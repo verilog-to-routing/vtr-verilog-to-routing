@@ -337,8 +337,97 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::ma
     return true; //OK
 }
 
+///@brief Resolve interposer cut locations so each cut goes only through root locations.
+/// If the formula-derived position would cut through a block, try moving by +1,-1, +2,-2, ... until valid.
+static void resolve_interposer_cut_locations(const vtr::NdMatrix<t_grid_tile, 3>& grid,
+                                             const t_grid_def& grid_def,
+                                             FormulaParser& p,
+                                             size_t grid_width,
+                                             size_t grid_height,
+                                             std::vector<std::vector<int>>& horizontal_interposer_cuts,
+                                             std::vector<std::vector<int>>& vertical_interposer_cuts) {
+    const size_t num_layers = grid_def.layers.size();
+
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        const t_layer_def& layer_def = grid_def.layers[layer];
+
+        for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
+            t_formula_data cut_vars;
+            cut_vars.set_var_value("W", grid_width);
+            cut_vars.set_var_value("H", grid_height);
+            const int base_cut_loc = p.parse_formula(cut_inf.loc, cut_vars);
+
+            auto is_cut_through_roots_only = [&grid, layer](e_interposer_cut_type dim, int loc) {
+                if (dim == e_interposer_cut_type::VERT) {
+                    if (loc < 0 || size_t(loc) >= grid.end_index(1)) return false;
+                    for (size_t y = 0; y < grid.end_index(2); y++) {
+                        if (grid[layer][loc][y].width_offset != 0 || grid[layer][loc][y].height_offset != 0)
+                            return false;
+                    }
+                    return true;
+                } else {
+                    VTR_ASSERT(dim == e_interposer_cut_type::HORZ);
+                    if (loc < 0 || size_t(loc) >= grid.end_index(2)) return false;
+                    for (size_t x = 0; x < grid.end_index(1); x++) {
+                        if (grid[layer][x][loc].width_offset != 0 || grid[layer][x][loc].height_offset != 0)
+                            return false;
+                    }
+                    return true;
+                }
+            };
+
+            int cut_loc = base_cut_loc;
+            for (int offset = 0;; offset++) {
+                int try_pos_plus = base_cut_loc + offset;
+                int try_pos_minus = base_cut_loc - offset;
+                if (offset == 0) {
+                    if (is_cut_through_roots_only(cut_inf.dim, try_pos_plus)) {
+                        cut_loc = try_pos_plus;
+                        break;
+                    }
+                } else {
+                    bool plus_ok = is_cut_through_roots_only(cut_inf.dim, try_pos_plus);
+                    bool minus_ok = is_cut_through_roots_only(cut_inf.dim, try_pos_minus);
+                    if (plus_ok) {
+                        cut_loc = try_pos_plus;
+                        break;
+                    }
+                    if (minus_ok) {
+                        cut_loc = try_pos_minus;
+                        break;
+                    }
+                }
+                if (offset > static_cast<int>(std::max(grid_width, grid_height))) {
+                    VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                                    "Interposer cut (dim=%s, formula=%s -> %d) does not cross root locations only; "
+                                    "no valid offset found within grid bounds.",
+                                    cut_inf.dim == e_interposer_cut_type::VERT ? "VERT" : "HORZ",
+                                    cut_inf.loc.c_str(), base_cut_loc);
+                }
+            }
+
+            if (cut_loc != base_cut_loc) {
+                VTR_LOG_WARN(
+                    "Interposer cut moved to avoid cutting through block: W=%zu H=%zu formula='%s' evaluated to %d, resolved to %d (%s)\n",
+                    grid_width, grid_height, cut_inf.loc.c_str(), base_cut_loc, cut_loc,
+                    cut_inf.dim == e_interposer_cut_type::VERT ? "VERT" : "HORZ");
+            }
+
+            if (cut_inf.dim == e_interposer_cut_type::VERT) {
+                vertical_interposer_cuts[layer].push_back(cut_loc);
+            } else {
+                VTR_ASSERT(cut_inf.dim == e_interposer_cut_type::HORZ);
+                horizontal_interposer_cuts[layer].push_back(cut_loc);
+            }
+        }
+    }
+}
+
 ///@brief Build the specified device grid
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range, const std::vector<t_logical_block_type_ptr>& limiting_resources) {
+static DeviceGrid build_device_grid(const t_grid_def& grid_def,
+                                    size_t grid_width, size_t grid_height,
+                                    bool warn_out_of_range,
+                                    const std::vector<t_logical_block_type_ptr>& limiting_resources) {
     if (grid_def.grid_type == e_grid_def_type::FIXED) {
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -381,19 +470,6 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
     for (size_t layer = 0; layer < num_layers; layer++) {
         const t_layer_def& layer_def = grid_def.layers[layer];
-
-        for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            t_formula_data cut_vars;
-            cut_vars.set_var_value("W", grid_width);
-            cut_vars.set_var_value("H", grid_height);
-            const int cut_loc = p.parse_formula(cut_inf.loc, cut_vars);
-            if (cut_inf.dim == e_interposer_cut_type::VERT) {
-                vertical_interposer_cuts[layer].push_back(cut_loc);
-            } else {
-                VTR_ASSERT(cut_inf.dim == e_interposer_cut_type::HORZ);
-                horizontal_interposer_cuts[layer].push_back(cut_loc);
-            }
-        }
 
         for (const t_grid_loc_def& grid_loc_def : layer_def.loc_defs) {
             // Fill in the block types according to the specification
@@ -547,6 +623,9 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
             }
         }
     }
+
+    resolve_interposer_cut_locations(grid, grid_def, p, grid_width, grid_height,
+                                     horizontal_interposer_cuts, vertical_interposer_cuts);
 
     // Warn if any types were not specified in the grid layout
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
