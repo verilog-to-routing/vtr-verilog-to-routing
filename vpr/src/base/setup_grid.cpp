@@ -379,19 +379,23 @@ static void resolve_interposer_cut_locations(const vtr::NdMatrix<t_grid_tile, 3>
             cut_vars.set_var_value("H", grid_height);
             const int base_cut_loc = p.parse_formula(cut_inf.loc, cut_vars);
 
+            // Vertical cut at loc: locations to the right of the cut (column at loc+1) must be root.
+            // Horizontal cut at loc: locations above the cut (row at loc+1) must be root.
             auto is_cut_through_roots_only = [&grid, layer](e_interposer_cut_type dim, int loc) {
                 if (dim == e_interposer_cut_type::VERT) {
-                    if (loc < 0 || size_t(loc) >= grid.end_index(1)) return false;
+                    const int right_col = loc + 1;
+                    if (right_col < 0 || size_t(right_col) >= grid.end_index(1)) return false;
                     for (size_t y = 0; y < grid.end_index(2); y++) {
-                        if (grid[layer][loc][y].width_offset != 0 || grid[layer][loc][y].height_offset != 0)
+                        if (grid[layer][right_col][y].width_offset != 0 || grid[layer][right_col][y].height_offset != 0)
                             return false;
                     }
                     return true;
                 } else {
                     VTR_ASSERT(dim == e_interposer_cut_type::HORZ);
-                    if (loc < 0 || size_t(loc) >= grid.end_index(2)) return false;
+                    const int row_above = loc + 1;
+                    if (row_above < 0 || size_t(row_above) >= grid.end_index(2)) return false;
                     for (size_t x = 0; x < grid.end_index(1); x++) {
-                        if (grid[layer][x][loc].width_offset != 0 || grid[layer][x][loc].height_offset != 0)
+                        if (grid[layer][x][row_above].width_offset != 0 || grid[layer][x][row_above].height_offset != 0)
                             return false;
                     }
                     return true;
@@ -486,8 +490,6 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
 
     FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
-    std::vector<std::vector<int>> horizontal_interposer_cuts(num_layers);
-    std::vector<std::vector<int>> vertical_interposer_cuts(num_layers);
 
     for (size_t layer = 0; layer < num_layers; layer++) {
         const t_layer_def& layer_def = grid_def.layers[layer];
@@ -645,6 +647,8 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
         }
     }
 
+    std::vector<std::vector<int>> horizontal_interposer_cuts(num_layers);
+    std::vector<std::vector<int>> vertical_interposer_cuts(num_layers);
     resolve_interposer_cut_locations(grid, grid_def, p, grid_width, grid_height,
                                      horizontal_interposer_cuts, vertical_interposer_cuts);
 
