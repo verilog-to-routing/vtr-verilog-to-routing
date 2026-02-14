@@ -7,9 +7,9 @@
 #include "scatter_gather_types.h"
 #include "rr_types.h"
 #include "globals.h"
-#include "rr_graph_uxsdcxx_interface.h"
 #include "vtr_assert.h"
 #include "vtr_random.h"
+#include "vtr_expr_eval.h"
 
 //
 // Static Function Declarations
@@ -349,7 +349,11 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
         // Step 2: Process each interposer cut (vertical or horizontal) on this layer
         for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
-            const int cut_loc = cut_inf.loc;
+            vtr::t_formula_data cut_vars;
+            cut_vars.set_var_value("W", static_cast<int>(grid_width));
+            cut_vars.set_var_value("H", static_cast<int>(grid_height));
+            vtr::FormulaParser formula_parser;
+            const int cut_loc = formula_parser.parse_formula(cut_inf.loc, cut_vars);
             e_interposer_cut_type cut_type = cut_inf.dim;
 
             // Step 3: For each inter-die wire defined at this cut, compute its SG region
