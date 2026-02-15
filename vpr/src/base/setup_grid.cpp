@@ -27,9 +27,6 @@
 
 #define MAX_SIZE_FACTOR 10000
 
-using vtr::FormulaParser;
-using vtr::t_formula_data;
-
 /**
  * @brief Create a device grid which satisfies the minimum block counts
  *
@@ -63,7 +60,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
 /// If the formula-derived position would cut through a block, try moving by +1,-1, +2,-2, ... until valid.
 static void resolve_interposer_cut_locations(const vtr::NdMatrix<t_grid_tile, 3>& grid,
                                              const t_grid_def& grid_def,
-                                             FormulaParser& p,
+                                             vtr::FormulaParser& p,
                                              size_t grid_width,
                                              size_t grid_height,
                                              std::vector<std::vector<int>>& horizontal_interposer_cuts,
@@ -363,7 +360,7 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::ma
 
 static void resolve_interposer_cut_locations(const vtr::NdMatrix<t_grid_tile, 3>& grid,
                                              const t_grid_def& grid_def,
-                                             FormulaParser& p,
+                                             vtr::FormulaParser& p,
                                              size_t grid_width,
                                              size_t grid_height,
                                              std::vector<std::vector<int>>& horizontal_interposer_cuts,
@@ -374,7 +371,7 @@ static void resolve_interposer_cut_locations(const vtr::NdMatrix<t_grid_tile, 3>
         const t_layer_def& layer_def = grid_def.layers[layer];
 
         for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            t_formula_data cut_vars;
+            vtr::t_formula_data cut_vars;
             cut_vars.set_var_value("W", grid_width);
             cut_vars.set_var_value("H", grid_height);
             const int base_cut_loc = p.parse_formula(cut_inf.loc, cut_vars);
@@ -489,7 +486,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
         }
     }
 
-    FormulaParser p;
+    vtr::FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
 
     for (size_t layer = 0; layer < num_layers; layer++) {
@@ -507,7 +504,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
 
             seen_types.insert(type);
 
-            t_formula_data vars;
+            vtr::t_formula_data vars;
             vars.set_var_value("W", grid_width);
             vars.set_var_value("H", grid_height);
             vars.set_var_value("w", type->width);
