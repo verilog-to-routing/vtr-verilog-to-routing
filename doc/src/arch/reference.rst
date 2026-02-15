@@ -582,24 +582,25 @@ Grid Layout Example
     Example FPGA grid
 
 
-.. arch:tag:: <interposer_cut x="int" y="int"/>
+.. arch:tag:: <interposer_cut x="expr" y="expr"/>
 
-    :opt_param x: Specifies the x-coordinate of a vertical interposer cut.
-    :opt_param y: Specifies the y-coordinate of a horizontal interposer cut.
+    :opt_param x: Specifies the x-coordinate of a vertical interposer cut. Value is an expression (see :ref:`grid_expressions`); variables ``W`` and ``H`` are device width and height.
+    :opt_param y: Specifies the y-coordinate of a horizontal interposer cut. Value is an expression (see :ref:`grid_expressions`); variables ``W`` and ``H`` are device width and height.
 
     .. note:: Exactly one of the ``x`` or ``y`` attributes must be specified.
 
-    Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at location 'loc' along the axis 'dim' Leaving the two sides completely unconnected.
-    To reconnect the two sides, this tag can have multiple <interdie_wire> tags as children to specify the connection between the two sides.
+    Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at the given location along the specified axis, leaving the two sides completely unconnected.
+    To reconnect the two sides, this tag can have multiple ``<interdie_wire>`` tags as children to specify the connection between the two sides.
+    This tag may appear inside ``<auto_layout>`` or ``<fixed_layout>`` as a grid location tag.
 
-.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="expr" offset_end="expr" offset_increment="expr" num="int"/>
+.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="expr" offset_end="expr" offset_increment="expr" num="expr"/>
 
     :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
     :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
     :req_param offset_start: Starting point of scatter-gather instantiations. Must be smaller than 'offset_end'.
     :req_param offset_end: Ending point of scatter-gather instantiations. Must be larger than 'offset_start'.
     :req_param offset_increment: Increment/distance between scatter-gather instantiations. Must be a positive number.
-    :req_param num: Number of scatter-gather instantiations per switchblock location.
+    :req_param num: Number of scatter-gather instantiations per switchblock location. May be an integer or a formula; the variable ``W`` denotes the routing channel width when the expression is evaluated.
 
     Defines the interdie wiring between the two sides of the cut. Connectivity is defined using scatter-gather patterns. Starting at 'offset_start' from location of the cut and moving by 'offset_increment' until we reach the location of 'offset_end' away from the cut, 'num' scatter-gather patterns defined by 'sg_name' and 'sg_link' will be instantiated.
     Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment are integer values.
@@ -2759,7 +2760,7 @@ Scatter-Gather Patterns
 The content under the ``<scatter_gather_list>`` tag consists of one or more ``<sg_pattern>`` tags that are used to specify a scatter-gather pattern.
 Scatter-gather patterns can be used to specify multi-level switch patterns, rather than the direct wire-to-wire switch patterns of conventional switch blocks.
 These additional switches, wires and/or muxes will be added to the architecture, augmenting wires created using segment specifications and switches created using switch box specifications.
-The number of any additional wires or muxes created by scatter-gather specifications will not vary with routing channel width.
+The number of additional wires or muxes created by scatter-gather specifications may be fixed or given by a formula in the routing channel width ``W`` (e.g. in ``<sg_location>`` or ``<interdie_wire>`` ``num`` attributes).
 
 .. figure:: scatter_gather_images/scattergather_diagram.svg
 
@@ -2844,11 +2845,11 @@ When instantiated, a scatter-gather pattern gathers connections from a switchblo
 
     .. note:: Only one of the offset fields for the sg_link tag should be set. The magnitude of the offset will generally be chosen by the architecture file creator to match the length of the sg_link segment type.
 
-.. arch:tag:: <sg_location type="string" num="int" sg_link_name="string">
+.. arch:tag:: <sg_location type="string" num="expr" sg_link_name="string">
 
     Instantiates the scatter-gather pattern with the specified sg_link.
 
-    :req_param num: Number of scatter-gather instances per matching location (e.g. per switch block)
+    :req_param num: Number of scatter-gather instances per matching location (e.g. per switch block). May be an integer or a formula; the variable ``W`` denotes the routing channel width when the expression is evaluated.
     
     :req_param sg_link_name: Name of the ``sg_link`` used in the instantiation
 
@@ -2881,7 +2882,7 @@ tag can be inserted under the following XML tags:
 * ``<pb_type>``
 * Any tag under ``<interconnect>`` (``<direct>``, ``<mux>``, etc).
 * ``<mode>``
-* Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``)
+* Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``, ``<interposer_cut>``)
 
 .. arch:tag:: <metadata>
 
