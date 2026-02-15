@@ -55,11 +55,11 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
                            "The `offset_start` attribute of an `interdie_wire` must be smaller than the `offset_start` attribute.");
         }
 
-        interdie_wire.num = pugiutil::get_attribute(interdie_wire_tag, "num", loc_data).as_int();
+        interdie_wire.num = pugiutil::get_attribute(interdie_wire_tag, "num", loc_data).as_string();
 
-        if (interdie_wire.num <= 0) {
+        if (interdie_wire.num.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(interdie_wire_tag),
-                           "The `num` attribute of an `interdie_wire` must be specified with a positive number.");
+                           "The `num` attribute of an `interdie_wire` must be specified (formula or positive integer).");
         }
 
         interposer.interdie_wires.push_back(interdie_wire);

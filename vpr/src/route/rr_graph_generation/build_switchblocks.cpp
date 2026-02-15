@@ -187,7 +187,6 @@ static void compute_wireconn_connections(e_directionality directionality,
                                          t_wireconn_scratchpad* scratchpad);
 
 /**
- *
  * @brief calculates the wire indices belonging to the types in types in 'wire_type_sizes' and switchpoints in 'points' at the given channel segment
  *  @param chan_details channel segment details (length, start and end points, ...)
  *  @param chan_type channel type (CHANX/CHANY)

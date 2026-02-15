@@ -34,7 +34,7 @@ struct t_interdie_wire_inf {
         int increment;
     } offset;
 
-    int num; ///< Number of scatter-gather instantiations per switchblock location
+    std::string num; ///< Formula (variable W = channel width) for number of scatter-gather instantiations per switchblock location
 };
 
 /**
