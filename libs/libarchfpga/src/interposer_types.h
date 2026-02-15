@@ -42,9 +42,9 @@ struct t_interdie_wire_inf {
  */
 struct t_interposer_cut_inf {
     /// Axis of interposer cut location. The cut is perpendicular to this axis. This specifies the dimension of `loc`.
-    e_interposer_cut_type dim;                       
+    e_interposer_cut_type dim;
     /// Location of the cut on the grid. Locations start from zero and cuts will happen above or to the right of the tiles at location=loc.
-    std::string loc;                                 
+    std::string loc;
     /// Connectivity specification between the two sides of the cut.
-    std::vector<t_interdie_wire_inf> interdie_wires; 
+    std::vector<t_interdie_wire_inf> interdie_wires;
 };
