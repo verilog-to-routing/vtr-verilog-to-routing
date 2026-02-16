@@ -95,7 +95,7 @@ vtr::NdMatrix<T, 2> get_device_sized_matrix_from_reduced(size_t device_width,
 /// Formula parser and formula data are used to evaluate the cut formula; W and H are set inside from grid dimensions.
 /// Returns the resolved cut location (possibly moved from the formula result).
 int adjust_interposer_cut_location(const DeviceGrid& grid,
-                                  size_t layer,
+                                  int layer,
                                   e_interposer_cut_type dim,
                                   const std::string& formula_str,
                                   vtr::FormulaParser& p,

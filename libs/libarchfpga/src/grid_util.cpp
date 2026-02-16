@@ -6,7 +6,7 @@
 #include "vtr_expr_eval.h"
 
 int adjust_interposer_cut_location(const DeviceGrid& grid,
-                                   size_t layer,
+                                   int layer,
                                    e_interposer_cut_type dim,
                                    const std::string& formula_str,
                                    vtr::FormulaParser& p,
@@ -20,27 +20,24 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
 
     // Vertical cut at loc: locations to the right of the cut (column at loc+1) must be root.
     // Horizontal cut at loc: locations above the cut (row at loc+1) must be root.
-    auto is_cut_through_roots_only = [&grid, layer](e_interposer_cut_type d, int loc) {
-        t_physical_tile_loc tile_loc;
-        tile_loc.layer_num = static_cast<int>(layer);
+    int grid_w = grid.width();
+    int grid_h = grid.height();
+
+    auto is_cut_through_roots_only = [&grid, layer, grid_w, grid_h](e_interposer_cut_type d, int loc) {
         if (d == e_interposer_cut_type::VERT) {
             const int right_col = loc + 1;
-            if (right_col < 0 || size_t(right_col) >= grid.width()) return false;
-            tile_loc.x = right_col;
-            for (size_t y = 0; y < grid.height(); y++) {
-                tile_loc.y = static_cast<int>(y);
-                if (grid.get_width_offset(tile_loc) != 0 || grid.get_height_offset(tile_loc) != 0)
+            if (right_col < 0 || right_col >= grid_w) return false;
+            for (int y = 0; y < grid_h; y++) {
+                if (grid.get_width_offset({right_col, y, layer}) != 0)
                     return false;
             }
             return true;
         } else {
             VTR_ASSERT(d == e_interposer_cut_type::HORZ);
             const int row_above = loc + 1;
-            if (row_above < 0 || size_t(row_above) >= grid.height()) return false;
-            tile_loc.y = row_above;
-            for (size_t x = 0; x < grid.width(); x++) {
-                tile_loc.x = static_cast<int>(x);
-                if (grid.get_width_offset(tile_loc) != 0 || grid.get_height_offset(tile_loc) != 0)
+            if (row_above < 0 || row_above >= grid_h) return false;
+            for (int x = 0; x < grid_w; x++) {
+                if (grid.get_height_offset({x, row_above, layer}) != 0)
                     return false;
             }
             return true;
