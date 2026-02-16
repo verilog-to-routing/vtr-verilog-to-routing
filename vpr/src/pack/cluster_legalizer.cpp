@@ -1259,7 +1259,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
-    LazyPopUniquePriorityQueue<t_pb_graph_node*, float> primitives_alive;
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> primitives_alive;
     get_next_primitive_list(cluster.placement_stats,
                             molecule_id,
                             primitives_list,
@@ -1469,6 +1469,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
              * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
              * their modes reset. This task is performed by the cleanup_pb() function below. */
             cleanup_pb(cluster.pb);
+            cluster.placement_stats->move_inflight_to_tried();
         } else {
             VTR_LOGV(log_verbosity_ > 3, "\t\tPASSED pack molecule\n");
         }

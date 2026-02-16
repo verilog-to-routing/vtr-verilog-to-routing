@@ -178,7 +178,7 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
 bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_stats,
                              PackMoleculeId molecule_id,
                              std::vector<t_pb_graph_node*>& primitives_list,
-                             LazyPopUniquePriorityQueue<t_pb_graph_node*, float>& primitives_alive,
+                             LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>>& primitives_alive,
                              const Prepacker& prepacker,
                              int force_site) {
     std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator best;
@@ -212,6 +212,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
     // Initialize variables
     bool found_best = false;
     lowest_cost = std::numeric_limits<float>::max();
+    int order = 0; // tie-break: earlier encountered wins
 
     // VTR_LOG("In get_next_primitive_list for molecule id %zu.\n", molecule_id);
 
@@ -264,7 +265,15 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                                               primitives_list,
                                               prepacker);
                     // VTR_LOG("\tThe primitive %s has a cost of %f. The pb_type_index is %d. The primitives_list has %zu element.\n", it->second->pb_graph_node->hierarchical_type_name().c_str(), cost, i, primitives_list.size());
-                    primitives_alive.push(it->second->pb_graph_node, -cost);
+                    if (cost < std::numeric_limits<float>::max()) {
+                        int tpc = it->second->pb_graph_node->total_primitive_count;
+
+                        // Key: (-cost, tpc, -order)
+                        primitives_alive.push(it->second->pb_graph_node,
+                                            std::make_tuple(-cost, tpc, -order));
+                        ++order;
+                    }
+
 
                     // if the cost is lower than the best, or is equal to the best but this
                     // primitive is more available in the cluster mark it as the best primitive

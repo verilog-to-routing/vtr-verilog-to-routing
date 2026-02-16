@@ -182,7 +182,7 @@ bool get_next_primitive_list(
     t_intra_cluster_placement_stats* cluster_placement_stats,
     PackMoleculeId molecule_id,
     std::vector<t_pb_graph_node*>& primitives_list,
-    LazyPopUniquePriorityQueue<t_pb_graph_node*, float>& primitives_alive,
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>>& primitives_alive,
     const Prepacker& prepacker,
     int force_site = -1);
 
