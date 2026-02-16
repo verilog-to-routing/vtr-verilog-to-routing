@@ -13,13 +13,10 @@ DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
     : name_(grid_def.name)
     , grid_(std::move(grid)) {
     const size_t num_layers = grid_.dim_size(0);
-    horizontal_interposer_cuts_.resize(num_layers);
-    vertical_interposer_cuts_.resize(num_layers);
 
     vtr::FormulaParser p;
-    resolve_interposer_cut_locations(*this, grid_def, p,
-                                    horizontal_interposer_cuts_, vertical_interposer_cuts_);
-
+    std::tie(horizontal_interposer_cuts_, vertical_interposer_cuts_) = resolve_interposer_cut_locations(*this, grid_def, p);
+    
     count_instances();
 
     const size_t x_size = grid_.dim_size(1);

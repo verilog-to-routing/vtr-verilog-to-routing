@@ -87,13 +87,15 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
     return cut_loc;
 }
 
-void resolve_interposer_cut_locations(const DeviceGrid& grid,
-                                    const t_grid_def& grid_def,
-                                    vtr::FormulaParser& p,
-                                    std::vector<std::vector<int>>& horizontal_interposer_cuts,
-                                    std::vector<std::vector<int>>& vertical_interposer_cuts) {
+std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>>
+resolve_interposer_cut_locations(const DeviceGrid& grid,
+                                 const t_grid_def& grid_def,
+                                 vtr::FormulaParser& p) {
     const size_t num_layers = grid_def.layers.size();
     vtr::t_formula_data formula_data;
+
+    std::vector<std::vector<int>> horizontal(num_layers);
+    std::vector<std::vector<int>> vertical(num_layers);
 
     for (size_t layer = 0; layer < num_layers; layer++) {
         const t_layer_def& layer_def = grid_def.layers[layer];
@@ -102,11 +104,12 @@ void resolve_interposer_cut_locations(const DeviceGrid& grid,
             const int cut_loc = adjust_interposer_cut_location(grid, layer, cut_inf.dim, cut_inf.loc, p, formula_data);
 
             if (cut_inf.dim == e_interposer_cut_type::VERT) {
-                vertical_interposer_cuts[layer].push_back(cut_loc);
+                vertical[layer].push_back(cut_loc);
             } else {
                 VTR_ASSERT(cut_inf.dim == e_interposer_cut_type::HORZ);
-                horizontal_interposer_cuts[layer].push_back(cut_loc);
+                horizontal[layer].push_back(cut_loc);
             }
         }
     }
+    return {std::move(horizontal), std::move(vertical)};
 }
