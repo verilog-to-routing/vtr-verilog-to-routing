@@ -16,7 +16,7 @@ DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
 
     vtr::FormulaParser p;
     std::tie(horizontal_interposer_cuts_, vertical_interposer_cuts_) = resolve_interposer_cut_locations(*this, grid_def, p);
-    
+
     count_instances();
 
     const size_t x_size = grid_.dim_size(1);

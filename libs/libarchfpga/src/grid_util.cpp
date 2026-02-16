@@ -48,7 +48,7 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
         for (int offset = 1;; offset++) {
             int try_pos_plus = base_cut_loc + offset;
             int try_pos_minus = base_cut_loc - offset;
-            
+
             bool plus_ok = is_cut_through_roots_only(dim, try_pos_plus);
             if (plus_ok) {
                 cut_loc = try_pos_plus;
