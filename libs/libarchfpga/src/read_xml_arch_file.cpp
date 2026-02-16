@@ -1852,6 +1852,8 @@ static void process_interconnect(vtr::string_internment& strings,
         pugi::xml_node cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
 
         while (cur != nullptr) {
+            expect_only_attributes(cur, {"name", "input", "output"}, loc_data);
+
             if (0 == strcmp(cur.name(), "complete")) {
                 mode->interconnect[interconnect_idx].type = COMPLETE_INTERC;
             } else if (0 == strcmp(cur.name(), "direct")) {
@@ -1932,6 +1934,7 @@ static void process_mode(pugi::xml_node Parent,
     if (implied_mode) {
         mode->name = vtr::strdup("default");
     } else {
+        expect_only_attributes(Parent, {"name", "disable_packing"}, loc_data);
         const char* prop = get_attribute(Parent, "name", loc_data).value();
         mode->name = vtr::strdup(prop);
     }

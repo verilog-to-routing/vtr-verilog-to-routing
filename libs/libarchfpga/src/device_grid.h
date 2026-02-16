@@ -18,6 +18,11 @@ struct t_grid_tile {
     const t_metadata_dict* meta = nullptr;
 };
 
+// A unique identifier for a die on device (Including 3D stacked dice and interposer-connected dice)
+// Used in multi-die 2.5D and 3D architectures
+struct general_die_id_tag {};
+typedef vtr::StrongId<struct general_die_id_tag, short> DeviceDieId;
+
 //TODO: All of the functions that use helper functions of this class should pass the layer_num to the functions, and the default value of layer_num should be deleted eventually.
 /**
  * @class DeviceGrid
@@ -216,6 +221,11 @@ class DeviceGrid {
     /// of those functions might look something like this: {{}} which is technically not empty.
     bool has_interposer_cuts() const;
 
+    /**
+     * @brief Returns if two locations loc_a and loc_b are on the same die, usable on 2D, 2.5D and 3D architectures.
+     */
+    bool are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
+
   private:
     /// @brief Counts the number of each tile type on each layer and store it in instance_counts_.
     /// It is called in the constructor.
@@ -246,4 +256,16 @@ class DeviceGrid {
     /// i.e. x value of the tile column just to the left each cut
     /// Accessed as [layer][cut_idx]
     std::vector<std::vector<int>> vertical_interposer_cuts_;
+
+    /**
+     * @brief Vector of matrices that contain a unique ID for each die of the device per grid location
+     * For example in a 4x4 grid, if you have an interposer cut at y = 2, the matrix would look like this:
+     * 1 1 1 1
+     * 1 1 1 1
+     * 0 0 0 0
+     * 0 0 0 0
+     *
+     * Accessed as [layer][x][y]. die_id_matrix_[layer][x][y] returns the ID of the die at location (x, y, layer)
+     */
+    std::vector<vtr::NdMatrix<DeviceDieId, 2>> die_id_matrix_;
 };

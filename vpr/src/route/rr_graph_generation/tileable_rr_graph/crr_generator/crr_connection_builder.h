@@ -35,6 +35,8 @@ class CRRConnectionBuilder {
      */
     void initialize(int fpga_grid_x,
                     int fpga_grid_y,
+                    bool preserve_ipin_connections,
+                    bool preserve_opin_connections,
                     bool is_annotated);
 
     /**
@@ -49,6 +51,8 @@ class CRRConnectionBuilder {
     // Info from config
     int fpga_grid_x_;
     int fpga_grid_y_;
+    bool preserve_ipin_connections_;
+    bool preserve_opin_connections_;
     bool is_annotated_;
 
     // Dependencies
@@ -57,24 +61,36 @@ class CRRConnectionBuilder {
     const SwitchBlockManager& sb_manager_;
     int verbosity_;
 
-    // Processing state
-    std::atomic<size_t> processed_locations_{0};
-    size_t total_locations_{0};
-
     // Connection building methods
     std::vector<Connection> build_connections_for_location(size_t x,
                                                            size_t y) const;
 
-    // Node processing methods
-    std::map<size_t, RRNodeId> get_tile_source_nodes(int x,
-                                                     int y,
-                                                     const DataFrame& df,
-                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    /**
+     * @brief Iterates over the switch block dataframe cells and creates connections
+     *        between matched source and sink routing nodes.
+     *
+     * For each non-empty cell in the dataframe, looks up the corresponding source
+     * and sink nodes, applies IPIN/OPIN preservation filters, computes the connection
+     * delay, and emits a Connection with the appropriate direction and switch template ID.
+     */
+    std::vector<Connection> build_connections_from_dataframe(
+        const DataFrame& df,
+        const std::unordered_map<size_t, RRNodeId>& source_nodes,
+        const std::unordered_map<size_t, RRNodeId>& sink_nodes,
+        const std::string& sw_block_file_name) const;
 
-    std::map<size_t, RRNodeId> get_tile_sink_nodes(int x,
-                                                   int y,
-                                                   const DataFrame& df,
-                                                   const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    // Node processing methods
+    std::unordered_map<size_t, RRNodeId> get_tile_source_nodes(int x,
+                                                               int y,
+                                                               const DataFrame& df,
+                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
+
+    std::unordered_map<size_t, RRNodeId> get_tile_sink_nodes(int x,
+                                                             int y,
+                                                             const DataFrame& df,
+                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
     // PTC sequence calculation
     std::string get_ptc_sequence(int seg_index,
@@ -109,12 +125,14 @@ class CRRConnectionBuilder {
     RRNodeId process_opin_ipin_node(const SegmentInfo& info,
                                     int x,
                                     int y,
-                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
     RRNodeId process_channel_node(const SegmentInfo& info,
                                   int x,
                                   int y,
-                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
                                   int& prev_seg_index,
                                   e_sw_template_dir& prev_side,
                                   std::string& prev_seg_type,
@@ -142,9 +160,6 @@ class CRRConnectionBuilder {
                                 RRNodeId source_node,
                                 RRNodeId sink_node,
                                 int segment_length = -1) const;
-
-    // Progress tracking
-    void update_progress();
 };
 
 } // namespace crrgenerator

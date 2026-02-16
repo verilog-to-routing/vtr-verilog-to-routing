@@ -757,7 +757,7 @@
   <switchlist>
 
     <!-- Short switch type used for creating diagonal wires. -->
-    <switch type="short" name="electrical_short" R="0" Cin="0" Tdel="0" />
+    <switch type="short" name="electrical_short" R="0" Cin="0" Cout="0" Tdel="0" />
 
     <!-- Timing for each wire type is built into each wire types driving switch. Timing
         information

@@ -1,6 +1,12 @@
 #include "device_grid.h"
 
+#include <cstddef>
 #include <utility>
+#include <vector>
+#include "physical_types.h"
+#include "vtr_log.h"
+#include "vtr_ndmatrix.h"
+#include "grid_util.h"
 
 DeviceGrid::DeviceGrid(std::string_view grid_name,
                        vtr::NdMatrix<t_grid_tile, 3> grid,
@@ -11,6 +17,32 @@ DeviceGrid::DeviceGrid(std::string_view grid_name,
     , horizontal_interposer_cuts_(std::move(horizontal_interposer_cuts))
     , vertical_interposer_cuts_(std::move(vertical_interposer_cuts)) {
     count_instances();
+
+    const size_t num_layers = grid_.dim_size(0);
+    const size_t x_size = grid_.dim_size(1);
+    const size_t y_size = grid_.dim_size(2);
+
+    // Build the unique Ids for each die. In 2D architectures there's only a single die but this is not the case in 2.5D and 3D architectures.
+    short die_region_counter = 0;
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        const std::vector<int>& horizontal_interposers = horizontal_interposer_cuts_[layer];
+        const std::vector<int>& vertical_interposers = vertical_interposer_cuts_[layer];
+
+        vtr::NdMatrix<DeviceDieId, 2> layer_reduced_die_id_matrix({vertical_interposers.size() + 1, horizontal_interposers.size() + 1});
+
+        for (size_t i = 0; i < vertical_interposers.size() + 1; i++) {
+            for (size_t j = 0; j < horizontal_interposers.size() + 1; j++) {
+                layer_reduced_die_id_matrix[i][j] = (DeviceDieId)die_region_counter;
+                die_region_counter++;
+            }
+        }
+        vtr::NdMatrix<DeviceDieId, 2> layer_die_id_matrix = get_device_sized_matrix_from_reduced(x_size,
+                                                                                                 y_size,
+                                                                                                 horizontal_interposers,
+                                                                                                 vertical_interposers,
+                                                                                                 layer_reduced_die_id_matrix);
+        die_id_matrix_.push_back(std::move(layer_die_id_matrix));
+    }
 }
 
 DeviceGrid::DeviceGrid(std::string_view grid_name,
@@ -104,4 +136,11 @@ bool DeviceGrid::has_interposer_cuts() const {
     }
 
     return false;
+}
+
+bool DeviceGrid::are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const {
+    const DeviceDieId first_id = die_id_matrix_[loc_a.layer_num][loc_a.x][loc_a.y];
+    const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][loc_b.x][loc_b.y];
+
+    return first_id == second_id;
 }

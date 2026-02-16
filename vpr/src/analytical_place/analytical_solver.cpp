@@ -12,6 +12,7 @@
 #include <limits>
 #include <memory>
 #include <thread>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include "PreClusterTimingManager.h"
@@ -594,8 +595,15 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
                 p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
                 p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
             }
+
             block_x_locs_solved = p_placement.block_x_locs;
             block_y_locs_solved = p_placement.block_y_locs;
+            if (is_multi_die()) {
+                std::fill(p_placement.block_layer_nums.begin(),
+                          p_placement.block_layer_nums.end(),
+                          device_grid_num_layers_ / 2.0);
+                block_z_locs_solved = p_placement.block_layer_nums;
+            }
             return;
         }
 
@@ -615,10 +623,16 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         // Save the legalized solution; we need it for the anchors.
         block_x_locs_legalized = p_placement.block_x_locs;
         block_y_locs_legalized = p_placement.block_y_locs;
+        if (is_multi_die()) {
+            block_z_locs_legalized = p_placement.block_layer_nums;
+        }
 
         // Store last solved position into p_placement for b2b model
         p_placement.block_x_locs = block_x_locs_solved;
         p_placement.block_y_locs = block_y_locs_solved;
+        if (is_multi_die()) {
+            p_placement.block_layer_nums = block_z_locs_solved;
+        }
     }
 
     // Run the B2B solver using p_placement as a starting point.
@@ -627,27 +641,38 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store the solved solutions for the next iteration.
     block_x_locs_solved = p_placement.block_x_locs;
     block_y_locs_solved = p_placement.block_y_locs;
+    if (is_multi_die()) {
+        block_z_locs_solved = p_placement.block_layer_nums;
+    }
 }
 
 void B2BSolver::initialize_placement_least_dense(PartialPlacement& p_placement) {
     // Find a gap for the blocks such that each block can fit onto the device
     // if they were evenly spaced by this gap.
-    double gap = std::sqrt(device_grid_height_ * device_grid_width_ / static_cast<double>(num_moveable_blocks_));
+    size_t num_tiles_per_layer = device_grid_width_ * device_grid_height_;
+    VTR_ASSERT_SAFE(device_grid_num_layers_ > 0);
+    unsigned num_blocks_per_layer = num_moveable_blocks_ / device_grid_num_layers_;
+    num_blocks_per_layer = std::max<size_t>(1, num_blocks_per_layer);
+    double gap = std::sqrt(num_tiles_per_layer / static_cast<double>(num_blocks_per_layer));
 
     // Assuming this gap, get how many columns/rows of blocks there will be.
     size_t cols = std::ceil(device_grid_width_ / gap);
     size_t rows = std::ceil(device_grid_height_ / gap);
 
     // Spread the blocks at these grid coordinates.
-    for (size_t r = 0; r <= rows; r++) {
-        for (size_t c = 0; c <= cols; c++) {
-            size_t i = r * cols + c;
-            if (i >= num_moveable_blocks_)
-                break;
-            APRowId row_id = APRowId(i);
-            APBlockId blk_id = row_id_to_blk_id_[row_id];
-            p_placement.block_x_locs[blk_id] = c * gap;
-            p_placement.block_y_locs[blk_id] = r * gap;
+    size_t current_row_idx = 0;
+    for (size_t d = 0; d < device_grid_num_layers_; d++) {
+        for (size_t r = 0; r <= rows; r++) {
+            for (size_t c = 0; c <= cols; c++) {
+                if (current_row_idx >= num_moveable_blocks_)
+                    break;
+                APRowId row_id = APRowId(current_row_idx);
+                APBlockId blk_id = row_id_to_blk_id_[row_id];
+                p_placement.block_x_locs[blk_id] = c * gap;
+                p_placement.block_y_locs[blk_id] = r * gap;
+                p_placement.block_layer_nums[blk_id] = d;
+                current_row_idx++;
+            }
         }
     }
 
@@ -656,6 +681,9 @@ void B2BSolver::initialize_placement_least_dense(PartialPlacement& p_placement) 
     for (APBlockId blk_id : disconnected_blocks_) {
         p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
         p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
+        if (is_multi_die()) {
+            p_placement.block_layer_nums[blk_id] = device_grid_num_layers_ / 2.0;
+        }
     }
 }
 
@@ -664,11 +692,15 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
     // A good guess for B2B is the last solved solution.
     Eigen::VectorXd x_guess(num_moveable_blocks_);
     Eigen::VectorXd y_guess(num_moveable_blocks_);
+    Eigen::VectorXd z_guess(num_moveable_blocks_);
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id_[row_id];
         x_guess(row_id_idx) = p_placement.block_x_locs[blk_id];
         y_guess(row_id_idx) = p_placement.block_y_locs[blk_id];
+        if (is_multi_die()) {
+            z_guess(row_id_idx) = p_placement.block_layer_nums[blk_id];
+        }
     }
 
     // Create a timer to keep track of how long each part of the solver take.
@@ -706,30 +738,20 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         // Note: Since we have two different connectivity matrices, we need to
         //       different CG solver objects.
         float solve_linear_system_start_time = runtime_timer.elapsed_sec();
-        Eigen::VectorXd x, y;
-        Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg_x;
-        Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg_y;
-        cg_x.compute(A_sparse_x);
-        cg_y.compute(A_sparse_y);
-        VTR_ASSERT_SAFE_MSG(cg_x.info() == Eigen::Success, "Conjugate Gradient failed at compute for A_x!");
-        VTR_ASSERT_SAFE_MSG(cg_y.info() == Eigen::Success, "Conjugate Gradient failed at compute for A_y!");
-        cg_x.setMaxIterations(max_cg_iterations_);
-        cg_y.setMaxIterations(max_cg_iterations_);
-
-        // Solve the x dimension.
-        x = cg_x.solveWithGuess(b_x, x_guess);
-        total_num_cg_iters_ += cg_x.iterations();
-        VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG-x iter: %zu\n", cg_x.iterations());
-
-        // Solve the y dimension.
-        y = cg_y.solveWithGuess(b_y, y_guess);
-        total_num_cg_iters_ += cg_y.iterations();
-        VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG-y iter: %zu\n", cg_y.iterations());
-
+        Eigen::VectorXd x = solve_linear_system(A_sparse_x, b_x, x_guess);
+        Eigen::VectorXd y = solve_linear_system(A_sparse_y, b_y, y_guess);
+        Eigen::VectorXd z;
+        if (is_multi_die()) {
+            z = solve_linear_system(A_sparse_z, b_z, z_guess);
+        }
         total_time_spent_solving_linear_system_ += runtime_timer.elapsed_sec() - solve_linear_system_start_time;
 
         // Save the result into the partial placement object.
-        store_solution_into_placement(x, y, p_placement);
+        store_solution_into_placement(x, p_placement.block_x_locs, device_grid_width_);
+        store_solution_into_placement(y, p_placement.block_y_locs, device_grid_height_);
+        if (is_multi_die()) {
+            store_solution_into_placement(z, p_placement.block_layer_nums, device_grid_num_layers_);
+        }
 
         // If the current HPWL is larger than the previous HPWL (i.e. the HPWL
         // got worst since last B2B iter) or the gap between the two solutions
@@ -751,6 +773,9 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         // Update the guesses with the most recent answer
         x_guess = x;
         y_guess = y;
+        if (is_multi_die()) {
+            z_guess = z;
+        }
     }
 
     // Disconnected blocks are not optimized by the solver.
@@ -761,6 +786,9 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         for (APBlockId blk_id : disconnected_blocks_) {
             p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
             p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
+            if (is_multi_die()) {
+                p_placement.block_layer_nums[blk_id] = device_grid_num_layers_ / 2.0;
+            }
         }
     } else {
         // If a legalized solution is available (after the first iteration of GP), then
@@ -768,8 +796,30 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         for (APBlockId blk_id : disconnected_blocks_) {
             p_placement.block_x_locs[blk_id] = block_x_locs_legalized[blk_id];
             p_placement.block_y_locs[blk_id] = block_y_locs_legalized[blk_id];
+            if (is_multi_die()) {
+                p_placement.block_layer_nums[blk_id] = block_z_locs_legalized[blk_id];
+            }
         }
     }
+}
+
+Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
+                                               Eigen::VectorXd& b,
+                                               Eigen::VectorXd& guess) {
+    // Set up the system of equation solver.
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
+    cg.compute(A);
+    VTR_ASSERT_SAFE_MSG(cg.info() == Eigen::Success, "Conjugate Gradient failed at compute!");
+
+    // Solve.
+    cg.setMaxIterations(max_cg_iterations_);
+    Eigen::VectorXd solution = cg.solveWithGuess(b, guess);
+
+    // Collect some metrics.
+    total_num_cg_iters_ += cg.iterations();
+    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: %zu\n", cg.iterations());
+
+    return solution;
 }
 
 namespace {
@@ -785,6 +835,10 @@ struct APNetBounds {
     APBlockId min_y_blk;
     /// @brief The top-most block in the net.
     APBlockId max_y_blk;
+    /// @brief The lower-most block in the net (lowest-layer).
+    APBlockId min_z_blk;
+    /// @brief The upper-most block in the net (upper-most-layer).
+    APBlockId max_z_blk;
 };
 
 } // namespace
@@ -809,12 +863,15 @@ static inline APNetBounds get_unique_net_bounds(APNetId net_id,
     double min_x_pos = std::numeric_limits<double>::max();
     double max_y_pos = std::numeric_limits<double>::lowest();
     double min_y_pos = std::numeric_limits<double>::max();
+    double max_z_pos = std::numeric_limits<double>::lowest();
+    double min_z_pos = std::numeric_limits<double>::max();
 
     for (APPinId pin_id : netlist.net_pins(net_id)) {
         // Update the bounds based on the position of the block that has this pin.
         APBlockId blk_id = netlist.pin_block(pin_id);
         double x_pos = p_placement.block_x_locs[blk_id];
         double y_pos = p_placement.block_y_locs[blk_id];
+        double z_pos = p_placement.block_layer_nums[blk_id];
         if (x_pos < min_x_pos) {
             min_x_pos = x_pos;
             bounds.min_x_blk = blk_id;
@@ -823,6 +880,10 @@ static inline APNetBounds get_unique_net_bounds(APNetId net_id,
             min_y_pos = y_pos;
             bounds.min_y_blk = blk_id;
         }
+        if (z_pos < min_z_pos) {
+            min_z_pos = z_pos;
+            bounds.min_z_blk = blk_id;
+        }
         if (x_pos > max_x_pos) {
             max_x_pos = x_pos;
             bounds.max_x_blk = blk_id;
@@ -830,6 +891,10 @@ static inline APNetBounds get_unique_net_bounds(APNetId net_id,
         if (y_pos > max_y_pos) {
             max_y_pos = y_pos;
             bounds.max_y_blk = blk_id;
+        }
+        if (z_pos > max_z_pos) {
+            max_z_pos = z_pos;
+            bounds.max_z_blk = blk_id;
         }
 
         // In the case of a tie, we do not want to have the same blocks as bounds.
@@ -843,6 +908,10 @@ static inline APNetBounds get_unique_net_bounds(APNetId net_id,
             max_y_pos = y_pos;
             bounds.max_y_blk = blk_id;
         }
+        if (z_pos == max_z_pos && bounds.min_z_blk != blk_id) {
+            max_z_pos = z_pos;
+            bounds.max_z_blk = blk_id;
+        }
     }
 
     // Ensure the same block is set as the bounds.
@@ -851,6 +920,7 @@ static inline APNetBounds get_unique_net_bounds(APNetId net_id,
     // context.
     VTR_ASSERT_SAFE(bounds.min_x_blk != bounds.max_x_blk);
     VTR_ASSERT_SAFE(bounds.min_y_blk != bounds.max_y_blk);
+    VTR_ASSERT_SAFE(bounds.min_z_blk != bounds.max_z_blk);
 
     return bounds;
 }
@@ -899,9 +969,9 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
 }
 
 // Use Finite Differences to compute derivative.
-std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
-                                                          APBlockId sink_blk,
-                                                          const PartialPlacement& p_placement) {
+std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
+                                                                   APBlockId sink_blk,
+                                                                   const PartialPlacement& p_placement) {
 
     // Get the flat distance from the driver block to the sink block.
     // NOTE: Here we take the magnitude of the difference since we assume that
@@ -910,11 +980,7 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     //       us only focus on the positive axis.
     float flat_dx = std::abs(p_placement.block_x_locs[sink_blk] - p_placement.block_x_locs[driver_blk]);
     float flat_dy = std::abs(p_placement.block_y_locs[sink_blk] - p_placement.block_y_locs[driver_blk]);
-
-    // TODO: Handle 3D FPGAs for this method.
-    int layer_num = 0;
-    VTR_ASSERT_SAFE_MSG(p_placement.block_layer_nums[driver_blk] == layer_num && p_placement.block_layer_nums[sink_blk] == layer_num,
-                        "3D FPGAs not supported yet in the B2B solver");
+    float flat_dlayer = std::abs(p_placement.block_layer_nums[sink_blk] - p_placement.block_layer_nums[driver_blk]);
 
     // Special case: If the distance between the driver and sink is as large as
     // the device, we cannot take the forward difference (since it will go off
@@ -926,6 +992,7 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
         flat_dx = device_grid_width_ - 2;
     if ((int)flat_dy + 1 > (int)device_grid_height_ - 1)
         flat_dy = device_grid_height_ - 2;
+    // NOTE: layers are directly checked for going off chip.
 
     // Get the physical tile location of the legalized driver block. The PlaceDelayModel
     // may use this position to determine the physical tile the wire is coming from.
@@ -936,7 +1003,7 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     // can be implemented, which it currently does).
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         layer_num);
+                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
 
     // Get the physical tle location of the sink block, relative to the driver block.
     // Based on the current implementation of the PlaceDelayModel, the location of this
@@ -945,10 +1012,11 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     // in x/y is not larger than the width/height of the device.
     t_physical_tile_loc sink_block_loc(driver_block_loc.x + flat_dx,
                                        driver_block_loc.y + flat_dy,
-                                       layer_num);
+                                       is_multi_die() ? driver_block_loc.layer_num + flat_dlayer : 0);
 
     int tile_dx = sink_block_loc.x - driver_block_loc.x;
     int tile_dy = sink_block_loc.y - driver_block_loc.y;
+    int tile_dlayer = sink_block_loc.layer_num - driver_block_loc.layer_num;
     // The following asserts are to protect the "delay" calls used for the forward
     // difference calculations below.
     VTR_ASSERT_SAFE(tile_dx + 1 < (int)device_grid_width_);
@@ -978,6 +1046,22 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     t_physical_tile_loc lower_block_loc(sink_block_loc.x,
                                         sink_block_loc.y - 1,
                                         sink_block_loc.layer_num);
+    // For layers, we need to ensure that the layers do not go off device.
+    // The delay method does not check for out of bounds.
+    int outer_sink_layer = sink_block_loc.layer_num + 1;
+    int inner_sink_layer = sink_block_loc.layer_num - 1;
+    if (outer_sink_layer >= (int)device_grid_num_layers_) {
+        outer_sink_layer = device_grid_num_layers_ - 1;
+    }
+    if (inner_sink_layer < 0) {
+        inner_sink_layer = 0;
+    }
+    t_physical_tile_loc outer_block_loc(sink_block_loc.x,
+                                        sink_block_loc.y,
+                                        outer_sink_layer);
+    t_physical_tile_loc inner_block_loc(sink_block_loc.x,
+                                        sink_block_loc.y,
+                                        inner_sink_layer);
 
     float right_edge_delay = place_delay_model_->delay(driver_block_loc,
                                                        0 /*from_pin*/,
@@ -995,6 +1079,22 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
                                                        0 /*from_pin*/,
                                                        lower_block_loc,
                                                        0 /*to_pin*/);
+
+    float outer_edge_delay, inner_edge_delay;
+    if (is_multi_die()) {
+        // Only compute these delays if the design has multiple dies.
+        outer_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                     0 /*from_pin*/,
+                                                     outer_block_loc,
+                                                     0 /*to_pin*/);
+        inner_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                     0 /*from_pin*/,
+                                                     inner_block_loc,
+                                                     0 /*to_pin*/);
+    } else {
+        outer_edge_delay = current_edge_delay;
+        inner_edge_delay = current_edge_delay;
+    }
 
     // Use Finite Differences to compute the instantanious derivative of delay
     // with respect to tile position at this current distance from the driver
@@ -1016,9 +1116,14 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     float backward_difference_y = current_edge_delay - lower_edge_delay;
     float central_difference_y = (forward_difference_y + backward_difference_y) / 2.0f;
 
+    float forward_difference_z = outer_edge_delay - current_edge_delay;
+    float backward_difference_z = current_edge_delay - inner_edge_delay;
+    float central_difference_z = (forward_difference_z + backward_difference_z) / 2.0f;
+
     // Set the resulting derivative to be equal to the central difference.
     float d_delay_x = central_difference_x;
     float d_delay_y = central_difference_y;
+    float d_delay_z = central_difference_z;
 
     // For approximating the derivative of our PlaceDelayModel, there is a special
     // case when the distance between the driver and sink are 0 in x or y. Since
@@ -1038,10 +1143,30 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
         d_delay_y = forward_difference_y;
     }
 
-    return std::make_pair(d_delay_x, d_delay_y);
+    // The layer has some special cases that occur when we are close to a boundary.
+    // NOTE: This is not needed for x and y since the delay calculator uses the
+    //       magnitude of dx/dy.
+    if (outer_sink_layer == sink_block_loc.layer_num) {
+        // If the sink is pressed against the top layer, use the backward difference.
+        d_delay_z = backward_difference_z;
+    }
+    if (inner_sink_layer == sink_block_loc.layer_num) {
+        // If the sink is pressed against the bottom layer, use the forward difference.
+        d_delay_z = forward_difference_z;
+    }
+    if (tile_dlayer == 0) {
+        // If the driver and sink are on the same layer, pick the forward/backward
+        // difference that is valid due to boundaries.
+        if (inner_sink_layer != sink_block_loc.layer_num)
+            d_delay_z = forward_difference_z;
+        else
+            d_delay_z = backward_difference_z;
+    }
+
+    return std::make_tuple(d_delay_x, d_delay_y, d_delay_z);
 }
 
-std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driver_blk) {
+std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlockId driver_blk) {
     // We want to find normalization factors for the delays along connections.
     // A simple normalization factor to use is 1 over the delay of leaving a
     // tile. This should be able to remove the units without changing the value
@@ -1051,7 +1176,7 @@ std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driv
     // of the driver block to try and estimate the delay from that block type.
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         0 /*layer_num*/);
+                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
 
     // Get the delay of exiting the block.
     double norm_fac_inv_x = place_delay_model_->delay(driver_block_loc,
@@ -1062,10 +1187,29 @@ std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driv
                                                       0 /*from_pin*/,
                                                       {driver_block_loc.x, driver_block_loc.y + 1, driver_block_loc.layer_num},
                                                       0 /*to_pin*/);
+    double norm_fac_inv_z;
+    if (is_multi_die()) {
+        // Get the target layer. This will be either the layer above or below
+        // the driver block. We pick the layer such that we do not go off device.
+        int target_layer = driver_block_loc.layer_num + 1;
+        if (target_layer >= (int)device_grid_num_layers_) {
+            target_layer = driver_block_loc.layer_num - 1;
+        }
+        if (target_layer < 0) {
+            target_layer = 0;
+        }
+        norm_fac_inv_z = place_delay_model_->delay(driver_block_loc,
+                                                   0 /*from_pin*/,
+                                                   {driver_block_loc.x, driver_block_loc.y, target_layer},
+                                                   0 /*to_pin*/);
+    } else {
+        norm_fac_inv_z = 1.0;
+    }
 
     // Normalization factors are expected to be non-negative.
     VTR_ASSERT_SAFE(norm_fac_inv_x >= 0.0);
     VTR_ASSERT_SAFE(norm_fac_inv_y >= 0.0);
+    VTR_ASSERT_SAFE(norm_fac_inv_z >= 0.0);
 
     // The normalization factors will become infinite if we divide by 0 delay.
     // If the normalization factor is near 0, just set it to 1e-9 (or on the order
@@ -1075,9 +1219,11 @@ std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driv
         norm_fac_inv_x = 1e-9;
     if (vtr::isclose(norm_fac_inv_y, 0.0))
         norm_fac_inv_y = 1e-9;
+    if (vtr::isclose(norm_fac_inv_z, 0.0))
+        norm_fac_inv_z = 1e-9;
 
     // Return the normalization factors.
-    return std::make_pair(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y);
+    return std::make_tuple(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y, 1.0 / norm_fac_inv_z);
 }
 
 void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned iteration) {
@@ -1086,6 +1232,10 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
     A_sparse_y = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
     b_x = Eigen::VectorXd::Zero(num_moveable_blocks_);
     b_y = Eigen::VectorXd::Zero(num_moveable_blocks_);
+    if (is_multi_die()) {
+        A_sparse_z = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
+        b_z = Eigen::VectorXd::Zero(num_moveable_blocks_);
+    }
 
     // Create triplet lists to store the sparse positions to update and reserve
     // space for them.
@@ -1094,6 +1244,10 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
     triplet_list_x.reserve(total_num_pins_in_netlist);
     std::vector<Eigen::Triplet<double>> triplet_list_y;
     triplet_list_y.reserve(total_num_pins_in_netlist);
+    std::vector<Eigen::Triplet<double>> triplet_list_z;
+    if (is_multi_die()) {
+        triplet_list_z.reserve(total_num_pins_in_netlist);
+    }
 
     for (APNetId net_id : netlist_.nets()) {
         if (netlist_.net_is_ignored(net_id))
@@ -1106,6 +1260,10 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // ====================================================================
         // In the objective there is are wirelength connections and timing
         // connections, trade-off between the weight of each type of connection.
+        // TODO: Investigate having different wirelength factors per dimension.
+        //       The intuition is that moving a block in one dimension may be
+        //       cheaper than moving it in another. For example, moving a block
+        //       in the z dimension should be more expensive than the x/y.
         double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id];
 
         // Find the bounding blocks
@@ -1125,12 +1283,19 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
                 add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
             }
+            if (is_multi_die() && blk_id != net_bounds.max_z_blk && blk_id != net_bounds.min_z_blk) {
+                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+            }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
         add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
         add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+        if (is_multi_die()) {
+            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+        }
 
         // ====================================================================
         // Timing Connections
@@ -1152,9 +1317,9 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 // from driver to sink. This will provide a value which is higher
                 // if the tradeoff between delay and wirelength is better, and
                 // lower when the tradeoff between delay and wirelength is worse.
-                auto [d_delay_x, d_delay_y] = get_delay_derivative(driver_blk,
-                                                                   sink_blk,
-                                                                   p_placement);
+                auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
+                                                                              sink_blk,
+                                                                              p_placement);
 
                 // Since the delay between two blocks may not monotonically increase
                 // (it may go down with distance due to different length wires), it
@@ -1166,12 +1331,13 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 //       sink away.
                 d_delay_x = std::max(d_delay_x, 0.0);
                 d_delay_y = std::max(d_delay_y, 0.0);
+                d_delay_z = std::max(d_delay_z, 0.0);
 
                 // The units for delay are in seconds; however the units for
                 // the wirelength term are in tiles. To ensure the units match,
                 // we need to normalize away the time units. Get normalization
                 // factors to remove the time units.
-                auto [delay_x_norm, delay_y_norm] = get_delay_normalization_facs(driver_blk);
+                auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
 
                 // Get the criticality of this timing edge from driver to sink.
                 double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
@@ -1194,6 +1360,12 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 add_connection_to_system(driver_blk, sink_blk,
                                          2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
                                          p_placement.block_y_locs, triplet_list_y, b_y);
+
+                if (is_multi_die()) {
+                    add_connection_to_system(driver_blk, sink_blk,
+                                             2 /*num_pins*/, timing_net_w * d_delay_z * delay_z_norm,
+                                             p_placement.block_layer_nums, triplet_list_z, b_z);
+                }
             }
         }
     }
@@ -1201,6 +1373,9 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
     // Build the sparse connectivity matrices from the triplets.
     A_sparse_x.setFromTriplets(triplet_list_x.begin(), triplet_list_x.end());
     A_sparse_y.setFromTriplets(triplet_list_y.begin(), triplet_list_y.end());
+    if (is_multi_die()) {
+        A_sparse_z.setFromTriplets(triplet_list_z.begin(), triplet_list_z.end());
+    }
 }
 
 // This function adds anchors for legalized solution. Anchors are treated as fixed node,
@@ -1223,12 +1398,18 @@ void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
         A_sparse_y.coeffRef(row_id_idx, row_id_idx) += pseudo_w_y;
         b_x(row_id_idx) += pseudo_w_x * block_x_locs_legalized[blk_id];
         b_y(row_id_idx) += pseudo_w_y * block_y_locs_legalized[blk_id];
+
+        if (is_multi_die()) {
+            double pseudo_w_z = coeff_pseudo_anchor * 2.0;
+            A_sparse_z.coeffRef(row_id_idx, row_id_idx) += pseudo_w_z;
+            b_z(row_id_idx) += pseudo_w_z * block_z_locs_legalized[blk_id];
+        }
     }
 }
 
-void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
-                                              Eigen::VectorXd& y_soln,
-                                              PartialPlacement& p_placement) {
+void B2BSolver::store_solution_into_placement(Eigen::VectorXd& dim_soln,
+                                              vtr::vector<APBlockId, double>& block_dim_locs,
+                                              double dim_max_pos) {
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         // Since we are capping the number of iterations, the solver may not
         // have enough time to converge on a solution that is on the device.
@@ -1240,19 +1421,14 @@ void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
         // TODO: Should handle this better. If the solution is very negative
         //       it may indicate a bug.
         double epsilon = 0.0001;
-        if (x_soln[row_id_idx] < epsilon)
-            x_soln[row_id_idx] = epsilon;
-        if (x_soln[row_id_idx] >= device_grid_width_)
-            x_soln[row_id_idx] = device_grid_width_ - epsilon;
-        if (y_soln[row_id_idx] < epsilon)
-            y_soln[row_id_idx] = epsilon;
-        if (y_soln[row_id_idx] >= device_grid_height_)
-            y_soln[row_id_idx] = device_grid_height_ - epsilon;
+        if (dim_soln[row_id_idx] < epsilon)
+            dim_soln[row_id_idx] = epsilon;
+        if (dim_soln[row_id_idx] >= dim_max_pos)
+            dim_soln[row_id_idx] = dim_max_pos - epsilon;
 
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id_[row_id];
-        p_placement.block_x_locs[blk_id] = x_soln[row_id_idx];
-        p_placement.block_y_locs[blk_id] = y_soln[row_id_idx];
+        block_dim_locs[blk_id] = dim_soln[row_id_idx];
     }
 }
 

@@ -596,13 +596,13 @@ Grid Layout Example
 
     :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
     :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
-    :req_param offset_start: Starting point of scatter-gather instantiations.
-    :req_param offset_end: Ending point of scatter-gather instantiations
-    :req_param offset_increment: Increment/distance between scatter-gather instantiations.
+    :req_param offset_start: Starting point of scatter-gather instantiations. Must be smaller than 'offset_end'.
+    :req_param offset_end: Ending point of scatter-gather instantiations. Must be larger than 'offset_start'.
+    :req_param offset_increment: Increment/distance between scatter-gather instantiations. Must be a positive number.
     :req_param num: Number of scatter-gather instantiations per switchblock location.
 
     Defines the interdie wiring between the two sides of the cut. Connectivity is defined using scatter-gather patterns. Starting at 'offset_start' from location of the cut and moving by 'offset_increment' until we reach the location of 'offset_end' away from the cut, 'num' scatter-gather patterns defined by 'sg_name' and 'sg_link' will be instantiated.
-    Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment can be integer values or expressions involving W and H (device width and height.)
+    Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment are integer values.
 
     .. figure:: scatter_gather_images/interposer_diagram.png
         
