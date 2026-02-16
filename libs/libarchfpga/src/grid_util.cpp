@@ -1,6 +1,5 @@
 #include "grid_util.h"
 
-#include "arch_error.h"
 #include "device_grid.h"
 #include "physical_types.h"
 #include "vtr_expr_eval.h"
@@ -11,6 +10,8 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
                                    const std::string& formula_str,
                                    vtr::FormulaParser& p,
                                    vtr::t_formula_data& formula_data) {
+    // Cuts must not go through tiles. If formula position doesn't satisfy this, try base +/-1, +/-2, ...
+
     const size_t grid_width = grid.width();
     const size_t grid_height = grid.height();
     formula_data.clear();
@@ -18,10 +19,8 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
     formula_data.set_var_value("H", grid_height);
     const int base_cut_loc = p.parse_formula(formula_str, formula_data);
 
-    // Vertical cut at loc: locations to the right of the cut (column at loc+1) must be root.
-    // Horizontal cut at loc: locations above the cut (row at loc+1) must be root.
-    int grid_w = grid.width();
-    int grid_h = grid.height();
+    const int grid_w = grid.width();
+    const int grid_h = grid.height();
 
     auto is_cut_through_roots_only = [&grid, layer, grid_w, grid_h](e_interposer_cut_type d, int loc) {
         if (d == e_interposer_cut_type::VERT) {
@@ -45,32 +44,24 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
     };
 
     int cut_loc = base_cut_loc;
-    for (int offset = 0;; offset++) {
-        int try_pos_plus = base_cut_loc + offset;
-        int try_pos_minus = base_cut_loc - offset;
-        if (offset == 0) {
-            if (is_cut_through_roots_only(dim, try_pos_plus)) {
-                cut_loc = try_pos_plus;
-                break;
-            }
-        } else {
+    if (!is_cut_through_roots_only(dim, base_cut_loc)) {
+        for (int offset = 1;; offset++) {
+            int try_pos_plus = base_cut_loc + offset;
+            int try_pos_minus = base_cut_loc - offset;
+            
             bool plus_ok = is_cut_through_roots_only(dim, try_pos_plus);
-            bool minus_ok = is_cut_through_roots_only(dim, try_pos_minus);
             if (plus_ok) {
                 cut_loc = try_pos_plus;
                 break;
             }
+
+            bool minus_ok = is_cut_through_roots_only(dim, try_pos_minus);
             if (minus_ok) {
                 cut_loc = try_pos_minus;
                 break;
             }
-        }
-        if (offset > static_cast<int>(std::max(grid_width, grid_height))) {
-            archfpga_throw(__FILE__, __LINE__,
-                          "Interposer cut (dim=%s, formula=%s -> %d) does not cross root locations only; "
-                          "no valid offset found within grid bounds.",
-                          dim == e_interposer_cut_type::VERT ? "VERT" : "HORZ",
-                          formula_str.c_str(), base_cut_loc);
+            int max_offset = (dim == e_interposer_cut_type::VERT) ? grid_w : grid_h;
+            VTR_ASSERT(offset <= max_offset);
         }
     }
 
