@@ -17,12 +17,10 @@
 #include "vtr_log.h"
 #include "stats.h"
 
-#include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
 #include "globals.h"
-#include "grid_util.h"
 #include "setup_grid.h"
 #include "vtr_expr_eval.h"
 
@@ -548,22 +546,6 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
         }
     }
 
-    std::vector<std::vector<int>> horizontal_interposer_cuts(num_layers);
-    std::vector<std::vector<int>> vertical_interposer_cuts(num_layers);
-    DeviceGrid temp_grid(grid_def.name,
-                        grid,
-                        limiting_resources,
-                        std::move(horizontal_interposer_cuts),
-                        std::move(vertical_interposer_cuts));
-
-    horizontal_interposer_cuts.clear();
-    vertical_interposer_cuts.clear();
-    horizontal_interposer_cuts.resize(num_layers);
-    vertical_interposer_cuts.resize(num_layers);
-
-    resolve_interposer_cut_locations(temp_grid, grid_def, p,
-                                     horizontal_interposer_cuts, vertical_interposer_cuts);
-
     // Warn if any types were not specified in the grid layout
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
         if (&type == empty_type) continue; // Don't worry if empty hasn't been specified
@@ -574,11 +556,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
         }
     }
 
-    DeviceGrid device_grid(grid_def.name,
-                           grid,
-                           limiting_resources,
-                           std::move(horizontal_interposer_cuts),
-                           std::move(vertical_interposer_cuts));
+    DeviceGrid device_grid(grid_def, std::move(grid), limiting_resources);
 
     check_grid(device_grid);
 
