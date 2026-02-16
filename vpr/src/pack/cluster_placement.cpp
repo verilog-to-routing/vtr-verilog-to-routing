@@ -23,7 +23,6 @@
 #include "prepack.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
-#include "lazy_pop_unique_priority_queue.h"
 
 /****************************************/
 /*Local Function Declaration			*/
@@ -173,6 +172,50 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
         cluster_placement_stats->free_primitives();
         delete cluster_placement_stats;
     }
+}
+
+float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                PackMoleculeId molecule_id,
+                                t_pb_graph_node* root,
+                                std::vector<t_pb_graph_node*>& primitives_list,
+                                const Prepacker& prepacker) {
+    float cost = std::numeric_limits<float>::max();
+    const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
+    size_t list_size = molecule.atom_block_ids.size();
+
+    if (primitive_type_feasible(molecule.atom_block_ids[molecule.root],
+                                root->pb_type)) {
+        t_cluster_placement_primitive* root_placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(root);
+        if (root_placement_primitive->valid) {
+            for (size_t i = 0; i < list_size; i++) {
+                primitives_list[i] = nullptr;
+            }
+            cost = root_placement_primitive->base_cost
+                   + root_placement_primitive->incremental_cost;
+            primitives_list[molecule.root] = root;
+            if (molecule.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
+                if (!expand_forced_pack_molecule_placement(cluster_placement_stats,
+                                                           molecule_id,
+                                                           molecule.pack_pattern->root_block,
+                                                           primitives_list,
+                                                           prepacker,
+                                                           &cost)) {
+                    return std::numeric_limits<float>::max();
+                }
+            }
+            for (size_t i = 0; i < list_size; i++) {
+                VTR_ASSERT((primitives_list[i] == nullptr) == (!molecule.atom_block_ids[i]));
+                for (size_t j = 0; j < list_size; j++) {
+                    if (i != j) {
+                        if (primitives_list[i] != nullptr && primitives_list[i] == primitives_list[j]) {
+                            return std::numeric_limits<float>::max();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return cost;
 }
 
 bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_stats,
@@ -491,53 +534,6 @@ static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* clu
             }
         }
     }
-}
-
-/**
- * Try place molecule at root location, populate primitives list with locations of placement if successful
- */
-float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
-                                PackMoleculeId molecule_id,
-                                t_pb_graph_node* root,
-                                std::vector<t_pb_graph_node*>& primitives_list,
-                                const Prepacker& prepacker) {
-    float cost = std::numeric_limits<float>::max();
-    const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
-    size_t list_size = molecule.atom_block_ids.size();
-
-    if (primitive_type_feasible(molecule.atom_block_ids[molecule.root],
-                                root->pb_type)) {
-        t_cluster_placement_primitive* root_placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(root);
-        if (root_placement_primitive->valid) {
-            for (size_t i = 0; i < list_size; i++) {
-                primitives_list[i] = nullptr;
-            }
-            cost = root_placement_primitive->base_cost
-                   + root_placement_primitive->incremental_cost;
-            primitives_list[molecule.root] = root;
-            if (molecule.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
-                if (!expand_forced_pack_molecule_placement(cluster_placement_stats,
-                                                           molecule_id,
-                                                           molecule.pack_pattern->root_block,
-                                                           primitives_list,
-                                                           prepacker,
-                                                           &cost)) {
-                    return std::numeric_limits<float>::max();
-                }
-            }
-            for (size_t i = 0; i < list_size; i++) {
-                VTR_ASSERT((primitives_list[i] == nullptr) == (!molecule.atom_block_ids[i]));
-                for (size_t j = 0; j < list_size; j++) {
-                    if (i != j) {
-                        if (primitives_list[i] != nullptr && primitives_list[i] == primitives_list[j]) {
-                            return std::numeric_limits<float>::max();
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return cost;
 }
 
 /**
