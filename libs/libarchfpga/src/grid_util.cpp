@@ -8,10 +8,16 @@
 int adjust_interposer_cut_location(const DeviceGrid& grid,
                                    size_t layer,
                                    e_interposer_cut_type dim,
-                                   int base_cut_loc,
-                                   size_t grid_width,
-                                   size_t grid_height,
-                                   const std::string& formula_str) {
+                                   const std::string& formula_str,
+                                   vtr::FormulaParser& p,
+                                   vtr::t_formula_data& formula_data) {
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+    formula_data.clear();
+    formula_data.set_var_value("W", grid_width);
+    formula_data.set_var_value("H", grid_height);
+    const int base_cut_loc = p.parse_formula(formula_str, formula_data);
+
     // Vertical cut at loc: locations to the right of the cut (column at loc+1) must be root.
     // Horizontal cut at loc: locations above the cut (row at loc+1) must be root.
     auto is_cut_through_roots_only = [&grid, layer](e_interposer_cut_type d, int loc) {
@@ -87,19 +93,13 @@ void resolve_interposer_cut_locations(const DeviceGrid& grid,
                                     std::vector<std::vector<int>>& horizontal_interposer_cuts,
                                     std::vector<std::vector<int>>& vertical_interposer_cuts) {
     const size_t num_layers = grid_def.layers.size();
-    const size_t grid_width = grid.width();
-    const size_t grid_height = grid.height();
+    vtr::t_formula_data formula_data;
 
     for (size_t layer = 0; layer < num_layers; layer++) {
         const t_layer_def& layer_def = grid_def.layers[layer];
 
         for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            vtr::t_formula_data cut_vars;
-            cut_vars.set_var_value("W", grid_width);
-            cut_vars.set_var_value("H", grid_height);
-            const int base_cut_loc = p.parse_formula(cut_inf.loc, cut_vars);
-            const int cut_loc = adjust_interposer_cut_location(
-                grid, layer, cut_inf.dim, base_cut_loc, grid_width, grid_height, cut_inf.loc);
+            const int cut_loc = adjust_interposer_cut_location(grid, layer, cut_inf.dim, cut_inf.loc, p, formula_data);
 
             if (cut_inf.dim == e_interposer_cut_type::VERT) {
                 vertical_interposer_cuts[layer].push_back(cut_loc);

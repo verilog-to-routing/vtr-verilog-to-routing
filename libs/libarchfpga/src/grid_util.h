@@ -11,6 +11,7 @@ struct t_grid_def;
 
 namespace vtr {
 class FormulaParser;
+class t_formula_data;
 }
 
 /**
@@ -90,14 +91,14 @@ vtr::NdMatrix<T, 2> get_device_sized_matrix_from_reduced(size_t device_width,
 }
 
 ///@brief Adjust a single interposer cut location so it goes only through root locations.
-/// Returns the resolved cut location (possibly moved from base_cut_loc).
+/// Formula parser and formula data are used to evaluate the cut formula; W and H are set inside from grid dimensions.
+/// Returns the resolved cut location (possibly moved from the formula result).
 int adjust_interposer_cut_location(const DeviceGrid& grid,
                                   size_t layer,
                                   e_interposer_cut_type dim,
-                                  int base_cut_loc,
-                                  size_t grid_width,
-                                  size_t grid_height,
-                                  const std::string& formula_str);
+                                  const std::string& formula_str,
+                                  vtr::FormulaParser& p,
+                                  vtr::t_formula_data& formula_data);
 
 ///@brief Resolve interposer cut locations so each cut goes only through root locations.
 /// If the formula-derived position would cut through a block, try moving by +1,-1, +2,-2, ... until valid.

@@ -350,18 +350,16 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
     VTR_ASSERT(interposer_inf.size() == num_layers);
 
+    vtr::FormulaParser formula_parser;
+    vtr::t_formula_data formula_data;
+
     // Step 1: Iterate over all layers in the device grid
     for (size_t layer = 0; layer < num_layers; layer++) {
 
         // Step 2: Process each interposer cut (vertical or horizontal) on this layer
         for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
-            vtr::t_formula_data cut_vars;
-            cut_vars.set_var_value("W", static_cast<int>(grid_width));
-            cut_vars.set_var_value("H", static_cast<int>(grid_height));
-            vtr::FormulaParser formula_parser;
-            const int base_cut_loc = formula_parser.parse_formula(cut_inf.loc, cut_vars);
             const int cut_loc = adjust_interposer_cut_location(
-                grid, layer, cut_inf.dim, base_cut_loc, grid_width, grid_height, cut_inf.loc);
+                grid, layer, cut_inf.dim, cut_inf.loc, formula_parser, formula_data);
             e_interposer_cut_type cut_type = cut_inf.dim;
 
             // Step 3: For each inter-die wire defined at this cut, compute its SG region
