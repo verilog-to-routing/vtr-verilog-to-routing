@@ -22,6 +22,7 @@
 #include "vpr_utils.h"
 
 #include "globals.h"
+#include "grid_util.h"
 #include "setup_grid.h"
 #include "vtr_expr_eval.h"
 
@@ -55,16 +56,6 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
                                     size_t height,
                                     bool warn_out_of_range = true,
                                     const std::vector<t_logical_block_type_ptr>& limiting_resources = std::vector<t_logical_block_type_ptr>());
-
-///@brief Resolve interposer cut locations so each cut goes only through root locations.
-/// If the formula-derived position would cut through a block, try moving by +1,-1, +2,-2, ... until valid.
-static void resolve_interposer_cut_locations(const vtr::NdMatrix<t_grid_tile, 3>& grid,
-                                             const t_grid_def& grid_def,
-                                             vtr::FormulaParser& p,
-                                             size_t grid_width,
-                                             size_t grid_height,
-                                             std::vector<std::vector<int>>& horizontal_interposer_cuts,
-                                             std::vector<std::vector<int>>& vertical_interposer_cuts);
 
 ///@brief Check if grid is valid
 static void check_grid(const DeviceGrid& grid);
@@ -358,94 +349,6 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::ma
     return true; //OK
 }
 
-static void resolve_interposer_cut_locations(const vtr::NdMatrix<t_grid_tile, 3>& grid,
-                                             const t_grid_def& grid_def,
-                                             vtr::FormulaParser& p,
-                                             size_t grid_width,
-                                             size_t grid_height,
-                                             std::vector<std::vector<int>>& horizontal_interposer_cuts,
-                                             std::vector<std::vector<int>>& vertical_interposer_cuts) {
-    const size_t num_layers = grid_def.layers.size();
-
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        const t_layer_def& layer_def = grid_def.layers[layer];
-
-        for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            vtr::t_formula_data cut_vars;
-            cut_vars.set_var_value("W", grid_width);
-            cut_vars.set_var_value("H", grid_height);
-            const int base_cut_loc = p.parse_formula(cut_inf.loc, cut_vars);
-
-            // Vertical cut at loc: locations to the right of the cut (column at loc+1) must be root.
-            // Horizontal cut at loc: locations above the cut (row at loc+1) must be root.
-            auto is_cut_through_roots_only = [&grid, layer](e_interposer_cut_type dim, int loc) {
-                if (dim == e_interposer_cut_type::VERT) {
-                    const int right_col = loc + 1;
-                    if (right_col < 0 || size_t(right_col) >= grid.end_index(1)) return false;
-                    for (size_t y = 0; y < grid.end_index(2); y++) {
-                        if (grid[layer][right_col][y].width_offset != 0 || grid[layer][right_col][y].height_offset != 0)
-                            return false;
-                    }
-                    return true;
-                } else {
-                    VTR_ASSERT(dim == e_interposer_cut_type::HORZ);
-                    const int row_above = loc + 1;
-                    if (row_above < 0 || size_t(row_above) >= grid.end_index(2)) return false;
-                    for (size_t x = 0; x < grid.end_index(1); x++) {
-                        if (grid[layer][x][row_above].width_offset != 0 || grid[layer][x][row_above].height_offset != 0)
-                            return false;
-                    }
-                    return true;
-                }
-            };
-
-            int cut_loc = base_cut_loc;
-            for (int offset = 0;; offset++) {
-                int try_pos_plus = base_cut_loc + offset;
-                int try_pos_minus = base_cut_loc - offset;
-                if (offset == 0) {
-                    if (is_cut_through_roots_only(cut_inf.dim, try_pos_plus)) {
-                        cut_loc = try_pos_plus;
-                        break;
-                    }
-                } else {
-                    bool plus_ok = is_cut_through_roots_only(cut_inf.dim, try_pos_plus);
-                    bool minus_ok = is_cut_through_roots_only(cut_inf.dim, try_pos_minus);
-                    if (plus_ok) {
-                        cut_loc = try_pos_plus;
-                        break;
-                    }
-                    if (minus_ok) {
-                        cut_loc = try_pos_minus;
-                        break;
-                    }
-                }
-                if (offset > static_cast<int>(std::max(grid_width, grid_height))) {
-                    VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                    "Interposer cut (dim=%s, formula=%s -> %d) does not cross root locations only; "
-                                    "no valid offset found within grid bounds.",
-                                    cut_inf.dim == e_interposer_cut_type::VERT ? "VERT" : "HORZ",
-                                    cut_inf.loc.c_str(), base_cut_loc);
-                }
-            }
-
-            if (cut_loc != base_cut_loc) {
-                VTR_LOG_WARN(
-                    "Interposer cut moved to avoid cutting through block: W=%zu H=%zu formula='%s' evaluated to %d, resolved to %d (%s)\n",
-                    grid_width, grid_height, cut_inf.loc.c_str(), base_cut_loc, cut_loc,
-                    cut_inf.dim == e_interposer_cut_type::VERT ? "VERT" : "HORZ");
-            }
-
-            if (cut_inf.dim == e_interposer_cut_type::VERT) {
-                vertical_interposer_cuts[layer].push_back(cut_loc);
-            } else {
-                VTR_ASSERT(cut_inf.dim == e_interposer_cut_type::HORZ);
-                horizontal_interposer_cuts[layer].push_back(cut_loc);
-            }
-        }
-    }
-}
-
 static DeviceGrid build_device_grid(const t_grid_def& grid_def,
                                     size_t grid_width,
                                     size_t grid_height,
@@ -647,7 +550,18 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
 
     std::vector<std::vector<int>> horizontal_interposer_cuts(num_layers);
     std::vector<std::vector<int>> vertical_interposer_cuts(num_layers);
-    resolve_interposer_cut_locations(grid, grid_def, p, grid_width, grid_height,
+    DeviceGrid temp_grid(grid_def.name,
+                        grid,
+                        limiting_resources,
+                        std::move(horizontal_interposer_cuts),
+                        std::move(vertical_interposer_cuts));
+
+    horizontal_interposer_cuts.clear();
+    vertical_interposer_cuts.clear();
+    horizontal_interposer_cuts.resize(num_layers);
+    vertical_interposer_cuts.resize(num_layers);
+
+    resolve_interposer_cut_locations(temp_grid, grid_def, p,
                                      horizontal_interposer_cuts, vertical_interposer_cuts);
 
     // Warn if any types were not specified in the grid layout
