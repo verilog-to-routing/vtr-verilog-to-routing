@@ -593,7 +593,7 @@ Grid Layout Example
     To reconnect the two sides, this tag can have multiple ``<interdie_wire>`` tags as children to specify the connection between the two sides.
     This tag may appear inside ``<auto_layout>`` or ``<fixed_layout>`` as a grid location tag.
 
-.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="expr" offset_end="expr" offset_increment="expr" num="expr"/>
+.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="int" offset_end="int" offset_increment="int" num="expr"/>
 
     :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
     :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
@@ -2882,7 +2882,7 @@ tag can be inserted under the following XML tags:
 * ``<pb_type>``
 * Any tag under ``<interconnect>`` (``<direct>``, ``<mux>``, etc).
 * ``<mode>``
-* Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``, ``<interposer_cut>``)
+* Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``)
 
 .. arch:tag:: <metadata>
 
