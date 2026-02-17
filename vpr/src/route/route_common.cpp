@@ -1072,3 +1072,25 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               bool /*is_flat*/) {
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
 }
+
+float get_rr_node_delay_cost(RRNodeId to_node, RREdgeId connecting_edge) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const auto& rr_switch_inf = rr_graph.rr_switch();
+
+    //Info for the switch connecting from_node to_node (i.e., to->index)
+    RRSwitchId iswitch = (RRSwitchId) rr_graph.edge_switch(connecting_edge);
+    float switch_R = rr_switch_inf[iswitch].R;
+    float switch_Tdel = rr_switch_inf[iswitch].Tdel;
+
+    //To node info
+    float node_C = rr_graph.node_C(to_node);
+    float node_R = rr_graph.node_R(to_node);
+
+    float R_upstream = switch_R + node_R;
+
+    //Calculate delay
+    float Rdel = R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
+    float Tdel = switch_Tdel + Rdel * node_C;
+//// asdad
+    return Tdel;
+}
