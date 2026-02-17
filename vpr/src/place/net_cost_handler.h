@@ -196,13 +196,13 @@ class NetCostHandler {
      * bounding box information for all nets.
      */
 
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
+    // [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box
     vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new_, ts_bb_edge_new_;
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> 2D bonding box on a layer*/
+    // [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> 2D bonding box on a layer
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_coord_new_, layer_ts_bb_edge_new_;
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer*/
-    vtr::Matrix<int> ts_layer_sink_pin_count_;
-    /* [0...num_affected_nets] -> net_id of the affected nets */
+    // [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer
+    vtr::Matrix<int> ts_num_sinks_per_layer_, num_sinks_per_layer_;
+    // [0...num_affected_nets] -> net_id of the affected nets
     std::vector<ClusterNetId> ts_nets_to_update_;
 
     vtr::vector<ClusterNetId, std::pair<float, float>> ts_avg_chan_util_new_;
@@ -224,10 +224,6 @@ class NetCostHandler {
     /// Store the bounding box coordinates of a net's bounding box
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords_;
-
-    /// Store the number of blocks on each layer ()
-    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::Matrix<int> num_sink_pin_layer_;
 
     /**
      * @brief In each of these vectors, there is one entry per cluster level net:
