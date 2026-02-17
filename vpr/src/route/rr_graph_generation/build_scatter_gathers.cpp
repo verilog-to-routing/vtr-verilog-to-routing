@@ -354,12 +354,14 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
             // Step 3: For each inter-die wire defined at this cut, compute its SG region
             for (const t_interdie_wire_inf& wire_inf : cut_inf.interdie_wires) {
-                VTR_ASSERT(wire_inf.offset_definition.repeat_expr.empty());
 
                 // Parse offset expressions and compute absolute start/end positions of the region
-                const int start = std::stoi(wire_inf.offset_definition.start_expr) + cut_loc;
-                const int end = std::stoi(wire_inf.offset_definition.end_expr) + cut_loc;
-                const int incr = std::stoi(wire_inf.offset_definition.incr_expr);
+                const int start = wire_inf.offset.start + cut_loc;
+                const int end = wire_inf.offset.end + cut_loc;
+                const int incr = wire_inf.offset.increment;
+
+                VTR_ASSERT_SAFE(incr >= 0);
+                VTR_ASSERT_SAFE(start <= end);
 
                 // Step 4: Find the corresponding SG pattern by name
                 auto sg_it = std::ranges::find_if(sg_patterns, [&wire_inf](const t_scatter_gather_pattern& sg) noexcept {
