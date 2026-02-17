@@ -84,7 +84,7 @@ resolve_interposer_cut_locations(const DeviceGrid& grid,
     vtr::t_formula_data formula_data;
 
     std::vector<std::vector<int>> horizontal(num_layers);
-    std::vector<std::vector<int>> vertical(num_layers);    
+    std::vector<std::vector<int>> vertical(num_layers);
 
     for (size_t layer = 0; layer < num_layers; layer++) {
         const t_layer_def& layer_def = grid_def.layers[layer];

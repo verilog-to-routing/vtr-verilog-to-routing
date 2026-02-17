@@ -358,7 +358,7 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
         // Step 2: Process each interposer cut (vertical or horizontal) on this layer
         for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
-        
+
             const int cut_loc = adjust_interposer_cut_location(grid, layer, cut_inf.dim, cut_inf.loc,
                                                                formula_parser, formula_data, /*print_warning=*/false);
             e_interposer_cut_type cut_type = cut_inf.dim;
