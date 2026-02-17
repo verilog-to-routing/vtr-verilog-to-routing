@@ -346,6 +346,37 @@ bool move_root_node_to_inflight(t_intra_cluster_placement_stats* cluster_placeme
     return false;
 }
 
+bool try_start_root_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
+                              PackMoleculeId molecule_id,
+                              t_pb_graph_node* root,
+                              std::vector<t_pb_graph_node*>& primitives_list,
+                              const Prepacker& prepacker) {
+    t_cluster_placement_primitive* root_prim =
+        cluster_placement_stats->get_pb_graph_node_placement_primitive(root);
+
+    // Skip stale entries
+    if (!root_prim->valid) {
+        return false;
+    }
+
+    // Move valid to inflight
+    if (!move_root_node_to_inflight(cluster_placement_stats, root)) {
+        return false;
+    }
+
+    // Populate primitives list and get cost for that placement
+    float cost = try_place_molecule(cluster_placement_stats,
+                                  molecule_id,
+                                  root,
+                                  primitives_list,
+                                  prepacker);
+
+    VTR_ASSERT_MSG(cost != std::numeric_limits<float>::max(),
+                   "The cost of the molecule placement cannot be infinite after validity check.");
+
+    return true;
+}
+
 /**
  * Resets one cluster placement stats by clearing incremental costs and returning all primitives to valid queue
  */

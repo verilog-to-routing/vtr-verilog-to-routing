@@ -195,18 +195,13 @@ float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stat
  * @param cluster_placement_stats
  *              Placement statistics and primitive state information for the current cluster.
  *              This structure maintains valid, tried, and in-flight primitive sets.
- *
  * @param molecule_id
  *              Identifier of the molecule to be evaluated for placement.
- *
  * @param primitives_list
  *              A list of primitives indexed to match atom_block_ids of molecule.
- *              Expects an allocated array of primitives ptrs as inputs.
- *
  * @param prepacker
  *              The prepacker object that provides access to the molecule
  *              corresponding to given molecule id.
- *
  * @param force_site
  *              Optional user-specified primitive site on which to place the molecule; if a force_site
  *              argument is provided, the function either selects the specified site or reports failure.
@@ -234,6 +229,33 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> build_pr
  */
 bool move_root_node_to_inflight(t_intra_cluster_placement_stats* cluster_placement_stats,
                                 t_pb_graph_node* target_root);
+
+/**
+ * @brief Attempts to activate and initialize placement for a candidate root primitive by:
+ *   - Verifing the primitive is valid.
+ *   - Moving the primitive from the valid set to the in-flight set.
+ *   - Calling try_place_molecule() to populate primitives_list.
+ *
+ * @param cluster_placement_stats
+ *              Placement statistics for the current cluster (contains valid/in-flight containers).
+ * @param molecule_id
+ *              The id of the molecule being packed.
+ * @param root
+ *              The candidate primitive root node selected for placement.
+ * @param primitives_list
+ *              Output vector populated by try_place_molecule() with the
+ *              primitive locations corresponding to the molecule atoms.
+ * @param prepacker
+ *              The prepacker object used to retrieve molecule information.
+ *
+ * @return True if the root was valid, successfully moved to in-flight,
+ *         and try_place_molecule() produced a valid placement.
+ */
+bool try_start_root_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
+                              PackMoleculeId molecule_id,
+                              t_pb_graph_node* root,
+                              std::vector<t_pb_graph_node*>& primitives_list,
+                              const Prepacker& prepacker);
 
 /**
  * @brief Commit primitive, invalidate primitives blocked by mode assignment and update costs for primitives in same cluster as current
