@@ -8,6 +8,7 @@
  */
 
 #include <memory>
+#include <tuple>
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
 #include "device_grid.h"
@@ -664,11 +665,11 @@ class B2BSolver : public AnalyticalSolver {
      *      distance from the driver to the sink.
      *
      *  @return The instantaneous derivative of delay with respect to distance
-     *          in the x and y dimensions respectively.
+     *          in the x, y, and z dimensions respectively.
      */
-    std::pair<double, double> get_delay_derivative(APBlockId driver_blk,
-                                                   APBlockId sink_blk,
-                                                   const PartialPlacement& p_placement);
+    std::tuple<double, double, double> get_delay_derivative(APBlockId driver_blk,
+                                                            APBlockId sink_blk,
+                                                            const PartialPlacement& p_placement);
 
     /**
      * @brief Get normalization factors to normalize away time units out of the
@@ -677,7 +678,7 @@ class B2BSolver : public AnalyticalSolver {
      *  @param driver_blk
      *      The driver block of the edge to normalize the objecive for.
      */
-    std::pair<double, double> get_delay_normalization_facs(APBlockId driver_blk);
+    std::tuple<double, double, double> get_delay_normalization_facs(APBlockId driver_blk);
 
     /**
      * @brief Initializes the linear system with the given partial placement.

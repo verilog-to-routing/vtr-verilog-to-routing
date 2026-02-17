@@ -49,7 +49,6 @@ void CRRConnectionBuilder::initialize(int fpga_grid_x,
 
 std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(size_t x,
                                                                              size_t y) const {
-    std::vector<Connection> tile_connections;
     // Find matching switch block pattern
     std::string pattern = sb_manager_.find_matching_pattern(x, y);
     if (pattern.empty()) {
@@ -80,15 +79,34 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
     auto source_nodes = get_tile_source_nodes(x, y, *df, col_nodes, row_nodes);
     auto sink_nodes = get_tile_sink_nodes(x, y, *df, col_nodes, row_nodes);
 
-    // Build connections based on dataframe
-    for (auto row_iter = df->begin(); row_iter != df->end(); ++row_iter) {
+    // Build connections by iterating over the switch block dataframe
+    auto tile_connections = build_connections_from_dataframe(*df, source_nodes, sink_nodes, sw_block_file_name);
+
+    // Uniqueify the connections
+    vtr::uniquify(tile_connections);
+    tile_connections.shrink_to_fit();
+
+    VTR_LOGV(verbosity_ > 1, "Generated %zu connections for location (%zu, %zu)\n",
+             tile_connections.size(), x, y);
+
+    return tile_connections;
+}
+
+std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
+    const DataFrame& df,
+    const std::unordered_map<size_t, RRNodeId>& source_nodes,
+    const std::unordered_map<size_t, RRNodeId>& sink_nodes,
+    const std::string& sw_block_file_name) const {
+    std::vector<Connection> connections;
+
+    for (auto row_iter = df.begin(); row_iter != df.end(); ++row_iter) {
         size_t row_idx = row_iter.get_row_index();
         if (row_idx < NUM_EMPTY_ROWS) {
             continue;
         }
 
-        for (size_t col_idx = NUM_EMPTY_COLS; col_idx < df->cols(); ++col_idx) {
-            const Cell& cell = df->at(row_idx, col_idx);
+        for (size_t col_idx = NUM_EMPTY_COLS; col_idx < df.cols(); ++col_idx) {
+            const Cell& cell = df.at(row_idx, col_idx);
 
             if (cell.is_empty()) {
                 continue;
@@ -105,6 +123,8 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
             e_rr_type source_node_type = rr_graph_.node_type(source_node);
             RRNodeId sink_node = sink_it->second;
             e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
+
+            // Skip connections involving IPIN/OPIN nodes if preservation is enabled
             if (preserve_ipin_connections_) {
                 if (source_node_type == e_rr_type::IPIN || sink_node_type == e_rr_type::IPIN) {
                     continue;
@@ -116,7 +136,9 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
                     continue;
                 }
             }
+
             std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
+
             // If the source node is an IPIN, then it should be considered as
             // a sink of the connection.
             if (source_node_type == e_rr_type::IPIN) {
@@ -125,7 +147,7 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
                                                        sink_node,
                                                        source_node);
 
-                tile_connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
+                connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
             } else {
                 int segment_length = -1;
                 if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
@@ -137,19 +159,12 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
                                                        sink_node,
                                                        segment_length);
 
-                tile_connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
+                connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
             }
         }
     }
 
-    // Uniqueify the connections
-    vtr::uniquify(tile_connections);
-    tile_connections.shrink_to_fit();
-
-    VTR_LOGV(verbosity_ > 1, "Generated %zu connections for location (%zu, %zu)\n",
-             tile_connections.size(), x, y);
-
-    return tile_connections;
+    return connections;
 }
 
 std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y) const {

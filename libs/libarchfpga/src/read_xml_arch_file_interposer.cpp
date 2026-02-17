@@ -12,30 +12,23 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
 
     pugiutil::expect_only_attributes(interposer_cut_tag, {"x", "y"}, loc_data);
 
-    const int x = pugiutil::get_attribute(interposer_cut_tag, "x", loc_data, pugiutil::ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
-    const int y = pugiutil::get_attribute(interposer_cut_tag, "y", loc_data, pugiutil::ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
+    pugi::xml_attribute x_attr = pugiutil::get_attribute(interposer_cut_tag, "x", loc_data, pugiutil::ReqOpt::OPTIONAL);
+    pugi::xml_attribute y_attr = pugiutil::get_attribute(interposer_cut_tag, "y", loc_data, pugiutil::ReqOpt::OPTIONAL);
 
-    // Both x and y are specified
-    if (x != ARCH_FPGA_UNDEFINED_VAL && y != ARCH_FPGA_UNDEFINED_VAL) {
+    const bool has_x = !x_attr.empty();
+    const bool has_y = !y_attr.empty();
+
+    if (has_x && has_y) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(interposer_cut_tag),
                        "Interposer cut tag must specify where the cut is to appear using only one of `x` or `y` attributes.");
     }
-
-    if (x != ARCH_FPGA_UNDEFINED_VAL) {
-        interposer.loc = x;
-        interposer.dim = e_interposer_cut_type::VERT;
-    } else if (y != ARCH_FPGA_UNDEFINED_VAL) {
-        interposer.loc = y;
-        interposer.dim = e_interposer_cut_type::HORZ;
-    } else {
+    if (!has_x && !has_y) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(interposer_cut_tag),
                        "Interposer cut tag must specify where the cut is to appear using `x` or `y` attributes.");
     }
 
-    if (interposer.loc <= 0) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(interposer_cut_tag),
-                       "Interposer cut location must be a positive number.");
-    }
+    interposer.loc = has_x ? std::string(x_attr.value()) : std::string(y_attr.value());
+    interposer.dim = has_x ? e_interposer_cut_type::VERT : e_interposer_cut_type::HORZ;
 
     pugiutil::expect_only_children(interposer_cut_tag, {"interdie_wire"}, loc_data);
 
@@ -48,15 +41,25 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
         interdie_wire.sg_name = pugiutil::get_attribute(interdie_wire_tag, "sg_name", loc_data).as_string();
         interdie_wire.sg_link = pugiutil::get_attribute(interdie_wire_tag, "sg_link", loc_data).as_string();
 
-        interdie_wire.offset_definition.start_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_start", loc_data).as_string();
-        interdie_wire.offset_definition.end_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_end", loc_data).as_string();
-        interdie_wire.offset_definition.incr_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_increment", loc_data).as_string();
+        interdie_wire.offset.start = pugiutil::get_attribute(interdie_wire_tag, "offset_start", loc_data).as_int();
+        interdie_wire.offset.end = pugiutil::get_attribute(interdie_wire_tag, "offset_end", loc_data).as_int();
+        interdie_wire.offset.increment = pugiutil::get_attribute(interdie_wire_tag, "offset_increment", loc_data).as_int();
 
-        interdie_wire.num = pugiutil::get_attribute(interdie_wire_tag, "num", loc_data).as_int();
-
-        if (interdie_wire.num <= 0) {
+        if (interdie_wire.offset.increment < 0) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(interdie_wire_tag),
-                           "The `num` attribute of an `interdie_wire` must be specified with a positive number.");
+                           "The `offset_increment` attribute of an `interdie_wire` must be a positive number.");
+        }
+
+        if (interdie_wire.offset.start > interdie_wire.offset.end) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(interdie_wire_tag),
+                           "The `offset_start` attribute of an `interdie_wire` must be smaller than the `offset_start` attribute.");
+        }
+
+        interdie_wire.num = pugiutil::get_attribute(interdie_wire_tag, "num", loc_data).as_string();
+
+        if (interdie_wire.num.empty()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(interdie_wire_tag),
+                           "The `num` attribute of an `interdie_wire` must be specified (formula or positive integer).");
         }
 
         interposer.interdie_wires.push_back(interdie_wire);
