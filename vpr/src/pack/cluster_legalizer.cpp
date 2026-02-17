@@ -1273,15 +1273,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
 
-        
-
         auto popped = primitives_alive.pop();
-        // VTR_LOG("\tNumber of primitives active %zu\n", primitives_alive.size());
         t_pb_graph_node* root = popped.first;
 
         auto* root_prim = cluster.placement_stats->get_pb_graph_node_placement_primitive(root);
         if (!root_prim->valid) {
-            // VTR_LOG("\tSkipped stale/invalid PQ entry.\n");
             continue; // skip stale/invalid PQ entry
         }
 
@@ -1293,12 +1289,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
         // IMPORTANT: primitives_list must correspond to this root.
         float cost = try_place_molecule(cluster.placement_stats, molecule_id, root, primitives_list, prepacker_);
-        if (cost == std::numeric_limits<float>::max()) {
-            // This root cannot place molecule; mark it "tried" and continue
-            cluster.placement_stats->move_inflight_to_tried();  // or a "revert inflight" helper
-            continue;
-        }
-
+        VTR_ASSERT_MSG(cost != std::numeric_limits<float>::max(), "The cost of the molecule placement cannot be infinite after validity check.");
 
         block_pack_status = e_block_pack_status::BLK_PASSED;
         size_t failed_location = 0;

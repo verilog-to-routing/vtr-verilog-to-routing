@@ -42,12 +42,6 @@ static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* clu
                                             float incremental_cost,
                                             bool valid);
 
-// static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
-//                                 PackMoleculeId molecule_id,
-//                                 t_pb_graph_node* root,
-//                                 std::vector<t_pb_graph_node*>& primitives_list,
-//                                 const Prepacker& prepacker);
-
 static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                   PackMoleculeId molecule_id,
                                                   const t_pack_pattern_block* pack_pattern_block,
@@ -224,11 +218,6 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                              LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>>& primitives_alive,
                              const Prepacker& prepacker,
                              int force_site) {
-    std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator best;
-
-    float cost, lowest_cost;
-    int best_pb_type_index = -1;
-
     if (cluster_placement_stats->curr_molecule != molecule_id) {
         /* New block, requeue tried primitives and in-flight primitives */
         cluster_placement_stats->flush_intermediate_queues();
@@ -253,11 +242,8 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
      */
 
     // Initialize variables
-    bool found_best = false;
-    lowest_cost = std::numeric_limits<float>::max();
-    int order = 0; // tie-break: earlier encountered wins
-
-    // VTR_LOG("In get_next_primitive_list for molecule id %zu.\n", molecule_id);
+    float cost = std::numeric_limits<float>::max();
+    int encounter_order = 0; // tie-break: earlier encountered wins
 
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
@@ -275,12 +261,11 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
 
                     /* check for force site match, if applicable */
                     if (force_site > -1) {
-                        // VTR_LOG("ENCOUNTERED FORCE SITE in get_next_primitive_list!\n");
                         /* check that the forced site index is within the available range */
                         int max_site = it->second->pb_graph_node->total_primitive_count - 1;
                         if (force_site > max_site) {
-                            // VTR_LOG("The specified primitive site (%d) is out of range (max %d)\n",
-                            //         force_site, max_site);
+                            VTR_LOG("The specified primitive site (%d) is out of range (max %d)\n",
+                                    force_site, max_site);
                             break;
                         }
                         if (force_site == it->second->pb_graph_node->flat_site_index) {
@@ -290,7 +275,10 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                                                       primitives_list,
                                                       prepacker);
                             if (cost < std::numeric_limits<float>::max()) {
-                                cluster_placement_stats->move_primitive_to_inflight(i, it);
+                                primitives_alive.clear();
+                                int tpc = it->second->pb_graph_node->total_primitive_count;
+                                primitives_alive.push(it->second->pb_graph_node,
+                                                    std::make_tuple(-cost, tpc, -encounter_order));
                                 return true;
                             } else {
                                 break;
@@ -307,61 +295,25 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                                               it->second->pb_graph_node,
                                               primitives_list,
                                               prepacker);
-                    // VTR_LOG("\tThe primitive %s has a cost of %f. The pb_type_index is %d. The primitives_list has %zu element.\n", it->second->pb_graph_node->hierarchical_type_name().c_str(), cost, i, primitives_list.size());
+
                     if (cost < std::numeric_limits<float>::max()) {
                         int tpc = it->second->pb_graph_node->total_primitive_count;
-
-                        // Key: (-cost, tpc, -order)
                         primitives_alive.push(it->second->pb_graph_node,
-                                            std::make_tuple(-cost, tpc, -order));
-                        ++order;
-                    }
-
-
-                    // if the cost is lower than the best, or is equal to the best but this
-                    // primitive is more available in the cluster mark it as the best primitive
-                    if (cost < lowest_cost || (found_best && best->second && cost == lowest_cost && it->second->pb_graph_node->total_primitive_count > best->second->pb_graph_node->total_primitive_count)) {
-                        lowest_cost = cost;
-                        best = it;
-                        best_pb_type_index = i;
-                        found_best = true;
+                                            std::make_tuple(-cost, tpc, -encounter_order));
+                        ++encounter_order;
                     }
                     ++it;
                 }
             }
         }
-        // VTR_LOG("\tThe primitive index %d has a cost of %f\n", i, cost);
     }
 
     /* if force_site was specified but not found, fail */
     if (force_site > -1) {
-        found_best = false;
+        primitives_alive.clear();
     }
 
-    if (!found_best) {
-        /* failed to find a placement */
-        const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
-        for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
-            primitives_list[i] = nullptr;
-        }
-        // VTR_LOG("\tNot found best for molecule id %zu.\n", molecule_id);
-        // VTR_LOG("\tNumber of primitives alive by priority queie %zu\n", primitives_alive.size());
-    } else {
-        /* populate primitive list with best */
-        cost = try_place_molecule(cluster_placement_stats,
-                                  molecule_id,
-                                  best->second->pb_graph_node,
-                                  primitives_list,
-                                  prepacker);
-        VTR_ASSERT(cost == lowest_cost);
-
-        /* take out best node and put it in flight */
-        //cluster_placement_stats->move_primitive_to_inflight(best_pb_type_index, best);
-        // VTR_LOG("\tFound best for molecule id %zu with cost %f and name %s\n", molecule_id, cost, best->second->pb_graph_node->hierarchical_type_name().c_str());
-        // VTR_LOG("\tNumber of primitives alive by priority queue %zu\n", primitives_alive.size());
-    }
-
-    if (!found_best) {
+    if (primitives_alive.empty()) {
         return false;
     }
     return true;
