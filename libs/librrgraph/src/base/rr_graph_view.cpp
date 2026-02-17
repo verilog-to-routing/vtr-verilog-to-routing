@@ -1,6 +1,12 @@
+#include <algorithm>
+#include <cstddef>
+#include <vector>
+
 #include "rr_graph_view.h"
+#include "rr_graph_fwd.h"
 #include "rr_node.h"
 #include "physical_types.h"
+#include "rr_node_types.h"
 
 RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
                          const RRSpatialLookup& node_lookup,
@@ -21,7 +27,7 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
 
 std::vector<RREdgeId> RRGraphView::find_edges(RRNodeId src_node, RRNodeId des_node) const {
     std::vector<RREdgeId> edge_list;
-    for (auto iedge: node_out_edges(src_node)) {
+    for (auto iedge : node_out_edges(src_node)) {
         RREdgeId edge = node_storage_.edge_id(src_node, iedge);
         if (edge_sink_node(edge) == des_node) {
             edge_list.push_back(edge);
