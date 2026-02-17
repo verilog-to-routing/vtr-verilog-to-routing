@@ -21,7 +21,7 @@ enum class e_scatter_gather_type {
 struct t_sg_location {
     e_sb_location type;       ///< Type of locations that the pattern is instantiated at.
     t_specified_loc region;   ///< Specification of the region where gather is applied
-    int num;                  ///< Number of scatter-gather pattern instantiations per location.
+    std::string num;          ///< Formula (variable W = channel width) for number of scatter-gather pattern instantiations per location.
     std::string sg_link_name; ///< Name of scatter-gather link to be used.
 };
 
