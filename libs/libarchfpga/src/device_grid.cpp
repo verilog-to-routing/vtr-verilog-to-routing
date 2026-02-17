@@ -34,7 +34,7 @@ DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
             for (size_t j = 0; j < horizontal_interposers.size() + 1; j++) {
                 DeviceDieId die_id = (DeviceDieId)die_region_counter;
                 layer_reduced_die_id_matrix[i][j] = die_id;
-                
+
                 t_die_region region = {.x_die = static_cast<short>(i), .y_die = static_cast<short>(j), .layer = static_cast<short>(layer)};
                 die_region_map_.update(die_id, region);
 
