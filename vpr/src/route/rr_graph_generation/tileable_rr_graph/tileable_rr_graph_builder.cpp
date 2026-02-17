@@ -27,6 +27,7 @@
 #include "tileable_rr_graph_node_builder.h"
 #include "tileable_rr_graph_edge_builder.h"
 #include "tileable_rr_graph_builder.h"
+#include "rr_graph_in_edges.h"
 
 #include "globals.h"
 
@@ -310,9 +311,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Save the track ids for tileable routing resource graph
     device_ctx.rr_node_track_ids = rr_node_track_ids;
 
-    // Build incoming edges
+    // Partition edges (required before querying edges)
     device_ctx.rr_graph_builder.partition_edges();
-    device_ctx.rr_graph_builder.build_in_edges();
 
     // Allocate external data structures
     //  a. cost_index
