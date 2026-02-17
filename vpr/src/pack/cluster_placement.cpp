@@ -364,12 +364,15 @@ bool try_start_root_placement(t_intra_cluster_placement_stats* cluster_placement
         return false;
     }
 
-    // Populate primitives list and get cost for that placement
+    // Re-run try_place_molecule() to populate primitives_list for the
+    // actual placement attempt. This is required even though the root
+    // was scored earlier when building the candidate queue, since the
+    // earlier call does not persist primitives_list state.
     float cost = try_place_molecule(cluster_placement_stats,
-                                  molecule_id,
-                                  root,
-                                  primitives_list,
-                                  prepacker);
+                                    molecule_id,
+                                    root,
+                                    primitives_list,
+                                    prepacker);
 
     VTR_ASSERT_MSG(cost != std::numeric_limits<float>::max(),
                    "The cost of the molecule placement cannot be infinite after validity check.");
