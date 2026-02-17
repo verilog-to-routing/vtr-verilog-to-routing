@@ -187,30 +187,53 @@ float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stat
                          const Prepacker& prepacker);
 
 /**
- * get next list of primitives for list of atom blocks
+ * @brief Builds a priority queue of feasible primitive root candidates for a molecule.
  *
- * primitives is the list of ptrs to primitives that matches with the list of atom block, assumes memory is preallocated
- *   - if this is a new block, requeue tried primitives and return a in-flight primitive list to try
- *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
+ * The function does not commit any placement. It only prepares candidate
+ * primitive roots for later selection by the caller (e.g., try_pack_molecule()).
  *
- * return true if can find next primitive, false otherwise
+ * @param cluster_placement_stats
+ *              Placement statistics and primitive state information for the current cluster.
+ *              This structure maintains valid, tried, and in-flight primitive sets.
  *
- * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
- * molecule - molecule to pack into open complex block
- * primitives_list - a list of primitives indexed to match atom_block_ids of molecule.
- *                   Expects an allocated array of primitives ptrs as inputs.
- *                   This function loads the array with the lowest cost primitives that implement molecule
- * force_site - optional user-specified primitive site on which to place the molecule; if a force_site
+ * @param molecule_id
+ *              Identifier of the molecule to be evaluated for placement.
+ *
+ * @param primitives_list
+ *              A list of primitives indexed to match atom_block_ids of molecule.
+ *              Expects an allocated array of primitives ptrs as inputs.
+ *
+ * @param prepacker
+ *              The prepacker object that provides access to the molecule
+ *              corresponding to given molecule id.
+ *
+ * @param force_site
+ *              Optional user-specified primitive site on which to place the molecule; if a force_site
  *              argument is provided, the function either selects the specified site or reports failure.
  *              If the force_site argument is set to its default value (-1), vpr selects an available site.
+ *
+ * @return A LazyPopUniquePriorityQueue containing feasible primitive root
+ *         candidates ordered by placement priority. The queue may be empty
+ *         if no feasible placement exists.
  */
-bool get_next_primitive_list(
-    t_intra_cluster_placement_stats* cluster_placement_stats,
-    PackMoleculeId molecule_id,
-    std::vector<t_pb_graph_node*>& primitives_list,
-    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>>& primitives_alive,
-    const Prepacker& prepacker,
-    int force_site = -1);
+LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                                                                                        PackMoleculeId molecule_id,
+                                                                                                        std::vector<t_pb_graph_node*>& primitives_list,
+                                                                                                        const Prepacker& prepacker,
+                                                                                                        int force_site = -1);
+
+/**
+ * @brief Move a candidate root primitive from the valid set to the in-flight set.
+ *
+ * @param cluster_placement_stats
+ *        Placement statistics for the current cluster (contains valid/in-flight containers).
+ * @param target_root
+ *        The pb_graph_node to move to the in-flight set.
+ * @return True if target_root was found in valid_primitives and moved to in-flight;
+ *         false otherwise.
+ */
+bool move_root_node_to_inflight(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                t_pb_graph_node* target_root);
 
 /**
  * @brief Commit primitive, invalidate primitives blocked by mode assignment and update costs for primitives in same cluster as current

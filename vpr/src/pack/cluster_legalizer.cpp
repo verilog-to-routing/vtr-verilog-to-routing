@@ -1143,29 +1143,6 @@ static bool cleanup_pb(t_pb* pb) {
     return can_free;
 }
 
-static bool move_root_node_to_inflight(t_intra_cluster_placement_stats* stats,
-                                       t_pb_graph_node* root_node) {
-    for (int i = 0; i < stats->num_pb_types; ++i) {
-        auto& mm = stats->valid_primitives[i];
-        for (auto it = mm.begin(); it != mm.end(); /* no ++ here */) {
-            auto* prim = it->second;
-
-            if (!prim->valid) {
-                stats->invalidate_primitive_and_increment_iterator(i, it);
-                continue;
-            }
-
-            if (prim->pb_graph_node == root_node) {
-                stats->move_primitive_to_inflight(i, it);
-                return true;
-            }
-
-            ++it;
-        }
-    }
-    return false;
-}
-
 e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_id,
                                                         LegalizationCluster& cluster,
                                                         LegalizationClusterId cluster_id,
@@ -1259,12 +1236,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
-    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> primitives_alive;
-    get_next_primitive_list(cluster.placement_stats,
-                            molecule_id,
-                            primitives_list,
-                            primitives_alive,
-                            prepacker_);
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
+                                                                                                                               molecule_id,
+                                                                                                                               primitives_list,
+                                                                                                                               prepacker_);
+
     // VTR_LOG("\tNumber of primitives active %zu\n", primitives_alive.size());
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
@@ -1273,8 +1249,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
 
-        auto popped = primitives_alive.pop();
-        t_pb_graph_node* root = popped.first;
+        std::pair<t_pb_graph_node *, std::tuple<float, int, int>> primitive = primitives_alive.pop();
+        t_pb_graph_node* root = primitive.first;
 
         auto* root_prim = cluster.placement_stats->get_pb_graph_node_placement_primitive(root);
         if (!root_prim->valid) {

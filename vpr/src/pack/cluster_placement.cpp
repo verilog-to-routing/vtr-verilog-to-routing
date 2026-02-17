@@ -212,38 +212,49 @@ float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stat
     return cost;
 }
 
-bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_stats,
-                             PackMoleculeId molecule_id,
-                             std::vector<t_pb_graph_node*>& primitives_list,
-                             LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>>& primitives_alive,
-                             const Prepacker& prepacker,
-                             int force_site) {
+LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                                                                                        PackMoleculeId molecule_id,
+                                                                                                        std::vector<t_pb_graph_node*>& primitives_list,
+                                                                                                        const Prepacker& prepacker,
+                                                                                                        int force_site) {
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> primitives_alive;
     if (cluster_placement_stats->curr_molecule != molecule_id) {
-        /* New block, requeue tried primitives and in-flight primitives */
+        // New block, requeue tried primitives and in-flight primitives
         cluster_placement_stats->flush_intermediate_queues();
         cluster_placement_stats->curr_molecule = molecule_id;
     } else {
-        /* Hack! Same failed molecule may re-enter if upper stream functions suck,
-         * I'm going to make the molecule selector more intelligent.
-         * TODO: Remove later
-         */
+        // Hack! Same failed molecule may re-enter if upper stream functions suck,
+        // I'm going to make the molecule selector more intelligent.
+        // TODO: Remove later
         if (!cluster_placement_stats->in_flight_empty()) {
-            /* Hack end */
-            /* old block, put root primitive currently inflight to tried queue	*/
+            // Hack end
+            // old block, put root primitive currently inflight to tried queue
             cluster_placement_stats->move_inflight_to_tried();
         }
     }
 
-    /* find next set of blocks
-     * 1. Remove invalid blocks to invalid queue
-     * 2. Find lowest cost array of primitives that implements blocks
-     * 3. When found, move current blocks to in-flight, return lowest cost array of primitives
-     * 4. Return NULL if not found
-     */
+    // Build a priority queue of feasible primitive roots for this molecule.
+    // Behavior:
+    //   1. Lazily remove invalid primitives from valid_primitives.
+    //   2. For each primitive type that is compatible with the molecule root:
+    //        - Attempt placement using try_place_molecule().
+    //        - If feasible, insert the root into the priority queue.
+    //   3. The priority key is:
+    //        (-cost, total_primitive_count, -encounter_order)
+    //      which ensures:
+    //        - Lower placement cost is preferred.
+    //        - Higher total_primitive_count breaks ties.
+    //        - Earlier encountered primitives break remaining ties.
+    //   4. If force_site >= 0:
+    //        - Only the primitive matching flat_site_index == force_site
+    //          is considered.
+    //        - The returned priority queue contains at most one element.
+    //        - If the forced site is infeasible, the returned priority queue is empty.
+    // The returned priority queue may be empty if no feasible primitive exists.
 
     // Initialize variables
     float cost = std::numeric_limits<float>::max();
-    int encounter_order = 0; // tie-break: earlier encountered wins
+    int encounter_order = 0;
 
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
@@ -253,15 +264,15 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
             if (primitive_type_feasible(molecule.atom_block_ids[molecule.root], cur_cluster_placement_primitive->pb_graph_node->pb_type)) {
                 // Iterate over the unordered_multimap of the valid primitives of a specific pb primitive type
                 for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
-                    //Lazily remove invalid primitives
+                    // Lazily remove invalid primitives
                     if (!it->second->valid) {
                         cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it); //iterator is incremented here
                         continue;
                     }
 
-                    /* check for force site match, if applicable */
+                    // Check for force site match, if applicable
                     if (force_site > -1) {
-                        /* check that the forced site index is within the available range */
+                        // Check that the forced site index is within the available range
                         int max_site = it->second->pb_graph_node->total_primitive_count - 1;
                         if (force_site > max_site) {
                             VTR_LOG("The specified primitive site (%d) is out of range (max %d)\n",
@@ -274,22 +285,20 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                                                       it->second->pb_graph_node,
                                                       primitives_list,
                                                       prepacker);
+                            primitives_alive.clear();
                             if (cost < std::numeric_limits<float>::max()) {
-                                primitives_alive.clear();
-                                int tpc = it->second->pb_graph_node->total_primitive_count;
+                                int total_primitive_count = it->second->pb_graph_node->total_primitive_count;
                                 primitives_alive.push(it->second->pb_graph_node,
-                                                    std::make_tuple(-cost, tpc, -encounter_order));
-                                return true;
-                            } else {
-                                break;
+                                                      std::make_tuple(-cost, total_primitive_count, -encounter_order));
                             }
+                            return primitives_alive;
                         } else {
                             ++it;
                             continue;
                         }
                     }
 
-                    /* try place molecule at root location cur */
+                    // Try place molecule at current root location
                     cost = try_place_molecule(cluster_placement_stats,
                                               molecule_id,
                                               it->second->pb_graph_node,
@@ -297,9 +306,9 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                                               prepacker);
 
                     if (cost < std::numeric_limits<float>::max()) {
-                        int tpc = it->second->pb_graph_node->total_primitive_count;
+                        int total_primitive_count = it->second->pb_graph_node->total_primitive_count;
                         primitives_alive.push(it->second->pb_graph_node,
-                                            std::make_tuple(-cost, tpc, -encounter_order));
+                                              std::make_tuple(-cost, total_primitive_count, -encounter_order));
                         ++encounter_order;
                     }
                     ++it;
@@ -308,15 +317,33 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
         }
     }
 
-    /* if force_site was specified but not found, fail */
-    if (force_site > -1) {
-        primitives_alive.clear();
+    return primitives_alive;
+}
+
+bool move_root_node_to_inflight(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                t_pb_graph_node* target_root) {
+    for (int pb_type_idx = 0; pb_type_idx < cluster_placement_stats->num_pb_types; ++pb_type_idx) {
+        auto& valid_primitives = cluster_placement_stats->valid_primitives[pb_type_idx];
+        for (auto it = valid_primitives.begin(); it != valid_primitives.end(); /* increment handled inside */) {
+            t_cluster_placement_primitive* placement_primitive = it->second;
+
+            // Lazily remove invalid primitives
+            if (!placement_primitive->valid) {
+                cluster_placement_stats->invalidate_primitive_and_increment_iterator(pb_type_idx, it);
+                continue;
+            }
+
+            // Found the requested root primitive
+            if (placement_primitive->pb_graph_node == target_root) {
+                cluster_placement_stats->move_primitive_to_inflight(pb_type_idx, it);
+                return true;
+            }
+            ++it;
+        }
     }
 
-    if (primitives_alive.empty()) {
-        return false;
-    }
-    return true;
+    // Root not found among valid primitives
+    return false;
 }
 
 /**
