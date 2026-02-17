@@ -63,7 +63,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq);
 
-
 /**
  * @brief Computes the adjusted location of a pin to match the position of
  * the channel it can reach based on which side of the block it is at.

@@ -135,7 +135,6 @@ static vtr::NdMatrix<float, 2> compute_interposer_delay_matrix(const DeviceGrid&
 
             interposer_delay_matrices[(size_t)first_die_id][(size_t)second_die_id] =
                 std::abs(first_horizontal_delay - second_horizontal_delay) + std::abs(first_vertical_delay - second_vertical_delay);
-
         }
     }
 
