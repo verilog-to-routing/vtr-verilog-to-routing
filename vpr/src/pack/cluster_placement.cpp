@@ -42,6 +42,12 @@ static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* clu
                                             float incremental_cost,
                                             bool valid);
 
+static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                PackMoleculeId molecule_id,
+                                t_pb_graph_node* root,
+                                std::vector<t_pb_graph_node*>& primitives_list,
+                                const Prepacker& prepacker);
+
 static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                   PackMoleculeId molecule_id,
                                                   const t_pack_pattern_block* pack_pattern_block,
@@ -168,7 +174,31 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
     }
 }
 
-float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+/**
+ * @brief Try place molecule at root location, populate primitives list with
+ *        locations of placement if successful
+ *
+ * @param cluster_placement_stats
+ *              The placement statistics for the current cluster, containing
+ *              valid primitives and cost information.
+ * @param molecule_id
+ *              The id of the molecule being evaluated.
+ * @param root
+ *              The candidate primitive pb_graph_node where the molecule's root
+ *              atom would be placed.
+ * @param primitives_list
+ *              Output vector populated with the selected primitive locations
+ *              for each atom in the molecule. Must be pre-sized to at least
+ *              molecule.atom_block_ids.size(). Entries corresponding to unused
+ *              atoms remain nullptr.
+ * @param prepacker
+ *              The prepacker object that provides access to the molecule
+ *              corresponding to given molecule id.
+ * @return The total placement cost if feasible, otherwise
+ *         std::numeric_limits<float>::max() if placement is invalid
+ *         or violates constraints.
+ */
+static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
                                 PackMoleculeId molecule_id,
                                 t_pb_graph_node* root,
                                 std::vector<t_pb_graph_node*>& primitives_list,
