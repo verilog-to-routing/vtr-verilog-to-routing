@@ -12,6 +12,8 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_view.h"
 
+class RRGraphInEdges;
+
 /**
  * @brief Get the coordinator of a starting point of a routing track 
  * For routing tracks in INC_DIRECTION
@@ -37,24 +39,28 @@ vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
  * This function only return unique driver switches
  */
 std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph,
+                                                     const RRGraphInEdges& in_edges,
                                                      const RRNodeId node);
 
 /**
  * @brief Find the driver nodes for a node in the rr_graph
  */
 std::vector<RRNodeId> get_rr_graph_driver_nodes(const RRGraphView& rr_graph,
+                                                const RRGraphInEdges& in_edges,
                                                 const RRNodeId node);
 
 /**
  * @brief Find the configurable driver nodes for a node in the rr_graph
  */
 std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& rr_graph,
+                                                             const RRGraphInEdges& in_edges,
                                                              const RRNodeId node);
 
 /**
  * @brief Find the configurable driver nodes for a node in the rr_graph
  */
 std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphView& rr_graph,
+                                                                 const RRGraphInEdges& in_edges,
                                                                  const RRNodeId node);
 
 /**
@@ -73,6 +79,7 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
  *   - The only fan-in is an OPIN 
  */
 bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
+                                   const RRGraphInEdges& in_edges,
                                    const RRNodeId node);
 
 /**

@@ -5,6 +5,7 @@
 
 #include "tileable_rr_graph_utils.h"
 #include "tileable_rr_graph_types.h"
+#include "rr_graph_in_edges.h"
 #include "rr_graph_view.h"
 #include "vtr_geometry.h"
 
@@ -45,10 +46,11 @@ vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
 }
 
 std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph,
+                                                     const RRGraphInEdges& in_edges,
                                                      const RRNodeId node) {
     std::vector<RRSwitchId> driver_switches;
 
-    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
+    for (const RREdgeId edge : in_edges.node_in_edges(node)) {
         if (driver_switches.end() == std::find(driver_switches.begin(), driver_switches.end(), RRSwitchId(rr_graph.edge_switch(edge)))) {
             driver_switches.push_back(RRSwitchId(rr_graph.edge_switch(edge)));
         }
@@ -58,10 +60,11 @@ std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph
 }
 
 std::vector<RRNodeId> get_rr_graph_driver_nodes(const RRGraphView& rr_graph,
+                                                const RRGraphInEdges& in_edges,
                                                 const RRNodeId node) {
     std::vector<RRNodeId> driver_nodes;
 
-    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
+    for (const RREdgeId edge : in_edges.node_in_edges(node)) {
         driver_nodes.push_back(rr_graph.edge_src_node(edge));
     }
 
@@ -69,10 +72,11 @@ std::vector<RRNodeId> get_rr_graph_driver_nodes(const RRGraphView& rr_graph,
 }
 
 std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& rr_graph,
+                                                             const RRGraphInEdges& in_edges,
                                                              const RRNodeId node) {
     std::vector<RRNodeId> driver_nodes;
 
-    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
+    for (const RREdgeId edge : in_edges.node_in_edges(node)) {
         // Bypass non-configurable edges
         if (false == rr_graph.edge_is_configurable(edge)) {
             continue;
@@ -84,10 +88,11 @@ std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& 
 }
 
 std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphView& rr_graph,
+                                                                 const RRGraphInEdges& in_edges,
                                                                  const RRNodeId node) {
     std::vector<RRNodeId> driver_nodes;
 
-    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
+    for (const RREdgeId edge : in_edges.node_in_edges(node)) {
         // Bypass configurable edges
         if (true == rr_graph.edge_is_configurable(edge)) {
             continue;
@@ -119,16 +124,17 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
 }
 
 bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
+                                   const RRGraphInEdges& in_edges,
                                    const RRNodeId node) {
     // We only accept IPIN
     VTR_ASSERT(e_rr_type::IPIN == rr_graph.node_type(node));
 
-    if (1 != rr_graph.node_in_edges(node).size()) {
+    if (1 != in_edges.node_in_edges(node).size()) {
         return false;
     }
 
-    VTR_ASSERT(1 == rr_graph.node_in_edges(node).size());
-    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
+    VTR_ASSERT(1 == in_edges.node_in_edges(node).size());
+    for (const RREdgeId edge : in_edges.node_in_edges(node)) {
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         if (e_rr_type::OPIN != rr_graph.node_type(src_node)) {
             return false;
