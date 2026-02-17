@@ -5,6 +5,8 @@
 #include "rr_chan.h"
 #include "rr_graph_view.h"
 
+class RRGraphInEdges;
+
 /********************************************************************
  * Object Generic Switch Block
  * This block contains
@@ -84,12 +86,12 @@ class RRGSB {
     RRNodeId get_chan_node(const e_side& side, const size_t& track_id) const;
 
     /* get all the sorted incoming edges for a rr_node at a given side and track_id */
-    std::vector<RREdgeId> get_chan_node_in_edges(const RRGraphView& rr_graph,
+    std::vector<RREdgeId> get_chan_node_in_edges(const RRGraphInEdges& in_edges,
                                                  const e_side& side,
                                                  const size_t& track_id) const;
 
     /* get all the sorted incoming edges for a IPIN rr_node at a given side and ipin_id */
-    std::vector<RREdgeId> get_ipin_node_in_edges(const RRGraphView& rr_graph,
+    std::vector<RREdgeId> get_ipin_node_in_edges(const RRGraphInEdges& in_edges,
                                                  const e_side& side,
                                                  const size_t& ipin_id) const;
 
@@ -141,7 +143,7 @@ class RRGSB {
     bool is_cb_exist(const e_rr_type& cb_type) const;
 
     /* check if the switch block exists in the GSB, this function checks if a switch block physically exists (no routing wires, no OPIN nodes, and no interconnecting wires) */
-    bool is_sb_exist(const RRGraphView& rr_graph) const;
+    bool is_sb_exist(const RRGraphInEdges& in_edges) const;
 
     /* Check if the node imply a short connection inside the SB, which happens to long wires across a FPGA fabric */
     bool is_sb_node_passing_wire(const RRGraphView& rr_graph, const e_side& node_side, const size_t& track_id) const;
@@ -196,11 +198,11 @@ class RRGSB {
     void add_mux_node(const RRNodeId& mux_node);
 
     /* Sort all the incoming edges for routing channel rr_node */
-    void sort_chan_node_in_edges(const RRGraphView& rr_graph, const bool reorder_incoming_edges = false);
+    void sort_chan_node_in_edges(const RRGraphView& rr_graph, const RRGraphInEdges& in_edges, const bool reorder_incoming_edges = false);
     /* Sort all the incoming edges for input pin rr_node */
-    void sort_ipin_node_in_edges(const RRGraphView& rr_graph);
+    void sort_ipin_node_in_edges(const RRGraphView& rr_graph, const RRGraphInEdges& in_edges);
     /* Build the lists of opin node for connection blocks. This is required after adding all the nodes */
-    void build_cb_opin_nodes(const RRGraphView& rr_graph);
+    void build_cb_opin_nodes(const RRGraphView& rr_graph, const RRGraphInEdges& in_edges);
 
   public: /* Mutators: cleaners */
     void clear();
@@ -227,12 +229,14 @@ class RRGSB {
      *                                This is required to generate correct bitstream for some FPGA devices.
      */
     void sort_chan_node_in_edges(const RRGraphView& rr_graph,
+                                 const RRGraphInEdges& in_edges,
                                  const e_side& chan_side,
                                  const size_t track_id,
                                  const bool reorder_incoming_edges);
 
     /* Sort all the incoming edges for one input pin rr_node */
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph,
+                                 const RRGraphInEdges& in_edges,
                                  const e_side& chan_side,
                                  const size_t& ipin_id);
 
