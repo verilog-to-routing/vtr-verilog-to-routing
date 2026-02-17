@@ -32,7 +32,12 @@ DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
 
         for (size_t i = 0; i < vertical_interposers.size() + 1; i++) {
             for (size_t j = 0; j < horizontal_interposers.size() + 1; j++) {
-                layer_reduced_die_id_matrix[i][j] = (DeviceDieId)die_region_counter;
+                DeviceDieId die_id = (DeviceDieId)die_region_counter;
+                layer_reduced_die_id_matrix[i][j] = die_id;
+                
+                t_die_region region = {.x_die = static_cast<short>(i), .y_die = static_cast<short>(j), .layer = static_cast<short>(layer)};
+                die_region_map_.update(die_id, region);
+
                 die_region_counter++;
             }
         }
@@ -141,4 +146,21 @@ bool DeviceGrid::are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile
     const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][loc_b.x][loc_b.y];
 
     return first_id == second_id;
+}
+
+DeviceDieId DeviceGrid::get_loc_die_id(t_physical_tile_loc loc) const {
+    return die_id_matrix_[loc.layer_num][loc.x][loc.y];
+}
+
+DeviceDieId DeviceGrid::get_die_region_id(t_die_region die_region) const {
+    return die_region_map_[die_region];
+}
+
+size_t DeviceGrid::get_die_count() const {
+    size_t die_count = 0;
+    for (size_t layer_num = 0; layer_num < get_num_layers(); layer_num++) {
+        die_count += (get_vertical_interposer_cuts()[layer_num].size() + 1) * (get_horizontal_interposer_cuts()[layer_num].size() + 1);
+    }
+
+    return die_count;
 }
