@@ -5,8 +5,6 @@
 #include "rr_chan.h"
 #include "rr_graph_view.h"
 
-class RRGraphInEdges;
-
 /********************************************************************
  * Object Generic Switch Block
  * This block contains
@@ -96,13 +94,9 @@ class RRGSB {
 
     /* Get the number of OPIN rr_nodes on a side */
     size_t get_num_opin_nodes(const e_side& side) const;
-    /* Get the number of OPIN rr_nodes on a side of a connection block */
-    size_t get_num_cb_opin_nodes(const e_rr_type& cb_type, const e_side& side) const;
 
     /* get a rr_node at a given side and track_id */
     RRNodeId get_opin_node(const e_side& side, const size_t& node_id) const;
-    /* get a rr_node at a given side and track_id for a connection block */
-    RRNodeId get_cb_opin_node(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
 
     /* Get the number of MUX rr_nodes */
     size_t get_num_mux_nodes() const;
@@ -206,11 +200,9 @@ class RRGSB {
     bool validate_num_sides() const;
     bool validate_side(const e_side& side) const;
     bool validate_track_id(const e_side& side, const size_t& track_id) const;
-    bool validate_cb_opin_node_id(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
     bool validate_opin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_ipin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_cb_type(const e_rr_type& cb_type) const;
-    size_t get_cb_opin_type_id(const e_rr_type& cb_type) const;
 
   private: /* Internal Data */
     /* Coordinator */
@@ -225,31 +217,11 @@ class RRGSB {
     /* Direction of a port when the channel node appear in the GSB module */
     std::vector<std::vector<PORTS>> chan_node_direction_;
 
-    /* Sequence of edge ids for each routing channel node,
-     * this is sorted by the location of edge source nodes in the context of GSB
-     * The edge sorting is critical to uniquify the routing modules in OpenFPGA
-     * This is due to that VPR allocate and sort edges randomly when building the rr_graph
-     * As a result, previous nodes of a chan node may be the same in different GSBs
-     * but their sequence is not. This will cause graph comparison to fail when uniquifying
-     * the routing modules. Therefore, edge sorting can be done inside the GSB
-     *
-     * Storage organization:
-     *   [chan_side][chan_node][edge_id_in_gsb_context]
-     */
-    std::vector<std::vector<std::vector<RREdgeId>>> chan_node_in_edges_;
-    /* Sequence of edge ids for each input pin node. Same rules applied as the channel nodes */
-    std::vector<std::vector<std::vector<RREdgeId>>> ipin_node_in_edges_;
-
     /* Logic Block Inputs data */
     std::vector<std::vector<RRNodeId>> ipin_node_;
 
     /* Logic Block Outputs data */
     std::vector<std::vector<RRNodeId>> opin_node_;
-    /* Logic block outputs which directly drive IPINs in connection block,
-     * CBX -> array[0], CBY -> array[1]
-     * Each CB may have OPINs from all sides
-     */
-    std::array<std::array<std::vector<RRNodeId>, NUM_2D_SIDES>, 2> cb_opin_node_;
 
     /* MUX Nodes Data */
     std::vector<RRNodeId> mux_node_;

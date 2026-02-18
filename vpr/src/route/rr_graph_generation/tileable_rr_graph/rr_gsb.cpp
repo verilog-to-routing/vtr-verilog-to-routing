@@ -24,19 +24,12 @@ RRGSB::RRGSB()
 
     chan_node_.clear();
     chan_node_direction_.clear();
-    chan_node_in_edges_.clear();
-    ipin_node_in_edges_.clear();
 
     ipin_node_.clear();
 
     opin_node_.clear();
 
     mux_node_.clear();
-    for (size_t icb_type = 0; icb_type < 2; icb_type++) {
-        for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) {
-            cb_opin_node_[icb_type][iside].clear();
-        }
-    }
 }
 
 /************************************************************************
@@ -229,29 +222,6 @@ RRNodeId RRGSB::get_opin_node(const e_side& side, const size_t& node_id) const {
     VTR_ASSERT(validate_opin_node_id(side, node_id));
 
     return opin_node_[side_manager.to_size_t()][node_id];
-}
-
-/* Get the number of OPIN rr_nodes on a side */
-size_t RRGSB::get_num_cb_opin_nodes(const e_rr_type& cb_type, const e_side& side) const {
-    SideManager side_manager(side);
-    VTR_ASSERT(side_manager.validate());
-    size_t icb_type = get_cb_opin_type_id(cb_type);
-    return cb_opin_node_[icb_type][side_manager.to_size_t()].size();
-}
-
-/* get a opin_node at a given side and track_id */
-RRNodeId RRGSB::get_cb_opin_node(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
-    SideManager side_manager(side);
-    VTR_ASSERT(side_manager.validate());
-
-    /* Ensure the side is valid in the context of this switch block */
-    VTR_ASSERT(validate_side(side));
-
-    /* Ensure the track is valid in the context of this switch block at a specific side */
-    VTR_ASSERT(validate_cb_opin_node_id(cb_type, side, node_id));
-
-    size_t icb_type = get_cb_opin_type_id(cb_type);
-    return cb_opin_node_[icb_type][side_manager.to_size_t()][node_id];
 }
 
 /* Get the number of MUX rr_nodes */
@@ -844,15 +814,6 @@ bool RRGSB::validate_opin_node_id(const e_side& side, const size_t& node_id) con
     return (node_id < opin_node_[size_t(side)].size());
 }
 
-/* Check the opin_node_id is valid for opin_node_ and opin_node_grid_side_ */
-bool RRGSB::validate_cb_opin_node_id(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
-    if (false == validate_side(side)) {
-        return false;
-    }
-    size_t icb_type = get_cb_opin_type_id(cb_type);
-    return (node_id < cb_opin_node_[icb_type][size_t(side)].size());
-}
-
 /* Check the ipin_node_id is valid for opin_node_ and opin_node_grid_side_ */
 bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) const {
     if (false == validate_side(side)) {
@@ -863,9 +824,4 @@ bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) con
 
 bool RRGSB::validate_cb_type(const e_rr_type& cb_type) const {
     return ((e_rr_type::CHANX == cb_type) || (e_rr_type::CHANY == cb_type));
-}
-
-size_t RRGSB::get_cb_opin_type_id(const e_rr_type& cb_type) const {
-    VTR_ASSERT(validate_cb_type(cb_type));
-    return cb_type == e_rr_type::CHANX ? 0 : 1;
 }
