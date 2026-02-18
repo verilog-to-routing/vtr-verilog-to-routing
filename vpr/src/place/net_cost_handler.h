@@ -202,6 +202,9 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_coord_new_, layer_ts_bb_edge_new_;
     // [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer
     vtr::Matrix<int> ts_num_sinks_per_layer_, num_sinks_per_layer_;
+
+    vtr::vector<ClusterNetId, int> ts_src_pin_layer_, src_pin_layer_;
+
     // [0...num_affected_nets] -> net_id of the affected nets
     std::vector<ClusterNetId> ts_nets_to_update_;
 
@@ -419,7 +422,8 @@ class NetCostHandler {
     void get_layer_bb_from_scratch_(ClusterNetId net_id,
                                     std::vector<t_2D_bb>& num_on_edges,
                                     std::vector<t_2D_bb>& coords,
-                                    vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
+                                    vtr::NdMatrixProxy<int, 1> layer_pin_sink_count,
+                                    int& src_pin_layer);
 
     /**
      * @brief Update the 3D bounding box of "net_id" incrementally based on the old and new locations of a pin on that net
@@ -427,7 +431,7 @@ class NetCostHandler {
      * number of blocks on each edge in the bb_edge_new data structure. This routine should only be called for large nets,
      * since it has some overhead relative to just doing a brute force bounding box calculation. The bounding box coordinate
      * and edge information for inet must be valid before this routine is called. Currently assumes channels on both sides of
-     * the CLBs forming the edges of the bounding box can be used.  Essentially, I am assuming the pins always lie on the
+     * the CLBs forming the edges of the bounding box can be used. Essentially, it is assumed that the pins always lie on the
      * outside of the bounding box. The x and y coordinates are the pin's x and y coordinates. IO blocks are considered to be one
      * cell in for simplicity.
      * @param net_id ID of the net which the moving pin belongs to
@@ -477,6 +481,7 @@ class NetCostHandler {
                                 std::vector<t_2D_bb>& bb_edge_new,
                                 std::vector<t_2D_bb>& bb_coord_new,
                                 vtr::NdMatrixProxy<int, 1> bb_layer_pin_sink_count,
+                                int& src_pin_layer,
                                 const int& old_num_block_on_edge,
                                 const int& old_edge_coord,
                                 int& new_num_block_on_edge,
