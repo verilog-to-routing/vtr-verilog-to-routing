@@ -12,8 +12,6 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_view.h"
 
-class RRGraphInEdges;
-
 /**
  * @brief Get the coordinator of a starting point of a routing track 
  * For routing tracks in INC_DIRECTION
