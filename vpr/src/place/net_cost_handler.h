@@ -506,7 +506,8 @@ class NetCostHandler {
                                          const std::vector<t_2D_bb>& curr_bb_coord,
                                          vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                          std::vector<t_2D_bb>& bb_edge_new,
-                                         std::vector<t_2D_bb>& bb_coord_new);
+                                         std::vector<t_2D_bb>& bb_coord_new,
+                                         int& src_pin_layer);
 
     /**
      * @brief This function is called in update_layer_bb to update the net's bounding box incrementally if
@@ -527,7 +528,8 @@ class NetCostHandler {
                                       const std::vector<t_2D_bb>& curr_bb_coord,
                                       vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                       std::vector<t_2D_bb>& bb_edge_new,
-                                      std::vector<t_2D_bb>& bb_coord_new);
+                                      std::vector<t_2D_bb>& bb_coord_new,
+                                      int& src_pin_layer);
 
     /**
      * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)

@@ -881,9 +881,9 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                              bb_pin_sink_count_new,
                              is_output_pin);
 
-    if (is_output_pin) {
-        src_pin_layer_new = pin_new_loc.layer_num;
-    }
+    // if (is_output_pin) {
+    //     src_pin_layer_new = pin_new_loc.layer_num;
+    // }
 
     int layer_old = pin_old_loc.layer_num;
     int layer_new = pin_new_loc.layer_num;
@@ -900,7 +900,8 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                                  *curr_bb_coord,
                                  bb_pin_sink_count_new,
                                  bb_edge_new,
-                                 bb_coord_new);
+                                 bb_coord_new,
+                                 src_pin_layer_new);
     } else {
         update_bb_same_layer_(net_id,
                               pin_old_loc,
@@ -909,7 +910,8 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                               *curr_bb_coord,
                               bb_pin_sink_count_new,
                               bb_edge_new,
-                              bb_coord_new);
+                              bb_coord_new,
+                              src_pin_layer_new);
     }
 
     
@@ -926,7 +928,8 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
                                                   const std::vector<t_2D_bb>& curr_bb_coord,
                                                   vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                                   std::vector<t_2D_bb>& bb_edge_new,
-                                                  std::vector<t_2D_bb>& bb_coord_new) {
+                                                  std::vector<t_2D_bb>& bb_coord_new,
+                                                  int& src_pin_layer) {
     int x_old = pin_old_loc.x;
     int x_new = pin_new_loc.x;
 
@@ -942,6 +945,7 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
                             bb_edge_new,
                             bb_coord_new,
                             bb_pin_sink_count_new,
+                            src_pin_layer,
                             curr_bb_edge[layer_num].xmax,
                             curr_bb_coord[layer_num].xmax,
                             bb_edge_new[layer_num].xmax,
@@ -965,6 +969,7 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
                             bb_edge_new,
                             bb_coord_new,
                             bb_pin_sink_count_new,
+                            src_pin_layer,
                             curr_bb_edge[layer_num].xmin,
                             curr_bb_coord[layer_num].xmin,
                             bb_edge_new[layer_num].xmin,
@@ -989,6 +994,7 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
                             bb_edge_new,
                             bb_coord_new,
                             bb_pin_sink_count_new,
+                            src_pin_layer,
                             curr_bb_edge[layer_num].ymax,
                             curr_bb_coord[layer_num].ymax,
                             bb_edge_new[layer_num].ymax,
@@ -1012,6 +1018,7 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
                             bb_edge_new,
                             bb_coord_new,
                             bb_pin_sink_count_new,
+                            src_pin_layer,
                             curr_bb_edge[layer_num].ymin,
                             curr_bb_coord[layer_num].ymin,
                             bb_edge_new[layer_num].ymin,
@@ -1038,7 +1045,8 @@ inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
                                                      const std::vector<t_2D_bb>& curr_bb_coord,
                                                      vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                                      std::vector<t_2D_bb>& bb_edge_new,
-                                                     std::vector<t_2D_bb>& bb_coord_new) {
+                                                     std::vector<t_2D_bb>& bb_coord_new,
+                                                     int& src_pin_layer) {
     int x_old = pin_old_loc.x;
 
     int y_old = pin_old_loc.y;
@@ -1057,6 +1065,7 @@ inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
                         bb_edge_new,
                         bb_coord_new,
                         bb_pin_sink_count_new,
+                        src_pin_layer,
                         curr_bb_edge[old_layer_num].xmax,
                         curr_bb_coord[old_layer_num].xmax,
                         bb_edge_new[old_layer_num].xmax,
@@ -1069,6 +1078,7 @@ inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
                         bb_edge_new,
                         bb_coord_new,
                         bb_pin_sink_count_new,
+                        src_pin_layer,
                         curr_bb_edge[old_layer_num].xmin,
                         curr_bb_coord[old_layer_num].xmin,
                         bb_edge_new[old_layer_num].xmin,
@@ -1083,6 +1093,7 @@ inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
                         bb_edge_new,
                         bb_coord_new,
                         bb_pin_sink_count_new,
+                        src_pin_layer,
                         curr_bb_edge[old_layer_num].ymax,
                         curr_bb_coord[old_layer_num].ymax,
                         bb_edge_new[old_layer_num].ymax,
@@ -1095,6 +1106,7 @@ inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
                         bb_edge_new,
                         bb_coord_new,
                         bb_pin_sink_count_new,
+                        src_pin_layer,
                         curr_bb_edge[old_layer_num].ymin,
                         curr_bb_coord[old_layer_num].ymin,
                         bb_edge_new[old_layer_num].ymin,
@@ -1574,7 +1586,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
     // Go through all the blocks moved.
     for (const t_pl_moved_block& moving_block : blocks_affected.moved_blocks) {
-        auto& affected_pins = blocks_affected.affected_pins;
+        std::vector<ClusterPinId>& affected_pins = blocks_affected.affected_pins;
         ClusterBlockId blk_id = moving_block.block_num;
 
         // Go through all the pins in the moved block.
