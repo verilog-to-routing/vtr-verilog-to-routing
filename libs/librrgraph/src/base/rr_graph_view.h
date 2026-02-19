@@ -83,8 +83,7 @@ class RRGraphView {
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
-                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges);
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the
@@ -667,23 +666,6 @@ class RRGraphView {
     /** @brief Get the segment id which a routing resource node represents. Only applicable to nodes whose type is CHANX or CHANY */
     RRSegmentId node_segment(RRNodeId node) const;
 
-    /** 
-     * @brief Return incoming edges for a given routing resource node 
-     *        Requires build_in_edges() to be called first
-     */
-    std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
-
-    /** 
-     * @brief Return configurable incoming edges for a given routing resource node
-     *        Requires build_in_edges() to be called first
-     */
-    std::vector<RREdgeId> node_configurable_in_edges(RRNodeId node) const;
-
-    /** 
-     * @brief Return non-configurable incoming edges for a given routing resource node
-     *        Requires build_in_edges() to be called first
-     */
-    std::vector<RREdgeId> node_non_configurable_in_edges(RRNodeId node) const;
 
     /** @brief Return detailed routing segment information of a specified segment
      * @note The routing segments here may not be exactly same as those defined in architecture file. They have been
@@ -769,15 +751,6 @@ class RRGraphView {
         return (size_t(switch_id) < rr_switch_inf_.size());
     }
 
-    /** @brief Validate if all the fan-in edge lists are valid. This
-     *         function should be called only if build_in_edges() is called before.
-    */
-    bool validate_in_edges() const;
-    
-    /** @brief Count the number of incoming edges for all the nodes. This
-     *         function should be called only if build_in_edges() is called before.
-    */
-    size_t in_edges_count() const;
 
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
@@ -821,8 +794,4 @@ class RRGraphView {
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /// switch info for rr nodes
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
-
-    /// A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
-    /// By default, it is empty. Call build_in_edges() to construct it.
-    const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
 };

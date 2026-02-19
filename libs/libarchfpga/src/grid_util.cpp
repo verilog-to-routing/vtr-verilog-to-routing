@@ -9,7 +9,8 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
                                    e_interposer_cut_type dim,
                                    const std::string& formula_str,
                                    vtr::FormulaParser& p,
-                                   vtr::t_formula_data& formula_data) {
+                                   vtr::t_formula_data& formula_data,
+                                   bool print_warning) {
     // Cuts must not go through tiles. If formula position doesn't satisfy this, try base +/-1, +/-2, ...
 
     const size_t grid_width = grid.width();
@@ -22,7 +23,7 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
     const int grid_w = grid.width();
     const int grid_h = grid.height();
 
-    auto is_cut_through_roots_only = [&grid, layer, grid_w, grid_h](e_interposer_cut_type d, int loc) {
+    auto cut_has_no_blocks = [&grid, layer, grid_w, grid_h](e_interposer_cut_type d, int loc) {
         if (d == e_interposer_cut_type::VERT) {
             const int right_col = loc + 1;
             if (right_col < 0 || right_col >= grid_w) return false;
@@ -44,18 +45,18 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
     };
 
     int cut_loc = base_cut_loc;
-    if (!is_cut_through_roots_only(dim, base_cut_loc)) {
+    if (!cut_has_no_blocks(dim, base_cut_loc)) {
         for (int offset = 1;; offset++) {
             int try_pos_plus = base_cut_loc + offset;
             int try_pos_minus = base_cut_loc - offset;
 
-            bool plus_ok = is_cut_through_roots_only(dim, try_pos_plus);
+            bool plus_ok = cut_has_no_blocks(dim, try_pos_plus);
             if (plus_ok) {
                 cut_loc = try_pos_plus;
                 break;
             }
 
-            bool minus_ok = is_cut_through_roots_only(dim, try_pos_minus);
+            bool minus_ok = cut_has_no_blocks(dim, try_pos_minus);
             if (minus_ok) {
                 cut_loc = try_pos_minus;
                 break;
@@ -65,7 +66,7 @@ int adjust_interposer_cut_location(const DeviceGrid& grid,
         }
     }
 
-    if (cut_loc != base_cut_loc) {
+    if (print_warning && cut_loc != base_cut_loc) {
         VTR_LOG_WARN(
             "Interposer cut moved to avoid cutting through block: W=%zu H=%zu formula='%s' evaluated to %d, resolved to %d (%s)\n",
             grid_width, grid_height, formula_str.c_str(), base_cut_loc, cut_loc,
@@ -89,7 +90,9 @@ resolve_interposer_cut_locations(const DeviceGrid& grid,
         const t_layer_def& layer_def = grid_def.layers[layer];
 
         for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            const int cut_loc = adjust_interposer_cut_location(grid, layer, cut_inf.dim, cut_inf.loc, p, formula_data);
+            const bool print_warning = grid_def.grid_type == e_grid_def_type::AUTO;
+            const int cut_loc = adjust_interposer_cut_location(
+                grid, layer, cut_inf.dim, cut_inf.loc, p, formula_data, print_warning);
 
             if (cut_inf.dim == e_interposer_cut_type::VERT) {
                 vertical[layer].push_back(cut_loc);
