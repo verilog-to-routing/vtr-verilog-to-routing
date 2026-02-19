@@ -80,7 +80,7 @@ static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(co
 }
 
 static vtr::NdMatrix<float, 2> compute_interposer_delay_matrix(const DeviceGrid& grid, const RRGraphView& rr_graph) {
-    vtr::ScopedStartFinishTimer timer("Computing interposer delay matrix");
+    vtr::ScopedStartFinishTimer timer("Computing interposer delay lookahead");
     const auto [layer_size, x_size, y_size] = grid.dim_sizes();
 
     vtr::NdMatrix<float, 2> interposer_delay_matrices({grid.get_die_count(), grid.get_die_count()}, 0.0f);
