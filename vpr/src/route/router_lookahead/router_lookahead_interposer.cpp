@@ -15,6 +15,22 @@
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_interposer.h"
 
+/**
+ * @brief Compute the delay matrix for interposer delays. End result is a 2D matrix with an entry for each pair of DeviceDieIds.
+ * Each element of the matrix represents the interposer delay of going from one die to another die.
+ * For example, in a device with 2 interposer cuts with a delay of 5ns each, this function returns the following 3x3 matrix:
+ *                      DeviceDieId
+ *                    0      1      2
+ *                 +------+------+------+
+ *               0 |   0  |   5  |  10  |
+ * DeviceDieId     +------+------+------+
+ *               1 |   5  |   0  |   5  |
+ *                 +------+------+------+
+ *               2 |  10  |   5  |   0  |
+ *                 +------+------+------+
+ * @note Currently devices that are 3D and have interposer cuts are not supported. This function will not crash
+ * but the resulting delay values will not be correct.
+ */
 static vtr::NdMatrix<float, 2> compute_interposer_delay_matrix(const DeviceGrid& grid, const RRGraphView& rr_graph);
 
 /**
@@ -24,21 +40,7 @@ static vtr::NdMatrix<float, 2> compute_interposer_delay_matrix(const DeviceGrid&
  * @param nodes List of nodes to get input edges for. This list will be mutated and sorted inside the function.
  * 
  */
-static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(const RRGraphView& rr_graph, std::vector<RRNodeId>& nodes) {
-    auto node_id_comp = [](const RRNodeId l, const RRNodeId r) noexcept { return static_cast<size_t>(l) >= static_cast<size_t>(r); };
-
-    std::ranges::stable_sort(nodes, node_id_comp);
-
-    std::unordered_map<RRNodeId, std::vector<RREdgeId>> node_in_edges;
-    for (RREdgeId edge_id : rr_graph.all_edges()) {
-        auto sink_node_it = std::ranges::lower_bound(nodes, rr_graph.edge_sink_node(edge_id), node_id_comp);
-        if (sink_node_it != nodes.end()) {
-            node_in_edges[*sink_node_it].push_back(edge_id);
-        }
-    }
-
-    return node_in_edges;
-}
+static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(const RRGraphView& rr_graph, std::vector<RRNodeId>& nodes);
 
 InterposerDelayLookahead::InterposerDelayLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid)
     : rr_graph_(rr_graph)
@@ -59,6 +61,22 @@ float InterposerDelayLookahead::get_interposer_lookahead_delay(RRNodeId from_nod
     float interposer_delay = die_to_die_delay_matrix_[static_cast<size_t>(from_die_id)][static_cast<size_t>(to_die_id)];
 
     return interposer_delay;
+}
+
+static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(const RRGraphView& rr_graph, std::vector<RRNodeId>& nodes) {
+    auto node_id_comp = [](const RRNodeId l, const RRNodeId r) noexcept { return static_cast<size_t>(l) >= static_cast<size_t>(r); };
+
+    std::ranges::stable_sort(nodes, node_id_comp);
+
+    std::unordered_map<RRNodeId, std::vector<RREdgeId>> node_in_edges;
+    for (RREdgeId edge_id : rr_graph.all_edges()) {
+        auto sink_node_it = std::ranges::lower_bound(nodes, rr_graph.edge_sink_node(edge_id), node_id_comp);
+        if (sink_node_it != nodes.end()) {
+            node_in_edges[*sink_node_it].push_back(edge_id);
+        }
+    }
+
+    return node_in_edges;
 }
 
 static vtr::NdMatrix<float, 2> compute_interposer_delay_matrix(const DeviceGrid& grid, const RRGraphView& rr_graph) {
@@ -138,6 +156,5 @@ static vtr::NdMatrix<float, 2> compute_interposer_delay_matrix(const DeviceGrid&
         }
     }
 
-    // Delay values in Ids that are in separate layers are completely wrong btw
     return interposer_delay_matrices;
 }
