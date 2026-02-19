@@ -1,4 +1,7 @@
 <!-- 
+  Interposer-based FPGA architecture with bidirectional wires to connect
+  multiple dice to each other through the interposer. Routing wires inside each die are unidirectional.
+
   Architecture with no fracturable LUTs
 
   - 40 nm technology
