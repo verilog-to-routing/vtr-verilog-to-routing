@@ -31,16 +31,12 @@ typedef vtr::StrongId<struct general_die_id_tag, short> DeviceDieId;
 class DeviceGrid {
   public:
     DeviceGrid() = default;
-    DeviceGrid(std::string_view grid_name,
-               vtr::NdMatrix<t_grid_tile, 3> grid,
-               std::vector<std::vector<int>>&& horizontal_interposer_cuts,
-               std::vector<std::vector<int>>&& vertical_interposer_cuts);
+    DeviceGrid(const t_grid_def& grid_def,
+               vtr::NdMatrix<t_grid_tile, 3> grid);
 
-    DeviceGrid(std::string_view grid_name,
+    DeviceGrid(const t_grid_def& grid_def,
                vtr::NdMatrix<t_grid_tile, 3> grid,
-               std::vector<t_logical_block_type_ptr> limiting_res,
-               std::vector<std::vector<int>>&& horizontal_interposer_cuts,
-               std::vector<std::vector<int>>&& vertical_interposer_cuts);
+               std::vector<t_logical_block_type_ptr> limiting_res);
 
     const std::string& name() const { return name_; }
 

@@ -4,21 +4,21 @@
 #include <utility>
 #include <vector>
 #include "physical_types.h"
-#include "vtr_log.h"
+#include "vtr_expr_eval.h"
 #include "vtr_ndmatrix.h"
 #include "grid_util.h"
 
-DeviceGrid::DeviceGrid(std::string_view grid_name,
-                       vtr::NdMatrix<t_grid_tile, 3> grid,
-                       std::vector<std::vector<int>>&& horizontal_interposer_cuts,
-                       std::vector<std::vector<int>>&& vertical_interposer_cuts)
-    : name_(grid_name)
-    , grid_(std::move(grid))
-    , horizontal_interposer_cuts_(std::move(horizontal_interposer_cuts))
-    , vertical_interposer_cuts_(std::move(vertical_interposer_cuts)) {
+DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
+                       vtr::NdMatrix<t_grid_tile, 3> grid)
+    : name_(grid_def.name)
+    , grid_(std::move(grid)) {
+    const size_t num_layers = grid_.dim_size(0);
+
+    vtr::FormulaParser p;
+    std::tie(horizontal_interposer_cuts_, vertical_interposer_cuts_) = resolve_interposer_cut_locations(*this, grid_def, p);
+
     count_instances();
 
-    const size_t num_layers = grid_.dim_size(0);
     const size_t x_size = grid_.dim_size(1);
     const size_t y_size = grid_.dim_size(2);
 
@@ -45,12 +45,10 @@ DeviceGrid::DeviceGrid(std::string_view grid_name,
     }
 }
 
-DeviceGrid::DeviceGrid(std::string_view grid_name,
+DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
                        vtr::NdMatrix<t_grid_tile, 3> grid,
-                       std::vector<t_logical_block_type_ptr> limiting_res,
-                       std::vector<std::vector<int>>&& horizontal_interposer_cuts,
-                       std::vector<std::vector<int>>&& vertical_interposer_cuts)
-    : DeviceGrid(grid_name, std::move(grid), std::move(horizontal_interposer_cuts), std::move(vertical_interposer_cuts)) {
+                       std::vector<t_logical_block_type_ptr> limiting_res)
+    : DeviceGrid(grid_def, std::move(grid)) {
     limiting_resources_ = std::move(limiting_res);
 }
 
