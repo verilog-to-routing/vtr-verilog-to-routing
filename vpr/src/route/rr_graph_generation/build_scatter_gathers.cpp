@@ -330,11 +330,11 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     // Storage for identifying source/destination channels of an SG link.
-    // These vectors are re-used for SG links at all locations to avoid memory re-allocation.
+    // These vectors are reused for SG links at all locations to avoid memory re-allocation.
     std::vector<t_chan_loc> gather_channels, scatter_channels;
 
     // Persistent storage for source (gather) and destination (scatter) wire candidates.
-    // Re-used across iterations to minimize memory re-allocations.
+    // Reused across iterations to minimize memory re-allocations.
     // In a "Forward" connection, signal flows from the gather location to the scatter location.
     // For bidirectional (BIDIR) SG links, signal can also flow in the reverse direction:
     // being driven by wires at the scatter location to drive wires at the gather location.
