@@ -31,22 +31,22 @@ void PlacementLogPrinter::print_place_status_header() const {
     VTR_LOG("\n");
     if (!noc_enabled) {
         VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
+            "---- ------ ------- ------- ---------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
         VTR_LOG(
-            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
+            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost Av IL Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
         VTR_LOG(
-            "      (sec)                                          (ns)       (ns)     (ns)                                                 \n");
+            "      (sec)                                                     (ns)       (ns)     (ns)                                                 \n");
         VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
+            "---- ------ ------- ------- ---------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
     } else {
         VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- ---------  ---------\n");
+            "---- ------ ------- ------- ---------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- ---------  ---------\n");
         VTR_LOG(
-            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha Agg. BW  Agg. Lat Lat Over. NoC Cong.\n");
+            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost Av IL Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha Agg. BW  Agg. Lat Lat Over. NoC Cong.\n");
         VTR_LOG(
-            "      (sec)                                          (ns)       (ns)     (ns)                                                   (bps)     (ns)     (ns)             \n");
+            "      (sec)                                                     (ns)       (ns)     (ns)                                                   (bps)     (ns)     (ns)             \n");
         VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- --------- ---------\n");
+            "---- ------ ------- ------- ---------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- --------- ---------\n");
     }
 }
 
@@ -72,11 +72,11 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
 
     VTR_LOG(
         "%4zu %6.1f %7.1e "
-        "%7.3f %10.2f %-10.5g "
+        "%7.3f %10.2f %-10.5g %10.2f "
         "%7.3f % 10.3g % 8.3f "
         "%7.3f %7.4f %6.1f %8.2f",
         annealing_state.num_temps, elapsed_sec, annealing_state.t,
-        placer_stats.av_cost, placer_stats.av_bb_cost, placer_stats.av_timing_cost,
+        placer_stats.av_cost, placer_stats.av_bb_cost, placer_stats.av_timing_cost, placer_stats.av_inter_layer_cost,
         1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
         placer_stats.success_rate, placer_stats.std_dev, annealing_state.rlim, annealing_state.crit_exponent);
 
@@ -178,8 +178,8 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     const t_placer_opts& placer_opts = placer_.placer_opts_;
     std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info_;
 
-    VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
-            costs.cost, costs.bb_cost, costs.timing_cost);
+    VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g il_cost: %g\n",
+            costs.cost, costs.bb_cost, costs.timing_cost, costs.inter_layer_cost);
 
     double wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
     VTR_LOG("Initial placement BB estimate of wirelength: %g\n", wirelength);

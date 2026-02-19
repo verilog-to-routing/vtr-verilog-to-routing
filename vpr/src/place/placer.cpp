@@ -120,6 +120,7 @@ Placer::Placer(const Netlist<>& net_list,
     auto [expected_wirelength, net_cost_terms_initial] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
     costs_.bb_cost = net_cost_terms_initial.bb_cost;
     costs_.congestion_cost = net_cost_terms_initial.cong_cost;
+    costs_.inter_layer_cost = net_cost_terms_initial.inter_die_penalty;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
@@ -258,6 +259,13 @@ int Placer::check_placement_costs_() {
     int error = 0;
 
     const auto [expected_wirelength, net_cost_terms_check] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
+
+    if (fabs(net_cost_terms_check.inter_die_penalty - costs_.inter_layer_cost) > costs_.inter_layer_cost * PL_INCREMENTAL_COST_TOLERANCE) {
+        VTR_LOG_ERROR(
+            "inter_layer_cost_check: %g and inter_layer_cost: %g differ in check_place.\n",
+            net_cost_terms_check.inter_die_penalty, costs_.inter_layer_cost);
+        error++;
+    }
 
     if (fabs(net_cost_terms_check.bb_cost - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
         VTR_LOG_ERROR(

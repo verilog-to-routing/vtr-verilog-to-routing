@@ -78,6 +78,8 @@ class t_placer_costs {
     /// The congestion cost, which estimates how much routing channels are over-utilized.
     double congestion_cost = 0.;
 
+    double inter_layer_cost = 0.;
+
     /// The normalization factor for the wiring cost.
     double bb_cost_norm = 0.;
 
@@ -86,6 +88,8 @@ class t_placer_costs {
 
     /// The normalization factor for the congestion cost.
     double congestion_cost_norm = 0.;
+
+    double inter_layer_cost_norm = 0.;
 
     /// NoC-related cost terms.
     NocCostTerms noc_cost_terms;
@@ -166,6 +170,8 @@ class t_placer_statistics {
     double av_timing_cost;
     /// Average congestion cost.
     double av_cong_cost;
+    /// Average inter-layer cost.
+    double av_inter_layer_cost;
     /// Sum of squares of the total cost.
     double sum_of_squares;
     /// Number of accepted block swaps for the current iteration.

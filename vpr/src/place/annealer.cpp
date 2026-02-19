@@ -680,6 +680,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             costs_.cost += delta_c;
             costs_.bb_cost += net_cost_terms_delta.bb_cost;
             costs_.congestion_cost += net_cost_terms_delta.cong_cost;
+            costs_.inter_layer_cost += net_cost_terms_delta.inter_die_penalty;
 
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
