@@ -460,7 +460,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 }
 
                 // Populate the actual bottleneck links.
-                for (int i_bottleneck = 0, i_s = 0, i_g = 0; i_bottleneck < num_instances; i_bottleneck++) {
+                for (int i_bottleneck = 0; i_bottleneck < num_instances; i_bottleneck++) {
                     t_bottleneck_link bottleneck_link;
                     bottleneck_link.gather_loc = gather_loc;
                     bottleneck_link.scatter_loc = scatter_loc;
