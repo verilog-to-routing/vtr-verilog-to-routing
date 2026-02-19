@@ -33,6 +33,7 @@
  */
 #include "net_cost_handler.h"
 
+#include "clustered_netlist.h"
 #include "clustered_netlist_fwd.h"
 #include "globals.h"
 #include "physical_types.h"
@@ -216,16 +217,16 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     }
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
+std::tuple<double, t_net_cost_terms> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
     return comp_bb_cong_cost_functor_(method);
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
+std::tuple<double, t_net_cost_terms> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double bb_cost = 0.;
-    double inter_die_penalty = 0.;
     double expected_wirelength = 0.;
+
+    t_net_cost_terms net_cost_terms;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -238,41 +239,36 @@ std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cos
             }
 
             net_cost_[net_id] = get_net_cube_bb_cost_(net_id, /*use_ts=*/false);
-            bb_cost += net_cost_[net_id];
+            net_cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
             }
 
             if (is_multi_layer_) {
                 net_inter_die_penalty_[net_id] = get_net_inter_die_penalty_(net_id, /*use_ts=*/false);
-                inter_die_penalty += net_inter_die_penalty_[net_id];
+                net_cost_terms.inter_die_penalty += net_inter_die_penalty_[net_id];
             }
         }
     }
 
-    double cong_cost = 0.;
     // Compute congestion cost using recomputed bounding boxes and channel utilization map
     if (congestion_modeling_started_) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/false);
-                cong_cost += net_cong_cost_[net_id];
+                net_cost_terms.cong_cost += net_cong_cost_[net_id];
             }
         }
     }
 
-    return {bb_cost, expected_wirelength, cong_cost};
+    return {expected_wirelength, net_cost_terms};
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
+std::tuple<double, t_net_cost_terms> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double cost = 0.;
-    double inter_die_penalty = 0.;
+    t_net_cost_terms net_cost_terms;
     double expected_wirelength = 0.;
-    // TODO: compute congestion cost
-    // Congestion modeling is not supported for per-layer mode, so 0 is returned.
-    constexpr double cong_cost = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -289,19 +285,23 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
             }
 
             net_cost_[net_id] = get_net_per_layer_bb_cost_(net_id, /*use_ts=*/false);
-            cost += net_cost_[net_id];
+            net_cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
             }
 
             if (is_multi_layer_) {
                 net_inter_die_penalty_[net_id] = get_net_inter_die_penalty_(net_id, /*use_ts=*/false);
-                inter_die_penalty += net_inter_die_penalty_[net_id];
+                net_cost_terms.inter_die_penalty += net_inter_die_penalty_[net_id];
             }
         }
     }
 
-    return {cost, expected_wirelength, cong_cost};
+    // TODO: compute congestion cost
+    // Congestion modeling is not supported for per-layer mode, so 0 is returned.
+    net_cost_terms.cong_cost = 0.;
+
+    return {expected_wirelength, net_cost_terms};
 }
 
 void NetCostHandler::update_net_bb_(const ClusterNetId net,
@@ -1599,23 +1599,21 @@ double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c) {
-    double inter_die_penalty = 0.;
-    
+void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& delta_net_cost_terms) {
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
         proposed_net_cost_[net_id] = get_net_bb_cost_functor_(net_id);
-        bb_delta_c += proposed_net_cost_[net_id] - net_cost_[net_id];
+        delta_net_cost_terms.bb_cost += proposed_net_cost_[net_id] - net_cost_[net_id];
 
         if (congestion_modeling_started_) {
             proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
-            congestion_delta_c += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
+            delta_net_cost_terms.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
         }
 
         if (is_multi_layer_) {
             proposed_net_inter_die_penalty_[net_id] = get_net_inter_die_penalty_(net_id, /*use_ts=*/true);
-            inter_die_penalty += proposed_net_inter_die_penalty_[net_id] - net_inter_die_penalty_[net_id];
+            delta_net_cost_terms.inter_die_penalty += proposed_net_inter_die_penalty_[net_id] - net_inter_die_penalty_[net_id];
         }
     }
 }
@@ -1623,13 +1621,14 @@ void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_d
 void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                                          const PlacerCriticalities* criticalities,
                                                          t_pl_blocks_to_be_moved& blocks_affected,
-                                                         double& bb_delta_c,
                                                          double& timing_delta_c,
-                                                         double& congestion_delta_c) {
-    VTR_ASSERT_DEBUG(bb_delta_c == 0.);
+                                                         t_net_cost_terms& delta_net_cost_terms) {
+    VTR_ASSERT_DEBUG(delta_net_cost_terms.bb_cost == 0.);
+    VTR_ASSERT_DEBUG(delta_net_cost_terms.cong_cost == 0.);
+    VTR_ASSERT_DEBUG(delta_net_cost_terms.inter_die_penalty == 0.);
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
-    VTR_ASSERT_DEBUG(congestion_delta_c == 0.);
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
 
@@ -1657,7 +1656,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
     // Now update the bounding box costs (since the net bounding
     // boxes are up-to-date). The cost is only updated once per net.
-    set_bb_delta_cost_(bb_delta_c, congestion_delta_c);
+    set_bb_delta_cost_(delta_net_cost_terms);
 }
 
 void NetCostHandler::update_move_nets() {

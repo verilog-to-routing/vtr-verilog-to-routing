@@ -35,6 +35,12 @@ enum class e_cost_methods {
     CHECK
 };
 
+struct t_net_cost_terms {
+    double bb_cost = 0.;
+    double inter_die_penalty = 0.;
+    double cong_cost = 0.;
+};
+
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
@@ -68,7 +74,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_bb_cong_cost(e_cost_methods method);
+    std::tuple<double, t_net_cost_terms> comp_bb_cong_cost(e_cost_methods method);
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.
@@ -96,9 +102,8 @@ class NetCostHandler {
     void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
-                                             double& bb_delta_c,
                                              double& timing_delta_c,
-                                             double& congestion_delta_c);
+                                             t_net_cost_terms& delta_net_cost_terms);
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -164,7 +169,7 @@ class NetCostHandler {
     /// Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
     /// Points to the proper method for computing the bounding box cost, estimated wirelength and congestion cost from scratch.
-    std::function<std::tuple<double, double, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
+    std::function<std::tuple<double, t_net_cost_terms>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     /// Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
     /// Points to the proper method for getting the bounding box cost of a net
@@ -333,10 +338,9 @@ class NetCostHandler {
     /**
      * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks
      * indicated in the blocks_affected data structure.
-     * @param bb_delta_c Bounding box cost difference after and before moving the block.
-     * @param congestion_delta_c Congestion cost difference after and before moving the block.
+     * @param net_cost_terms Net cost terms difference after and before moving the block.
      */
-    void set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c);
+    void set_bb_delta_cost_(t_net_cost_terms& delta_net_cost_terms);
 
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
@@ -541,7 +545,7 @@ class NetCostHandler {
      * @note Congestion modeling is not supported for per-layer mode, so 0 is returned.
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_per_layer_bb_cost_(e_cost_methods method);
+    std::tuple<double, t_net_cost_terms> comp_per_layer_bb_cost_(e_cost_methods method);
 
     /**
      * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
@@ -552,7 +556,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_cube_bb_cong_cost_(e_cost_methods method);
+    std::tuple<double, t_net_cost_terms> comp_cube_bb_cong_cost_(e_cost_methods method);
 
     /**
      * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
