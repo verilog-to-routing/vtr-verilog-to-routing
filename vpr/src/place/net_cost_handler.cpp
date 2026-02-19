@@ -39,6 +39,7 @@
 #include "placer_state.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
+#include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 #include "PlacerCriticalities.h"
@@ -147,6 +148,9 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     net_cost_.resize(num_nets, -1.);
     proposed_net_cost_.resize(num_nets, -1.);
 
+    net_inter_die_penalty_.resize(num_nets, -1.);
+    proposed_net_inter_die_penalty_.resize(num_nets, -1.);
+
     // Used to store costs for moves not yet made and to indicate when a net's
     // cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
     // been recomputed.
@@ -220,6 +224,7 @@ std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cos
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     double bb_cost = 0.;
+    double inter_die_penalty = 0.;
     double expected_wirelength = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
@@ -236,6 +241,11 @@ std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cos
             bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
+            }
+
+            if (is_multi_layer_) {
+                net_inter_die_penalty_[net_id] = get_net_inter_die_penalty_(net_id, /*use_ts=*/false);
+                inter_die_penalty += net_inter_die_penalty_[net_id];
             }
         }
     }
@@ -258,6 +268,7 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     double cost = 0.;
+    double inter_die_penalty = 0.;
     double expected_wirelength = 0.;
     // TODO: compute congestion cost
     // Congestion modeling is not supported for per-layer mode, so 0 is returned.
@@ -281,6 +292,11 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
             cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
+            }
+
+            if (is_multi_layer_) {
+                net_inter_die_penalty_[net_id] = get_net_inter_die_penalty_(net_id, /*use_ts=*/false);
+                inter_die_penalty += net_inter_die_penalty_[net_id];
             }
         }
     }
@@ -411,13 +427,13 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
 }
 
 void NetCostHandler::record_affected_net_(const ClusterNetId net) {
-    /* Record effected nets. */
+    // Record effected nets.
     if (proposed_net_cost_[net] < 0.) {
-        /* Net not marked yet. */
+        // Net not marked yet.
         VTR_ASSERT_SAFE(ts_nets_to_update_.size() < ts_nets_to_update_.capacity());
         ts_nets_to_update_.push_back(net);
 
-        /* Flag to say we've marked this net. */
+        // Flag to say we've marked this net.
         proposed_net_cost_[net] = 1.;
     }
 }
@@ -1405,6 +1421,27 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     return ncost;
 }
 
+double NetCostHandler::get_net_inter_die_penalty_(ClusterNetId net_id, bool use_ts) {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const int num_layers = device_ctx.grid.get_num_layers();
+
+    const vtr::NdMatrixProxy<int, 1> num_sinks_per_layer = use_ts ? ts_num_sinks_per_layer_[size_t(net_id)] : num_sinks_per_layer_[size_t(net_id)];
+    const int src_pin_layer = use_ts ? ts_src_pin_layer_[net_id] : src_pin_layer_[net_id];
+
+    int max_num_pins_on_one_layer = 0;
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        int num_pins_on_layer = num_sinks_per_layer[layer_num] + (layer_num == src_pin_layer ? 1 : 0);
+        max_num_pins_on_one_layer = std::max(max_num_pins_on_one_layer, num_pins_on_layer);
+    }
+
+    const int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();
+
+    double inter_die_penalty = double(num_pins - max_num_pins_on_one_layer) / double(num_pins);
+
+    return inter_die_penalty;
+}
+
 double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
     VTR_ASSERT_SAFE(congestion_modeling_started_);
     const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
@@ -1531,6 +1568,7 @@ std::pair<double, double> NetCostHandler::recompute_bb_cong_cost_() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     double bb_cost = 0.;
+    double inter_die_penalty = 0.;
     double cong_cost = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
@@ -1540,6 +1578,10 @@ std::pair<double, double> NetCostHandler::recompute_bb_cong_cost_() {
 
             if (congestion_modeling_started_) {
                 cong_cost += net_cong_cost_[net_id];
+            }
+
+            if (is_multi_layer_) {
+                inter_die_penalty += net_inter_die_penalty_[net_id];
             }
         }
     }
@@ -1558,6 +1600,8 @@ double wirelength_crossing_count(size_t fanout) {
 }
 
 void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c) {
+    double inter_die_penalty = 0.;
+    
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
@@ -1567,6 +1611,11 @@ void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_d
         if (congestion_modeling_started_) {
             proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
             congestion_delta_c += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
+        }
+
+        if (is_multi_layer_) {
+            proposed_net_inter_die_penalty_[net_id] = get_net_inter_die_penalty_(net_id, /*use_ts=*/true);
+            inter_die_penalty += proposed_net_inter_die_penalty_[net_id] - net_inter_die_penalty_[net_id];
         }
     }
 }
@@ -1637,6 +1686,11 @@ void NetCostHandler::update_move_nets() {
         if (congestion_modeling_started_) {
             net_cong_cost_[net_id] = proposed_net_cong_cost_[net_id];
             proposed_net_cong_cost_[net_id] = -1;
+        }
+
+        if (is_multi_layer_) {
+            net_inter_die_penalty_[net_id] = proposed_net_inter_die_penalty_[net_id];
+            proposed_net_inter_die_penalty_[net_id] = -1;
         }
 
         bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
