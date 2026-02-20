@@ -52,6 +52,8 @@ double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_
         total_cost = (1 - placer_opts.timing_tradeoff) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
     }
 
+    total_cost += placer_opts.inter_layer_cost_factor * inter_layer_cost * inter_layer_cost_norm;
+
     total_cost += placer_opts.congestion_factor * congestion_cost * congestion_cost_norm;
 
     if (noc_opts.noc) {
