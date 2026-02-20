@@ -90,7 +90,7 @@ resolve_interposer_cut_locations(const DeviceGrid& grid,
         const t_layer_def& layer_def = grid_def.layers[layer];
 
         for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            const bool print_warning = grid_def.grid_type == e_grid_def_type::AUTO;
+            const bool print_warning = grid_def.grid_type != e_grid_def_type::AUTO;
             const int cut_loc = adjust_interposer_cut_location(
                 grid, layer, cut_inf.dim, cut_inf.loc, p, formula_data, print_warning);
 
