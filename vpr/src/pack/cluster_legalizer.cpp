@@ -1236,10 +1236,10 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
-    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
-                                                                                                                               molecule_id,
-                                                                                                                               primitives_list,
-                                                                                                                               prepacker_);
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
+                                                                                                                                 molecule_id,
+                                                                                                                                 primitives_list,
+                                                                                                                                 prepacker_);
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
@@ -1248,7 +1248,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
 
-        std::pair<t_pb_graph_node *, std::tuple<float, int, int>> primitive = primitives_alive.pop();
+        std::pair<t_pb_graph_node*, std::tuple<float, int, int>> primitive = primitives_alive.pop();
         t_pb_graph_node* root = primitive.first;
 
         if (!try_start_root_placement(cluster.placement_stats, molecule_id, root, primitives_list, prepacker_))

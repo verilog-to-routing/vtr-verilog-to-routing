@@ -180,11 +180,11 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
  *         candidates ordered by placement priority. The queue may be empty
  *         if no feasible placement exists.
  */
-LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
-                                                                                                        PackMoleculeId molecule_id,
-                                                                                                        std::vector<t_pb_graph_node*>& primitives_list,
-                                                                                                        const Prepacker& prepacker,
-                                                                                                        int force_site = -1);
+LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                                                                                          PackMoleculeId molecule_id,
+                                                                                                          std::vector<t_pb_graph_node*>& primitives_list,
+                                                                                                          const Prepacker& prepacker,
+                                                                                                          int force_site = -1);
 
 /**
  * @brief Move a candidate root primitive from the valid set to the in-flight set.
@@ -201,7 +201,7 @@ bool move_root_node_to_inflight(t_intra_cluster_placement_stats* cluster_placeme
 
 /**
  * @brief Attempts to activate and initialize placement for a candidate root primitive by:
- *   - Verifing the primitive is valid.
+ *   - Verifying the primitive is valid.
  *   - Moving the primitive from the valid set to the in-flight set.
  *   - Calling try_place_molecule() to populate primitives_list.
  *

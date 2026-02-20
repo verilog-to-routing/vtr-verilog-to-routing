@@ -242,12 +242,12 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
     return cost;
 }
 
-LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
-                                                                                                        PackMoleculeId molecule_id,
-                                                                                                        std::vector<t_pb_graph_node*>& primitives_list,
-                                                                                                        const Prepacker& prepacker,
-                                                                                                        int force_site) {
-    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float,int,int>> primitives_alive;
+LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                                                                                          PackMoleculeId molecule_id,
+                                                                                                          std::vector<t_pb_graph_node*>& primitives_list,
+                                                                                                          const Prepacker& prepacker,
+                                                                                                          int force_site) {
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive;
     if (cluster_placement_stats->curr_molecule != molecule_id) {
         // New block, requeue tried primitives and in-flight primitives
         cluster_placement_stats->flush_intermediate_queues();
