@@ -603,10 +603,11 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         return;
     }
 
-    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) ? num_sinks_per_layer_[size_t(net_id)] : num_sink_pin_layer_new;
+    const bool first_update = (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET);
+    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = first_update ? num_sinks_per_layer_[size_t(net_id)] : num_sink_pin_layer_new;
 
     const t_bb *curr_bb_edge, *curr_bb_coord;
-    if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+    if (first_update) {
         // The net had NOT been updated before, could use the old values
         curr_bb_edge = &bb_num_on_edges_[net_id];
         curr_bb_coord = &bb_coords_[net_id];
@@ -772,7 +773,9 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
 
         if (!src_pin) {
-            // if src pin is being moved, we don't need to update this data structure
+            if (first_update) {
+                src_pin_layer_new = src_pin_layer_[net_id];
+            }
             if (pin_old_loc.layer_num != pin_new_loc.layer_num) {
                 num_sink_pin_layer_new[pin_old_loc.layer_num] = (curr_num_sink_pin_layer)[pin_old_loc.layer_num] - 1;
                 num_sink_pin_layer_new[pin_new_loc.layer_num] = (curr_num_sink_pin_layer)[pin_new_loc.layer_num] + 1;
@@ -875,10 +878,11 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
         return;
     }
 
-    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) ? num_sinks_per_layer_[size_t(net_id)] : bb_pin_sink_count_new;
+    const bool first_update = (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET);
+    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = first_update ? num_sinks_per_layer_[size_t(net_id)] : bb_pin_sink_count_new;
 
     const std::vector<t_2D_bb>*curr_bb_edge, *curr_bb_coord;
-    if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+    if (first_update) {
         // The net had NOT been updated before, could use the old values
         curr_bb_edge = &layer_bb_num_on_edges_[net_id];
         curr_bb_coord = &layer_bb_coords_[net_id];
@@ -897,9 +901,11 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                              bb_pin_sink_count_new,
                              is_output_pin);
 
-    // if (is_output_pin) {
-    //     src_pin_layer_new = pin_new_loc.layer_num;
-    // }
+    if (is_output_pin) {
+        src_pin_layer_new = pin_new_loc.layer_num;
+    } else if (first_update) {
+        src_pin_layer_new = src_pin_layer_[net_id];
+    }
 
     int layer_old = pin_old_loc.layer_num;
     int layer_new = pin_new_loc.layer_num;
