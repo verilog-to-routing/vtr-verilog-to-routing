@@ -145,9 +145,11 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     // Automatically determine exit temperature.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-    if (congestion_modeling_enabled) {
-        t_exit *= (1. + placer_opts.congestion_factor);
-    }
+    // if (congestion_modeling_enabled) {
+    //     t_exit *= (1. + placer_opts.congestion_factor);
+    // }
+
+    t_exit *= (1. + (congestion_modeling_enabled ? placer_opts.congestion_factor : 0.0) + placer_opts.inter_layer_cost_factor);
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
@@ -612,7 +614,8 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            costs_.timing_cost_norm);
             delta_c = (1 - placer_opts_.timing_tradeoff) * net_cost_terms_delta.bb_cost * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
-                      + placer_opts_.congestion_factor * net_cost_terms_delta.cong_cost * costs_.congestion_cost_norm;
+                      + placer_opts_.congestion_factor * net_cost_terms_delta.cong_cost * costs_.congestion_cost_norm
+                      + placer_opts_.inter_layer_cost_factor * net_cost_terms_delta.inter_die_penalty * costs_.inter_layer_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out

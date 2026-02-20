@@ -22,6 +22,12 @@ void t_placer_costs::update_norm_factors() {
         congestion_cost_norm = 1. / (double)clustered_nlist.nets().size();
     }
 
+    if (inter_layer_cost > 0.) {
+        inter_layer_cost_norm = 1 / inter_layer_cost;
+    } else {
+        inter_layer_cost_norm = 1. / (double)clustered_nlist.nets().size();
+    }
+
     if (place_algorithm.is_timing_driven()) {
         // Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);

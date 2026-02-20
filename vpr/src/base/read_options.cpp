@@ -2358,6 +2358,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("equilibrium")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_inter_layer_cost_factor, "--place_inter_layer_cost_factor")
+        .help("Factor to scale the inter-layer cost when calculating the total cost")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.place_init_t, "--init_t")
         .help("Initial temperature for manual annealing schedule")
         .default_value("100.0")

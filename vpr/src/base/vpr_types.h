@@ -997,6 +997,8 @@ struct t_placer_opts {
     /// When in CRITICALITY_TIMING_PLACE mode, what is the tradeoff between timing and wiring costs.
     float timing_tradeoff;
 
+    float inter_layer_cost_factor;
+
     /// Weight for how much congestion affects placement cost.
     /// Higher means congestion is more important.
     float congestion_factor;

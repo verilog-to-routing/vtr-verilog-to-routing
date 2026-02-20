@@ -138,6 +138,7 @@ struct t_options {
     argparse::ArgValue<float> place_exit_t;
     argparse::ArgValue<float> place_alpha_t;
     argparse::ArgValue<e_anneal_init_t_estimator> place_init_t_estimator;
+    argparse::ArgValue<float> place_inter_layer_cost_factor;
 
     argparse::ArgValue<e_sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> place_algorithm;
