@@ -56,7 +56,7 @@ static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_patte
 
         t_sg_location sg_location;
 
-        sg_location.num = pugiutil::get_attribute(node, "num", loc_data).as_int();
+        sg_location.num = pugiutil::get_attribute(node, "num", loc_data).as_string();
         sg_location.sg_link_name = pugiutil::get_attribute(node, "sg_link_name", loc_data).as_string();
 
         auto sg_location_type_iter = SB_LOCATION_STRING_MAP.find(pugiutil::get_attribute(node, "type", loc_data).as_string());

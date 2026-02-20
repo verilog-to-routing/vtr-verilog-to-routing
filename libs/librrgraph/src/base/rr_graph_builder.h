@@ -49,8 +49,6 @@ class RRGraphBuilder {
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
     
-    /** @brief Return a writable object for the incoming edge storage */
-    vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
 
     /** @brief Return the size for rr_node_metadata */
     inline size_t rr_node_metadata_size() const {
@@ -305,17 +303,6 @@ class RRGraphBuilder {
      */
     void build_edges(const bool& uniquify = true);
 
-    /** @brief Allocate and build incoming edges for each node. 
-     * By default, no incoming edges are kept in storage, to be memory efficient
-     * Currently, this function is only called when building the tileable rr_graph.
-     */
-    void build_in_edges();
-
-    /** @brief Return incoming edges for a given routing resource node 
-     *  Require build_in_edges() to be called first
-     */
-    std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
-
     // ** End of functions for tileable routing resource graph generator **
 
     /** @brief Set the node id for clock network virtual sink */
@@ -531,12 +518,6 @@ class RRGraphBuilder {
      */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
-    /** 
-     * @brief A list of incoming edges for each routing resource node. 
-     * @note This can be built optionally, as required by applications.
-     * By default, it is empty! Call build_in_edges() to construct it.
-     */
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
 
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
@@ -570,9 +551,4 @@ class RRGraphBuilder {
      */
     bool is_edge_dirty_;
 
-    /**
-     * @brief This flag indicates whether node_in_edges_ is updated with 
-     * edges in the main rr-graph edge storage.
-     */
-    bool is_incoming_edge_dirty_;
 };

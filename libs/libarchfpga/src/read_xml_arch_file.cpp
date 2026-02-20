@@ -2655,15 +2655,19 @@ static void process_block_type_locs(t_grid_def& grid_def,
         // tags do not have. For this reason we check if loc_spec_tag is an interposer tag
         // and switch code paths if it is.
         if (loc_type == "interposer_cut") {
-            if (grid_def.grid_type == e_grid_def_type::AUTO) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposers are not currently supported for auto sized devices.");
-            }
-
             t_interposer_cut_inf interposer_cut = parse_interposer_cut_tag(loc_spec_tag, loc_data);
 
-            if ((interposer_cut.dim == e_interposer_cut_type::VERT && interposer_cut.loc >= grid_def.width)
-                || (interposer_cut.dim == e_interposer_cut_type::HORZ && interposer_cut.loc >= grid_def.height)) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer cut dimensions are outside of device bounds");
+            // Bounds check only for fixed-size devices; for auto-sized devices W and H are unknown here.
+            if (grid_def.grid_type == e_grid_def_type::FIXED) {
+                vtr::FormulaParser p;
+                vtr::t_formula_data vars;
+                vars.set_var_value("W", grid_def.width);
+                vars.set_var_value("H", grid_def.height);
+                const int cut_loc = p.parse_formula(interposer_cut.loc, vars);
+                if ((interposer_cut.dim == e_interposer_cut_type::VERT && cut_loc >= grid_def.width)
+                    || (interposer_cut.dim == e_interposer_cut_type::HORZ && cut_loc >= grid_def.height)) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer cut dimensions are outside of device bounds");
+                }
             }
 
             grid_def.layers.at(die_number).interposer_cuts.push_back(interposer_cut);

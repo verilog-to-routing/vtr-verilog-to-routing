@@ -48,6 +48,7 @@
 
 #include "scatter_gather_types.h"
 #include "interposer_types.h"
+#include "grid_types.h"
 
 //Forward declarations
 struct t_clock_network;

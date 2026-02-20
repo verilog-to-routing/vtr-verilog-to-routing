@@ -3,12 +3,13 @@
 
 #include <vector>
 
-#include "switchblock_scatter_gather_common_utils.h"
-#include "scatter_gather_types.h"
-#include "rr_types.h"
 #include "globals.h"
-#include "rr_graph_uxsdcxx_interface.h"
+#include "grid_util.h"
+#include "rr_types.h"
+#include "scatter_gather_types.h"
+#include "switchblock_scatter_gather_common_utils.h"
 #include "vtr_assert.h"
+#include "vtr_expr_eval.h"
 #include "vtr_random.h"
 
 //
@@ -224,6 +225,11 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 VTR_ASSERT(seg_it != segment_inf.end());
                 const t_segment_inf& wire_segment = *seg_it;
 
+                formula_data.clear();
+                formula_data.set_var_value("W", nodes_per_chan.max);
+                const int num_instances = formula_parser.parse_formula(sg_loc_info.num, formula_data);
+                VTR_ASSERT(num_instances > 0);
+
                 index_to_correct_sg_channels(sg_pattern.gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
                 index_to_correct_sg_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
 
@@ -281,12 +287,12 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                 const bool is_3d_link = (sg_link.z_offset != 0);
                 if (is_3d_link) {
-                    interdie_3d_links[gather_loc.x][gather_loc.y].reserve(interdie_3d_links[gather_loc.x][gather_loc.y].size() + sg_loc_info.num);
+                    interdie_3d_links[gather_loc.x][gather_loc.y].reserve(interdie_3d_links[gather_loc.x][gather_loc.y].size() + num_instances);
                 } else {
-                    bottleneck_links.reserve(bottleneck_links.size() + sg_loc_info.num);
+                    bottleneck_links.reserve(bottleneck_links.size() + num_instances);
                 }
 
-                for (int i_bottleneck = 0, i_s = 0, i_g = 0; i_bottleneck < sg_loc_info.num; i_bottleneck++) {
+                for (int i_bottleneck = 0, i_s = 0, i_g = 0; i_bottleneck < num_instances; i_bottleneck++) {
 
                     t_bottleneck_link bottleneck_link;
                     bottleneck_link.gather_loc = gather_loc;
@@ -344,12 +350,17 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
     VTR_ASSERT(interposer_inf.size() == num_layers);
 
+    vtr::FormulaParser formula_parser;
+    vtr::t_formula_data formula_data;
+
     // Step 1: Iterate over all layers in the device grid
     for (size_t layer = 0; layer < num_layers; layer++) {
 
         // Step 2: Process each interposer cut (vertical or horizontal) on this layer
         for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
-            const int cut_loc = cut_inf.loc;
+
+            const int cut_loc = adjust_interposer_cut_location(grid, layer, cut_inf.dim, cut_inf.loc,
+                                                               formula_parser, formula_data, /*print_warning=*/false);
             e_interposer_cut_type cut_type = cut_inf.dim;
 
             // Step 3: For each inter-die wire defined at this cut, compute its SG region

@@ -129,8 +129,10 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
+        t_grid_def grid_def;
+        grid_def.name = device_grid_name;
+        grid_def.layers.resize(1);
+        DeviceGrid test_device = DeviceGrid(grid_def, std::move(test_grid));
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -247,8 +249,10 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
+        t_grid_def grid_def;
+        grid_def.name = device_grid_name;
+        grid_def.layers.resize(1);
+        DeviceGrid test_device = DeviceGrid(grid_def, std::move(test_grid));
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -365,8 +369,10 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
+        t_grid_def grid_def;
+        grid_def.name = device_grid_name;
+        grid_def.layers.resize(1);
+        DeviceGrid test_device = DeviceGrid(grid_def, std::move(test_grid));
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -932,8 +938,10 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             }
         }
 
-        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
+        t_grid_def grid_def;
+        grid_def.name = device_grid_name;
+        grid_def.layers.resize(1);
+        device_ctx.grid = DeviceGrid(grid_def, std::move(test_grid));
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
@@ -984,8 +992,10 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         noc_info.router_list.clear();
 
-        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
+        t_grid_def grid_def;
+        grid_def.name = device_grid_name;
+        grid_def.layers.resize(1);
+        device_ctx.grid = DeviceGrid(grid_def, std::move(test_grid));
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
@@ -1220,8 +1230,10 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             noc_info.link_bandwidth_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_BANDWIDTH_OVERRIDE});
         }
 
-        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
+        t_grid_def grid_def;
+        grid_def.name = device_grid_name;
+        grid_def.layers.resize(1);
+        device_ctx.grid = DeviceGrid(grid_def, std::move(test_grid));
 
         REQUIRE_NOTHROW(setup_noc(arch));
 
