@@ -45,7 +45,9 @@
 #include "vtr_prefix_sum.h"
 #include "stats.h"
 
+#include <algorithm>
 #include <array>
+#include <vector>
 
 static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
@@ -103,8 +105,9 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     , placer_state_(placer_state)
     , placer_opts_(placer_opts) {
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
-    const size_t num_layers = device_ctx.grid.get_num_layers();
+    const size_t num_layers = grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
@@ -144,6 +147,15 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     net_cost_.resize(num_nets, -1.);
     proposed_net_cost_.resize(num_nets, -1.);
 
+    if (grid.has_interposer_cuts()) {
+        VTR_ASSERT(cube_bb_ && !is_multi_layer_);
+        net_interposer_cost_.resize(num_nets, -1.);
+        proposed_net_interposer_cost_.resize(num_nets, -1.);
+
+        VTR_ASSERT(std::ranges::is_sorted(grid.get_horizontal_interposer_cuts()));
+        VTR_ASSERT(std::ranges::is_sorted(grid.get_vertical_interposer_cuts()));
+    }
+
     // Used to store costs for moves not yet made and to indicate when a net's
     // cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
     // been recomputed.
@@ -164,8 +176,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    const size_t grid_height = device_ctx.grid.height();
-    const size_t grid_width = device_ctx.grid.width();
+    const size_t grid_height = grid.height();
+    const size_t grid_width = grid.width();
 
     // These arrays contain accumulative channel width between channel zero and
     // the channel specified by the given index. The accumulated channel width
@@ -1364,6 +1376,39 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     ncost *= crossing;
 
     return ncost;
+}
+
+double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) {
+    const auto& grid = g_vpr_ctx.device().grid;
+
+    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
+
+    const std::vector<std::vector<int>> horizontal_cuts = grid.get_horizontal_interposer_cuts();
+    const std::vector<std::vector<int>> vertical_cuts = grid.get_vertical_interposer_cuts();
+
+    const int bb_width = bb.xmax - bb.xmin + 1;
+    const int bb_height = bb.ymax - bb.ymin + 1;
+
+    int num_horizontal_crossings = 0;
+    int num_vertical_crossings = 0;
+
+    for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+        const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+        for (int cut_y : layer_h_cuts) {
+            if (cut_y >= bb.ymin && cut_y < bb.ymax) {
+                num_horizontal_crossings++;
+            }
+        }
+        const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+        for (int cut_x : layer_v_cuts) {
+            if (cut_x >= bb.xmin && cut_x < bb.xmax) {
+                num_vertical_crossings++;
+            }
+        }
+    }
+
+    double cost = num_horizontal_crossings * bb_width + num_vertical_crossings * bb_height;
+    return cost;
 }
 
 double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
