@@ -818,7 +818,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     t_routing_cost_map routing_cost_map({device_ctx.grid.get_num_layers(), device_ctx.grid.width(), device_ctx.grid.height()});
 
     if (sample_nodes.empty()) {
-        VTR_LOGV_WARN(route_verbosity > 1,
+        VTR_LOGV_WARN(route_verbosity > 0,
                       "Unable to find any sample location for segment %s type '%s' (length %d)\n",
                       rr_node_typename[chan_type],
                       segment_inf.name.c_str(),
@@ -1444,6 +1444,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b)) {
             child_entry.delay = parent_entry.delay; // + something from existing lookahead ?
             child_entry.cost = parent_entry.cost;
+            child_entry.congestion_upstream = parent_entry.congestion_upstream;
         }
         //VTR_ASSERT(child_entry.cost >= 0); //Assertion fails in practise. TODO: debug
 
