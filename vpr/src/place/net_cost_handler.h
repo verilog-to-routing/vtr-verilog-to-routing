@@ -571,7 +571,7 @@ class NetCostHandler {
      *        it would only add the costs again.
      * @return (total bb cost, total congestion cost)
      */
-    std::pair<double, double> recompute_bb_cong_cost_();
+    t_net_cost_terms recompute_bb_cong_cost_();
 
     /**
      * @brief Given the 3D BB, calculate the wire-length cost of the net
