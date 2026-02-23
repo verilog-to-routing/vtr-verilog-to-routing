@@ -17,6 +17,7 @@ circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
 
 # Add architectures to list to sweep
 arch_list_add=3d_SB_inter_die_stratixiv_arch.timing.xml
+arch_list_add=3d_bidir_SB_inter_die_stratixiv_arch.timing.xml
 
 # Parse info and how to parse
 parse_file=vpr_titan.txt
