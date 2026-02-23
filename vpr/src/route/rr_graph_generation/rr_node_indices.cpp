@@ -383,12 +383,10 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
         int xlow, xhigh, ylow, yhigh;
         e_rr_type chan_type;
         Direction direction;
-        const t_physical_tile_loc& src_loc = link.gather_loc;
-        const t_physical_tile_loc& dst_loc = link.scatter_loc;
 
         // Step 1: Determine the channel type (CHANX/CHANY) and span coordinates
-        const int layer = src_loc.layer_num;
-        compute_non_3d_sg_link_geometry(src_loc, dst_loc, chan_type, xlow, xhigh, ylow, yhigh, direction);
+        const int layer = link.gather_loc.layer_num;
+        compute_non_3d_sg_link_geometry(link, chan_type, xlow, xhigh, ylow, yhigh, direction);
 
         // Select the appropriate ptc matrix for this channel type
         vtr::NdMatrix<int, 3>& ptc_matrix = (chan_type == e_rr_type::CHANX) ? chanx_ptc : chany_ptc;
