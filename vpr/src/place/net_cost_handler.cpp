@@ -1541,24 +1541,30 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
     return z_cost_factor;
 }
 
-std::pair<double, double> NetCostHandler::recompute_bb_cong_cost_() {
+t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid = g_vpr_ctx.device().grid;
+    
+    const bool has_interposer_cuts = grid.has_interposer_cuts();
 
-    double bb_cost = 0.;
-    double cong_cost = 0.;
+    t_net_cost_terms cost_terms;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             // Bounding boxes don't have to be recomputed; they're correct.
-            bb_cost += net_cost_[net_id];
+            cost_terms.bb_cost += net_cost_[net_id];
 
             if (congestion_modeling_started_) {
-                cong_cost += net_cong_cost_[net_id];
+                cost_terms.cong_cost += net_cong_cost_[net_id];
+            }
+
+            if (has_interposer_cuts) {
+                cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
         }
     }
 
-    return {bb_cost, cong_cost};
+    return cost_terms;
 }
 
 double wirelength_crossing_count(size_t fanout) {
@@ -1671,6 +1677,9 @@ void NetCostHandler::reset_move_nets() {
 void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
                                                   t_placer_costs& costs) {
+    // const auto& grid = g_vpr_ctx.device().grid;
+    // const bool has_interposer_cuts = grid.has_interposer_cuts();
+
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
                                    const std::string& cost_name) -> void {
@@ -1682,16 +1691,23 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         }
     };
 
-    auto [new_bb_cost, new_cong_cost] = recompute_bb_cong_cost_();
-    check_and_print_cost(new_bb_cost, costs.bb_cost, "bb_cost");
-    costs.bb_cost = new_bb_cost;
+    t_net_cost_terms new_cost_terms = recompute_bb_cong_cost_();
+    check_and_print_cost(new_cost_terms.bb_cost, costs.bb_cost, "bb_cost");
+    costs.bb_cost = new_cost_terms.bb_cost;
 
     if (congestion_modeling_started_) {
-        check_and_print_cost(new_cong_cost, costs.congestion_cost, "cong_cost");
-        costs.congestion_cost = new_cong_cost;
+        check_and_print_cost(new_cost_terms.cong_cost, costs.congestion_cost, "cong_cost");
+        costs.congestion_cost = new_cost_terms.cong_cost;
     } else {
         costs.congestion_cost = 0.;
     }
+
+    // if (has_interposer_cuts) {
+    //     check_and_print_cost(new_cost_terms.interposer_cost, costs.interposer_cost, "interposer_cost");
+    //     costs.interposer_cost = new_cost_terms.interposer_cost;
+    // } else {
+    //     costs.interposer_cost = 0.;
+    // }
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
@@ -1700,7 +1716,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.timing_cost = new_timing_cost;
     } else {
         VTR_ASSERT(placer_opts_.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
-        costs.cost = new_bb_cost * costs.bb_cost_norm;
+        costs.cost = new_cost_terms.bb_cost * costs.bb_cost_norm;
     }
 }
 
