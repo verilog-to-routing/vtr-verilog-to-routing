@@ -13,6 +13,7 @@
 #include <fstream>
 #include <ranges>
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -1431,6 +1432,19 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
                                    parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
+        // If child node crosses an interposer cut, ignore its costs
+        // Interposer crossing delay is
+        t_physical_tile_loc child_side_a = {device_ctx.rr_graph.node_xhigh(child_node),
+                                            device_ctx.rr_graph.node_yhigh(child_node),
+                                            device_ctx.rr_graph.node_layer_high(child_node)};
+        t_physical_tile_loc child_side_b = {device_ctx.rr_graph.node_xlow(child_node),
+                                            device_ctx.rr_graph.node_ylow(child_node),
+                                            device_ctx.rr_graph.node_layer_low(child_node)};
+
+        if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b)) {
+            child_entry.delay = parent_entry.delay; // + something from existing lookahead ?
+            child_entry.cost = parent_entry.cost;
+        }
         //VTR_ASSERT(child_entry.cost >= 0); //Assertion fails in practise. TODO: debug
 
         /* skip this child if it has been visited with smaller cost */
