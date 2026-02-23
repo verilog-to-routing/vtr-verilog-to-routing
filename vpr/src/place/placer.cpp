@@ -123,7 +123,10 @@ Placer::Placer(const Netlist<>& net_list,
     }
 
     // Gets initial cost and loads bounding boxes.
-    std::tie(costs_.bb_cost, std::ignore, costs_.congestion_cost) = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
+    auto [initial_cost_terms, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
+    costs_.bb_cost = initial_cost_terms.bb_cost;
+    costs_.congestion_cost = initial_cost_terms.cong_cost;
+    // costs_.interposer_cost = initial_cost_terms.interposer_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
@@ -261,12 +264,12 @@ void Placer::check_place_() {
 int Placer::check_placement_costs_() {
     int error = 0;
 
-    const auto [bb_cost_check, expected_wirelength, _] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
+    const auto [cost_terms_check, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
 
-    if (fabs(bb_cost_check - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
+    if (fabs(cost_terms_check.bb_cost - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
         VTR_LOG_ERROR(
             "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
-            bb_cost_check, costs_.bb_cost);
+            cost_terms_check.bb_cost, costs_.bb_cost);
         error++;
     }
 

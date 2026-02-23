@@ -15,6 +15,7 @@
 class PlacerState;
 class PlacerCriticalities;
 
+
 /**
  * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
  * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
@@ -33,6 +34,12 @@ double wirelength_crossing_count(size_t fanout);
 enum class e_cost_methods {
     NORMAL,
     CHECK
+};
+
+struct t_net_cost_terms {
+  double bb_cost = 0.;
+  double interposer_cost = 0.;
+  double cong_cost = 0.;
 };
 
 class NetCostHandler {
@@ -68,7 +75,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_bb_cong_cost(e_cost_methods method);
+    std::pair<t_net_cost_terms, double> comp_bb_cong_cost(e_cost_methods method);
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.
@@ -164,7 +171,7 @@ class NetCostHandler {
     /// Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
     /// Points to the proper method for computing the bounding box cost, estimated wirelength and congestion cost from scratch.
-    std::function<std::tuple<double, double, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
+    std::function<std::pair<t_net_cost_terms, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     /// Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
     /// Points to the proper method for getting the bounding box cost of a net
@@ -538,7 +545,7 @@ class NetCostHandler {
      * @note Congestion modeling is not supported for per-layer mode, so 0 is returned.
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_per_layer_bb_cost_(e_cost_methods method);
+    std::pair<t_net_cost_terms, double> comp_per_layer_bb_cost_(e_cost_methods method);
 
     /**
      * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
@@ -549,7 +556,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_cube_bb_cong_cost_(e_cost_methods method);
+    std::pair<t_net_cost_terms, double> comp_cube_bb_cong_cost_(e_cost_methods method);
 
     /**
      * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.

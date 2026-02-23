@@ -175,6 +175,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
     const size_t grid_height = grid.height();
     const size_t grid_width = grid.width();
@@ -221,14 +222,17 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     }
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
+std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
     return comp_bb_cong_cost_functor_(method);
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
+std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid = g_vpr_ctx.device().grid;
 
-    double bb_cost = 0.;
+    const bool has_interposer_cuts = grid.has_interposer_cuts();
+
+    t_net_cost_terms cost_terms;
     double expected_wirelength = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
@@ -242,35 +246,39 @@ std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cos
             }
 
             net_cost_[net_id] = get_net_cube_bb_cost_(net_id, /*use_ts=*/false);
-            bb_cost += net_cost_[net_id];
+            cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
+            }
+
+            if (has_interposer_cuts) {
+                net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
+                cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
         }
     }
 
-    double cong_cost = 0.;
     // Compute congestion cost using recomputed bounding boxes and channel utilization map
     if (congestion_modeling_started_) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/false);
-                cong_cost += net_cong_cost_[net_id];
+                cost_terms.cong_cost += net_cong_cost_[net_id];
             }
         }
     }
 
-    return {bb_cost, expected_wirelength, cong_cost};
+    return {cost_terms, expected_wirelength};
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
+std::pair<t_net_cost_terms, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double cost = 0.;
-    double expected_wirelength = 0.;
+    
     // TODO: compute congestion cost
     // Congestion modeling is not supported for per-layer mode, so 0 is returned.
-    constexpr double cong_cost = 0.;
+    t_net_cost_terms cost_terms;
+    double expected_wirelength = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -286,14 +294,14 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
             }
 
             net_cost_[net_id] = get_net_per_layer_bb_cost_(net_id, /*use_ts=*/false);
-            cost += net_cost_[net_id];
+            cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
             }
         }
     }
 
-    return {cost, expected_wirelength, cong_cost};
+    return {cost_terms, expected_wirelength};
 }
 
 void NetCostHandler::update_net_bb_(const ClusterNetId net,
