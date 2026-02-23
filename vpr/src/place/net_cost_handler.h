@@ -250,6 +250,8 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
 
+    vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
+
     /**
      * @brief The congestion cost for each net is based on the extent to which its
      * average routing channel utilization exceeds a predefined threshold.
@@ -572,6 +574,8 @@ class NetCostHandler {
      * @return Wirelength cost of the net
      */
     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
+
+    double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
      * @brief Calculate the congestion cost of net using its 3D bounding box.
