@@ -15,10 +15,12 @@
 #include "globals.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
+#include "rr_node_types.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
 #include "vpr_types.h"
+#include "vtr_assert.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
 #include "route_common.h"
@@ -1441,10 +1443,39 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                             device_ctx.rr_graph.node_ylow(child_node),
                                             device_ctx.rr_graph.node_layer_low(child_node)};
 
-        if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b)) {
-            child_entry.delay = parent_entry.delay; // + something from existing lookahead ?
-            child_entry.cost = parent_entry.cost;
-            child_entry.congestion_upstream = parent_entry.congestion_upstream;
+        if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b) && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
+            // VTR_ASSERT_SAFE(is_chanxy(rr_graph.node_type(child_node)));
+            // t_physical_tile_loc parent_low_loc = {device_ctx.rr_graph.node_xlow(parent),
+            //                                       device_ctx.rr_graph.node_ylow(parent),
+            //                                       device_ctx.rr_graph.node_layer_low(parent)};
+            // t_physical_tile_loc child_end_point;
+
+            // if (device_ctx.grid.are_locs_on_same_die(parent_low_loc, child_side_a)) {
+            //     child_end_point = child_side_b;
+            // } else {
+            //     child_end_point = child_side_a;
+            // }
+
+            // auto [num_segs_same_dir, num_segs_ortho_dir] = get_expected_segs_to_target_pos(parent, child_end_point.x, child_end_point.y);
+
+            // RRIndexedDataId cost_index = rr_graph.node_cost_index(parent);
+            // int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+
+            // const auto& same_data = device_ctx.rr_indexed_data[cost_index];
+            // const auto& ortho_data = device_ctx.rr_indexed_data[RRIndexedDataId(ortho_cost_index)];
+
+            // float cong_cost = num_segs_same_dir * same_data.base_cost
+            //                   + num_segs_ortho_dir * ortho_data.base_cost;
+
+            // float Tdel = num_segs_same_dir * same_data.T_linear
+            //              + num_segs_ortho_dir * ortho_data.T_linear
+            //              + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
+            //              + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
+            //              + parent_entry.R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load);
+
+            child_entry.delay = parent_entry.delay; // + Tdel;
+            child_entry.cost = parent_entry.cost; // + Tdel;
+            child_entry.congestion_upstream = parent_entry.congestion_upstream; // + cong_cost;
         }
         //VTR_ASSERT(child_entry.cost >= 0); //Assertion fails in practise. TODO: debug
 
