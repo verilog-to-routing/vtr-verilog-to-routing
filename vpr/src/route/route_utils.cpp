@@ -11,12 +11,12 @@
 #include "route_common.h"
 #include "route_debug.h"
 #include "stats.h"
+#include "stats_utils.h"
 
 #include "VprTimingGraphResolver.h"
 #include "route_tree.h"
 #include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
-#include "stats.h"
 #include "timing_util.h"
 
 #ifdef VPR_USE_TBB
