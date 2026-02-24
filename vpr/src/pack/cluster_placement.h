@@ -158,6 +158,15 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
 /**
  * @brief Builds a priority queue of feasible primitive root candidates for a molecule.
  *
+ * A primitive root candidate is a candidate primitive location in the cluster where
+ * the molecule's root atom could be placed.
+ *
+ * The returned priority queue orders candidates in decreasing desirability:
+ *   1) lower molecule placement cost first,
+ *   2) higher total primitive count to break ties,
+ *   3) earlier encountered primitives to break remaining ties.
+ * TODO: Explore other cost schemes including weighted sum of these metrics.
+ *
  * The function does not commit any placement. It only prepares candidate
  * primitive roots for later selection by the caller (e.g., try_pack_molecule()).
  *
@@ -167,7 +176,10 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
  * @param molecule_id
  *              Identifier of the molecule to be evaluated for placement.
  * @param primitives_list
- *              A list of primitives indexed to match atom_block_ids of molecule.
+ *              Output vector populated with the selected primitive locations for each atom in the
+ *              molecule. Must be pre-sized to the number of atoms in the molecule. Entries corresponding
+ *              to unused atoms remain nullptr. The contents are valid only for the currently evaluated
+ *              candidate root location and must be recomputed when committing a placement.
  * @param prepacker
  *              The prepacker object that provides access to the molecule
  *              corresponding to given molecule id.
