@@ -120,7 +120,7 @@ Placer::Placer(const Netlist<>& net_list,
     auto [initial_cost_terms, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
     costs_.bb_cost = initial_cost_terms.bb_cost;
     costs_.congestion_cost = initial_cost_terms.cong_cost;
-    // costs_.interposer_cost = initial_cost_terms.interposer_cost;
+    costs_.interposer_cost = initial_cost_terms.interposer_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
