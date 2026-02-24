@@ -1577,16 +1577,24 @@ double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c) {
+void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    const bool has_interposer_cuts = grid.has_interposer_cuts();
+
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
         proposed_net_cost_[net_id] = get_net_bb_cost_functor_(net_id);
-        bb_delta_c += proposed_net_cost_[net_id] - net_cost_[net_id];
+        cost_terms_delta.bb_cost += proposed_net_cost_[net_id] - net_cost_[net_id];
 
         if (congestion_modeling_started_) {
             proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
-            congestion_delta_c += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
+            cost_terms_delta.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
+        }
+
+        if (has_interposer_cuts) {
+            proposed_net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/true);
+            cost_terms_delta.interposer_cost += proposed_net_interposer_cost_[net_id] - net_interposer_cost_[net_id];
         }
     }
 }
@@ -1594,12 +1602,12 @@ void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_d
 void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                                          const PlacerCriticalities* criticalities,
                                                          t_pl_blocks_to_be_moved& blocks_affected,
-                                                         double& bb_delta_c,
-                                                         double& timing_delta_c,
-                                                         double& congestion_delta_c) {
-    VTR_ASSERT_DEBUG(bb_delta_c == 0.);
+                                                         t_net_cost_terms& cost_terms_delta,
+                                                         double& timing_delta_c) {
+    VTR_ASSERT_DEBUG(cost_terms_delta.bb_cost == 0.);
+    VTR_ASSERT_DEBUG(cost_terms_delta.cong_cost == 0.);
+    VTR_ASSERT_DEBUG(cost_terms_delta.interposer_cost == 0.);
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
-    VTR_ASSERT_DEBUG(congestion_delta_c == 0.);
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
@@ -1628,7 +1636,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
     // Now update the bounding box costs (since the net bounding
     // boxes are up-to-date). The cost is only updated once per net.
-    set_bb_delta_cost_(bb_delta_c, congestion_delta_c);
+    set_bb_delta_cost_(cost_terms_delta);
 }
 
 void NetCostHandler::update_move_nets() {
@@ -1677,8 +1685,8 @@ void NetCostHandler::reset_move_nets() {
 void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
                                                   t_placer_costs& costs) {
-    // const auto& grid = g_vpr_ctx.device().grid;
-    // const bool has_interposer_cuts = grid.has_interposer_cuts();
+    const auto& grid = g_vpr_ctx.device().grid;
+    const bool has_interposer_cuts = grid.has_interposer_cuts();
 
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
@@ -1702,12 +1710,12 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.congestion_cost = 0.;
     }
 
-    // if (has_interposer_cuts) {
-    //     check_and_print_cost(new_cost_terms.interposer_cost, costs.interposer_cost, "interposer_cost");
-    //     costs.interposer_cost = new_cost_terms.interposer_cost;
-    // } else {
-    //     costs.interposer_cost = 0.;
-    // }
+    if (has_interposer_cuts) {
+        check_and_print_cost(new_cost_terms.interposer_cost, costs.interposer_cost, "interposer_cost");
+        costs.interposer_cost = new_cost_terms.interposer_cost;
+    } else {
+        costs.interposer_cost = 0.;
+    }
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;

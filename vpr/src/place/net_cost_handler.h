@@ -103,9 +103,8 @@ class NetCostHandler {
     void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
-                                             double& bb_delta_c,
-                                             double& timing_delta_c,
-                                             double& congestion_delta_c);
+                                             t_net_cost_terms& cost_terms_delta,
+                                             double& timing_delta_c);
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -344,7 +343,7 @@ class NetCostHandler {
      * @param bb_delta_c Bounding box cost difference after and before moving the block.
      * @param congestion_delta_c Congestion cost difference after and before moving the block.
      */
-    void set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c);
+    void set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta);
 
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
