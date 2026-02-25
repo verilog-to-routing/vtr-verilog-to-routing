@@ -26,30 +26,30 @@ typedef vtr::StrongId<struct general_die_id_tag, short> DeviceDieId;
 
 /**
  * @brief Die regions are (x, y, layer) positions with one position for an entire die.
-     * As an example, imagine a 3D device with two layers: the first layer having one horizontal and one vertical interposer cut and the second layer
-     * having one horizontal interposer cut. The following die regions would exist:
-     *     Layer 1:
-     *         +-----------+-----------+
-     *         |           |           |
-     *         |  (0,1,0)  |  (1,1,0)  |
-     *         |           |           |
-     *         +-----------+-----------+
-     *         |           |           |
-     *         |  (0,0,0)  |  (1,0,0)  |
-     *         |           |           |
-     *         +-----------+-----------+
-     *
-     *     Layer 2:
-     *         +-----------------------+
-     *         |                       |
-     *         |        (0,1,1)        |
-     *         |                       |
-     *         +-----------------------+
-     *         |                       |
-     *         |        (0,0,1)        |
-     *         |                       |
-     *         +-----------------------+
-     */
+ * As an example, imagine a 3D device with two layers: the first layer having one horizontal and one vertical interposer cut and the second layer
+ * having one horizontal interposer cut. The following die regions would exist:
+ *     Layer 1:
+ *         +-----------+-----------+
+ *         |           |           |
+ *         |  (0,1,0)  |  (1,1,0)  |
+ *         |           |           |
+ *         +-----------+-----------+
+ *         |           |           |
+ *         |  (0,0,0)  |  (1,0,0)  |
+ *         |           |           |
+ *         +-----------+-----------+
+ *
+ *     Layer 2:
+ *         +-----------------------+
+ *         |                       |
+ *         |        (0,1,1)        |
+ *         |                       |
+ *         +-----------------------+
+ *         |                       |
+ *         |        (0,0,1)        |
+ *         |                       |
+ *         +-----------------------+
+ */
 struct t_die_region {
     short x_die;
     short y_die;

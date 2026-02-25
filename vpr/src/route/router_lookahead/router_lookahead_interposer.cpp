@@ -132,7 +132,7 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
         horizontal_cong_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
         vertical_cong_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
-        
+
         // Calculate the vertical delay and congestion cost prefix sums
         for (size_t vertical_interposer_index = 0; vertical_interposer_index < layer_vertical_interposer_cuts.size(); vertical_interposer_index++) {
             int x_loc = layer_vertical_interposer_cuts[vertical_interposer_index];
@@ -170,10 +170,10 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
     vtr::NdMatrix<float, 2> interposer_cong_matrix({grid.get_die_count(), grid.get_die_count()}, 0.0f);
 
     // Lambda to compute the die-crossing cost between two die regions based on horizontal and vertical cost prefix sums.
-    auto get_die_crossing_cost = [](const std::vector<std::vector<float>>& horiz_sums, 
-                                   const std::vector<std::vector<float>>& vert_sums,
-                                   const t_die_region& src, 
-                                   const t_die_region& dest) {
+    auto get_die_crossing_cost = [](const std::vector<std::vector<float>>& horiz_sums,
+                                    const std::vector<std::vector<float>>& vert_sums,
+                                    const t_die_region& src,
+                                    const t_die_region& dest) {
         float h_dist = std::abs(horiz_sums[src.layer][src.x_die] - horiz_sums[dest.layer][dest.x_die]);
         float v_dist = std::abs(vert_sums[src.layer][src.y_die] - vert_sums[dest.layer][dest.y_die]);
         return h_dist + v_dist;
@@ -190,7 +190,7 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
             // We multiply the base cost of an interposer crossing by a factor of 2. This tells the router that interposer wires are a rare and expensive resource.
             interposer_cong_matrix[(size_t)first_die_id][(size_t)second_die_id] =
-                2 * get_die_crossing_cost(horizontal_cong_sum, vertical_cong_sum, first_die_region, second_die_region);;
+                2 * get_die_crossing_cost(horizontal_cong_sum, vertical_cong_sum, first_die_region, second_die_region);
         }
     }
 
