@@ -64,7 +64,8 @@ static void run_dijkstra(RRNodeId start_node,
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<util::PQ_Entry>& pq);
+                                       std::priority_queue<util::PQ_Entry>& pq,
+                                       bool has_interposer_cuts = false);
 
 /**
  * @brief Computes the adjusted location of a pin to match the position of
@@ -1336,6 +1337,8 @@ static void run_dijkstra(RRNodeId start_node,
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
+    const bool has_interposer_cuts = device_ctx.grid.has_interposer_cuts();
+
     vtr::vector<RRNodeId, bool>& node_expanded = data.node_expanded;
     node_expanded.resize(rr_graph.num_nodes());
     std::fill(node_expanded.begin(), node_expanded.end(), false);
@@ -1401,7 +1404,7 @@ static void run_dijkstra(RRNodeId start_node,
             }
         }
 
-        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
+        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, has_interposer_cuts);
         node_expanded[curr_node] = true;
     }
 }
@@ -1409,7 +1412,8 @@ static void run_dijkstra(RRNodeId start_node,
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<util::PQ_Entry>& pq) {
+                                       std::priority_queue<util::PQ_Entry>& pq,
+                                       bool has_interposer_cuts) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -1434,19 +1438,21 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
                                    parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
-        // If child node crosses an interposer cut, ignore its costs
-        // Interposer crossing delay is added later using the InterposerLookahead class
-        t_physical_tile_loc child_side_a = {device_ctx.rr_graph.node_xhigh(child_node),
-                                            device_ctx.rr_graph.node_yhigh(child_node),
-                                            device_ctx.rr_graph.node_layer_high(child_node)};
-        t_physical_tile_loc child_side_b = {device_ctx.rr_graph.node_xlow(child_node),
-                                            device_ctx.rr_graph.node_ylow(child_node),
-                                            device_ctx.rr_graph.node_layer_low(child_node)};
+        if (has_interposer_cuts) {
+            // If child node crosses an interposer cut, ignore its costs
+            // Interposer crossing delay is added later using the InterposerLookahead class
+            t_physical_tile_loc child_side_a = {device_ctx.rr_graph.node_xhigh(child_node),
+                                                device_ctx.rr_graph.node_yhigh(child_node),
+                                                device_ctx.rr_graph.node_layer_high(child_node)};
+            t_physical_tile_loc child_side_b = {device_ctx.rr_graph.node_xlow(child_node),
+                                                device_ctx.rr_graph.node_ylow(child_node),
+                                                device_ctx.rr_graph.node_layer_low(child_node)};
 
-        if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b) && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
-            child_entry.delay = parent_entry.delay;
-            child_entry.cost = parent_entry.cost;
-            child_entry.congestion_upstream = parent_entry.congestion_upstream;
+            if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b) && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
+                child_entry.delay = parent_entry.delay;
+                child_entry.cost = parent_entry.cost;
+                child_entry.congestion_upstream = parent_entry.congestion_upstream;
+            }
         }
         //VTR_ASSERT(child_entry.cost >= 0); //Assertion fails in practise. TODO: debug
 
