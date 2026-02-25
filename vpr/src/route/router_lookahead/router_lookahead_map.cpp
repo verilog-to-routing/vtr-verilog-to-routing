@@ -395,7 +395,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
     if (has_interposer_cuts_) {
         VTR_ASSERT_SAFE(interposer_lookahead_);
-        auto [interposer_delay, interposer_cong_cost] = interposer_lookahead_.value().get_interposer_lookahead_cost(from_node, to_node);
+        auto [interposer_delay, interposer_cong_cost] = interposer_lookahead_->get_interposer_lookahead_cost(from_node, to_node);
         expected_delay_cost += interposer_delay;
         expected_cong_cost += interposer_cong_cost;
     }
