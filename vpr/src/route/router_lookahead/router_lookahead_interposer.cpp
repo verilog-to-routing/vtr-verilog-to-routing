@@ -45,7 +45,7 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
  */
 static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(const RRGraphView& rr_graph, std::vector<RRNodeId>& nodes);
 
-InterposerDelayLookahead::InterposerDelayLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx)
+InterposerLookahead::InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx)
     : rr_graph_(rr_graph)
     , grid_(grid) {
     auto [delay_matrix, cong_matrix] = compute_interposer_delay_matrix(grid, rr_graph, device_ctx);
@@ -53,7 +53,7 @@ InterposerDelayLookahead::InterposerDelayLookahead(const RRGraphView& rr_graph, 
     die_to_die_cong_matrix_ = std::move(cong_matrix);
 }
 
-std::pair<float, float> InterposerDelayLookahead::get_interposer_lookahead_cost(RRNodeId from_node, RRNodeId to_node) const {
+std::pair<float, float> InterposerLookahead::get_interposer_lookahead_cost(RRNodeId from_node, RRNodeId to_node) const {
     int from_layer = rr_graph_.node_layer_low(from_node);
     int to_layer = rr_graph_.node_layer_low(to_node);
 

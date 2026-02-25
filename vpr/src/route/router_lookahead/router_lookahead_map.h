@@ -25,7 +25,7 @@ class MapLookahead : public RouterLookahead {
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
     vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost;  // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
-    std::optional<InterposerDelayLookahead> interposer_lookahead_;
+    std::optional<InterposerLookahead> interposer_lookahead_;
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
