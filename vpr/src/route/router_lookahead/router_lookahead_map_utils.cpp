@@ -1411,7 +1411,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq,
-                                       bool has_interposer_cuts) {
+                                       bool has_interposer_cuts /*=false*/) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -1439,14 +1439,15 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         if (has_interposer_cuts) {
             // If child node crosses an interposer cut, ignore its costs
             // Interposer crossing delay is added later using the InterposerLookahead class
-            t_physical_tile_loc child_side_a = {device_ctx.rr_graph.node_xhigh(child_node),
-                                                device_ctx.rr_graph.node_yhigh(child_node),
-                                                device_ctx.rr_graph.node_layer_high(child_node)};
-            t_physical_tile_loc child_side_b = {device_ctx.rr_graph.node_xlow(child_node),
-                                                device_ctx.rr_graph.node_ylow(child_node),
-                                                device_ctx.rr_graph.node_layer_low(child_node)};
+            t_physical_tile_loc child_side_a = {rr_graph.node_xhigh(child_node),
+                                                rr_graph.node_yhigh(child_node),
+                                                rr_graph.node_layer_high(child_node)};
+            t_physical_tile_loc child_side_b = {rr_graph.node_xlow(child_node),
+                                                rr_graph.node_ylow(child_node),
+                                                rr_graph.node_layer_low(child_node)};
 
-            if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b) && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
+            if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b)
+                && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
                 child_entry.delay = parent_entry.delay;
                 child_entry.cost = parent_entry.cost;
                 child_entry.congestion_upstream = parent_entry.congestion_upstream;
