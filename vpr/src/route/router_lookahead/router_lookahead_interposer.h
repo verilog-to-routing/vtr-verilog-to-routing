@@ -38,7 +38,7 @@ class InterposerLookahead {
     /// @brief 2D Matrix storing pre-calculated delays between Die[i] and Die[j].
     vtr::NdMatrix<float, 2> die_to_die_delay_matrix_;
     vtr::NdMatrix<float, 2> die_to_die_cong_matrix_;
-    
+
     const RRGraphView& rr_graph_;
     const DeviceGrid& grid_;
 };

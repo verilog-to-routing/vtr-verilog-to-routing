@@ -174,7 +174,6 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
             interposer_delay_matrices[(size_t)first_die_id][(size_t)second_die_id] =
                 std::abs(first_horizontal_delay - second_horizontal_delay) + std::abs(first_vertical_delay - second_vertical_delay);
 
-
             float first_horizontal_cong = horizontal_cong_sum[first_die_region.layer][first_die_region.x_die];
             float first_vertical_cong = vertical_cong_sum[first_die_region.layer][first_die_region.y_die];
 
