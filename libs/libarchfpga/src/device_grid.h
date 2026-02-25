@@ -339,4 +339,6 @@ class DeviceGrid {
     std::vector<vtr::NdMatrix<DeviceDieId, 2>> die_id_matrix_;
 
     vtr::bimap<DeviceDieId, t_die_region> die_region_map_;
+
+    bool has_interposer_cuts_;
 };
