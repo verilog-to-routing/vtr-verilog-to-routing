@@ -24,6 +24,32 @@ struct t_grid_tile {
 struct general_die_id_tag {};
 typedef vtr::StrongId<struct general_die_id_tag, short> DeviceDieId;
 
+/**
+ * @brief Die regions are (x, y, layer) positions with one position for an entire die.
+     * As an example, imagine a 3D device with two layers: the first layer having one horizontal and one vertical interposer cut and the second layer
+     * having one horizontal interposer cut. The following die regions would exist:
+     *     Layer 1:
+     *         +-----------+-----------+
+     *         |           |           |
+     *         |  (0,1,0)  |  (1,1,0)  |
+     *         |           |           |
+     *         +-----------+-----------+
+     *         |           |           |
+     *         |  (0,0,0)  |  (1,0,0)  |
+     *         |           |           |
+     *         +-----------+-----------+
+     *
+     *     Layer 2:
+     *         +-----------------------+
+     *         |                       |
+     *         |        (0,1,1)        |
+     *         |                       |
+     *         +-----------------------+
+     *         |                       |
+     *         |        (0,0,1)        |
+     *         |                       |
+     *         +-----------------------+
+     */
 struct t_die_region {
     short x_die;
     short y_die;
@@ -175,7 +201,7 @@ class DeviceGrid {
         );
     }
 
-    // Forward const-iterator over (layer, x_die, y_die)
+    // Forward const-iterator over all die regions in the device. See t_die_region for information on what a die region is.
     class die_const_iterator {
       public:
         using value_type = t_die_region;
@@ -283,10 +309,22 @@ class DeviceGrid {
      */
     bool are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
 
+    /**
+     * @brief Get the die identifier of a location. In 2.5D and 3D architectures each die has it's own unique identifier.
+     * 
+     * @param loc (x, y, layer) position that you want the id of.
+     * @return DeviceDieId ID of the given location
+     */
     DeviceDieId get_loc_die_id(t_physical_tile_loc loc) const;
 
+    /**
+     * @brief Get the total number of dice in the device. 2.5D and 3D architectures consist of multiple dice.
+     */
     size_t get_die_count() const;
 
+    /**
+     * @brief Get the die identifier of a given die region. See the comment above t_die_region for information on what a die region is.
+     */
     DeviceDieId get_die_region_id(t_die_region die_region) const;
 
   private:
@@ -338,6 +376,7 @@ class DeviceGrid {
      */
     std::vector<vtr::NdMatrix<DeviceDieId, 2>> die_id_matrix_;
 
+    /// @brief Two way map between die identifiers and die regions.
     vtr::bimap<DeviceDieId, t_die_region> die_region_map_;
 
     bool has_interposer_cuts_;
