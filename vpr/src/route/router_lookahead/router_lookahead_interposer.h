@@ -3,7 +3,6 @@
 /**
  * @file router_lookahead_interposer.h
  * @brief This file contains the class that calculates the lookahead matrix for interposer-based architectures.
- * 
  */
 
 #include "rr_graph_view.h"
@@ -27,7 +26,7 @@ class InterposerLookahead {
     InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx);
 
     /**
-     * @brief Estimates the delay between two nodes based on their die locations.
+     * @brief Estimates the interposer delay between two nodes based on their die locations.
      * @param from_node The source routing resource node.
      * @param to_node The destination routing resource node.
      * @return {float, float} The estimated delay and congestion costs
