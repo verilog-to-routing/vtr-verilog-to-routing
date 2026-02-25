@@ -294,6 +294,12 @@ class DeviceGrid {
     /// It is called in the constructor.
     void count_instances();
 
+    /**
+     * @brief Initialize the data structures used in multi-die FPGAs, such as the die_id_matrix_ or die_region_map_.
+     * These structures must be initialized before using are_locs_on_same_die, get_loc_die_id, get_die_count and get_die_region_id.
+     */
+    void initialize_multi_die_data_structures();
+
     std::string name_;
 
     /**
