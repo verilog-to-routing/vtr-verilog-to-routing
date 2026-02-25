@@ -8,14 +8,19 @@
 #include "vtr_ndmatrix.h"
 #include "grid_util.h"
 
+/**
+ * @brief checks the horizontal_interposer_cuts_ and vertical_interposer_cuts_ fields of the DeviceGrid object
+ * to see if it has any interposer cuts. This function is used in the constructor of the DeviceGrid to cache the result.
+ */
+static bool check_if_grid_has_interposer_cuts(const DeviceGrid& grid);
+
 DeviceGrid::DeviceGrid(const t_grid_def& grid_def,
                        vtr::NdMatrix<t_grid_tile, 3> grid)
     : name_(grid_def.name)
     , grid_(std::move(grid)) {
-    const size_t num_layers = grid_.dim_size(0);
-
     vtr::FormulaParser p;
     std::tie(horizontal_interposer_cuts_, vertical_interposer_cuts_) = resolve_interposer_cut_locations(*this, grid_def, p);
+    has_interposer_cuts_ = check_if_grid_has_interposer_cuts(*this);
 
     count_instances();
 
@@ -129,18 +134,25 @@ void DeviceGrid::initialize_multi_die_data_structures() {
         die_id_matrix_.push_back(std::move(layer_die_id_matrix));
     }
 }
+
+static bool check_if_grid_has_interposer_cuts(const DeviceGrid& grid) {
+    for (const std::vector<int>& layer_h_cuts : grid.get_horizontal_interposer_cuts()) {
         if (!layer_h_cuts.empty()) {
             return true;
         }
     }
 
-    for (const std::vector<int>& layer_v_cuts : vertical_interposer_cuts_) {
+    for (const std::vector<int>& layer_v_cuts : grid.get_vertical_interposer_cuts()) {
         if (!layer_v_cuts.empty()) {
             return true;
         }
     }
 
     return false;
+}
+
+bool DeviceGrid::has_interposer_cuts() const {
+    return has_interposer_cuts_;
 }
 
 bool DeviceGrid::are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const {
