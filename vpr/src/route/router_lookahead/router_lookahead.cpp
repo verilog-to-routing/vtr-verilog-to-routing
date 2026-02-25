@@ -5,7 +5,6 @@
 #include "router_lookahead_compressed_map.h"
 #include "router_lookahead_extended_map.h"
 #include "router_lookahead_simple.h"
-#include "rr_graph_fwd.h"
 #include "vpr_error.h"
 #include "globals.h"
 
@@ -126,28 +125,34 @@ static int round_up(float x) {
     return std::ceil(x - 0.001);
 }
 
-std::pair<int, int> get_expected_segs_to_target_pos(RRNodeId from_node, int target_x, int target_y) {
+static std::pair<int, int> get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node) {
+    /* Returns the number of segments the same type as inode that will be needed *
+     * to reach target_node (not including inode) in each direction (the same    *
+     * direction (horizontal or vertical) as inode and the orthogonal direction).*/
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+
+    int num_segs_ortho_dir;
+    int num_segs_same_dir;
 
     int no_need_to_pass_by_clb;
     float ylow, yhigh, xlow, xhigh;
 
-    int num_segs_ortho_dir = 0;
-    int num_segs_same_dir = 0;
+    int target_x = rr_graph.node_xlow(target_node);
+    int target_y = rr_graph.node_ylow(target_node);
 
-    RRIndexedDataId cost_index = rr_graph.node_cost_index(from_node);
+    RRIndexedDataId cost_index = rr_graph.node_cost_index(inode);
     float inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
     int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
     float ortho_inv_length = device_ctx.rr_indexed_data[RRIndexedDataId(ortho_cost_index)].inv_length;
-    e_rr_type rr_type = rr_graph.node_type(from_node);
+    e_rr_type rr_type = rr_graph.node_type(inode);
 
     if (rr_type == e_rr_type::CHANX) {
-        ylow = rr_graph.node_ylow(from_node);
-        xhigh = rr_graph.node_xhigh(from_node);
-        xlow = rr_graph.node_xlow(from_node);
+        ylow = rr_graph.node_ylow(inode);
+        xhigh = rr_graph.node_xhigh(inode);
+        xlow = rr_graph.node_xlow(inode);
 
-        /* Count vertical (orthogonal to from_node) segs first. */
+        /* Count vertical (orthogonal to inode) segs first. */
 
         if (ylow > target_y) { /* Coming from a row above target? */
             num_segs_ortho_dir = round_up((ylow - target_y + 1.) * ortho_inv_length);
@@ -160,7 +165,7 @@ std::pair<int, int> get_expected_segs_to_target_pos(RRNodeId from_node, int targ
             no_need_to_pass_by_clb = 0;
         }
 
-        /* Now count horizontal (same dir. as from_node) segs. */
+        /* Now count horizontal (same dir. as inode) segs. */
 
         if (xlow > target_x + no_need_to_pass_by_clb) {
             num_segs_same_dir = round_up((xlow - no_need_to_pass_by_clb - target_x) * inv_length);
@@ -169,12 +174,12 @@ std::pair<int, int> get_expected_segs_to_target_pos(RRNodeId from_node, int targ
         } else {
             num_segs_same_dir = 0;
         }
-    } else { /* from_node is a CHANY */
-        ylow = rr_graph.node_ylow(from_node);
-        yhigh = rr_graph.node_yhigh(from_node);
-        xlow = rr_graph.node_xlow(from_node);
+    } else { /* inode is a CHANY */
+        ylow = rr_graph.node_ylow(inode);
+        yhigh = rr_graph.node_yhigh(inode);
+        xlow = rr_graph.node_xlow(inode);
 
-        /* Count horizontal (orthogonal to from_node) segs first. */
+        /* Count horizontal (orthogonal to inode) segs first. */
 
         if (xlow > target_x) { /* Coming from a column right of target? */
             num_segs_ortho_dir = round_up((xlow - target_x + 1.) * ortho_inv_length);
@@ -187,7 +192,7 @@ std::pair<int, int> get_expected_segs_to_target_pos(RRNodeId from_node, int targ
             no_need_to_pass_by_clb = 0;
         }
 
-        /* Now count vertical (same dir. as from_node) segs. */
+        /* Now count vertical (same dir. as inode) segs. */
 
         if (ylow > target_y + no_need_to_pass_by_clb) {
             num_segs_same_dir = round_up((ylow - no_need_to_pass_by_clb - target_y) * inv_length);
@@ -199,18 +204,6 @@ std::pair<int, int> get_expected_segs_to_target_pos(RRNodeId from_node, int targ
     }
 
     return {num_segs_same_dir, num_segs_ortho_dir};
-}
-
-static std::pair<int, int> get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node) {
-    /* Returns the number of segments the same type as inode that will be needed *
-     * to reach target_node (not including inode) in each direction (the same    *
-     * direction (horizontal or vertical) as inode and the orthogonal direction).*/
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-
-    int target_x = rr_graph.node_xlow(target_node);
-    int target_y = rr_graph.node_ylow(target_node);
-
-    return get_expected_segs_to_target_pos(inode, target_x, target_y);
 }
 
 void invalidate_router_lookahead_cache() {

@@ -179,5 +179,3 @@ class NoOpLookahead : public RouterLookahead {
         return -1.;
     }
 };
-
-std::pair<int, int> get_expected_segs_to_target_pos(RRNodeId from_node, int target_x, int target_y);
