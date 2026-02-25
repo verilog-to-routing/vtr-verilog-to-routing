@@ -17,14 +17,14 @@
  * See compute_interposer_delay_matrix for information on how the internal delay matrix
  * works.
  */
-class InterposerDelayLookahead {
+class InterposerLookahead {
   public:
     /**
      * @brief Constructs the lookahead and populates the internal delay matrix.
      * @param rr_graph The Routing Resource Graph.
      * @param grid The Device Grid, used to determine die boundaries and interposer positions.
      */
-    InterposerDelayLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx);
+    InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx);
 
     /**
      * @brief Estimates the delay between two nodes based on their die locations.
