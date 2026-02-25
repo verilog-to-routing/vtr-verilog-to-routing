@@ -1443,7 +1443,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                             device_ctx.rr_graph.node_ylow(child_node),
                                             device_ctx.rr_graph.node_layer_low(child_node)};
 
-        
         if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b) && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
             child_entry.delay = parent_entry.delay;
             child_entry.cost = parent_entry.cost;
