@@ -158,8 +158,7 @@ inline float get_single_rr_cong_cost(RRNodeId inode, float pres_fac) {
 
 /**
  * @brief Calculate delay of a single RR Node using 'connecting_edge' as it's driver/switch
- * This function ignores all upstream and downstream effects on the delay values
- * 
+ * This function ignores all upstream and downstream effects on the delay values.
  */
 float get_rr_node_delay_cost(RRNodeId to_node, RREdgeId connecting_edge);
 
