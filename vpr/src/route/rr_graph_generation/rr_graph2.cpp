@@ -425,8 +425,8 @@ void load_sblock_pattern_lookup(const int i,
          * ones that are passing through and have a SB. */
         enum Direction end_dir = (pos_dir ? Direction::DEC : Direction::INC);
 
-        // Different channel widths have different seg_details 
-        // warranting modified calls to static routines in this file. 
+        // Different channel widths have different seg_details
+        // warranting modified calls to static routines in this file.
         const std::vector<int> cuts = get_chan_interposer_cuts(vert ? e_rr_type::CHANY : e_rr_type::CHANX);
         label_incoming_wires(chan, seg, sb_seg,
                              seg_details, chan_len, end_dir, chan_width,

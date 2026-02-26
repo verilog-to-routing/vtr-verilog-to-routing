@@ -228,12 +228,12 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
     //       Interposer cuts can be at different locations on different layers.
     //       This causes wires to be split at different locations on different layers.
     VTR_ASSERT(!grid.has_interposer_cuts() || grid.get_num_layers() == 1);
-    
+
     // Get interposer cuts along the segment dimension so that wires are
     // split at cut boundaries rather than spanning across them, if any.
     const std::vector<int>& seg_dimension_cuts = (seg_parallel_axis == e_parallel_axis::X_AXIS)
-                                                    ? grid.get_vertical_interposer_cuts()[0]
-                                                    : grid.get_horizontal_interposer_cuts()[0];
+                                                     ? grid.get_vertical_interposer_cuts()[0]
+                                                     : grid.get_horizontal_interposer_cuts()[0];
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
 
@@ -397,8 +397,8 @@ const std::vector<int>& get_chan_interposer_cuts(e_rr_type chan_type) {
     VTR_ASSERT(!grid.has_interposer_cuts() || grid.get_num_layers() == 1);
 
     const std::vector<int>& cuts_by_layer = (chan_type == e_rr_type::CHANX)
-                                    ? grid.get_vertical_interposer_cuts()[0]
-                                    : grid.get_horizontal_interposer_cuts()[0];
+                                                ? grid.get_vertical_interposer_cuts()[0]
+                                                : grid.get_horizontal_interposer_cuts()[0];
 
     return cuts_by_layer;
 }
@@ -447,9 +447,9 @@ int get_seg_start(const t_chan_seg_details* seg_details,
 
 int get_seg_end(const t_chan_seg_details* seg_details,
                 const int itrack,
-                const int istart, 
-                const int chan_num, 
-                const int seg_max, 
+                const int istart,
+                const int chan_num,
+                const int seg_max,
                 const std::vector<int>& seg_dimension_cuts) {
     int seg_end;
 

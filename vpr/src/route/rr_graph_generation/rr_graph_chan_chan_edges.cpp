@@ -945,7 +945,6 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         to_y = to_seg;
     }
 
-    
     // Get interposer cuts along the channel.
     const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(to_type);
 
