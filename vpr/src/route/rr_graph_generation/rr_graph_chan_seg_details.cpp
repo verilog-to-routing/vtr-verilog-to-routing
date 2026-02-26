@@ -9,13 +9,13 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
 
 static void adjust_chan_details(const t_chan_width& nodes_per_chan,
                                 t_chan_details& chan_details_x,
-                                t_chan_details& chan_details_y);                                        
+                                t_chan_details& chan_details_y);
 
 static void adjust_seg_details(const int x,
                                const int y,
                                const t_chan_width& nodes_per_chan,
                                t_chan_details& chan_details,
-                               const e_parallel_axis seg_parallel_axis);                                        
+                               const e_parallel_axis seg_parallel_axis);
 
 std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
@@ -215,7 +215,7 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
                                         const std::vector<t_seg_details>& seg_details,
                                         const e_parallel_axis seg_parallel_axis) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
-                                            
+
     const int num_seg_details = (int)seg_details.size();
     if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
         VTR_ASSERT(num_seg_details <= nodes_per_chan.x_max);
@@ -284,7 +284,7 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
 
                 p_seg_details[i].set_seg_start(seg_start);
                 p_seg_details[i].set_seg_end(seg_end);
-                p_seg_details[i].set_length (seg_end - seg_start + 1);
+                p_seg_details[i].set_length(seg_end - seg_start + 1);
 
                 if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
                     if (i >= nodes_per_chan.x_list[y]) {
@@ -302,10 +302,10 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
 }
 
 static void adjust_chan_details(const t_chan_width& nodes_per_chan,
-                         t_chan_details& chan_details_x,
-                         t_chan_details& chan_details_y) {
+                                t_chan_details& chan_details_x,
+                                t_chan_details& chan_details_y) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
-                            
+
     for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
         for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
 

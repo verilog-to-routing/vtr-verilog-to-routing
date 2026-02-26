@@ -11,7 +11,6 @@
 #include "rr_types.h"
 #include "rr_graph_chan_seg_details.h"
 
-
 constexpr short UN_SET = -1;
 /************************** Subroutines local to this module ****************/
 

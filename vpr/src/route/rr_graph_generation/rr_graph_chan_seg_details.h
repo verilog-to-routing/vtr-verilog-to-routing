@@ -17,7 +17,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const bool use_full_seg_groups,
                                                       const e_directionality directionality);
 
-                                                      /**
+/**
  * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.
  *
  * This function determines how many routing tracks (or sets of tracks) to assign to each
@@ -60,4 +60,4 @@ int get_seg_end(const t_chan_seg_details* seg_details,
                 const int istart,
                 const int chan_num,
                 const int seg_max,
-                const std::vector<int>& seg_dimension_cuts);                                      
+                const std::vector<int>& seg_dimension_cuts);
