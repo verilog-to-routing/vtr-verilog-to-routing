@@ -341,7 +341,8 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         bool is_connected_track = false;
 
         const t_chan_seg_details* seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
-        const std::vector<int> opin_cuts = get_chan_seg_interposer_cuts(to_type);
+        // Get interposer cuts along the channel.
+        const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(to_type);
 
         // Iterate of the opin to track connections
         for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][side]) {
@@ -353,7 +354,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
             }
 
             // Only connect to wire if there is a CB
-            if (is_cblock(chan, seg, to_track, seg_details, opin_cuts)) {
+            if (is_cblock(chan, seg, to_track, seg_details, chan_interposer_cuts)) {
                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
@@ -402,13 +403,14 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     // Determine the channel width instead of using max channels to not create hanging nodes
     int max_chan_width = (e_rr_type::CHANX == chan_type) ? nodes_per_chan.x_list[y] : nodes_per_chan.y_list[x];
 
-    const std::vector<int> unidir_cuts = get_chan_seg_interposer_cuts(chan_type);
+    // Get interposer cuts along the channel.
+    const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(chan_type);
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
                      Direction::INC, max_chan_width, true, inc_muxes, &num_inc_muxes, &dummy,
-                     unidir_cuts);
+                     chan_interposer_cuts);
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
                      Direction::DEC, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy,
-                     unidir_cuts);
+                     chan_interposer_cuts);
 
     // Clip Fc to the number of muxes.
     if ((Fc / 2 > num_inc_muxes) || (Fc / 2 > num_dec_muxes)) {

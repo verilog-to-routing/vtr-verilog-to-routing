@@ -228,8 +228,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     }
 
     const t_chan_seg_details* seg_details = from_chan_details[x_coord][y_coord].data();
-
-    const std::vector<int> seg_dim_cuts = get_chan_seg_interposer_cuts(chan_type);
+    // Get interposer cuts along the channel.
+    const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(chan_type);
 
     // figure out if we're generating switch block edges based on a custom switch block description
     bool custom_switch_block = false;
@@ -246,8 +246,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         // Start and end coordinates of this segment along the length of the channel
         // Note that these values are in the VPR coordinate system (and do not consider
         // wire directionality), so start correspond to left/bottom and end corresponds to right/top
-        int start = get_seg_start(seg_details, track, chan_coord, seg_coord, seg_dim_cuts);
-        int end = get_seg_end(seg_details, track, start, chan_coord, seg_dimension, seg_dim_cuts);
+        int start = get_seg_start(seg_details, track, chan_coord, seg_coord, chan_interposer_cuts);
+        int end = get_seg_end(seg_details, track, start, chan_coord, seg_dimension, chan_interposer_cuts);
 
         if (seg_coord > start) {
             continue; // Only process segments which start at this location
@@ -406,9 +406,10 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(switch_block_conn.empty());
     }
 
-    const std::vector<int> from_cuts = get_chan_seg_interposer_cuts(from_type);
+    // Get interposer cuts along the channel.
+    const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(from_type);
 
-    VTR_ASSERT_MSG(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg, from_cuts),
+    VTR_ASSERT_MSG(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg, chan_interposer_cuts),
                    "From segment location must be a the wire start point");
 
     int from_switch = from_seg_details[from_track].arch_wire_switch();
@@ -419,7 +420,7 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
 
     // The absolute coordinate along the channel where the switch block at the
     // end of the current wire segment is located
-    int end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len, from_cuts);
+    int end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len, chan_interposer_cuts);
 
     // Figure out the sides of SB the from_wire will use
     e_side from_side_a, from_side_b;
@@ -453,7 +454,7 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
 
         // Figure out if we are at a sblock
         bool from_is_sblock = is_sblock(from_chan, from_seg, sb_seg, from_track,
-                                        from_seg_details, directionality, from_cuts);
+                                        from_seg_details, directionality, chan_interposer_cuts);
         if (sb_seg == end_sb_seg || sb_seg == start_sb_seg) {
             // end of wire must be an sblock
             from_is_sblock = true;
@@ -721,15 +722,16 @@ static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
                               e_directionality directionality) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    const std::vector<int> chan_cuts = get_chan_seg_interposer_cuts(chan_type);
+    // Get interposer cuts along the channel.
+    const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(chan_type);
 
     // End of this wire
-    int end = get_seg_end(seg_details, track, seg, chan, chan_length, chan_cuts);
+    int end = get_seg_end(seg_details, track, seg, chan, chan_length, chan_interposer_cuts);
 
     int num_conn = 0;
 
     for (int j = seg; j <= end; j++) {
-        if (is_cblock(chan, j, track, seg_details, chan_cuts)) {
+        if (is_cblock(chan, j, track, seg_details, chan_interposer_cuts)) {
             for (int pass = 0; pass < 2; ++pass) { //pass == 0 => TOP/RIGHT, pass == 1 => BOTTOM/LEFT
                 e_side side;
                 int x, y;
@@ -853,12 +855,12 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
 
     *Fs_clipped = false;
 
-    /* get list of muxes to which we can connect */
+    // get list of muxes to which we can connect
     int dummy;
-    const std::vector<int> to_cuts = get_chan_seg_interposer_cuts(to_type);
+    const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(to_type);
     label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
                      to_dir, max_chan_width, false, mux_labels, &num_labels, &dummy,
-                     to_cuts);
+                     chan_interposer_cuts);
 
     /* Can't connect if no muxes. */
     if (num_labels < 1) {
@@ -943,8 +945,11 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         to_y = to_seg;
     }
 
+    
+    // Get interposer cuts along the channel.
+    const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(to_type);
+
     // Go through the list of tracks we can connect to
-    const std::vector<int> to_seg_cuts = get_chan_seg_interposer_cuts(to_type);
     int num_conn = 0;
     for (int to_track : conn_tracks) {
         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_type, to_track);
@@ -956,7 +961,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         // Get the switches for any edges between the two tracks
         int to_switch = seg_details[to_track].arch_wire_switch();
 
-        bool to_is_sblock = is_sblock(to_chan, to_seg, to_sb, to_track, seg_details, directionality, to_seg_cuts);
+        bool to_is_sblock = is_sblock(to_chan, to_seg, to_sb, to_track, seg_details, directionality, chan_interposer_cuts);
         get_switch_type(from_is_sblock, to_is_sblock, from_switch, to_switch,
                         switch_override,
                         switch_types);

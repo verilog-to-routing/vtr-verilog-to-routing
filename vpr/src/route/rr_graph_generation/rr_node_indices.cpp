@@ -175,7 +175,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  int* index) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    const std::vector<int> seg_dim_cuts = get_chan_seg_interposer_cuts(type);
+    const std::vector<int> seg_dim_cuts = get_chan_interposer_cuts(type);
 
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         // Skip the current die if architecture file specifies that it doesn't require global resource routing

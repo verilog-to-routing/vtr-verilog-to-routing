@@ -52,7 +52,7 @@ std::vector<int> get_seg_track_counts(int num_sets,
  * For CHANY (vertical wires), returns horizontal interposer cut y-positions.
  * Returns an empty vector when there are no interposer cuts.
  */
-std::vector<int> get_chan_seg_interposer_cuts(e_rr_type chan_type);
+const std::vector<int>& get_chan_interposer_cuts(e_rr_type chan_type);
 
 /**
  * Returns the channel segment number at which a given track at a given channel segment number started.

@@ -391,19 +391,16 @@ static void adjust_seg_details(const int x,
     }
 }
 
-std::vector<int> get_chan_seg_interposer_cuts(e_rr_type chan_type) {
+const std::vector<int>& get_chan_interposer_cuts(e_rr_type chan_type) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
-    if (!grid.has_interposer_cuts()) {
-        return {};
-    }
 
-    const auto& cuts_by_layer = (chan_type == e_rr_type::CHANX)
-                                    ? grid.get_vertical_interposer_cuts()
-                                    : grid.get_horizontal_interposer_cuts();
-    if (!cuts_by_layer.empty()) {
-        return cuts_by_layer[0];
-    }
-    return {};
+    VTR_ASSERT(!grid.has_interposer_cuts() || grid.get_num_layers() == 1);
+
+    const std::vector<int>& cuts_by_layer = (chan_type == e_rr_type::CHANX)
+                                    ? grid.get_vertical_interposer_cuts()[0]
+                                    : grid.get_horizontal_interposer_cuts()[0];
+
+    return cuts_by_layer;
 }
 
 int get_seg_start(const t_chan_seg_details* seg_details,
