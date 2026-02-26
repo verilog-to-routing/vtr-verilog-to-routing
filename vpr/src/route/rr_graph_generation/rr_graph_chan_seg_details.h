@@ -5,6 +5,11 @@
 #include "rr_graph_type.h"
 #include "physical_types.h"
 
+/**
+ * Allocates and loads the chan_details data structure, a 2D array of
+ * seg_details structures. This array is used to handle unique seg_details
+ * (ie. channel segments) for each horizontal and vertical channel.
+ */
 void alloc_and_load_chan_details(const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details_x,
                                  const std::vector<t_seg_details>& seg_details_y,
@@ -49,6 +54,11 @@ std::vector<int> get_seg_track_counts(int num_sets,
  */
 std::vector<int> get_chan_seg_interposer_cuts(e_rr_type chan_type);
 
+/**
+ * Returns the channel segment number at which a given track at a given channel segment number started.
+ * When interposer cuts are present (seg_dimension_cuts is non-empty),
+ * wires going through a cut are split at the cut position.
+ */
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,

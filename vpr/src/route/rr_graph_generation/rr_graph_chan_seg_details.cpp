@@ -22,14 +22,14 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const std::vector<t_segment_inf>& segment_inf,
                                                       const bool use_full_seg_groups,
                                                       const e_directionality directionality) {
-    /* Allocates and loads the seg_details data structure.  Max_len gives the   *
-     * maximum length of a segment (dimension of array).  The code below tries  *
-     * to:                                                                      *
-     * (1) stagger the start points of segments of the same type evenly;        *
-     * (2) spread out the limited number of connection boxes or switch boxes    *
-     *     evenly along the length of a segment, starting at the segment ends;  *
-     * (3) stagger the connection and switch boxes on different long lines,     *
-     *     as they will not be staggered by different segment start points.     */
+    // Allocates and loads the seg_details data structure. Max_len gives the
+    // maximum length of a segment (dimension of array). The code below tries
+    // to:
+    // (1) stagger the start points of segments of the same type evenly;
+    // (2) spread out the limited number of connection boxes or switch boxes
+    //     evenly along the length of a segment, starting at the segment ends;
+    // (3) stagger the connection and switch boxes on different long lines,
+    //     as they will not be staggered by different segment start points.
 
     // Unidir tracks are assigned in pairs, and bidir tracks individually
     int fac;
@@ -89,11 +89,11 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].length = length;
             seg_details[cur_track].longline = longline;
 
-            /* Stagger the start points in for each track set. The
-             * pin mappings should be aware of this when choosing an
-             * intelligent way of connecting pins and tracks.
-             * cur_track is used as an offset so that extra tracks
-             * from different segment types are hopefully better balanced. */
+            // Stagger the start points in for each track set.
+            // The pin mappings should be aware of this when choosing an
+            // intelligent way of connecting pins and tracks.
+            // cur_track is used as an offset so that extra tracks
+            // from different segment types are hopefully better balanced.
             seg_details[cur_track].start = (cur_track / fac) % length + 1;
 
             // These properties are used for vpr_to_phy_track to determine twisting of wires.
@@ -104,8 +104,8 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                 seg_details[cur_track].group_size = length * fac;
             }
 
-            /* Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
-             * since this is a property of a detailed route. */
+            // Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
+            // since this is a property of a detailed route.
             seg_details[cur_track].cb = std::make_unique<bool[]>(length);
             seg_details[cur_track].sb = std::make_unique<bool[]>(length + 1);
             for (int j = 0; j < length; ++j) {
@@ -121,7 +121,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                 if (seg_details[cur_track].longline) {
                     seg_details[cur_track].sb[j] = true;
                 } else {
-                    /* Use the segment's pattern. */
+                    // Use the segment's pattern.
                     int index = j % segment_inf[i].sb.size();
                     seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
                 }
@@ -140,7 +140,8 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
 
             // check for directionality to set the wire_switch and opin_switch
             // if not specified in the architecture file, we will use a same mux for both directions
-            if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1) {
+            if (seg_details[cur_track].direction == Direction::INC
+                || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1) {
                 seg_details[cur_track].arch_opin_switch = arch_opin_switch;
                 seg_details[cur_track].arch_wire_switch = arch_wire_switch;
             } else {
@@ -154,7 +155,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
 
             ++cur_track;
         }
-    } /* End for each segment type. */
+    } // End for each segment type.
 
     seg_details.resize(cur_track);
     return seg_details;
@@ -223,30 +224,24 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
         VTR_ASSERT(num_seg_details <= nodes_per_chan.y_max);
     }
 
-    // Gather interposer cuts along the segment dimension so that wires are
-    // split at cut boundaries rather than spanning across them.
-    std::vector<int> seg_dimension_cuts;
-    if (grid.has_interposer_cuts()) {
-        const auto& cuts_by_layer = (seg_parallel_axis == e_parallel_axis::X_AXIS)
-                                        ? grid.get_vertical_interposer_cuts()
-                                        : grid.get_horizontal_interposer_cuts();
-        if (!cuts_by_layer.empty()) {
-            seg_dimension_cuts = cuts_by_layer[0];
-        }
-    }
+    // TODO: t_chan_width type doesn't support multiple layers yet.
+    //       Interposer cuts can be at different locations on different layers.
+    //       This causes wires to be split at different locations on different layers.
+    VTR_ASSERT(!grid.has_interposer_cuts() || grid.get_num_layers() == 1);
+    
+    // Get interposer cuts along the segment dimension so that wires are
+    // split at cut boundaries rather than spanning across them, if any.
+    const std::vector<int>& seg_dimension_cuts = (seg_parallel_axis == e_parallel_axis::X_AXIS)
+                                                    ? grid.get_vertical_interposer_cuts()[0]
+                                                    : grid.get_horizontal_interposer_cuts()[0];
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
-
-    const std::vector<int> no_cuts;
 
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
             t_chan_seg_details* p_seg_details = chan_details[x][y].data();
             for (int i = 0; i < num_seg_details; ++i) {
                 p_seg_details[i] = t_chan_seg_details(&seg_details[i]);
-
-                int seg_start = -1;
-                int seg_end = -1;
 
                 // Compute the natural start and end first (without interposer
                 // cuts) so that the endpoint is based on the wire's true span.
@@ -266,16 +261,20 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
                     seg_max = (int)grid.height() - 2; //-2 for no perim channels
                 }
 
-                int natural_start = get_seg_start(p_seg_details, i, chan_num, seg_num, no_cuts);
-                int natural_end = get_seg_end(p_seg_details, i, natural_start, chan_num, seg_max, no_cuts);
+                // Get the natural start and end first (without interposer cuts)
+                int seg_start = get_seg_start(p_seg_details, i, chan_num, seg_num, {});
+                int seg_end = get_seg_end(p_seg_details, i, seg_start, chan_num, seg_max, {});
 
-                seg_start = natural_start;
-                seg_end = natural_end;
+                // If the wire's start point is before a cut and the current channel segment
+                // is after the cut, adjust the start point to the point immediately after the cut.
                 for (int c : seg_dimension_cuts) {
                     if (c >= seg_start && c < seg_num) {
                         seg_start = c + 1;
                     }
                 }
+
+                // If the wire's end point is after the cut but its start point is before the cut,
+                // move the end point to the cut position.
                 for (int c : seg_dimension_cuts) {
                     if (c >= seg_start && c < seg_end) {
                         seg_end = c;
@@ -306,10 +305,10 @@ static void adjust_chan_details(const t_chan_width& nodes_per_chan,
                                 t_chan_details& chan_details_y) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
-    for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
-        for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+    for (size_t y = 0; y <= grid.height() - 2; ++y) {    // -2 for no perim channels
+        for (size_t x = 0; x <= grid.width() - 2; ++x) { // -2 for no perim channels
 
-            /* Ignore any non-obstructed channel seg_detail structures */
+            // Ignore any non-obstructed channel seg_detail structures
             if (chan_details_x[x][y][0].length() > 0)
                 continue;
 
@@ -318,10 +317,10 @@ static void adjust_chan_details(const t_chan_width& nodes_per_chan,
         }
     }
 
-    for (size_t x = 0; x <= grid.width() - 2; ++x) {      //-2 for no perim channels
-        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
+    for (size_t x = 0; x <= grid.width() - 2; ++x) {      // -2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { // -2 for no perim channels
 
-            /* Ignore any non-obstructed channel seg_detail structures */
+            // Ignore any non-obstructed channel seg_detail structures
             if (chan_details_y[x][y][0].length() > 0)
                 continue;
 
@@ -331,9 +330,6 @@ static void adjust_chan_details(const t_chan_width& nodes_per_chan,
     }
 }
 
-/* Allocates and loads the chan_details data structure, a 2D array of
- * seg_details structures. This array is used to handle unique seg_details
- * (ie. channel segments) for each horizontal and vertical channel. */
 void alloc_and_load_chan_details(const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details_x,
                                  const std::vector<t_seg_details>& seg_details_y,
@@ -342,7 +338,7 @@ void alloc_and_load_chan_details(const t_chan_width& nodes_per_chan,
     chan_details_x = init_chan_details(nodes_per_chan, seg_details_x, e_parallel_axis::X_AXIS);
     chan_details_y = init_chan_details(nodes_per_chan, seg_details_y, e_parallel_axis::Y_AXIS);
 
-    /* Adjust segment start/end based on obstructed channels, if any */
+    // Adjust segment start/end based on obstructed channels, if any.
     adjust_chan_details(nodes_per_chan, chan_details_x, chan_details_y);
 }
 
@@ -410,10 +406,6 @@ std::vector<int> get_chan_seg_interposer_cuts(e_rr_type chan_type) {
     return {};
 }
 
-/* Returns the segment number at which the segment this track lies on
- * started. When interposer cuts are present (seg_dimension_cuts is non-empty),
- * the wire is split at the nearest cut between the natural start and seg_num,
- * so the returned start is on the same side of any cut as seg_num. */
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,
@@ -428,15 +420,15 @@ int get_seg_start(const t_chan_seg_details* seg_details,
             int length = seg_details[itrack].length();
             int start = seg_details[itrack].start();
 
-            /* Start is guaranteed to be between 1 and length. Hence, adding length to
-             * the quantity in brackets below guarantees it will be non-negative. */
+            // Start is guaranteed to be between 1 and length. Hence, adding length to
+            // the quantity in brackets below guarantees it will be non-negative.
             VTR_ASSERT(start > 0);
             VTR_ASSERT(start <= length);
 
-            /* NOTE: Start points are staggered between different channels.
-             * The start point must stagger backwards as chan_num increases.
-             * Unidirectional routing expects this to allow the N-to-N
-             * assumption to be made with respect to ending wires in the core. */
+            // NOTE: Start points are staggered between different channels.
+            // The start point must stagger backwards as chan_num increases.
+            // Unidirectional routing expects this to allow the N-to-N
+            // assumption to be made with respect to ending wires in the core.
             seg_start = seg_num - (seg_num + length + chan_num - start) % length;
             if (seg_start < 1) {
                 seg_start = 1;
@@ -456,7 +448,12 @@ int get_seg_start(const t_chan_seg_details* seg_details,
     return seg_start;
 }
 
-int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const int istart, const int chan_num, const int seg_max, const std::vector<int>& seg_dimension_cuts) {
+int get_seg_end(const t_chan_seg_details* seg_details,
+                const int itrack,
+                const int istart, 
+                const int chan_num, 
+                const int seg_max, 
+                const std::vector<int>& seg_dimension_cuts) {
     int seg_end;
 
     if (seg_details[itrack].longline()) {
@@ -467,21 +464,21 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
         int len = seg_details[itrack].length();
         int ofs = seg_details[itrack].start();
 
-        /* Normal endpoint */
+        // Normal endpoint
         seg_end = istart + len - 1;
 
-        /* If start is against edge it may have been clipped */
+        // If start is against edge it may have been clipped
         if (1 == istart) {
-            /* If the (staggered) startpoint of first full wire wasn't
-             * also 1, we must be the clipped wire */
+            // If the (staggered) startpoint of first full wire wasn't
+            // also 1, we must be the clipped wire
             int first_full = (len - (chan_num % len) + ofs - 1) % len + 1;
             if (first_full > 1) {
-                /* then we stop just before the first full seg */
+                // then we stop just before the first full seg
                 seg_end = first_full - 1;
             }
         }
 
-        /* Clip against far edge */
+        // Clip against far edge
         if (seg_end > seg_max) {
             seg_end = seg_max;
         }
