@@ -6,20 +6,6 @@
 #include "rr_types.h"
 #include "device_grid.h"
 
-/******************* Subroutines exported by rr_graph2.c *********************/
-
-void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width& nodes_per_chan,
-                         t_chan_details& chan_details_x,
-                         t_chan_details& chan_details_y);
-
-void adjust_seg_details(const int x,
-                        const int y,
-                        const DeviceGrid& grid,
-                        const t_chan_width& nodes_per_chan,
-                        t_chan_details& chan_details,
-                        const e_parallel_axis seg_details_type);
-
 bool is_cblock(const int chan,
                const int seg,
                const int track,
