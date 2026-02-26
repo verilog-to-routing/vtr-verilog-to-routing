@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
-#include "rr_graph2.h"
+#include "rr_graph_chan_seg_details.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 #include "vpr_utils.h"

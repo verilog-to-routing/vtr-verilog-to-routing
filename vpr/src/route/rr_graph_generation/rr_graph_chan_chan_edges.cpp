@@ -6,6 +6,7 @@
 #include "rr_rc_data.h"
 #include "rr_graph_sg.h"
 #include "rr_graph2.h"
+#include "rr_graph_chan_seg_details.h"
 #include "build_switchblocks.h"
 #include "build_scatter_gathers.h"
 #include "globals.h"
