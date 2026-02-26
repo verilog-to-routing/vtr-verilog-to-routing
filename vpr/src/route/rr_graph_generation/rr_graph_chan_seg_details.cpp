@@ -284,6 +284,7 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
 
                 p_seg_details[i].set_seg_start(seg_start);
                 p_seg_details[i].set_seg_end(seg_end);
+                p_seg_details[i].set_length (seg_end - seg_start + 1);
 
                 if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
                     if (i >= nodes_per_chan.x_list[y]) {
