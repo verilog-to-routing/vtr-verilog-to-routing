@@ -24,7 +24,8 @@ static void label_incoming_wires(const int chan_num,
                                  const int max_chan_width,
                                  std::vector<int>& labels,
                                  int* num_incoming_wires,
-                                 int* num_ending_wires);
+                                 int* num_ending_wires,
+                                 const std::vector<int>& seg_dimension_cuts);
 
 static int find_label_of_track(const std::vector<int>& wire_mux_on_track,
                                int num_wire_muxes,
@@ -36,11 +37,11 @@ void dump_seg_details(t_seg_details* seg_details,
 
 /******************** Subroutine definitions *******************************/
 
-bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details) {
+bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details, const std::vector<int>& seg_dimension_cuts) {
     int length = seg_details[track].length();
 
     // Make sure they gave us correct start
-    int start_seg = get_seg_start(seg_details, track, chan, seg);
+    int start_seg = get_seg_start(seg_details, track, chan, seg, seg_dimension_cuts);
 
     int ofs = seg - start_seg;
 
@@ -253,7 +254,7 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
     }
 }
 
-bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, const t_chan_seg_details* seg_details, const e_directionality directionality) {
+bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, const t_chan_seg_details* seg_details, const e_directionality directionality, const std::vector<int>& seg_dimension_cuts) {
     int fac = 1;
     if (UNI_DIRECTIONAL == directionality) {
         fac = 2;
@@ -262,7 +263,7 @@ bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, 
     int length = seg_details[track].length();
 
     // Make sure they gave us correct start
-    wire_seg = get_seg_start(seg_details, track, chan, wire_seg);
+    wire_seg = get_seg_start(seg_details, track, chan, wire_seg, seg_dimension_cuts);
 
     int offset = sb_seg - wire_seg + 1; // Offset 0 is behind us, so add 1
 
@@ -429,18 +430,21 @@ void load_sblock_pattern_lookup(const int i,
          * AA: Different channel widths have different seg_details 
          * warranting modified calls to static routines in this file. 
          */
+        const std::vector<int> cuts = get_chan_seg_interposer_cuts(vert ? e_rr_type::CHANY : e_rr_type::CHANX);
         label_incoming_wires(chan, seg, sb_seg,
                              seg_details, chan_len, end_dir, chan_width,
                              incoming_wire_label[side],
                              &num_incoming_wires[side],
-                             &num_ending_wires[side]);
+                             &num_ending_wires[side],
+                             cuts);
 
         /* Figure out all the tracks on a side that are starting. */
         int dummy;
         enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
         label_wire_muxes(chan, seg,
                          seg_details, UNDEFINED, chan_len, start_dir, chan_width,
-                         false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy);
+                         false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy,
+                         cuts);
     }
 
     for (e_side to_side : TOTAL_2D_SIDES) {
@@ -556,7 +560,8 @@ void label_wire_muxes(const int chan_num,
                       const bool check_cb,
                       std::vector<int>& labels,
                       int* num_wire_muxes,
-                      int* num_wire_muxes_cb_restricted) {
+                      int* num_wire_muxes_cb_restricted,
+                      const std::vector<int>& seg_dimension_cuts) {
     // COUNT pass then a LOAD pass
     int num_labels = 0;
     int num_labels_restricted = 0;
@@ -570,8 +575,8 @@ void label_wire_muxes(const int chan_num,
 
         // Find the tracks that are starting.
         for (int itrack = 0; itrack < max_chan_width; ++itrack) {
-            int start = get_seg_start(seg_details, itrack, chan_num, seg_num);
-            int end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
+            int start = get_seg_start(seg_details, itrack, chan_num, seg_num, seg_dimension_cuts);
+            int end = get_seg_end(seg_details, itrack, start, chan_num, max_len, seg_dimension_cuts);
 
             // Skip tracks that are undefined
             if (seg_details[itrack].length() == 0) {
@@ -628,7 +633,8 @@ static void label_incoming_wires(const int chan_num,
                                  const int max_chan_width,
                                  std::vector<int>& labels,
                                  int* num_incoming_wires,
-                                 int* num_ending_wires) {
+                                 int* num_ending_wires,
+                                 const std::vector<int>& seg_dimension_cuts) {
     /* Labels the incoming wires on that side (seg_num, chan_num, direction).
      * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,
      * the labels 0,1,2,.. identify consecutive incoming wires that have sblock (passing wires with sblock and ending wires) */
@@ -647,8 +653,8 @@ static void label_incoming_wires(const int chan_num,
             }
 
             if (seg_details[itrack].direction() == dir) {
-                int start = get_seg_start(seg_details, itrack, chan_num, seg_num);
-                int end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
+                int start = get_seg_start(seg_details, itrack, chan_num, seg_num, seg_dimension_cuts);
+                int end = get_seg_end(seg_details, itrack, start, chan_num, max_len, seg_dimension_cuts);
 
                 /* Determine if we are a wire endpoint */
                 bool is_endpoint = (seg_num == end);
@@ -658,7 +664,7 @@ static void label_incoming_wires(const int chan_num,
 
                 /* Determine if we have a sblock on the wire */
                 bool sblock_exists = is_sblock(chan_num, seg_num, sb_seg, itrack,
-                                               seg_details, UNI_DIRECTIONAL);
+                                               seg_details, UNI_DIRECTIONAL, seg_dimension_cuts);
 
                 switch (pass) {
                         /* On first pass, only load ending wire labels. */

@@ -40,13 +40,24 @@ std::vector<int> get_seg_track_counts(int num_sets,
                                       const std::vector<t_segment_inf>& segment_inf,
                                       bool use_full_seg_groups);
 
+/**
+ * @brief Returns interposer cut positions along the segment dimension for the given channel type.
+ *
+ * For CHANX (horizontal wires), returns vertical interposer cut x-positions.
+ * For CHANY (vertical wires), returns horizontal interposer cut y-positions.
+ * Returns an empty vector when there are no interposer cuts.
+ */
+std::vector<int> get_chan_seg_interposer_cuts(e_rr_type chan_type);
+
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,
-                  const int seg_num);
+                  const int seg_num,
+                  const std::vector<int>& seg_dimension_cuts);
 
 int get_seg_end(const t_chan_seg_details* seg_details,
                 const int itrack,
                 const int istart,
                 const int chan_num,
-                const int seg_max);                                      
+                const int seg_max,
+                const std::vector<int>& seg_dimension_cuts);                                      

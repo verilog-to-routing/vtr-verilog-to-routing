@@ -23,14 +23,16 @@ void adjust_seg_details(const int x,
 bool is_cblock(const int chan,
                const int seg,
                const int track,
-               const t_chan_seg_details* seg_details);
+               const t_chan_seg_details* seg_details,
+               const std::vector<int>& seg_dimension_cuts);
 
 bool is_sblock(const int chan,
                int wire_seg,
                const int sb_seg,
                const int track,
                const t_chan_seg_details* seg_details,
-               const e_directionality directionality);
+               const e_directionality directionality,
+               const std::vector<int>& seg_dimension_cuts);
 
 /**
  * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
@@ -52,7 +54,8 @@ void label_wire_muxes(const int chan_num,
                       const bool check_cb,
                       std::vector<int>& labels,
                       int* num_wire_muxes,
-                      int* num_wire_muxes_cb_restricted);
+                      int* num_wire_muxes_cb_restricted,
+                      const std::vector<int>& seg_dimension_cuts);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const t_chan_width& nodes_per_chan);

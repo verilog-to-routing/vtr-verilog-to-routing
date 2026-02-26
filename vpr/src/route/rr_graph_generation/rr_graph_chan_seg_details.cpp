@@ -223,7 +223,21 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
         VTR_ASSERT(num_seg_details <= nodes_per_chan.y_max);
     }
 
+    // Gather interposer cuts along the segment dimension so that wires are
+    // split at cut boundaries rather than spanning across them.
+    std::vector<int> seg_dimension_cuts;
+    if (grid.has_interposer_cuts()) {
+        const auto& cuts_by_layer = (seg_parallel_axis == e_parallel_axis::X_AXIS)
+                                        ? grid.get_vertical_interposer_cuts()
+                                        : grid.get_horizontal_interposer_cuts();
+        if (!cuts_by_layer.empty()) {
+            seg_dimension_cuts = cuts_by_layer[0];
+        }
+    }
+
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
+
+    const std::vector<int> no_cuts;
 
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
@@ -234,12 +248,38 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
                 int seg_start = -1;
                 int seg_end = -1;
 
+                // Compute the natural start and end first (without interposer
+                // cuts) so that the endpoint is based on the wire's true span.
+                // Then clamp both by the interposer cuts.  We must NOT pass
+                // a cut-adjusted start into get_seg_end because its internal
+                // formula (istart + len - 1) would produce a wrong endpoint.
+                int chan_num = -1;
+                int seg_num = -1;
+                int seg_max = -1;
                 if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
-                    seg_start = get_seg_start(p_seg_details, i, y, x);
-                    seg_end = get_seg_end(p_seg_details, i, seg_start, y, grid.width() - 2); //-2 for no perim channels
+                    chan_num = (int)y;
+                    seg_num = (int)x;
+                    seg_max = (int)grid.width() - 2; //-2 for no perim channels
                 } else if (seg_parallel_axis == e_parallel_axis::Y_AXIS) {
-                    seg_start = get_seg_start(p_seg_details, i, x, y);
-                    seg_end = get_seg_end(p_seg_details, i, seg_start, x, grid.height() - 2); //-2 for no perim channels
+                    chan_num = (int)x;
+                    seg_num = (int)y;
+                    seg_max = (int)grid.height() - 2; //-2 for no perim channels
+                }
+
+                int natural_start = get_seg_start(p_seg_details, i, chan_num, seg_num, no_cuts);
+                int natural_end = get_seg_end(p_seg_details, i, natural_start, chan_num, seg_max, no_cuts);
+
+                seg_start = natural_start;
+                seg_end = natural_end;
+                for (int c : seg_dimension_cuts) {
+                    if (c >= seg_start && c < seg_num) {
+                        seg_start = c + 1;
+                    }
+                }
+                for (int c : seg_dimension_cuts) {
+                    if (c >= seg_start && c < seg_end) {
+                        seg_end = c;
+                    }
                 }
 
                 p_seg_details[i].set_seg_start(seg_start);
@@ -354,12 +394,30 @@ static void adjust_seg_details(const int x,
     }
 }
 
+std::vector<int> get_chan_seg_interposer_cuts(e_rr_type chan_type) {
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    if (!grid.has_interposer_cuts()) {
+        return {};
+    }
+
+    const auto& cuts_by_layer = (chan_type == e_rr_type::CHANX)
+                                    ? grid.get_vertical_interposer_cuts()
+                                    : grid.get_horizontal_interposer_cuts();
+    if (!cuts_by_layer.empty()) {
+        return cuts_by_layer[0];
+    }
+    return {};
+}
+
 /* Returns the segment number at which the segment this track lies on
- * started. */
+ * started. When interposer cuts are present (seg_dimension_cuts is non-empty),
+ * the wire is split at the nearest cut between the natural start and seg_num,
+ * so the returned start is on the same side of any cut as seg_num. */
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,
-                  const int seg_num) {
+                  const int seg_num,
+                  const std::vector<int>& seg_dimension_cuts) {
     int seg_start = 0;
     if (seg_details[itrack].seg_start() >= 0) {
         seg_start = seg_details[itrack].seg_start();
@@ -385,38 +443,56 @@ int get_seg_start(const t_chan_seg_details* seg_details,
         }
     }
 
-    return seg_start;
-}
-
-int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const int istart, const int chan_num, const int seg_max) {
-    if (seg_details[itrack].longline()) {
-        return seg_max;
-    }
-
-    if (seg_details[itrack].seg_end() >= 0) {
-        return seg_details[itrack].seg_end();
-    }
-
-    int len = seg_details[itrack].length();
-    int ofs = seg_details[itrack].start();
-
-    /* Normal endpoint */
-    int seg_end = istart + len - 1;
-
-    /* If start is against edge it may have been clipped */
-    if (1 == istart) {
-        /* If the (staggered) startpoint of first full wire wasn't
-         * also 1, we must be the clipped wire */
-        int first_full = (len - (chan_num % len) + ofs - 1) % len + 1;
-        if (first_full > 1) {
-            /* then we stop just before the first full seg */
-            seg_end = first_full - 1;
+    // A cut at position c means positions <= c and positions > c are on different
+    // sides of the interposer. If any cut lies between seg_start and seg_num
+    // (i.e., seg_start <= c < seg_num), the wire must start after the cut.
+    for (int c : seg_dimension_cuts) {
+        if (c >= seg_start && c < seg_num) {
+            seg_start = c + 1;
         }
     }
 
-    /* Clip against far edge */
-    if (seg_end > seg_max) {
+    return seg_start;
+}
+
+int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const int istart, const int chan_num, const int seg_max, const std::vector<int>& seg_dimension_cuts) {
+    int seg_end;
+
+    if (seg_details[itrack].longline()) {
         seg_end = seg_max;
+    } else if (seg_details[itrack].seg_end() >= 0) {
+        seg_end = seg_details[itrack].seg_end();
+    } else {
+        int len = seg_details[itrack].length();
+        int ofs = seg_details[itrack].start();
+
+        /* Normal endpoint */
+        seg_end = istart + len - 1;
+
+        /* If start is against edge it may have been clipped */
+        if (1 == istart) {
+            /* If the (staggered) startpoint of first full wire wasn't
+             * also 1, we must be the clipped wire */
+            int first_full = (len - (chan_num % len) + ofs - 1) % len + 1;
+            if (first_full > 1) {
+                /* then we stop just before the first full seg */
+                seg_end = first_full - 1;
+            }
+        }
+
+        /* Clip against far edge */
+        if (seg_end > seg_max) {
+            seg_end = seg_max;
+        }
+    }
+
+    // A cut at position c means positions <= c and positions > c are on different
+    // sides of the interposer. If any cut lies within the wire span [istart, seg_end)
+    // (i.e., istart <= c < seg_end), the wire must end at the cut position.
+    for (int c : seg_dimension_cuts) {
+        if (c >= istart && c < seg_end) {
+            seg_end = c;
+        }
     }
 
     return seg_end;

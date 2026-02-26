@@ -175,6 +175,8 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  int* index) {
     const auto& device_ctx = g_vpr_ctx.device();
 
+    const std::vector<int> seg_dim_cuts = get_chan_seg_interposer_cuts(type);
+
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         // Skip the current die if architecture file specifies that it doesn't require global resource routing
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
@@ -196,7 +198,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                     if (seg_details[track].length() <= 0)
                         continue;
 
-                    int start = get_seg_start(seg_details, track, chan, seg);
+                    int start = get_seg_start(seg_details, track, chan, seg, seg_dim_cuts);
                     int node_start_x = (type == e_rr_type::CHANX) ? start : chan;
                     int node_start_y = (type == e_rr_type::CHANX) ? chan : start;
 
