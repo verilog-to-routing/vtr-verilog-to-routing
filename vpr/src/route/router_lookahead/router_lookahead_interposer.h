@@ -34,6 +34,8 @@ class InterposerLookahead {
      */
     std::pair<float, float> get_interposer_lookahead_cost(RRNodeId from_node, RRNodeId to_node) const;
 
+    std::pair<float, float> get_interposer_lookahead_cost(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
+
   private:
     /// @brief 2D Matrix storing pre-calculated delays between Die[i] and Die[j].
     vtr::NdMatrix<float, 2> die_to_die_delay_matrix_;
