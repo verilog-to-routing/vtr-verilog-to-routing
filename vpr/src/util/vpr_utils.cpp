@@ -440,22 +440,29 @@ int get_sub_tile_index(ClusterBlockId blk) {
  * for the node.
  */
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
+    t_pb_graph_pin* first_pin = nullptr;
     if (pb_graph_node->num_input_pins != nullptr) {
         /* If input port exists on this node, return the index of the first
          * input pin as node_id.
          */
-        t_pb_graph_pin first_input_pin = pb_graph_node->input_pins[0][0];
-        int node_id = first_input_pin.pin_count_in_cluster;
-        return node_id;
-    } else {
+        first_pin = &(pb_graph_node->input_pins[0][0]);
+    } else if (pb_graph_node->num_output_pins != nullptr) {
         /* If no input port exists on node, then return the index of the first
-         * output pin. Every pb_node is guaranteed to have at least an input or
          * output pin.
          */
-        t_pb_graph_pin first_output_pin = pb_graph_node->output_pins[0][0];
-        int node_id = first_output_pin.pin_count_in_cluster;
-        return node_id;
+        first_pin = &(pb_graph_node->output_pins[0][0]);
+    } else {
+        /* If no input or output pin exists, then return the index of the first
+         * clock pin. Every pb_node is guaranteed to have at least an input,
+         * output, or clock pin.
+         */
+        VTR_ASSERT(pb_graph_node->num_clock_pins != nullptr);
+        first_pin = &(pb_graph_node->clock_pins[0][0]);
     }
+
+    VTR_ASSERT_SAFE(first_pin != nullptr);
+    int node_id = first_pin->pin_count_in_cluster;
+    return node_id;
 }
 
 t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
