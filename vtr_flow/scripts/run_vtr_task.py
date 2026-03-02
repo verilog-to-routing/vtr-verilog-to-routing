@@ -325,7 +325,7 @@ def run_tasks(args, configs) -> int:
             print("\nParsing test results...")
             if len(args.list_file) > 0:
                 print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
-            parse_tasks(configs, jobs, args.alt_tasks_dir)
+            parse_tasks(configs, jobs, args.alt_tasks_dir, args.j)
             print("Elapsed time: {}".format(format_elapsed_time(datetime.now() - start)))
 
         if args.create_golden:
