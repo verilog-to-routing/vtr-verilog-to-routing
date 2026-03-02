@@ -132,10 +132,11 @@ class NetCostHandler {
                                       const PlacerCriticalities* criticalities,
                                       t_placer_costs& costs);
 
-    /**
-     * @brief Get the total wirelength estimate of all nets.
-     */
+    ///@brief Get the total wirelength estimate of all nets.
     double get_total_wirelength_estimate() const;
+
+    ///@brief Get the number of nets crossing interposer cuts.
+    int get_num_nets_crossing_interposer_cuts() const;
 
     /**
      * @brief Estimates routing channel utilization and computes the congestion cost
@@ -581,7 +582,7 @@ class NetCostHandler {
      */
     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
 
-    double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts);
+    double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
 
     /**
      * @brief Calculate the congestion cost of net using its 3D bounding box.
