@@ -1393,8 +1393,8 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
-    const std::vector<std::vector<int>> horizontal_cuts = grid.get_horizontal_interposer_cuts();
-    const std::vector<std::vector<int>> vertical_cuts = grid.get_vertical_interposer_cuts();
+    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
 
     
 
@@ -1419,7 +1419,7 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
     const double bb_width_factor = double(bb.xmax - bb.xmin + 1) / grid.width();
     const double bb_height_factor = double(bb.ymax - bb.ymin + 1) / grid.height();
 
-    double cost = num_horizontal_crossings * bb_width_factor + num_vertical_crossings * bb_height_factor;
+    double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
     return cost;
 }
 
