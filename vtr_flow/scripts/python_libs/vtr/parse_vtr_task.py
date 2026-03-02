@@ -13,6 +13,7 @@ import textwrap
 import shutil
 from datetime import datetime
 from contextlib import redirect_stdout
+from multiprocessing import Pool
 
 # pylint: disable=wrong-import-position
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -138,6 +139,15 @@ def vtr_command_argparser(prog=None):
         help="Parse the specified run directory. Defaults to the latest.",
     )
 
+    parser.add_argument(
+        "-j",
+        "-p",
+        default=1,
+        type=int,
+        metavar="NUM_PROC",
+        help="How many processors to use for execution.",
+    )
+
     parser.add_argument("-revision", default="", help="Revision number")
 
     return parser
@@ -153,6 +163,8 @@ def vtr_command_main(arg_list, prog=None):
     if args.run is not None:
         RunDir.set_user_run_dir_name(args.run)
     try:
+        assert args.j > 0, "Invalid number of processors"
+
         task_names = args.task
 
         for list_file in args.list_file:
@@ -164,7 +176,7 @@ def vtr_command_main(arg_list, prog=None):
         num_failed = 0
 
         jobs = create_jobs(args, configs, after_run=True)
-        parse_tasks(configs, jobs, args.alt_tasks_dir)
+        parse_tasks(configs, jobs, args.alt_tasks_dir, args.j)
 
         if args.create_golden:
             create_golden_results_for_tasks(configs, args.alt_tasks_dir)
@@ -194,13 +206,20 @@ def vtr_command_main(arg_list, prog=None):
     return num_failed
 
 
-def parse_tasks(configs, jobs, alt_tasks_dir=None):
+def parse_tasks(configs, jobs, alt_tasks_dir=None, num_procs=1):
     """
     Parse the selection of tasks specified in configs and associated jobs
     """
+    queued_procs = []
     for config in configs:
         config_jobs = [job for job in jobs if job.task_name() == config.task_name]
-        parse_task(config, config_jobs, alt_tasks_dir=alt_tasks_dir)
+        queued_procs.append((config, config_jobs, FIRST_PARSE_FILE, alt_tasks_dir))
+
+    with Pool(processes=num_procs) as pool:
+        for proc in queued_procs:
+            pool.apply_async(parse_task, proc)
+        pool.close()
+        pool.join()
 
 
 def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_tasks_dir=None):
