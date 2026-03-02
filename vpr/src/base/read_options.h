@@ -173,6 +173,8 @@ struct t_options {
     argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;
 
+    argparse::ArgValue<float> place_interposer_cost_factor;
+
     // NoC Options
     argparse::ArgValue<bool> noc;
     argparse::ArgValue<std::string> noc_flows_file;

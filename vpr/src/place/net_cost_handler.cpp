@@ -33,12 +33,14 @@
  */
 #include "net_cost_handler.h"
 
+#include "clustered_netlist.h"
 #include "clustered_netlist_fwd.h"
 #include "globals.h"
 #include "physical_types.h"
 #include "placer_state.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
+#include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 #include "PlacerCriticalities.h"
@@ -1386,7 +1388,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     return ncost;
 }
 
-double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) {
+double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
     const auto& grid = g_vpr_ctx.device().grid;
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
@@ -1394,8 +1396,7 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
     const std::vector<std::vector<int>> horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>> vertical_cuts = grid.get_vertical_interposer_cuts();
 
-    const int bb_width = bb.xmax - bb.xmin + 1;
-    const int bb_height = bb.ymax - bb.ymin + 1;
+    
 
     int num_horizontal_crossings = 0;
     int num_vertical_crossings = 0;
@@ -1415,7 +1416,10 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
         }
     }
 
-    double cost = num_horizontal_crossings * bb_width + num_vertical_crossings * bb_height;
+    const double bb_width_factor = double(bb.xmax - bb.xmin + 1) / grid.width();
+    const double bb_height_factor = double(bb.ymax - bb.ymin + 1) / grid.height();
+
+    double cost = num_horizontal_crossings * bb_width_factor + num_vertical_crossings * bb_height_factor;
     return cost;
 }
 
@@ -1665,6 +1669,11 @@ void NetCostHandler::update_move_nets() {
             proposed_net_cong_cost_[net_id] = -1;
         }
 
+        if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+            net_interposer_cost_[net_id] = proposed_net_interposer_cost_[net_id];
+            proposed_net_interposer_cost_[net_id] = -1;
+        }
+
         bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }
@@ -1729,7 +1738,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
 }
 
 double NetCostHandler::get_total_wirelength_estimate() const {
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     double estimated_wirelength = 0.0;
     for (ClusterNetId net_id : clb_nlist.nets()) {
@@ -1743,6 +1752,23 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     }
 
     return estimated_wirelength;
+}
+
+int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    int num_nets_crossing_interposer_cuts = 0;
+
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        if (!clb_nlist.net_is_ignored(net_id)) {
+            if (get_net_interposer_cost_(net_id, /*use_ts=*/false) > 0) {
+                num_nets_crossing_interposer_cuts++;
+            }
+        }
+    
+    }
+
+    return num_nets_crossing_interposer_cuts;
 }
 
 double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {

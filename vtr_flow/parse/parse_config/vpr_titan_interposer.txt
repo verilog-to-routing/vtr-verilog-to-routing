@@ -1,0 +1,3 @@
+
+%include vpr_titan.txt
+%include common/vpr.interposer.txt
