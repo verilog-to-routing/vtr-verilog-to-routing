@@ -273,6 +273,13 @@ int Placer::check_placement_costs_() {
         error++;
     }
 
+    if (fabs(cost_terms_check.interposer_cost - costs_.interposer_cost) > costs_.interposer_cost * PL_INCREMENTAL_COST_TOLERANCE) {
+        VTR_LOG_ERROR(
+            "interposer_cost_check: %g and interposer_cost: %g differ in check_place.\n",
+            cost_terms_check.interposer_cost, costs_.interposer_cost);
+        error++;
+    }
+
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double timing_cost_check;
         comp_td_costs(place_delay_model_.get(), *placer_criticalities_, placer_state_, &timing_cost_check);

@@ -1,0 +1,2 @@
+init_num_nets_crossing_interposer;vpr.out;Initial number of nets crossing interposer cuts: (\d+)
+num_nets_crossing_interposer;vpr.out;Number of nets crossing interposer cuts: (\d+)

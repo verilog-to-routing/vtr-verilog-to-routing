@@ -121,7 +121,6 @@ t_annealing_state::t_annealing_state(float first_t,
 }
 
 bool t_annealing_state::outer_loop_update(float success_rate,
-                                          bool congestion_modeling_enabled,
                                           const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts) {
 #ifndef NO_GRAPHICS
@@ -145,9 +144,11 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     // Automatically determine exit temperature.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-    if (congestion_modeling_enabled) {
-        t_exit *= (1. + placer_opts.congestion_factor);
-    }
+    t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor);
+
+    // if (congestion_modeling_enabled) {
+        
+    // }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
@@ -960,7 +961,7 @@ const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
 }
 
 bool PlacementAnnealer::outer_loop_update_state() {
-    return annealing_state_.outer_loop_update(placer_stats_.success_rate, congestion_modeling_started_, costs_, placer_opts_);
+    return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
 }
 
 void PlacementAnnealer::start_quench() {
