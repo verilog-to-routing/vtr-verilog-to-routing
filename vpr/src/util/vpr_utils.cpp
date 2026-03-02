@@ -438,28 +438,25 @@ int get_sub_tile_index(ClusterBlockId blk) {
  * this function will find the pin index (int pin_count_in_cluster) of the first
  * pin for a given pb_graph_node, and use this index value as unique identifier
  * for the node.
+ *
+ * The first pin for a pb_graph_node is the first input pin. If there are no input
+ * pins, then the first output pin is used. Finally, if no input or output pins exist,
+ * then the first clock pin is used. Every pb_node is guaranteed to have at least an
+ * input, output, or clock pin.
  */
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
+    // Select the first pin in the pb_graph node.
     t_pb_graph_pin* first_pin = nullptr;
     if (pb_graph_node->num_input_pins != nullptr) {
-        /* If input port exists on this node, return the index of the first
-         * input pin as node_id.
-         */
         first_pin = &(pb_graph_node->input_pins[0][0]);
     } else if (pb_graph_node->num_output_pins != nullptr) {
-        /* If no input port exists on node, then return the index of the first
-         * output pin.
-         */
         first_pin = &(pb_graph_node->output_pins[0][0]);
     } else {
-        /* If no input or output pin exists, then return the index of the first
-         * clock pin. Every pb_node is guaranteed to have at least an input,
-         * output, or clock pin.
-         */
         VTR_ASSERT(pb_graph_node->num_clock_pins != nullptr);
         first_pin = &(pb_graph_node->clock_pins[0][0]);
     }
 
+    // Use the pin count of the first pin in the cluster as the node id.
     VTR_ASSERT_SAFE(first_pin != nullptr);
     int node_id = first_pin->pin_count_in_cluster;
     return node_id;
