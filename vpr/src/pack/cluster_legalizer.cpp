@@ -36,6 +36,8 @@
 #include "vtr_assert.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
+#include "lazy_pop_unique_priority_queue.h"
+#include "cluster_placement.h"
 
 /*
  * @brief Allocates the stats stored within the pb of a cluster.
@@ -1234,15 +1236,23 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
+                                                                                                                                 molecule_id,
+                                                                                                                                 primitives_list,
+                                                                                                                                 prepacker_);
+
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
-        if (!get_next_primitive_list(cluster.placement_stats,
-                                     molecule_id,
-                                     primitives_list,
-                                     prepacker_)) {
+        if (primitives_alive.empty()) {
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
+
+        std::pair<t_pb_graph_node*, std::tuple<float, int, int>> primitive = primitives_alive.pop();
+        t_pb_graph_node* root = primitive.first;
+
+        if (!try_start_root_placement(cluster.placement_stats, molecule_id, root, primitives_list, prepacker_))
+            continue;
 
         block_pack_status = e_block_pack_status::BLK_PASSED;
         size_t failed_location = 0;
@@ -1413,6 +1423,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
              * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
              * their modes reset. This task is performed by the cleanup_pb() function below. */
             cleanup_pb(cluster.pb);
+
+            // Move failed primitive that is inflight to the tried map.
+            cluster.placement_stats->move_inflight_to_tried();
         } else {
             VTR_LOGV(log_verbosity_ > 3, "\t\tPASSED pack molecule\n");
         }
