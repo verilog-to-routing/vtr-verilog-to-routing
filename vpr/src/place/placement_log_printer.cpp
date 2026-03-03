@@ -183,9 +183,12 @@ void PlacementLogPrinter::print_place_status_header() const {
         for (size_t i = 0; i < cols.size(); ++i) {
             if (i) VTR_LOG(" ");
             const auto& col = cols[i];
-            if (line == 0 || line == 3) VTR_LOG("%s", col.dash.c_str());
-            else if (line == 1) VTR_LOG("%s", col.header1.c_str());
-            else VTR_LOG("%s", col.header2.c_str());
+            if (line == 0 || line == 3)
+                VTR_LOG("%s", col.dash.c_str());
+            else if (line == 1)
+                VTR_LOG("%s", col.header1.c_str());
+            else
+                VTR_LOG("%s", col.header2.c_str());
         }
         VTR_LOG("\n");
     }

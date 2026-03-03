@@ -274,7 +274,6 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
 std::pair<t_net_cost_terms, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    
     // TODO: compute congestion cost
     // Congestion modeling is not supported for per-layer mode, so 0 is returned.
     t_net_cost_terms cost_terms;
@@ -1394,8 +1393,6 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
 
-    
-
     int num_horizontal_crossings = 0;
     int num_vertical_crossings = 0;
 
@@ -1759,7 +1756,6 @@ int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
                 num_nets_crossing_interposer_cuts++;
             }
         }
-    
     }
 
     return num_nets_crossing_interposer_cuts;
