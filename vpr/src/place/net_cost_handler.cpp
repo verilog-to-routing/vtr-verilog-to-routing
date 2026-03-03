@@ -1574,8 +1574,6 @@ double wirelength_crossing_count(size_t fanout) {
 }
 
 void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
-    const auto& grid = g_vpr_ctx.device().grid;
-
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
@@ -1685,8 +1683,6 @@ void NetCostHandler::reset_move_nets() {
 void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
                                                   t_placer_costs& costs) {
-    const auto& grid = g_vpr_ctx.device().grid;
-
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
                                    const std::string& cost_name) -> void {
