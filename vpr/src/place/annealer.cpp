@@ -147,7 +147,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor);
 
     // if (congestion_modeling_enabled) {
-        
+
     // }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
@@ -512,9 +512,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    double delta_c = 0.;            // Change in cost due to this swap.
+    double delta_c = 0.; // Change in cost due to this swap.
     t_net_cost_terms cost_terms_delta;
-    double timing_delta_c = 0.;     // Change in the timing cost (delay * criticality).
+    double timing_delta_c = 0.; // Change in the timing cost (delay * criticality).
 
     // Allow some fraction of moves to not be restricted by rlim,
     // in the hopes of better escaping local minima.
