@@ -113,6 +113,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
+    interposer_cost_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cost_factor > 0;
 
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {
@@ -149,7 +150,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     net_cost_.resize(num_nets, -1.);
     proposed_net_cost_.resize(num_nets, -1.);
 
-    if (grid.has_interposer_cuts()) {
+    if (interposer_cost_enabled_) {
         VTR_ASSERT(cube_bb_ && !is_multi_layer_);
         net_interposer_cost_.resize(num_nets, -1.);
         proposed_net_interposer_cost_.resize(num_nets, -1.);
@@ -230,9 +231,6 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_met
 
 std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid = g_vpr_ctx.device().grid;
-
-    const bool has_interposer_cuts = grid.has_interposer_cuts();
 
     t_net_cost_terms cost_terms;
     double expected_wirelength = 0.;
@@ -253,7 +251,7 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
             }
 
-            if (has_interposer_cuts) {
+            if (interposer_cost_enabled_) {
                 net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
                 cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
@@ -1548,8 +1546,6 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
 t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid = g_vpr_ctx.device().grid;
-    
-    const bool has_interposer_cuts = grid.has_interposer_cuts();
 
     t_net_cost_terms cost_terms;
 
@@ -1562,7 +1558,7 @@ t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
                 cost_terms.cong_cost += net_cong_cost_[net_id];
             }
 
-            if (has_interposer_cuts) {
+            if (interposer_cost_enabled_) {
                 cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
         }
@@ -1583,7 +1579,6 @@ double wirelength_crossing_count(size_t fanout) {
 
 void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
     const auto& grid = g_vpr_ctx.device().grid;
-    const bool has_interposer_cuts = grid.has_interposer_cuts();
 
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
@@ -1596,7 +1591,7 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
             cost_terms_delta.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
         }
 
-        if (has_interposer_cuts) {
+        if (interposer_cost_enabled_) {
             proposed_net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/true);
             cost_terms_delta.interposer_cost += proposed_net_interposer_cost_[net_id] - net_interposer_cost_[net_id];
         }
@@ -1669,7 +1664,7 @@ void NetCostHandler::update_move_nets() {
             proposed_net_cong_cost_[net_id] = -1;
         }
 
-        if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+        if (interposer_cost_enabled_) {
             net_interposer_cost_[net_id] = proposed_net_interposer_cost_[net_id];
             proposed_net_interposer_cost_[net_id] = -1;
         }
@@ -1695,7 +1690,6 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
                                                   const PlacerCriticalities* criticalities,
                                                   t_placer_costs& costs) {
     const auto& grid = g_vpr_ctx.device().grid;
-    const bool has_interposer_cuts = grid.has_interposer_cuts();
 
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
@@ -1719,7 +1713,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.congestion_cost = 0.;
     }
 
-    if (has_interposer_cuts) {
+    if (interposer_cost_enabled_) {
         check_and_print_cost(new_cost_terms.interposer_cost, costs.interposer_cost, "interposer_cost");
         costs.interposer_cost = new_cost_terms.interposer_cost;
     } else {

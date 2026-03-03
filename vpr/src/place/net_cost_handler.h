@@ -162,6 +162,7 @@ class NetCostHandler {
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;
+    bool interposer_cost_enabled_;
     /// Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
     /// Determines whether the FPGA has multiple dies (layers)
