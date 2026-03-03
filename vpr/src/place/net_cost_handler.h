@@ -15,7 +15,6 @@
 class PlacerState;
 class PlacerCriticalities;
 
-
 /**
  * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
  * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
@@ -37,9 +36,9 @@ enum class e_cost_methods {
 };
 
 struct t_net_cost_terms {
-  double bb_cost = 0.;
-  double interposer_cost = 0.;
-  double cong_cost = 0.;
+    double bb_cost = 0.;
+    double interposer_cost = 0.;
+    double cong_cost = 0.;
 };
 
 class NetCostHandler {
