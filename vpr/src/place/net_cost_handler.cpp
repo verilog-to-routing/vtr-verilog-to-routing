@@ -1542,7 +1542,6 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
 
 t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid = g_vpr_ctx.device().grid;
 
     t_net_cost_terms cost_terms;
 
