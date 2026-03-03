@@ -146,10 +146,6 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
     t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor);
 
-    // if (congestion_modeling_enabled) {
-
-    // }
-
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
     if (success_rate > 0.96) {
