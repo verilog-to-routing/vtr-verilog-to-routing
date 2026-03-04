@@ -1807,7 +1807,8 @@ int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
 }
 
 void NetCostHandler::compute_interposer_est_cong_() {
-    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
@@ -1817,6 +1818,8 @@ void NetCostHandler::compute_interposer_est_cong_() {
 
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+
+    const ChannelMetric<vtr::NdMatrix<int, 3>>& chan_width = device_ctx.rr_chan_segment_width;
 
     horz_interposer_est_cong_.fill(0.);
     vert_interposer_est_cong_.fill(0.);
@@ -1854,11 +1857,38 @@ void NetCostHandler::compute_interposer_est_cong_() {
         }
     }
 
+    // Convert estimated wire count to utilization ratio (estimated / available).
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
+            const int cut_y = horizontal_cuts[layer][i_cut];
+            for (size_t x = 0; x < grid_width; x++) {
+                int avail = chan_width.y[layer][x][cut_y];
+                if (avail > 0) {
+                    horz_interposer_est_cong_[layer][i_cut][x] /= avail;
+                } else {
+                    horz_interposer_est_cong_[layer][i_cut][x] = 1.;
+                }
+            }
+        }
+    }
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t i_cut = 0; i_cut < vertical_cuts[layer].size(); i_cut++) {
+            const int cut_x = vertical_cuts[layer][i_cut];
+            for (size_t y = 0; y < grid_height; y++) {
+                int avail = chan_width.x[layer][cut_x][y];
+                if (avail > 0) {
+                    vert_interposer_est_cong_[layer][i_cut][y] /= avail;
+                } else {
+                    vert_interposer_est_cong_[layer][i_cut][y] = 1.;
+                }
+            }
+        }
+    }
+
     // Convert estimated congestion to prefix sums along the last dimension.
     // Stored so that prefix[0]=0 and prefix[i]=sum(contrib[0..i-1]), so range [a,b] sum = prefix[b+1]-prefix[a] (no bounds check for a-1).
     for (size_t layer = 0; layer < num_layers; layer++) {
-        const size_t num_h_cuts = horizontal_cuts[layer].size();
-        for (size_t i_cut = 0; i_cut < num_h_cuts; i_cut++) {
+        for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
             double running_sum = 0.;
             for (size_t x = 0; x <= grid_width; x++) {
                 horz_interposer_est_cong_[layer][i_cut][x] = running_sum;
@@ -1868,8 +1898,7 @@ void NetCostHandler::compute_interposer_est_cong_() {
     }
 
     for (size_t layer = 0; layer < num_layers; ++layer) {
-        const size_t num_v_cuts = vertical_cuts[layer].size();
-        for (size_t i_cut = 0; i_cut < num_v_cuts; ++i_cut) {
+        for (size_t i_cut = 0; i_cut < vertical_cuts[layer].size(); i_cut++) {
             double running_sum = 0.;
             for (size_t y = 0; y <= grid_height; ++y) {
                 vert_interposer_est_cong_[layer][i_cut][y] = running_sum;
