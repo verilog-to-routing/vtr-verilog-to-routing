@@ -1819,8 +1819,6 @@ void NetCostHandler::compute_interposer_est_cong_() {
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
 
-    const ChannelMetric<vtr::NdMatrix<int, 3>>& chan_width = device_ctx.rr_chan_segment_width;
-
     horz_interposer_est_cong_.fill(0.);
     vert_interposer_est_cong_.fill(0.);
 
@@ -1857,12 +1855,13 @@ void NetCostHandler::compute_interposer_est_cong_() {
         }
     }
 
+    const vtr::NdMatrix<int, 3>& horz_interposer_capacity = device_ctx.horz_interposer_capacity_;
+    const vtr::NdMatrix<int, 3>& vert_interposer_capacity = device_ctx.vert_interposer_capacity_;
     // Convert estimated wire count to utilization ratio (estimated / available).
     for (size_t layer = 0; layer < num_layers; layer++) {
         for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
-            const int cut_y = horizontal_cuts[layer][i_cut];
             for (size_t x = 0; x < grid_width; x++) {
-                int avail = chan_width.y[layer][x][cut_y];
+                int avail = horz_interposer_capacity[layer][i_cut][x];
                 if (avail > 0) {
                     horz_interposer_est_cong_[layer][i_cut][x] /= avail;
                 } else {
@@ -1873,9 +1872,8 @@ void NetCostHandler::compute_interposer_est_cong_() {
     }
     for (size_t layer = 0; layer < num_layers; layer++) {
         for (size_t i_cut = 0; i_cut < vertical_cuts[layer].size(); i_cut++) {
-            const int cut_x = vertical_cuts[layer][i_cut];
             for (size_t y = 0; y < grid_height; y++) {
-                int avail = chan_width.x[layer][cut_x][y];
+                int avail = vert_interposer_capacity[layer][i_cut][y];
                 if (avail > 0) {
                     vert_interposer_est_cong_[layer][i_cut][y] /= avail;
                 } else {
