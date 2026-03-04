@@ -35,6 +35,7 @@
 
 #include "clustered_netlist.h"
 #include "clustered_netlist_fwd.h"
+#include "device_grid.h"
 #include "globals.h"
 #include "physical_types.h"
 #include "placer_state.h"
@@ -1754,6 +1755,52 @@ int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
     }
 
     return num_nets_crossing_interposer_cuts;
+}
+
+void NetCostHandler::compute_interposer_est_cong_() {
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
+
+    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+
+    horz_interposer_est_cong_.fill(0.);
+    vert_interposer_est_cong_.fill(0.);
+
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            continue;
+        }
+
+        const t_bb& bb = bb_coords_[net_id];
+
+        for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+
+            const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+            for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
+                int cut_y = layer_h_cuts[i_cut];
+                if (cut_y >= bb.ymin && cut_y < bb.ymax) {
+                    const double cong_congribution = 1.0 / (bb.xmax - bb.xmin + 1);
+                    for (int x = bb.xmin; x <= bb.xmax; x++) {
+                        horz_interposer_est_cong_[layer][i_cut][x] += cong_congribution;
+                    }
+                }
+            }
+
+            const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+            for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
+                int cut_x = layer_v_cuts[i_cut];
+                if (cut_x >= bb.xmin && cut_x < bb.xmax) {
+                    const double cong_congribution = 1.0 / (bb.ymax - bb.ymin + 1);
+                    for (int y = bb.ymin; y <= bb.ymax; y++) {
+                        vert_interposer_est_cong_[layer][i_cut][y] += cong_congribution;
+                    }
+                }
+            }       
+        }
+    }
+
 }
 
 double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {
