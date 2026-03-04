@@ -1074,6 +1074,57 @@ static void alloc_and_init_channel_width() {
         chan_width_list.x[loc.y] = std::max(chan_width.x[loc.layer_num][loc.x][loc.y], chan_width_list.x[loc.y]);
         chan_width_list.y[loc.x] = std::max(chan_width.y[loc.layer_num][loc.x][loc.y], chan_width_list.y[loc.x]);
     }
+
+    // Initialize interposer capacity: for each (layer, cut_idx), capacity at each (x or y) along the cut
+    if (grid.has_interposer_cuts()) {
+        const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+        const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+        const size_t num_layers = grid.get_num_layers();
+
+        size_t max_h_cuts = 0, max_v_cuts = 0;
+        for (size_t layer = 0; layer < num_layers; layer++) {
+            max_h_cuts = std::max(max_h_cuts, horizontal_cuts[layer].size());
+            max_v_cuts = std::max(max_v_cuts, vertical_cuts[layer].size());
+        }
+
+        vtr::NdMatrix<int, 3>& horz_interposer_capacity = mutable_device_ctx.horz_interposer_capacity_;
+        vtr::NdMatrix<int, 3>& vert_interposer_capacity = mutable_device_ctx.vert_interposer_capacity_;
+
+        horz_interposer_capacity.resize({num_layers, max_h_cuts, grid.width()});
+        vert_interposer_capacity.resize({num_layers, max_v_cuts, grid.height()});
+        horz_interposer_capacity.fill(0);
+        vert_interposer_capacity.fill(0);
+
+        for (RRNodeId node_id : rr_graph.nodes()) {
+            e_rr_type rr_type = rr_graph.node_type(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
+            int cap = rr_graph.node_capacity(node_id);
+
+            if (rr_type == e_rr_type::CHANY) {
+                int x = rr_graph.node_xlow(node_id);
+                int ylow = rr_graph.node_ylow(node_id);
+                int yhigh = rr_graph.node_yhigh(node_id);
+                const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+                for (size_t cut_idx = 0; cut_idx < layer_h_cuts.size(); cut_idx++) {
+                    int cut_y = layer_h_cuts[cut_idx];
+                    if (ylow <= cut_y && cut_y < yhigh) {
+                        horz_interposer_capacity[layer][cut_idx][x] += cap;
+                    }
+                }
+            } else if (rr_type == e_rr_type::CHANX) {
+                int y = rr_graph.node_ylow(node_id);
+                int xlow = rr_graph.node_xlow(node_id);
+                int xhigh = rr_graph.node_xhigh(node_id);
+                const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+                for (size_t cut_idx = 0; cut_idx < layer_v_cuts.size(); cut_idx++) {
+                    int cut_x = layer_v_cuts[cut_idx];
+                    if (xlow <= cut_x && cut_x < xhigh) {
+                        vert_interposer_capacity[layer][cut_idx][y] += cap;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
