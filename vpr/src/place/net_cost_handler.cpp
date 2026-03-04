@@ -1431,6 +1431,51 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     return x_chan_cong + y_chan_cong;
 }
 
+double NetCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) {
+    constexpr double INTERPOSER_CONG_THRESHOLD = 0.5;
+
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
+
+    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+
+    double cost = 0.;
+
+    for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+        // Horizontal cuts: net crosses if cut_y is in [bb.ymin, bb.ymax).
+        // Bounding box for that cut is x in [bb.xmin, bb.xmax]; congestion is stored as prefix sum along x.
+        const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+        for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
+            int cut_y = layer_h_cuts[i_cut];
+            if (cut_y >= bb.ymin && cut_y < bb.ymax) {
+                int count_x = bb.xmax - bb.xmin + 1;
+                double sum = horz_interposer_est_cong_[layer][i_cut][bb.xmax]
+                            - (bb.xmin > 0 ? horz_interposer_est_cong_[layer][i_cut][bb.xmin - 1] : 0.);
+                double avg = sum / count_x;
+
+                cost += std::max(0.0, avg - INTERPOSER_CONG_THRESHOLD);
+            }
+        }
+
+        // Vertical cuts: net crosses if cut_x is in [bb.xmin, bb.xmax).
+        // Bounding box for that cut is y in [bb.ymin, bb.ymax]; congestion is stored as prefix sum along y.
+        const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+        for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
+            int cut_x = layer_v_cuts[i_cut];
+            if (cut_x >= bb.xmin && cut_x < bb.xmax) {
+                int count_y = bb.ymax - bb.ymin + 1;
+                double sum = vert_interposer_est_cong_[layer][i_cut][bb.ymax]
+                            - (bb.ymin > 0 ? vert_interposer_est_cong_[layer][i_cut][bb.ymin - 1] : 0.);
+                double avg = sum / count_y;
+                cost += std::max(0.0, avg - INTERPOSER_CONG_THRESHOLD);
+            }
+        }
+    }
+
+    return cost;
+}
+
 double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts) {
     // Per-layer bounding box of the net
     const std::vector<t_2D_bb>& bb = use_ts ? layer_ts_bb_coord_new_[net_id] : layer_bb_coords_[net_id];

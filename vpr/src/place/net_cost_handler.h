@@ -598,6 +598,8 @@ class NetCostHandler {
      */
     double get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts);
 
+    double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts);
+
     /**
      * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
      * and return the sum of the costs
