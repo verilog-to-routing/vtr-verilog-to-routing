@@ -137,6 +137,8 @@ class NetCostHandler {
     ///@brief Get the number of nets crossing interposer cuts.
     int get_num_nets_crossing_interposer_cuts() const;
 
+    void compute_interposer_est_cong_();
+
     /**
      * @brief Estimates routing channel utilization and computes the congestion cost
      * for each net.
@@ -235,6 +237,9 @@ class NetCostHandler {
     /// Store the number of blocks on each layer ()
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::Matrix<int> num_sink_pin_layer_;
+
+    vtr::NdMatrix<double, 3> horz_interposer_est_cong_;
+    vtr::NdMatrix<double, 3> vert_interposer_est_cong_;
 
     /**
      * @brief In each of these vectors, there is one entry per cluster level net:
