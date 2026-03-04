@@ -1762,6 +1762,10 @@ void NetCostHandler::compute_interposer_est_cong_() {
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
+    const size_t num_layers = grid.get_num_layers();
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
 
@@ -1798,6 +1802,30 @@ void NetCostHandler::compute_interposer_est_cong_() {
                     }
                 }
             }       
+        }
+    }
+
+    // Convert estimated congestion to prefix sums along the last dimension.
+    // For horizontal cuts, take prefix sums along x; for vertical cuts, along y.
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        const size_t num_h_cuts = horizontal_cuts[layer].size();
+        for (size_t i_cut = 0; i_cut < num_h_cuts; i_cut++) {
+            double running_sum = 0.;
+            for (size_t x = 0; x < grid_width; x++) {
+                running_sum += horz_interposer_est_cong_[layer][i_cut][x];
+                horz_interposer_est_cong_[layer][i_cut][x] = running_sum;
+            }
+        }
+    }
+
+    for (size_t layer = 0; layer < num_layers; ++layer) {
+        const size_t num_v_cuts = vertical_cuts[layer].size();
+        for (size_t i_cut = 0; i_cut < num_v_cuts; ++i_cut) {
+            double running_sum = 0.;
+            for (size_t y = 0; y < grid_height; ++y) {
+                running_sum += vert_interposer_est_cong_[layer][i_cut][y];
+                vert_interposer_est_cong_[layer][i_cut][y] = running_sum;
+            }
         }
     }
 
