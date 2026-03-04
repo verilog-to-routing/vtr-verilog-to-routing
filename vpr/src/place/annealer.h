@@ -105,7 +105,6 @@ class t_annealing_state {
      * @return True->continues the annealing. False->exits the annealing.
      */
     bool outer_loop_update(float success_rate,
-                           bool congestion_modeling_enabled,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts);
 

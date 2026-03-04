@@ -33,19 +33,23 @@
  */
 #include "net_cost_handler.h"
 
+#include "clustered_netlist.h"
 #include "clustered_netlist_fwd.h"
 #include "globals.h"
 #include "physical_types.h"
 #include "placer_state.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
+#include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 #include "PlacerCriticalities.h"
 #include "vtr_prefix_sum.h"
 #include "stats.h"
 
+#include <algorithm>
 #include <array>
+#include <vector>
 
 static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
@@ -103,11 +107,13 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     , placer_state_(placer_state)
     , placer_opts_(placer_opts) {
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
-    const size_t num_layers = device_ctx.grid.get_num_layers();
+    const size_t num_layers = grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
+    interposer_cost_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cost_factor > 0;
 
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {
@@ -144,6 +150,15 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     net_cost_.resize(num_nets, -1.);
     proposed_net_cost_.resize(num_nets, -1.);
 
+    if (interposer_cost_enabled_) {
+        VTR_ASSERT(cube_bb_ && !is_multi_layer_);
+        net_interposer_cost_.resize(num_nets, -1.);
+        proposed_net_interposer_cost_.resize(num_nets, -1.);
+
+        VTR_ASSERT(std::ranges::is_sorted(grid.get_horizontal_interposer_cuts()));
+        VTR_ASSERT(std::ranges::is_sorted(grid.get_vertical_interposer_cuts()));
+    }
+
     // Used to store costs for moves not yet made and to indicate when a net's
     // cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
     // been recomputed.
@@ -163,9 +178,10 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
-    const size_t grid_height = device_ctx.grid.height();
-    const size_t grid_width = device_ctx.grid.width();
+    const size_t grid_height = grid.height();
+    const size_t grid_width = grid.width();
 
     // These arrays contain accumulative channel width between channel zero and
     // the channel specified by the given index. The accumulated channel width
@@ -209,14 +225,14 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     }
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
+std::pair<t_net_cost_terms, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
     return comp_bb_cong_cost_functor_(method);
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
+std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double bb_cost = 0.;
+    t_net_cost_terms cost_terms;
     double expected_wirelength = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
@@ -230,35 +246,38 @@ std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cos
             }
 
             net_cost_[net_id] = get_net_cube_bb_cost_(net_id, /*use_ts=*/false);
-            bb_cost += net_cost_[net_id];
+            cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
+            }
+
+            if (interposer_cost_enabled_) {
+                net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
+                cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
         }
     }
 
-    double cong_cost = 0.;
     // Compute congestion cost using recomputed bounding boxes and channel utilization map
     if (congestion_modeling_started_) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/false);
-                cong_cost += net_cong_cost_[net_id];
+                cost_terms.cong_cost += net_cong_cost_[net_id];
             }
         }
     }
 
-    return {bb_cost, expected_wirelength, cong_cost};
+    return {cost_terms, expected_wirelength};
 }
 
-std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
+std::pair<t_net_cost_terms, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double cost = 0.;
-    double expected_wirelength = 0.;
     // TODO: compute congestion cost
     // Congestion modeling is not supported for per-layer mode, so 0 is returned.
-    constexpr double cong_cost = 0.;
+    t_net_cost_terms cost_terms;
+    double expected_wirelength = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -274,14 +293,14 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
             }
 
             net_cost_[net_id] = get_net_per_layer_bb_cost_(net_id, /*use_ts=*/false);
-            cost += net_cost_[net_id];
+            cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
             }
         }
     }
 
-    return {cost, expected_wirelength, cong_cost};
+    return {cost_terms, expected_wirelength};
 }
 
 void NetCostHandler::update_net_bb_(const ClusterNetId net,
@@ -1366,6 +1385,39 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     return ncost;
 }
 
+double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
+    const auto& grid = g_vpr_ctx.device().grid;
+
+    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
+
+    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+
+    int num_horizontal_crossings = 0;
+    int num_vertical_crossings = 0;
+
+    for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+        const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+        for (int cut_y : layer_h_cuts) {
+            if (cut_y >= bb.ymin && cut_y < bb.ymax) {
+                num_horizontal_crossings++;
+            }
+        }
+        const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+        for (int cut_x : layer_v_cuts) {
+            if (cut_x >= bb.xmin && cut_x < bb.xmax) {
+                num_vertical_crossings++;
+            }
+        }
+    }
+
+    const double bb_width_factor = double(bb.xmax - bb.xmin + 1) / grid.width();
+    const double bb_height_factor = double(bb.ymax - bb.ymin + 1) / grid.height();
+
+    double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
+    return cost;
+}
+
 double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
     VTR_ASSERT_SAFE(congestion_modeling_started_);
     const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
@@ -1488,24 +1540,27 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
     return z_cost_factor;
 }
 
-std::pair<double, double> NetCostHandler::recompute_bb_cong_cost_() {
+t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double bb_cost = 0.;
-    double cong_cost = 0.;
+    t_net_cost_terms cost_terms;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             // Bounding boxes don't have to be recomputed; they're correct.
-            bb_cost += net_cost_[net_id];
+            cost_terms.bb_cost += net_cost_[net_id];
 
             if (congestion_modeling_started_) {
-                cong_cost += net_cong_cost_[net_id];
+                cost_terms.cong_cost += net_cong_cost_[net_id];
+            }
+
+            if (interposer_cost_enabled_) {
+                cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
         }
     }
 
-    return {bb_cost, cong_cost};
+    return cost_terms;
 }
 
 double wirelength_crossing_count(size_t fanout) {
@@ -1518,16 +1573,21 @@ double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c) {
+void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
         proposed_net_cost_[net_id] = get_net_bb_cost_functor_(net_id);
-        bb_delta_c += proposed_net_cost_[net_id] - net_cost_[net_id];
+        cost_terms_delta.bb_cost += proposed_net_cost_[net_id] - net_cost_[net_id];
 
         if (congestion_modeling_started_) {
             proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
-            congestion_delta_c += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
+            cost_terms_delta.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
+        }
+
+        if (interposer_cost_enabled_) {
+            proposed_net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/true);
+            cost_terms_delta.interposer_cost += proposed_net_interposer_cost_[net_id] - net_interposer_cost_[net_id];
         }
     }
 }
@@ -1535,12 +1595,12 @@ void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_d
 void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                                          const PlacerCriticalities* criticalities,
                                                          t_pl_blocks_to_be_moved& blocks_affected,
-                                                         double& bb_delta_c,
-                                                         double& timing_delta_c,
-                                                         double& congestion_delta_c) {
-    VTR_ASSERT_DEBUG(bb_delta_c == 0.);
+                                                         t_net_cost_terms& cost_terms_delta,
+                                                         double& timing_delta_c) {
+    VTR_ASSERT_DEBUG(cost_terms_delta.bb_cost == 0.);
+    VTR_ASSERT_DEBUG(cost_terms_delta.cong_cost == 0.);
+    VTR_ASSERT_DEBUG(cost_terms_delta.interposer_cost == 0.);
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
-    VTR_ASSERT_DEBUG(congestion_delta_c == 0.);
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
@@ -1569,7 +1629,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
     // Now update the bounding box costs (since the net bounding
     // boxes are up-to-date). The cost is only updated once per net.
-    set_bb_delta_cost_(bb_delta_c, congestion_delta_c);
+    set_bb_delta_cost_(cost_terms_delta);
 }
 
 void NetCostHandler::update_move_nets() {
@@ -1596,6 +1656,11 @@ void NetCostHandler::update_move_nets() {
         if (congestion_modeling_started_) {
             net_cong_cost_[net_id] = proposed_net_cong_cost_[net_id];
             proposed_net_cong_cost_[net_id] = -1;
+        }
+
+        if (interposer_cost_enabled_) {
+            net_interposer_cost_[net_id] = proposed_net_interposer_cost_[net_id];
+            proposed_net_interposer_cost_[net_id] = -1;
         }
 
         bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
@@ -1629,15 +1694,22 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         }
     };
 
-    auto [new_bb_cost, new_cong_cost] = recompute_bb_cong_cost_();
-    check_and_print_cost(new_bb_cost, costs.bb_cost, "bb_cost");
-    costs.bb_cost = new_bb_cost;
+    t_net_cost_terms new_cost_terms = recompute_bb_cong_cost_();
+    check_and_print_cost(new_cost_terms.bb_cost, costs.bb_cost, "bb_cost");
+    costs.bb_cost = new_cost_terms.bb_cost;
 
     if (congestion_modeling_started_) {
-        check_and_print_cost(new_cong_cost, costs.congestion_cost, "cong_cost");
-        costs.congestion_cost = new_cong_cost;
+        check_and_print_cost(new_cost_terms.cong_cost, costs.congestion_cost, "cong_cost");
+        costs.congestion_cost = new_cost_terms.cong_cost;
     } else {
         costs.congestion_cost = 0.;
+    }
+
+    if (interposer_cost_enabled_) {
+        check_and_print_cost(new_cost_terms.interposer_cost, costs.interposer_cost, "interposer_cost");
+        costs.interposer_cost = new_cost_terms.interposer_cost;
+    } else {
+        costs.interposer_cost = 0.;
     }
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
@@ -1647,12 +1719,12 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.timing_cost = new_timing_cost;
     } else {
         VTR_ASSERT(placer_opts_.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
-        costs.cost = new_bb_cost * costs.bb_cost_norm;
+        costs.cost = new_cost_terms.bb_cost * costs.bb_cost_norm;
     }
 }
 
 double NetCostHandler::get_total_wirelength_estimate() const {
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     double estimated_wirelength = 0.0;
     for (ClusterNetId net_id : clb_nlist.nets()) {
@@ -1666,6 +1738,22 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     }
 
     return estimated_wirelength;
+}
+
+int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    int num_nets_crossing_interposer_cuts = 0;
+
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        if (!clb_nlist.net_is_ignored(net_id)) {
+            if (get_net_interposer_cost_(net_id, /*use_ts=*/false) > 0) {
+                num_nets_crossing_interposer_cuts++;
+            }
+        }
+    }
+
+    return num_nets_crossing_interposer_cuts;
 }
 
 double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {

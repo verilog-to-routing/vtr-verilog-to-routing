@@ -35,6 +35,12 @@ enum class e_cost_methods {
     CHECK
 };
 
+struct t_net_cost_terms {
+    double bb_cost = 0.;
+    double interposer_cost = 0.;
+    double cong_cost = 0.;
+};
+
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
@@ -68,7 +74,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_bb_cong_cost(e_cost_methods method);
+    std::pair<t_net_cost_terms, double> comp_bb_cong_cost(e_cost_methods method);
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.
@@ -96,9 +102,8 @@ class NetCostHandler {
     void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
-                                             double& bb_delta_c,
-                                             double& timing_delta_c,
-                                             double& congestion_delta_c);
+                                             t_net_cost_terms& cost_terms_delta,
+                                             double& timing_delta_c);
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -126,10 +131,11 @@ class NetCostHandler {
                                       const PlacerCriticalities* criticalities,
                                       t_placer_costs& costs);
 
-    /**
-     * @brief Get the total wirelength estimate of all nets.
-     */
+    ///@brief Get the total wirelength estimate of all nets.
     double get_total_wirelength_estimate() const;
+
+    ///@brief Get the number of nets crossing interposer cuts.
+    int get_num_nets_crossing_interposer_cuts() const;
 
     /**
      * @brief Estimates routing channel utilization and computes the congestion cost
@@ -155,6 +161,7 @@ class NetCostHandler {
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;
+    bool interposer_cost_enabled_;
     /// Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
     /// Determines whether the FPGA has multiple dies (layers)
@@ -164,7 +171,7 @@ class NetCostHandler {
     /// Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
     /// Points to the proper method for computing the bounding box cost, estimated wirelength and congestion cost from scratch.
-    std::function<std::tuple<double, double, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
+    std::function<std::pair<t_net_cost_terms, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     /// Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
     /// Points to the proper method for getting the bounding box cost of a net
@@ -249,6 +256,8 @@ class NetCostHandler {
      */
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
+
+    vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
 
     /**
      * @brief The congestion cost for each net is based on the extent to which its
@@ -335,7 +344,7 @@ class NetCostHandler {
      * @param bb_delta_c Bounding box cost difference after and before moving the block.
      * @param congestion_delta_c Congestion cost difference after and before moving the block.
      */
-    void set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c);
+    void set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta);
 
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
@@ -536,7 +545,7 @@ class NetCostHandler {
      * @note Congestion modeling is not supported for per-layer mode, so 0 is returned.
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_per_layer_bb_cost_(e_cost_methods method);
+    std::pair<t_net_cost_terms, double> comp_per_layer_bb_cost_(e_cost_methods method);
 
     /**
      * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
@@ -547,7 +556,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::tuple<double, double, double> comp_cube_bb_cong_cost_(e_cost_methods method);
+    std::pair<t_net_cost_terms, double> comp_cube_bb_cong_cost_(e_cost_methods method);
 
     /**
      * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
@@ -562,7 +571,7 @@ class NetCostHandler {
      *        it would only add the costs again.
      * @return (total bb cost, total congestion cost)
      */
-    std::pair<double, double> recompute_bb_cong_cost_();
+    t_net_cost_terms recompute_bb_cong_cost_();
 
     /**
      * @brief Given the 3D BB, calculate the wire-length cost of the net
@@ -572,6 +581,8 @@ class NetCostHandler {
      * @return Wirelength cost of the net
      */
     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
+
+    double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
 
     /**
      * @brief Calculate the congestion cost of net using its 3D bounding box.

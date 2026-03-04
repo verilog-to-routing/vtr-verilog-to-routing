@@ -2,6 +2,7 @@
 #include "placement_log_printer.h"
 
 #include "echo_files.h"
+#include "globals.h"
 #include "place_macro.h"
 #include "timing_util.h"
 #include "vtr_log.h"
@@ -15,90 +16,201 @@
 #include "draw.h"
 #include "read_place.h"
 #include "tatum/echo_writer.hpp"
+#include "vpr_context.h"
+#include "vtr_util.h"
+
+#include <cmath>
+#include <functional>
+#include <limits>
+#include <string>
+#include <vector>
+
+std::vector<PlaceStatusColumn> PlacementLogPrinter::get_place_status_columns() const {
+    const bool noc_enabled = placer_.noc_opts_.noc;
+    const bool has_interposer = g_vpr_ctx.device().grid.has_interposer_cuts();
+
+    std::vector<PlaceStatusColumn> cols;
+    auto add = [&](bool show, const char* d, const char* h1, const char* h2,
+                   std::function<std::string(float)> fn) {
+        if (!show) return;
+        cols.push_back(PlaceStatusColumn{d, h1, h2, std::move(fn)});
+    };
+
+    add(true, "----", "Tnum", "    ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const t_annealing_state& st = annealer.get_annealing_state();
+            return vtr::string_fmt("%4zu", st.num_temps);
+        });
+    // width 6
+    add(true, "------", " Time ", "(sec) ",
+        [](float elapsed_sec) { return vtr::string_fmt("%6.1f", elapsed_sec); });
+    add(true, "-------", "   T   ", "       ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const t_annealing_state& st = annealer.get_annealing_state();
+            return vtr::string_fmt("%7.1e", st.t);
+        });
+    add(true, "-------", "AvCost ", "       ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%7.3f", stats.av_cost);
+        });
+    // width 10
+    add(true, "----------", "Av BB Cost", "          ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%10.2f", stats.av_bb_cost);
+        });
+    add(true, "----------", "Av TD Cost", "          ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%-10.5g", stats.av_timing_cost);
+        });
+    // width 7
+    add(true, "-------", "  CPD  ", "  (ns) ",
+        [this](float) {
+            const bool is_td = placer_.placer_opts_.place_algorithm.is_timing_driven();
+            const float nan = std::numeric_limits<float>::quiet_NaN();
+            float cpd_ns = 1e9f * (is_td ? placer_.critical_path_.delay() : nan);
+            return vtr::string_fmt("%7.3f", cpd_ns);
+        });
+    // width 10
+    add(true, "----------", "   sTNS   ", "   (ns)   ",
+        [this](float) {
+            const bool is_td = placer_.placer_opts_.place_algorithm.is_timing_driven();
+            const float nan = std::numeric_limits<float>::quiet_NaN();
+            float sTNS_ns = 1e9f * (is_td ? placer_.timing_info_->setup_total_negative_slack() : nan);
+            return vtr::string_fmt("% 10.3g", sTNS_ns);
+        });
+    // width 8
+    add(true, "--------", "  sWNS  ", "  (ns)  ",
+        [this](float) {
+            const bool is_td = placer_.placer_opts_.place_algorithm.is_timing_driven();
+            const float nan = std::numeric_limits<float>::quiet_NaN();
+            float sWNS_ns = 1e9f * (is_td ? placer_.timing_info_->setup_worst_negative_slack() : nan);
+            return vtr::string_fmt("% 8.3f", sWNS_ns);
+        });
+    // width 7
+    add(true, "-------", "AcRate ", "       ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%7.3f", stats.success_rate);
+        });
+    add(true, "-------", "StdDev ", "       ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%7.4f", stats.std_dev);
+        });
+    // width 6
+    add(true, "------", "R lim ", "      ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const t_annealing_state& st = annealer.get_annealing_state();
+            return vtr::string_fmt("%6.1f", st.rlim);
+        });
+    // width 8
+    add(true, "--------", "CritExp ", "        ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const t_annealing_state& st = annealer.get_annealing_state();
+            return vtr::string_fmt("%8.2f", st.crit_exponent);
+        });
+    // width 9
+    add(true, "---------", "TotMoves ", "         ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            size_t v = static_cast<size_t>(annealer.get_total_iteration());
+            return (v <= static_cast<size_t>(std::pow(10, 9) - 1))
+                       ? vtr::string_fmt(" %9zu", v)
+                       : vtr::string_fmt(" %#9.3g", static_cast<double>(v));
+        });
+    // width 6
+    add(true, "------", "Alpha ", "      ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const t_annealing_state& st = annealer.get_annealing_state();
+            return vtr::string_fmt("%6.3f", st.alpha);
+        });
+    // width 8
+    add(noc_enabled, "--------", "Agg. BW ", " (bps)  ",
+        [this](float) {
+            const NocCostTerms& noc = placer_.costs_.noc_cost_terms;
+            return vtr::string_fmt("%7.2e", noc.aggregate_bandwidth);
+        });
+    add(noc_enabled, "--------", "Agg.Lat ", " (ns)   ",
+        [this](float) {
+            const NocCostTerms& noc = placer_.costs_.noc_cost_terms;
+            return vtr::string_fmt("%7.2e", noc.latency);
+        });
+    add(noc_enabled, "---------", "Lat Over.", " (ns)",
+        [this](float) {
+            const NocCostTerms& noc = placer_.costs_.noc_cost_terms;
+            return vtr::string_fmt("%8.2e", noc.latency_overrun);
+        });
+    add(noc_enabled, "---------", "NoC Cong.", "     ",
+        [this](float) {
+            const NocCostTerms& noc = placer_.costs_.noc_cost_terms;
+            return vtr::string_fmt("%8.2f", noc.congestion);
+        });
+    add(has_interposer, "---------", "Av Int.Cost", "     ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%9.3f", stats.av_interposer_cost);
+        });
+
+    return cols;
+}
 
 PlacementLogPrinter::PlacementLogPrinter(const Placer& placer, bool quiet)
     : placer_(placer)
     , quiet_(quiet)
-    , msg_(quiet ? 0 : vtr::bufsize) {}
+    , msg_(quiet ? 0 : vtr::bufsize) {
+    place_status_columns_ = get_place_status_columns();
+}
 
 void PlacementLogPrinter::print_place_status_header() const {
-    if (quiet_) {
-        return;
-    }
-
-    const bool noc_enabled = placer_.noc_opts_.noc;
-
+    if (quiet_) return;
+    const auto& cols = place_status_columns_;
     VTR_LOG("\n");
-    if (!noc_enabled) {
-        VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
-        VTR_LOG(
-            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
-        VTR_LOG(
-            "      (sec)                                          (ns)       (ns)     (ns)                                                 \n");
-        VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
-    } else {
-        VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- ---------  ---------\n");
-        VTR_LOG(
-            "Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha Agg. BW  Agg. Lat Lat Over. NoC Cong.\n");
-        VTR_LOG(
-            "      (sec)                                          (ns)       (ns)     (ns)                                                   (bps)     (ns)     (ns)             \n");
-        VTR_LOG(
-            "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- --------- ---------\n");
+    for (int line = 0; line < 4; ++line) {
+        for (size_t i = 0; i < cols.size(); ++i) {
+            if (i) VTR_LOG(" ");
+            const auto& col = cols[i];
+            if (line == 0 || line == 3)
+                VTR_LOG("%s", col.dash.c_str());
+            else if (line == 1)
+                VTR_LOG("%s", col.header1.c_str());
+            else
+                VTR_LOG("%s", col.header2.c_str());
+        }
+        VTR_LOG("\n");
     }
 }
 
 void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
-    if (quiet_) {
-        return;
+    if (quiet_) return;
+
+    const t_annealing_state& annealing_state = placer_.annealer_->get_annealing_state();
+
+    const auto& cols = place_status_columns_;
+    for (size_t i = 0; i < cols.size(); ++i) {
+        if (i) VTR_LOG(" ");
+        VTR_LOG("%s", cols[i].format_value(elapsed_sec).c_str());
     }
-
-    const PlacementAnnealer& annealer = *placer_.annealer_;
-    const t_annealing_state& annealing_state = annealer.get_annealing_state();
-    const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
-    const int tot_moves = annealer.get_total_iteration();
-    const t_placer_costs& costs = placer_.costs_;
-    std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info_;
-
-    const bool noc_enabled = placer_.noc_opts_.noc;
-    const NocCostTerms& noc_cost_terms = placer_.costs_.noc_cost_terms;
-
-    const bool is_timing_driven = placer_.placer_opts_.place_algorithm.is_timing_driven();
-    const float cpd = is_timing_driven ? placer_.critical_path_.delay() : std::numeric_limits<float>::quiet_NaN();
-    const float sTNS = is_timing_driven ? placer_.timing_info_->setup_total_negative_slack() : std::numeric_limits<float>::quiet_NaN();
-    const float sWNS = is_timing_driven ? placer_.timing_info_->setup_worst_negative_slack() : std::numeric_limits<float>::quiet_NaN();
-
-    VTR_LOG(
-        "%4zu %6.1f %7.1e "
-        "%7.3f %10.2f %-10.5g "
-        "%7.3f % 10.3g % 8.3f "
-        "%7.3f %7.4f %6.1f %8.2f",
-        annealing_state.num_temps, elapsed_sec, annealing_state.t,
-        placer_stats.av_cost, placer_stats.av_bb_cost, placer_stats.av_timing_cost,
-        1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
-        placer_stats.success_rate, placer_stats.std_dev, annealing_state.rlim, annealing_state.crit_exponent);
-
-    pretty_print_uint(" ", tot_moves, 9, 3);
-
-    VTR_LOG(" %6.3f", annealing_state.alpha);
-
-    if (noc_enabled) {
-        VTR_LOG(
-            " %7.2e %7.2e"
-            " %8.2e %8.2f",
-            noc_cost_terms.aggregate_bandwidth, noc_cost_terms.latency,
-            noc_cost_terms.latency_overrun, noc_cost_terms.congestion);
-    }
-
     VTR_LOG("\n");
     fflush(stdout);
 
+    const t_placer_costs& costs = placer_.costs_;
     sprintf(msg_.data(), "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
             costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
-
-    update_screen(ScreenUpdatePriority::MINOR, msg_.data(), e_pic_type::PLACEMENT, timing_info);
+    update_screen(ScreenUpdatePriority::MINOR, msg_.data(), e_pic_type::PLACEMENT, placer_.timing_info_);
 }
 
 void PlacementLogPrinter::print_resources_utilization() const {
@@ -189,6 +301,11 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
         placer_.noc_cost_handler_->print_noc_costs("Initial NoC Placement Costs", costs, placer_.noc_opts_);
     }
 
+    if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+        VTR_LOG("Initial placement estimated interposer cost: %g\n", costs.interposer_cost);
+        VTR_LOG("Initial number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
+    }
+
     if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
                 1e9 * placer_.critical_path_.delay());
@@ -241,6 +358,10 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     VTR_LOG("\n");
     double estimated_wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
     VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", estimated_wirelength);
+
+    if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+        VTR_LOG("Number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
+    }
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
         //Final timing estimate

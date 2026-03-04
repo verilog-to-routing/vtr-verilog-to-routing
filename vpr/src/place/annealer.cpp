@@ -121,7 +121,6 @@ t_annealing_state::t_annealing_state(float first_t,
 }
 
 bool t_annealing_state::outer_loop_update(float success_rate,
-                                          bool congestion_modeling_enabled,
                                           const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts) {
 #ifndef NO_GRAPHICS
@@ -145,9 +144,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     // Automatically determine exit temperature.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-    if (congestion_modeling_enabled) {
-        t_exit *= (1. + placer_opts.congestion_factor);
-    }
+    t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor);
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
@@ -511,10 +508,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    double delta_c = 0.;            // Change in cost due to this swap.
-    double bb_delta_c = 0.;         // Change in the bounding box (wiring) cost.
-    double timing_delta_c = 0.;     // Change in the timing cost (delay * criticality).
-    double congestion_delta_c = 0.; // Change in the congestion cost
+    double delta_c = 0.; // Change in cost due to this swap.
+    t_net_cost_terms cost_terms_delta;
+    double timing_delta_c = 0.; // Change in the timing cost (delay * criticality).
 
     // Allow some fraction of moves to not be restricted by rlim,
     // in the hopes of better escaping local minima.
@@ -592,7 +588,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
          * delays and timing costs and store them in proposed_* data structures.
          */
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
-                                                              bb_delta_c, timing_delta_c, congestion_delta_c);
+                                                              cost_terms_delta, timing_delta_c);
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -603,14 +599,15 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\t\tMove bb_delta_c %e, bb_cost_norm %e, timing_tradeoff %f, "
                            "timing_delta_c %e, timing_cost_norm %e\n",
-                           bb_delta_c,
+                           cost_terms_delta.bb_cost,
                            costs_.bb_cost_norm,
                            placer_opts_.timing_tradeoff,
                            timing_delta_c,
                            costs_.timing_cost_norm);
-            delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
+            delta_c = (1 - placer_opts_.timing_tradeoff) * cost_terms_delta.bb_cost * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
-                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
+                      + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm
+                      + placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -649,9 +646,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\t\tMove bb_delta_c %e, bb_cost_norm %e\n",
-                           bb_delta_c,
+                           cost_terms_delta.bb_cost,
                            costs_.bb_cost_norm);
-            delta_c = bb_delta_c * costs_.bb_cost_norm;
+            delta_c = cost_terms_delta.bb_cost * costs_.bb_cost_norm;
         }
 
         NocCostTerms noc_delta_c; // change in NoC cost
@@ -670,14 +667,15 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
         if (manual_move_enabled) {
-            move_outcome = pl_do_manual_move(delta_c, timing_delta_c, bb_delta_c, move_outcome);
+            move_outcome = pl_do_manual_move(delta_c, timing_delta_c, cost_terms_delta.bb_cost, move_outcome);
         }
 #endif //NO_GRAPHICS
 
         if (move_outcome == e_move_result::ACCEPTED) {
             costs_.cost += delta_c;
-            costs_.bb_cost += bb_delta_c;
-            costs_.congestion_cost += congestion_delta_c;
+            costs_.bb_cost += cost_terms_delta.bb_cost;
+            costs_.congestion_cost += cost_terms_delta.cong_cost;
+            costs_.interposer_cost += cost_terms_delta.interposer_cost;
 
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
@@ -761,14 +759,14 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         move_type_stats_.incr_accept_reject(proposed_action, move_outcome);
 
         move_outcome_stats.delta_cost_norm = delta_c;
-        move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs_.bb_cost_norm;
+        move_outcome_stats.delta_bb_cost_norm = cost_terms_delta.bb_cost * costs_.bb_cost_norm;
         move_outcome_stats.delta_timing_cost_norm = timing_delta_c * costs_.timing_cost_norm;
 
-        move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
+        move_outcome_stats.delta_bb_cost_abs = cost_terms_delta.bb_cost;
         move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
 
         if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-            LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c, (move_outcome == e_move_result::ACCEPTED ? "ACCEPTED" : "REJECTED"), "");
+            LOG_MOVE_STATS_OUTCOME(delta_c, cost_terms_delta.bb_cost, timing_delta_c, (move_outcome == e_move_result::ACCEPTED ? "ACCEPTED" : "REJECTED"), "");
         }
     }
     move_outcome_stats.outcome = move_outcome;
@@ -782,7 +780,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     }
 
 #ifndef NO_GRAPHICS
-    stop_placement_and_check_breakpoints(blocks_affected_, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+    stop_placement_and_check_breakpoints(blocks_affected_, move_outcome, delta_c, cost_terms_delta.bb_cost, timing_delta_c);
 #endif
 
     // Clear the data structure containing block move info
@@ -959,7 +957,7 @@ const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
 }
 
 bool PlacementAnnealer::outer_loop_update_state() {
-    return annealing_state_.outer_loop_update(placer_stats_.success_rate, congestion_modeling_started_, costs_, placer_opts_);
+    return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
 }
 
 void PlacementAnnealer::start_quench() {
