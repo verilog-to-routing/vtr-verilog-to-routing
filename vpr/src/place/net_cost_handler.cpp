@@ -115,6 +115,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
     is_multi_layer_ = num_layers > 1;
     interposer_cost_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cost_factor > 0;
+    interposer_cong_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cong_factor > 0;
 
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {
@@ -158,6 +159,12 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
         VTR_ASSERT(std::ranges::is_sorted(grid.get_horizontal_interposer_cuts()));
         VTR_ASSERT(std::ranges::is_sorted(grid.get_vertical_interposer_cuts()));
+    }
+
+    if (interposer_cong_enabled_) {
+        VTR_ASSERT(cube_bb_ && !is_multi_layer_);
+        horz_interposer_est_cong_.resize({num_layers, grid.get_horizontal_interposer_cuts().size(), grid.width() + 1}, 0.);
+        vert_interposer_est_cong_.resize({num_layers, grid.get_vertical_interposer_cuts().size(), grid.height() + 1}, 0.);
     }
 
     // Used to store costs for moves not yet made and to indicate when a net's
@@ -1432,14 +1439,13 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
 }
 
 double NetCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) {
-    constexpr double INTERPOSER_CONG_THRESHOLD = 0.5;
-
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
 
+    const float threshold = placer_opts_.interposer_cong_threshold;
     double cost = 0.;
 
     for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
@@ -1450,11 +1456,10 @@ double NetCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, b
             int cut_y = layer_h_cuts[i_cut];
             if (cut_y >= bb.ymin && cut_y < bb.ymax) {
                 int count_x = bb.xmax - bb.xmin + 1;
-                double sum = horz_interposer_est_cong_[layer][i_cut][bb.xmax]
-                            - (bb.xmin > 0 ? horz_interposer_est_cong_[layer][i_cut][bb.xmin - 1] : 0.);
+                double sum = horz_interposer_est_cong_[layer][i_cut][bb.xmax + 1] - horz_interposer_est_cong_[layer][i_cut][bb.xmin];
                 double avg = sum / count_x;
 
-                cost += std::max(0.0, avg - INTERPOSER_CONG_THRESHOLD);
+                cost += std::max(0.0, avg - threshold);
             }
         }
 
@@ -1465,10 +1470,9 @@ double NetCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, b
             int cut_x = layer_v_cuts[i_cut];
             if (cut_x >= bb.xmin && cut_x < bb.xmax) {
                 int count_y = bb.ymax - bb.ymin + 1;
-                double sum = vert_interposer_est_cong_[layer][i_cut][bb.ymax]
-                            - (bb.ymin > 0 ? vert_interposer_est_cong_[layer][i_cut][bb.ymin - 1] : 0.);
+                double sum = vert_interposer_est_cong_[layer][i_cut][bb.ymax + 1] - vert_interposer_est_cong_[layer][i_cut][bb.ymin];
                 double avg = sum / count_y;
-                cost += std::max(0.0, avg - INTERPOSER_CONG_THRESHOLD);
+                cost += std::max(0.0, avg - threshold);
             }
         }
     }
@@ -1851,14 +1855,14 @@ void NetCostHandler::compute_interposer_est_cong_() {
     }
 
     // Convert estimated congestion to prefix sums along the last dimension.
-    // For horizontal cuts, take prefix sums along x; for vertical cuts, along y.
+    // Stored so that prefix[0]=0 and prefix[i]=sum(contrib[0..i-1]), so range [a,b] sum = prefix[b+1]-prefix[a] (no bounds check for a-1).
     for (size_t layer = 0; layer < num_layers; layer++) {
         const size_t num_h_cuts = horizontal_cuts[layer].size();
         for (size_t i_cut = 0; i_cut < num_h_cuts; i_cut++) {
             double running_sum = 0.;
-            for (size_t x = 0; x < grid_width; x++) {
-                running_sum += horz_interposer_est_cong_[layer][i_cut][x];
+            for (size_t x = 0; x <= grid_width; x++) {
                 horz_interposer_est_cong_[layer][i_cut][x] = running_sum;
+                running_sum += (x < grid_width) ? horz_interposer_est_cong_[layer][i_cut][x] : 0.;
             }
         }
     }
@@ -1867,9 +1871,9 @@ void NetCostHandler::compute_interposer_est_cong_() {
         const size_t num_v_cuts = vertical_cuts[layer].size();
         for (size_t i_cut = 0; i_cut < num_v_cuts; ++i_cut) {
             double running_sum = 0.;
-            for (size_t y = 0; y < grid_height; ++y) {
-                running_sum += vert_interposer_est_cong_[layer][i_cut][y];
+            for (size_t y = 0; y <= grid_height; ++y) {
                 vert_interposer_est_cong_[layer][i_cut][y] = running_sum;
+                running_sum += (y < grid_height) ? vert_interposer_est_cong_[layer][i_cut][y] : 0.;
             }
         }
     }
