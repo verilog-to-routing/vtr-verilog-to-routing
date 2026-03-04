@@ -163,8 +163,14 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
     if (interposer_cong_enabled_) {
         VTR_ASSERT(cube_bb_ && !is_multi_layer_);
-        horz_interposer_est_cong_.resize({num_layers, grid.get_horizontal_interposer_cuts().size(), grid.width() + 1}, 0.);
-        vert_interposer_est_cong_.resize({num_layers, grid.get_vertical_interposer_cuts().size(), grid.height() + 1}, 0.);
+
+        size_t max_h_cuts = 0, max_v_cuts = 0;
+        for (size_t layer = 0; layer < num_layers; layer++) {
+            max_h_cuts = std::max(max_h_cuts, grid.get_horizontal_interposer_cuts()[layer].size());
+            max_v_cuts = std::max(max_v_cuts, grid.get_vertical_interposer_cuts()[layer].size());
+        }
+        horz_interposer_est_cong_.resize({num_layers, max_h_cuts, grid.width() + 1}, 0.);
+        vert_interposer_est_cong_.resize({num_layers, max_v_cuts, grid.height() + 1}, 0.);
     }
 
     // Used to store costs for moves not yet made and to indicate when a net's
