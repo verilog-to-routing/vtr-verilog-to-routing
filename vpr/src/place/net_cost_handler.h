@@ -264,6 +264,7 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
 
     vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
+    vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
     /**
      * @brief The congestion cost for each net is based on the extent to which its
