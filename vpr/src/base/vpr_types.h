@@ -1009,6 +1009,9 @@ struct t_placer_opts {
 
     float interposer_cost_factor;
 
+    float interposer_cong_threshold;
+    float interposer_cong_factor;
+
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;
 
