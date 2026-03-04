@@ -164,6 +164,9 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     if (interposer_cong_enabled_) {
         VTR_ASSERT(cube_bb_ && !is_multi_layer_);
 
+        net_interposer_cong_cost_.resize(num_nets, -1.);
+        proposed_net_interposer_cong_cost_.resize(num_nets, -1.);
+
         size_t max_h_cuts = 0, max_v_cuts = 0;
         for (size_t layer = 0; layer < num_layers; layer++) {
             max_h_cuts = std::max(max_h_cuts, grid.get_horizontal_interposer_cuts()[layer].size());
@@ -268,6 +271,11 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
             if (interposer_cost_enabled_) {
                 net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
                 cost_terms.interposer_cost += net_interposer_cost_[net_id];
+            }
+
+            if (interposer_cong_enabled_) {
+                net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
+                cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
             }
         }
     }
@@ -1613,6 +1621,10 @@ t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
             if (interposer_cost_enabled_) {
                 cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
+
+            if (interposer_cong_enabled_) {
+                cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
+            }
         }
     }
 
@@ -1644,6 +1656,11 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
         if (interposer_cost_enabled_) {
             proposed_net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/true);
             cost_terms_delta.interposer_cost += proposed_net_interposer_cost_[net_id] - net_interposer_cost_[net_id];
+        }
+
+        if (interposer_cong_enabled_) {
+            proposed_net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/true);
+            cost_terms_delta.interposer_cong_cost += proposed_net_interposer_cong_cost_[net_id] - net_interposer_cong_cost_[net_id];
         }
     }
 }
@@ -1717,6 +1734,11 @@ void NetCostHandler::update_move_nets() {
         if (interposer_cost_enabled_) {
             net_interposer_cost_[net_id] = proposed_net_interposer_cost_[net_id];
             proposed_net_interposer_cost_[net_id] = -1;
+        }
+
+        if (interposer_cong_enabled_) {
+            net_interposer_cong_cost_[net_id] = proposed_net_interposer_cong_cost_[net_id];
+            proposed_net_interposer_cong_cost_[net_id] = -1;
         }
 
         bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
