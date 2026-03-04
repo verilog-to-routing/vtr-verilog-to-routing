@@ -257,6 +257,9 @@ struct DeviceContext : public Context {
     /// Stores the number of wire segments in each routing channel segment at [layer][x][y]
     ChannelMetric<vtr::NdMatrix<int, 3>> rr_chan_segment_width;
 
+    vtr::NdMatrix<int, 3> horz_interposer_capacity_;
+    vtr::NdMatrix<int, 3> vert_interposer_capacity_;
+
     /// Stores the maximum channel segment width in each horizontal/vertical channel
     ChannelMetric<std::vector<int>> rr_chan_width;
 
