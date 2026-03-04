@@ -2,67 +2,23 @@
 
 #include <vector>
 
-#include "build_switchblocks.h"
 #include "rr_graph_type.h"
-#include "rr_graph_fwd.h"
-#include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
-
-/******************* Subroutines exported by rr_graph2.c *********************/
-
-std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
-                                                      const int max_len,
-                                                      const std::vector<t_segment_inf>& segment_inf,
-                                                      const bool use_full_seg_groups,
-                                                      const e_directionality directionality);
-
-void alloc_and_load_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width& nodes_per_chan,
-                                 const std::vector<t_seg_details>& seg_details_x,
-                                 const std::vector<t_seg_details>& seg_details_y,
-                                 t_chan_details& chan_details_x,
-                                 t_chan_details& chan_details_y);
-
-t_chan_details init_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width& nodes_per_chan,
-                                 const std::vector<t_seg_details>& seg_details,
-                                 const e_parallel_axis seg_details_type);
-
-void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width& nodes_per_chan,
-                         t_chan_details& chan_details_x,
-                         t_chan_details& chan_details_y);
-
-void adjust_seg_details(const int x,
-                        const int y,
-                        const DeviceGrid& grid,
-                        const t_chan_width& nodes_per_chan,
-                        t_chan_details& chan_details,
-                        const e_parallel_axis seg_details_type);
-
-int get_seg_start(const t_chan_seg_details* seg_details,
-                  const int itrack,
-                  const int chan_num,
-                  const int seg_num);
-
-int get_seg_end(const t_chan_seg_details* seg_details,
-                const int itrack,
-                const int istart,
-                const int chan_num,
-                const int seg_max);
 
 bool is_cblock(const int chan,
                const int seg,
                const int track,
-               const t_chan_seg_details* seg_details);
+               const t_chan_seg_details* seg_details,
+               const std::vector<int>& seg_dimension_cuts);
 
 bool is_sblock(const int chan,
                int wire_seg,
                const int sb_seg,
                const int track,
                const t_chan_seg_details* seg_details,
-               const e_directionality directionality);
+               const e_directionality directionality,
+               const std::vector<int>& seg_dimension_cuts);
 
 /**
  * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
@@ -84,7 +40,8 @@ void label_wire_muxes(const int chan_num,
                       const bool check_cb,
                       std::vector<int>& labels,
                       int* num_wire_muxes,
-                      int* num_wire_muxes_cb_restricted);
+                      int* num_wire_muxes_cb_restricted,
+                      const std::vector<int>& seg_dimension_cuts);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const t_chan_width& nodes_per_chan);
@@ -98,29 +55,6 @@ void load_sblock_pattern_lookup(const int i,
                                 const int Fs,
                                 const enum e_switch_block_type switch_block_type,
                                 t_sblock_pattern& sblock_pattern);
-
-/**
- * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.
- *
- * This function determines how many routing tracks (or sets of tracks) to assign to each
- * segment type in order to match the desired frequency distribution specified in
- * the segment information.
- *
- * When @p use_full_seg_groups is true, the function assigns tracks in multiples of the
- * segment length, which may result in a total track count that slightly overshoots or
- * undershoots the target @p num_sets. The algorithm proceeds by:
- * - Calculating the demand for each segment type.
- * - Iteratively assigning tracks to the segment type with the highest remaining demand.
- * - Optionally undoing the last assignment if it overshoots the target by more than half a group.
- *
- * @param num_sets Total number of track sets to assign.
- * @param segment_inf Vector containing segment type information (frequency, length, etc.).
- * @param use_full_seg_groups If true, assign tracks in full segment-length groups.
- * @return A vector where each element indicates the number of tracks assigned to the corresponding segment type.
- */
-std::vector<int> get_seg_track_counts(int num_sets,
-                                      const std::vector<t_segment_inf>& segment_inf,
-                                      bool use_full_seg_groups);
 
 void dump_seg_details(const t_chan_seg_details* seg_details,
                       int max_chan_width,

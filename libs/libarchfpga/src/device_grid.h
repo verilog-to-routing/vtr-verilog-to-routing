@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include "vtr_bimap.h"
 #include "vtr_ndmatrix.h"
 #include "physical_types.h"
 #include "vtr_geometry.h"
@@ -22,6 +23,40 @@ struct t_grid_tile {
 // Used in multi-die 2.5D and 3D architectures
 struct general_die_id_tag {};
 typedef vtr::StrongId<struct general_die_id_tag, short> DeviceDieId;
+
+/**
+ * @brief Die regions are (x, y, layer) positions with one position for an entire die.
+ * As an example, imagine a 3D device with two layers: the first layer having one horizontal and one vertical interposer cut and the second layer
+ * having one horizontal interposer cut. The following die regions would exist:
+ *     Layer 1:
+ *         +-----------+-----------+
+ *         |           |           |
+ *         |  (0,1,0)  |  (1,1,0)  |
+ *         |           |           |
+ *         +-----------+-----------+
+ *         |           |           |
+ *         |  (0,0,0)  |  (1,0,0)  |
+ *         |           |           |
+ *         +-----------+-----------+
+ *
+ *     Layer 2:
+ *         +-----------------------+
+ *         |                       |
+ *         |        (0,1,1)        |
+ *         |                       |
+ *         +-----------------------+
+ *         |                       |
+ *         |        (0,0,1)        |
+ *         |                       |
+ *         +-----------------------+
+ */
+struct t_die_region {
+    short x_die;
+    short y_die;
+    short layer;
+
+    auto operator<=>(const t_die_region&) const = default;
+};
 
 //TODO: All of the functions that use helper functions of this class should pass the layer_num to the functions, and the default value of layer_num should be deleted eventually.
 /**
@@ -166,6 +201,58 @@ class DeviceGrid {
         );
     }
 
+    // Forward const-iterator over all die regions in the device. See t_die_region for information on what a die region is.
+    class die_const_iterator {
+      public:
+        using value_type = t_die_region;
+        using difference_type = std::ptrdiff_t;
+        using iterator_category = std::forward_iterator_tag;
+
+        die_const_iterator(const DeviceGrid* g, size_t layer, size_t x_die, size_t y_die)
+            : g_(g) {
+            die_region_.layer = static_cast<short>(layer);
+            die_region_.x_die = static_cast<short>(x_die);
+            die_region_.y_die = static_cast<short>(y_die);
+        }
+
+        value_type operator*() const { return die_region_; }
+
+        // pre-increment
+        die_const_iterator& operator++() {
+            // advance x_die, then y_die, then layer
+            ++die_region_.x_die;
+            if (die_region_.x_die > static_cast<short>(g_->get_vertical_interposer_cuts()[die_region_.layer].size())) {
+                die_region_.x_die = 0;
+                ++die_region_.y_die;
+                if (die_region_.y_die > static_cast<short>(g_->get_horizontal_interposer_cuts()[die_region_.layer].size())) {
+                    die_region_.y_die = 0;
+                    ++die_region_.layer;
+                }
+            }
+            return *this;
+        }
+
+        bool operator==(const die_const_iterator& o) const {
+            return die_region_.x_die == o.die_region_.x_die
+                   && die_region_.y_die == o.die_region_.y_die
+                   && die_region_.layer == o.die_region_.layer
+                   && g_ == o.g_;
+        }
+
+        bool operator!=(const die_const_iterator& o) const { return !(*this == o); }
+
+      private:
+        const DeviceGrid* g_ = nullptr;
+        t_die_region die_region_{0, 0, 0};
+    };
+
+    inline auto all_die_regions() const {
+        return vtr::make_range(
+            die_const_iterator(this, /*layer*/ 0, /*x*/ 0, /*y*/ 0),
+            die_const_iterator(this, /*layer*/ get_num_layers(), /*x*/ 0, /*y*/ 0) // end sentinel
+        );
+    }
+
     ///@brief Return the metadata of the tile at the specified location
     inline const t_metadata_dict* get_metadata(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].meta;
@@ -222,10 +309,34 @@ class DeviceGrid {
      */
     bool are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
 
+    /**
+     * @brief Get the die identifier of a location. In 2.5D and 3D architectures each die has it's own unique identifier.
+     * 
+     * @param loc (x, y, layer) position that you want the id of.
+     * @return DeviceDieId ID of the given location
+     */
+    DeviceDieId get_loc_die_id(t_physical_tile_loc loc) const;
+
+    /**
+     * @brief Get the total number of dice in the device. 2.5D and 3D architectures consist of multiple dice.
+     */
+    size_t get_die_count() const;
+
+    /**
+     * @brief Get the die identifier of a given die region. See the comment above t_die_region for information on what a die region is.
+     */
+    DeviceDieId get_die_region_id(t_die_region die_region) const;
+
   private:
     /// @brief Counts the number of each tile type on each layer and store it in instance_counts_.
     /// It is called in the constructor.
     void count_instances();
+
+    /**
+     * @brief Initialize the data structures used in multi-die FPGAs, such as the die_id_matrix_ or die_region_map_.
+     * These structures must be initialized before using are_locs_on_same_die, get_loc_die_id, get_die_count and get_die_region_id.
+     */
+    void initialize_multi_die_data_structures();
 
     std::string name_;
 
@@ -264,4 +375,9 @@ class DeviceGrid {
      * Accessed as [layer][x][y]. die_id_matrix_[layer][x][y] returns the ID of the die at location (x, y, layer)
      */
     std::vector<vtr::NdMatrix<DeviceDieId, 2>> die_id_matrix_;
+
+    /// @brief Two way map between die identifiers and die regions.
+    vtr::bimap<DeviceDieId, t_die_region> die_region_map_;
+
+    bool has_interposer_cuts_;
 };
