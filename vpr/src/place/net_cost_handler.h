@@ -38,6 +38,7 @@ enum class e_cost_methods {
 struct t_net_cost_terms {
     double bb_cost = 0.;
     double interposer_cost = 0.;
+    double interposer_cong_cost = 0.;
     double cong_cost = 0.;
 };
 
