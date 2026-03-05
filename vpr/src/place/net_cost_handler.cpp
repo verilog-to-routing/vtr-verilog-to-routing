@@ -115,7 +115,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
     is_multi_layer_ = num_layers > 1;
     interposer_cost_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cost_factor > 0;
-    interposer_cong_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cong_factor > 0;
+    // interposer_cong_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cong_factor > 0;
+    interposer_cong_modeling_started_ = false;
 
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {
@@ -161,7 +162,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
         VTR_ASSERT(std::ranges::is_sorted(grid.get_vertical_interposer_cuts()));
     }
 
-    if (interposer_cong_enabled_) {
+    if (placer_opts_.interposer_cong_factor > 0) {
         VTR_ASSERT(cube_bb_ && !is_multi_layer_);
 
         net_interposer_cong_cost_.resize(num_nets, -1.);
@@ -272,21 +273,11 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
                 net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
                 cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
-        }
-    }
 
-    if (interposer_cong_enabled_) {
-        // Compute the estimated interposer congestion.
-        // This can called only after the bounding boxes are computed.
-        compute_interposer_est_cong_();
-
-        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-                continue;
+            if (interposer_cong_modeling_started_) {
+                net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
+                cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
             }
-
-            net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
-            cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
         }
     }
 
@@ -1632,7 +1623,7 @@ t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
                 cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
 
-            if (interposer_cong_enabled_) {
+            if (interposer_cong_modeling_started_) {
                 cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
             }
         }
@@ -1668,7 +1659,7 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
             cost_terms_delta.interposer_cost += proposed_net_interposer_cost_[net_id] - net_interposer_cost_[net_id];
         }
 
-        if (interposer_cong_enabled_) {
+        if (interposer_cong_modeling_started_) {
             proposed_net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/true);
             cost_terms_delta.interposer_cong_cost += proposed_net_interposer_cong_cost_[net_id] - net_interposer_cong_cost_[net_id];
         }
@@ -1746,7 +1737,7 @@ void NetCostHandler::update_move_nets() {
             proposed_net_interposer_cost_[net_id] = -1;
         }
 
-        if (interposer_cong_enabled_) {
+        if (interposer_cong_modeling_started_) {
             net_interposer_cong_cost_[net_id] = proposed_net_interposer_cong_cost_[net_id];
             proposed_net_interposer_cong_cost_[net_id] = -1;
         }
@@ -1800,7 +1791,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.interposer_cost = 0.;
     }
 
-    if (interposer_cong_enabled_) {
+    if (interposer_cong_modeling_started_) {
         check_and_print_cost(new_cost_terms.interposer_cong_cost, costs.interposer_cong_cost, "interposer_cong_cost");
         costs.interposer_cong_cost = new_cost_terms.interposer_cong_cost;
     } else {
@@ -1955,6 +1946,8 @@ void NetCostHandler::compute_interposer_est_cong_() {
             vert_interposer_est_cong_[layer][i_cut][grid_height] = running_sum;
         }
     }
+
+    interposer_cong_modeling_started_ = true;
 
 }
 

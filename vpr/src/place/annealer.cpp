@@ -233,7 +233,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
     , quench_started_(false)
-    , congestion_modeling_started_(false) {
+    , congestion_modeling_started_(false)
+    , interposer_cong_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     float first_crit_exponent;
@@ -835,8 +836,14 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         }
     }
 
-    if (placer_opts_.interposer_cong_factor > 0.) {
+    if ((placer_opts_.interposer_cong_factor > 0.
+        && annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio)
+        || interposer_cong_modeling_started_) {
         net_cost_handler_.compute_interposer_est_cong_();
+        if (!interposer_cong_modeling_started_) {
+            VTR_LOG("Interposer congestion modeling started.\n");
+            interposer_cong_modeling_started_ = true;
+        }
     }
 
     // Update the cost normalization factors
