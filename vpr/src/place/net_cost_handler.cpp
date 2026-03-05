@@ -1933,20 +1933,26 @@ void NetCostHandler::compute_interposer_est_cong_() {
     for (size_t layer = 0; layer < num_layers; layer++) {
         for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
             double running_sum = 0.;
-            for (size_t x = 0; x <= grid_width; x++) {
+            for (size_t x = 0; x < grid_width; ++x) {
+                double val = horz_interposer_est_cong_[layer][i_cut][x];
                 horz_interposer_est_cong_[layer][i_cut][x] = running_sum;
-                running_sum += (x < grid_width) ? horz_interposer_est_cong_[layer][i_cut][x] : 0.;
+                running_sum += val;
             }
+
+            horz_interposer_est_cong_[layer][i_cut][grid_width] = running_sum;
         }
     }
 
     for (size_t layer = 0; layer < num_layers; ++layer) {
         for (size_t i_cut = 0; i_cut < vertical_cuts[layer].size(); i_cut++) {
             double running_sum = 0.;
-            for (size_t y = 0; y <= grid_height; ++y) {
+            for (size_t y = 0; y < grid_height; ++y) {
+                double val = vert_interposer_est_cong_[layer][i_cut][y];
                 vert_interposer_est_cong_[layer][i_cut][y] = running_sum;
-                running_sum += (y < grid_height) ? vert_interposer_est_cong_[layer][i_cut][y] : 0.;
+                running_sum += val;
             }
+
+            vert_interposer_est_cong_[layer][i_cut][grid_height] = running_sum;
         }
     }
 
