@@ -835,6 +835,10 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         }
     }
 
+    if (placer_opts_.interposer_cong_factor > 0.) {
+        net_cost_handler_.compute_interposer_est_cong_();
+    }
+
     // Update the cost normalization factors
     costs_.update_norm_factors();
 
