@@ -272,11 +272,21 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
                 net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
                 cost_terms.interposer_cost += net_interposer_cost_[net_id];
             }
+        }
+    }
 
-            if (interposer_cong_enabled_) {
-                net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
-                cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
+    if (interposer_cong_enabled_) {
+        // Compute the estimated interposer congestion.
+        // This can called only after the bounding boxes are computed.
+        compute_interposer_est_cong_();
+
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+                continue;
             }
+
+            net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
+            cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
         }
     }
 
