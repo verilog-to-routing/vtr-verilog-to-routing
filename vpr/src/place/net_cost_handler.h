@@ -138,7 +138,12 @@ class NetCostHandler {
     ///@brief Get the number of nets crossing interposer cuts.
     int get_num_nets_crossing_interposer_cuts() const;
 
-    void compute_interposer_est_cong_();
+    /**
+     * @brief Compute estimated interposer congestion and optionally the total interposer congestion cost.
+     * @param compute_congestion_cost When true, compute total interposer congestion cost (sum over all nets).
+     * @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
+     */
+    double compute_interposer_est_cong_(bool compute_congestion_cost = true);
 
     /**
      * @brief Estimates routing channel utilization and computes the congestion cost

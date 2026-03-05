@@ -1842,7 +1842,7 @@ int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
     return num_nets_crossing_interposer_cuts;
 }
 
-void NetCostHandler::compute_interposer_est_cong_() {
+double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
@@ -1949,6 +1949,18 @@ void NetCostHandler::compute_interposer_est_cong_() {
 
     interposer_cong_modeling_started_ = true;
 
+    double total_interposer_cong_cost = 0.;
+    if (compute_congestion_cost) {
+        for (ClusterNetId net_id : clb_nlist.nets()) {
+            if (clb_nlist.net_is_ignored(net_id)) {
+                continue;
+            }
+
+            net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
+            total_interposer_cong_cost += net_interposer_cong_cost_[net_id];
+        }
+    }
+    return total_interposer_cong_cost;
 }
 
 double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {
