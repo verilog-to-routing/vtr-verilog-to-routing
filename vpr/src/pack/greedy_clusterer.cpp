@@ -315,24 +315,25 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
             num_repeated_molecules++;
     }
 
-    // Ensure that the cluster is legal. When the cluster legalization
-    // strategy is full, it must be legal.
-    if (strategy != ClusterLegalizationStrategy::FULL) {
-        // If the legalizer did not check everything for every molecule,
-        // need to check that the full cluster is legal (need to perform
-        // intra-lb routing).
-        bool is_cluster_legal = cluster_legalizer.check_cluster_legality(legalization_cluster_id);
-
-        if (!is_cluster_legal) {
-            // If the cluster is not legal, undo the cluster.
-            // Update the used type instances.
-            num_used_type_instances[cluster_legalizer.get_cluster_type(legalization_cluster_id)]--;
-            // Destroy the illegal cluster.
-            cluster_legalizer.destroy_cluster(legalization_cluster_id);
-            cluster_legalizer.compress();
-            // Cluster failed to grow.
-            return LegalizationClusterId();
-        }
+    // Ensure that the cluster has a legal final routing.
+    //
+    // If strategy == SKIP_INTRA_LB_ROUTE, then this is the first and only
+    // legality check.
+    //
+    // If strategy == FULL, then it is possible to reach this step without a
+    // routing solution if a cluster has been packed the same way before, due
+    // to skipping routing on clusters that are known to be legal from the
+    // PackingSignatureTree. In this case, routing must be run at least once on
+    // the final cluster for later stages to use.
+    if (!cluster_legalizer.ensure_legal_final_routing(legalization_cluster_id)) {
+        // If the cluster is not legal, undo the cluster.
+        // Update the used type instances.
+        num_used_type_instances[cluster_legalizer.get_cluster_type(legalization_cluster_id)]--;
+        // Destroy the illegal cluster.
+        cluster_legalizer.destroy_cluster(legalization_cluster_id);
+        cluster_legalizer.compress();
+        // Cluster failed to grow.
+        return LegalizationClusterId();
     }
 
     // A legal cluster must have been created by this point.

@@ -766,6 +766,14 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``30``
 
+.. option:: --memoize_cluster_packings {on | off}
+
+    Enables memoization of previously seen clusters during packing.
+
+    This can significantly reduce runtime for certain architectures by skipping redundant intracluster routing calls made to test for cluster legality
+
+    **Default:** ``on``
+
 .. option:: --pack_verbosity <int>
 
     Controls the verbosity of clustering output.
