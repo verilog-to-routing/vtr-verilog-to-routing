@@ -1790,6 +1790,13 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.interposer_cost = 0.;
     }
 
+    if (interposer_cong_enabled_) {
+        check_and_print_cost(new_cost_terms.interposer_cong_cost, costs.interposer_cong_cost, "interposer_cong_cost");
+        costs.interposer_cong_cost = new_cost_terms.interposer_cong_cost;
+    } else {
+        costs.interposer_cong_cost = 0.;
+    }
+
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, placer_state_, &new_timing_cost);
