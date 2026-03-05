@@ -607,7 +607,8 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             delta_c = (1 - placer_opts_.timing_tradeoff) * cost_terms_delta.bb_cost * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
                       + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm
-                      + placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm;
+                      + placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
+                      + placer_opts_.interposer_cong_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -676,7 +677,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             costs_.bb_cost += cost_terms_delta.bb_cost;
             costs_.congestion_cost += cost_terms_delta.cong_cost;
             costs_.interposer_cost += cost_terms_delta.interposer_cost;
-
+            costs_.interposer_cong_cost += cost_terms_delta.interposer_cong_cost;
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
 
