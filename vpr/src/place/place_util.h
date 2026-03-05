@@ -79,6 +79,7 @@ class t_placer_costs {
     double congestion_cost = 0.;
 
     double interposer_cost = 0.;
+    double interposer_cong_cost = 0.;
 
     /// The normalization factor for the wiring cost.
     double bb_cost_norm = 0.;
@@ -91,6 +92,9 @@ class t_placer_costs {
 
     /// The normalization factor for the interposer cost.
     double interposer_cost_norm = 0.;
+
+    /// The normalization factor for the interposer congestion cost.
+    double interposer_cong_cost_norm = 0.;
 
     /// NoC-related cost terms.
     NocCostTerms noc_cost_terms;
