@@ -177,6 +177,8 @@ class t_placer_statistics {
     double av_cong_cost;
     /// Average interposer cost.
     double av_interposer_cost;
+    /// Average interposer congestion cost.
+    double av_interposer_cong_cost;
     /// Sum of squares of the total cost.
     double sum_of_squares;
     /// Number of accepted block swaps for the current iteration.
