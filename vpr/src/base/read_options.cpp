@@ -2641,6 +2641,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_interposer_cong_cost_factor, "--place_interposer_cong_cost_factor")
+        .help("Factor to scale the interposer congestion cost when calculating the total cost")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_interposer_cong_threshold, "--place_interposer_cong_threshold")
+        .help("Threshold for the interposer congestion cost")
+        .default_value("1000.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.place_timing_tradeoff, "--timing_tradeoff")

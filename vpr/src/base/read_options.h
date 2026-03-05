@@ -175,6 +175,8 @@ struct t_options {
     argparse::ArgValue<int> placer_debug_net;
 
     argparse::ArgValue<float> place_interposer_cost_factor;
+    argparse::ArgValue<float> place_interposer_cong_cost_factor;
+    argparse::ArgValue<float> place_interposer_cong_threshold;
 
     // NoC Options
     argparse::ArgValue<bool> noc;
