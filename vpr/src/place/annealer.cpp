@@ -839,7 +839,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     if ((placer_opts_.interposer_cong_factor > 0.
         && annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio)
         || interposer_cong_modeling_started_) {
-        net_cost_handler_.compute_interposer_est_cong_();
+        costs_.interposer_cong_cost = net_cost_handler_.compute_interposer_est_cong_(/*compute_congestion_cost=*/true);
         if (!interposer_cong_modeling_started_) {
             VTR_LOG("Interposer congestion modeling started.\n");
             interposer_cong_modeling_started_ = true;
