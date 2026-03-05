@@ -164,6 +164,12 @@ std::vector<PlaceStatusColumn> PlacementLogPrinter::get_place_status_columns() c
             const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
             return vtr::string_fmt("%9.3f", stats.av_interposer_cost);
         });
+    add(has_interposer, "----------", "Int. Cong.", "          ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%9.3f", stats.av_interposer_cong_cost);
+        });
 
     return cols;
 }
