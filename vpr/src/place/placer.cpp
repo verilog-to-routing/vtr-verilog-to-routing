@@ -127,6 +127,7 @@ Placer::Placer(const Netlist<>& net_list,
     costs_.bb_cost = initial_cost_terms.bb_cost;
     costs_.congestion_cost = initial_cost_terms.cong_cost;
     costs_.interposer_cost = initial_cost_terms.interposer_cost;
+    costs_.interposer_cong_cost = initial_cost_terms.interposer_cong_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
@@ -277,6 +278,13 @@ int Placer::check_placement_costs_() {
         VTR_LOG_ERROR(
             "interposer_cost_check: %g and interposer_cost: %g differ in check_place.\n",
             cost_terms_check.interposer_cost, costs_.interposer_cost);
+        error++;
+    }
+
+    if (fabs(cost_terms_check.interposer_cong_cost - costs_.interposer_cong_cost) > costs_.interposer_cong_cost * PL_INCREMENTAL_COST_TOLERANCE) {
+        VTR_LOG_ERROR(
+            "interposer_cong_cost_check: %g and interposer_cong_cost: %g differ in check_place.\n",
+            cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost);
         error++;
     }
 
