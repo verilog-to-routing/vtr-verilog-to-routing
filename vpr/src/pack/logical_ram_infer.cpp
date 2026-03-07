@@ -8,10 +8,10 @@
 #include "vtr_math.h"
 
 RamMapper::RamMapper(const AtomNetlist& atom_nlist,
-    Prepacker& prepacker,
-    const LogicalModels& models,
-    const std::vector<t_logical_block_type>& logical_block_types,
-    const PreClusterTimingManager pre_cluster_timing_manager) {
+                     const Prepacker& prepacker,
+                     const LogicalModels& models,
+                     const std::vector<t_logical_block_type>& logical_block_types,
+                     const PreClusterTimingManager pre_cluster_timing_manager) {
 
     
     vtr::ScopedStartFinishTimer prepacker_timer("Ram Mapper");

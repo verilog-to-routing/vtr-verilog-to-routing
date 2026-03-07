@@ -41,7 +41,7 @@ struct LogicalRamStats {
 class RamMapper {
   public:
     RamMapper(const AtomNetlist& atom_nlist,
-              Prepacker& prepacker,
+              const Prepacker& prepacker,
               const LogicalModels& models,
               const std::vector<t_logical_block_type>& logical_block_types,
               const PreClusterTimingManager pre_cluster_timing_manager);

@@ -214,7 +214,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const t_ap_opts& ap_opts = vpr_setup.APOpts;
 
     // Run the prepacker
-    Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
 
     // Create the ap netlist from the atom netlist using the result from the
     // prepacker.
