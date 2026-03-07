@@ -19,6 +19,12 @@ packages_to_install+=(
     libeigen3-dev
 )
 
+# Required for parsing SDC files (see LibSDCParse)
+packages_to_install+=(
+    tcl-dev
+    swig
+)
+
 # Required for graphics
 packages_to_install+=(
     libgtk-3-dev

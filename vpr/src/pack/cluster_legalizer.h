@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include "atom_netlist_fwd.h"
+#include "cluster_router.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
 #include "prepack.h"
@@ -30,7 +31,6 @@ class Prepacker;
 class LogicalModels;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
-struct t_lb_router_data;
 
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
@@ -88,6 +88,30 @@ enum class e_block_pack_status {
  * This contains necessary information for legalizing a cluster.
  */
 struct LegalizationCluster {
+    /**
+     * @brief Default constructor for the LegalizationCluster class.
+     *
+     * This is needed to use this class within the vtr::vector_map class.
+     */
+    LegalizationCluster()
+        : pb(nullptr)
+        , type(nullptr)
+        , pr(PartitionRegion())
+        , noc_grp_id(NocGroupId::INVALID())
+        , cluster_router()
+        , placement_stats(nullptr) {}
+
+    /**
+     * @brief Constructor for the LegalizationCluster class.
+     *
+     *  @param cluster_type         The type of this cluster.
+     *  @param cluster_mode         The mode of this cluster.
+     *  @param lb_type_rr_graphs    The RR-graphs for each cluster type.
+     */
+    LegalizationCluster(t_logical_block_type_ptr cluster_type,
+                        int cluster_mode,
+                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs);
+
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
     ///        the cluster using a legalization strategy.
@@ -117,10 +141,10 @@ struct LegalizationCluster {
     ///        for optimization.
     NocGroupId noc_grp_id;
 
-    /// @brief The router data of the intra lb router used for this cluster.
+    /// @brief The intra lb router used for this cluster.
     ///        Contains information about the atoms in the cluster and how they
     ///        can be routed within.
-    t_lb_router_data* router_data;
+    ClusterRouter cluster_router;
 
     /// @brief The stats on where the different atoms in the cluster are currently
     ///        placed in the cluster. This is used when the legalizer decides

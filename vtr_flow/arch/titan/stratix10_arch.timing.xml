@@ -9120,7 +9120,7 @@
       <input name="data_in" num_pins="36"/>
       <output name="data_out" num_pins="6"/>
       <clock name="clk" num_pins="1"/>
-      <mode name="io_cell" num_pb="1">
+      <mode name="io_cell">
         <pb_type name="pad" num_pb="1">
           <output name="recieve_off_chip" num_pins="1"/>
           <input name="drive_off_chip" num_pins="1"/>
@@ -9304,53 +9304,53 @@
         <interconnect>
           <!-- inputs coming from the FPGA core and going to OE flip flop -->
           <!-- <complete input="io_cell.data_in" name="core_to_ff" output="oe_ff.clrn oe_ff.sclr oe_ff.ena oe_ff.d"/> -->
-          <!-- <direct input="io_cell.clk" name="ff_clk" num_pins="1" output="oe_ff.clk"/> -->
+          <!-- <direct input="io_cell.clk" name="ff_clk" output="oe_ff.clk"/> -->
 
           <!-- inputs coming from the FPGA core and going to ddio out primitive -->
-          <complete input="io_cell.data_in" name="core_to_ddio_out" num_pins="1" output="ddio_out.areset ddio_out.sreset ddio_out.ena ddio_out.clkhi ddio_out.clklo ddio_out.muxsel ddio_out.datainlo ddio_out.datainhi"/>
-          <direct input="io_cell.clk" name="ddio_out_clk" num_pins="1" output="ddio_out.clk"/>
+          <complete input="io_cell.data_in" name="core_to_ddio_out" output="ddio_out.areset ddio_out.sreset ddio_out.ena ddio_out.clkhi ddio_out.clklo ddio_out.muxsel ddio_out.datainlo ddio_out.datainhi"/>
+          <direct input="io_cell.clk" name="ddio_out_clk" output="ddio_out.clk"/>
           
           <!-- inputs coming from the FPGA core and going to the output buffer -->
           <complete input="io_cell.data_in" name="core_to_obuf" output="obuf.dynamicterminationcontrol obuf.seriesterminationcontrol obuf.parallelterminationcontrol"/>
           <!-- the i port of the output buffer can be driven by the output of the ddio out module or the core logic or the o output of the pseudo diff out-->
-          <complete input="io_cell.data_in ddio_out.dataout pseudo_diff_out.o" name="i_obuff" num_pins="1" output="obuf.i"/>
+          <complete input="io_cell.data_in ddio_out.dataout pseudo_diff_out.o" name="i_obuff" output="obuf.i"/>
           <!-- the oe port of the output buffer can be driven by the output of the oe flip flop or the core logic or the oeout output of the pseudo diff out-->
-          <complete input="io_cell.data_in pseudo_diff_out.oeout" name="oe_obuff" num_pins="1" output="obuf.oe"/>
+          <complete input="io_cell.data_in pseudo_diff_out.oeout" name="oe_obuff" output="obuf.oe"/>
           
           <!-- inputs coming from the FPGA core and going to the input buffer -->
           <complete input="io_cell.data_in" name="core_to_ibuff" output="ibuf.ibar ibuf.dynamicterminationcontrol ibuf.seriesterminationcontrol ibuf.parallelterminationcontrol"/>
           <!-- the output of the padin will directly drive the input buffer  -->
-          <direct input="pad.recieve_off_chip" name="pad_receive" num_pins="1" output="ibuf.i">
+          <direct input="pad.recieve_off_chip" name="pad_receive" output="ibuf.i">
             <pack_pattern in_port="pad.recieve_off_chip" name="pad_to_ibuf" out_port="ibuf.i"/>
           </direct>
 
 
           <!-- inputs coming from the FPGA core and going to pseudo diff out primitive -->
-          <complete input="io_cell.data_in" name="core_to_pseudo_diff_out" num_pins="1" output="pseudo_diff_out.ibar pseudo_diff_out.oebin pseudo_diff_out.dtcin pseudo_diff_out.dtcbarin"/>
+          <complete input="io_cell.data_in" name="core_to_pseudo_diff_out" output="pseudo_diff_out.ibar pseudo_diff_out.oebin pseudo_diff_out.dtcin pseudo_diff_out.dtcbarin"/>
           <!-- the i port of the  pseudo diff out can be driven by the output of the ddio out module or the core logic -->
-          <complete input="io_cell.data_in ddio_out.dataout" name="i_pseudo_diff" num_pins="1" output=" pseudo_diff_out.i"/>
+          <complete input="io_cell.data_in ddio_out.dataout" name="i_pseudo_diff" output=" pseudo_diff_out.i"/>
           <!-- the oein port of the pseudo diff out can be driven by the output of the oe flip flop or the core logic -->
-          <complete input="io_cell.data_in" name="oe_pseudo_diff" num_pins="1" output="pseudo_diff_out.oein"/>
+          <complete input="io_cell.data_in" name="oe_pseudo_diff" output="pseudo_diff_out.oein"/>
           
           <!-- inputs coming from the FPGA core and going to ddio in primitive -->
-          <complete input="io_cell.data_in" name="core_to_ddio_in" num_pins="1" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
-          <direct input="io_cell.clk" name="ddioi_clk" num_pins="1" output="ddio_in.clk"/>
+          <complete input="io_cell.data_in" name="core_to_ddio_in" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
+          <direct input="io_cell.clk" name="ddioi_clk" output="ddio_in.clk"/>
           
           <!-- the data port of theddio in is driven by the output of the input buffer or by FPGA global routing -->
-          <complete input="ibuf.o io_cell.data_in" name="ddioi_datain" num_pins="1" output="ddio_in.datain"/>
+          <complete input="ibuf.o io_cell.data_in" name="ddioi_datain" output="ddio_in.datain"/>
 
           <!-- the pad out can be driven by the output ports of the output buffer or by FPGA core  -->
-          <complete input="io_cell.data_in obuf.o obuf.obar" name="pad_drive" num_pins="1" output="pad.drive_off_chip">
+          <complete input="io_cell.data_in obuf.o obuf.obar" name="pad_drive" output="pad.drive_off_chip">
             <pack_pattern in_port="obuf.o" name="obuf_to_pad" out_port="pad.drive_off_chip"/>
           </complete>
 
           <!-- the outputs of the io_cell block going to the core -->
-          <direct input="pseudo_diff_out.obar" name="io_cell_obar" num_pins="1" output="io_cell.data_out[0]"/>
-          <direct input="pseudo_diff_out.oebout" name="io_cell_oeout" num_pins="1" output="io_cell.data_out[1]"/>
-          <direct input="pseudo_diff_out.dtc" name="io_cell_dtc" num_pins="1" output="io_cell.data_out[2]"/>
-          <direct input="pseudo_diff_out.dtcbar" name="io_cell_dtcbar" num_pins="1" output="io_cell.data_out[3]"/>
-          <complete input="ibuf.o ddio_in.regoutlo pad.recieve_off_chip" name="io_cell_regoutlo" num_pins="1" output="io_cell.data_out[4]"/>
-          <direct input="ddio_in.regouthi" name="io_cell_regouthi" num_pins="1" output="io_cell.data_out[5]"/>
+          <direct input="pseudo_diff_out.obar" name="io_cell_obar" output="io_cell.data_out[0]"/>
+          <direct input="pseudo_diff_out.oebout" name="io_cell_oeout" output="io_cell.data_out[1]"/>
+          <direct input="pseudo_diff_out.dtc" name="io_cell_dtc" output="io_cell.data_out[2]"/>
+          <direct input="pseudo_diff_out.dtcbar" name="io_cell_dtcbar" output="io_cell.data_out[3]"/>
+          <complete input="ibuf.o ddio_in.regoutlo pad.recieve_off_chip" name="io_cell_regoutlo" output="io_cell.data_out[4]"/>
+          <direct input="ddio_in.regouthi" name="io_cell_regouthi" output="io_cell.data_out[5]"/>
         </interconnect>
       </mode>
     </pb_type>

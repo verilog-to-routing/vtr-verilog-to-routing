@@ -8,7 +8,6 @@
 
 RRGraphBuilder::RRGraphBuilder() {
     is_edge_dirty_ = true;
-    is_incoming_edge_dirty_ = true;
 }
 
 t_rr_graph_storage& RRGraphBuilder::rr_nodes() {
@@ -27,9 +26,6 @@ MetadataStorage<std::tuple<int, int, short>>& RRGraphBuilder::rr_edge_metadata()
     return rr_edge_metadata_;
 }
 
-vtr::vector<RRNodeId, std::vector<RREdgeId>>& RRGraphBuilder::node_in_edge_storage() {
-    return node_in_edges_;
-}
 
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     e_rr_type node_type = node_storage_.node_type(node);
@@ -96,14 +92,12 @@ void RRGraphBuilder::clear_temp_storage() {
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
     node_storage_.clear();
-    node_in_edges_.clear();
     rr_node_metadata_.clear();
     rr_edge_metadata_.clear();
     rr_segments_.clear();
     rr_switch_inf_.clear();
     edges_to_build_.clear();
     is_edge_dirty_ = true;
-    is_incoming_edge_dirty_ = true;
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
@@ -182,13 +176,11 @@ void RRGraphBuilder::create_edge_in_cache(RRNodeId src,
                                           bool remapped) {
     edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
     is_edge_dirty_ = true; // Adding a new edge revokes the flag
-    is_incoming_edge_dirty_ = true;
 }
 
 void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
     edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
     is_edge_dirty_ = true; /* Adding a new edge revokes the flag */
-    is_incoming_edge_dirty_ = true;
 }
 
 void RRGraphBuilder::build_edges(const bool& uniquify) {
@@ -201,32 +193,6 @@ void RRGraphBuilder::build_edges(const bool& uniquify) {
     is_edge_dirty_ = false;
 }
 
-void RRGraphBuilder::build_in_edges() {
-    VTR_ASSERT(validate());
-    node_in_edges_.clear();
-    node_in_edges_.resize(node_storage_.size());
-
-    for (RRNodeId src_node : vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
-        for (t_edge_size iedge : node_storage_.edges(src_node)) {
-            VTR_ASSERT(src_node == node_storage_.edge_source_node(node_storage_.edge_id(src_node, iedge)));
-            RRNodeId des_node = node_storage_.edge_sink_node(node_storage_.edge_id(src_node, iedge));
-            node_in_edges_[des_node].push_back(node_storage_.edge_id(src_node, iedge));
-        }
-    }
-    is_incoming_edge_dirty_ = false;
-}
-
-std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
-    VTR_ASSERT(size_t(node) < node_storage_.size());
-    if (is_incoming_edge_dirty_) {
-        VTR_LOG_ERROR("Incoming edges are not built yet in routing resource graph. Please call build_in_edges().");
-        return std::vector<RREdgeId>();
-    }
-    if (node_in_edges_.empty()) {
-        return std::vector<RREdgeId>();
-    }
-    return node_in_edges_[node];
-}
 
 void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers) {
     node_storage_.set_node_ptc_nums(node, ptc_numbers);

@@ -68,7 +68,7 @@ There should be a directory containing the pattern files specified in the switch
 
 * **Rows** represent source nodes
 * **Columns** represent sink nodes
-* An **'x' mark** at an intersection indicates that the source and sink nodes are connected. The delay for that connections is retrieved from the sitch type specified in the architecture file.
+* An **'x' mark** at an intersection indicates that the source and sink nodes are connected. The delay for that connections is retrieved from the switch type specified in the architecture file.
 * A **number** at an intersection indicates that the nodes are connected with the switch delay specified by that number (in ps)
 
 **Note:** The pattern currently only supports uni-directional segments. Therefore, wires can only be driven from their starting point.
@@ -93,7 +93,7 @@ Each column has header rows describing the sink node:
 3. **Row 3 - Fan-in:** The number of fan-ins to the sink node (optional)
 4. **Row 4 - Lane Number:** The lane to which the sink node belongs
 
-*Note:* Given that currently we only support unidirectional segments, the tap is not specified because a wire can only be driven from its starting point.
+*Note:* Given that currently we only support unidirectional segments, the tap number is not specified for sink nodes because a wire can only be driven from its starting point.
 
 Example
 ^^^^^^^

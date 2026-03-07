@@ -9,15 +9,25 @@
 #include "physical_types_util.h"
 #include "place_constraints.h"
 #include "noc_place_utils.h"
+#include "vpr_types.h"
 
 void t_placer_costs::update_norm_factors() {
+    const ClusteredNetlist& clustered_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    bb_cost_norm = 1 / bb_cost;
+
+    if (congestion_cost > 0.) {
+        congestion_cost_norm = 1 / congestion_cost;
+    } else {
+        congestion_cost_norm = 1. / (double)clustered_nlist.nets().size();
+    }
+
     if (place_algorithm.is_timing_driven()) {
-        bb_cost_norm = 1 / bb_cost;
-        //Prevent the norm factor from going to infinity
+        // Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {
-        VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
-        bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
+        // Timing normalization factor is not used
+        timing_cost_norm = std::numeric_limits<double>::quiet_NaN();
     }
 
     if (noc_enabled) {
@@ -35,6 +45,8 @@ double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_
         // in timing mode we include both wirelength and timing costs
         total_cost = (1 - placer_opts.timing_tradeoff) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
     }
+
+    total_cost += placer_opts.congestion_factor * congestion_cost * congestion_cost_norm;
 
     if (noc_opts.noc) {
         // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
@@ -65,7 +77,7 @@ int get_place_inner_loop_num_move(const t_placer_opts& placer_opts, const t_anne
         move_lim = int(annealing_sched.inner_num * pow(device_size, 2. / 3.) * pow(num_blocks, 2. / 3.));
     }
 
-    /* Avoid having a non-positive move_lim */
+    // Avoid having a non-positive move_lim
     move_lim = std::max(move_lim, 1);
 
     return move_lim;
@@ -76,6 +88,7 @@ void t_placer_statistics::reset() {
     av_cost = 0.;
     av_bb_cost = 0.;
     av_timing_cost = 0.;
+    av_cong_cost = 0.;
     sum_of_squares = 0.;
     success_sum = 0;
     success_rate = 0.;
@@ -88,6 +101,7 @@ void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
     av_cost += costs.cost;
     av_bb_cost += costs.bb_cost;
     av_timing_cost += costs.timing_cost;
+    av_cong_cost += costs.congestion_cost;
     sum_of_squares += (costs.cost) * (costs.cost);
 }
 
@@ -97,10 +111,12 @@ void t_placer_statistics::calc_iteration_stats(const t_placer_costs& costs, int 
         av_cost = costs.cost;
         av_bb_cost = costs.bb_cost;
         av_timing_cost = costs.timing_cost;
+        av_cong_cost = costs.congestion_cost;
     } else {
         av_cost /= success_sum;
         av_bb_cost /= success_sum;
         av_timing_cost /= success_sum;
+        av_cong_cost /= success_sum;
     }
     success_rate = success_sum / float(move_lim);
     std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
@@ -161,6 +177,8 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
+    const bool device_has_interposers = device_ctx.grid.has_interposer_cuts();
+
     //Get block type of head member
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -212,15 +230,20 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
             && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
-            // Can still accommodate blocks here, check the next position
-            continue;
         } else {
             // Can't be placed here - skip to the next try
             mac_can_be_placed = false;
             break;
         }
-    }
 
+        if (device_has_interposers) {
+            if (!device_ctx.grid.are_locs_on_same_die({head_pos.x, head_pos.y, head_pos.layer},
+                                                      {head_pos.x + pl_macro.members[imember].offset.x, head_pos.y + pl_macro.members[imember].offset.y, head_pos.layer + pl_macro.members[imember].offset.layer})) {
+                mac_can_be_placed = false;
+                break;
+            }
+        }
+    }
     return mac_can_be_placed;
 }
 

@@ -372,11 +372,11 @@ static bool is_loc_legal(const t_pl_loc& loc,
     return legal;
 }
 
-bool find_subtile_in_location(t_pl_loc& centroid,
-                              t_logical_block_type_ptr block_type,
-                              const BlkLocRegistry& blk_loc_registry,
-                              const PartitionRegion& pr,
-                              vtr::RngContainer& rng) {
+static bool find_subtile_in_location(t_pl_loc& centroid,
+                                     t_logical_block_type_ptr block_type,
+                                     const BlkLocRegistry& blk_loc_registry,
+                                     const PartitionRegion& pr,
+                                     vtr::RngContainer& rng) {
     //check if the location is on chip and legal, if yes try to update subtile
     if (is_loc_on_chip({centroid.x, centroid.y, centroid.layer}) && is_loc_legal(centroid, pr, block_type)) {
         //find the compatible subtiles
@@ -653,8 +653,6 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
         // and save the closest of all regions.
         t_flat_pl_loc best_projected_pos = centroid;
         float best_distance = std::numeric_limits<float>::max();
-        VTR_ASSERT_MSG(centroid.layer == 0,
-                       "3D FPGAs not supported for this part of the code yet");
         for (const Region& region : head_pr.get_regions()) {
             const vtr::Rect<int>& rect = region.get_rect();
             // Note: We add 0.999 here since the partition region is in grid
@@ -662,12 +660,16 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
             //       they really are 1x1.
             float proj_x = std::clamp<float>(centroid.x, rect.xmin(), rect.xmax() + 0.999);
             float proj_y = std::clamp<float>(centroid.y, rect.ymin(), rect.ymax() + 0.999);
+            float proj_layer = std::clamp<float>(centroid.layer, region.get_layer_range().first,
+                                                 region.get_layer_range().second + 0.999);
             float dx = std::abs(proj_x - centroid.x);
             float dy = std::abs(proj_y - centroid.y);
-            float dist = dx + dy;
+            float dlayer = std::abs(proj_layer - centroid.layer);
+            float dist = dx + dy + dlayer;
             if (dist < best_distance) {
                 best_projected_pos.x = proj_x;
                 best_projected_pos.y = proj_y;
+                best_projected_pos.layer = proj_layer;
                 best_distance = dist;
             }
         }

@@ -66,7 +66,7 @@ class Connection {
     RRNodeId sink_node() const { return sink_node_; }
     RRNodeId src_node() const { return src_node_; }
     int delay_ps() const { return delay_ps_; }
-    std::string sw_template_id() const { return sw_template_id_; }
+    const std::string& sw_template_id() const { return sw_template_id_; }
 
     bool operator<(const Connection& other) const {
         return std::tie(sink_node_, src_node_, delay_ps_) < std::tie(other.sink_node_, other.src_node_, other.delay_ps_);

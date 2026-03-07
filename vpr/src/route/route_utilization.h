@@ -8,15 +8,15 @@
 
 /**
  * @class RoutingChanUtilEstimator
- * @brief This class computes the net bounding boxes and estimates the routing channel utilization
+ * @brief This class computes the net bounding boxes (cube mode) and estimates the routing channel utilization
  * for each CHANX/CHANY channel by smearing the estimated wirelength for each net across all channels
  * within its bounding box.
  */
 class RoutingChanUtilEstimator {
   public:
-    RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry, bool cube_bb);
+    RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry);
 
-    std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> estimate_routing_chan_util();
+    ChannelMetric<vtr::NdMatrix<double, 3>> estimate_routing_chan_util();
 
   private:
     std::unique_ptr<PlacerState> placer_state_;

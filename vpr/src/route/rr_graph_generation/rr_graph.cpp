@@ -1014,19 +1014,17 @@ static void alloc_and_init_channel_width() {
     const DeviceGrid& grid = mutable_device_ctx.grid;
     const auto& rr_graph = mutable_device_ctx.rr_graph;
 
-    vtr::NdMatrix<int, 3>& chanx_width = mutable_device_ctx.rr_chanx_segment_width;
-    vtr::NdMatrix<int, 3>& chany_width = mutable_device_ctx.rr_chany_segment_width;
-    vtr::NdMatrix<int, 2>& chanz_width = mutable_device_ctx.rr_chanz_segment_width;
+    ChannelMetric<vtr::NdMatrix<int, 3>>& chan_width = mutable_device_ctx.rr_chan_segment_width;
 
-    chanx_width.resize({grid.get_num_layers(), grid.width(), grid.height()});
-    chany_width.resize({grid.get_num_layers(), grid.width(), grid.height()});
+    chan_width.x.resize({grid.get_num_layers(), grid.width(), grid.height()});
+    chan_width.y.resize({grid.get_num_layers(), grid.width(), grid.height()});
 
-    chanx_width.fill(0);
-    chany_width.fill(0);
+    chan_width.x.fill(0);
+    chan_width.y.fill(0);
 
     if (grid.get_num_layers() > 1) {
-        chanz_width.resize({grid.width(), grid.height()});
-        chanz_width.fill(0);
+        chan_width.z.resize({grid.get_num_layers(), grid.width(), grid.height()});
+        chan_width.z.fill(0);
     }
 
     for (RRNodeId node_id : rr_graph.nodes()) {
@@ -1036,33 +1034,34 @@ static void alloc_and_init_channel_width() {
             int y = rr_graph.node_ylow(node_id);
             int layer = rr_graph.node_layer_low(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                chanx_width[layer][x][y] += rr_graph.node_capacity(node_id);
+                chan_width.x[layer][x][y] += rr_graph.node_capacity(node_id);
             }
         } else if (rr_type == e_rr_type::CHANY) {
             int x = rr_graph.node_xlow(node_id);
             int layer = rr_graph.node_layer_low(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
+                chan_width.y[layer][x][y] += rr_graph.node_capacity(node_id);
             }
         } else if (rr_type == e_rr_type::CHANZ) {
             int x = rr_graph.node_xlow(node_id);
             int y = rr_graph.node_ylow(node_id);
-            chanz_width[x][y]++;
+            for (int l = rr_graph.node_layer_low(node_id); l <= rr_graph.node_layer_high(node_id); l++) {
+                chan_width.z[l][x][y]++;
+            }
         }
     }
 
-    std::vector<int>& chanx_width_list = mutable_device_ctx.rr_chanx_width;
-    std::vector<int>& chany_width_list = mutable_device_ctx.rr_chany_width;
+    ChannelMetric<std::vector<int>>& chan_width_list = mutable_device_ctx.rr_chan_width;
 
-    chanx_width_list.resize(grid.height());
-    chany_width_list.resize(grid.width());
+    chan_width_list.x.resize(grid.height());
+    chan_width_list.y.resize(grid.width());
 
-    std::ranges::fill(chanx_width_list, 0);
-    std::ranges::fill(chany_width_list, 0);
+    std::ranges::fill(chan_width_list.x, 0);
+    std::ranges::fill(chan_width_list.y, 0);
 
     for (t_physical_tile_loc loc : grid.all_locations()) {
-        chanx_width_list[loc.y] = std::max(chanx_width[loc.layer_num][loc.x][loc.y], chanx_width_list[loc.y]);
-        chany_width_list[loc.x] = std::max(chany_width[loc.layer_num][loc.x][loc.y], chany_width_list[loc.x]);
+        chan_width_list.x[loc.y] = std::max(chan_width.x[loc.layer_num][loc.x][loc.y], chan_width_list.x[loc.y]);
+        chan_width_list.y[loc.x] = std::max(chan_width.y[loc.layer_num][loc.x][loc.y], chan_width_list.y[loc.x]);
     }
 }
 
@@ -1412,6 +1411,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     VTR_LOGV(route_verbosity > 1, "OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);
 
     num_edges = 0;
+
     add_chan_chan_edges(rr_graph_builder,
                         num_seg_types_x, num_seg_types_y,
                         track_to_pin_lookup_x, track_to_pin_lookup_y,
@@ -1564,11 +1564,12 @@ void free_rr_graph() {
 
     device_ctx.rr_graph_is_flat = false;
 
-    device_ctx.rr_chanx_segment_width.clear();
-    device_ctx.rr_chany_segment_width.clear();
-    device_ctx.rr_chanz_segment_width.clear();
-    device_ctx.rr_chanx_width.clear();
-    device_ctx.rr_chany_width.clear();
+    device_ctx.rr_chan_segment_width.x.clear();
+    device_ctx.rr_chan_segment_width.y.clear();
+    device_ctx.rr_chan_segment_width.z.clear();
+    device_ctx.rr_chan_width.x.clear();
+    device_ctx.rr_chan_width.y.clear();
+    device_ctx.rr_chan_width.z.clear();
 
     invalidate_router_lookahead_cache();
 }

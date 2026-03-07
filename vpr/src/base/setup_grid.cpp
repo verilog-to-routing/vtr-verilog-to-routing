@@ -17,7 +17,6 @@
 #include "vtr_log.h"
 #include "stats.h"
 
-#include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
@@ -27,13 +26,34 @@
 
 #define MAX_SIZE_FACTOR 10000
 
-using vtr::FormulaParser;
-using vtr::t_formula_data;
+/**
+ * @brief Create a device grid which satisfies the minimum block counts
+ *
+ * If a set of fixed grid layouts are specified, the smallest satisfying grid is picked
+ * If an auto grid layouts are specified, the smallest dynamically sized grid is picked
+ */
+static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layouts,
+                                        const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts,
+                                        float maximum_device_utilization);
 
-static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float maximum_device_utilization);
-static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts);
+/**
+ * @brief Estimates what logical block types will be unimplementable due to resource
+ *        limits in the available grid
+ *
+ * Performs a fast counting based estimate, allocating the least
+ * flexible block types (those with the fewestequivalent tiles) first.
+ */
+static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid,
+                                                                     std::map<t_logical_block_type_ptr, size_t> instance_counts);
+
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization);
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range = true, const std::vector<t_logical_block_type_ptr>& limiting_resources = std::vector<t_logical_block_type_ptr>());
+
+///@brief Build the specified device grid
+static DeviceGrid build_device_grid(const t_grid_def& grid_def,
+                                    size_t width,
+                                    size_t height,
+                                    bool warn_out_of_range = true,
+                                    const std::vector<t_logical_block_type_ptr>& limiting_resources = std::vector<t_logical_block_type_ptr>());
 
 ///@brief Check if grid is valid
 static void check_grid(const DeviceGrid& grid);
@@ -140,13 +160,9 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
     }
 }
 
-/**
- * @brief Create a device grid which satisfies the minimum block counts
- *
- * If a set of fixed grid layouts are specified, the smallest satisfying grid is picked
- * If an auto grid layouts are specified, the smallest dynamically sized grid is picked
- */
-static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float maximum_device_utilization) {
+static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layouts,
+                                        const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts,
+                                        float maximum_device_utilization) {
     VTR_ASSERT(!grid_layouts.empty());
 
     DeviceGrid grid;
@@ -257,14 +273,8 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
     return grid; //Unreachable
 }
 
-/**
- * @brief Estimates what logical block types will be unimplementable due to resource
- *        limits in the available grid
- *
- * Performs a fast counting based estimate, allocating the least
- * flexible block types (those with the fewestequivalent tiles) first.
- */
-static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts) {
+static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid,
+                                                                     std::map<t_logical_block_type_ptr, size_t> instance_counts) {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::vector<t_logical_block_type_ptr> overused_resources;
@@ -337,8 +347,11 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::ma
     return true; //OK
 }
 
-///@brief Build the specified device grid
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range, const std::vector<t_logical_block_type_ptr>& limiting_resources) {
+static DeviceGrid build_device_grid(const t_grid_def& grid_def,
+                                    size_t grid_width,
+                                    size_t grid_height,
+                                    bool warn_out_of_range,
+                                    const std::vector<t_logical_block_type_ptr>& limiting_resources) {
     if (grid_def.grid_type == e_grid_def_type::FIXED) {
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -374,22 +387,11 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
-    FormulaParser p;
+    vtr::FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
-    std::vector<std::vector<int>> horizontal_interposer_cuts(num_layers);
-    std::vector<std::vector<int>> vertical_interposer_cuts(num_layers);
 
     for (size_t layer = 0; layer < num_layers; layer++) {
         const t_layer_def& layer_def = grid_def.layers[layer];
-
-        for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            if (cut_inf.dim == e_interposer_cut_type::VERT) {
-                vertical_interposer_cuts[layer].push_back(cut_inf.loc);
-            } else {
-                VTR_ASSERT(cut_inf.dim == e_interposer_cut_type::HORZ);
-                horizontal_interposer_cuts[layer].push_back(cut_inf.loc);
-            }
-        }
 
         for (const t_grid_loc_def& grid_loc_def : layer_def.loc_defs) {
             // Fill in the block types according to the specification
@@ -403,7 +405,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
             seen_types.insert(type);
 
-            t_formula_data vars;
+            vtr::t_formula_data vars;
             vars.set_var_value("W", grid_width);
             vars.set_var_value("H", grid_height);
             vars.set_var_value("w", type->width);
@@ -554,11 +556,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
-    DeviceGrid device_grid(grid_def.name,
-                           grid,
-                           limiting_resources,
-                           std::move(horizontal_interposer_cuts),
-                           std::move(vertical_interposer_cuts));
+    DeviceGrid device_grid(grid_def, std::move(grid), limiting_resources);
 
     check_grid(device_grid);
 

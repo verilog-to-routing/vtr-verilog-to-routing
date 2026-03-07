@@ -105,6 +105,7 @@ class t_annealing_state {
      * @return True->continues the annealing. False->exits the annealing.
      */
     bool outer_loop_update(float success_rate,
+                           bool congestion_modeling_enabled,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts);
 
@@ -345,6 +346,8 @@ class PlacementAnnealer {
     int tot_iter_;
     /// Indicates whether the annealer has entered into the quench stage
     bool quench_started_;
+    /// Indicates whether routing congestion modeling has been started
+    bool congestion_modeling_started_;
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();
