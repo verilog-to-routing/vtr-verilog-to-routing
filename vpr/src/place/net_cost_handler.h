@@ -59,7 +59,12 @@ class NetCostHandler {
      * @param placer_state Contains information about block locations and net bounding boxes.
      * @param cube_bb True if the 3D bounding box should be used, false otherwise.
      */
-    NetCostHandler(const t_placer_opts& placer_opts, PlacerState& placer_state, bool cube_bb);
+    NetCostHandler(PlacerState& placer_state,
+                   bool cube_bb,
+                   t_place_algorithm place_algorithm,
+                   bool interposer_cost_enabled,
+                   double interposer_cong_threshold,
+                   double congestion_chan_util_threshold);
 
     /**
      * @brief Finds the bb cost and congestion cost from scratch.
@@ -177,8 +182,12 @@ class NetCostHandler {
     bool is_multi_layer_;
     /// A reference to the placer's state to be updated by this object.
     PlacerState& placer_state_;
+  
     /// Contains some parameter that determine how the placement cost is computed.
-    const t_placer_opts& placer_opts_;
+    t_place_algorithm place_algorithm_;
+    double interposer_cong_threshold_;
+    double congestion_chan_util_threshold_;
+
     /// Points to the proper method for computing the bounding box cost, estimated wirelength and congestion cost from scratch.
     std::function<std::pair<t_net_cost_terms, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     /// Points to the proper method for updating the bounding box of a net.
