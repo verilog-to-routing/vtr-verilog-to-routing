@@ -1627,9 +1627,7 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
     :req_param input: Pins that are inputs to this interconnect. Different data lines are separated by a space.
     :req_param output: Pins that are outputs of this interconnect.
 
-    Describes a bus-based multiplexer.
-
-    .. note:: Buses are not yet supported so all muxes must use one bit wide data only!
+    This tag supports both single-bit muxes and bus-based muxes. Note that the bit width of each mux input must match the bit width of the mux output.
 
     **Example:**
 
