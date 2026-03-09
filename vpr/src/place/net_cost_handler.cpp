@@ -100,13 +100,19 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
 
 /******************************* End of Function definitions ************************************/
 
-NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
-                               PlacerState& placer_state,
-                               bool cube_bb)
+NetCostHandler::NetCostHandler(PlacerState& placer_state,
+                               bool cube_bb,
+                               t_place_algorithm place_algorithm,
+                               bool interposer_cost_enabled,
+                               double interposer_cong_threshold,
+                               double congestion_chan_util_threshold)
     : congestion_modeling_started_(false)
+    , interposer_cost_enabled_(interposer_cost_enabled)
     , cube_bb_(cube_bb)
     , placer_state_(placer_state)
-    , placer_opts_(placer_opts) {
+    , place_algorithm_(place_algorithm)
+    , interposer_cong_threshold_(interposer_cong_threshold)
+    , congestion_chan_util_threshold_(congestion_chan_util_threshold) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
@@ -114,8 +120,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
-    interposer_cost_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cost_factor > 0;
-    // interposer_cong_enabled_ = grid.has_interposer_cuts() && placer_opts_.interposer_cong_factor > 0;
+    
     interposer_cong_modeling_started_ = false;
 
     // Either 3D BB or per layer BB data structure are used, not both.
@@ -162,7 +167,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
         VTR_ASSERT(std::ranges::is_sorted(grid.get_vertical_interposer_cuts()));
     }
 
-    if (placer_opts_.interposer_cong_factor > 0) {
+    if (interposer_cong_threshold_ > 0) {
         VTR_ASSERT(cube_bb_ && !is_multi_layer_);
 
         net_interposer_cong_cost_.resize(num_nets, -1.);
@@ -486,7 +491,7 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
     // Update the net bounding boxes.
     update_net_bb_(net_id, blk_id, pin_id, moving_blk_inf);
 
-    if (placer_opts_.place_algorithm.is_timing_driven()) {
+    if (place_algorithm_.is_timing_driven()) {
         // Determine the change in connection delay and timing cost.
         update_td_delta_costs_(delay_model,
                                *criticalities,
@@ -1445,7 +1450,7 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     VTR_ASSERT_SAFE(congestion_modeling_started_);
     const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
 
-    const float threshold = placer_opts_.congestion_chan_util_threshold;
+    const float threshold = congestion_chan_util_threshold_;
 
     float x_chan_cong = (x_chan_util < threshold) ? 0.0f : x_chan_util - threshold;
     float y_chan_cong = (y_chan_util < threshold) ? 0.0f : y_chan_util - threshold;
@@ -1460,7 +1465,7 @@ double NetCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, b
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
 
-    const float threshold = placer_opts_.interposer_cong_threshold;
+    const float threshold = interposer_cong_threshold_;
     double cost = 0.;
 
     for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
@@ -1799,13 +1804,13 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.interposer_cong_cost = 0.;
     }
 
-    if (placer_opts_.place_algorithm.is_timing_driven()) {
+    if (place_algorithm_.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, placer_state_, &new_timing_cost);
         check_and_print_cost(new_timing_cost, costs.timing_cost, "timing_cost");
         costs.timing_cost = new_timing_cost;
     } else {
-        VTR_ASSERT(placer_opts_.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
+        VTR_ASSERT(place_algorithm_ == e_place_algorithm::BOUNDING_BOX_PLACE);
         costs.cost = new_cost_terms.bb_cost * costs.bb_cost_norm;
     }
 }
