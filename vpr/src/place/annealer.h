@@ -347,6 +347,8 @@ class PlacementAnnealer {
     bool quench_started_;
     /// Indicates whether routing congestion modeling has been started
     bool congestion_modeling_started_;
+    /// Indicates whether interposer congestion modeling has been started
+    bool interposer_cong_modeling_started_;
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();

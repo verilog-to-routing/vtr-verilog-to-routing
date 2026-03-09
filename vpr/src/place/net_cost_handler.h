@@ -38,6 +38,7 @@ enum class e_cost_methods {
 struct t_net_cost_terms {
     double bb_cost = 0.;
     double interposer_cost = 0.;
+    double interposer_cong_cost = 0.;
     double cong_cost = 0.;
 };
 
@@ -58,7 +59,12 @@ class NetCostHandler {
      * @param placer_state Contains information about block locations and net bounding boxes.
      * @param cube_bb True if the 3D bounding box should be used, false otherwise.
      */
-    NetCostHandler(const t_placer_opts& placer_opts, PlacerState& placer_state, bool cube_bb);
+    NetCostHandler(PlacerState& placer_state,
+                   bool cube_bb,
+                   t_place_algorithm place_algorithm,
+                   bool interposer_cost_enabled,
+                   double interposer_cong_threshold,
+                   double congestion_chan_util_threshold);
 
     /**
      * @brief Finds the bb cost and congestion cost from scratch.
@@ -138,6 +144,13 @@ class NetCostHandler {
     int get_num_nets_crossing_interposer_cuts() const;
 
     /**
+     * @brief Compute estimated interposer congestion and optionally the total interposer congestion cost.
+     * @param compute_congestion_cost When true, compute total interposer congestion cost (sum over all nets).
+     * @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
+     */
+    double compute_interposer_est_cong_(bool compute_congestion_cost = true);
+
+    /**
      * @brief Estimates routing channel utilization and computes the congestion cost
      * for each net.
      * @param compute_congestion_cost Indicates whether computing congestion cost is needed.
@@ -162,14 +175,19 @@ class NetCostHandler {
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;
     bool interposer_cost_enabled_;
+    bool interposer_cong_modeling_started_;
     /// Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
     /// Determines whether the FPGA has multiple dies (layers)
     bool is_multi_layer_;
     /// A reference to the placer's state to be updated by this object.
     PlacerState& placer_state_;
+
     /// Contains some parameter that determine how the placement cost is computed.
-    const t_placer_opts& placer_opts_;
+    t_place_algorithm place_algorithm_;
+    double interposer_cong_threshold_;
+    double congestion_chan_util_threshold_;
+
     /// Points to the proper method for computing the bounding box cost, estimated wirelength and congestion cost from scratch.
     std::function<std::pair<t_net_cost_terms, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     /// Points to the proper method for updating the bounding box of a net.
@@ -236,6 +254,9 @@ class NetCostHandler {
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::Matrix<int> num_sink_pin_layer_;
 
+    vtr::NdMatrix<double, 3> horz_interposer_est_cong_;
+    vtr::NdMatrix<double, 3> vert_interposer_est_cong_;
+
     /**
      * @brief In each of these vectors, there is one entry per cluster level net:
      * [0...cluster_ctx.clb_nlist.nets().size()-1].
@@ -258,6 +279,7 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
 
     vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
+    vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
     /**
      * @brief The congestion cost for each net is based on the extent to which its
@@ -592,6 +614,8 @@ class NetCostHandler {
      * @return Congestion cost of the net
      */
     double get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts);
+
+    double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
      * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer

@@ -79,6 +79,7 @@ class t_placer_costs {
     double congestion_cost = 0.;
 
     double interposer_cost = 0.;
+    double interposer_cong_cost = 0.;
 
     /// The normalization factor for the wiring cost.
     double bb_cost_norm = 0.;
@@ -91,6 +92,9 @@ class t_placer_costs {
 
     /// The normalization factor for the interposer cost.
     double interposer_cost_norm = 0.;
+
+    /// The normalization factor for the interposer congestion cost.
+    double interposer_cong_cost_norm = 0.;
 
     /// NoC-related cost terms.
     NocCostTerms noc_cost_terms;
@@ -173,6 +177,8 @@ class t_placer_statistics {
     double av_cong_cost;
     /// Average interposer cost.
     double av_interposer_cost;
+    /// Average interposer congestion cost.
+    double av_interposer_cong_cost;
     /// Sum of squares of the total cost.
     double sum_of_squares;
     /// Number of accepted block swaps for the current iteration.

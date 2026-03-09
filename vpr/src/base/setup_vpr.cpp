@@ -673,6 +673,8 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->recompute_crit_iter = Options.recompute_crit_iter;
 
     PlacerOpts->interposer_cost_factor = Options.place_interposer_cost_factor;
+    PlacerOpts->interposer_cong_factor = Options.place_interposer_cong_cost_factor;
+    PlacerOpts->interposer_cong_threshold = Options.place_interposer_cong_threshold;
 
     PlacerOpts->timing_tradeoff = Options.place_timing_tradeoff;
     PlacerOpts->congestion_factor = Options.place_congestion_factor;
