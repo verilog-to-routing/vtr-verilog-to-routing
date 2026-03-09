@@ -242,7 +242,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                         // Start finding the other members
                         while (next_net_id != ClusterNetId::INVALID()) {
                             ClusterNetId curr_net_id = next_net_id;
-                            
+
                             // Check that the next net is driven by a direct with the same idirect and also have the same to_pin direct connection
                             // If not, this is not a valid macro and we stop here.
                             if (!is_net_direct_connection(curr_net_id, to_idirect, clb_nlist)) {
@@ -659,8 +659,7 @@ static bool is_constant_clb_net(ClusterNetId clb_net,
     return atom_nlist.net_is_constant(atom_net);
 }
 
-bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect,
-                                           const ClusteredNetlist& clb_nlist) {
+bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist) {
     ClusterBlockId block_id = clb_nlist.net_driver_block(clb_net);
     int pin_index = clb_nlist.net_pin_logical_index(clb_net, 0);
 
@@ -674,22 +673,21 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect,
 
     for (auto net_sink : clb_nlist.net_sinks(clb_net)) {
         ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
-        
+
         int sink_pin_index = clb_nlist.net_pin_logical_index(clb_net, clb_nlist.net_sinks(clb_net).size());
-        
+
         auto sink_logical_block = clb_nlist.block_type(sink_block_id);
         auto sink_physical_tile = pick_physical_type(sink_logical_block);
         auto sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
 
         receiver_direct = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
     }
-    
 
     if (driver_direct == UNDEFINED || receiver_direct == UNDEFINED) {
         return false;
     }
 
-    return driver_direct == idirect && receiver_direct == idirect;                                            
+    return driver_direct == idirect && receiver_direct == idirect;
 }
 
 const t_pl_macro& PlaceMacros::operator[](int idx) const {
