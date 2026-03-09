@@ -120,7 +120,7 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
-    
+
     interposer_cong_modeling_started_ = false;
 
     // Either 3D BB or per layer BB data structure are used, not both.
@@ -1893,7 +1893,7 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
                         vert_interposer_est_cong_[layer][i_cut][y] += cong_congribution;
                     }
                 }
-            }       
+            }
         }
     }
 
