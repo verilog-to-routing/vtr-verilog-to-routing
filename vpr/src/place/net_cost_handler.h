@@ -182,7 +182,7 @@ class NetCostHandler {
     bool is_multi_layer_;
     /// A reference to the placer's state to be updated by this object.
     PlacerState& placer_state_;
-  
+
     /// Contains some parameter that determine how the placement cost is computed.
     t_place_algorithm place_algorithm_;
     double interposer_cong_threshold_;
