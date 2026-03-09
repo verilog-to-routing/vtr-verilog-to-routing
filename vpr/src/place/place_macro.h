@@ -239,7 +239,7 @@ class PlaceMacros {
                              const std::vector<t_physical_tile_type>& physical_tile_types,
                              const ClusteredNetlist& clb_nlist) const;
 
-    bool net_is_driven_by_direct_(ClusterNetId clb_net,
+    bool is_net_direct_connection(ClusterNetId clb_net, int idirect,
                                   const ClusteredNetlist& clb_nlist);
 
     /**
