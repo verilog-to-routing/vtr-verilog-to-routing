@@ -1777,7 +1777,8 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
     check_and_print_cost(new_cost_terms.bb_cost, costs.bb_cost, "bb_cost");
     costs.bb_cost = new_cost_terms.bb_cost;
 
-    if (congestion_modeling_started_) {
+    constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
+    if (congestion_modeling_started_ && new_cost_terms.cong_cost > MIN_EXPECTED_CONG_COST) {
         check_and_print_cost(new_cost_terms.cong_cost, costs.congestion_cost, "cong_cost");
         costs.congestion_cost = new_cost_terms.cong_cost;
     } else {
@@ -1791,7 +1792,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.interposer_cost = 0.;
     }
 
-    if (interposer_cong_modeling_started_) {
+    if (interposer_cong_modeling_started_ && new_cost_terms.interposer_cong_cost > MIN_EXPECTED_CONG_COST) {
         check_and_print_cost(new_cost_terms.interposer_cong_cost, costs.interposer_cong_cost, "interposer_cong_cost");
         costs.interposer_cong_cost = new_cost_terms.interposer_cong_cost;
     } else {
