@@ -47,7 +47,12 @@ Placer::Placer(const Netlist<>& net_list,
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
     , placer_state_(placer_opts.place_algorithm.is_timing_driven())
     , rng_(placer_opts.seed)
-    , net_cost_handler_(placer_opts, placer_state_, cube_bb)
+    , net_cost_handler_(placer_state_,
+                        cube_bb,
+                        placer_opts.place_algorithm,
+                        placer_opts.interposer_cost_factor > 0.,
+                        placer_opts.interposer_cong_threshold,
+                        placer_opts.congestion_chan_util_threshold)
     , place_delay_model_(std::move(place_delay_model))
     , log_printer_(*this, quiet)
     , quench_only_(placer_opts.place_quench_only)
