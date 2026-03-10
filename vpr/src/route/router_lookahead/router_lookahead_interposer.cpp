@@ -94,6 +94,7 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
     /**
      * @brief Gets the minimum delay and congestion cost of a list of nodes along with their input edges.
+     * Used here to calculate the cost of crossing an interposer cut.
      */
     auto get_channel_min_delay = [&rr_graph, &device_ctx](const std::unordered_map<RRNodeId, std::vector<RREdgeId>>& node_in_edges) {
         float channel_delay = std::numeric_limits<float>::max();
@@ -113,6 +114,7 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
     };
 
     // Compute prefix sums for interposer delays and congestion costs along each axis.
+    // The cost of each cut is the minimum cost of all nodes that cross the cut.
     // By calculating the cumulative cost at each cut, we can determine the cost
     // between any two regions in O(1) time using the difference between their
     // prefix sum values.
