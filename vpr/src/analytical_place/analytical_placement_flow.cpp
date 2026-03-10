@@ -239,15 +239,14 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     DeviceSizeEstimator device_size_estimator(vpr_setup.PackerOpts.device_layout,
                                               vpr_setup.PackerOpts,
                                               device_ctx.arch->grid_layouts,
-                                              device_ctx.arch->models,
                                               prepacker);
-    
-    // Infer logical rams and map them to physical rams to be prioritized in the packing.
+
+    // Infer logical RAMs and assign to physical types to prioritize during packing.
+    // For the auto-device flow, reuse the groups already computed by the estimator.
     RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
                          prepacker,
-                         device_ctx.arch->models,
-                         device_ctx.logical_block_types,
-                         pre_cluster_timing_manager);
+                         pre_cluster_timing_manager,
+                         device_size_estimator.ram_groups());
 
     // Pre-compute the place delay model. This will be passed into the global
     // placer to create a more accurate timing model.

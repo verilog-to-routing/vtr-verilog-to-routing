@@ -403,22 +403,11 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
 
     bool is_memory = false;
     const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
-    // const LogicalRamStats logica_ram_stats = prepacker.get_overall_logical_ram_stats();
     if (prim->pb_type->is_primitive() && prim->pb_type->class_type == MEMORY_CLASS) {
         is_memory = true;
-        const size_t gid = ram_mapper.group_id_of(root_atom);
-        VTR_ASSERT_MSG(gid != SIZE_MAX, "root_atom not mapped to any LogicalRamGroup");
-        auto& logical_ram = ram_mapper.group_by_id_mut(gid);
-        
-        // VTR_LOG("Seed selected from logical ram groups (selected atom %zu):\n", root_atom);
-        // VTR_LOG("\tRepresentative atom id: %zu\n", logical_ram.rep_blk);
-        // VTR_LOG("\tTotal memory slices: %d\n", logical_ram.total_memory_slices);
-        // VTR_LOG("\tReamining memory slices: %d\n", logical_ram.remaining_memory_slices);
-        // VTR_LOG("\tCandidate type capacities:\n");
-        // for (t_logical_block_type_ptr& cand : candidate_types) {
-        //     int capacity = logical_ram.candidate_capacity[cand];
-        //     VTR_LOG("\t\t%s: %d\n", cand->name.c_str(), capacity);
-        // }
+        const LogicalRamGroupId gid = ram_mapper.group_id_of(root_atom);
+        VTR_ASSERT_MSG(gid.is_valid(), "root_atom not mapped to any LogicalRamGroup");
+        const auto& logical_ram = ram_mapper.group(gid);
 
         // Check if the current atom in the retrieved logical ram.
         auto it = std::find(logical_ram.atoms.begin(), logical_ram.atoms.end(), root_atom);
@@ -465,16 +454,6 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             VTR_LOGV(log_verbosity_ > 2, "\tPASSED_SEED: Block Type %s\n", type->name.c_str());
             // If clustering succeeds return the new_cluster_id and type.
             block_type = type;
-
-            if (is_memory) {
-                const size_t gid = ram_mapper.group_id_of(root_atom);
-                VTR_ASSERT_MSG(gid != SIZE_MAX, "root_atom not mapped to any LogicalRamGroup");
-                auto& logical_ram = ram_mapper.group_by_id_mut(gid);
-                logical_ram.remaining_memory_slices -= std::min(logical_ram.remaining_memory_slices, logical_ram.candidate_capacity[type]);
-                logical_ram.last_selected_type = type;
-                // VTR_LOG("\tSelected candidate type: %s\n", type->name.c_str());
-                // VTR_LOG("\tAdjusting the remaining slices\n");
-            }
 
             break;
         } else {

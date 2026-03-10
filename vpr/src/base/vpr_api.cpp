@@ -723,15 +723,14 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     DeviceSizeEstimator device_size_estimator(vpr_setup.PackerOpts.device_layout,
                                               vpr_setup.PackerOpts,
                                               arch.grid_layouts,
-                                              arch.models,
                                               prepacker);
-    
-    // Infer logical rams and map them to physical rams to be prioritized in the packing.
+
+    // Infer logical RAMs and assign to physical types to prioritize during packing.
+    // For the auto-device flow, reuse the groups already computed by the estimator.
     RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
                          prepacker,
-                         arch.models,
-                         g_vpr_ctx.device().logical_block_types,
-                         pre_cluster_timing_manager);
+                         pre_cluster_timing_manager,
+                         device_size_estimator.ram_groups());
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,

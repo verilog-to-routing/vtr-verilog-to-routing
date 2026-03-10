@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <vector>
 #include "flat_placement_types.h"
+#include "logical_ram_infer.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "greedy_clusterer.h"
@@ -119,10 +120,9 @@ struct ClusterGainStats {
     ///        of the seed.
     bool is_memory = false;
 
-    /// @brief The logical ram group id of this cluster. It is set to -1 for
-    ///        non-memory clusters.
-    ///        TODO: Change this with a "LogicalRAMGroupId" when you create.          
-    size_t logical_ram_id = -1;
+    /// @brief The logical RAM group ID of this cluster.
+    ///        Set to INVALID for non-memory clusters.
+    LogicalRamGroupId logical_ram_id;
 
     /// @brief List of feasible block and its gain pairs.
     ///        The list is maintained in heap structure with the highest gain block
