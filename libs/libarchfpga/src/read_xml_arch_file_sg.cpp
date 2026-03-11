@@ -28,10 +28,12 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
     
         std::string_view mux_name = pugiutil::get_attribute(node, "mux", loc_data).as_string();
         if (!mux_name.empty()) {
-            sg_link.mux_index = find_switch_by_name(switches, mux_name);
-            if (sg_link.mux_index < 0) {
+            int mux_index = find_switch_by_name(switches, mux_name);
+            if (mux_index < 0) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                                vtr::string_fmt("'%s' is not a valid mux name.\n", mux_name.data()).c_str());
+            } else {
+                sg_link.mux_index = mux_index;
             }
         }
  
