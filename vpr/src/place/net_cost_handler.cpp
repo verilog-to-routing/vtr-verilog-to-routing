@@ -167,7 +167,7 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
         VTR_ASSERT(std::ranges::is_sorted(grid.get_vertical_interposer_cuts()));
     }
 
-    if (interposer_cong_threshold_ > 0) {
+    if (interposer_cong_threshold_ > 0 && g_vpr_ctx.device().grid.has_interposer_cuts()) {
         VTR_ASSERT(cube_bb_ && !is_multi_layer_);
 
         net_interposer_cong_cost_.resize(num_nets, -1.);
