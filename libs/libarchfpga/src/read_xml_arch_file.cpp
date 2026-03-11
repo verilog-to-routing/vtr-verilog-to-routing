@@ -394,15 +394,6 @@ static bool attribute_to_bool(const pugi::xml_node node,
                               const pugi::xml_attribute attr,
                               const pugiutil::loc_data& loc_data);
 
-/**
- * @brief Searches for a switch whose matches with the given name.
- * @param switches Contains all the architecture switches.
- * @param switch_name The name with which switch names are compared.
- * @return A negative integer if no switch was found with the given name; otherwise
- * the index of the matching switch is returned.
- */
-static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, std::string_view switch_name);
-
 static e_side string_to_side(const std::string& side_str);
 
 template<typename T>
@@ -5022,17 +5013,6 @@ static bool attribute_to_bool(const pugi::xml_node node,
     }
 
     return false;
-}
-
-static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, std::string_view switch_name) {
-    for (int iswitch = 0; iswitch < (int)switches.size(); ++iswitch) {
-        const t_arch_switch_inf& arch_switch = switches[iswitch];
-        if (arch_switch.name == switch_name) {
-            return iswitch;
-        }
-    }
-
-    return ARCH_FPGA_UNDEFINED_VAL;
 }
 
 static e_side string_to_side(const std::string& side_str) {
