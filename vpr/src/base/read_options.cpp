@@ -2288,6 +2288,23 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("30")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool, ParseOnOff>(args.memoize_cluster_packings, "--memoize_cluster_packings")
+        .help("Enables memoization of previously seen clusters during packing.\n"
+              "\n"
+              "This can significantly reduce runtime for architectures with\n"
+              "complex or sparse logic block interconnects by skipping redundant\n"
+              "intracluster routing calls made to test for cluster legality.\n"
+              "Architectures with simple logic block interconnects (i.e. those\n"
+              "with full or regular crossbars) are likely to only see a marginal\n"
+              "improvement, if any. Enabling this option does not affect circuit\n"
+              "quality metrics like routed wirelength or critical path delay.\n"
+              "\n"
+              "Note: Use of this feature with `--analytical_place` is experimental.\n"
+              "For now, `--memoize_cluster_packings` is unsupported if\n"
+              "`--ap_full_legalizer` is set to `flat-recon`, and will be ignored.\n")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
@@ -3762,7 +3779,7 @@ bool verify_args(const t_options& args) {
      * describe the communication within the NoC. We ensure that a noc traffic
      * flows file is provided when the "--noc" option is used. If it is not
      * provided, we throw an error.
-     * 
+     *
      */
     if (args.noc.provenance() == Provenance::SPECIFIED && args.noc_flows_file.provenance() != Provenance::SPECIFIED) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
