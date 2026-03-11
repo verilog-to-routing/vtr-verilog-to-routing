@@ -671,17 +671,22 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, co
 
     int receiver_direct = UNDEFINED;
 
-    for (auto net_sink : clb_nlist.net_sinks(clb_net)) {
-        ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
-
-        int sink_pin_index = clb_nlist.net_pin_logical_index(clb_net, clb_nlist.net_sinks(clb_net).size());
-
-        auto sink_logical_block = clb_nlist.block_type(sink_block_id);
-        auto sink_physical_tile = pick_physical_type(sink_logical_block);
-        auto sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
-
-        receiver_direct = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
+    //if there is more than one sink, it should not be counted as a direct connection
+    if (clb_nlist.net_sinks(clb_net).size() > 1) {
+        return false;
     }
+
+    ClusterPinId net_sink = clb_nlist.net_pin(clb_net, 1); 
+    ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
+
+    int sink_pin_index = clb_nlist.net_pin_logical_index(clb_net, 1);
+
+    auto sink_logical_block = clb_nlist.block_type(sink_block_id);
+    auto sink_physical_tile = pick_physical_type(sink_logical_block);
+    auto sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
+
+    receiver_direct = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
+
 
     if (driver_direct == UNDEFINED || receiver_direct == UNDEFINED) {
         return false;
