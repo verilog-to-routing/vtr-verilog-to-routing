@@ -181,3 +181,15 @@ t_metadata_dict process_meta_data(vtr::string_internment& strings,
     }
     return data;
 }
+
+int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches,
+                        std::string_view switch_name) {
+    for (int iswitch = 0; iswitch < (int)switches.size(); ++iswitch) {
+        const t_arch_switch_inf& arch_switch = switches[iswitch];
+        if (arch_switch.name == switch_name) {
+            return iswitch;
+        }
+    }
+
+    return ARCH_FPGA_UNDEFINED_VAL;
+}
