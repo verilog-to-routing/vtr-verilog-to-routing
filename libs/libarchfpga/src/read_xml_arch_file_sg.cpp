@@ -1,4 +1,5 @@
 #include "read_xml_arch_file_sg.h"
+#include <string_view>
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
 #include "pugixml_util.hpp"
@@ -14,6 +15,7 @@
  * @return std::vector<t_sg_link> the information for the sg_links in the sg_link_list.
  */
 static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag,
+                                                 const std::vector<t_arch_switch_inf>& switches,
                                                  const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_link> sg_link_list;
     pugiutil::expect_only_children(sg_link_list_tag, {"sg_link"}, loc_data);
@@ -23,7 +25,16 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
 
         t_sg_link sg_link;
         sg_link.name = pugiutil::get_attribute(node, "name", loc_data).as_string();
-        sg_link.mux_name = pugiutil::get_attribute(node, "mux", loc_data).as_string();
+    
+        std::string_view mux_name = pugiutil::get_attribute(node, "mux", loc_data).as_string();
+        if (!mux_name.empty()) {
+            sg_link.mux_index = find_switch_by_name(switches, mux_name);
+            if (sg_link.mux_index < 0) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                               vtr::string_fmt("'%s' is not a valid mux name.\n", mux_name.data()).c_str());
+            }
+        }
+ 
         sg_link.seg_type = pugiutil::get_attribute(node, "seg_type", loc_data).as_string();
 
         // Since the offset attributes are optional and might not exist, the as_int method will return a value of zero if the attribute is empty
@@ -115,7 +126,7 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
         sg.scatter_pattern = scatter_wireconn;
 
         pugi::xml_node sg_link_list_tag = pugiutil::get_single_child(sg_tag, "sg_link_list", loc_data);
-        sg.sg_links = parse_sg_link_tags(sg_link_list_tag, loc_data);
+        sg.sg_links = parse_sg_link_tags(sg_link_list_tag, switches, loc_data);
 
         sg.sg_locations = parse_sg_location_tags(sg_tag, loc_data);
 
