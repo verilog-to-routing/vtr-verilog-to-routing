@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include "switchblock_types.h"
 #include "arch_types.h"
@@ -34,7 +35,7 @@ struct t_sg_link {
     /// Name of the sg_link.
     std::string name;
     /// Index of the multiplexer used to gather connections.
-    int mux_index = ARCH_FPGA_UNDEFINED_VAL;
+    std::optional<int> mux_index;
     /// Segment/wire used to move through the device to the scatter location.
     std::string seg_type;
     /// X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
