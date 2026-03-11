@@ -676,7 +676,7 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, co
         return false;
     }
 
-    ClusterPinId net_sink = clb_nlist.net_pin(clb_net, 1); 
+    ClusterPinId net_sink = clb_nlist.net_pin(clb_net, 1);
     ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
 
     int sink_pin_index = clb_nlist.net_pin_logical_index(clb_net, 1);
@@ -686,7 +686,6 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, co
     auto sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
 
     receiver_direct = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
-
 
     if (driver_direct == UNDEFINED || receiver_direct == UNDEFINED) {
         return false;

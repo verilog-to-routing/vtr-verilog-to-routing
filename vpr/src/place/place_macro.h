@@ -238,7 +238,7 @@ class PlaceMacros {
                              const std::vector<t_pl_macro>& macros,
                              const std::vector<t_physical_tile_type>& physical_tile_types,
                              const ClusteredNetlist& clb_nlist) const;
-    
+
     /** 
      * @brief Checks if a net is a direct connection, both driver and receiver should match the direclist specified in the architecture file
      * 
