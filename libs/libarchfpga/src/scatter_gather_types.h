@@ -2,6 +2,7 @@
 
 #include <string>
 #include "switchblock_types.h"
+#include "arch_types.h"
 
 /**
  * @brief Enumeration for the type field of an <sg_pattern> tag. With UNIDIR the gather pattern makes a mux which is connected by a node
@@ -30,12 +31,18 @@ struct t_sg_location {
  * This tag describes how and where the scatter (fanout) happens relative to the gather (fanin).
  */
 struct t_sg_link {
-    std::string name;     ///< Name of the sg_link.
-    std::string mux_name; ///< Name of the multiplexer used to gather connections.
-    std::string seg_type; ///< Segment/wire used to move through the device to the scatter location.
-    int x_offset;         ///< X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
-    int y_offset;         ///< y offset of where the scatter happens relative to the gather. If set, the x and z offsets must be zero.
-    int z_offset;         ///< z offset of where the scatter happens relative to the gather. If set, the x and y offsets must be zero.
+    /// Name of the sg_link.
+    std::string name;
+    /// Index of the multiplexer used to gather connections.
+    int mux_index = ARCH_FPGA_UNDEFINED_VAL;
+    /// Segment/wire used to move through the device to the scatter location.
+    std::string seg_type;
+    /// X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
+    int x_offset;
+    /// Y offset of where the scatter happens relative to the gather. If set, the x and z offsets must be zero.
+    int y_offset;
+    /// z offset of where the scatter happens relative to the gather. If set, the x and y offsets must be zero.
+    int z_offset;
 };
 
 /**
