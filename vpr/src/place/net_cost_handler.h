@@ -163,7 +163,20 @@ class NetCostHandler {
      *
      * @return Total congestion cost if requested.
      */
-    double estimate_routing_chan_util(bool compute_congestion_cost = true);
+    /**
+     * @brief Estimates routing channel utilization and computes the congestion cost
+     *        for each net.
+     * @param compute_congestion_cost When true, compute per-net congestion costs
+     *        (2D x/y and optionally 3D z) in addition to updating the global
+     *        utilization maps.
+     * @param compute_2d_congestion When true, enable standard 2D (x/y) congestion
+     *        modeling based on channel utilizations within each net's bounding box.
+     * @param compute_3d_congestion When true, enable z-axis (CHANZ) congestion
+     *        modeling using the net 3D bounding boxes.
+     */
+    double estimate_routing_chan_util(bool compute_congestion_cost = true,
+                                      bool compute_2d_congestion = true,
+                                      bool compute_3d_congestion = false);
 
     /**
      * @brief Returns the estimated routing channel usage for each location in the grid.
@@ -172,8 +185,10 @@ class NetCostHandler {
     const ChannelMetric<vtr::NdMatrix<double, 3>>& get_chan_util() const;
 
   private:
-    /// Indicates whether congestion cost modeling is enabled.
+    /// Indicates whether x/y congestion cost modeling is enabled.
     bool congestion_modeling_started_;
+    /// Indicates whether 3D (z-axis) congestion modeling is enabled.
+    bool z_congestion_modeling_started_;
     bool interposer_cost_enabled_;
     bool interposer_cong_modeling_started_;
     /// Specifies whether the bounding box is computed using cube method or per-layer method.
@@ -319,6 +334,20 @@ class NetCostHandler {
      *        over a net’s bounding box during congestion cost estimation.
      */
     ChannelMetric<vtr::PrefixSum2D<double>> acc_chan_util_;
+
+    /**
+     * @brief Estimated routing usage for inter-die (CHANZ) connections,
+     *        indexed by [x][y]. Values represent normalized z-direction wire
+     *        demand aggregated over all dice at each (x, y) location.
+     */
+    vtr::Matrix<double> chanz_util_;
+
+    /**
+     * @brief Accumulated (prefix sum) CHANZ utilization over (x, y), used to
+     *        compute average inter-die utilization within a net's 3D bounding
+     *        box when estimating z-direction congestion cost.
+     */
+    vtr::PrefixSum2D<double> acc_chanz_util_;
 
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 

@@ -828,7 +828,10 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     if ((annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio
          && placer_opts_.congestion_factor != 0.)
         || congestion_modeling_started_) {
-        costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
+        // Enable both 2D (x/y) and 3D (z-axis) congestion modeling during placement.
+        costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util(/*compute_congestion_cost=*/true,
+                                                                              /*compute_2d_congestion=*/false,
+                                                                              /*compute_3d_congestion=*/true);
 
         if (!congestion_modeling_started_) {
             VTR_LOG("Congestion modeling started.\n");
