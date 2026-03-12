@@ -120,7 +120,8 @@ static void write_csv(const std::string& filepath, const std::vector<std::vector
  */
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
-                                     vtr::NdMatrix<int, 3>& chany_occ);
+                                     vtr::NdMatrix<int, 3>& chany_occ,
+                                     vtr::NdMatrix<int, 3>& chanz_occ);
 
 /**
  * @brief Writes channel occupancy data to a file.
@@ -394,24 +395,36 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
 static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     const auto& device_ctx = g_vpr_ctx.device();
 
+    const size_t num_layers = device_ctx.grid.get_num_layers();
+    const size_t width = device_ctx.grid.width();
+    const size_t height = device_ctx.grid.height();
+
     auto chanx_occ = vtr::NdMatrix<int, 3>({{
-                                               device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width(),     // Length of each x channel
-                                               device_ctx.grid.height() - 1 // Total number of x channels. There is no CHANX above the top row.
+                                               num_layers,
+                                               width,     // Length of each x channel
+                                               height - 1 // Total number of x channels. There is no CHANX above the top row.
                                            }},
                                            0);
 
     auto chany_occ = vtr::NdMatrix<int, 3>({{
-                                               device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width() - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
-                                               device_ctx.grid.height()     // Length of each y channel.
+                                               num_layers,
+                                               width - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
+                                               height     // Length of each y channel.
                                            }},
                                            0);
 
-    load_channel_occupancies(net_list, chanx_occ, chany_occ);
+    vtr::NdMatrix<int, 3> chanz_occ;
+    if (num_layers > 1) {
+        chanz_occ.resize({{num_layers, width, height}}, 0);
+    }
+
+    load_channel_occupancies(net_list, chanx_occ, chany_occ, chanz_occ);
 
     write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chan_segment_width.x);
     write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chan_segment_width.y);
+    if (num_layers > 1) {
+        write_channel_occupancy_table("chanz_occupancy.txt", chanz_occ, device_ctx.rr_chan_segment_width.z);
+    }
 
     int total_cap_x = 0;
     int total_used_x = 0;
@@ -422,14 +435,14 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     VTR_LOG("X - Directed channels: layer   y   max occ   ave occ   ave cap\n");
     VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
-    for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
-        for (size_t y = 0; y < device_ctx.grid.height() - 1; y++) {
+    for (size_t layer = 0; layer < num_layers; ++layer) {
+        for (size_t y = 0; y < height - 1; y++) {
             float ave_occ = 0.0f;
             float ave_cap = 0.0f;
             int max_occ = -1;
 
             // It is assumed that there is no CHANX at x=0
-            for (size_t x = 1; x < device_ctx.grid.width(); x++) {
+            for (size_t x = 1; x < width; x++) {
                 max_occ = std::max(chanx_occ[layer][x][y], max_occ);
                 ave_occ += chanx_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.x[layer][x][y];
@@ -437,8 +450,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                 total_cap_x += chanx_occ[layer][x][y];
                 total_used_x += chanx_occ[layer][x][y];
             }
-            ave_occ /= device_ctx.grid.width() - 2;
-            ave_cap /= device_ctx.grid.width() - 2;
+            ave_occ /= width - 2;
+            ave_cap /= width - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
                     layer, y, max_occ, ave_occ, ave_cap);
         }
@@ -447,14 +460,14 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     VTR_LOG("Y - Directed channels: layer   x   max occ   ave occ   ave cap\n");
     VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
-    for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
-        for (size_t x = 0; x < device_ctx.grid.width() - 1; x++) {
+    for (size_t layer = 0; layer < num_layers; ++layer) {
+        for (size_t x = 0; x < width - 1; x++) {
             float ave_occ = 0.0;
             float ave_cap = 0.0;
             int max_occ = -1;
 
             // It is assumed that there is no CHANY at y=0
-            for (size_t y = 1; y < device_ctx.grid.height(); y++) {
+            for (size_t y = 1; y < height; y++) {
                 max_occ = std::max(chany_occ[layer][x][y], max_occ);
                 ave_occ += chany_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.y[layer][x][y];
@@ -462,8 +475,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                 total_cap_y += chany_occ[layer][x][y];
                 total_used_y += chany_occ[layer][x][y];
             }
-            ave_occ /= device_ctx.grid.height() - 2;
-            ave_cap /= device_ctx.grid.height() - 2;
+            ave_occ /= height - 2;
+            ave_cap /= height - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
                     layer, x, max_occ, ave_occ, ave_cap);
         }
@@ -525,7 +538,8 @@ static void write_channel_occupancy_table(std::string_view filename,
 
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
-                                     vtr::NdMatrix<int, 3>& chany_occ) {
+                                     vtr::NdMatrix<int, 3>& chany_occ,
+                                     vtr::NdMatrix<int, 3>& chanz_occ) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
@@ -533,6 +547,9 @@ static void load_channel_occupancies(const Netlist<>& net_list,
     // First set the occupancy of everything to zero.
     chanx_occ.fill(0);
     chany_occ.fill(0);
+    if (!chanz_occ.empty()) {
+        chanz_occ.fill(0);
+    }
 
     // Now go through each net and count the tracks and pins used everywhere
     for (ParentNetId net_id : net_list.nets()) {
@@ -560,6 +577,14 @@ static void load_channel_occupancies(const Netlist<>& net_list,
                 int layer = rr_graph.node_layer_low(inode);
                 for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
                     chany_occ[layer][i][j]++;
+            } else if (rr_type == e_rr_type::CHANZ) {
+                int x = rr_graph.node_xlow(inode);
+                int y = rr_graph.node_ylow(inode);
+                int layer_low = rr_graph.node_layer_low(inode);
+                int layer_high = rr_graph.node_layer_high(inode);
+                for (int layer = layer_low; layer <= layer_high; layer++) {
+                    chanz_occ[layer][x][y]++;
+                }
             }
         }
     }
