@@ -1,9 +1,11 @@
 #include "read_xml_arch_file_sg.h"
+#include <limits>
 #include <string_view>
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
 #include "pugixml_util.hpp"
 #include "arch_error.h"
+#include "arch_types.h"
 #include "switchblock_types.h"
 #include "vtr_util.h"
 
@@ -79,6 +81,31 @@ static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_patte
         } else {
             sg_location.type = sg_location_type_iter->second;
         }
+
+        if (sg_location.type == e_sb_location::E_XY_SPECIFIED) {
+            pugiutil::expect_only_attributes(node,
+                                             {"num", "sg_link_name", "type",
+                                              "x", "y",
+                                              "startx", "endx", "repeatx", "incrx",
+                                              "starty", "endy", "repeaty", "incry"},
+                                             loc_data);
+
+            sg_location.region.x = pugiutil::get_attribute(node, "x", loc_data, pugiutil::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
+            sg_location.region.y = pugiutil::get_attribute(node, "y", loc_data, pugiutil::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
+
+            sg_location.region.reg_x.start = pugiutil::get_attribute(node, "startx", loc_data, pugiutil::OPTIONAL).as_int(0);
+            sg_location.region.reg_x.end = pugiutil::get_attribute(node, "endx", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max() / 2);
+
+            sg_location.region.reg_y.start = pugiutil::get_attribute(node, "starty", loc_data, pugiutil::OPTIONAL).as_int(0);
+            sg_location.region.reg_y.end = pugiutil::get_attribute(node, "endy", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max() / 2);
+
+            sg_location.region.reg_x.repeat = pugiutil::get_attribute(node, "repeatx", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max());
+            sg_location.region.reg_y.repeat = pugiutil::get_attribute(node, "repeaty", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max());
+
+            sg_location.region.reg_x.incr = pugiutil::get_attribute(node, "incrx", loc_data, pugiutil::OPTIONAL).as_int(1);
+            sg_location.region.reg_y.incr = pugiutil::get_attribute(node, "incry", loc_data, pugiutil::OPTIONAL).as_int(1);
+        }
+
         sg_location_list.push_back(sg_location);
     }
     return sg_location_list;
