@@ -112,6 +112,9 @@ static bool match_sb_xy(const DeviceGrid& grid,
         if (specified_loc.x == -1 && loc.y == specified_loc.y) {
             return true;
         }
+
+        // Explicit coordinates were specified but this location didn't match
+        return false;
     }
 
     // if both sb_x and sb_y is not defined, we have a region that we should apply this SB pattern to, we just need to check
@@ -145,11 +148,11 @@ static bool match_sb_xy(const DeviceGrid& grid,
     if (loc.x >= reg_startx && loc.x <= reg_endx) { //should fall into the region
         // we also should respect the incrx
         // if incrx is not equal to 1, all locations within this region are *NOT* valid
-        if ((loc.x + reg_startx) % specified_loc.reg_x.incr == 0) {
+        if ((loc.x - reg_startx) % specified_loc.reg_x.incr == 0) {
             // valid x coordinate, check for y value
             if (loc.y >= reg_starty && loc.y <= reg_endy) {
                 // check for incry, similar as incrx
-                if ((loc.y + reg_starty) % specified_loc.reg_y.incr == 0) {
+                if ((loc.y - reg_starty) % specified_loc.reg_y.incr == 0) {
                     // both x and y are valid
                     return true;
                 }
