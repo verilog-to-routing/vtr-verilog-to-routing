@@ -28,6 +28,7 @@
 std::vector<PlaceStatusColumn> PlacementLogPrinter::get_place_status_columns() const {
     const bool noc_enabled = placer_.noc_opts_.noc;
     const bool has_interposer = g_vpr_ctx.device().grid.has_interposer_cuts();
+    const bool cong_enabled = placer_.placer_opts_.congestion_factor > 0.0;
 
     std::vector<PlaceStatusColumn> cols;
     auto add = [&](bool show, const char* d, const char* h1, const char* h2,
@@ -169,6 +170,12 @@ std::vector<PlaceStatusColumn> PlacementLogPrinter::get_place_status_columns() c
             const PlacementAnnealer& annealer = *placer_.annealer_;
             const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
             return vtr::string_fmt("%9.3f", stats.av_interposer_cong_cost);
+        });
+    add(cong_enabled, "----------", "  Av Cong ", "   Cost   ",
+        [this](float) {
+            const PlacementAnnealer& annealer = *placer_.annealer_;
+            const auto& [swap_stats, move_type_stats, stats] = annealer.get_stats();
+            return vtr::string_fmt("%-10.5g", stats.av_cong_cost);
         });
 
     return cols;
