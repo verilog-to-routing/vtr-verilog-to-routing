@@ -432,6 +432,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     int total_used_x = 0;
     int total_cap_y = 0;
     int total_used_y = 0;
+    int total_cap_z = 0;
+    int total_used_z = 0;
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels: layer   y   max occ   ave occ   ave cap\n");
@@ -484,16 +486,34 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
         }
     }
 
+    // Accumulate CHANZ usage and capacity, if present
+    for (size_t x = 0; x < chanz_occ.dim_size(1); ++x) {
+        for (size_t y = 0; y < chanz_occ.dim_size(2); ++y) {
+            total_used_z += chanz_occ[0][x][y];
+            total_cap_z += device_ctx.rr_chan_segment_width.z[0][x][y];
+        }
+    }
+
     VTR_LOG("\n");
 
-    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, ALL %9d\n",
-            total_cap_x, total_cap_y, total_cap_x + total_cap_y);
-    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, ALL %9d\n",
-            total_used_x, total_used_y, total_used_x + total_used_y);
-    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, ALL %8.1f%%\n",
-            100.0 * static_cast<double>(total_used_x) / total_cap_x,
-            100.0 * static_cast<double>(total_used_y) / total_cap_y,
-            100.0 * static_cast<double>(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
+    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, CHANZ %9d, ALL %9d\n",
+            total_cap_x, total_cap_y, total_cap_z, total_cap_x + total_cap_y + total_cap_z);
+    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, CHANZ %9d, ALL %9d\n",
+            total_used_x, total_used_y, total_used_z, total_used_x + total_used_y + total_used_z);
+
+    double usage_x = total_cap_x > 0 ? static_cast<double>(total_used_x) / total_cap_x : 0.0;
+    double usage_y = total_cap_y > 0 ? static_cast<double>(total_used_y) / total_cap_y : 0.0;
+    double usage_z = total_cap_z > 0 ? static_cast<double>(total_used_z) / total_cap_z : 0.0;
+    double usage_all = (total_cap_x + total_cap_y + total_cap_z) > 0
+                           ? static_cast<double>(total_used_x + total_used_y + total_used_z)
+                                 / (total_cap_x + total_cap_y + total_cap_z)
+                           : 0.0;
+
+    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, CHANZ %8.1f%%, ALL %8.1f%%\n",
+            100.0 * usage_x,
+            100.0 * usage_y,
+            100.0 * usage_z,
+            100.0 * usage_all);
 
     VTR_LOG("\n");
 }
