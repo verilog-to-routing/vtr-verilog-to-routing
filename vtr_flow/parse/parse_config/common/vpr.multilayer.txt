@@ -1,0 +1,2 @@
+init_num_multi_layer_nets;vpr.out;Initial number of nets spanning multiple layers: (\d+)
+num_multi_layer_nets;vpr.out;Number of nets spanning multiple layers: (\d+)
