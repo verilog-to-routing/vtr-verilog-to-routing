@@ -319,6 +319,10 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
         VTR_LOG("Initial number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
     }
 
+    if (g_vpr_ctx.device().grid.get_num_layers() > 1) {
+        VTR_LOG("Initial number of nets spanning multiple layers: %d\n", placer_.net_cost_handler_.get_num_multi_layer_nets());
+    }
+
     if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
                 1e9 * placer_.critical_path_.delay());
@@ -374,6 +378,10 @@ void PlacementLogPrinter::print_post_placement_stats() const {
 
     if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
         VTR_LOG("Number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
+    }
+
+    if (g_vpr_ctx.device().grid.get_num_layers() > 1) {
+        VTR_LOG("Number of nets spanning multiple layers: %d\n", placer_.net_cost_handler_.get_num_multi_layer_nets());
     }
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
