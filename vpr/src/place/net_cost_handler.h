@@ -143,6 +143,9 @@ class NetCostHandler {
     ///@brief Get the number of nets crossing interposer cuts.
     int get_num_nets_crossing_interposer_cuts() const;
 
+    ///@brief Get the number of nets whose bounding boxes span multiple layers.
+    int get_num_multi_layer_nets() const;
+
     /**
      * @brief Compute estimated interposer congestion and optionally the total interposer congestion cost.
      * @param compute_congestion_cost When true, compute total interposer congestion cost (sum over all nets).

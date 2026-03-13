@@ -1878,6 +1878,29 @@ int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
     return num_nets_crossing_interposer_cuts;
 }
 
+int NetCostHandler::get_num_multi_layer_nets() const {
+    // If the architecture is not multi-layer, no net can span multiple layers.
+    if (!is_multi_layer_) {
+        return 0;
+    }
+
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    int num_multi_layer_nets = 0;
+
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        if (clb_nlist.net_is_ignored(net_id)) continue;
+
+        const t_bb& bb = bb_coords_[net_id];
+
+        if (bb.layer_max != bb.layer_min) {
+            ++num_multi_layer_nets;
+        }
+    }
+
+    return num_multi_layer_nets;
+}
+
 double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
