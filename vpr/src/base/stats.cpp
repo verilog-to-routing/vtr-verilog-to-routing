@@ -396,17 +396,21 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
+    const size_t width = grid.width();
+    const size_t height = grid.height();
+    const size_t num_layers = grid.get_num_layers();
+
     auto chanx_occ = vtr::NdMatrix<int, 3>({{
-                                               grid.get_num_layers(),
-                                               grid.width(),     // Length of each x channel
-                                               grid.height() - 1 // Total number of x channels. There is no CHANX above the top row.
+                                               num_layers,
+                                               width,     // Length of each x channel
+                                               height - 1 // Total number of x channels. There is no CHANX above the top row.
                                            }},
                                            0);
 
     auto chany_occ = vtr::NdMatrix<int, 3>({{
-                                               grid.get_num_layers(),
-                                               grid.width() - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
-                                               grid.height()     // Length of each y channel.
+                                               num_layers,
+                                               width - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
+                                               height     // Length of each y channel.
                                            }},
                                            0);
 
@@ -424,14 +428,14 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     VTR_LOG("X - Directed channels: layer   y   max occ   ave occ   ave cap\n");
     VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
-    for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
-        for (size_t y = 0; y < device_ctx.grid.height() - 1; y++) {
+    for (size_t layer = 0; layer < num_layers; ++layer) {
+        for (size_t y = 0; y < height - 1; y++) {
             float ave_occ = 0.0f;
             float ave_cap = 0.0f;
             int max_occ = -1;
 
             // It is assumed that there is no CHANX at x=0
-            for (size_t x = 1; x < device_ctx.grid.width(); x++) {
+            for (size_t x = 1; x < width; x++) {
                 max_occ = std::max(chanx_occ[layer][x][y], max_occ);
                 ave_occ += chanx_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.x[layer][x][y];
@@ -439,8 +443,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                 total_cap_x += device_ctx.rr_chan_segment_width.x[layer][x][y];
                 total_used_x += chanx_occ[layer][x][y];
             }
-            ave_occ /= grid.width() - 2;
-            ave_cap /= grid.width() - 2;
+            ave_occ /= width - 2;
+            ave_cap /= width - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
                     layer, y, max_occ, ave_occ, ave_cap);
         }
@@ -449,14 +453,14 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     VTR_LOG("Y - Directed channels: layer   x   max occ   ave occ   ave cap\n");
     VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
-    for (size_t layer = 0; layer < grid.get_num_layers(); ++layer) {
-        for (size_t x = 0; x < grid.width() - 1; x++) {
+    for (size_t layer = 0; layer < num_layers; ++layer) {
+        for (size_t x = 0; x < width - 1; x++) {
             float ave_occ = 0.0;
             float ave_cap = 0.0;
             int max_occ = -1;
 
             // It is assumed that there is no CHANY at y=0
-            for (size_t y = 1; y < grid.height(); y++) {
+            for (size_t y = 1; y < height; y++) {
                 max_occ = std::max(chany_occ[layer][x][y], max_occ);
                 ave_occ += chany_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.y[layer][x][y];
@@ -464,8 +468,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                 total_cap_y += device_ctx.rr_chan_segment_width.y[layer][x][y];
                 total_used_y += chany_occ[layer][x][y];
             }
-            ave_occ /= grid.height() - 2;
-            ave_cap /= grid.height() - 2;
+            ave_occ /= height - 2;
+            ave_cap /= height - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
                     layer, x, max_occ, ave_occ, ave_cap);
         }
