@@ -13,6 +13,7 @@
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_tree.h"
+#include "vpr_context.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -392,19 +393,20 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
 }
 
 static void get_channel_occupancy_stats(const Netlist<>& net_list) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
 
     auto chanx_occ = vtr::NdMatrix<int, 3>({{
-                                               device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width(),     // Length of each x channel
-                                               device_ctx.grid.height() - 1 // Total number of x channels. There is no CHANX above the top row.
+                                               grid.get_num_layers(),
+                                               grid.width(),     // Length of each x channel
+                                               grid.height() - 1 // Total number of x channels. There is no CHANX above the top row.
                                            }},
                                            0);
 
     auto chany_occ = vtr::NdMatrix<int, 3>({{
-                                               device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width() - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
-                                               device_ctx.grid.height()     // Length of each y channel.
+                                               grid.get_num_layers(),
+                                               grid.width() - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
+                                               grid.height()     // Length of each y channel.
                                            }},
                                            0);
 
@@ -434,11 +436,11 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                 ave_occ += chanx_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.x[layer][x][y];
 
-                total_cap_x += chanx_occ[layer][x][y];
+                total_cap_x += device_ctx.rr_chan_segment_width.x[layer][x][y];
                 total_used_x += chanx_occ[layer][x][y];
             }
-            ave_occ /= device_ctx.grid.width() - 2;
-            ave_cap /= device_ctx.grid.width() - 2;
+            ave_occ /= grid.width() - 2;
+            ave_cap /= grid.width() - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
                     layer, y, max_occ, ave_occ, ave_cap);
         }
@@ -447,23 +449,23 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     VTR_LOG("Y - Directed channels: layer   x   max occ   ave occ   ave cap\n");
     VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
-    for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
-        for (size_t x = 0; x < device_ctx.grid.width() - 1; x++) {
+    for (size_t layer = 0; layer < grid.get_num_layers(); ++layer) {
+        for (size_t x = 0; x < grid.width() - 1; x++) {
             float ave_occ = 0.0;
             float ave_cap = 0.0;
             int max_occ = -1;
 
             // It is assumed that there is no CHANY at y=0
-            for (size_t y = 1; y < device_ctx.grid.height(); y++) {
+            for (size_t y = 1; y < grid.height(); y++) {
                 max_occ = std::max(chany_occ[layer][x][y], max_occ);
                 ave_occ += chany_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.y[layer][x][y];
 
-                total_cap_y += chany_occ[layer][x][y];
+                total_cap_y += device_ctx.rr_chan_segment_width.y[layer][x][y];
                 total_used_y += chany_occ[layer][x][y];
             }
-            ave_occ /= device_ctx.grid.height() - 2;
-            ave_cap /= device_ctx.grid.height() - 2;
+            ave_occ /= grid.height() - 2;
+            ave_cap /= grid.height() - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
                     layer, x, max_occ, ave_occ, ave_cap);
         }
@@ -471,12 +473,14 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
 
     VTR_LOG("\n");
 
-    VTR_LOG("Total existing wires segments: CHANX %d, CHANY %d, ALL %d\n",
+    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, ALL %9d\n",
             total_cap_x, total_cap_y, total_cap_x + total_cap_y);
-    VTR_LOG("Total used wires segments:     CHANX %d, CHANY %d, ALL %d\n",
+    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, ALL %9d\n",
             total_used_x, total_used_y, total_used_x + total_used_y);
-    VTR_LOG("Usage percentage:               CHANX %d%%, CHANY %d%%, ALL %d%%\n",
-            (float)total_used_x / total_cap_x, (float)total_used_y / total_cap_y, (float)(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
+    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, ALL %8.1f%%\n",
+            100.0 * static_cast<double>(total_used_x) / total_cap_x,
+            100.0 * static_cast<double>(total_used_y) / total_cap_y,
+            100.0 * static_cast<double>(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
 
     VTR_LOG("\n");
 }
