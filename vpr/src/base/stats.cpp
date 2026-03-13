@@ -13,6 +13,7 @@
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_tree.h"
+#include "vpr_context.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -393,11 +394,12 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
 }
 
 static void get_channel_occupancy_stats(const Netlist<>& net_list) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
 
-    const size_t num_layers = device_ctx.grid.get_num_layers();
-    const size_t width = device_ctx.grid.width();
-    const size_t height = device_ctx.grid.height();
+    const size_t num_layers = grid.get_num_layers();
+    const size_t width = grid.width();
+    const size_t height = grid.height();
 
     auto chanx_occ = vtr::NdMatrix<int, 3>({{
                                                num_layers,
@@ -447,7 +449,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                 ave_occ += chanx_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.x[layer][x][y];
 
-                total_cap_x += chanx_occ[layer][x][y];
+                total_cap_x += device_ctx.rr_chan_segment_width.x[layer][x][y];
                 total_used_x += chanx_occ[layer][x][y];
             }
             ave_occ /= width - 2;
@@ -472,7 +474,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                 ave_occ += chany_occ[layer][x][y];
                 ave_cap += device_ctx.rr_chan_segment_width.y[layer][x][y];
 
-                total_cap_y += chany_occ[layer][x][y];
+                total_cap_y += device_ctx.rr_chan_segment_width.y[layer][x][y];
                 total_used_y += chany_occ[layer][x][y];
             }
             ave_occ /= height - 2;
@@ -484,12 +486,14 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
 
     VTR_LOG("\n");
 
-    VTR_LOG("Total existing wires segments: CHANX %d, CHANY %d, ALL %d\n",
+    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, ALL %9d\n",
             total_cap_x, total_cap_y, total_cap_x + total_cap_y);
-    VTR_LOG("Total used wires segments:     CHANX %d, CHANY %d, ALL %d\n",
+    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, ALL %9d\n",
             total_used_x, total_used_y, total_used_x + total_used_y);
-    VTR_LOG("Usage percentage:               CHANX %d%%, CHANY %d%%, ALL %d%%\n",
-            (float)total_used_x / total_cap_x, (float)total_used_y / total_cap_y, (float)(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
+    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, ALL %8.1f%%\n",
+            100.0 * static_cast<double>(total_used_x) / total_cap_x,
+            100.0 * static_cast<double>(total_used_y) / total_cap_y,
+            100.0 * static_cast<double>(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
 
     VTR_LOG("\n");
 }
