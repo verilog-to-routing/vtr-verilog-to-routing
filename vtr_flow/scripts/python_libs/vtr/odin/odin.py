@@ -1,5 +1,5 @@
 """
-    Module to run ODIN II with its various arguments
+Module to run ODIN II with its various arguments
 """
 
 import os

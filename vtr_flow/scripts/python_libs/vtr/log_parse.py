@@ -1,5 +1,5 @@
 """
-    module that contains functions to inspect various files to determine important values
+module that contains functions to inspect various files to determine important values
 """
 
 import re
