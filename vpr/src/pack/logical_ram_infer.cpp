@@ -1,3 +1,16 @@
+/**
+ * @file
+ * @author  Haydar Cakan
+ * @date    March 2026
+ * @brief   Implementation of logical RAM inference and mapping.
+ *
+ * RAM atoms are grouped into sibling-feasible equivalence classes by
+ * group_ram_atoms(). assign_ram_groups_by_min_area() then assigns each group to the
+ * physical RAM type that minimizes total tile area, processing the most
+ * constrained groups first. RamMapper wraps these two steps and adds a
+ * timing pass that remaps timing-critical groups to the smallest (fastest)
+ * candidate type, subject to device utilization constraints.
+ */
 
 #include "logical_ram_infer.h"
 
@@ -9,6 +22,7 @@
 
 #include "atom_netlist.h"
 #include "cluster_util.h"
+#include "vpr_error.h"
 #include "globals.h"
 #include "prepack.h"
 #include "vtr_assert.h"
@@ -86,7 +100,7 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
     return groups;
 }
 
-void assign_minimum_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups) {
+void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups) {
     // Step 1: Compute area cost for each group × candidate type, then sort
     //         candidate_types by area so that candidate_types[0] is always
     //         the minimum-area choice.
@@ -97,12 +111,12 @@ void assign_minimum_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups
                 g.total_memory_slices, g.candidate_capacity.at(cand)));
             int tile_area = cand->equivalent_tiles[0]->height
                           * cand->equivalent_tiles[0]->width;
-            g.area_type[cand] = n * tile_area;
+            g.candidate_area_cost[cand] = n * tile_area;
         }
         std::sort(g.candidate_types.begin(), g.candidate_types.end(),
                   [&](t_logical_block_type_ptr a, t_logical_block_type_ptr b) {
-                      int area_a = g.area_type.at(a);
-                      int area_b = g.area_type.at(b);
+                      int area_a = g.candidate_area_cost.at(a);
+                      int area_b = g.candidate_area_cost.at(b);
                       if (area_a != area_b) return area_a < area_b;
                       // Tie-break: prefer higher capacity, then by name.
                       int cap_a = g.candidate_capacity.at(a);
@@ -145,17 +159,18 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
     vtr::ScopedStartFinishTimer timer("Ram Mapper");
 
     if (precomputed_groups.empty()) {
-        VTR_LOG("No pre-computed RAM groups — running grouping and area assignment.\n");
+        VTR_LOG("No pre-computed RAM groups, running grouping and area assignment.\n");
         logical_ram_groups_ = group_ram_atoms(atom_nlist, prepacker);
-        assign_minimum_area(logical_ram_groups_);
+        assign_ram_groups_by_min_area(logical_ram_groups_);
+        check_assigned_rams_fit_on_device();
     } else {
         VTR_LOG("Using pre-computed RAM groups from device size estimator.\n");
         logical_ram_groups_ = std::move(precomputed_groups);
     }
 
-    log_utilizations("Area assignment device utilizations:");
+    log_utilizations("Device ram utilizations after area driven assignment:");
     timing_pass(atom_nlist, timing_manager);
-    log_utilizations("After timing pass device utilizations:");
+    log_utilizations("Device ram utilizations after timing pass:");
     build_atom_to_group_map(atom_nlist);
 }
 
@@ -202,6 +217,57 @@ void RamMapper::log_utilizations(const std::string& label) const {
                 type->name.c_str(),
                 vtr::safe_ratio<float>(used, total),
                 used, total);
+    }
+}
+
+void RamMapper::check_assigned_rams_fit_on_device() const {
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    // Sum required instances per type from the current assignment.
+    // Also verify that every group was assigned a type and has at least one candidate.
+    std::unordered_map<t_logical_block_type_ptr, int> required;
+    for (LogicalRamGroupId gid : logical_ram_groups_.keys()) {
+        const LogicalRamGroup& g = logical_ram_groups_[gid];
+
+        if (g.candidate_types.empty()) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Logical RAM group %zu has no compatible physical RAM type "
+                            "in the architecture.\n",
+                            size_t(gid));
+        }
+
+        if (!g.pre_assigned_type) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Logical RAM group %zu was not assigned a physical type.\n",
+                            size_t(gid));
+        }
+
+        int n = (int)std::ceil(vtr::safe_ratio<float>(
+            g.total_memory_slices, g.candidate_capacity.at(g.pre_assigned_type)));
+        required[g.pre_assigned_type] += n;
+    }
+
+    // Check each type against the available device capacity.
+    for (const auto& [type, needed] : required) {
+        int available = 0;
+        for (t_physical_tile_type_ptr phys : type->equivalent_tiles)
+            available += device_ctx.grid.num_instances(phys, -1);
+        
+        // pre_assigned_type is a hint to the packer, not a hard constraint.
+        // The packer may still place the group on an alternative candidate
+        // type, so a warning is issued rather than a fatal error.
+        // TODO: Currently each logical RAM group is assigned to a single
+        //       physical type. Allowing atoms within a group to be split
+        //       across different physical types could yield a lower total
+        //       area, at the cost of potentially worse timing. This finer-
+        //       grained assignment could be invoked as a fallback when the
+        //       current assignment exceeds the available device capacity.
+        if (needed > available) {
+            VTR_LOG_WARN("RAM type '%s' requires %d instance(s) but the device "
+                         "only provides %d. The packer can attempt to use "
+                         "alternative candidate types.\n",
+                         type->name.c_str(), needed, available);
+        }
     }
 }
 

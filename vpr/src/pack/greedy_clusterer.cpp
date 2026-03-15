@@ -401,10 +401,8 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
                          });
     }
 
-    bool is_memory = false;
     const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
     if (prim->pb_type->is_primitive() && prim->pb_type->class_type == MEMORY_CLASS) {
-        is_memory = true;
         const LogicalRamGroupId gid = ram_mapper.group_id_of(root_atom);
         VTR_ASSERT_MSG(gid.is_valid(), "root_atom not mapped to any LogicalRamGroup");
         const auto& logical_ram = ram_mapper.group(gid);

@@ -2,7 +2,7 @@
 /**
  * @file
  * @author  Haydar Cakan
- * @date    March 12, 2026
+ * @date    March 2026
  * @brief   Estimates the device size required to fit a design before packing
  *          begins, so that an appropriate FPGA grid can be selected and 
  *          optimizations before packing (e.g. analytical placement, ram mapping)
@@ -44,8 +44,6 @@ class DeviceSizeEstimator {
     }
 
   private:
-    vtr::vector<LogicalRamGroupId, LogicalRamGroup> ram_groups_;
-
     /**
      * @brief Estimates the number of instances required for each logical block
      *        type to fit the design.
@@ -59,4 +57,8 @@ class DeviceSizeEstimator {
      */
     std::map<t_logical_block_type_ptr, size_t> estimate_resource_requirement(
         const Prepacker& prepacker);
+
+    /// @brief RAM groups computed during estimation; exposed via ram_groups()
+    ///        for reuse by RamMapper to avoid redundant grouping and area assignment.
+    vtr::vector<LogicalRamGroupId, LogicalRamGroup> ram_groups_;
 };

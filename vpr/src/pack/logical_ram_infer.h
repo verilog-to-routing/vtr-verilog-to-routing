@@ -1,4 +1,13 @@
 #pragma once
+/**
+ * @file
+ * @author  Haydar Cakan
+ * @date    March 2026
+ * @brief   Logical RAM inference: groups RAM atoms into sibling-feasible
+ *          equivalence classes and assigns each group to a physical
+ *          RAM type by minimizing area and then tries to improve timing
+ *          of most critical groups.
+ */
 
 #include <string>
 #include <unordered_map>
@@ -29,21 +38,22 @@ struct LogicalRamGroup {
     const t_pb_type* rep_pb_type = nullptr;
     /// @brief All atoms in this group.
     std::vector<AtomBlockId> atoms;
-    /// @brief Legal physical block types for this group, sorted by area cost
-    ///        (ascending) after assign_minimum_area() is called.
+    /// @brief Legal physical block types that can implement this group.
+    ///        Sorted by area cost (ascending) after assign_ram_groups_by_min_area().
     std::vector<t_logical_block_type_ptr> candidate_types;
     /// @brief Number of primitives per physical instance for each candidate type.
     std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
-    /// @brief Area cost (instances × tile_area) for each candidate type.
-    ///        Populated by assign_minimum_area().
-    std::unordered_map<t_logical_block_type_ptr, int> area_type;
-    /// @brief Total number of RAM slices (atoms) in the group.
+    /// @brief Map from each candidate type to its total area cost,
+    ///        computed as ceil(slices / capacity) × tile_area.
+    ///        Populated by assign_ram_groups_by_min_area().
+    std::unordered_map<t_logical_block_type_ptr, int> candidate_area_cost;
+    /// @brief Total number of RAM slices in the group.
     int total_memory_slices = 0;
-    /// @brief Physical block type selected by area/timing assignment.
+    /// @brief Physical block type selected by area/timing driven assignment.
     t_logical_block_type_ptr pre_assigned_type = nullptr;
-    /// @brief True if the RAM output is registered (relevant for timing remapping).
+    /// @brief True if the RAM output is registered.
     bool is_output_registered = false;
-    /// @brief Maximum setup-timing criticality among atoms in this group.
+    /// @brief Maximum setup timing criticality among atoms in this group.
     float max_atom_criticality = 0.0f;
 };
 
@@ -51,29 +61,33 @@ struct LogicalRamGroup {
  * @brief Groups RAM atoms from the netlist into sibling-feasible equivalence
  *        classes and initializes per-type capacities for each group.
  *
- * Two atoms are sibling-feasible if their non-data ports match bit-for-bit,
+ * Two atoms are sibling-feasible if their non-data ports match bit for bit,
  * meaning they can be packed into the same physical RAM block.
  *
- * @param atom_nlist  The atom netlist.
- * @param prepacker   The prepacker (provides expected primitive mappings).
- * @return            A vector of groups, indexed by LogicalRamGroupId.
+ * @param atom_nlist  Used to iterate over all atom blocks and identify RAM primitives.
+ * @param prepacker   Used to query each atom's expected primitive mapping and to
+ *                    compute per type capacities for each group.
+ * @return            A vector of groups indexed by LogicalRamGroupId, each with
+ *                    candidate_types and candidate_capacity populated.
  */
 vtr::vector<LogicalRamGroupId, LogicalRamGroup>
 group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker);
 
 /**
- * @brief Assigns each group's pre_assigned_type to the minimum-area type.
+ * @brief Assigns each group's pre_assigned_type to the minimum-area candidate type.
  *
- * Groups are processed in priority order (most constrained first: fewest
- * candidate types, then most atoms) using a sorted index, without reordering
- * the groups vector. No device-grid feasibility check is performed.
+ * Groups are processed most constrained first (fewest candidate types, then
+ * most atoms) to prioritize groups with fewer placement options. After this
+ * call, each group's candidate_types is sorted by area cost (ascending) and
+ * pre_assigned_type points to candidate_types[0].
  *
- * After this call, each group's candidate_types is sorted by area cost
- * (ascending) and pre_assigned_type is set to candidate_types[0].
+ * No device-grid feasibility check is performed; call
+ * check_assigned_rams_fit_on_device() afterwards if needed.
  *
- * @param groups  Groups to assign (modified in place).
+ * @param groups  RAM groups whose candidate_types will be sorted by area cost
+ *                and whose pre_assigned_type will be set to the minimum-area choice.
  */
-void assign_minimum_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups);
+void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups);
 
 /**
  * @brief Infers logical RAM groups from the atom netlist and assigns each
@@ -92,12 +106,16 @@ class RamMapper {
      * If precomputed_groups is non-empty (typically from DeviceSizeEstimator
      * in the auto-device flow), the area assignment is skipped and only the
      * timing pass is performed. Otherwise, group_ram_atoms() followed by
-     * assign_minimum_area() are called internally before the timing pass.
+     * assign_ram_groups_by_min_area() are called internally before the timing pass.
      *
-     * @param atom_nlist          The atom netlist.
-     * @param prepacker           The prepacker.
-     * @param timing_manager      Pre-cluster timing information.
-     * @param precomputed_groups  Previously computed groups (optional).
+     * @param atom_nlist          Used to iterate atoms during grouping and to evaluate
+     *                            timing criticality per atom in the timing pass.
+     * @param prepacker           Used to query primitive mappings and per type capacities
+     *                            during RAM grouping.
+     * @param timing_manager      Used to compute setup timing criticality per atom,
+     *                            driving the timing based remap decisions.
+     * @param precomputed_groups  RAM groups previously computed by DeviceSizeEstimator;
+     *                            if non-empty, grouping and area assignment are skipped.
      */
     RamMapper(const AtomNetlist& atom_nlist,
               const Prepacker& prepacker,
@@ -118,16 +136,24 @@ class RamMapper {
     size_t num_groups() const { return logical_ram_groups_.size(); }
 
   private:
-    vtr::vector<LogicalRamGroupId, LogicalRamGroup> logical_ram_groups_;
-    vtr::vector<AtomBlockId, LogicalRamGroupId> atom_to_group_;
-
     /// @brief Builds the atom-to-group lookup map. Called once at the end of construction.
     void build_atom_to_group_map(const AtomNetlist& atom_nlist);
 
-    /// @brief Remaps timing-critical groups to the fastest (smallest) RAM type.
+    /// @brief Tries to remap timing-critical groups to the smalles (believed to be fastest) RAM type.
     void timing_pass(const AtomNetlist& atom_nlist,
                      const PreClusterTimingManager& timing_manager);
 
+    /// @brief Checks the integrity of the current RAM type assignment.
+    ///        Issues a fatal error if any group has no candidate types or no
+    ///        assigned type. Warns if any type exceeds the available device capacity.
+    void check_assigned_rams_fit_on_device() const;
+
     /// @brief Logs device utilization per RAM type with a given label.
     void log_utilizations(const std::string& label) const;
+
+    /// @brief All logical RAM groups, indexed by LogicalRamGroupId.
+    vtr::vector<LogicalRamGroupId, LogicalRamGroup> logical_ram_groups_;
+    
+    /// @brief Maps each RAM atom to its group ID for fast lookup during packing.
+    vtr::vector<AtomBlockId, LogicalRamGroupId> atom_to_group_;
 };

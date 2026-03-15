@@ -1,11 +1,11 @@
 /**
  * @file
  * @author  Haydar Cakan
- * @date    March 12, 2026
+ * @date    March 2026
  * @brief   Implementation of device size estimation before packing.
  *
  * Non-RAM molecules are grouped by logical block type and packed into virtual
- * clusters using a lightweight pin-capacity and mini-packer simulation to
+ * clusters using a lightweight pin-capacity and cluster placement feasibility to
  * estimate the number of physical instances required. RAM atoms are grouped
  * into sibling-feasible equivalence classes and assigned to the minimum-area
  * physical RAM type. The resulting RAM groups are stored in ram_groups_ and
@@ -128,7 +128,7 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
             std::fill(primitives_list.begin(), primitives_list.end(), nullptr);
             placed = can_place_molecule(cluster_stats, mol_id, primitives_list, prepacker);
             if (!placed) {
-                // Molecule cannot fit any fresh cluster; skip it in the estimate.
+                // Molecule cannot fit any fresh cluster, skip it in the estimate.
                 continue;
             }
         }
@@ -156,7 +156,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
     // Group RAM atoms and assign to minimum-area types.
     // Results are stored in ram_groups_ for later use by RamMapper.
     ram_groups_ = group_ram_atoms(atom_ctx.netlist(), prepacker);
-    assign_minimum_area(ram_groups_);
+    assign_ram_groups_by_min_area(ram_groups_);
 
     // Group non-RAM molecules by their logical block type.
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
