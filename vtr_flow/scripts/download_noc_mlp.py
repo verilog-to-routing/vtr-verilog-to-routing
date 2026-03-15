@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-    Module for downloading and extracting NoC MLP benchmarks
+Module for downloading and extracting NoC MLP benchmarks
 """
 
 import sys
@@ -31,15 +31,13 @@ def parse_args():
     """
     Parses command line arguments
     """
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
                     Download and extract a MLP NoC benchmarks into a
                     VTR-style directory structure.
 
                     If a previous matching tar.gz file is found
                     does nothing (unless --force is specified).
-                  """
-    )
+                  """)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
     )

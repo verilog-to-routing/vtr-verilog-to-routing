@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-""" This module controls and parses the large runs that includes
-sweeping multiple parameters. """
+"""This module controls and parses the large runs that includes
+sweeping multiple parameters."""
+
 import itertools
 import os
 import sys

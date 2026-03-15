@@ -1,5 +1,5 @@
 """
-    Module to interact with VPR and its various options
+Module to interact with VPR and its various options
 """
 
 from collections import OrderedDict
