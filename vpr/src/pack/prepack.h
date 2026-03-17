@@ -143,10 +143,11 @@ struct t_molecule_stats {
     int num_used_ext_outputs = 0;
 };
 
+/// @brief Sets of nets that cross the boundary of a molecule, partitioned by pin type.
 struct t_molecule_external_nets {
-    std::unordered_set<AtomNetId> ext_clock_nets;
-    std::unordered_set<AtomNetId> ext_input_nets;
-    std::unordered_set<AtomNetId> ext_output_nets;
+    std::unordered_set<AtomNetId> ext_clock_nets;   ///< Nets driving a clock pin from outside the molecule.
+    std::unordered_set<AtomNetId> ext_input_nets;   ///< Nets driving an input pin from outside the molecule.
+    std::unordered_set<AtomNetId> ext_output_nets;  ///< Nets driven by the molecule with at least one sink outside.
 };
 
 /**
@@ -241,6 +242,12 @@ class Prepacker {
         return expected_lowest_cost_pb_gnode[blk_id];
     }
 
+    /**
+     * @brief Search through all primitives and return the lowest cost primitive that fits this atom block.
+     *
+     * @param blk_id               Atom to find a primitive for.
+     * @param logical_block_types  Block types to search through.
+     */
     t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
                                                                        const std::vector<t_logical_block_type>& logical_block_types) const;
 
@@ -257,6 +264,13 @@ class Prepacker {
     t_molecule_stats calc_max_molecule_stats(const AtomNetlist& netlist,
                                              const LogicalModels& models) const;
 
+    /**
+     * @brief Returns the sets of nets that cross the boundary of a molecule,
+     *        partitioned into clock, input, and output nets.
+     *
+     * @param molecule_id  Molecule to compute external nets for.
+     * @param atom_nlist   Used to iterate pins and look up net drivers.
+     */
     t_molecule_external_nets calc_molecule_external_nets(PackMoleculeId molecule_id,
                                                         const AtomNetlist& atom_nlist) const;
 
