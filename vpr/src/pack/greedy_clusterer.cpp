@@ -359,6 +359,44 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
     return legalization_cluster_id;
 }
 
+/**
+ * @brief If the atom is a memory primitive with a pre-assigned RAM type, moves
+ *        that type to the front of candidate_types using a stable partition so
+ *        the packer tries it first. Has no effect for non-memory atoms or groups
+ *        without a pre-assigned type.
+ *
+ * @param root_atom        The seed atom being clustered.
+ * @param prepacker        Used to look up the expected primitive for root_atom.
+ * @param ram_mapper       Used to look up the logical RAM group and pre-assigned type.
+ * @param atom_netlist     Used to look up the atom name for warning messages.
+ * @param candidate_types  Block types to reorder in place.
+ */
+static void prioritize_pre_assigned_ram_type(AtomBlockId root_atom,
+                                             const Prepacker& prepacker,
+                                             const RamMapper& ram_mapper,
+                                             const AtomNetlist& atom_netlist,
+                                             std::vector<t_logical_block_type_ptr>& candidate_types) {
+    const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
+    if (!prim->pb_type->is_primitive() || prim->pb_type->class_type != MEMORY_CLASS)
+        return;
+
+    const LogicalRamGroupId group_id = ram_mapper.group_id_of(root_atom);
+    VTR_ASSERT_MSG(group_id.is_valid(), "root_atom of memory class should be mapped to a LogicalRamGroup");
+    const LogicalRamGroup& ram_group = ram_mapper.group(group_id);
+
+    auto it = std::find(ram_group.atoms.begin(), ram_group.atoms.end(), root_atom);
+    VTR_ASSERT_MSG(it != ram_group.atoms.end(), "Could not find root atom in the retrieved logical ram atoms");
+
+    if (ram_group.pre_assigned_type) {
+        t_logical_block_type_ptr pre_assigned_type = ram_group.pre_assigned_type;
+        std::stable_partition(candidate_types.begin(), candidate_types.end(),
+                              [&](t_logical_block_type_ptr p) { return p == pre_assigned_type; });
+    } else {
+        VTR_LOG_WARN("No pre-assigned type found for logical RAM group of atom %s\n",
+                     atom_netlist.block_name(root_atom).c_str());
+    }
+}
+
 LegalizationClusterId GreedyClusterer::start_new_cluster(
     PackMoleculeId seed_mol_id,
     ClusterLegalizer& cluster_legalizer,
@@ -401,33 +439,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
                          });
     }
 
-    const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
-    if (prim->pb_type->is_primitive() && prim->pb_type->class_type == MEMORY_CLASS) {
-        const LogicalRamGroupId gid = ram_mapper.group_id_of(root_atom);
-        VTR_ASSERT_MSG(gid.is_valid(), "root_atom not mapped to any LogicalRamGroup");
-        const auto& logical_ram = ram_mapper.group(gid);
-
-        // Check if the current atom in the retrieved logical ram.
-        auto it = std::find(logical_ram.atoms.begin(), logical_ram.atoms.end(), root_atom);
-        VTR_ASSERT_MSG(it != logical_ram.atoms.end(), "Could not find root atom in the retrieved logical ram atoms");
-            
-
-        // VTR_ASSERT_MSG(candidate_types == logical_ram.candidate_types, "Logical ram and clustering candidate types are mismatching.");
-
-        if (logical_ram.pre_assigned_type) {
-            // VTR_LOG("\tPre-assigned type: %s\n", logical_ram.pre_assigned_type->name.c_str());
-            auto* pre = logical_ram.pre_assigned_type;
-            std::stable_partition(candidate_types.begin(), candidate_types.end(),
-                                [&](t_logical_block_type_ptr p) { return p == pre; });
-            // candidate_types = {logical_ram.pre_assigned_type}; // hard constraint
-        } else {
-            VTR_LOG_WARN(
-                "No pre-assigned type found for logical RAM group of atom %s\n",
-                atom_netlist_.block_name(root_atom).c_str());
-        }
-    }
-
-
+    prioritize_pre_assigned_ram_type(root_atom, prepacker, ram_mapper, atom_netlist_, candidate_types);
 
     if (log_verbosity_ > 2) {
         VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name);
@@ -452,7 +464,6 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             VTR_LOGV(log_verbosity_ > 2, "\tPASSED_SEED: Block Type %s\n", type->name.c_str());
             // If clustering succeeds return the new_cluster_id and type.
             block_type = type;
-
             break;
         } else {
             VTR_LOGV(log_verbosity_ > 2, "\tFAILED_SEED: Block Type %s\n", type->name.c_str());
