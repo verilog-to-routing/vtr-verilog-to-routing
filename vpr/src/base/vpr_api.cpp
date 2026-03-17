@@ -549,7 +549,16 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
 
     vpr_setup_noc(vpr_setup, arch);
 
-    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH
+    // Do not create RR graph in AP flow with fixed device since it was already
+    // built on the correct device size.
+    // TODO: This check makes vpr_create_device flow-aware. We need to save the
+    //       grid and channels that RR graph is created and check if it is
+    //       changed at that point in a more generic way.
+    bool is_ap_and_fixed_device = (vpr_setup.APOpts.doAP == e_stage_action::DO)
+                               && (vpr_setup.PackerOpts.device_layout != "auto");
+
+    if (!is_ap_and_fixed_device
+        && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH
         && !(pack_only && vpr_setup.RoutingArch.write_rr_graph_filename.empty())) {
         // The RR graph built by this function should contain only the intra-cluster resources.
         // If the flat router is used, additional resources are added when routing begins.
