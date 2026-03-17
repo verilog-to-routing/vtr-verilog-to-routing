@@ -117,6 +117,9 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     t_cluster_progress_stats clustering_stats;
     clustering_stats.num_molecules = prepacker.molecules().size();
 
+    // Check whether the RAM mapper has any groups to guard RAM-specific logic.
+    has_ram_groups_ = ram_mapper.num_groups() > 0;
+
     // Calculate the max molecule stats, which is used for gain calculation.
     const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_netlist_, arch_.models);
 
@@ -439,7 +442,8 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
                          });
     }
 
-    prioritize_pre_assigned_ram_type(root_atom, prepacker, ram_mapper, atom_netlist_, candidate_types);
+    if (has_ram_groups_)
+        prioritize_pre_assigned_ram_type(root_atom, prepacker, ram_mapper, atom_netlist_, candidate_types);
 
     if (log_verbosity_ > 2) {
         VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name);

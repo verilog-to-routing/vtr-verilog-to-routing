@@ -5,11 +5,12 @@
 #include <unordered_set>
 #include <vector>
 
+#include "logical_ram_infer.h"
+
 class AtomNetId;
 class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
-class RamMapper;
 struct t_analysis_opts;
 struct t_ap_opts;
 struct t_arch;
@@ -39,6 +40,10 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
  *              Flat (primitive-level) placement information that may be
  *              provided by the user as a hint for packing. Will be invalid if
  *              there is no flat placement information provided.
+ *  @param ram_mapper
+ *              Pre-computed logical RAM groups with assigned physical types.
+ *              Used to guide packing for memory clusters. Defaults to an empty
+ *              mapper if not provided.
  */
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
@@ -47,8 +52,8 @@ bool try_pack(const t_packer_opts& packer_opts,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
-              const RamMapper& ram_mapper,
-              const FlatPlacementInfo& flat_placement_info);
+              const FlatPlacementInfo& flat_placement_info,
+              const RamMapper& ram_mapper = RamMapper{});
 
 /**
  * @brief Try to fit the block type instances on the given architecture. Will

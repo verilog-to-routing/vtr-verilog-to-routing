@@ -559,6 +559,10 @@ class GreedyCandidateSelector {
     /// @brief Used to look up the logical RAM group of an atom for memory cluster filtering.
     const RamMapper& ram_mapper_;
 
+    /// @brief True if the RAM mapper has at least one logical RAM group.
+    ///        Used to guard RAM-specific candidate filtering.
+    bool has_ram_groups_ = false;
+
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;
 

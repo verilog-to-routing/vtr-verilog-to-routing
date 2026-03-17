@@ -1255,8 +1255,8 @@ void APPack::legalize(const PartialPlacement& p_placement) {
              vpr_setup_.PackerRRGraph,
              prepacker_,
              pre_cluster_timing_manager_,
-             ram_mapper_,
-             flat_placement_info);
+             flat_placement_info,
+             ram_mapper_);
 
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.

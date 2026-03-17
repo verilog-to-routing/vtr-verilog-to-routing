@@ -233,8 +233,8 @@ bool try_pack(const t_packer_opts& packer_opts,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
-              const RamMapper& ram_mapper,
-              const FlatPlacementInfo& flat_placement_info) {
+              const FlatPlacementInfo& flat_placement_info,
+              const RamMapper& ram_mapper) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     // The clusterer modifies the device context by increasing the size of the

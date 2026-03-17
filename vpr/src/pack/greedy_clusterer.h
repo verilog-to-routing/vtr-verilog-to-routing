@@ -260,6 +260,10 @@ class GreedyClusterer {
     /// each molecule.
     const int log_verbosity_;
 
+    /// @brief True if the RAM mapper has at least one logical RAM group.
+    ///        Used to guard RAM-specific logic in clustering.
+    bool has_ram_groups_ = false;
+
     /// @brief Does the atom block that drives the output of this atom net also
     /// appear as a receiver (input) pin of the atom net?
     ///

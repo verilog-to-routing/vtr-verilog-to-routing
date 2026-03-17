@@ -28,7 +28,6 @@
 #include "vtr_log.h"
 #include "vtr_version.h"
 #include "vtr_time.h"
-#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -77,7 +76,6 @@
 #include "timing_fail_error.h"
 #include "analytical_placement_flow.h"
 #include "verify_clustering.h"
-#include "device_size_estimate.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -97,7 +95,6 @@
 #include "sync_netlists_to_routing_flat.h"
 
 #include "load_flat_place.h"
-#include "logical_ram_infer.h"
 
 #ifdef VPR_USE_TBB
 #define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
@@ -728,26 +725,11 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
 
-    // Estimate the device size before packing.
-    DeviceSizeEstimator device_size_estimator(vpr_setup.PackerOpts.device_layout,
-                                              vpr_setup.PackerOpts,
-                                              arch.grid_layouts,
-                                              prepacker);
-
-    // Infer logical RAMs and assign to physical types to prioritize during packing.
-    // For the auto-device flow, reuse the groups already computed by the estimator.
-    RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
-                         prepacker,
-                         pre_cluster_timing_manager,
-                         device_size_estimator.ram_groups(),
-                         vpr_setup.PackerOpts.pack_verbosity);
-
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,
                     vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
-                    ram_mapper,
                     g_vpr_ctx.atom().flat_placement_info());
 }
 

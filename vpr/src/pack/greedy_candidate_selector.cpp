@@ -117,6 +117,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     : atom_netlist_(atom_netlist)
     , prepacker_(prepacker)
     , ram_mapper_(ram_mapper)
+    , has_ram_groups_(ram_mapper.num_groups() > 0)
     , packer_opts_(packer_opts)
     , allow_unrelated_clustering_(allow_unrelated_clustering)
     , log_verbosity_(log_verbosity)
@@ -815,7 +816,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
     cluster_gain_stats.candidates_propose_limit = packer_opts_.feasible_block_array_size; // set the limit of candidates to propose
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
-        if (!is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
+        if (has_ram_groups_ && !is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
             continue;
         // Get the molecule that contains this block.
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
@@ -849,7 +850,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
 
     /* Only consider candidates that pass a very simple legality check */
     for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
-        if (!is_atom_in_cluster_ram_group(transitive_candidate.first, cluster_gain_stats, ram_mapper_))
+        if (has_ram_groups_ && !is_atom_in_cluster_ram_group(transitive_candidate.first, cluster_gain_stats, ram_mapper_))
             continue;
         PackMoleculeId molecule_id = transitive_candidate.second;
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
@@ -883,7 +884,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         }
 
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
-        if (!is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
+        if (has_ram_groups_ && !is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
             continue;
 
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
@@ -945,7 +946,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
     if (num_available_atoms < attraction_group_num_atoms_threshold_) {
         for (AtomBlockId atom_id : available_atoms) {
-            if (!is_atom_in_cluster_ram_group(atom_id, cluster_gain_stats, ram_mapper_))
+            if (has_ram_groups_ && !is_atom_in_cluster_ram_group(atom_id, cluster_gain_stats, ram_mapper_))
                 continue;
             //Only consider molecules that are unpacked and of the correct type
             PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
@@ -968,7 +969,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
         AtomBlockId blk_id = available_atoms[selected_atom];
 
-        if (!is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
+        if (has_ram_groups_ && !is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
             continue;
 
         //Only consider molecules that are unpacked and of the correct type
