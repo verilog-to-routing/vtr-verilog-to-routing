@@ -38,7 +38,7 @@ struct LogicalRamGroup {
     const t_pb_type* rep_pb_type = nullptr;
     /// @brief All atoms in this group.
     std::vector<AtomBlockId> atoms;
-    /// @brief Legal physical block types that can implement this group.
+    /// @brief Physical block types that can implement this group.
     ///        Sorted by area cost (ascending) after assign_ram_groups_by_min_area().
     std::vector<t_logical_block_type_ptr> candidate_types;
     /// @brief Number of primitives per physical instance for each candidate type.
@@ -74,18 +74,13 @@ vtr::vector<LogicalRamGroupId, LogicalRamGroup>
 group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker);
 
 /**
- * @brief Assigns each group's pre_assigned_type to the minimum-area candidate type.
- *
- * Groups are processed most constrained first (fewest candidate types, then
- * most atoms) to prioritize groups with fewer placement options. After this
- * call, each group's candidate_types is sorted by area cost (ascending) and
- * pre_assigned_type points to candidate_types[0].
+ * @brief Assigns each group's pre_assigned_type to the minimum area cost candidate type.
  *
  * No device-grid feasibility check is performed; call
  * check_assigned_rams_fit_on_device() afterwards if needed.
  *
  * @param groups  RAM groups whose candidate_types will be sorted by area cost
- *                and whose pre_assigned_type will be set to the minimum-area choice.
+ *                and whose pre_assigned_type will be set to the minimum area choice.
  */
 void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups);
 
@@ -120,7 +115,8 @@ class RamMapper {
     RamMapper(const AtomNetlist& atom_nlist,
               const Prepacker& prepacker,
               const PreClusterTimingManager& timing_manager,
-              vtr::vector<LogicalRamGroupId, LogicalRamGroup> precomputed_groups = {});
+              vtr::vector<LogicalRamGroupId, LogicalRamGroup> precomputed_groups = {},
+              int verbosity = 0);
 
     RamMapper() = default;
     RamMapper(RamMapper&&) = default;
@@ -153,7 +149,10 @@ class RamMapper {
 
     /// @brief All logical RAM groups, indexed by LogicalRamGroupId.
     vtr::vector<LogicalRamGroupId, LogicalRamGroup> logical_ram_groups_;
-    
+
     /// @brief Maps each RAM atom to its group ID for fast lookup during packing.
     vtr::vector<AtomBlockId, LogicalRamGroupId> atom_to_group_;
+
+    /// @brief Packing verbosity level.
+    int log_verbosity_ = 0;
 };

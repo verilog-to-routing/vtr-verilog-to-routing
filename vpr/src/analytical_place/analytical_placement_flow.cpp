@@ -246,7 +246,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
                          prepacker,
                          pre_cluster_timing_manager,
-                         device_size_estimator.ram_groups());
+                         device_size_estimator.ram_groups(),
+                         ap_opts.log_verbosity);
 
     // Pre-compute the place delay model. This will be passed into the global
     // placer to create a more accurate timing model.

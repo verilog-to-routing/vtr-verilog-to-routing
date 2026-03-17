@@ -739,7 +739,8 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
                          prepacker,
                          pre_cluster_timing_manager,
-                         device_size_estimator.ram_groups());
+                         device_size_estimator.ram_groups(),
+                         vpr_setup.PackerOpts.pack_verbosity);
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,
