@@ -556,6 +556,7 @@ class GreedyCandidateSelector {
     /// @brief The prepacker used to pack atoms into molecule pack patterns.
     const Prepacker& prepacker_;
 
+    /// @brief Used to look up the logical RAM group of an atom for memory cluster filtering.
     const RamMapper& ram_mapper_;
 
     /// @brief The packer options used to configure the clusterer.

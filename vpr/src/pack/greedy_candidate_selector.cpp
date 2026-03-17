@@ -84,6 +84,20 @@ static t_flat_pl_loc get_molecule_pos(PackMoleculeId molecule_id,
     return appack_ctx.flat_placement_info.get_pos(root_blk_id);
 }
 
+/**
+ * @brief Returns false if the atom is a memory not in the same logical RAM
+ *        group as the cluster, true otherwise.
+ *
+ * @param blk_id              Atom to check.
+ * @param cluster_gain_stats  Cluster state, checked for is_memory and logical_ram_id.
+ * @param ram_mapper          Used to look up the atom's logical RAM group.
+ */
+static bool is_atom_in_cluster_ram_group(AtomBlockId blk_id,
+                                         const ClusterGainStats& cluster_gain_stats,
+                                         const RamMapper& ram_mapper) {
+    return !cluster_gain_stats.is_memory || ram_mapper.group_id_of(blk_id) == cluster_gain_stats.logical_ram_id;
+}
+
 GreedyCandidateSelector::GreedyCandidateSelector(
     const AtomNetlist& atom_netlist,
     const Prepacker& prepacker,
@@ -259,10 +273,11 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     AtomBlockId seed_atom = seed_mol.atom_block_ids[seed_mol.root];
     const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
-    
+
     if (cluster_gain_stats.is_memory) {
         cluster_gain_stats.logical_ram_id = ram_mapper_.group_id_of(seed_atom);
-        // VTR_LOG("Cluster Gain Stats: Current cluster id of %zu is a memory cluster and part of a logical ram of %zu.\n", cluster_id, cluster_gain_stats.logical_ram_id);
+        VTR_LOGV(log_verbosity_ > 2, "Cluster of seed atom %zu is a memory cluster in logical RAM group %zu.\n",
+                 size_t(seed_atom), size_t(cluster_gain_stats.logical_ram_id));
     }
 
     // Return the cluster gain stats.
@@ -422,17 +437,6 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
                 AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
                 if (!cluster_legalizer.is_atom_clustered(blk_id)) {
                     if (cluster_gain_stats.sharing_gain.count(blk_id) == 0) {
-                        // if (cluster_gain_stats.is_memory) {
-                        //     //Add only the same logical memory atoms.
-                        //     size_t blk_logical_ram_group_id = prepacker_.group_id_of(blk_id);
-                        //     if (cluster_gain_stats.logical_ram_id == blk_logical_ram_group_id) {
-                        //         cluster_gain_stats.marked_blocks.push_back(blk_id);
-                        //         cluster_gain_stats.sharing_gain[blk_id] = 1;
-                        //     }
-                        // } else {
-                        //     cluster_gain_stats.marked_blocks.push_back(blk_id);
-                        //     cluster_gain_stats.sharing_gain[blk_id] = 1;
-                        // }
                         cluster_gain_stats.marked_blocks.push_back(blk_id);
                         cluster_gain_stats.sharing_gain[blk_id] = 1;
                     } else {
@@ -811,11 +815,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
     cluster_gain_stats.candidates_propose_limit = packer_opts_.feasible_block_array_size; // set the limit of candidates to propose
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
-        // If this is memory cluster and block is not in the same logical
-        // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+        if (!is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
             continue;
-        }
         // Get the molecule that contains this block.
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         // Add the molecule as a candidate if the molecule is not clustered and
@@ -848,11 +849,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
 
     /* Only consider candidates that pass a very simple legality check */
     for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
-        // If this is memory cluster and block is not in the same logical
-        // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(transitive_candidate.first) != cluster_gain_stats.logical_ram_id) {
+        if (!is_atom_in_cluster_ram_group(transitive_candidate.first, cluster_gain_stats, ram_mapper_))
             continue;
-        }
         PackMoleculeId molecule_id = transitive_candidate.second;
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
@@ -885,11 +883,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         }
 
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
-        // If this is memory cluster and block is not in the same logical
-        // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+        if (!is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
             continue;
-        }
 
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
@@ -950,11 +945,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
     if (num_available_atoms < attraction_group_num_atoms_threshold_) {
         for (AtomBlockId atom_id : available_atoms) {
-            // If this is memory cluster and block is not in the same logical
-            // memory, do not add this block as candidate.
-            if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(atom_id) != cluster_gain_stats.logical_ram_id) {
+            if (!is_atom_in_cluster_ram_group(atom_id, cluster_gain_stats, ram_mapper_))
                 continue;
-            }
             //Only consider molecules that are unpacked and of the correct type
             PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
             if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
@@ -976,11 +968,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
         AtomBlockId blk_id = available_atoms[selected_atom];
 
-        // If this is memory cluster and block is not in the same logical
-        // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+        if (!is_atom_in_cluster_ram_group(blk_id, cluster_gain_stats, ram_mapper_))
             continue;
-        }
 
         //Only consider molecules that are unpacked and of the correct type
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
