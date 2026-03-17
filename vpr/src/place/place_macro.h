@@ -239,8 +239,17 @@ class PlaceMacros {
                              const std::vector<t_physical_tile_type>& physical_tile_types,
                              const ClusteredNetlist& clb_nlist) const;
 
-    bool net_is_driven_by_direct_(ClusterNetId clb_net,
-                                  const ClusteredNetlist& clb_nlist);
+    /** 
+     * @brief Checks if a net is a direct connection, both driver and receiver should match the direclist specified in the architecture file
+     * 
+     *  @param clb_net The clustered net to check if it is a direct connection.
+     *  @param idirect The index of the direct connection to match with the driver and receiver of the net.
+     *  @param clb_nlist The clustered netlist.
+     * 
+     * 
+     * @return True if the net is a direct connection, false otherwise.
+     */
+    bool is_net_direct_connection(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist);
 
     /**
      * @brief Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.

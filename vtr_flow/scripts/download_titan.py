@@ -32,15 +32,13 @@ TITAN_URL_MIRRORS = {"eecg": "https://www.eecg.utoronto.ca/~vaughn/titan/"}
 
 
 def parse_args():
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
                     Download and extract a Titan benchmark release into a
                     VTR-style directory structure.
 
                     If a previous matching titan release tar.gz file is found
                     does nothing (unless --force is specified).
-                  """
-    )
+                  """)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
     )

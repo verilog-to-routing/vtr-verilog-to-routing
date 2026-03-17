@@ -49,13 +49,10 @@ def vtr_command_argparser(prog=None):
     Parses one or more VTR tasks.
     """
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
                     Parses one or more VTR tasks.
-                    """
-    )
-    epilog = textwrap.dedent(
-        """
+                    """)
+    epilog = textwrap.dedent("""
                 Examples
                 --------
 
@@ -72,8 +69,7 @@ def vtr_command_argparser(prog=None):
                 ---------
                     The exit code equals the number failures
                     (i.e. exit code 0 indicates no failures).
-                """
-    )
+                """)
 
     parser = argparse.ArgumentParser(
         prog=prog,
