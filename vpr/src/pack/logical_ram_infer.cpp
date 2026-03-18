@@ -165,9 +165,11 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
 
     log_utilizations("Device ram utilizations after area driven assignment:");
     check_assigned_rams_fit_on_device();
-    timing_pass(atom_nlist, timing_manager);
-    log_utilizations("Device ram utilizations after timing driven remapping:");
-    check_assigned_rams_fit_on_device();
+    if (timing_manager.is_valid()) {
+        timing_pass(atom_nlist, timing_manager);
+        log_utilizations("Device ram utilizations after timing driven remapping:");
+        check_assigned_rams_fit_on_device();
+    }
     build_atom_to_group_map(atom_nlist);
 }
 
@@ -274,6 +276,8 @@ void RamMapper::check_assigned_rams_fit_on_device() const {
 void RamMapper::timing_pass(const AtomNetlist& atom_nlist,
                             const PreClusterTimingManager& timing_manager) {
     VTR_LOG("Timing pass for logical RAMs.\n");
+    VTR_ASSERT_MSG(timing_manager.is_valid(), "Valid timing manager required for timing pass.");
+
     const auto& device_ctx = g_vpr_ctx.device();
 
     // Compute max criticality per group.
