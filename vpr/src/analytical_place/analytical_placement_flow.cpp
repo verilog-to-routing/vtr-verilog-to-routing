@@ -14,7 +14,9 @@
 #include "atom_netlist.h"
 #include "cluster_util.h"
 #include "detailed_placer.h"
+#include "device_size_estimate.h"
 #include "full_legalizer.h"
+#include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
 #include "globals.h"
@@ -32,9 +34,6 @@
 #include "vtr_assert.h"
 #include "vtr_time.h"
 #include "vtr_math.h"
-
-#include "logical_ram_infer.h"
-#include "device_size_estimate.h"
 
 /**
  * @brief A helper method to log statistics on the APNetlist.
@@ -235,11 +234,9 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                        vpr_setup.RoutingArch,
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
-    // Estimate the device size before packing.
-    DeviceSizeEstimator device_size_estimator(vpr_setup.PackerOpts.device_layout,
-                                              vpr_setup.PackerOpts,
-                                              device_ctx.arch->grid_layouts,
-                                              prepacker);
+
+    // Estimate the device size before packing and build the RR graph if necessary.
+    DeviceSizeEstimator device_size_estimator(vpr_setup, *device_ctx.arch, prepacker);
 
     // Infer logical RAMs and assign to physical types to prioritize during packing.
     // For the auto-device flow, reuse the groups already computed by the estimator.

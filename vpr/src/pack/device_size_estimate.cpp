@@ -21,6 +21,8 @@
 #include "globals.h"
 #include "prepack.h"
 #include "setup_grid.h"
+#include "vpr_api.h"
+#include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
@@ -195,37 +197,43 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
     return num_type_instances;
 }
 
-DeviceSizeEstimator::DeviceSizeEstimator(const std::string& device_layout,
-                                         const t_packer_opts& packer_opts,
-                                         const std::vector<t_grid_def>& grid_layouts,
+DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
+                                         const t_arch& arch,
                                          const Prepacker& prepacker) {
     vtr::ScopedStartFinishTimer timer("Estimate Device Size");
+    const std::string& device_layout = vpr_setup.PackerOpts.device_layout;
+    const t_packer_opts& packer_opts = vpr_setup.PackerOpts;
+    bool is_ap = (vpr_setup.APOpts.doAP == e_stage_action::DO);
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     // If device size is fixed, create device grid without estimation.
     if (device_layout != "auto") {
         VTR_LOG("Device is fixed to %s.\n", device_layout.c_str());
         std::map<t_logical_block_type_ptr, size_t> num_type_instances;
-        device_ctx.grid = create_device_grid(device_layout, grid_layouts,
+        device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
                                              num_type_instances,
                                              packer_opts.target_device_utilization);
-        return;
+    } else {
+        VTR_ASSERT(device_layout == "auto");
+        VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n");
+
+        std::map<t_logical_block_type_ptr, size_t> num_type_instances = estimate_resource_requirement(prepacker);
+        VTR_LOG("Estimated resource requirements:\n");
+        for (auto& [type_ptr, count] : num_type_instances)
+            VTR_LOG("  %s: %zu requested instances\n", type_ptr->name.c_str(), count);
+
+        device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
+                                             num_type_instances,
+                                             packer_opts.target_device_utilization);
+
+        size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
+        VTR_LOG("FPGA size estimated to %zu x %zu: %zu grid tiles (%s)\n",
+                device_ctx.grid.width(), device_ctx.grid.height(),
+                num_grid_tiles, device_ctx.grid.name().c_str());
     }
 
-    VTR_ASSERT(device_layout == "auto");
-    VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n");
-
-    std::map<t_logical_block_type_ptr, size_t> num_type_instances = estimate_resource_requirement(prepacker);
-    VTR_LOG("Estimated resource requirements:\n");
-    for (auto& [type_ptr, count] : num_type_instances)
-        VTR_LOG("  %s: %zu requested instances\n", type_ptr->name.c_str(), count);
-
-    device_ctx.grid = create_device_grid(device_layout, grid_layouts,
-                                         num_type_instances,
-                                         packer_opts.target_device_utilization);
-
-    size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
-    VTR_LOG("FPGA size estimated to %zu x %zu: %zu grid tiles (%s)\n",
-            device_ctx.grid.width(), device_ctx.grid.height(),
-            num_grid_tiles, device_ctx.grid.name().c_str());
+    // Build the RR graph for AP flow to run global and detailed placement.
+    if (is_ap && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, /*is_flat=*/false);
+    }
 }

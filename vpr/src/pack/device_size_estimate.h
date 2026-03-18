@@ -16,8 +16,8 @@
 
 // Forward declarations
 class Prepacker;
-struct t_grid_def;
-struct t_packer_opts;
+struct t_arch;
+struct t_vpr_setup;
 
 /**
  * @brief Estimates the device size required to fit the design before packing.
@@ -32,9 +32,8 @@ struct t_packer_opts;
  */
 class DeviceSizeEstimator {
   public:
-    DeviceSizeEstimator(const std::string& device_layout,
-                        const t_packer_opts& packer_opts,
-                        const std::vector<t_grid_def>& grid_layouts,
+    DeviceSizeEstimator(t_vpr_setup& vpr_setup,
+                        const t_arch& arch,
                         const Prepacker& prepacker);
 
     /// @brief Returns the RAM groups computed during estimation.
