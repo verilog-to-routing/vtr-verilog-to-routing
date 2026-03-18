@@ -267,9 +267,13 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
     // TODO: Maybe import the fixed block locations in the constructor and then
     //       only import the moveable block locations.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
+        // FIXME: Clean this up and document
+        size_t num_layers = bin_spatial_lookup_.dim_size(0);
+        VTR_ASSERT_SAFE(num_layers > 0);
+        size_t layer = std::min<size_t>(p_placement.block_layer_nums[blk_id] + 0.5, num_layers - 1);
         FlatPlacementBinId bin_id = get_bin(p_placement.block_x_locs[blk_id],
                                             p_placement.block_y_locs[blk_id],
-                                            p_placement.block_layer_nums[blk_id]);
+                                            layer);
         insert_block_into_bin(blk_id, bin_id);
     }
 }
@@ -308,6 +312,9 @@ void FlatPlacementDensityManager::export_placement_from_bins(PartialPlacement& p
                                                                    p_placement);
         p_placement.block_x_locs[blk_id] = new_blk_pos.x();
         p_placement.block_y_locs[blk_id] = new_blk_pos.y();
+        // TODO: For layers this forces the block to either whole number layer.
+        //       It may be interesting to investigate using the clamping functions
+        //       above on the layers. For now this should be ok.
         p_placement.block_layer_nums[blk_id] = bins_.bin_layer(blk_bin_id);
     }
 }
