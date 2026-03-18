@@ -47,7 +47,7 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
         if (prim->pb_type->class_type != MEMORY_CLASS)
             continue;
 
-        auto root_model_id = atom_nlist.block_model(atom_blk_id);
+        LogicalModelId root_model_id = atom_nlist.block_model(atom_blk_id);
         std::vector<t_logical_block_type_ptr> candidate_types =
             primitive_candidate_block_types[root_model_id];
 
@@ -100,7 +100,8 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
     return groups;
 }
 
-void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups) {
+void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups,
+                                   bool is_fixed_device) {
     // Compute the area cost of each candidate type for every group and sort
     // candidate_types by area so that candidate_types[0] is always the minimum-area choice.
     for (LogicalRamGroupId group_id : groups.keys()) {
@@ -130,19 +131,67 @@ void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGrou
     std::vector<LogicalRamGroupId> order(groups.keys().begin(), groups.keys().end());
     std::stable_sort(order.begin(), order.end(),
                      [&](LogicalRamGroupId id_a, LogicalRamGroupId id_b) {
-                         const auto& group_a = groups[id_a];
-                         const auto& group_b = groups[id_b];
+                         const LogicalRamGroup& group_a = groups[id_a];
+                         const LogicalRamGroup& group_b = groups[id_b];
                          if (group_a.candidate_types.size() != group_b.candidate_types.size())
                              return group_a.candidate_types.size() < group_b.candidate_types.size();
                          return group_a.total_memory_slices > group_b.total_memory_slices;
                      });
 
-    // Assign each group to its minimum-area type, which is candidate_types[0]
-    // after the sort above.
+    // For fixed devices, pre-compute available capacity per type so that
+    // assignment can respect hard capacity limits.
+    std::unordered_map<t_logical_block_type_ptr, int> available_resources;
+    std::unordered_map<t_logical_block_type_ptr, int> resource_usages;
+    if (is_fixed_device) {
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
+        for (LogicalRamGroupId group_id : groups.keys()) {
+            for (t_logical_block_type_ptr candidate_type : groups[group_id].candidate_types) {
+                if (available_resources.count(candidate_type) == 0) {
+                    int capacity = 0;
+                    for (t_physical_tile_type_ptr physical_tile_type : candidate_type->equivalent_tiles)
+                        capacity += device_ctx.grid.num_instances(physical_tile_type, -1);
+                    available_resources[candidate_type] = capacity;
+                }
+            }
+        }
+    }
+
+    // Assign each group to a physical type.
     for (LogicalRamGroupId group_id : order) {
         LogicalRamGroup& ram_group = groups[group_id];
         VTR_ASSERT(!ram_group.candidate_types.empty());
-        ram_group.pre_assigned_type = ram_group.candidate_types[0];
+
+        if (!is_fixed_device) {
+            // Auto-device: always pick the minimum-area type, no need to check
+            // device utilization.
+            ram_group.pre_assigned_type = ram_group.candidate_types[0];
+        } else {
+            // Fixed device: pick the first candidate (in area order) that
+            // still has capacity on this device.
+            t_logical_block_type_ptr chosen_type = nullptr;
+            for (t_logical_block_type_ptr candidate_type : ram_group.candidate_types) {
+                int needed = (int)std::ceil(vtr::safe_ratio<float>(
+                    ram_group.total_memory_slices, ram_group.candidate_capacity.at(candidate_type)));
+                if (resource_usages[candidate_type] + needed <= available_resources[candidate_type]) {
+                    chosen_type = candidate_type;
+                    break;
+                }
+            }
+
+            if (!chosen_type) {
+                // No type has remaining capacity; fall back to min-area and
+                // let the packer handle the overflow.
+                chosen_type = ram_group.candidate_types[0];
+                VTR_LOG_WARN("RAM group %zu cannot fit on any available type on the fixed "
+                             "device; assigning to '%s' as fallback.\n",
+                             size_t(group_id), chosen_type->name.c_str());
+            }
+
+            int needed = (int)std::ceil(vtr::safe_ratio<float>(
+                ram_group.total_memory_slices, ram_group.candidate_capacity.at(chosen_type)));
+            resource_usages[chosen_type] += needed;
+            ram_group.pre_assigned_type = chosen_type;
+        }
     }
 }
 
@@ -150,14 +199,15 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
                      const Prepacker& prepacker,
                      const PreClusterTimingManager& timing_manager,
                      vtr::vector<LogicalRamGroupId, LogicalRamGroup> precomputed_groups,
-                     int verbosity)
+                     int verbosity,
+                     bool is_fixed_device)
     : log_verbosity_(verbosity) {
     vtr::ScopedStartFinishTimer timer("Ram Mapper");
 
     if (precomputed_groups.empty()) {
         VTR_LOG("No pre-computed RAM groups, running grouping and area assignment.\n");
         logical_ram_groups_ = group_ram_atoms(atom_nlist, prepacker);
-        assign_ram_groups_by_min_area(logical_ram_groups_);
+        assign_ram_groups_by_min_area(logical_ram_groups_, is_fixed_device);
     } else {
         VTR_LOG("Using pre-computed RAM groups from device size estimator.\n");
         logical_ram_groups_ = std::move(precomputed_groups);
@@ -196,7 +246,7 @@ void RamMapper::build_atom_to_group_map(const AtomNetlist& atom_nlist) {
 }
 
 void RamMapper::log_utilizations(const std::string& label) const {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // Compute current type usages from pre_assigned_type of each group.
     std::unordered_map<t_logical_block_type_ptr, int> usages;
@@ -213,7 +263,7 @@ void RamMapper::log_utilizations(const std::string& label) const {
     VTR_LOG("%s\n", label.c_str());
     for (const auto& [type, used] : usages) {
         int total = 0;
-        for (auto phys : type->equivalent_tiles)
+        for (t_physical_tile_type_ptr phys : type->equivalent_tiles)
             total += device_ctx.grid.num_instances(phys, -1);
         VTR_LOG("  %s: %.4f (%d/%d)\n",
                 type->name.c_str(),
@@ -223,7 +273,7 @@ void RamMapper::log_utilizations(const std::string& label) const {
 }
 
 void RamMapper::check_assigned_rams_fit_on_device() const {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // Sum required instances per type from the current assignment and
     // verify that every group was assigned a type and has at least one candidate.
@@ -278,7 +328,7 @@ void RamMapper::timing_pass(const AtomNetlist& atom_nlist,
     VTR_LOG("Timing pass for logical RAMs.\n");
     VTR_ASSERT_MSG(timing_manager.is_valid(), "Valid timing manager required for timing pass.");
 
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // Compute max criticality per group.
     float overall_max_criticality = 0.0f;
@@ -347,7 +397,7 @@ void RamMapper::timing_pass(const AtomNetlist& atom_nlist,
         int num_tiles_new_type = (int)std::ceil(vtr::safe_ratio<float>(
             ram_group.total_memory_slices, ram_group.candidate_capacity.at(min_cap_type)));
         int total_available = 0;
-        for (auto phys : min_cap_type->equivalent_tiles)
+        for (t_physical_tile_type_ptr phys : min_cap_type->equivalent_tiles)
             total_available += device_ctx.grid.num_instances(phys, -1);
 
         if (usages[min_cap_type] + num_tiles_new_type > total_available) {

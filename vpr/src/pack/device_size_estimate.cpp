@@ -157,7 +157,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
     // Group RAM atoms and assign to minimum-area types.
     // Results are stored in ram_groups_ for later use by RamMapper.
     ram_groups_ = group_ram_atoms(atom_ctx.netlist(), prepacker);
-    assign_ram_groups_by_min_area(ram_groups_);
+    assign_ram_groups_by_min_area(ram_groups_, false /*is_fixed_device*/);
 
     // Group non-RAM molecules by their logical block type.
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>

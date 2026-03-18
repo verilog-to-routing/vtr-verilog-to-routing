@@ -79,10 +79,14 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker);
  * No device-grid feasibility check is performed; call
  * check_assigned_rams_fit_on_device() afterwards if needed.
  *
- * @param groups  RAM groups whose candidate_types will be sorted by area cost
- *                and whose pre_assigned_type will be set to the minimum area choice.
+ * @param groups           RAM groups whose candidate_types will be sorted by area cost
+ *                         and whose pre_assigned_type will be set to the minimum area choice.
+ * @param is_fixed_device  When true, respects device capacity limits during assignment.
+ *                         Groups that would overflow their minimum-area type are spilled
+ *                         to the next smallest area cost candidate type that is not overflowing.
  */
-void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups);
+void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGroup>& groups,
+                                   bool is_fixed_device = false);
 
 /**
  * @brief Infers logical RAM groups from the atom netlist and assigns each
@@ -111,12 +115,14 @@ class RamMapper {
      *                            driving the timing based remap decisions.
      * @param precomputed_groups  RAM groups previously computed by DeviceSizeEstimator;
      *                            if non-empty, grouping and area assignment are skipped.
+     * @param is_fixed_device     When true, area assignment respects device capacity limits.
      */
     RamMapper(const AtomNetlist& atom_nlist,
               const Prepacker& prepacker,
               const PreClusterTimingManager& timing_manager,
               vtr::vector<LogicalRamGroupId, LogicalRamGroup> precomputed_groups = {},
-              int verbosity = 0);
+              int verbosity = 0,
+              bool is_fixed_device = false);
 
     RamMapper() = default;
     RamMapper(RamMapper&&) = default;

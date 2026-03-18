@@ -244,7 +244,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                          prepacker,
                          pre_cluster_timing_manager,
                          device_size_estimator.ram_groups(),
-                         ap_opts.log_verbosity);
+                         ap_opts.log_verbosity,
+                         vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
 
     // Pre-compute the place delay model. This will be passed into the global
     // placer to create a more accurate timing model.
