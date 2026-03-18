@@ -1875,8 +1875,8 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
 }
 
 t_molecule_external_nets Prepacker::calc_molecule_external_nets(
-        PackMoleculeId molecule_id,
-        const AtomNetlist& atom_nlist) const {
+    PackMoleculeId molecule_id,
+    const AtomNetlist& atom_nlist) const {
 
     VTR_ASSERT(molecule_id.is_valid());
 

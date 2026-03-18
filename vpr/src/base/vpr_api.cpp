@@ -553,7 +553,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
     //       grid and channels that RR graph is created and check if it is
     //       changed at that point in a more generic way.
     bool is_ap_and_fixed_device = (vpr_setup.APOpts.doAP == e_stage_action::DO)
-                               && (vpr_setup.PackerOpts.device_layout != "auto");
+                                  && (vpr_setup.PackerOpts.device_layout != "auto");
 
     if (!is_ap_and_fixed_device
         && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH

@@ -109,7 +109,7 @@ void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGrou
             int num_tiles = (int)std::ceil(vtr::safe_ratio<float>(
                 ram_group.total_memory_slices, ram_group.candidate_capacity.at(cand)));
             int tile_area = cand->equivalent_tiles[0]->height
-                          * cand->equivalent_tiles[0]->width;
+                            * cand->equivalent_tiles[0]->width;
             ram_group.candidate_area_cost[cand] = num_tiles * tile_area;
         }
         std::sort(ram_group.candidate_types.begin(), ram_group.candidate_types.end(),
@@ -300,7 +300,8 @@ void RamMapper::timing_pass(const AtomNetlist& atom_nlist,
     std::vector<LogicalRamGroupId> critical_groups;
     for (LogicalRamGroupId group_id : logical_ram_groups_.keys()) {
         if (std::fabs(overall_max_criticality
-                      - logical_ram_groups_[group_id].max_atom_criticality) < kEps)
+                      - logical_ram_groups_[group_id].max_atom_criticality)
+            < kEps)
             critical_groups.push_back(group_id);
     }
     VTR_LOG("Max atom criticality: %.4f (%zu critical group(s)).\n",

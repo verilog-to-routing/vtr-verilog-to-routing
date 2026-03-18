@@ -59,14 +59,14 @@ void vpr_signal_handler(int signal) {
     if (signal == SIGINT) {
         safe_write("Received SIGINT: Attempting to checkpoint then exit...\n");
         checkpoint();
-        std::quick_exit(INTERRUPTED_EXIT_CODE);
+        std::quick_exit(EXIT_FAILURE);
     } else if (signal == SIGHUP) {
         safe_write("Received SIGHUP: Attempting to checkpoint...\n");
         checkpoint();
     } else if (signal == SIGTERM) {
         safe_write("Received SIGTERM: Attempting to checkpoint then exit...\n");
         checkpoint();
-        std::quick_exit(INTERRUPTED_EXIT_CODE);
+        std::quick_exit(EXIT_FAILURE);
     }
 }
 

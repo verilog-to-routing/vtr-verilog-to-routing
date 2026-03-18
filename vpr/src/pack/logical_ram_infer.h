@@ -135,7 +135,7 @@ class RamMapper {
     /// @brief Builds the atom-to-group lookup map. Called once at the end of construction.
     void build_atom_to_group_map(const AtomNetlist& atom_nlist);
 
-    /// @brief Tries to remap timing-critical groups to the smalles (believed to be fastest) RAM type.
+    /// @brief Tries to remap timing-critical groups to the smallest (believed to be fastest) RAM type.
     void timing_pass(const AtomNetlist& atom_nlist,
                      const PreClusterTimingManager& timing_manager);
 

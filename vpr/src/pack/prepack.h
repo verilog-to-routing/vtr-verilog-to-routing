@@ -145,9 +145,9 @@ struct t_molecule_stats {
 
 /// @brief Sets of nets that cross the boundary of a molecule, partitioned by pin type.
 struct t_molecule_external_nets {
-    std::unordered_set<AtomNetId> ext_clock_nets;   ///< Nets driving a clock pin from outside the molecule.
-    std::unordered_set<AtomNetId> ext_input_nets;   ///< Nets driving an input pin from outside the molecule.
-    std::unordered_set<AtomNetId> ext_output_nets;  ///< Nets driven by the molecule with at least one sink outside.
+    std::unordered_set<AtomNetId> ext_clock_nets;  ///< Nets driving a clock pin from outside the molecule.
+    std::unordered_set<AtomNetId> ext_input_nets;  ///< Nets driving an input pin from outside the molecule.
+    std::unordered_set<AtomNetId> ext_output_nets; ///< Nets driven by the molecule with at least one sink outside.
 };
 
 /**
@@ -272,7 +272,7 @@ class Prepacker {
      * @param atom_nlist   Used to iterate pins and look up net drivers.
      */
     t_molecule_external_nets calc_molecule_external_nets(PackMoleculeId molecule_id,
-                                                        const AtomNetlist& atom_nlist) const;
+                                                         const AtomNetlist& atom_nlist) const;
 
     /**
      * @brief Gets the largest number of blocks (atoms) that any molecule contains.

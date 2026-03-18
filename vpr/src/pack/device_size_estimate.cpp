@@ -37,7 +37,7 @@ static bool can_place_molecule(t_intra_cluster_placement_stats* cluster_stats,
                                PackMoleculeId mol_id,
                                std::vector<t_pb_graph_node*>& primitives_list,
                                const Prepacker& prepacker) {
-    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> 
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>>
         candidate_queue = build_primitive_candidate_queue(cluster_stats, mol_id, primitives_list, prepacker);
 
     while (!candidate_queue.empty()) {
@@ -72,7 +72,7 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
                                       const std::vector<PackMoleculeId>& mol_ids,
                                       const Prepacker& prepacker,
                                       const AtomNetlist& atom_nlist) {
-    const int input_pin_capacity  = logical_type->pb_type->num_input_pins;
+    const int input_pin_capacity = logical_type->pb_type->num_input_pins;
     const int output_pin_capacity = logical_type->pb_type->num_output_pins;
     const int cluster_mode = 0;
 
@@ -95,16 +95,15 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
         t_molecule_external_nets external_nets = prepacker.calc_molecule_external_nets(mol_id, atom_nlist);
         int new_input_nets = 0, new_output_nets = 0;
         for (AtomNetId net : external_nets.ext_input_nets) {
-            if (!cur_input_nets.count(net)) 
+            if (!cur_input_nets.count(net))
                 ++new_input_nets;
         }
         for (AtomNetId net : external_nets.ext_output_nets) {
-            if (!cur_output_nets.count(net)) 
+            if (!cur_output_nets.count(net))
                 ++new_output_nets;
         }
 
-        bool pin_overflow = (input_pin_capacity > 0 && static_cast<int>(cur_input_nets.size()) + new_input_nets > input_pin_capacity) ||
-                            (output_pin_capacity > 0 && static_cast<int>(cur_output_nets.size()) + new_output_nets > output_pin_capacity);
+        bool pin_overflow = (input_pin_capacity > 0 && static_cast<int>(cur_input_nets.size()) + new_input_nets > input_pin_capacity) || (output_pin_capacity > 0 && static_cast<int>(cur_output_nets.size()) + new_output_nets > output_pin_capacity);
 
         // Pin capacity exceeded, close the current cluster and start a fresh one.
         if (pin_overflow && (!cur_input_nets.empty() || !cur_output_nets.empty())) {
@@ -135,7 +134,7 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
 
         // Commit the placement and record the nets consumed by this cluster.
         for (t_pb_graph_node* prim : primitives_list) {
-            if (prim) 
+            if (prim)
                 commit_primitive(cluster_stats, prim);
         }
 
@@ -169,9 +168,9 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
 
         // Skip RAMs, they are handled separately via logical ram groups.
-        if (!prim || !prim->pb_type || !prim->pb_type->is_primitive()) 
+        if (!prim || !prim->pb_type || !prim->pb_type->is_primitive())
             continue;
-        if (prim->pb_type->class_type == MEMORY_CLASS) 
+        if (prim->pb_type->class_type == MEMORY_CLASS)
             continue;
 
         LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
