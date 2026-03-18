@@ -54,12 +54,39 @@ static bool can_place_molecule(t_intra_cluster_placement_stats* cluster_stats,
 }
 
 /**
+ * @brief Opens a fresh virtual cluster and tries to place the given molecule into it,
+ *        iterating over all modes of the logical type (mirroring greedy clusterer).
+ *
+ * @return Cluster placement stats for the first mode that accepts the molecule,
+ *         or nullptr if no mode works. The caller takes ownership and must call
+ *         free_cluster_placement_stats() when done.
+ */
+static t_intra_cluster_placement_stats* open_cluster_for_molecule(t_logical_block_type_ptr logical_type,
+                                                                  PackMoleculeId mol_id,
+                                                                  std::vector<t_pb_graph_node*>& primitives_list,
+                                                                  const Prepacker& prepacker) {
+    int num_modes = logical_type->pb_graph_head->pb_type->num_modes;
+
+    // Types with no explicit modes are treated as having a single mode (mode 0).
+    int modes_to_try = std::max(1, num_modes);
+    for (int mode = 0; mode < modes_to_try; mode++) {
+        t_intra_cluster_placement_stats* stats = alloc_and_load_cluster_placement_stats(logical_type, mode);
+        std::fill(primitives_list.begin(), primitives_list.end(), nullptr);
+        if (can_place_molecule(stats, mol_id, primitives_list, prepacker))
+            return stats;
+        free_cluster_placement_stats(stats);
+    }
+    return nullptr;
+}
+
+/**
  * @brief Estimates the number of virtual clusters needed for a single logical
  *        block type using a combined pin-capacity and mini-packer simulation.
  *
  * Molecules are packed greedily into virtual clusters. A new cluster is opened
  * when either the pin capacity would be exceeded or the mini-packer cannot fit
- * the molecule into the current cluster.
+ * the molecule into the current cluster. When opening a new cluster, all modes
+ * are tried in order (matching greedy clusterer behavior).
  *
  * @param logical_type  The logical block type to simulate packing for; its pb_type
  *                      determines the pin capacities and available primitive sites.
@@ -76,7 +103,6 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
                                       const AtomNetlist& atom_nlist) {
     const int input_pin_capacity = logical_type->pb_type->num_input_pins;
     const int output_pin_capacity = logical_type->pb_type->num_output_pins;
-    const int cluster_mode = 0;
 
     std::unordered_set<AtomNetId> cur_input_nets;
     std::unordered_set<AtomNetId> cur_output_nets;
@@ -85,12 +111,7 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
 
     for (PackMoleculeId mol_id : mol_ids) {
         const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
-
-        // Open the first cluster on the initial iteration.
-        if (!cluster_stats) {
-            cluster_stats = alloc_and_load_cluster_placement_stats(logical_type, cluster_mode);
-            ++cluster_count;
-        }
+        std::vector<t_pb_graph_node*> primitives_list(mol.atom_block_ids.size(), nullptr);
 
         // Count new unique external nets this molecule would add.
         // Clock nets are excluded from pin-capacity checks.
@@ -107,30 +128,31 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
 
         bool pin_overflow = (input_pin_capacity > 0 && static_cast<int>(cur_input_nets.size()) + new_input_nets > input_pin_capacity) || (output_pin_capacity > 0 && static_cast<int>(cur_output_nets.size()) + new_output_nets > output_pin_capacity);
 
-        // Pin capacity exceeded, close the current cluster and start a fresh one.
-        if (pin_overflow && (!cur_input_nets.empty() || !cur_output_nets.empty())) {
-            free_cluster_placement_stats(cluster_stats);
-            cluster_stats = alloc_and_load_cluster_placement_stats(logical_type, cluster_mode);
+        // Pin capacity exceeded or no cluster open yet, open a new one.
+        if (!cluster_stats || (pin_overflow && (!cur_input_nets.empty() || !cur_output_nets.empty()))) {
+            if (cluster_stats)
+                free_cluster_placement_stats(cluster_stats);
+            cluster_stats = open_cluster_for_molecule(logical_type, mol_id, primitives_list, prepacker);
             ++cluster_count;
             cur_input_nets.clear();
             cur_output_nets.clear();
-        }
-
-        // Try to place in the current cluster; if that fails, open a new one and retry.
-        std::vector<t_pb_graph_node*> primitives_list(mol.atom_block_ids.size(), nullptr);
-        bool placed = can_place_molecule(cluster_stats, mol_id, primitives_list, prepacker);
-        if (!placed) {
-            // Cluster placement rejected the molecule, start a new cluster and try once more.
-            free_cluster_placement_stats(cluster_stats);
-            cluster_stats = alloc_and_load_cluster_placement_stats(logical_type, cluster_mode);
-            ++cluster_count;
-            cur_input_nets.clear();
-            cur_output_nets.clear();
-            std::fill(primitives_list.begin(), primitives_list.end(), nullptr);
-            placed = can_place_molecule(cluster_stats, mol_id, primitives_list, prepacker);
-            if (!placed) {
-                // Molecule cannot fit any fresh cluster, skip it in the estimate.
+            if (!cluster_stats) {
+                // Molecule cannot fit in any mode of a fresh cluster; skip it and count as one cluster.
                 continue;
+            }
+        } else {
+            // Try to place in the current cluster; if that fails, open a new one.
+            bool placed = can_place_molecule(cluster_stats, mol_id, primitives_list, prepacker);
+            if (!placed) {
+                free_cluster_placement_stats(cluster_stats);
+                cluster_stats = open_cluster_for_molecule(logical_type, mol_id, primitives_list, prepacker);
+                ++cluster_count;
+                cur_input_nets.clear();
+                cur_output_nets.clear();
+                if (!cluster_stats) {
+                    // Molecule cannot fit in any mode of a fresh cluster; skip it and count as one cluster.
+                    continue;
+                }
             }
         }
 
