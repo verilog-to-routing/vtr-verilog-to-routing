@@ -1006,6 +1006,12 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
+    // If auto device size used, recreate the device grid after final
+    // clustering before the initial placement using the global clustering.
+    if (vpr_setup_.PackerOpts.device_layout == "auto") {
+        vpr_create_device_grid(vpr_setup_, arch_);
+    }
+
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
     update_drawing_data_structures();
@@ -1194,6 +1200,13 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   "Aborting program.\n",
                   num_clustering_errors);
     }
+
+    // If auto device size used, recreate the device grid after final
+    // clustering before the initial placement using the global clustering.
+    if (vpr_setup_.PackerOpts.device_layout == "auto") {
+        vpr_create_device_grid(vpr_setup_, arch_);
+    }
+
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
@@ -1261,6 +1274,12 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
+
+    // If auto device size used, recreate the device grid after final
+    // clustering before the initial placement using the global clustering.
+    if (vpr_setup_.PackerOpts.device_layout == "auto") {
+        vpr_create_device_grid(vpr_setup_, arch_);
+    }
 
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);

@@ -237,7 +237,7 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
                                              packer_opts.target_device_utilization);
     } else {
         VTR_ASSERT(device_layout == "auto");
-        VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n");
+        VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n", device_layout.c_str());
 
         std::map<t_logical_block_type_ptr, size_t> num_type_instances = estimate_resource_requirement(prepacker);
         VTR_LOG("Estimated resource requirements:\n");

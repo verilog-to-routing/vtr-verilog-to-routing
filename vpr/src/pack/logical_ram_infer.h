@@ -120,7 +120,7 @@ class RamMapper {
     RamMapper(const AtomNetlist& atom_nlist,
               const Prepacker& prepacker,
               const PreClusterTimingManager& timing_manager,
-              vtr::vector<LogicalRamGroupId, LogicalRamGroup> precomputed_groups = {},
+              const vtr::vector<LogicalRamGroupId, LogicalRamGroup>& precomputed_groups,
               int verbosity = 0,
               bool is_fixed_device = false);
 

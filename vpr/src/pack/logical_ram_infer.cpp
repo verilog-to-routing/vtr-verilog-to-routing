@@ -198,7 +198,7 @@ void assign_ram_groups_by_min_area(vtr::vector<LogicalRamGroupId, LogicalRamGrou
 RamMapper::RamMapper(const AtomNetlist& atom_nlist,
                      const Prepacker& prepacker,
                      const PreClusterTimingManager& timing_manager,
-                     vtr::vector<LogicalRamGroupId, LogicalRamGroup> precomputed_groups,
+                     const vtr::vector<LogicalRamGroupId, LogicalRamGroup>& precomputed_groups,
                      int verbosity,
                      bool is_fixed_device)
     : log_verbosity_(verbosity) {
@@ -210,7 +210,7 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         assign_ram_groups_by_min_area(logical_ram_groups_, is_fixed_device);
     } else {
         VTR_LOG("Using pre-computed RAM groups from device size estimator.\n");
-        logical_ram_groups_ = std::move(precomputed_groups);
+        logical_ram_groups_ = precomputed_groups;
     }
 
     log_utilizations("Device ram utilizations after area driven assignment:");
@@ -380,7 +380,8 @@ void RamMapper::timing_pass(const AtomNetlist& atom_nlist,
         // Find the smallest-capacity candidate (assumed to be the faster).
         t_logical_block_type_ptr min_cap_type = nullptr;
         int min_cap = std::numeric_limits<int>::max();
-        for (const auto& [cand, cap] : ram_group.candidate_capacity) {
+        for (t_logical_block_type_ptr cand : ram_group.candidate_types) {
+            int cap = ram_group.candidate_capacity.at(cand);
             if (cap < min_cap) {
                 min_cap = cap;
                 min_cap_type = cand;

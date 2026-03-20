@@ -270,6 +270,10 @@ class Prepacker {
      *
      * @param molecule_id  Molecule to compute external nets for.
      * @param atom_nlist   Used to iterate pins and look up net drivers.
+     *
+     * Note: Complexity is O(A * P * S) in the worst case, where A is the number of
+     *       atoms in the molecule, P is the maximum number of pins per atom, and S
+     *       is the maximum fanout of an output net.
      */
     t_molecule_external_nets calc_molecule_external_nets(PackMoleculeId molecule_id,
                                                          const AtomNetlist& atom_nlist) const;
