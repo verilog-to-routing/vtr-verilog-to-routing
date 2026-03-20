@@ -642,7 +642,7 @@ class ClusterLegalizer {
  *        precisely the same net connections (with the exception of nets in data
  *        port classes).
  *
- * Note that this routine does not check pin feasibility against the cur_pb_type; so
+ * Note that this routine does not check pin feasibility against the cur_pb_type, so
  * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
  *
  * @param blk_id          The atom block being checked for sibling feasibility.

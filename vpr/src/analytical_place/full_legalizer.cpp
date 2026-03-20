@@ -1006,8 +1006,11 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // If auto device size used, recreate the device grid after final
-    // clustering before the initial placement using the global clustering.
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
     if (vpr_setup_.PackerOpts.device_layout == "auto") {
         vpr_create_device_grid(vpr_setup_, arch_);
     }
@@ -1201,8 +1204,11 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // If auto device size used, recreate the device grid after final
-    // clustering before the initial placement using the global clustering.
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
     if (vpr_setup_.PackerOpts.device_layout == "auto") {
         vpr_create_device_grid(vpr_setup_, arch_);
     }
@@ -1275,8 +1281,11 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
 
-    // If auto device size used, recreate the device grid after final
-    // clustering before the initial placement using the global clustering.
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
     if (vpr_setup_.PackerOpts.device_layout == "auto") {
         vpr_create_device_grid(vpr_setup_, arch_);
     }

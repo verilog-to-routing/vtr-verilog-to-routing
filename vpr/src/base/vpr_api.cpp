@@ -549,9 +549,11 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
 
     // Do not create RR graph in AP flow with fixed device since it was already
     // built on the correct device size.
-    // TODO: This check makes vpr_create_device flow-aware. We need to save the
-    //       grid and channels that RR graph is created and check if it is
-    //       changed at that point in a more generic way.
+    // TODO: This check makes vpr_create_device flow-aware. Instead, we should
+    //       record the grid and channel width used when the RR graph was built,
+    //       and check if they have changed. If so, the RR graph should be rebuilt.
+    //       This would allow us to determine when to (re)build the RR graph in a
+    //       more generic and flow-independent way.
     bool is_ap_and_fixed_device = (vpr_setup.APOpts.doAP == e_stage_action::DO)
                                   && (vpr_setup.PackerOpts.device_layout != "auto");
 
