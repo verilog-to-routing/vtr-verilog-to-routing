@@ -68,6 +68,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const AtomNetlist& atom_netlist,
                                                    const Prepacker& prepacker,
                                                    const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                   const RamMapper& ram_mapper,
                                                    const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
                                                    const DeviceGrid& device_grid) {
@@ -77,6 +78,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                         atom_netlist,
                                                         prepacker,
                                                         pre_cluster_timing_manager,
+                                                        ram_mapper,
                                                         vpr_setup,
                                                         arch,
                                                         device_grid);
@@ -85,6 +87,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             atom_netlist,
                                             prepacker,
                                             pre_cluster_timing_manager,
+                                            ram_mapper,
                                             vpr_setup,
                                             arch,
                                             device_grid);
@@ -93,6 +96,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                atom_netlist,
                                                prepacker,
                                                pre_cluster_timing_manager,
+                                               ram_mapper,
                                                vpr_setup,
                                                arch,
                                                device_grid);
@@ -1002,6 +1006,15 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
+    if (vpr_setup_.PackerOpts.device_layout == "auto") {
+        vpr_create_device_grid(vpr_setup_, arch_);
+    }
+
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
     update_drawing_data_structures();
@@ -1190,6 +1203,16 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   "Aborting program.\n",
                   num_clustering_errors);
     }
+
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
+    if (vpr_setup_.PackerOpts.device_layout == "auto") {
+        vpr_create_device_grid(vpr_setup_, arch_);
+    }
+
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
@@ -1251,11 +1274,21 @@ void APPack::legalize(const PartialPlacement& p_placement) {
              vpr_setup_.PackerRRGraph,
              prepacker_,
              pre_cluster_timing_manager_,
-             flat_placement_info);
+             flat_placement_info,
+             ram_mapper_);
 
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
+
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
+    if (vpr_setup_.PackerOpts.device_layout == "auto") {
+        vpr_create_device_grid(vpr_setup_, arch_);
+    }
 
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);

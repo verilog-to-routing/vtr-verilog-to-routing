@@ -24,6 +24,7 @@ class AttractionInfo;
 struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
+class RamMapper;
 class t_pack_high_fanout_thresholds;
 struct t_analysis_opts;
 struct t_clustering_data;
@@ -137,6 +138,7 @@ class GreedyClusterer {
     std::map<t_logical_block_type_ptr, size_t>
     do_clustering(ClusterLegalizer& cluster_legalizer,
                   const Prepacker& prepacker,
+                  const RamMapper& ram_mapper,
                   bool allow_unrelated_clustering,
                   bool balance_block_type_utilization,
                   AttractionInfo& attraction_groups,
@@ -164,6 +166,7 @@ class GreedyClusterer {
                                            ClusterLegalizationStrategy strategy,
                                            ClusterLegalizer& cluster_legalizer,
                                            const Prepacker& prepacker,
+                                           const RamMapper& ram_mapper,
                                            bool balance_block_type_utilization,
                                            AttractionInfo& attraction_groups,
                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
@@ -186,6 +189,7 @@ class GreedyClusterer {
     LegalizationClusterId start_new_cluster(PackMoleculeId seed_mol_id,
                                             ClusterLegalizer& cluster_legalizer,
                                             const Prepacker& prepacker,
+                                            const RamMapper& ram_mapper,
                                             bool balance_block_type_utilization,
                                             std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
                                             DeviceContext& mutable_device_ctx);
@@ -255,6 +259,10 @@ class GreedyClusterer {
     /// Numbers larger than 2 will print info on the status of the packing for
     /// each molecule.
     const int log_verbosity_;
+
+    /// @brief True if the RAM mapper has at least one logical RAM group.
+    ///        Used to guard RAM-specific logic in clustering.
+    bool has_ram_groups_ = false;
 
     /// @brief Does the atom block that drives the output of this atom net also
     /// appear as a receiver (input) pin of the atom net?
