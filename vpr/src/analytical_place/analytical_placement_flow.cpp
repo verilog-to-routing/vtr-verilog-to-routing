@@ -86,65 +86,70 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
 static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement) {
     size_t num_mols_assigned_to_center = 0;
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
-        // Get the molecule that AP block represents
-        PackMoleculeId mol_id = ap_netlist.block_molecules(ap_blk_id)[0];
-        const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
-        // Get location of a valid atom in the molecule and verify that
-        // all atoms of the molecule share same placement information.
+        // Get location of a valid atom across all molecules in this AP block
+        // and verify that all atoms in the block share the same placement info.
         float atom_loc_x, atom_loc_y, atom_loc_layer;
         int atom_loc_sub_tile;
         bool found_valid_atom = false;
-        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-            if (!atom_blk_id.is_valid())
-                continue;
-            float current_loc_x = flat_placement_info.blk_x_pos[atom_blk_id];
-            float current_loc_y = flat_placement_info.blk_y_pos[atom_blk_id];
-            float current_loc_layer = flat_placement_info.blk_layer[atom_blk_id];
-            int current_loc_sub_tile = flat_placement_info.blk_sub_tile[atom_blk_id];
-            if (found_valid_atom) {
-                if (current_loc_x == -1 || current_loc_y == -1)
+        for (PackMoleculeId mol_id : ap_netlist.block_molecules(ap_blk_id)) {
+            const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+                if (!atom_blk_id.is_valid())
                     continue;
-                if (current_loc_x != atom_loc_x || current_loc_y != atom_loc_y || current_loc_layer != atom_loc_layer || current_loc_sub_tile != atom_loc_sub_tile)
-                    VPR_FATAL_ERROR(VPR_ERROR_AP,
-                                    "Molecule of ID %zu contains atom %s (ID: %zu) with a location (%g, %g, layer: %g, subtile: %d) "
-                                    "that conflicts the location of other atoms in this molecule of (%g, %g, layer: %g, subtile: %d).",
-                                    mol_id, g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(), atom_blk_id,
-                                    current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
-                                    atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
-            } else {
-                if (current_loc_x != -1 && current_loc_y != -1) {
-                    atom_loc_x = std::clamp(current_loc_x, 0.0f,
-                                            static_cast<float>(g_vpr_ctx.device().grid.width() - 1));
-                    atom_loc_y = std::clamp(current_loc_y, 0.0f,
-                                            static_cast<float>(g_vpr_ctx.device().grid.height() - 1));
-                    // If current_loc_layer or current_loc_sub_tile are unset (-1), default to layer 0 and sub_tile 0.
-                    if (current_loc_layer == -1)
-                        current_loc_layer = 0;
-                    if (current_loc_sub_tile == -1)
-                        current_loc_sub_tile = 0;
-                    atom_loc_layer = current_loc_layer;
-                    atom_loc_sub_tile = current_loc_sub_tile;
-                    found_valid_atom = true;
+                float current_loc_x = flat_placement_info.blk_x_pos[atom_blk_id];
+                float current_loc_y = flat_placement_info.blk_y_pos[atom_blk_id];
+                float current_loc_layer = flat_placement_info.blk_layer[atom_blk_id];
+                int current_loc_sub_tile = flat_placement_info.blk_sub_tile[atom_blk_id];
+                if (found_valid_atom) {
+                    if (current_loc_x == -1 || current_loc_y == -1)
+                        continue;
+                    if (current_loc_x != atom_loc_x || current_loc_y != atom_loc_y || current_loc_layer != atom_loc_layer || current_loc_sub_tile != atom_loc_sub_tile)
+                        VPR_FATAL_ERROR(VPR_ERROR_AP,
+                                        "AP block %s contains atom %s (ID: %zu) with a location (%g, %g, layer: %g, subtile: %d) "
+                                        "that conflicts the location of other atoms in this block of (%g, %g, layer: %g, subtile: %d).",
+                                        ap_netlist.block_name(ap_blk_id).c_str(),
+                                        g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(), atom_blk_id,
+                                        current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
+                                        atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
+                } else {
+                    if (current_loc_x != -1 && current_loc_y != -1) {
+                        atom_loc_x = std::clamp(current_loc_x, 0.0f,
+                                                static_cast<float>(g_vpr_ctx.device().grid.width() - 1));
+                        atom_loc_y = std::clamp(current_loc_y, 0.0f,
+                                                static_cast<float>(g_vpr_ctx.device().grid.height() - 1));
+                        // If current_loc_layer or current_loc_sub_tile are unset (-1), default to layer 0 and sub_tile 0.
+                        if (current_loc_layer == -1)
+                            current_loc_layer = 0;
+                        if (current_loc_sub_tile == -1)
+                            current_loc_sub_tile = 0;
+                        atom_loc_layer = current_loc_layer;
+                        atom_loc_sub_tile = current_loc_sub_tile;
+                        found_valid_atom = true;
+                    }
                 }
             }
         }
-        // If any atom in the molecule has a location assigned, use that location
+        // If any atom in the block has a location assigned, use that location
         // for the entire AP block. Otherwise, assign the AP block to the center
-        // of the device grid and update the flat placement info for all its atoms accordingly.
+        // of the device grid and update the flat placement info for all atoms accordingly.
         if (!found_valid_atom) {
             num_mols_assigned_to_center++;
-            VTR_LOG_WARN("No atoms of molecule ID %zu provided in the flat placement. Assigning it to the device center.\n", mol_id);
+            VTR_LOG_WARN("No atoms of AP block %s provided in the flat placement. Assigning it to the device center.\n",
+                         ap_netlist.block_name(ap_blk_id).c_str());
             p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
             p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
             p_placement.block_layer_nums[ap_blk_id] = 0;
             p_placement.block_sub_tiles[ap_blk_id] = 0;
-            // Update flat placement for atoms of that molecule accordingly.
+            // Update flat placement for all atoms in all molecules of the block.
             // Needed for flat placement reconstruction statistics reporting.
-            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_x_pos[atom_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
-                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_y_pos[atom_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
-                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_layer[atom_blk_id] = 0;
-                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_sub_tile[atom_blk_id] = 0;
+            for (PackMoleculeId mol_id : ap_netlist.block_molecules(ap_blk_id)) {
+                const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+                for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+                    g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_x_pos[atom_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
+                    g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_y_pos[atom_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
+                    g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_layer[atom_blk_id] = 0;
+                    g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_sub_tile[atom_blk_id] = 0;
+                }
             }
             // TODO: If an atom's location is specified in the placement constraints,
             //       verify it matches the assigned flat placement. If not, override the
@@ -215,14 +220,6 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // Run the prepacker
     const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
 
-    // Create the ap netlist from the atom netlist using the result from the
-    // prepacker.
-    APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist,
-                                                     prepacker,
-                                                     constraints,
-                                                     ap_opts.ap_high_fanout_threshold);
-    print_ap_netlist_stats(ap_netlist);
-
     // Pre-compute the pre-clustering timing delays. This object will be passed
     // into the global placer and the full legalizer to make them timing driven.
     PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,
@@ -246,6 +243,15 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                          device_size_estimator.ram_groups(),
                          ap_opts.log_verbosity,
                          vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+
+    // Create the AP netlist from the atom netlist. RAM atoms belonging to the
+    // same PhysicalRamGroup are collapsed into a single AP super-block.
+    APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist,
+                                                     prepacker,
+                                                     ram_mapper,
+                                                     constraints,
+                                                     ap_opts.ap_high_fanout_threshold);
+    print_ap_netlist_stats(ap_netlist);
 
     // Pre-compute the place delay model. This will be passed into the global
     // placer to create a more accurate timing model.

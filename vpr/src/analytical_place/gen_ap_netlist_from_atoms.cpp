@@ -10,6 +10,7 @@
 #include "ap_netlist.h"
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
+#include "logical_ram_infer.h"
 #include "netlist_fwd.h"
 #include "partition.h"
 #include "partition_region.h"
@@ -19,11 +20,14 @@
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_time.h"
+#include "vtr_vector.h"
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
+                                    const RamMapper& ram_mapper,
                                     const UserPlaceConstraints& constraints,
                                     int high_fanout_threshold) {
     // Create a scoped timer for reading the atom netlist.
@@ -33,18 +37,38 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
     //        using empty strings.
     APNetlist ap_netlist;
 
+    // Pre-create one AP block per physical RAM group. Each group's molecules
+    // are packed into a single super-block so the global placer treats all
+    // atoms in the group as one moveable unit.
+    // Build a map from each RAM atom to the AP block that represents its group.
+    vtr::vector<AtomBlockId, APBlockId> ram_atom_to_ap_block(atom_netlist.blocks().size());
+    for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
+        VTR_ASSERT(!phys_group.atoms.empty());
+        // Name the super-block after the first valid atom in the group.
+        const std::string& blk_name = atom_netlist.block_name(phys_group.atoms[0]);
+        APBlockId ram_ap_blk_id = ap_netlist.create_block(blk_name, phys_group.molecules);
+        for (AtomBlockId atom_id : phys_group.atoms) {
+            ram_atom_to_ap_block[atom_id] = ram_ap_blk_id;
+        }
+    }
+
     // Add the APBlocks based on the atom block molecules. This essentially
     // creates supernodes.
     // Each AP block has the name of the first atom block in the molecule.
     // Each port is named "<atom_blk_name>_<atom_port_name>"
     // Each net has the exact same name as in the atom netlist
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
-        // Get the molecule of this block
-        PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
-        const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
-        // Create the AP block (if not already done)
-        const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
-        APBlockId ap_blk_id = ap_netlist.create_block(first_blk_name, {molecule_id});
+        APBlockId ap_blk_id;
+        if (ram_atom_to_ap_block[atom_blk_id].is_valid()) {
+            // RAM atom: use the pre-created super-block for its physical group.
+            ap_blk_id = ram_atom_to_ap_block[atom_blk_id];
+        } else {
+            // Non-RAM atom: create (or reuse) a single-molecule AP block.
+            PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
+            const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
+            const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
+            ap_blk_id = ap_netlist.create_block(first_blk_name, {molecule_id});
+        }
         // Add the ports and pins of this block to the supernode
         for (AtomPortId atom_port_id : atom_netlist.block_ports(atom_blk_id)) {
             BitIndex port_width = atom_netlist.port_width(atom_port_id);

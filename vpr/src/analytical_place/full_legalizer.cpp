@@ -337,17 +337,25 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     };
 
     // Collect the sorting information and tile information.
+    // Each molecule in each AP block gets its own entry, so that all molecules
+    // (including those in RAM super-blocks with multiple molecules) are
+    // registered in tile_blocks and mol_desired_physical_tile_loc.
+    // Sorting stats (ext_inputs, long_chain) are taken from the first molecule
+    // and applied to all molecules of the same block.
     std::vector<BlockInformation> sorted_blocks;
     sorted_blocks.reserve(ap_netlist_.blocks().size());
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        PackMoleculeId mol_id = ap_netlist_.block_molecules(blk_id)[0];
-        const auto& mol = prepacker_.get_molecule(mol_id);
+        const auto& molecules = ap_netlist_.block_molecules(blk_id);
+        PackMoleculeId first_mol_id = molecules[0];
+        const auto& first_mol = prepacker_.get_molecule(first_mol_id);
 
-        int num_ext_inputs = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
-        bool long_chain = mol.is_chain() && prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain;
+        int num_ext_inputs = prepacker_.calc_molecule_stats(first_mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
+        bool long_chain = first_mol.is_chain() && prepacker_.get_molecule_chain_info(first_mol.chain_id).is_long_chain;
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
 
-        sorted_blocks.push_back({mol_id, num_ext_inputs, long_chain, tile_loc});
+        for (PackMoleculeId mol_id : molecules) {
+            sorted_blocks.push_back({mol_id, num_ext_inputs, long_chain, tile_loc});
+        }
     }
 
     // Sort the blocks so that:
@@ -488,8 +496,8 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
     // already created 8-neighboring tile clusters.
     std::unordered_set<PackMoleculeId> mols_clustered;
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        // Get unclustered block and its location.
-        PackMoleculeId molecule_id = ap_netlist_.block_molecules(blk_id)[0];
+        for (PackMoleculeId molecule_id : ap_netlist_.block_molecules(blk_id)) {
+        // Get unclustered molecule and its location.
         t_physical_tile_loc loc = mol_desired_physical_tile_loc[molecule_id];
 
         // Skip the already clustered molecules.
@@ -608,6 +616,7 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                 break;
             }
         }
+        } // end for molecule_id
     }
     return mols_clustered;
 }
@@ -625,12 +634,13 @@ FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
     vtr::NdMatrix<std::unordered_set<PackMoleculeId>, 3> unclustered_tile_molecules({layer_num, width, height});
     std::vector<PackMoleculeId> unclustered_blocks;
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        PackMoleculeId mol_id = ap_netlist_.block_molecules(blk_id)[0];
-        if (cluster_legalizer.is_mol_clustered(mol_id))
-            continue;
-        t_physical_tile_loc tile_loc = mol_desired_physical_tile_loc[mol_id];
-        unclustered_tile_molecules[tile_loc.layer_num][tile_loc.x][tile_loc.y].insert(mol_id);
-        unclustered_blocks.push_back(mol_id);
+        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(blk_id)) {
+            if (cluster_legalizer.is_mol_clustered(mol_id))
+                continue;
+            t_physical_tile_loc tile_loc = mol_desired_physical_tile_loc[mol_id];
+            unclustered_tile_molecules[tile_loc.layer_num][tile_loc.x][tile_loc.y].insert(mol_id);
+            unclustered_blocks.push_back(mol_id);
+        }
     }
 
     // Sort unclustered blocks by highest external input pins.
