@@ -6,6 +6,7 @@
  */
 
 #include "flat_placement_density_manager.h"
+#include <cmath>
 #include <tuple>
 #include <unordered_map>
 #include "ap_argparse_utils.h"
@@ -267,10 +268,14 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
     // TODO: Maybe import the fixed block locations in the constructor and then
     //       only import the moveable block locations.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        // FIXME: Clean this up and document
-        size_t num_layers = bin_spatial_lookup_.dim_size(0);
-        VTR_ASSERT_SAFE(num_layers > 0);
-        size_t layer = std::min<size_t>(p_placement.block_layer_nums[blk_id] + 0.5, num_layers - 1);
+        // Layers will be a floating point number between the minimum layer (usually 0),
+        // and the maximum layer (num_layers - 1). For an architecture with two layers,
+        // this means that the layer will be a number between 0 and 1. If we always
+        // round this down, everything will be placed on the bottom layer. This is
+        // unique to layers, since for x and y dimensions we allow blocks to be placed
+        // one tile off grid. To prevent this behavior for layers, we round to the
+        // nearest layer.
+        double layer = std::round(p_placement.block_layer_nums[blk_id]);
         FlatPlacementBinId bin_id = get_bin(p_placement.block_x_locs[blk_id],
                                             p_placement.block_y_locs[blk_id],
                                             layer);
