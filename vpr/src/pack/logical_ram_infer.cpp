@@ -222,6 +222,7 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
     }
     build_atom_to_group_map(atom_nlist);
     physical_ram_groups_ = create_physical_ram_groups(prepacker);
+    build_atom_to_physical_group_map();
 }
 
 LogicalRamGroupId RamMapper::group_id_of(AtomBlockId blk) const {
@@ -275,6 +276,24 @@ void RamMapper::build_atom_to_group_map(const AtomNetlist& atom_nlist) {
     for (LogicalRamGroupId group_id : logical_ram_groups_.keys()) {
         for (AtomBlockId atom_id : logical_ram_groups_[group_id].atoms) {
             atom_to_group_[atom_id] = group_id;
+        }
+    }
+}
+
+PhysicalRamGroupId RamMapper::physical_group_id_of(AtomBlockId blk) const {
+    if (!blk.is_valid())
+        return PhysicalRamGroupId::INVALID();
+    if (size_t(blk) >= atom_to_physical_group_.size())
+        return PhysicalRamGroupId::INVALID();
+    return atom_to_physical_group_[blk];
+}
+
+void RamMapper::build_atom_to_physical_group_map() {
+    // Size the map to cover all atom IDs seen in logical groups (same extent as atom_to_group_).
+    atom_to_physical_group_.assign(atom_to_group_.size(), PhysicalRamGroupId::INVALID());
+    for (PhysicalRamGroupId phys_id : physical_ram_groups_.keys()) {
+        for (AtomBlockId atom_id : physical_ram_groups_[phys_id].atoms) {
+            atom_to_physical_group_[atom_id] = phys_id;
         }
     }
 }

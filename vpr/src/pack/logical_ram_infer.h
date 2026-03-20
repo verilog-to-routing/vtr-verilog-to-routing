@@ -156,8 +156,11 @@ class RamMapper {
     RamMapper(RamMapper&&) = default;
     RamMapper& operator=(RamMapper&&) = default;
 
-    /// @brief Returns the group ID for an atom, or INVALID if not a RAM atom.
+    /// @brief Returns the logical group ID for an atom, or INVALID if not a RAM atom.
     LogicalRamGroupId group_id_of(AtomBlockId blk) const;
+
+    /// @brief Returns the physical group ID for an atom, or INVALID if not a RAM atom.
+    PhysicalRamGroupId physical_group_id_of(AtomBlockId blk) const;
 
     /// @brief Returns a const reference to the group for a given ID.
     const LogicalRamGroup& group(LogicalRamGroupId id) const;
@@ -180,8 +183,13 @@ class RamMapper {
     }
 
   private:
-    /// @brief Builds the atom-to-group lookup map. Called once at the end of construction.
+    /// @brief Builds the atom-to-logical-group lookup map.
+    ///        Called once at the end of construction.
     void build_atom_to_group_map(const AtomNetlist& atom_nlist);
+
+    /// @brief Builds the atom-to-physical-group lookup map from physical_ram_groups_.
+    ///        Called once at the end of construction, after create_physical_ram_groups().
+    void build_atom_to_physical_group_map();
 
     /// @brief Partitions logical RAM groups into physical RAM groups.
     ///        Called once at the end of construction.
@@ -205,8 +213,11 @@ class RamMapper {
     /// @brief Physical RAM groups derived from logical groups, indexed by PhysicalRamGroupId.
     vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> physical_ram_groups_;
 
-    /// @brief Maps each RAM atom to its group ID for fast lookup during packing.
+    /// @brief Maps each RAM atom to its logical group ID for fast lookup during packing.
     vtr::vector<AtomBlockId, LogicalRamGroupId> atom_to_group_;
+
+    /// @brief Maps each RAM atom to its physical group ID for fast lookup during packing.
+    vtr::vector<AtomBlockId, PhysicalRamGroupId> atom_to_physical_group_;
 
     /// @brief Packing verbosity level.
     int log_verbosity_ = 0;
