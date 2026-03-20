@@ -20,6 +20,7 @@
  */
 
 #include <string>
+#include <vector>
 #include "atom_netlist_fwd.h"
 #include "netlist.h"
 #include "ap_netlist_fwd.h"
@@ -81,8 +82,8 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
      * Blocks
      */
 
-    /// @brief Returns the molecule that this block represents.
-    PackMoleculeId block_molecule(const APBlockId id) const;
+    /// @brief Returns the molecules that this block represents.
+    const std::vector<PackMoleculeId>& block_molecules(const APBlockId id) const;
 
     /// @brief Returns the mobility of this block.
     APBlockMobility block_mobility(const APBlockId id) const;
@@ -114,10 +115,10 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
     /**
      * @brief Create or return an existing block in the netlist
      *
-     *  @param name The unique name of the block
-     *  @param mol  The molecule the block represents
+     *  @param name      The unique name of the block
+     *  @param molecules The molecules this block represents
      */
-    APBlockId create_block(const std::string& name, PackMoleculeId molecule_id);
+    APBlockId create_block(const std::string& name, std::vector<PackMoleculeId> molecules);
 
     /**
      * @brief Fixes a block at the given location
@@ -196,8 +197,8 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
     bool validate_net_sizes_impl(size_t num_nets) const override;
 
   private: // Private Data
-    /// @brief Molecule of each block
-    vtr::vector_map<APBlockId, PackMoleculeId> block_molecules_;
+    /// @brief Molecules of each block
+    vtr::vector_map<APBlockId, std::vector<PackMoleculeId>> block_molecules_;
     /// @brief Type of each block
     vtr::vector_map<APBlockId, APBlockMobility> block_mobilities_;
     /// @brief Location of each block (if fixed).

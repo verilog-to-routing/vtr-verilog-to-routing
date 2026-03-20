@@ -87,7 +87,7 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
     size_t num_mols_assigned_to_center = 0;
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
         // Get the molecule that AP block represents
-        PackMoleculeId mol_id = ap_netlist.block_molecule(ap_blk_id);
+        PackMoleculeId mol_id = ap_netlist.block_molecules(ap_blk_id)[0];
         const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
         // Get location of a valid atom in the molecule and verify that
         // all atoms of the molecule share same placement information.

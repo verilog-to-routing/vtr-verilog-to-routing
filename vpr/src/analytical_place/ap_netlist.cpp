@@ -7,6 +7,7 @@
 
 #include "ap_netlist.h"
 #include <string>
+#include <vector>
 #include "atom_netlist_fwd.h"
 #include "netlist_fwd.h"
 #include "netlist_utils.h"
@@ -16,7 +17,7 @@
 /*
  * Blocks
  */
-PackMoleculeId APNetlist::block_molecule(const APBlockId id) const {
+const std::vector<PackMoleculeId>& APNetlist::block_molecules(const APBlockId id) const {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_molecules_[id];
@@ -56,19 +57,16 @@ AtomNetId APNetlist::net_atom_net(const APNetId id) const {
 /*
  * Mutators
  */
-APBlockId APNetlist::create_block(const std::string& name, PackMoleculeId molecule_id) {
+APBlockId APNetlist::create_block(const std::string& name, std::vector<PackMoleculeId> molecules) {
     APBlockId blk_id = Netlist::create_block(name);
 
     // Initialize the data
-    block_molecules_.insert(blk_id, molecule_id);
+    block_molecules_.insert(blk_id, std::move(molecules));
     block_mobilities_.insert(blk_id, APBlockMobility::MOVEABLE);
     block_locs_.insert(blk_id, APFixedBlockLoc());
 
     // Check post-conditions: size
     VTR_ASSERT(validate_block_sizes());
-
-    // Check post-conditions: values
-    VTR_ASSERT(block_molecule(blk_id) == molecule_id);
     VTR_ASSERT(block_mobility(blk_id) == APBlockMobility::MOVEABLE);
 
     return blk_id;
