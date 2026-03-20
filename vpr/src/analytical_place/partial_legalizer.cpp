@@ -1561,40 +1561,40 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     float best_score = -1.0f;
     const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
 
-    // First, try all of the planar partitions.
-    int64_t min_pivot_layer = window.layer_low;
-    int64_t max_pivot_layer = window.layer_high - 1;
-    for (int64_t pivot_layer = min_pivot_layer; pivot_layer <= max_pivot_layer; pivot_layer++) {
-        float lower_window_capacity = 0.0f;
-        for (int64_t layer = window.layer_low; layer <= pivot_layer; layer++) {
-            lower_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
-        }
-        float upper_window_capacity = 0.0f;
-        for (int64_t layer = pivot_layer + 1; layer <= (int64_t)window.layer_high; layer++) {
-            upper_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
-        }
-        lower_window_capacity = std::max(lower_window_capacity, 0.0f);
-        upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+    // First, try all of the planar partitions, if any.
+    if (window.layer_high > window.layer_low) {
+        for (size_t pivot_layer = window.layer_low; pivot_layer < window.layer_high; pivot_layer++) {
+            float lower_window_capacity = 0.0f;
+            for (size_t layer = window.layer_low; layer <= pivot_layer; layer++) {
+                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
+            }
+            float upper_window_capacity = 0.0f;
+            for (size_t layer = pivot_layer + 1; layer <= window.layer_high; layer++) {
+                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
+            }
+            lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+            upper_window_capacity = std::max(upper_window_capacity, 0.0f);
 
-        // Compute the score of this partition line. The score is simply just
-        // the minimum of the two capacities dividided by the maximum of the
-        // two capacities.
-        float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
-        float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
-        float cut_score = smaller_capacity / larger_capacity;
+            // Compute the score of this partition line. The score is simply just
+            // the minimum of the two capacities dividided by the maximum of the
+            // two capacities.
+            float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+            float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+            float cut_score = smaller_capacity / larger_capacity;
 
-        // If this is the best cut we have ever seen, save it as the result.
-        if (cut_score > best_score) {
-            best_score = cut_score;
-            partitioned_window.partition_dir = e_partition_dir::PLANAR;
-            partitioned_window.pivot_pos = static_cast<double>(pivot_layer) + 0.5;
-            partitioned_window.lower_window.region = window.region;
-            partitioned_window.upper_window.region = window.region;
+            // If this is the best cut we have ever seen, save it as the result.
+            if (cut_score > best_score) {
+                best_score = cut_score;
+                partitioned_window.partition_dir = e_partition_dir::PLANAR;
+                partitioned_window.pivot_pos = static_cast<double>(pivot_layer) + 0.5;
+                partitioned_window.lower_window.region = window.region;
+                partitioned_window.upper_window.region = window.region;
 
-            partitioned_window.lower_window.layer_low = window.layer_low;
-            partitioned_window.lower_window.layer_high = pivot_layer;
-            partitioned_window.upper_window.layer_low = pivot_layer + 1;
-            partitioned_window.upper_window.layer_high = window.layer_high;
+                partitioned_window.lower_window.layer_low = window.layer_low;
+                partitioned_window.lower_window.layer_high = pivot_layer;
+                partitioned_window.upper_window.layer_low = pivot_layer + 1;
+                partitioned_window.upper_window.layer_high = window.layer_high;
+            }
         }
     }
 
