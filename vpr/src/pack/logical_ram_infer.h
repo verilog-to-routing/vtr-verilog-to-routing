@@ -16,15 +16,19 @@
 #include "atom_netlist_fwd.h"
 #include "physical_types.h"
 #include "PreClusterTimingManager.h"
+#include "prepack.h"
+#include "vtr_range.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
 // Forward declarations
 class AtomNetlist;
-class Prepacker;
 
 /// @brief Unique identifier for a logical RAM group.
 typedef vtr::StrongId<struct logical_ram_group_id_tag, size_t> LogicalRamGroupId;
+
+/// @brief Unique identifier for a physical RAM group.
+typedef vtr::StrongId<struct physical_ram_group_id_tag, size_t> PhysicalRamGroupId;
 
 /**
  * @brief Represents a group of RAM atom blocks that share the same non-data
@@ -55,6 +59,29 @@ struct LogicalRamGroup {
     bool is_output_registered = false;
     /// @brief Maximum setup timing criticality among atoms in this group.
     float max_atom_criticality = 0.0f;
+};
+
+/**
+ * @brief Represents a group of atoms that map to a single physical RAM tile.
+ *
+ * A LogicalRamGroup is partitioned into one or more PhysicalRamGroups based
+ * on the capacity of the pre-assigned physical tile type. Each PhysicalRamGroup
+ * holds the subset of atoms that fit within one tile without exceeding its
+ * memory slice capacity.
+ */
+struct PhysicalRamGroup {
+    /// The logical RAM group this physical group was derived from.
+    LogicalRamGroupId logical_ram_group_id;
+
+    /// Atoms assigned to this physical RAM tile.
+    std::vector<AtomBlockId> atoms;
+
+    /// Molecules corresponding to the atoms in this physical RAM tile.
+    /// Populated by create_physical_ram_groups() for use in AP block construction.
+    std::vector<PackMoleculeId> molecules;
+
+    /// Total memory slices consumed by the atoms in this group.
+    int total_memory_slices = 0;
 };
 
 /**
@@ -124,6 +151,7 @@ class RamMapper {
               int verbosity = 0,
               bool is_fixed_device = false);
 
+
     RamMapper() = default;
     RamMapper(RamMapper&&) = default;
     RamMapper& operator=(RamMapper&&) = default;
@@ -137,9 +165,27 @@ class RamMapper {
     /// @brief Returns the number of logical RAM groups.
     size_t num_groups() const { return logical_ram_groups_.size(); }
 
+    typedef typename vtr::vector<PhysicalRamGroupId, PhysicalRamGroup>::const_iterator physical_ram_group_iterator;
+    typedef typename vtr::Range<physical_ram_group_iterator> physical_ram_group_range;
+
+    /// @brief Returns the range of all physical RAM group IDs for iteration.
+    physical_ram_group_range physical_ram_groups() const {
+        return vtr::make_range(physical_ram_groups_.begin(), physical_ram_groups_.end());
+    }
+
+    /// @brief Returns the physical RAM group for a given ID.
+    const PhysicalRamGroup& physical_ram_group(PhysicalRamGroupId id) const {
+        VTR_ASSERT(id.is_valid() && size_t(id) < physical_ram_groups_.size());
+        return physical_ram_groups_[id];
+    }
+
   private:
     /// @brief Builds the atom-to-group lookup map. Called once at the end of construction.
     void build_atom_to_group_map(const AtomNetlist& atom_nlist);
+
+    /// @brief Partitions logical RAM groups into physical RAM groups.
+    ///        Called once at the end of construction.
+    vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> create_physical_ram_groups(const Prepacker& prepacker) const;
 
     /// @brief Tries to remap timing-critical groups to the smallest (believed to be fastest) RAM type.
     void timing_pass(const AtomNetlist& atom_nlist,
@@ -155,6 +201,9 @@ class RamMapper {
 
     /// @brief All logical RAM groups, indexed by LogicalRamGroupId.
     vtr::vector<LogicalRamGroupId, LogicalRamGroup> logical_ram_groups_;
+
+    /// @brief Physical RAM groups derived from logical groups, indexed by PhysicalRamGroupId.
+    vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> physical_ram_groups_;
 
     /// @brief Maps each RAM atom to its group ID for fast lookup during packing.
     vtr::vector<AtomBlockId, LogicalRamGroupId> atom_to_group_;

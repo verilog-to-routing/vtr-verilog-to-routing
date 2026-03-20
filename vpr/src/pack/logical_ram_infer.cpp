@@ -221,6 +221,7 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         check_assigned_rams_fit_on_device();
     }
     build_atom_to_group_map(atom_nlist);
+    physical_ram_groups_ = create_physical_ram_groups(prepacker);
 }
 
 LogicalRamGroupId RamMapper::group_id_of(AtomBlockId blk) const {
@@ -234,6 +235,39 @@ LogicalRamGroupId RamMapper::group_id_of(AtomBlockId blk) const {
 const LogicalRamGroup& RamMapper::group(LogicalRamGroupId id) const {
     VTR_ASSERT(id.is_valid() && size_t(id) < logical_ram_groups_.size());
     return logical_ram_groups_[id];
+}
+
+vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram_groups(const Prepacker& prepacker) const {
+    vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> physical_groups;
+
+    for (LogicalRamGroupId logical_id : logical_ram_groups_.keys()) {
+        const LogicalRamGroup& logical_group = logical_ram_groups_[logical_id];
+        VTR_ASSERT_MSG(logical_group.pre_assigned_type,
+                       "All logical RAM groups must have a pre-assigned type before "
+                       "creating physical RAM groups.");
+
+        int tile_capacity = logical_group.candidate_capacity.at(logical_group.pre_assigned_type);
+
+        PhysicalRamGroup current_group;
+        current_group.logical_ram_group_id = logical_id;
+
+        for (AtomBlockId atom_id : logical_group.atoms) {
+            if (!atom_id)
+                continue;
+            if (current_group.total_memory_slices >= tile_capacity) {
+                physical_groups.push_back(current_group);
+                current_group = {logical_id, {}, {}, 0};
+            }
+            current_group.atoms.push_back(atom_id);
+            current_group.molecules.push_back(prepacker.get_atom_molecule(atom_id));
+            current_group.total_memory_slices++;
+        }
+
+        if (!current_group.atoms.empty())
+            physical_groups.push_back(current_group);
+    }
+
+    return physical_groups;
 }
 
 void RamMapper::build_atom_to_group_map(const AtomNetlist& atom_nlist) {
