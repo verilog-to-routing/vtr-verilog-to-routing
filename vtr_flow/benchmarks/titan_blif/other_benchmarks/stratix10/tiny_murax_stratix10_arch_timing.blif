@@ -1,0 +1,3362 @@
+#BLIF OUTPUT: small_test_circuit_stratix10.blif
+
+#MAIN MODEL
+
+.model tiny_murax
+.inputs \
+    clk \
+    sw[0] \
+    sw[1] \
+    sw[2] \
+    sw[3]
+.outputs \
+    led[0] \
+    led[1] \
+    led[2] \
+    led[3]
+
+.names gnd
+0
+
+.names vcc
+1
+
+.names unknown
+0
+
+.names led_drv[0] led[0]
+1 1
+
+.names led_drv[1] led[1]
+1 1
+
+.names led_drv[2] led[2]
+1 1
+
+.names led_drv[3] led[3]
+1 1
+
+# ── Carry-chain adder (35 bits) ──
+.subckt fourteennm_lcell_comb5 \
+    cin=gnd \
+    dataa=c6_out[2] \
+    cout=carry[1] \
+    sumout=add_sum[0]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[1] \
+    dataa=ff_q[57] \
+    cout=carry[2] \
+    sumout=add_sum[1]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[2] \
+    dataa=ff_q[12] \
+    cout=carry[3] \
+    sumout=add_sum[2]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[3] \
+    dataa=add_sum[6] \
+    cout=carry[4] \
+    sumout=add_sum[3]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[4] \
+    dataa=ff_q[140] \
+    cout=carry[5] \
+    sumout=add_sum[4]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[5] \
+    dataa=ff_q[125] \
+    cout=carry[6] \
+    sumout=add_sum[5]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[6] \
+    dataa=ff_q[114] \
+    cout=carry[7] \
+    sumout=add_sum[6]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[7] \
+    dataa=ff_q[71] \
+    cout=carry[8] \
+    sumout=add_sum[7]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[8] \
+    dataa=add_sum[4] \
+    cout=carry[9] \
+    sumout=add_sum[8]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[9] \
+    dataa=ff_q[52] \
+    cout=carry[10] \
+    sumout=add_sum[9]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[10] \
+    dataa=c6_out[21] \
+    cout=carry[11] \
+    sumout=add_sum[10]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[11] \
+    dataa=add_sum[6] \
+    cout=carry[12] \
+    sumout=add_sum[11]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[12] \
+    dataa=c5l_out[79] \
+    cout=carry[13] \
+    sumout=add_sum[12]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[13] \
+    dataa=ff_q[44] \
+    cout=carry[14] \
+    sumout=add_sum[13]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[14] \
+    dataa=c5l_out[102] \
+    cout=carry[15] \
+    sumout=add_sum[14]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[15] \
+    dataa=c5l_out[16] \
+    cout=carry[16] \
+    sumout=add_sum[15]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[16] \
+    dataa=ff_q[16] \
+    cout=carry[17] \
+    sumout=add_sum[16]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[17] \
+    dataa=ff_q[15] \
+    cout=carry[18] \
+    sumout=add_sum[17]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[18] \
+    dataa=ff_q[47] \
+    cout=carry[19] \
+    sumout=add_sum[18]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[19] \
+    dataa=ff_q[111] \
+    cout=carry[20] \
+    sumout=add_sum[19]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[20] \
+    dataa=ff_q[119] \
+    cout=carry[21] \
+    sumout=add_sum[20]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[21] \
+    dataa=c5l_out[58] \
+    cout=carry[22] \
+    sumout=add_sum[21]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[22] \
+    dataa=c5l_out[108] \
+    cout=carry[23] \
+    sumout=add_sum[22]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[23] \
+    dataa=ff_q[13] \
+    cout=carry[24] \
+    sumout=add_sum[23]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[24] \
+    dataa=c5l_out[87] \
+    cout=carry[25] \
+    sumout=add_sum[24]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[25] \
+    dataa=ff_q[101] \
+    cout=carry[26] \
+    sumout=add_sum[25]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[26] \
+    dataa=c6_out[41] \
+    cout=carry[27] \
+    sumout=add_sum[26]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[27] \
+    dataa=c6_out[7] \
+    cout=carry[28] \
+    sumout=add_sum[27]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[28] \
+    dataa=c6_out[34] \
+    cout=carry[29] \
+    sumout=add_sum[28]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[29] \
+    dataa=c5l_out[79] \
+    cout=carry[30] \
+    sumout=add_sum[29]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[30] \
+    dataa=c5l_out[14] \
+    cout=carry[31] \
+    sumout=add_sum[30]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[31] \
+    dataa=ff_q[112] \
+    cout=carry[32] \
+    sumout=add_sum[31]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[32] \
+    dataa=c5l_out[29] \
+    cout=carry[33] \
+    sumout=add_sum[32]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[33] \
+    dataa=c5l_out[101] \
+    cout=carry[34] \
+    sumout=add_sum[33]
+
+.subckt fourteennm_lcell_comb5 \
+    cin=carry[34] \
+    dataa=ff_q[142] \
+    cout=carry[35] \
+    sumout=add_sum[34]
+
+# ── 5-input LUTs (125) ──
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[15] \
+    datab=ram5_dout[0] \
+    combout=c5l_out[0]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[32] \
+    datab=c5l_out[16] \
+    datac=ff_q[174] \
+    combout=c5l_out[1]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[79] \
+    datab=ff_q[110] \
+    datac=add_sum[17] \
+    datad=ff_q[172] \
+    combout=c5l_out[2]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[47] \
+    datab=ff_q[194] \
+    combout=c5l_out[3]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[183] \
+    datab=sw[3] \
+    combout=c5l_out[4]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[109] \
+    datab=ff_q[135] \
+    datac=ram5_dout[1] \
+    datad=ff_q[22] \
+    combout=c5l_out[5]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[74] \
+    datab=ff_q[63] \
+    datac=ff_q[193] \
+    datad=ff_q[40] \
+    datae=c5l_out[82] \
+    combout=c5l_out[6]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ram10_dout[0] \
+    datab=c5l_out[121] \
+    datac=c5l_out[116] \
+    datad=ff_q[185] \
+    combout=c5l_out[7]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[35] \
+    datab=ff_q[35] \
+    datac=ff_q[23] \
+    combout=c5l_out[8]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[22] \
+    datab=ff_q[148] \
+    datac=ff_q[40] \
+    combout=c5l_out[9]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[51] \
+    datab=ff_q[194] \
+    datac=ff_q[142] \
+    combout=c5l_out[10]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[0] \
+    datab=ram10_dout[3] \
+    datac=ff_q[186] \
+    datad=ff_q[83] \
+    datae=ff_q[189] \
+    combout=c5l_out[11]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[107] \
+    datab=c6_out[18] \
+    datac=ff_q[136] \
+    datad=c6_out[34] \
+    combout=c5l_out[12]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[111] \
+    datab=c6_out[0] \
+    combout=c5l_out[13]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[73] \
+    datab=add_sum[0] \
+    datac=ff_q[125] \
+    combout=c5l_out[14]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[36] \
+    datab=ff_q[194] \
+    datac=ff_q[138] \
+    combout=c5l_out[15]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[25] \
+    datab=ff_q[166] \
+    datac=sw[1] \
+    combout=c5l_out[16]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[117] \
+    datab=ram5_dout[8] \
+    combout=c5l_out[17]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ram5_dout[0] \
+    datab=ff_q[161] \
+    combout=c5l_out[18]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[137] \
+    datab=ff_q[33] \
+    datac=ff_q[108] \
+    datad=c5l_out[90] \
+    datae=c6_out[42] \
+    combout=c5l_out[19]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[108] \
+    datab=c6_out[10] \
+    datac=c5l_out[55] \
+    datad=c5l_out[2] \
+    combout=c5l_out[20]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[73] \
+    datab=ff_q[135] \
+    datac=ff_q[71] \
+    datad=ff_q[126] \
+    datae=add_sum[8] \
+    combout=c5l_out[21]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[9] \
+    datab=c5l_out[99] \
+    datac=c5l_out[19] \
+    datad=c5l_out[98] \
+    combout=c5l_out[22]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[185] \
+    datab=ff_q[112] \
+    datac=ff_q[70] \
+    datad=c5l_out[60] \
+    datae=c5l_out[52] \
+    combout=c5l_out[23]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[13] \
+    datab=ff_q[24] \
+    combout=c5l_out[24]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[78] \
+    datab=c5l_out[121] \
+    combout=c5l_out[25]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[32] \
+    datab=c6_out[23] \
+    datac=c5l_out[16] \
+    combout=c5l_out[26]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[197] \
+    datab=ff_q[195] \
+    combout=c5l_out[27]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[70] \
+    datab=ff_q[128] \
+    datac=c5l_out[83] \
+    datad=ff_q[5] \
+    datae=c6_out[23] \
+    combout=c5l_out[28]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[24] \
+    datab=c5l_out[74] \
+    combout=c5l_out[29]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[20] \
+    datab=c6_out[3] \
+    datac=ff_q[174] \
+    datad=ff_q[57] \
+    combout=c5l_out[30]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[22] \
+    datab=ff_q[80] \
+    datac=c5l_out[32] \
+    datad=ff_q[1] \
+    combout=c5l_out[31]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[56] \
+    datab=add_sum[17] \
+    datac=ff_q[91] \
+    datad=c5l_out[59] \
+    combout=c5l_out[32]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[120] \
+    datab=ff_q[152] \
+    combout=c5l_out[33]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[78] \
+    datab=ff_q[191] \
+    datac=add_sum[17] \
+    combout=c5l_out[34]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[76] \
+    datab=add_sum[25] \
+    datac=c5l_out[71] \
+    combout=c5l_out[35]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[106] \
+    datab=ff_q[165] \
+    combout=c5l_out[36]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[9] \
+    datab=ff_q[57] \
+    datac=ff_q[185] \
+    datad=ram10_dout[1] \
+    datae=ram5_dout[1] \
+    combout=c5l_out[37]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[122] \
+    datab=ff_q[29] \
+    datac=ff_q[123] \
+    datad=c5l_out[90] \
+    combout=c5l_out[38]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[43] \
+    datab=add_sum[1] \
+    combout=c5l_out[39]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ram5_dout[5] \
+    datab=ff_q[35] \
+    datac=add_sum[16] \
+    datad=c5l_out[72] \
+    datae=add_sum[19] \
+    combout=c5l_out[40]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[65] \
+    datab=c6_out[12] \
+    datac=c5l_out[43] \
+    combout=c5l_out[41]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[135] \
+    datab=c5l_out[70] \
+    datac=c5l_out[110] \
+    combout=c5l_out[42]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[108] \
+    datab=c5l_out[76] \
+    datac=add_sum[13] \
+    datad=add_sum[0] \
+    datae=c6_out[28] \
+    combout=c5l_out[43]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[40] \
+    datab=ff_q[159] \
+    datac=c5l_out[4] \
+    combout=c5l_out[44]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[24] \
+    datab=c5l_out[64] \
+    datac=c5l_out[31] \
+    datad=ff_q[61] \
+    combout=c5l_out[45]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[115] \
+    datab=ff_q[32] \
+    datac=ff_q[173] \
+    combout=c5l_out[46]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[101] \
+    datab=c5l_out[83] \
+    combout=c5l_out[47]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[101] \
+    datab=ff_q[112] \
+    datac=ff_q[3] \
+    combout=c5l_out[48]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[37] \
+    datab=c5l_out[123] \
+    combout=c5l_out[49]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[117] \
+    datab=ff_q[34] \
+    combout=c5l_out[50]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[169] \
+    datab=ff_q[36] \
+    combout=c5l_out[51]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[142] \
+    datab=c6_out[17] \
+    datac=c5l_out[48] \
+    combout=c5l_out[52]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[76] \
+    datab=ff_q[67] \
+    datac=c6_out[45] \
+    combout=c5l_out[53]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[124] \
+    datab=add_sum[28] \
+    datac=c5l_out[42] \
+    datad=ram5_dout[1] \
+    datae=c5l_out[8] \
+    combout=c5l_out[54]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[48] \
+    datab=ff_q[49] \
+    datac=c6_out[12] \
+    combout=c5l_out[55]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[181] \
+    datab=c5l_out[16] \
+    datac=c5l_out[10] \
+    datad=c5l_out[39] \
+    datae=add_sum[0] \
+    combout=c5l_out[56]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[19] \
+    datab=c6_out[9] \
+    combout=c5l_out[57]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[31] \
+    datab=c5l_out[6] \
+    combout=c5l_out[58]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ram4_dout[1] \
+    datab=ff_q[55] \
+    datac=ff_q[127] \
+    datad=ff_q[98] \
+    combout=c5l_out[59]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[74] \
+    datab=c5l_out[29] \
+    datac=ff_q[71] \
+    combout=c5l_out[60]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[93] \
+    datab=ff_q[142] \
+    datac=c5l_out[36] \
+    datad=ff_q[127] \
+    datae=ff_q[38] \
+    combout=c5l_out[61]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ram5_dout[1] \
+    datab=c5l_out[81] \
+    datac=ff_q[50] \
+    datad=ff_q[25] \
+    datae=c6_out[8] \
+    combout=c5l_out[62]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[47] \
+    datab=add_sum[12] \
+    combout=c5l_out[63]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[85] \
+    datab=c5l_out[8] \
+    datac=c5l_out[48] \
+    combout=c5l_out[64]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[109] \
+    datab=c5l_out[5] \
+    datac=ff_q[30] \
+    datad=ff_q[84] \
+    datae=ff_q[194] \
+    combout=c5l_out[65]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[199] \
+    datab=ff_q[135] \
+    combout=c5l_out[66]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[146] \
+    datab=c5l_out[16] \
+    datac=c6_out[31] \
+    datad=add_sum[1] \
+    datae=add_sum[28] \
+    combout=c5l_out[67]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[79] \
+    datab=ff_q[97] \
+    datac=ff_q[151] \
+    datad=ff_q[111] \
+    datae=ff_q[29] \
+    combout=c5l_out[68]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[9] \
+    datab=ff_q[160] \
+    combout=c5l_out[69]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[25] \
+    datab=c5l_out[99] \
+    combout=c5l_out[70]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[57] \
+    datab=c5l_out[71] \
+    datac=ff_q[80] \
+    datad=ff_q[29] \
+    datae=c5l_out[60] \
+    combout=c5l_out[71]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=vcc \
+    datab=ff_q[95] \
+    combout=c5l_out[72]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[104] \
+    datab=ff_q[34] \
+    combout=c5l_out[73]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[6] \
+    datab=ff_q[61] \
+    datac=c5l_out[91] \
+    combout=c5l_out[74]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[96] \
+    datab=c5l_out[104] \
+    datac=ff_q[20] \
+    combout=c5l_out[75]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[14] \
+    datab=c6_out[11] \
+    combout=c5l_out[76]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[133] \
+    datab=ff_q[104] \
+    datac=c6_out[17] \
+    datad=c6_out[41] \
+    combout=c5l_out[77]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[122] \
+    datab=ff_q[135] \
+    datac=c5l_out[2] \
+    datad=ff_q[67] \
+    combout=c5l_out[78]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[34] \
+    datab=ff_q[161] \
+    datac=add_sum[11] \
+    datad=ff_q[37] \
+    combout=c5l_out[79]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[34] \
+    datab=c5l_out[118] \
+    combout=c5l_out[80]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[37] \
+    datab=c5l_out[75] \
+    combout=c5l_out[81]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[59] \
+    datab=ff_q[135] \
+    datac=ff_q[67] \
+    combout=c5l_out[82]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[35] \
+    datab=ff_q[125] \
+    datac=ff_q[189] \
+    datad=ff_q[145] \
+    combout=c5l_out[83]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[24] \
+    datab=ram10_dout[2] \
+    datac=c5l_out[78] \
+    combout=c5l_out[84]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[113] \
+    datab=ram5_dout[1] \
+    datac=c6_out[9] \
+    datad=c5l_out[70] \
+    combout=c5l_out[85]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[16] \
+    datab=ram5_dout[6] \
+    combout=c5l_out[86]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[14] \
+    datab=ff_q[53] \
+    datac=ff_q[68] \
+    datad=ff_q[135] \
+    combout=c5l_out[87]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[54] \
+    datab=add_sum[7] \
+    combout=c5l_out[88]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[139] \
+    datab=ff_q[144] \
+    datac=c5l_out[109] \
+    combout=c5l_out[89]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[42] \
+    datab=ff_q[175] \
+    datac=ff_q[104] \
+    combout=c5l_out[90]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[58] \
+    datab=c5l_out[50] \
+    datac=ff_q[128] \
+    datad=sw[3] \
+    combout=c5l_out[91]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[47] \
+    datab=c5l_out[124] \
+    combout=c5l_out[92]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ram10_dout[0] \
+    datab=ff_q[141] \
+    datac=ff_q[22] \
+    datad=ff_q[1] \
+    datae=ff_q[170] \
+    combout=c5l_out[93]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[1] \
+    datab=ff_q[134] \
+    datac=ff_q[82] \
+    combout=c5l_out[94]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[82] \
+    datab=c6_out[36] \
+    datac=c5l_out[18] \
+    datad=c5l_out[87] \
+    datae=ff_q[4] \
+    combout=c5l_out[95]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[38] \
+    datab=c6_out[28] \
+    combout=c5l_out[96]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[79] \
+    datab=ff_q[18] \
+    datac=ram10_dout[3] \
+    combout=c5l_out[97]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[98] \
+    datab=c5l_out[82] \
+    datac=ff_q[75] \
+    datad=c5l_out[20] \
+    combout=c5l_out[98]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[21] \
+    datab=ff_q[157] \
+    datac=ff_q[186] \
+    combout=c5l_out[99]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[183] \
+    datab=ff_q[107] \
+    combout=c5l_out[100]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[16] \
+    datab=ff_q[52] \
+    datac=ff_q[181] \
+    combout=c5l_out[101]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[117] \
+    datab=add_sum[10] \
+    datac=ff_q[79] \
+    datad=ff_q[121] \
+    datae=ff_q[83] \
+    combout=c5l_out[102]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[11] \
+    datab=ff_q[12] \
+    datac=ff_q[91] \
+    combout=c5l_out[103]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[27] \
+    datab=c5l_out[10] \
+    datac=ram4_dout[2] \
+    datad=c6_out[17] \
+    combout=c5l_out[104]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[136] \
+    datab=ff_q[81] \
+    datac=add_sum[30] \
+    combout=c5l_out[105]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[195] \
+    datab=ff_q[19] \
+    combout=c5l_out[106]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[113] \
+    datab=ff_q[102] \
+    datac=ram5_dout[6] \
+    datad=c5l_out[35] \
+    datae=ff_q[179] \
+    combout=c5l_out[107]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ram5_dout[8] \
+    datab=add_sum[34] \
+    datac=ff_q[116] \
+    datad=ff_q[114] \
+    combout=c5l_out[108]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[12] \
+    datab=ff_q[98] \
+    combout=c5l_out[109]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[168] \
+    datab=ff_q[142] \
+    datac=ff_q[35] \
+    datad=add_sum[22] \
+    datae=ff_q[142] \
+    combout=c5l_out[110]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[3] \
+    datab=c5l_out[60] \
+    datac=c5l_out[4] \
+    datad=c6_out[22] \
+    combout=c5l_out[111]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[14] \
+    datab=ff_q[59] \
+    datac=ff_q[133] \
+    datad=ff_q[91] \
+    combout=c5l_out[112]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[19] \
+    datab=ff_q[55] \
+    datac=c5l_out[105] \
+    datad=c5l_out[22] \
+    combout=c5l_out[113]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=add_sum[0] \
+    datab=add_sum[29] \
+    datac=ff_q[160] \
+    datad=c5l_out[23] \
+    combout=c5l_out[114]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[197] \
+    datab=c5l_out[95] \
+    combout=c5l_out[115]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[130] \
+    datab=ff_q[22] \
+    datac=c6_out[37] \
+    combout=c5l_out[116]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[0] \
+    datab=c5l_out[66] \
+    datac=ram5_dout[0] \
+    datad=c5l_out[75] \
+    datae=c6_out[26] \
+    combout=c5l_out[117]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=ff_q[186] \
+    datab=c5l_out[20] \
+    datac=ff_q[35] \
+    combout=c5l_out[118]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[119] \
+    datab=ff_q[160] \
+    datac=c6_out[14] \
+    datad=gnd \
+    combout=c5l_out[119]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[43] \
+    datab=ff_q[153] \
+    combout=c5l_out[120]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[16] \
+    datab=c5l_out[9] \
+    datac=ff_q[167] \
+    datad=c5l_out[6] \
+    combout=c5l_out[121]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[83] \
+    datab=ff_q[65] \
+    datac=ff_q[98] \
+    datad=c5l_out[15] \
+    combout=c5l_out[122]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c6_out[21] \
+    datab=add_sum[10] \
+    datac=ff_q[89] \
+    datad=c5l_out[115] \
+    datae=c5l_out[91] \
+    combout=c5l_out[123]
+
+.subckt fourteennm_lcell_comb5 \
+    dataa=c5l_out[7] \
+    datab=c5l_out[80] \
+    datac=ram10_dout[2] \
+    datad=ff_q[0] \
+    combout=c5l_out[124]
+
+# ── 6-input LUTs (48) ──
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[146] \
+    datab=ff_q[107] \
+    datac=c5l_out[20] \
+    datad=add_sum[29] \
+    datae=c5l_out[96] \
+    dataf=c5l_out[110] \
+    combout=c6_out[0]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[38] \
+    datab=c5l_out[26] \
+    datac=c5l_out[26] \
+    datad=c6_out[20] \
+    datae=ff_q[109] \
+    dataf=c5l_out[61] \
+    combout=c6_out[1]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=add_sum[33] \
+    datab=add_sum[34] \
+    datac=add_sum[3] \
+    datad=ff_q[86] \
+    datae=c6_out[12] \
+    dataf=ff_q[43] \
+    datag=ff_q[145] \
+    combout=c6_out[2]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[14] \
+    datab=c5l_out[124] \
+    datac=c5l_out[117] \
+    datad=ff_q[171] \
+    datae=ff_q[47] \
+    dataf=ram5_dout[7] \
+    datag=add_sum[11] \
+    datah=ff_q[120] \
+    combout=c6_out[3]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[115] \
+    datab=ram5_dout[0] \
+    datac=ff_q[101] \
+    datad=ff_q[75] \
+    datae=ff_q[12] \
+    dataf=ff_q[23] \
+    combout=c6_out[4]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[43] \
+    datab=c5l_out[112] \
+    datac=vcc \
+    datad=add_sum[20] \
+    datae=ff_q[37] \
+    combout=c6_out[5]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[12] \
+    datab=c5l_out[122] \
+    datac=c5l_out[94] \
+    datad=ff_q[99] \
+    datae=c6_out[42] \
+    dataf=c6_out[31] \
+    datag=ff_q[196] \
+    combout=c6_out[6]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[4] \
+    datab=ff_q[124] \
+    datac=ff_q[75] \
+    datad=c6_out[10] \
+    datae=c6_out[27] \
+    dataf=ff_q[2] \
+    datag=add_sum[11] \
+    combout=c6_out[7]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=add_sum[25] \
+    datab=c5l_out[17] \
+    datac=ff_q[112] \
+    datad=ff_q[90] \
+    combout=c6_out[8]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[37] \
+    datab=ff_q[25] \
+    datac=c5l_out[85] \
+    datad=ff_q[127] \
+    datae=gnd \
+    dataf=ff_q[62] \
+    datag=c5l_out[33] \
+    datah=ff_q[68] \
+    combout=c6_out[9]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[16] \
+    datab=c5l_out[71] \
+    datac=c5l_out[86] \
+    datad=c5l_out[104] \
+    datae=ff_q[162] \
+    dataf=add_sum[13] \
+    datag=c5l_out[26] \
+    combout=c6_out[10]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ram5_dout[5] \
+    datab=c6_out[43] \
+    datac=c5l_out[58] \
+    datad=c5l_out[18] \
+    datae=ram10_dout[1] \
+    dataf=c5l_out[80] \
+    datag=c5l_out[28] \
+    datah=ff_q[81] \
+    combout=c6_out[11]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[30] \
+    datab=ff_q[132] \
+    datac=add_sum[11] \
+    datad=ff_q[126] \
+    datae=sw[0] \
+    dataf=c6_out[1] \
+    datag=ff_q[141] \
+    combout=c6_out[12]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[48] \
+    datab=c5l_out[120] \
+    datac=ff_q[122] \
+    datad=ff_q[140] \
+    datae=c5l_out[25] \
+    dataf=ff_q[39] \
+    datag=c6_out[40] \
+    datah=ff_q[146] \
+    combout=c6_out[13]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[139] \
+    datab=ff_q[171] \
+    datac=ff_q[163] \
+    datad=c5l_out[76] \
+    datae=ff_q[41] \
+    combout=c6_out[14]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[77] \
+    datab=ff_q[118] \
+    datac=ff_q[196] \
+    datad=c6_out[30] \
+    datae=ff_q[78] \
+    combout=c6_out[15]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[32] \
+    datab=c5l_out[12] \
+    datac=c5l_out[8] \
+    datad=ff_q[169] \
+    datae=c5l_out[77] \
+    combout=c6_out[16]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[12] \
+    datab=ff_q[31] \
+    datac=ff_q[105] \
+    datad=ram10_dout[2] \
+    datae=c5l_out[15] \
+    dataf=ff_q[199] \
+    datag=add_sum[21] \
+    combout=c6_out[17]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[31] \
+    datab=ff_q[10] \
+    datac=add_sum[18] \
+    datad=c5l_out[94] \
+    datae=ff_q[194] \
+    dataf=c5l_out[44] \
+    datag=ff_q[3] \
+    datah=ff_q[180] \
+    combout=c6_out[18]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=add_sum[12] \
+    datab=ff_q[199] \
+    datac=ram10_dout[3] \
+    datad=c5l_out[14] \
+    datae=c5l_out[75] \
+    dataf=add_sum[9] \
+    combout=c6_out[19]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ram4_dout[1] \
+    datab=c5l_out[108] \
+    datac=ff_q[112] \
+    datad=c5l_out[49] \
+    datae=ff_q[112] \
+    dataf=ff_q[139] \
+    datag=c5l_out[23] \
+    datah=c5l_out[48] \
+    combout=c6_out[20]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[199] \
+    datab=ff_q[172] \
+    datac=c6_out[17] \
+    datad=c6_out[22] \
+    combout=c6_out[21]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[45] \
+    datab=ff_q[84] \
+    datac=sw[0] \
+    datad=c5l_out[39] \
+    datae=ff_q[65] \
+    dataf=c5l_out[118] \
+    datag=c5l_out[73] \
+    combout=c6_out[22]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[1] \
+    datab=c5l_out[103] \
+    datac=c5l_out[88] \
+    datad=c6_out[14] \
+    combout=c6_out[23]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[42] \
+    datab=c6_out[4] \
+    datac=c5l_out[19] \
+    datad=ff_q[69] \
+    combout=c6_out[24]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[93] \
+    datab=ff_q[25] \
+    datac=ff_q[133] \
+    datad=ff_q[194] \
+    datae=ff_q[167] \
+    dataf=ff_q[108] \
+    datag=c5l_out[32] \
+    combout=c6_out[25]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[172] \
+    datab=add_sum[16] \
+    datac=ff_q[194] \
+    datad=ff_q[142] \
+    datae=add_sum[12] \
+    dataf=ram10_dout[1] \
+    combout=c6_out[26]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[129] \
+    datab=ram10_dout[3] \
+    datac=ff_q[41] \
+    datad=c5l_out[40] \
+    datae=ff_q[9] \
+    dataf=add_sum[10] \
+    datag=c5l_out[76] \
+    combout=c6_out[27]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[179] \
+    datab=ff_q[114] \
+    datac=c6_out[7] \
+    datad=ff_q[35] \
+    combout=c6_out[28]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=add_sum[13] \
+    datab=ff_q[15] \
+    datac=ff_q[126] \
+    datad=ff_q[102] \
+    combout=c6_out[29]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[118] \
+    datab=ff_q[78] \
+    datac=ff_q[122] \
+    datad=ff_q[64] \
+    combout=c6_out[30]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[17] \
+    datab=ff_q[58] \
+    datac=c5l_out[88] \
+    datad=ff_q[111] \
+    datae=c5l_out[38] \
+    dataf=c6_out[33] \
+    datag=ff_q[131] \
+    combout=c6_out[31]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[85] \
+    datab=c5l_out[110] \
+    datac=c5l_out[110] \
+    datad=add_sum[9] \
+    datae=c6_out[42] \
+    dataf=ff_q[58] \
+    combout=c6_out[32]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[159] \
+    datab=ff_q[55] \
+    datac=c5l_out[96] \
+    datad=ff_q[13] \
+    datae=ff_q[159] \
+    combout=c6_out[33]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[21] \
+    datab=ff_q[192] \
+    datac=c5l_out[3] \
+    datad=c6_out[41] \
+    datae=ff_q[101] \
+    dataf=ff_q[38] \
+    datag=c5l_out[103] \
+    datah=c6_out[28] \
+    combout=c6_out[34]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[52] \
+    datab=c6_out[31] \
+    datac=add_sum[22] \
+    datad=ff_q[154] \
+    datae=vcc \
+    combout=c6_out[35]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ram5_dout[0] \
+    datab=ff_q[61] \
+    datac=add_sum[34] \
+    datad=c5l_out[89] \
+    datae=add_sum[27] \
+    dataf=ff_q[21] \
+    datag=ff_q[177] \
+    datah=c5l_out[72] \
+    combout=c6_out[36]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[13] \
+    datab=ff_q[189] \
+    datac=ff_q[35] \
+    datad=c5l_out[59] \
+    datae=c6_out[6] \
+    dataf=ff_q[174] \
+    datag=ff_q[6] \
+    combout=c6_out[37]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ram5_dout[9] \
+    datab=c5l_out[50] \
+    datac=ff_q[54] \
+    datad=c5l_out[21] \
+    datae=ff_q[185] \
+    dataf=c6_out[0] \
+    datag=ram10_dout[0] \
+    combout=c6_out[38]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[37] \
+    datab=ff_q[78] \
+    datac=c5l_out[22] \
+    datad=ff_q[90] \
+    datae=add_sum[2] \
+    dataf=c5l_out[67] \
+    datag=c6_out[8] \
+    combout=c6_out[39]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[115] \
+    datab=ram5_dout[1] \
+    datac=c5l_out[75] \
+    datad=add_sum[23] \
+    datae=c5l_out[47] \
+    dataf=c5l_out[38] \
+    combout=c6_out[40]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ram5_dout[10] \
+    datab=add_sum[1] \
+    datac=c5l_out[103] \
+    datad=ff_q[137] \
+    datae=ff_q[165] \
+    dataf=ff_q[125] \
+    datag=ram10_dout[1] \
+    combout=c6_out[41]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[142] \
+    datab=c5l_out[30] \
+    datac=ff_q[124] \
+    datad=add_sum[11] \
+    combout=c6_out[42]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c5l_out[91] \
+    datab=c5l_out[112] \
+    datac=c6_out[17] \
+    datad=ff_q[194] \
+    datae=ff_q[172] \
+    dataf=ff_q[14] \
+    datag=c5l_out[53] \
+    combout=c6_out[43]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[93] \
+    datab=c5l_out[49] \
+    datac=ff_q[108] \
+    datad=ff_q[181] \
+    datae=ram4_dout[0] \
+    dataf=ff_q[132] \
+    combout=c6_out[44]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[143] \
+    datab=c5l_out[105] \
+    datac=c6_out[34] \
+    datad=ff_q[141] \
+    datae=c5l_out[84] \
+    dataf=ff_q[5] \
+    combout=c6_out[45]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=ff_q[97] \
+    datab=ff_q[43] \
+    datac=ff_q[123] \
+    datad=c6_out[43] \
+    datae=c5l_out[8] \
+    dataf=c5l_out[50] \
+    datag=c5l_out[84] \
+    datah=add_sum[15] \
+    combout=c6_out[46]
+
+.subckt fourteennm_lcell_comb6 \
+    dataa=c6_out[28] \
+    datab=c5l_out[43] \
+    datac=c6_out[5] \
+    datad=c6_out[39] \
+    datae=c5l_out[51] \
+    combout=c6_out[47]
+
+# ── Flip-flops (200) ──
+.subckt fourteennm_ff \
+    d=c5l_out[29] \
+    clk=clk \
+    q=resetCtrl_reset
+
+.subckt fourteennm_ff \
+    d=add_sum[32] \
+    clk=clk \
+    q=ctrl_enable
+
+.subckt fourteennm_ff \
+    d=ff_q[8] \
+    clk=clk \
+    q=led_drv[0]
+
+.subckt fourteennm_ff \
+    d=ff_q[47] \
+    clk=clk \
+    q=led_drv[1]
+
+.subckt fourteennm_ff \
+    d=ff_q[150] \
+    clk=clk \
+    q=led_drv[2]
+
+.subckt fourteennm_ff \
+    d=ff_q[113] \
+    clk=clk \
+    q=led_drv[3]
+
+.subckt fourteennm_ff \
+    d=c5l_out[62] \
+    ena=c6_out[10] \
+    clk=clk \
+    q=ff_q[6]
+
+.subckt fourteennm_ff \
+    d=add_sum[17] \
+    ena=c5l_out[78] \
+    clk=clk \
+    q=ff_q[7]
+
+.subckt fourteennm_ff \
+    d=add_sum[11] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[8]
+
+.subckt fourteennm_ff \
+    d=c5l_out[123] \
+    clk=clk \
+    q=ff_q[9]
+
+.subckt fourteennm_ff \
+    d=c5l_out[25] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[10]
+
+.subckt fourteennm_ff \
+    d=ff_q[32] \
+    ena=c5l_out[32] \
+    clk=clk \
+    q=ff_q[11]
+
+.subckt fourteennm_ff \
+    d=c5l_out[3] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[12]
+
+.subckt fourteennm_ff \
+    d=c5l_out[122] \
+    sclr=ff_q[33] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[13]
+
+.subckt fourteennm_ff \
+    d=c6_out[19] \
+    clrn=resetCtrl_reset \
+    ena=c6_out[17] \
+    clk=clk \
+    q=ff_q[14]
+
+.subckt fourteennm_ff \
+    d=add_sum[29] \
+    ena=c5l_out[113] \
+    clk=clk \
+    q=ff_q[15]
+
+.subckt fourteennm_ff \
+    d=ff_q[109] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[16]
+
+.subckt fourteennm_ff \
+    d=c5l_out[67] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[17]
+
+.subckt fourteennm_ff \
+    d=c5l_out[115] \
+    ena=c5l_out[73] \
+    clk=clk \
+    q=ff_q[18]
+
+.subckt fourteennm_ff \
+    d=ff_q[116] \
+    sclr=ff_q[119] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[19]
+
+.subckt fourteennm_ff \
+    d=c6_out[14] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[20]
+
+.subckt fourteennm_ff \
+    d=add_sum[29] \
+    ena=c5l_out[73] \
+    clk=clk \
+    q=ff_q[21]
+
+.subckt fourteennm_ff \
+    d=add_sum[3] \
+    ena=c6_out[13] \
+    clk=clk \
+    q=ff_q[22]
+
+.subckt fourteennm_ff \
+    d=c6_out[28] \
+    sclr=c5l_out[21] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[23]
+
+.subckt fourteennm_ff \
+    d=ram10_dout[5] \
+    clk=clk \
+    q=ff_q[24]
+
+.subckt fourteennm_ff \
+    d=c6_out[7] \
+    ena=c6_out[24] \
+    clk=clk \
+    q=ff_q[25]
+
+.subckt fourteennm_ff \
+    d=c6_out[0] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[26]
+
+.subckt fourteennm_ff \
+    d=ff_q[84] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[27]
+
+.subckt fourteennm_ff \
+    d=c5l_out[80] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[28]
+
+.subckt fourteennm_ff \
+    d=ff_q[0] \
+    ena=c5l_out[48] \
+    clk=clk \
+    q=ff_q[29]
+
+.subckt fourteennm_ff \
+    d=c6_out[2] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[30]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[10] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[31]
+
+.subckt fourteennm_ff \
+    d=ff_q[79] \
+    ena=c5l_out[29] \
+    clk=clk \
+    q=ff_q[32]
+
+.subckt fourteennm_ff \
+    d=ram10_dout[4] \
+    ena=c6_out[5] \
+    clk=clk \
+    q=ff_q[33]
+
+.subckt fourteennm_ff \
+    d=c5l_out[123] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[34]
+
+.subckt fourteennm_ff \
+    d=ram10_dout[0] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[106] \
+    clk=clk \
+    q=ff_q[35]
+
+.subckt fourteennm_ff \
+    d=ram10_dout[0] \
+    clrn=resetCtrl_reset \
+    ena=c6_out[25] \
+    clk=clk \
+    q=ff_q[36]
+
+.subckt fourteennm_ff \
+    d=ff_q[114] \
+    ena=c6_out[14] \
+    clk=clk \
+    q=ff_q[37]
+
+.subckt fourteennm_ff \
+    d=c5l_out[82] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[38]
+
+.subckt fourteennm_ff \
+    d=ff_q[105] \
+    sclr=add_sum[8] \
+    clk=clk \
+    q=ff_q[39]
+
+.subckt fourteennm_ff \
+    d=c6_out[44] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[40]
+
+.subckt fourteennm_ff \
+    d=c6_out[26] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[41]
+
+.subckt fourteennm_ff \
+    d=c5l_out[116] \
+    sclr=ff_q[73] \
+    clk=clk \
+    q=ff_q[42]
+
+.subckt fourteennm_ff \
+    d=add_sum[27] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[43]
+
+.subckt fourteennm_ff \
+    d=ff_q[172] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[44]
+
+.subckt fourteennm_ff \
+    d=c5l_out[60] \
+    clk=clk \
+    q=ff_q[45]
+
+.subckt fourteennm_ff \
+    d=ff_q[111] \
+    ena=c5l_out[25] \
+    clk=clk \
+    q=ff_q[46]
+
+.subckt fourteennm_ff \
+    d=c5l_out[76] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[47]
+
+.subckt fourteennm_ff \
+    d=c5l_out[95] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[48]
+
+.subckt fourteennm_ff \
+    d=c6_out[31] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[49]
+
+.subckt fourteennm_ff \
+    d=c6_out[38] \
+    ena=c5l_out[119] \
+    clk=clk \
+    q=ff_q[50]
+
+.subckt fourteennm_ff \
+    d=c5l_out[40] \
+    sclr=ff_q[176] \
+    ena=c5l_out[64] \
+    clk=clk \
+    q=ff_q[51]
+
+.subckt fourteennm_ff \
+    d=ff_q[50] \
+    ena=c5l_out[97] \
+    clk=clk \
+    q=ff_q[52]
+
+.subckt fourteennm_ff \
+    d=add_sum[6] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[53]
+
+.subckt fourteennm_ff \
+    d=add_sum[2] \
+    clk=clk \
+    q=ff_q[54]
+
+.subckt fourteennm_ff \
+    d=ff_q[73] \
+    clk=clk \
+    q=ff_q[55]
+
+.subckt fourteennm_ff \
+    d=c5l_out[48] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[56]
+
+.subckt fourteennm_ff \
+    d=c6_out[35] \
+    ena=c6_out[23] \
+    clk=clk \
+    q=ff_q[57]
+
+.subckt fourteennm_ff \
+    d=ff_q[23] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[58]
+
+.subckt fourteennm_ff \
+    d=ff_q[93] \
+    clk=clk \
+    q=ff_q[59]
+
+.subckt fourteennm_ff \
+    d=c5l_out[123] \
+    clk=clk \
+    q=ff_q[60]
+
+.subckt fourteennm_ff \
+    d=ff_q[119] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[61]
+
+.subckt fourteennm_ff \
+    d=ff_q[185] \
+    clk=clk \
+    q=ff_q[62]
+
+.subckt fourteennm_ff \
+    d=c5l_out[23] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[116] \
+    clk=clk \
+    q=ff_q[63]
+
+.subckt fourteennm_ff \
+    d=c6_out[47] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[64]
+
+.subckt fourteennm_ff \
+    d=c5l_out[120] \
+    sclr=c5l_out[87] \
+    ena=c5l_out[16] \
+    clk=clk \
+    q=ff_q[65]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[5] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[9] \
+    clk=clk \
+    q=ff_q[66]
+
+.subckt fourteennm_ff \
+    d=ram4_dout[3] \
+    sclr=resetCtrl_reset \
+    ena=c6_out[13] \
+    clk=clk \
+    q=ff_q[67]
+
+.subckt fourteennm_ff \
+    d=add_sum[13] \
+    ena=c6_out[0] \
+    clk=clk \
+    q=ff_q[68]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[4] \
+    sclr=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[69]
+
+.subckt fourteennm_ff \
+    d=ff_q[25] \
+    clk=clk \
+    q=ff_q[70]
+
+.subckt fourteennm_ff \
+    d=c5l_out[15] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[71]
+
+.subckt fourteennm_ff \
+    d=c6_out[39] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[72]
+
+.subckt fourteennm_ff \
+    d=ram10_dout[2] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[73]
+
+.subckt fourteennm_ff \
+    d=ff_q[59] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[74]
+
+.subckt fourteennm_ff \
+    d=c5l_out[37] \
+    clk=clk \
+    q=ff_q[75]
+
+.subckt fourteennm_ff \
+    d=c5l_out[6] \
+    sclr=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[76]
+
+.subckt fourteennm_ff \
+    d=c5l_out[107] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[77]
+
+.subckt fourteennm_ff \
+    d=c5l_out[56] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[78]
+
+.subckt fourteennm_ff \
+    d=ff_q[133] \
+    ena=c5l_out[122] \
+    clk=clk \
+    q=ff_q[79]
+
+.subckt fourteennm_ff \
+    d=c5l_out[27] \
+    ena=c5l_out[20] \
+    clk=clk \
+    q=ff_q[80]
+
+.subckt fourteennm_ff \
+    d=c5l_out[16] \
+    sclr=c5l_out[119] \
+    ena=c5l_out[75] \
+    clk=clk \
+    q=ff_q[81]
+
+.subckt fourteennm_ff \
+    d=c5l_out[110] \
+    sclr=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[82]
+
+.subckt fourteennm_ff \
+    d=c5l_out[58] \
+    ena=c5l_out[24] \
+    clk=clk \
+    q=ff_q[83]
+
+.subckt fourteennm_ff \
+    d=c6_out[45] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[84]
+
+.subckt fourteennm_ff \
+    d=c5l_out[21] \
+    sclr=ff_q[49] \
+    ena=c6_out[25] \
+    clk=clk \
+    q=ff_q[85]
+
+.subckt fourteennm_ff \
+    d=c5l_out[105] \
+    clk=clk \
+    q=ff_q[86]
+
+.subckt fourteennm_ff \
+    d=ff_q[184] \
+    sclr=ff_q[147] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[87]
+
+.subckt fourteennm_ff \
+    d=c5l_out[57] \
+    ena=c5l_out[29] \
+    clk=clk \
+    q=ff_q[88]
+
+.subckt fourteennm_ff \
+    d=add_sum[33] \
+    clk=clk \
+    q=ff_q[89]
+
+.subckt fourteennm_ff \
+    d=c6_out[47] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[90]
+
+.subckt fourteennm_ff \
+    d=ff_q[68] \
+    sclr=ff_q[139] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[91]
+
+.subckt fourteennm_ff \
+    d=c5l_out[102] \
+    sclr=resetCtrl_reset \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[96] \
+    clk=clk \
+    q=ff_q[92]
+
+.subckt fourteennm_ff \
+    d=c5l_out[40] \
+    clk=clk \
+    q=ff_q[93]
+
+.subckt fourteennm_ff \
+    d=c5l_out[21] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[94]
+
+.subckt fourteennm_ff \
+    d=c5l_out[20] \
+    ena=c5l_out[113] \
+    clk=clk \
+    q=ff_q[95]
+
+.subckt fourteennm_ff \
+    d=add_sum[20] \
+    ena=c6_out[26] \
+    clk=clk \
+    q=ff_q[96]
+
+.subckt fourteennm_ff \
+    d=c5l_out[78] \
+    sclr=resetCtrl_reset \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[97]
+
+.subckt fourteennm_ff \
+    d=ff_q[74] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[98]
+
+.subckt fourteennm_ff \
+    d=add_sum[7] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[99]
+
+.subckt fourteennm_ff \
+    d=add_sum[16] \
+    sclr=ff_q[9] \
+    clk=clk \
+    q=ff_q[100]
+
+.subckt fourteennm_ff \
+    d=c6_out[21] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[101]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[1] \
+    clk=clk \
+    q=ff_q[102]
+
+.subckt fourteennm_ff \
+    d=ram4_dout[2] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[103]
+
+.subckt fourteennm_ff \
+    d=c5l_out[79] \
+    clk=clk \
+    q=ff_q[104]
+
+.subckt fourteennm_ff \
+    d=c6_out[37] \
+    sclr=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[105]
+
+.subckt fourteennm_ff \
+    d=c5l_out[37] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[106]
+
+.subckt fourteennm_ff \
+    d=add_sum[24] \
+    ena=c6_out[23] \
+    clk=clk \
+    q=ff_q[107]
+
+.subckt fourteennm_ff \
+    d=c6_out[19] \
+    ena=c6_out[35] \
+    clk=clk \
+    q=ff_q[108]
+
+.subckt fourteennm_ff \
+    d=c5l_out[17] \
+    clk=clk \
+    q=ff_q[109]
+
+.subckt fourteennm_ff \
+    d=c5l_out[90] \
+    ena=c5l_out[14] \
+    clk=clk \
+    q=ff_q[110]
+
+.subckt fourteennm_ff \
+    d=ff_q[19] \
+    ena=c6_out[27] \
+    clk=clk \
+    q=ff_q[111]
+
+.subckt fourteennm_ff \
+    d=c6_out[16] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[112]
+
+.subckt fourteennm_ff \
+    d=c5l_out[121] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[113]
+
+.subckt fourteennm_ff \
+    d=c5l_out[44] \
+    sclr=c6_out[37] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[114]
+
+.subckt fourteennm_ff \
+    d=c5l_out[72] \
+    ena=c5l_out[13] \
+    clk=clk \
+    q=ff_q[115]
+
+.subckt fourteennm_ff \
+    d=c5l_out[24] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[116]
+
+.subckt fourteennm_ff \
+    d=c6_out[24] \
+    ena=c6_out[42] \
+    clk=clk \
+    q=ff_q[117]
+
+.subckt fourteennm_ff \
+    d=add_sum[8] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[118]
+
+.subckt fourteennm_ff \
+    d=add_sum[16] \
+    ena=c6_out[46] \
+    clk=clk \
+    q=ff_q[119]
+
+.subckt fourteennm_ff \
+    d=c5l_out[4] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[120]
+
+.subckt fourteennm_ff \
+    d=c5l_out[35] \
+    clk=clk \
+    q=ff_q[121]
+
+.subckt fourteennm_ff \
+    d=c6_out[13] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[122]
+
+.subckt fourteennm_ff \
+    d=c5l_out[39] \
+    clk=clk \
+    q=ff_q[123]
+
+.subckt fourteennm_ff \
+    d=ff_q[42] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[60] \
+    clk=clk \
+    q=ff_q[124]
+
+.subckt fourteennm_ff \
+    d=add_sum[19] \
+    ena=c5l_out[79] \
+    clk=clk \
+    q=ff_q[125]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[2] \
+    clk=clk \
+    q=ff_q[126]
+
+.subckt fourteennm_ff \
+    d=c5l_out[72] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[127]
+
+.subckt fourteennm_ff \
+    d=ff_q[35] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[128]
+
+.subckt fourteennm_ff \
+    d=ff_q[132] \
+    clk=clk \
+    q=ff_q[129]
+
+.subckt fourteennm_ff \
+    d=c6_out[6] \
+    sclr=resetCtrl_reset \
+    ena=c5l_out[115] \
+    clk=clk \
+    q=ff_q[130]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[9] \
+    sclr=c5l_out[57] \
+    clk=clk \
+    q=ff_q[131]
+
+.subckt fourteennm_ff \
+    d=c5l_out[7] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[132]
+
+.subckt fourteennm_ff \
+    d=c5l_out[73] \
+    clk=clk \
+    q=ff_q[133]
+
+.subckt fourteennm_ff \
+    d=ff_q[120] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[134]
+
+.subckt fourteennm_ff \
+    d=ff_q[140] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[135]
+
+.subckt fourteennm_ff \
+    d=c5l_out[12] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[136]
+
+.subckt fourteennm_ff \
+    d=ff_q[127] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[137]
+
+.subckt fourteennm_ff \
+    d=c5l_out[0] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[138]
+
+.subckt fourteennm_ff \
+    d=c5l_out[92] \
+    sclr=resetCtrl_reset \
+    ena=c6_out[37] \
+    clk=clk \
+    q=ff_q[139]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[4] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[140]
+
+.subckt fourteennm_ff \
+    d=ff_q[188] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[141]
+
+.subckt fourteennm_ff \
+    d=ff_q[175] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[142]
+
+.subckt fourteennm_ff \
+    d=ff_q[117] \
+    sclr=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[143]
+
+.subckt fourteennm_ff \
+    d=c5l_out[79] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[144]
+
+.subckt fourteennm_ff \
+    d=ff_q[48] \
+    ena=c6_out[42] \
+    clk=clk \
+    q=ff_q[145]
+
+.subckt fourteennm_ff \
+    d=add_sum[31] \
+    ena=c5l_out[98] \
+    clk=clk \
+    q=ff_q[146]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[11] \
+    clk=clk \
+    q=ff_q[147]
+
+.subckt fourteennm_ff \
+    d=c5l_out[21] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[46] \
+    clk=clk \
+    q=ff_q[148]
+
+.subckt fourteennm_ff \
+    d=c5l_out[20] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[149]
+
+.subckt fourteennm_ff \
+    d=c5l_out[89] \
+    clk=clk \
+    q=ff_q[150]
+
+.subckt fourteennm_ff \
+    d=c5l_out[111] \
+    clk=clk \
+    q=ff_q[151]
+
+.subckt fourteennm_ff \
+    d=c6_out[38] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[152]
+
+.subckt fourteennm_ff \
+    d=c6_out[30] \
+    ena=c5l_out[60] \
+    clk=clk \
+    q=ff_q[153]
+
+.subckt fourteennm_ff \
+    d=c6_out[20] \
+    sclr=ff_q[78] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[154]
+
+.subckt fourteennm_ff \
+    d=c5l_out[101] \
+    clk=clk \
+    q=ff_q[155]
+
+.subckt fourteennm_ff \
+    d=c5l_out[47] \
+    ena=c5l_out[67] \
+    clk=clk \
+    q=ff_q[156]
+
+.subckt fourteennm_ff \
+    d=ff_q[54] \
+    clk=clk \
+    q=ff_q[157]
+
+.subckt fourteennm_ff \
+    d=c5l_out[31] \
+    sclr=ff_q[37] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[22] \
+    clk=clk \
+    q=ff_q[158]
+
+.subckt fourteennm_ff \
+    d=add_sum[8] \
+    sclr=c5l_out[77] \
+    clk=clk \
+    q=ff_q[159]
+
+.subckt fourteennm_ff \
+    d=ff_q[179] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[160]
+
+.subckt fourteennm_ff \
+    d=ff_q[60] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[94] \
+    clk=clk \
+    q=ff_q[161]
+
+.subckt fourteennm_ff \
+    d=ff_q[141] \
+    sclr=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[162]
+
+.subckt fourteennm_ff \
+    d=ff_q[134] \
+    ena=c5l_out[32] \
+    clk=clk \
+    q=ff_q[163]
+
+.subckt fourteennm_ff \
+    d=c5l_out[115] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[164]
+
+.subckt fourteennm_ff \
+    d=ff_q[33] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[165]
+
+.subckt fourteennm_ff \
+    d=c5l_out[41] \
+    ena=c6_out[7] \
+    clk=clk \
+    q=ff_q[166]
+
+.subckt fourteennm_ff \
+    d=ff_q[64] \
+    ena=c6_out[35] \
+    clk=clk \
+    q=ff_q[167]
+
+.subckt fourteennm_ff \
+    d=c5l_out[23] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[168]
+
+.subckt fourteennm_ff \
+    d=c6_out[43] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[169]
+
+.subckt fourteennm_ff \
+    d=ff_q[7] \
+    sclr=c6_out[3] \
+    clk=clk \
+    q=ff_q[170]
+
+.subckt fourteennm_ff \
+    d=c6_out[38] \
+    sclr=c5l_out[121] \
+    ena=c5l_out[62] \
+    clk=clk \
+    q=ff_q[171]
+
+.subckt fourteennm_ff \
+    d=c5l_out[18] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[172]
+
+.subckt fourteennm_ff \
+    d=c5l_out[36] \
+    ena=c5l_out[88] \
+    clk=clk \
+    q=ff_q[173]
+
+.subckt fourteennm_ff \
+    d=c5l_out[94] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[31] \
+    clk=clk \
+    q=ff_q[174]
+
+.subckt fourteennm_ff \
+    d=c5l_out[36] \
+    sclr=ff_q[148] \
+    ena=c5l_out[40] \
+    clk=clk \
+    q=ff_q[175]
+
+.subckt fourteennm_ff \
+    d=ram5_dout[6] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[176]
+
+.subckt fourteennm_ff \
+    d=c5l_out[78] \
+    clrn=resetCtrl_reset \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[177]
+
+.subckt fourteennm_ff \
+    d=c5l_out[90] \
+    sclr=ff_q[144] \
+    clk=clk \
+    q=ff_q[178]
+
+.subckt fourteennm_ff \
+    d=c5l_out[73] \
+    ena=c5l_out[67] \
+    clk=clk \
+    q=ff_q[179]
+
+.subckt fourteennm_ff \
+    d=ff_q[93] \
+    sclr=resetCtrl_reset \
+    ena=c5l_out[98] \
+    clk=clk \
+    q=ff_q[180]
+
+.subckt fourteennm_ff \
+    d=ff_q[71] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[181]
+
+.subckt fourteennm_ff \
+    d=add_sum[30] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[182]
+
+.subckt fourteennm_ff \
+    d=c5l_out[102] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[85] \
+    clk=clk \
+    q=ff_q[183]
+
+.subckt fourteennm_ff \
+    d=c5l_out[38] \
+    ena=c6_out[31] \
+    clk=clk \
+    q=ff_q[184]
+
+.subckt fourteennm_ff \
+    d=c6_out[32] \
+    ena=c6_out[5] \
+    clk=clk \
+    q=ff_q[185]
+
+.subckt fourteennm_ff \
+    d=ff_q[76] \
+    clrn=resetCtrl_reset \
+    ena=c5l_out[28] \
+    clk=clk \
+    q=ff_q[186]
+
+.subckt fourteennm_ff \
+    d=add_sum[30] \
+    ena=c6_out[27] \
+    clk=clk \
+    q=ff_q[187]
+
+.subckt fourteennm_ff \
+    d=c6_out[42] \
+    ena=c5l_out[13] \
+    clk=clk \
+    q=ff_q[188]
+
+.subckt fourteennm_ff \
+    d=c6_out[36] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[189]
+
+.subckt fourteennm_ff \
+    d=add_sum[6] \
+    sclr=ff_q[9] \
+    ena=c5l_out[52] \
+    clk=clk \
+    q=ff_q[190]
+
+.subckt fourteennm_ff \
+    d=c6_out[31] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[191]
+
+.subckt fourteennm_ff \
+    d=c6_out[18] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[192]
+
+.subckt fourteennm_ff \
+    d=c6_out[11] \
+    clk=clk \
+    q=ff_q[193]
+
+.subckt fourteennm_ff \
+    d=ff_q[164] \
+    ena=c5l_out[63] \
+    clk=clk \
+    q=ff_q[194]
+
+.subckt fourteennm_ff \
+    d=c5l_out[57] \
+    clk=clk \
+    q=ff_q[195]
+
+.subckt fourteennm_ff \
+    d=ff_q[176] \
+    ena=c5l_out[70] \
+    clk=clk \
+    q=ff_q[196]
+
+.subckt fourteennm_ff \
+    d=add_sum[0] \
+    ena=ctrl_enable \
+    clk=clk \
+    q=ff_q[197]
+
+.subckt fourteennm_ff \
+    d=c5l_out[73] \
+    clrn=resetCtrl_reset \
+    clk=clk \
+    q=ff_q[198]
+
+.subckt fourteennm_ff \
+    d=add_sum[18] \
+    ena=c6_out[18] \
+    clk=clk \
+    q=ff_q[199]
+
+# ── RAM blocks (addr4: 4, addr5: 12, addr10: 6) ──
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{4}.port_b_address_width{4} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=ff_q[122] \
+    portbaddr[1]=ff_q[124] \
+    portbaddr[2]=ff_q[25] \
+    portbaddr[3]=c6_out[17] \
+    portawe=c5l_out[35] \
+    portaaddr[0]=ff_q[55] \
+    portaaddr[1]=c5l_out[115] \
+    portaaddr[2]=add_sum[6] \
+    portaaddr[3]=c5l_out[100] \
+    portadatain=ff_q[135] \
+    portbdataout=ram4_dout[0]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{4}.port_b_address_width{4} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[11] \
+    portbaddr[1]=ff_q[169] \
+    portbaddr[2]=c6_out[42] \
+    portbaddr[3]=c5l_out[41] \
+    portawe=c5l_out[57] \
+    portaaddr[0]=c6_out[1] \
+    portaaddr[1]=ff_q[119] \
+    portaaddr[2]=ff_q[26] \
+    portaaddr[3]=ff_q[51] \
+    portadatain=ff_q[25] \
+    portbdataout=ram4_dout[1]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{4}.port_b_address_width{4} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c6_out[9] \
+    portbaddr[1]=c5l_out[43] \
+    portbaddr[2]=c5l_out[44] \
+    portbaddr[3]=c6_out[8] \
+    portawe=c5l_out[35] \
+    portaaddr[0]=ff_q[2] \
+    portaaddr[1]=c5l_out[81] \
+    portaaddr[2]=ff_q[80] \
+    portaaddr[3]=c5l_out[8] \
+    portadatain=ff_q[51] \
+    portbdataout=ram4_dout[2]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{4}.port_b_address_width{4} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=add_sum[20] \
+    portbaddr[1]=ff_q[45] \
+    portbaddr[2]=c6_out[8] \
+    portbaddr[3]=c5l_out[93] \
+    portawe=c5l_out[73] \
+    portaaddr[0]=ff_q[164] \
+    portaaddr[1]=ff_q[146] \
+    portaaddr[2]=c6_out[5] \
+    portaaddr[3]=ff_q[30] \
+    portadatain=ff_q[59] \
+    portbdataout=ram4_dout[3]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[13] \
+    portbaddr[1]=ram10_dout[4] \
+    portbaddr[2]=ff_q[90] \
+    portbaddr[3]=ff_q[18] \
+    portbaddr[4]=ram10_dout[4] \
+    portawe=c6_out[11] \
+    portaaddr[0]=add_sum[5] \
+    portaaddr[1]=c6_out[45] \
+    portaaddr[2]=vcc \
+    portaaddr[3]=ff_q[19] \
+    portaaddr[4]=ff_q[89] \
+    portadatain=ff_q[101] \
+    portbdataout=ram5_dout[0]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=ff_q[152] \
+    portbaddr[1]=c5l_out[90] \
+    portbaddr[2]=c5l_out[108] \
+    portbaddr[3]=ff_q[54] \
+    portbaddr[4]=ff_q[171] \
+    portawe=c6_out[1] \
+    portaaddr[0]=ff_q[95] \
+    portaaddr[1]=add_sum[10] \
+    portaaddr[2]=ff_q[148] \
+    portaaddr[3]=ff_q[19] \
+    portaaddr[4]=ff_q[4] \
+    portadatain=ff_q[72] \
+    portbdataout=ram5_dout[1]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=vcc \
+    portbaddr[1]=c5l_out[58] \
+    portbaddr[2]=c5l_out[39] \
+    portbaddr[3]=ff_q[139] \
+    portbaddr[4]=ff_q[98] \
+    portawe=c5l_out[116] \
+    portaaddr[0]=c6_out[3] \
+    portaaddr[1]=c5l_out[78] \
+    portaaddr[2]=c5l_out[68] \
+    portaaddr[3]=c5l_out[52] \
+    portaaddr[4]=ff_q[68] \
+    portadatain=ff_q[28] \
+    portbdataout=ram5_dout[2]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c6_out[42] \
+    portbaddr[1]=ff_q[95] \
+    portbaddr[2]=ff_q[7] \
+    portbaddr[3]=add_sum[4] \
+    portbaddr[4]=ff_q[172] \
+    portawe=c5l_out[84] \
+    portaaddr[0]=ff_q[83] \
+    portaaddr[1]=add_sum[1] \
+    portaaddr[2]=c5l_out[34] \
+    portaaddr[3]=c6_out[6] \
+    portaaddr[4]=ff_q[131] \
+    portadatain=ff_q[75] \
+    portbdataout=ram5_dout[3]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c6_out[2] \
+    portbaddr[1]=c5l_out[7] \
+    portbaddr[2]=ram5_dout[11] \
+    portbaddr[3]=c5l_out[18] \
+    portbaddr[4]=c5l_out[63] \
+    portawe=c6_out[20] \
+    portaaddr[0]=c6_out[20] \
+    portaaddr[1]=add_sum[14] \
+    portaaddr[2]=ff_q[98] \
+    portaaddr[3]=ff_q[89] \
+    portaaddr[4]=c5l_out[112] \
+    portadatain=ff_q[83] \
+    portbdataout=ram5_dout[4]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[44] \
+    portbaddr[1]=ff_q[165] \
+    portbaddr[2]=ff_q[127] \
+    portbaddr[3]=ff_q[3] \
+    portbaddr[4]=ff_q[133] \
+    portawe=c5l_out[22] \
+    portaaddr[0]=c5l_out[5] \
+    portaaddr[1]=c6_out[17] \
+    portaaddr[2]=ff_q[48] \
+    portaaddr[3]=ff_q[94] \
+    portaaddr[4]=ff_q[71] \
+    portadatain=ff_q[98] \
+    portbdataout=ram5_dout[5]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[98] \
+    portbaddr[1]=c6_out[45] \
+    portbaddr[2]=c5l_out[93] \
+    portbaddr[3]=ff_q[5] \
+    portbaddr[4]=ff_q[133] \
+    portawe=c5l_out[60] \
+    portaaddr[0]=c5l_out[28] \
+    portaaddr[1]=add_sum[12] \
+    portaaddr[2]=ff_q[136] \
+    portaaddr[3]=ff_q[168] \
+    portaaddr[4]=ff_q[154] \
+    portadatain=ff_q[167] \
+    portbdataout=ram5_dout[6]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[38] \
+    portbaddr[1]=ff_q[157] \
+    portbaddr[2]=ff_q[81] \
+    portbaddr[3]=c5l_out[7] \
+    portbaddr[4]=c6_out[26] \
+    portawe=c5l_out[92] \
+    portaaddr[0]=c6_out[29] \
+    portaaddr[1]=ff_q[120] \
+    portaaddr[2]=ff_q[31] \
+    portaaddr[3]=c6_out[16] \
+    portaaddr[4]=ff_q[60] \
+    portadatain=ff_q[128] \
+    portbdataout=ram5_dout[7]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[114] \
+    portbaddr[1]=ff_q[113] \
+    portbaddr[2]=ff_q[112] \
+    portbaddr[3]=ff_q[68] \
+    portbaddr[4]=c5l_out[44] \
+    portawe=c5l_out[79] \
+    portaaddr[0]=c6_out[28] \
+    portaaddr[1]=ff_q[60] \
+    portaaddr[2]=c6_out[2] \
+    portaaddr[3]=ff_q[151] \
+    portaaddr[4]=ff_q[188] \
+    portadatain=ff_q[39] \
+    portbdataout=ram5_dout[8]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[81] \
+    portbaddr[1]=c5l_out[41] \
+    portbaddr[2]=add_sum[14] \
+    portbaddr[3]=c5l_out[75] \
+    portbaddr[4]=ram4_dout[2] \
+    portawe=c5l_out[116] \
+    portaaddr[0]=add_sum[9] \
+    portaaddr[1]=c5l_out[110] \
+    portaaddr[2]=ff_q[191] \
+    portaaddr[3]=c5l_out[12] \
+    portaaddr[4]=c6_out[34] \
+    portadatain=ff_q[170] \
+    portbdataout=ram5_dout[9]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=add_sum[30] \
+    portbaddr[1]=ff_q[41] \
+    portbaddr[2]=c5l_out[69] \
+    portbaddr[3]=c5l_out[28] \
+    portbaddr[4]=c5l_out[70] \
+    portawe=c5l_out[55] \
+    portaaddr[0]=add_sum[17] \
+    portaaddr[1]=ff_q[126] \
+    portaaddr[2]=c6_out[23] \
+    portaaddr[3]=add_sum[13] \
+    portaaddr[4]=c5l_out[105] \
+    portadatain=ff_q[180] \
+    portbdataout=ram5_dout[10]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[80] \
+    portbaddr[1]=c5l_out[58] \
+    portbaddr[2]=ff_q[103] \
+    portbaddr[3]=c5l_out[93] \
+    portbaddr[4]=c5l_out[74] \
+    portawe=c5l_out[92] \
+    portaaddr[0]=ff_q[39] \
+    portaaddr[1]=c5l_out[88] \
+    portaaddr[2]=ff_q[57] \
+    portaaddr[3]=ff_q[31] \
+    portaaddr[4]=ram10_dout[0] \
+    portadatain=ff_q[38] \
+    portbdataout=ram5_dout[11]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{10}.port_b_address_width{10} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[61] \
+    portbaddr[1]=c5l_out[28] \
+    portbaddr[2]=ram5_dout[2] \
+    portbaddr[3]=ff_q[28] \
+    portbaddr[4]=c5l_out[32] \
+    portbaddr[5]=ff_q[67] \
+    portbaddr[6]=c5l_out[62] \
+    portbaddr[7]=c5l_out[12] \
+    portbaddr[8]=c5l_out[33] \
+    portbaddr[9]=c5l_out[88] \
+    portawe=c5l_out[42] \
+    portaaddr[0]=ff_q[167] \
+    portaaddr[1]=c5l_out[66] \
+    portaaddr[2]=c5l_out[26] \
+    portaaddr[3]=ff_q[59] \
+    portaaddr[4]=c6_out[23] \
+    portaaddr[5]=ff_q[105] \
+    portaaddr[6]=c6_out[42] \
+    portaaddr[7]=c5l_out[98] \
+    portaaddr[8]=c5l_out[50] \
+    portaaddr[9]=ff_q[46] \
+    portadatain=ff_q[14] \
+    portbdataout=ram10_dout[0]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{10}.port_b_address_width{10} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=add_sum[8] \
+    portbaddr[1]=ff_q[111] \
+    portbaddr[2]=c5l_out[96] \
+    portbaddr[3]=ff_q[37] \
+    portbaddr[4]=ff_q[23] \
+    portbaddr[5]=c5l_out[16] \
+    portbaddr[6]=ff_q[176] \
+    portbaddr[7]=c6_out[33] \
+    portbaddr[8]=ff_q[32] \
+    portbaddr[9]=c5l_out[77] \
+    portawe=c6_out[18] \
+    portaaddr[0]=c5l_out[36] \
+    portaaddr[1]=c6_out[19] \
+    portaaddr[2]=ram5_dout[1] \
+    portaaddr[3]=ff_q[157] \
+    portaaddr[4]=c6_out[45] \
+    portaaddr[5]=ff_q[11] \
+    portaaddr[6]=c5l_out[2] \
+    portaaddr[7]=ff_q[130] \
+    portaaddr[8]=ram5_dout[6] \
+    portaaddr[9]=ff_q[1] \
+    portadatain=ff_q[15] \
+    portbdataout=ram10_dout[1]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{10}.port_b_address_width{10} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c6_out[5] \
+    portbaddr[1]=c5l_out[15] \
+    portbaddr[2]=ff_q[191] \
+    portbaddr[3]=ff_q[195] \
+    portbaddr[4]=c5l_out[29] \
+    portbaddr[5]=ff_q[193] \
+    portbaddr[6]=ff_q[192] \
+    portbaddr[7]=ff_q[41] \
+    portbaddr[8]=c6_out[24] \
+    portbaddr[9]=c6_out[13] \
+    portawe=c5l_out[17] \
+    portaaddr[0]=c5l_out[41] \
+    portaaddr[1]=ff_q[16] \
+    portaaddr[2]=ff_q[146] \
+    portaaddr[3]=c5l_out[9] \
+    portaaddr[4]=ff_q[92] \
+    portaaddr[5]=add_sum[20] \
+    portaaddr[6]=ff_q[69] \
+    portaaddr[7]=add_sum[19] \
+    portaaddr[8]=c6_out[3] \
+    portaaddr[9]=add_sum[0] \
+    portadatain=ff_q[138] \
+    portbdataout=ram10_dout[2]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{10}.port_b_address_width{10} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=ram10_dout[3] \
+    portbaddr[1]=ff_q[1] \
+    portbaddr[2]=add_sum[14] \
+    portbaddr[3]=ff_q[11] \
+    portbaddr[4]=ff_q[152] \
+    portbaddr[5]=c5l_out[37] \
+    portbaddr[6]=c6_out[19] \
+    portbaddr[7]=c6_out[43] \
+    portbaddr[8]=c5l_out[78] \
+    portbaddr[9]=c5l_out[17] \
+    portawe=c5l_out[34] \
+    portaaddr[0]=c6_out[9] \
+    portaaddr[1]=ff_q[178] \
+    portaaddr[2]=ff_q[60] \
+    portaaddr[3]=ff_q[91] \
+    portaaddr[4]=c5l_out[75] \
+    portaaddr[5]=c5l_out[1] \
+    portaaddr[6]=c5l_out[70] \
+    portaaddr[7]=ff_q[65] \
+    portaaddr[8]=c6_out[47] \
+    portaaddr[9]=ff_q[114] \
+    portadatain=ff_q[136] \
+    portbdataout=ram10_dout[3]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{10}.port_b_address_width{10} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=ff_q[57] \
+    portbaddr[1]=ff_q[16] \
+    portbaddr[2]=ram5_dout[2] \
+    portbaddr[3]=c6_out[13] \
+    portbaddr[4]=c5l_out[14] \
+    portbaddr[5]=c5l_out[114] \
+    portbaddr[6]=add_sum[19] \
+    portbaddr[7]=ff_q[8] \
+    portbaddr[8]=ff_q[123] \
+    portbaddr[9]=ff_q[105] \
+    portawe=c5l_out[97] \
+    portaaddr[0]=ram5_dout[9] \
+    portaaddr[1]=ff_q[117] \
+    portaaddr[2]=ff_q[126] \
+    portaaddr[3]=c5l_out[35] \
+    portaaddr[4]=ff_q[177] \
+    portaaddr[5]=ff_q[79] \
+    portaaddr[6]=ff_q[141] \
+    portaaddr[7]=ff_q[96] \
+    portaaddr[8]=c6_out[46] \
+    portaaddr[9]=add_sum[18] \
+    portadatain=ff_q[17] \
+    portbdataout=ram10_dout[4]
+
+.subckt fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{10}.port_b_address_width{10} \
+    clk_portbin=clk \
+    clk_portain=clk \
+    portbre=vcc \
+    portbaddr[0]=c5l_out[5] \
+    portbaddr[1]=c5l_out[24] \
+    portbaddr[2]=ff_q[119] \
+    portbaddr[3]=c5l_out[76] \
+    portbaddr[4]=ff_q[111] \
+    portbaddr[5]=add_sum[13] \
+    portbaddr[6]=add_sum[24] \
+    portbaddr[7]=ff_q[28] \
+    portbaddr[8]=ff_q[71] \
+    portbaddr[9]=c5l_out[57] \
+    portawe=c5l_out[25] \
+    portaaddr[0]=c5l_out[104] \
+    portaaddr[1]=ff_q[17] \
+    portaaddr[2]=c5l_out[28] \
+    portaaddr[3]=c5l_out[106] \
+    portaaddr[4]=c6_out[19] \
+    portaaddr[5]=c6_out[35] \
+    portaaddr[6]=ff_q[24] \
+    portaaddr[7]=ff_q[125] \
+    portaaddr[8]=add_sum[6] \
+    portaaddr[9]=ff_q[22] \
+    portadatain=ff_q[74] \
+    portbdataout=ram10_dout[5]
+
+.end
+
+#SUBCKT MODELS
+
+.model fourteennm_lcell_comb5
+.inputs \
+    cin \
+    datae \
+    datad \
+    datac \
+    datab \
+    dataa
+.outputs \
+    cout \
+    sumout \
+    combout
+.blackbox
+.end
+
+.model fourteennm_lcell_comb6
+.inputs \
+    cin \
+    datah \
+    datag \
+    dataf \
+    datae \
+    datad \
+    datac \
+    datab \
+    dataa
+.outputs \
+    cout \
+    sumout \
+    combout
+.blackbox
+.end
+
+.model fourteennm_ff
+.inputs \
+    d \
+    sclr \
+    clrn \
+    ena \
+    clk
+.outputs \
+    q
+.blackbox
+.end
+
+.model fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{10}.port_b_address_width{10}
+.inputs \
+    clk_portbout \
+    clk_portbin \
+    clk_portaout \
+    clk_portain \
+    eccencparity[0] \
+    eccencparity[1] \
+    eccencparity[2] \
+    eccencparity[3] \
+    eccencparity[4] \
+    eccencparity[5] \
+    eccencparity[6] \
+    eccencparity[7] \
+    eccencbypass \
+    portb_dataout_sclr \
+    portb_dataout_aclr \
+    ena_portbout \
+    ena_portbin \
+    ena_portaout \
+    ena_portain \
+    portbaddrstall \
+    portbre \
+    portbaddr[0] \
+    portbaddr[1] \
+    portbaddr[2] \
+    portbaddr[3] \
+    portbaddr[4] \
+    portbaddr[5] \
+    portbaddr[6] \
+    portbaddr[7] \
+    portbaddr[8] \
+    portbaddr[9] \
+    portaaddrstall \
+    portabyteenamasks[0] \
+    portabyteenamasks[1] \
+    portabyteenamasks[2] \
+    portabyteenamasks[3] \
+    portabyteenamasks[4] \
+    portabyteenamasks[5] \
+    portabyteenamasks[6] \
+    portabyteenamasks[7] \
+    portawe \
+    portaaddr[0] \
+    portaaddr[1] \
+    portaaddr[2] \
+    portaaddr[3] \
+    portaaddr[4] \
+    portaaddr[5] \
+    portaaddr[6] \
+    portaaddr[7] \
+    portaaddr[8] \
+    portaaddr[9] \
+    portadatain
+.outputs \
+    portbdataout \
+    eccstatus[0] \
+    eccstatus[1]
+.blackbox
+.end
+
+.model fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5}
+.inputs \
+    clk_portbout \
+    clk_portbin \
+    clk_portaout \
+    clk_portain \
+    eccencparity[0] \
+    eccencparity[1] \
+    eccencparity[2] \
+    eccencparity[3] \
+    eccencparity[4] \
+    eccencparity[5] \
+    eccencparity[6] \
+    eccencparity[7] \
+    eccencbypass \
+    portb_dataout_sclr \
+    portb_dataout_aclr \
+    ena_portbout \
+    ena_portbin \
+    ena_portaout \
+    ena_portain \
+    portbaddrstall \
+    portbre \
+    portbaddr[0] \
+    portbaddr[1] \
+    portbaddr[2] \
+    portbaddr[3] \
+    portbaddr[4] \
+    portaaddrstall \
+    portabyteenamasks[0] \
+    portabyteenamasks[1] \
+    portabyteenamasks[2] \
+    portabyteenamasks[3] \
+    portabyteenamasks[4] \
+    portabyteenamasks[5] \
+    portabyteenamasks[6] \
+    portabyteenamasks[7] \
+    portawe \
+    portaaddr[0] \
+    portaaddr[1] \
+    portaaddr[2] \
+    portaaddr[3] \
+    portaaddr[4] \
+    portadatain
+.outputs \
+    portbdataout \
+    eccstatus[0] \
+    eccstatus[1]
+.blackbox
+.end
+
+.model fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{4}.port_b_address_width{4}
+.inputs \
+    clk_portbout \
+    clk_portbin \
+    clk_portaout \
+    clk_portain \
+    eccencparity[0] \
+    eccencparity[1] \
+    eccencparity[2] \
+    eccencparity[3] \
+    eccencparity[4] \
+    eccencparity[5] \
+    eccencparity[6] \
+    eccencparity[7] \
+    eccencbypass \
+    portb_dataout_sclr \
+    portb_dataout_aclr \
+    ena_portbout \
+    ena_portbin \
+    ena_portaout \
+    ena_portain \
+    portbaddrstall \
+    portbre \
+    portbaddr[0] \
+    portbaddr[1] \
+    portbaddr[2] \
+    portbaddr[3] \
+    portaaddrstall \
+    portabyteenamasks[0] \
+    portabyteenamasks[1] \
+    portabyteenamasks[2] \
+    portabyteenamasks[3] \
+    portabyteenamasks[4] \
+    portabyteenamasks[5] \
+    portabyteenamasks[6] \
+    portabyteenamasks[7] \
+    portawe \
+    portaaddr[0] \
+    portaaddr[1] \
+    portaaddr[2] \
+    portaaddr[3] \
+    portadatain
+.outputs \
+    portbdataout \
+    eccstatus[0] \
+    eccstatus[1]
+.blackbox
+.end

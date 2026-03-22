@@ -321,6 +321,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        packer_opts.enable_pin_feasibility_filter,
+                                       packer_opts.memoize_cluster_packings,
                                        arch.models,
                                        packer_opts.pack_verbosity);
 
