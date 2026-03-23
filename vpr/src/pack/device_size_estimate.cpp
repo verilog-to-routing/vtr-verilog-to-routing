@@ -4,12 +4,18 @@
  * @date    March 2026
  * @brief   Implementation of device size estimation before packing.
  *
- * Non-RAM molecules are grouped by logical block type and packed into virtual
- * clusters using a lightweight pin-capacity and cluster placement feasibility to
- * estimate the number of physical instances required. RAM atoms are grouped
+ * Non-RAM molecules are grouped by logical block type, and the number of
+ * physical instances required for each type is estimated using a lightweight
+ * pin-capacity and cluster placement feasibility check. RAM atoms are grouped
  * into sibling-feasible equivalence classes and assigned to the minimum-area
  * physical RAM type. The resulting RAM groups are stored in ram_groups_ and
  * exposed via ram_groups() for reuse by RamMapper, avoiding redundant work.
+ *
+ * Note: For the cluster feasibility check, we refer to the terms primitive and
+ *       atom. In this context, an atom is the smallest netlist element (AtomBlockId)
+ *       to be placed inside a cluster, while a primitive (t_pb_graph_node)
+ *       represents a placement site within a cluster. Cluster placement
+ *       assigns atoms to compatible primitive sites inside a cluster.
  */
 
 #include "device_size_estimate.h"
@@ -29,11 +35,17 @@
 #include "vtr_time.h"
 
 /**
- * @brief Attempts to place a molecule into the current virtual cluster.
+ * @brief Attempts to place a molecule into the current cluster.
  *
- * Tries each candidate primitive site from the queue until one succeeds.
+ * Tries each candidate primitive site (from the candidate queue built using
+ * primitives_list) until one succeeds.
  *
- * @return True if the molecule was placed successfully, false otherwise.
+ * @param cluster_stats    Current cluster placement state.
+ * @param mol_id           Molecule to be placed.
+ * @param primitives_list  Candidate primitive locations (also used to build the queue).
+ * @param prepacker        Used to build candidate primitive sites and to check
+ *                         whether the molecule atoms can be placed at each site.
+ * @return                 True if the molecule was placed successfully, false otherwise.
  */
 static bool can_place_molecule(t_intra_cluster_placement_stats* cluster_stats,
                                PackMoleculeId mol_id,
@@ -44,7 +56,12 @@ static bool can_place_molecule(t_intra_cluster_placement_stats* cluster_stats,
 
     while (!candidate_queue.empty()) {
         t_pb_graph_node* root = candidate_queue.pop().first;
+
+        // Reset the placement state for this attempt. primitives_list stores
+        // the tentative primitive assignments for the current molecule, so it
+        // must be cleared before trying a new root candidate.
         std::fill(primitives_list.begin(), primitives_list.end(), nullptr);
+
         if (try_start_root_placement(cluster_stats, mol_id, root, primitives_list, prepacker)) {
             return true;
         }
@@ -54,12 +71,22 @@ static bool can_place_molecule(t_intra_cluster_placement_stats* cluster_stats,
 }
 
 /**
- * @brief Opens a fresh virtual cluster and tries to place the given molecule into it,
- *        iterating over all modes of the logical type (mirroring greedy clusterer).
+ * @brief Opens a fresh cluster and tries to place the given molecule into it
+ *        by iterating over all modes of the logical type.
  *
- * @return Cluster placement stats for the first mode that accepts the molecule,
- *         or nullptr if no mode works. The caller takes ownership and must call
- *         free_cluster_placement_stats() when done.
+ * @param logical_type     Logical block type whose modes are tried when opening
+ *                         the new cluster.
+ * @param mol_id           Molecule to place in the new cluster.
+ * @param primitives_list  Scratch/output vector. Must be pre-sized to
+ *                         mol.atom_block_ids.size(). It is cleared before each
+ *                         placement attempt. On success, entry i stores the
+ *                         primitive location assigned to mol.atom_block_ids[i].
+ * @param prepacker        Used to build candidate primitive sites and to check
+ *                         whether the molecule atoms can be placed at each site.
+ * @return                 Cluster placement stats for the first mode that
+ *                         accepts the molecule, or nullptr if no mode works.
+ *                         The caller takes ownership and must call
+ *                         free_cluster_placement_stats() when done.
  */
 static t_intra_cluster_placement_stats* open_cluster_for_molecule(t_logical_block_type_ptr logical_type,
                                                                   PackMoleculeId mol_id,
@@ -80,22 +107,23 @@ static t_intra_cluster_placement_stats* open_cluster_for_molecule(t_logical_bloc
 }
 
 /**
- * @brief Estimates the number of virtual clusters needed for a single logical
- *        block type using a combined pin-capacity and mini-packer simulation.
+ * @brief Estimates the number of clusters needed for a single logical
+ *        block type using pin-capacity and placement feasibility checks.
  *
- * Molecules are packed greedily into virtual clusters. A new cluster is opened
- * when either the pin capacity would be exceeded or the mini-packer cannot fit
- * the molecule into the current cluster. When opening a new cluster, all modes
- * are tried in order (matching greedy clusterer behavior).
+ * Molecules are packed greedily into clusters. A new cluster is opened
+ * when either adding the molecule would exceed pin capacity (based on
+ * unique external nets) or when the molecule cannot be placed into the
+ * current cluster. When opening a new cluster, all modes of the logical
+ * type are tried in order.
  *
  * @param logical_type  The logical block type to simulate packing for; its pb_type
  *                      determines the pin capacities and available primitive sites.
  * @param mol_ids       Molecules to pack, pre-filtered to belong to this logical type.
- * @param prepacker     Used to query molecule structure, primitive placement feasibility,
+ * @param prepacker     Used to query molecule structure, placement feasibility,
  *                      and external net counts.
  * @param atom_nlist    Used to compute the external nets each molecule contributes,
  *                      needed for the pin-capacity check.
- * @return              Number of virtual clusters needed to fit all molecules.
+ * @return              Number of clusters needed to fit all molecules.
  */
 static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
                                       const std::vector<PackMoleculeId>& mol_ids,
@@ -129,7 +157,7 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
         bool pin_overflow = (input_pin_capacity > 0 && static_cast<int>(cur_input_nets.size()) + new_input_nets > input_pin_capacity) || (output_pin_capacity > 0 && static_cast<int>(cur_output_nets.size()) + new_output_nets > output_pin_capacity);
 
         // Pin capacity exceeded or no cluster open yet, open a new one.
-        if (!cluster_stats || (pin_overflow && (!cur_input_nets.empty() || !cur_output_nets.empty()))) {
+        if (!cluster_stats || pin_overflow) {
             if (cluster_stats)
                 free_cluster_placement_stats(cluster_stats);
             cluster_stats = open_cluster_for_molecule(logical_type, mol_id, primitives_list, prepacker);
@@ -156,12 +184,14 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
             }
         }
 
-        // Commit the placement and record the nets consumed by this cluster.
+        // Commit the successful placement by marking the assigned primitives as used
+        // and updating the cluster placement state for subsequent molecule placements.
         for (t_pb_graph_node* prim : primitives_list) {
             if (prim)
                 commit_primitive(cluster_stats, prim);
         }
 
+        // Record the external nets used by this molecule in the current cluster.
         cur_input_nets.insert(external_nets.ext_input_nets.begin(), external_nets.ext_input_nets.end());
         cur_output_nets.insert(external_nets.ext_output_nets.begin(), external_nets.ext_output_nets.end());
     }
@@ -198,6 +228,8 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
             continue;
 
         LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
+
+        // Select the first candidate logical block type.
         t_logical_block_type_ptr candidate_type = primitive_candidate_block_types[root_model_id][0];
         logical_type_molecules[candidate_type].push_back(mol_id);
     }

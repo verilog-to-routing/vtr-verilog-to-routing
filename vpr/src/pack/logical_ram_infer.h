@@ -6,7 +6,11 @@
  * @brief   Logical RAM inference: groups RAM atoms into sibling-feasible
  *          equivalence classes and assigns each group to a physical
  *          RAM type by minimizing area and then tries to improve timing
- *          of most critical groups.
+ *          of the most critical groups.
+ *
+ * For example, a 128-bit wide RAM will generally have been cut into
+ * 128 one-bit wide atoms which all have the same address and control signals.
+ * This module determines those 128 atoms form a single 'logical RAM'.
  */
 
 #include <string>
@@ -53,7 +57,9 @@ struct LogicalRamGroup {
     std::unordered_map<t_logical_block_type_ptr, int> candidate_area_cost;
     /// @brief Total number of RAM slices in the group.
     int total_memory_slices = 0;
-    /// @brief Physical block type selected by area/timing driven assignment.
+    /// @brief Preferred physical RAM block type for this group, selected by
+    ///        area/timing-driven assignment. The clusterer will attempt to use
+    ///        this type, but may choose a different one if resources are unavailable.
     t_logical_block_type_ptr pre_assigned_type = nullptr;
     /// @brief True if the RAM output is registered.
     bool is_output_registered = false;

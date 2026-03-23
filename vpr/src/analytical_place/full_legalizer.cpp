@@ -1000,6 +1000,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
         high_fanout_thresholds,
         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
         vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+        false, // --memoize_cluster_packings is not yet supported for flat-recon
         arch_.models,
         vpr_setup_.PackerOpts.pack_verbosity);
 
@@ -1017,8 +1018,11 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // If auto device size used, recreate the device grid after final
-    // clustering before the initial placement using the global clustering.
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
     if (vpr_setup_.PackerOpts.device_layout == "auto") {
         vpr_create_device_grid(vpr_setup_, arch_);
     }
@@ -1041,6 +1045,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+                                       vpr_setup_.PackerOpts.memoize_cluster_packings,
                                        arch_.models,
                                        vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
@@ -1110,6 +1115,10 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                     ++it;
                 }
             }
+            // The cluster by now must be routable, but if --memoize_cluster_packings
+            // is on then it is possible the routing data structures are not
+            // populated. Check that the cluster has a routing. If not, route it.
+            cluster_legalizer.ensure_legal_final_routing(new_cluster_id);
             // Once all molecules have been inserted, clean the cluster.
             cluster_legalizer.clean_cluster(new_cluster_id);
         }
@@ -1214,8 +1223,11 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // If auto device size used, recreate the device grid after final
-    // clustering before the initial placement using the global clustering.
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
     if (vpr_setup_.PackerOpts.device_layout == "auto") {
         vpr_create_device_grid(vpr_setup_, arch_);
     }
@@ -1289,8 +1301,11 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
 
-    // If auto device size used, recreate the device grid after final
-    // clustering before the initial placement using the global clustering.
+    // If auto device sizing is used, recreate the device grid after final
+    // clustering and before initial placement. The earlier grid was based on
+    // a pre-clustering estimate, but the required device size can change once
+    // the final clustering is known. Rebuilding the grid also invalidates the
+    // RR graph generated for the estimated device size as required.
     if (vpr_setup_.PackerOpts.device_layout == "auto") {
         vpr_create_device_grid(vpr_setup_, arch_);
     }

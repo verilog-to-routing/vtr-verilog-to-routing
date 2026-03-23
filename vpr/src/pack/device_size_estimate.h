@@ -27,8 +27,8 @@ struct t_vpr_setup;
  * grid that can accommodate them. For fixed device layouts, the grid is created
  * directly without estimation.
  *
- * RAM groups computed during estimation are exposed via ram_groups() so that
- * RamMapper can reuse them and skip redundant work.
+ * Logical RAM groups (siblif-feasible memory atoms) computed during estimation
+ * are exposed via ram_groups() so that RamMapper can reuse them and skip redundant work.
  */
 class DeviceSizeEstimator {
   public:
@@ -52,7 +52,7 @@ class DeviceSizeEstimator {
      * non-RAM types using pin capacity and cluster placement feasibility
      * constraints to get required number of instances for each type.
      *
-     * @return Map from logical block type to estimated instance count.
+     * @return Map from logical block type to estimated cluster instance count.
      */
     std::map<t_logical_block_type_ptr, size_t> estimate_resource_requirement(
         const Prepacker& prepacker);
