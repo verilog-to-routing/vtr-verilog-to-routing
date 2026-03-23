@@ -8,9 +8,25 @@
  *          RAM type by minimizing area and then tries to improve timing
  *          of the most critical groups.
  *
+ *          The logical RAM inference groups the RAM atom and pre-assigns a
+ *          physical type to that logical RAM. However, which atoms of that
+ *          logical RAM to be clustered together inside an instance of a physical
+ *          RAM is not determined in that step. The next step of physical RAM
+ *          inference determined that.
+ *
+ *          Physical RAM inference: given a logical RAM atoms, determines which
+ *          atoms of that logical RAM to be clustered together inside a physical
+ *          RAM instance of pre-assigned type. The assignmend is aware of the
+ *          capacity of the pre-assigned physical RAM type.
+ *
  * For example, a 128-bit wide RAM will generally have been cut into
  * 128 one-bit wide atoms which all have the same address and control signals.
- * This module determines those 128 atoms form a single 'logical RAM'.
+ * This module determines those 128 atoms form a single 'logical RAM group'.
+ *
+ * If we pre-assign that logical RAM to a physical RAM type that can support at
+ * most 64-bit wide mode, we need two instance of that physical RAM. Assigning
+ * which 64 atoms to be assigned together to a physical RAM is called 'physical
+ * ram mapping' and each created group is called a 'physical RAM group'.
  */
 
 #include <string>
@@ -78,14 +94,11 @@ struct LogicalRamGroup {
 struct PhysicalRamGroup {
     /// The logical RAM group this physical group was derived from.
     LogicalRamGroupId logical_ram_group_id;
-
     /// Atoms assigned to this physical RAM tile.
     std::vector<AtomBlockId> atoms;
-
     /// Molecules corresponding to the atoms in this physical RAM tile.
     /// Populated by create_physical_ram_groups() for use in AP block construction.
     std::vector<PackMoleculeId> molecules;
-
     /// Total memory slices consumed by the atoms in this group.
     int total_memory_slices = 0;
 };
@@ -148,6 +161,8 @@ class RamMapper {
      *                            driving the timing based remap decisions.
      * @param precomputed_groups  RAM groups previously computed by DeviceSizeEstimator;
      *                            if non-empty, grouping and area assignment are skipped.
+     * @param verbosity           The verbosity level used to determine logging option for
+     *                            remappings in timing pass.
      * @param is_fixed_device     When true, area assignment respects device capacity limits.
      */
     RamMapper(const AtomNetlist& atom_nlist,
@@ -190,15 +205,15 @@ class RamMapper {
 
   private:
     /// @brief Builds the atom-to-logical-group lookup map.
-    ///        Called once at the end of construction.
-    void build_atom_to_group_map(const AtomNetlist& atom_nlist);
+    void build_atom_to_logical_group_map(const AtomNetlist& atom_nlist);
 
     /// @brief Builds the atom-to-physical-group lookup map from physical_ram_groups_.
-    ///        Called once at the end of construction, after create_physical_ram_groups().
     void build_atom_to_physical_group_map();
 
     /// @brief Partitions logical RAM groups into physical RAM groups.
-    ///        Called once at the end of construction.
+    /// TODO:  Currently we are assigning the atoms to physical ram groups
+    ///        by iterating over their order in the logical ram group. We should
+    ///        evaluate that decision and investigate mimicking the greedy packer here.
     vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> create_physical_ram_groups(const Prepacker& prepacker) const;
 
     /// @brief Tries to remap timing-critical groups to the smallest (believed to be fastest) RAM type.

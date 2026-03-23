@@ -220,7 +220,7 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         log_utilizations("Device ram utilizations after timing driven remapping:");
         check_assigned_rams_fit_on_device();
     }
-    build_atom_to_group_map(atom_nlist);
+    build_atom_to_logical_group_map(atom_nlist);
     physical_ram_groups_ = create_physical_ram_groups(prepacker);
     build_atom_to_physical_group_map();
 }
@@ -271,7 +271,7 @@ vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram
     return physical_groups;
 }
 
-void RamMapper::build_atom_to_group_map(const AtomNetlist& atom_nlist) {
+void RamMapper::build_atom_to_logical_group_map(const AtomNetlist& atom_nlist) {
     atom_to_group_.assign(atom_nlist.blocks().size(), LogicalRamGroupId::INVALID());
     for (LogicalRamGroupId group_id : logical_ram_groups_.keys()) {
         for (AtomBlockId atom_id : logical_ram_groups_[group_id].atoms) {
