@@ -131,7 +131,7 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
         }
         // If any atom in the block has a location assigned, use that location
         // for the entire AP block. Otherwise, assign the AP block to the center
-        // of the device grid and update the flat placement info for all atoms accordingly.
+        // of the device grid and update the flat placement info for all its atoms accordingly.
         if (!found_valid_atom) {
             num_mols_assigned_to_center++;
             VTR_LOG_WARN("No atoms of AP block %s provided in the flat placement. Assigning it to the device center.\n",
@@ -244,8 +244,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                          ap_opts.log_verbosity,
                          vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
 
-    // Create the AP netlist from the atom netlist. RAM atoms belonging to the
-    // same PhysicalRamGroup are collapsed into a single AP super-block.
+    // Create the ap netlist from the atom netlist using the result from the
+    // prepacker and ram mapper.
     APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist,
                                                      prepacker,
                                                      ram_mapper,
