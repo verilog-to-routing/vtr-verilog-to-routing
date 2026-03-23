@@ -57,16 +57,19 @@ AtomNetId APNetlist::net_atom_net(const APNetId id) const {
 /*
  * Mutators
  */
-APBlockId APNetlist::create_block(const std::string& name, std::vector<PackMoleculeId> molecules) {
+APBlockId APNetlist::create_block(const std::string& name, const std::vector<PackMoleculeId>& molecules) {
     APBlockId blk_id = Netlist::create_block(name);
 
     // Initialize the data
-    block_molecules_.insert(blk_id, std::move(molecules));
+    block_molecules_.insert(blk_id, molecules);
     block_mobilities_.insert(blk_id, APBlockMobility::MOVEABLE);
     block_locs_.insert(blk_id, APFixedBlockLoc());
 
     // Check post-conditions: size
     VTR_ASSERT(validate_block_sizes());
+
+    // Check post-conditions: values
+    VTR_ASSERT(block_molecules(blk_id) == molecules);
     VTR_ASSERT(block_mobility(blk_id) == APBlockMobility::MOVEABLE);
 
     return blk_id;

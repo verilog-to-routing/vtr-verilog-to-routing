@@ -20,12 +20,11 @@ class UserPlaceConstraints;
  * RAM atoms that belong to the same PhysicalRamGroup (as determined by the
  * ram_mapper) are collapsed into a single AP block containing all the
  * group's molecules, so the global placer treats them as one moveable unit.
- * Non-RAM atoms each get their own single-molecule AP block, as before.
  *
  *  @param atom_netlist          The atom netlist for the input design.
  *  @param prepacker             The prepacker, initialized on the provided atom netlist.
  *  @param ram_mapper            Used to identify physical RAM groups and create
- *                               super-blocks for them in the AP netlist.
+ *                               multiple molecule blocks for them in the AP netlist.
  *  @param constraints           The placement constraints on the Atom blocks, provided
  *                               by the user.
  *  @param high_fanout_threshold The threshold above which nets with higher fanout will

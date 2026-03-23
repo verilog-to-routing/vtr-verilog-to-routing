@@ -118,7 +118,7 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
      *  @param name      The unique name of the block
      *  @param molecules The molecules this block represents
      */
-    APBlockId create_block(const std::string& name, std::vector<PackMoleculeId> molecules);
+    APBlockId create_block(const std::string& name, const std::vector<PackMoleculeId>& molecules);
 
     /**
      * @brief Fixes a block at the given location

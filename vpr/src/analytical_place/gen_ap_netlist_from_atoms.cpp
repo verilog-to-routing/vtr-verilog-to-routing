@@ -63,7 +63,8 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             // RAM atom: use the pre-created super-block for its physical group.
             ap_blk_id = ram_atom_to_ap_block[atom_blk_id];
         } else {
-            // Non-RAM atom: create (or reuse) a single-molecule AP block.
+            // Non-RAM atom: Get the molecule of this block and create the AP
+            // block (if not already done)
             PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
             const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
             const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
