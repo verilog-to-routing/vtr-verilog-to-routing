@@ -120,7 +120,7 @@ struct ClusterGainStats {
     ///        of the seed.
     bool is_memory = false;
 
-    /// @brief The logical RAM group ID of this cluster.
+    /// @brief The logical RAM group ID of this cluster's seed atom.
     ///        Set to INVALID for non-memory clusters.
     LogicalRamGroupId logical_ram_id;
 

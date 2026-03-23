@@ -86,30 +86,6 @@ static t_flat_pl_loc get_molecule_pos(PackMoleculeId molecule_id,
 
 /**
  * @brief Returns true if the candidate atom is feasible to add to the cluster
- *        based on RAM group compatibility. Non-memory clusters always return
- *        true. Memory clusters require the atom to belong to the same logical
- *        RAM group as the cluster's seed atom.
- *
- * @param blk_id              Atom to check.
- * @param cluster_gain_stats  Cluster state, checked for is_memory and logical_ram_id.
- * @param ram_mapper          Used to look up the atom's logical RAM group.
- * @return True if the atom is RAM-group compatible with the cluster, false otherwise.
- *
- * TODO: Non-RAM candidates (invalid logical_ram_id) are currently rejected for
- *       clusters seeded by RAM atoms. While intentional, this may be overly
- *       conservative for architectures that support mixed RAM + non-RAM clusters.
- *       In such cases, non-RAM candidates should be permitted.
- */
-static bool candidate_atom_ram_group_feasible(AtomBlockId blk_id,
-                                              const ClusterGainStats& cluster_gain_stats,
-                                              const RamMapper& ram_mapper) {
-    if (!cluster_gain_stats.is_memory)
-        return true;
-    return ram_mapper.group_id_of(blk_id) == cluster_gain_stats.logical_ram_id;
-}
-
-/**
- * @brief Returns true if the candidate atom is feasible to add to the cluster
  *        based on physical RAM group compatibility. Non-memory clusters always
  *        return true. Memory clusters require the candidate atom to belong to
  *        the same physical RAM group as the cluster's seed atom, ensuring that
