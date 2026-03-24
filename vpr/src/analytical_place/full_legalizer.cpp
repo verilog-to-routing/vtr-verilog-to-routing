@@ -531,9 +531,9 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
 
             // Sort tile locations by increasing average molecule count.
             std::sort(neighbor_tile_locs.begin(), neighbor_tile_locs.end(),
-                    [&](const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
-                        return avg_mols_in_tile[a] < avg_mols_in_tile[b];
-                    });
+                      [&](const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+                          return avg_mols_in_tile[a] < avg_mols_in_tile[b];
+                      });
 
             // Try to fit the unclustered molecule to sorted neighbor tile clusters.
             // Note: This pass opens a cluster, try to add one molecule to it, then close it again. This might cost CPU

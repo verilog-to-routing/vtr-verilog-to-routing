@@ -172,7 +172,6 @@ class RamMapper {
               int verbosity = 0,
               bool is_fixed_device = false);
 
-
     RamMapper() = default;
     RamMapper(RamMapper&&) = default;
     RamMapper& operator=(RamMapper&&) = default;
