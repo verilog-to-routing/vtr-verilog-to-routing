@@ -151,15 +151,26 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                     g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_sub_tile[atom_blk_id] = 0;
                 }
             }
-            // TODO: If an atom's location is specified in the placement constraints,
-            //       verify it matches the assigned flat placement. If not, override the
-            //       flat placement with the constraint location and warn the user.
         } else {
             // Pass the placement information
             p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
             p_placement.block_y_locs[ap_blk_id] = atom_loc_y;
             p_placement.block_layer_nums[ap_blk_id] = atom_loc_layer;
             p_placement.block_sub_tiles[ap_blk_id] = atom_loc_sub_tile;
+        }
+        // For fixed blocks, constraint positions take priority over flat placement.
+        // Flat placement files use anchor positions; std::floor converts AP coordinates
+        // (tile center) back to anchor positions.
+        if (ap_netlist.block_mobility(ap_blk_id) == APBlockMobility::FIXED) {
+            const APFixedBlockLoc& fixed_loc = ap_netlist.block_loc(ap_blk_id);
+            if (fixed_loc.x != -1)
+                p_placement.block_x_locs[ap_blk_id] = std::floor(fixed_loc.x);
+            if (fixed_loc.y != -1)
+                p_placement.block_y_locs[ap_blk_id] = std::floor(fixed_loc.y);
+            if (fixed_loc.layer_num != -1)
+                p_placement.block_layer_nums[ap_blk_id] = fixed_loc.layer_num;
+            if (fixed_loc.sub_tile != -1)
+                p_placement.block_sub_tiles[ap_blk_id] = fixed_loc.sub_tile;
         }
     }
     VTR_LOG("%zu of %zu molecules placed at device center (no atoms of these molecules found in flat placement).\n",
