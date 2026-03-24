@@ -373,7 +373,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     // Group the molecules by root tile. Any non-zero offset gets
     // pulled back to its root.
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
-    mol_desired_physical_tile_loc.reserve(ap_netlist_.blocks().size());
+    mol_desired_physical_tile_loc.reserve(prepacker_.molecules().size());
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         int width_offset = device_grid_.get_width_offset(tile_loc);
         int height_offset = device_grid_.get_height_offset(tile_loc);

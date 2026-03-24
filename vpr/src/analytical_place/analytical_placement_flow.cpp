@@ -88,8 +88,8 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
         // Get location of a valid atom across all molecules in this AP block
         // and verify that all atoms in the block share the same placement info.
-        float atom_loc_x, atom_loc_y, atom_loc_layer;
-        int atom_loc_sub_tile;
+        float atom_loc_x = 0.f, atom_loc_y = 0.f, atom_loc_layer = 0.f;
+        int atom_loc_sub_tile = 0;
         bool found_valid_atom = false;
         for (PackMoleculeId mol_id : ap_netlist.block_molecules(ap_blk_id)) {
             const t_pack_molecule& mol = prepacker.get_molecule(mol_id);

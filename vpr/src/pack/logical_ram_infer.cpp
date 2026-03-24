@@ -204,6 +204,14 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
     : log_verbosity_(verbosity) {
     vtr::ScopedStartFinishTimer timer("Ram Mapper");
 
+    // Skip the RAM mapping if flat placement is provided. AP blocks created with
+    // the RAM mapping information may conflict with the provided flat placement.
+    // This is analogous to skipping global placement if flat placement is provided.
+    if (g_vpr_ctx.atom().flat_placement_info().valid) {
+        VTR_LOG("Flat Placement is provided, skipping the RAM mapping.\n");
+        return;
+    }
+
     if (precomputed_groups.empty()) {
         VTR_LOG("No pre-computed RAM groups, running grouping and area assignment.\n");
         logical_ram_groups_ = group_ram_atoms(atom_nlist, prepacker);
