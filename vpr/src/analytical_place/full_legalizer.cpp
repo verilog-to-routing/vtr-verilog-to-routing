@@ -822,51 +822,68 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                     primitive_candidate_block_types,
                     tile_blocks);
 
-    // Perform neighbor clustering pass.
-    std::unordered_set<PackMoleculeId> neighbor_pass_molecules = neighbor_clustering(cluster_legalizer,
-                                                                                     primitive_candidate_block_types);
-
-    // Perform orphan window clustering pass.
-    // We retry orphan-window clustering with progressively larger Manhattan radii,
-    // trading fewer clusters for higher displacement. Radius 8 was chosen
-    // empirically as a good starting point (low displacement, reasonable cluster
-    // count). If those clusters still don't fit the device, we retry with 16, and
-    // finally with the whole device.
+    // Perform orphan window clustering pass, activating neighbor clustering only
+    // if needed. We retry orphan-window clustering with progressively larger
+    // Manhattan radii, trading fewer clusters for higher displacement. Radius 8
+    // was chosen empirically as a good starting point (low displacement,
+    // reasonable cluster count). If those clusters still don't fit the device,
+    // we retry with 16, and finally with the whole device. If all radii fail,
+    // neighbor clustering is run to merge orphans into existing nearby clusters
+    // (reducing cluster count), and orphan window clustering is retried.
     std::vector<int> orphan_window_search_radii = {8, 16, static_cast<int>(device_grid.width() + device_grid.height())};
     bool fits_on_device = false;
     std::unordered_set<LegalizationClusterId> orphan_window_clusters;
-    for (int orphan_window_search_radius : orphan_window_search_radii) {
-        orphan_window_clusters = orphan_window_clustering(cluster_legalizer,
-                                                          primitive_candidate_block_types,
-                                                          orphan_window_search_radius);
+    std::unordered_set<PackMoleculeId> neighbor_pass_molecules;
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        for (int orphan_window_search_radius : orphan_window_search_radii) {
+            orphan_window_clusters = orphan_window_clustering(cluster_legalizer,
+                                                              primitive_candidate_block_types,
+                                                              orphan_window_search_radius);
 
-        // Count used instances per block type.
-        std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
-        for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
-            if (!cluster_id.is_valid())
-                continue;
-            t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
-            num_used_type_instances[cluster_type]++;
+            // Count used instances per block type.
+            std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
+            for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+                if (!cluster_id.is_valid())
+                    continue;
+                t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
+                num_used_type_instances[cluster_type]++;
+            }
+
+            std::map<t_logical_block_type_ptr, float> block_type_utils;
+            fits_on_device = try_size_device_grid(arch_,
+                                                  num_used_type_instances,
+                                                  block_type_utils,
+                                                  vpr_setup_.PackerOpts.target_device_utilization,
+                                                  vpr_setup_.PackerOpts.device_layout);
+            // Exit if clusters fit on device.
+            if (fits_on_device)
+                break;
+
+            // Destroy the orphan window clusters to recreate with bigger search radius.
+            VTR_LOG("Clusters did not fit on device with orphan window search radius of %d.\n", orphan_window_search_radius);
+            for (LegalizationClusterId cluster_id : orphan_window_clusters) {
+                if (!cluster_id.is_valid())
+                    continue;
+                cluster_legalizer.destroy_cluster(cluster_id);
+            }
+            orphan_window_clusters.clear();
         }
 
-        std::map<t_logical_block_type_ptr, float> block_type_utils;
-        fits_on_device = try_size_device_grid(arch_,
-                                              num_used_type_instances,
-                                              block_type_utils,
-                                              vpr_setup_.PackerOpts.target_device_utilization,
-                                              vpr_setup_.PackerOpts.device_layout);
-        // Exit if clusters fit on device.
-        if (fits_on_device)
+        // Exit if clusters fit on device or neighbor clustering already attempted.
+        if (fits_on_device || attempt == 1)
             break;
 
-        // Destroy the orphan window clusters to recreate with bigger search radius.
-        VTR_LOG("Clusters did not fit on device with orphan window search radius of %d.\n", orphan_window_search_radius);
+        // Orphan window clustering did not fit on device. Perform neighbor
+        // clustering pass to merge orphans into existing nearby clusters before
+        // retrying orphan window clustering.
         for (LegalizationClusterId cluster_id : orphan_window_clusters) {
             if (!cluster_id.is_valid())
                 continue;
             cluster_legalizer.destroy_cluster(cluster_id);
         }
         orphan_window_clusters.clear();
+        neighbor_pass_molecules = neighbor_clustering(cluster_legalizer,
+                                                      primitive_candidate_block_types);
     }
 
     if (!fits_on_device) {
