@@ -761,7 +761,12 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
     :req_param name: A unique name identifying the switch
     :req_param R: Resistance of the switch.
     :req_param Cin:  Input capacitance of the switch.
+
+        .. note:: For ``short`` type switches, ``Cin`` may be omitted and defaults to ``0``.
+
     :req_param Cout:  Output capacitance of the switch.
+
+        .. note:: For ``short`` type switches, ``Cout`` may be omitted and defaults to ``0``.
 
     :opt_param Cinternal: 
         Since multiplexers and tristate buffers are modeled as a       
@@ -1232,6 +1237,9 @@ The following tags are common to all ``<tile>`` tags:
         Physical equivalence for a pin is specified by listing a pin more than once for different locations.
         For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 
+        A ``<loc>`` tag may have empty content (no pin strings), which indicates that no pins are located on that side at the specified offset.
+        This is useful when explicitly marking a side as having no pins, for example in heterogeneous tiles where some sides are intentionally left unconnected.
+
         .. note:: If the ``<pinlocations>`` tag is missing, a ``spread`` pattern is assumed.
 
 .. arch:tag:: <switchblock_locations pattern="{external_full_internal_straight|all|external|internal|none|custom}" internal_switch="string">
@@ -1641,7 +1649,7 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
 
 
 
-A ``<complete>``, ``<direct>``, or ``<mux>`` tag may take an additional, optional, tag called ``<pack_pattern>`` that is used to describe *molecules*.
+A ``<complete>``, ``<direct>``, or ``<mux>`` tag may take one or more additional, optional, ``<pack_pattern>`` tags that are used to describe *molecules*.
 A pack pattern is a power user feature directing that the CAD tool should group certain netlist atoms (eg. LUTs, FFs, carry chains) together during the CAD flow.
 This allows the architect to help the CAD tool recognize structures that have limited flexibility so that netlist atoms that fit those structures be kept together as though they are one unit.
 This tag impacts the CAD tool only, there is no architectural impact from defining molecules.
@@ -1731,6 +1739,7 @@ The classes we offer are:
     * An input port with ``port_class="address"`` attribute
     * An input port with ``port_class="data_in"`` attribute
     * An input port with ``port_class="write_en"`` attribute
+    * An input port with ``port_class="read_en"`` attribute (optional)
     * An output port with ``port_class="data_out"`` attribute
     * A clock port with ``port_class="clock"`` attribute
 
@@ -1740,12 +1749,19 @@ The classes we offer are:
     * An input port with ``port_class="address1"`` attribute
     * An input port with ``port_class="data_in1"`` attribute
     * An input port with ``port_class="write_en1"`` attribute
+    * An input port with ``port_class="read_en1"`` attribute (optional)
     * An input port with ``port_class="address2"`` attribute
     * An input port with ``port_class="data_in2"`` attribute
     * An input port with ``port_class="write_en2"`` attribute
+    * An input port with ``port_class="read_en2"`` attribute (optional)
     * An output port with ``port_class="data_out1"`` attribute
     * An output port with ``port_class="data_out2"`` attribute
     * A clock port with ``port_class="clock"`` attribute
+
+    .. note::
+        Memory port class values support an optional numeric suffix to identify the port's index (e.g. ``address``, ``address1``, ``address2``).
+        The un-suffixed form (e.g. ``address``) is equivalent to index 1 (i.e. ``address1``).
+        This generalizes to N-port memories: use ``addressN``, ``data_inN``, ``write_enN``, ``read_enN``, and ``data_outN`` for each port index N ≥ 1.
 
 
 Timing
@@ -2079,6 +2095,8 @@ The ``<segment>`` tag and its contents are described below.
 
     .. note:: Can not be specified for ``longline`` segments (which assume full switch block population)
 
+    .. note:: This tag may be omitted for segments with ``freq="0"`` (i.e. segments that contribute no tracks to the channel).
+
 .. arch:tag:: <cb type="pattern">int list</cb>
 
     This tag describes the connection block depopulation (as illustrated by the circles in :numref:`fig_sb_pattern`) for this particular wire segment.
@@ -2089,6 +2107,8 @@ The ``<segment>`` tag and its contents are described below.
     For a length L wire there must be L entries separated by spaces.
 
     .. note:: Can not be specified for ``longline`` segments (which assume full connection block population)
+
+    .. note:: This tag may be omitted for segments with ``freq="0"`` (i.e. segments that contribute no tracks to the channel).
 
 .. arch:tag:: <mux name="string"/>
 
@@ -2551,7 +2571,11 @@ The full format is documented below.
 
     ``<switchblock>`` is the top-level XML node used to describe connections between different segment types.
 
+    Each ``<switchblock>`` must contain exactly one ``<switchblock_location>`` tag and exactly one ``<switchfuncs>`` tag.
+
 .. arch:tag:: <switchblock_location type="string"/>
+
+    :required: Yes
 
     :req_param type:
         Can be one of the following strings:
@@ -2566,7 +2590,10 @@ The full format is documented below.
 
 .. arch:tag:: <switchfuncs>
 
-    The switchfuncs XML node contains one or more entries that specify the permutation functions with which different switch block sides should be connected, as described below.
+    :required: Yes
+
+    The switchfuncs XML node contains one or more ``<func>`` entries that specify the permutation functions with which different switch block sides should be connected, as described below.
+    At least one ``<func>`` entry must be present.
 
 .. arch:tag:: <func type="string" formula="string"/>
 
@@ -2642,13 +2669,15 @@ The full format is documented below.
         * ``3*to`` -- Creates number of switchblock edges equal to three times the 'to' set sizes.
 
     :req_param from_type:
-        A comma-separated list segment names that defines which segment types will be a source of a connection.
+        A comma-separated list of segment names that defines which segment types will be a source of a connection.
         The segment names specified must match the names of the segments defined under the ``<segmentlist>`` XML node.
+        When multiple segment types are listed, each type shares the same ``from_switchpoint`` values, and the overall source set is the union of all (type, switchpoint) pairs.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
     :req_param to_type:
         A comma-separated list of segment names that defines which segment types will be the destination of the connections specified.
         Each segment name must match an entry in the ``<segmentlist>`` XML node.
+        When multiple segment types are listed, each type shares the same ``to_switchpoint`` values, and the overall destination set is the union of all (type, switchpoint) pairs.
         Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
 
     :req_param from_switchpoint:
@@ -2695,7 +2724,9 @@ The full format is documented below.
     :opt_param to_order:
         Specifies the order in which ``to_switchpoint``s are selected when creating edges.
 
-        .. note:: See ``from_switchpoint_order`` for value descriptions.
+        .. note:: See ``from_order`` for value descriptions.
+
+        **Default:** ``shuffled``
 
     :opt_param switch_override:
 
@@ -2726,12 +2757,21 @@ The full format is documented below.
         This tag can be specified multiple times.
         The surrounding ``<wireconn>``'s source set is the union of all contained ``<from>`` tags.
 
+        .. note::
+            ``<from>`` sub-tags and the ``from_type``/``from_switchpoint`` attributes are mutually exclusive on a given ``<wireconn>``.
+            If ``<from>`` sub-tags are present, the ``from_type`` and ``from_switchpoint`` attributes are ignored.
+            Use sub-tags when you need to specify different switchpoints for different segment types; use attributes when all types share the same switchpoints.
+
     .. arch:tag:: <to type="string" switchpoint="int, int, int, ..."/>
 
         Specifies a subset of *destination* wire switchpoints.
 
         This tag can be specified multiple times.
         The surrounding ``<wireconn>``'s destination set is the union of all contained ``<to>`` tags.
+
+        .. note::
+            ``<to>`` sub-tags and the ``to_type``/``to_switchpoint`` attributes are mutually exclusive on a given ``<wireconn>``.
+            If ``<to>`` sub-tags are present, the ``to_type`` and ``to_switchpoint`` attributes are ignored.
 
         .. seealso:: ``<from>`` for attribute descriptions.
 
