@@ -23,14 +23,14 @@ TEST_CASE("test_ap_netlist_data_storage", "[vpr_ap_netlist]") {
     PackMoleculeId mol_b_id;
     PackMoleculeId mol_c_id;
     // Create blocks for these molecules.
-    APBlockId block_id_a = test_netlist.create_block("BlockA", mol_a_id);
-    APBlockId block_id_b = test_netlist.create_block("BlockB", mol_b_id);
-    APBlockId block_id_c = test_netlist.create_block("BlockC", mol_c_id);
+    APBlockId block_id_a = test_netlist.create_block("BlockA", {mol_a_id});
+    APBlockId block_id_b = test_netlist.create_block("BlockB", {mol_b_id});
+    APBlockId block_id_c = test_netlist.create_block("BlockC", {mol_c_id});
 
-    SECTION("Test block_molecule returns the correct molecule after creation") {
-        REQUIRE(test_netlist.block_molecule(block_id_a) == mol_a_id);
-        REQUIRE(test_netlist.block_molecule(block_id_b) == mol_b_id);
-        REQUIRE(test_netlist.block_molecule(block_id_c) == mol_c_id);
+    SECTION("Test block_molecules returns the correct molecule after creation") {
+        REQUIRE(test_netlist.block_molecules(block_id_a)[0] == mol_a_id);
+        REQUIRE(test_netlist.block_molecules(block_id_b)[0] == mol_b_id);
+        REQUIRE(test_netlist.block_molecules(block_id_c)[0] == mol_c_id);
     }
 
     // Delete block B to reorganize the blocks internally.
@@ -41,14 +41,14 @@ TEST_CASE("test_ap_netlist_data_storage", "[vpr_ap_netlist]") {
     block_id_b = APBlockId::INVALID();
     block_id_c = test_netlist.find_block("BlockC");
 
-    SECTION("Test block_molecule returns the correct molecule after compression") {
-        REQUIRE(test_netlist.block_molecule(block_id_a) == mol_a_id);
-        REQUIRE(test_netlist.block_molecule(block_id_c) == mol_c_id);
+    SECTION("Test block_molecules returns the correct molecule after compression") {
+        REQUIRE(test_netlist.block_molecules(block_id_a)[0] == mol_a_id);
+        REQUIRE(test_netlist.block_molecules(block_id_c)[0] == mol_c_id);
     }
 
     // Create a new block, and fix its location.
     PackMoleculeId fixed_mol_id;
-    APBlockId fixed_block_id = test_netlist.create_block("FixedBlock", fixed_mol_id);
+    APBlockId fixed_block_id = test_netlist.create_block("FixedBlock", {fixed_mol_id});
     APFixedBlockLoc fixed_block_loc;
     fixed_block_loc.x = 12;
     fixed_block_loc.y = 42;

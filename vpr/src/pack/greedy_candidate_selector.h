@@ -120,9 +120,13 @@ struct ClusterGainStats {
     ///        of the seed.
     bool is_memory = false;
 
-    /// @brief The logical RAM group ID of this cluster.
+    /// @brief The logical RAM group ID of this cluster's seed atom.
     ///        Set to INVALID for non-memory clusters.
     LogicalRamGroupId logical_ram_id;
+
+    /// @brief The physical RAM group ID of this cluster's seed atom.
+    ///        Set to INVALID for non-memory clusters.
+    PhysicalRamGroupId physical_ram_id;
 
     /// @brief List of feasible block and its gain pairs.
     ///        The list is maintained in heap structure with the highest gain block
