@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: /home/alex/uxsdcxx/uxsdcxx.py /home/alex/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * Input file: /home/alex/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: 87f4c65e2d6ec30e990956a8a1808d8c
+ * Cmdline: uxsdcxx/uxsdcxx.py vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Input file: /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * md5sum of input file: eff50f11750fcc30c56815b8f143ac58
  */
 
 #include <functional>
@@ -131,8 +131,9 @@ static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.")
 
 /* Tokens for attribute and node names. */
 
-enum class atok_t_add_atom { NAME_PATTERN };
-constexpr const char* atok_lookup_t_add_atom[] = {"name_pattern"};
+enum class atok_t_add_atom { IS_REGEX,
+                             NAME_PATTERN };
+constexpr const char* atok_lookup_t_add_atom[] = {"is_regex", "name_pattern"};
 
 enum class atok_t_add_region { LAYER_HIGH,
                                LAYER_LOW,
@@ -173,6 +174,15 @@ constexpr const char* atok_lookup_t_vpr_constraints[] = {"tool_name"};
 inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
+        case 8:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('i', 0, 64) | onechar('s', 8, 64) | onechar('_', 16, 64) | onechar('r', 24, 64) | onechar('e', 32, 64) | onechar('g', 40, 64) | onechar('e', 48, 64) | onechar('x', 56, 64):
+                    return atok_t_add_atom::IS_REGEX;
+                    break;
+                default:
+                    break;
+            }
+            break;
         case 12:
             switch (*((triehash_uu64*)&in[0])) {
                 case onechar('n', 0, 64) | onechar('a', 8, 64) | onechar('m', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):
@@ -699,6 +709,14 @@ inline enum_route_model_type lex_enum_route_model_type(const char* in, bool thro
 }
 
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
+inline bool load_bool(const char* in, const std::function<void(const char*)>* report_error) {
+    bool out;
+    out = std::strtol(in, NULL, 10);
+    if (errno != 0)
+        noreturn_report(report_error, ("Invalid value `" + std::string(in) + "` when loading into a bool.").c_str());
+    return out;
+}
+
 inline int load_int(const char* in, const std::function<void(const char*)>* report_error) {
     int out;
     out = std::strtol(in, NULL, 10);
@@ -781,6 +799,9 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);
         switch (in) {
+            case atok_t_add_atom::IS_REGEX:
+                out.set_add_atom_is_regex(load_bool(attr.value(), report_error), context);
+                break;
             case atok_t_add_atom::NAME_PATTERN:
                 out.set_add_atom_name_pattern(attr.value(), context);
                 break;
@@ -1169,6 +1190,7 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
         for (size_t i = 0, n = in.num_partition_add_atom(context); i < n; i++) {
             auto child_context = in.get_partition_add_atom(i, context);
             os << "<add_atom";
+            os << " is_regex=\"" << in.get_add_atom_is_regex(child_context) << "\"";
             os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
             os << "/>\n";
         }
