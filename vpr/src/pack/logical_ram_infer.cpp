@@ -260,6 +260,12 @@ vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram
         PhysicalRamGroup current_group;
         current_group.logical_ram_group_id = logical_id;
 
+        // Pack each logical RAM into as few physical RAMs of the type chosen
+        // by the RAM mapper as possible. Atoms are packed into physical RAMs
+        // in whatever order they are listed in the logical group, which might
+        // tend to keep datapaths together (e.g. if data[0] and data[1] in a
+        // wide bus are put in this data structure in order), but no direct
+        // attempt is made to ensure this happens.
         for (AtomBlockId atom_id : logical_group.atoms) {
             if (!atom_id)
                 continue;

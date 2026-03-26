@@ -24,7 +24,7 @@
  * This module determines those 128 atoms form a single 'logical RAM group'.
  *
  * If we pre-assign that logical RAM to a physical RAM type that can support at
- * most 64-bit wide mode, we need two instance of that physical RAM. Assigning
+ * most 64-bit wide mode, we need two instances of that physical RAM. Deciding
  * which 64 atoms to be assigned together to a physical RAM is called 'physical
  * ram mapping' and each created group is called a 'physical RAM group'.
  */
