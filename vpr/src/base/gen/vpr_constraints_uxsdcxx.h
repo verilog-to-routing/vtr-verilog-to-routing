@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Cmdline: ../uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
  * Input file: /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: eff50f11750fcc30c56815b8f143ac58
+ * md5sum of input file: 4183636892e0f68ed1c60cf009745773
  */
 
 #include <functional>
@@ -709,14 +709,6 @@ inline enum_route_model_type lex_enum_route_model_type(const char* in, bool thro
 }
 
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
-inline bool load_bool(const char* in, const std::function<void(const char*)>* report_error) {
-    bool out;
-    out = std::strtol(in, NULL, 10);
-    if (errno != 0)
-        noreturn_report(report_error, ("Invalid value `" + std::string(in) + "` when loading into a bool.").c_str());
-    return out;
-}
-
 inline int load_int(const char* in, const std::function<void(const char*)>* report_error) {
     int out;
     out = std::strtol(in, NULL, 10);
@@ -800,7 +792,7 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
         atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);
         switch (in) {
             case atok_t_add_atom::IS_REGEX:
-                out.set_add_atom_is_regex(load_bool(attr.value(), report_error), context);
+                out.set_add_atom_is_regex(attr.value(), context);
                 break;
             case atok_t_add_atom::NAME_PATTERN:
                 out.set_add_atom_name_pattern(attr.value(), context);

@@ -137,16 +137,28 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return temp_atom_string_.c_str();
     }
 
-    virtual inline bool get_add_atom_is_regex(AtomBlockId& /*blk_id*/) final{
-        return false;
+    virtual inline const char* get_add_atom_is_regex(AtomBlockId& /*blk_id*/) final {
+        return "false";
     }
 
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         name_pattern_ = name_pattern;
     }
 
-    virtual inline void set_add_atom_is_regex(bool is_regex, void*& /*ctx*/) final {   
-        is_regex_ = is_regex;
+    virtual inline void set_add_atom_is_regex(const char* is_regex, void*& /*ctx*/) final {
+        std::string val = is_regex;
+        std::transform(val.begin(), val.end(), val.begin(),
+                    [](unsigned char c) { return std::tolower(c); });
+
+        if (val == "true" || val == "1") {
+            is_regex_ = true;
+        } else if (val == "false" || val == "0") {
+            is_regex_ = false;
+        } else {
+            VPR_THROW(VPR_ERROR_OTHER,
+                    "Invalid value '%s' for add_atom is_regex. Expected true/false or 1/0.",
+                    is_regex);
+        }
     }
 
     /** Generated for complex type "add_region":
@@ -239,7 +251,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
         // If the pattern cannot be found, raise a warning.
         if (lb_types_.empty()) {
-            VTR_LOG_WARN("Logical block type %s was not found, skipping logical block type.\n", name_pattern);
+            VTR_LOG_WARN("Logical block with name pattern %s was not found, skipping this pattern.\n", name_pattern);
         }
     }
 
@@ -277,15 +289,14 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         auto& atom_ctx = g_vpr_ctx.atom();
         bool found = false;
 
-        if (!is_regex_){ //the name pattern is not a regex, look for an exact match for the atom name
+        if (!is_regex_) { //the name pattern is not a regex, look for an exact match for the atom name
             AtomBlockId atom_id = atom_ctx.netlist().find_block(name_pattern_);
             if (atom_id != AtomBlockId::INVALID()) {
                 found = true;
                 constraints_.mutable_place_constraints().add_constrained_atom(atom_id, part_id);
             }
 
-        }
-        else{ //the name pattern is a regex, look for all atoms matching the regex pattern
+        } else { //the name pattern is a regex, look for all atoms matching the regex pattern
             auto atom_name_regex = std::regex(name_pattern_);
             for (auto block_id : atom_ctx.netlist().blocks()) { // loop through all block names and add the names that matches with the name_pattern
                 auto block_name = atom_ctx.netlist().block_name(block_id);
@@ -300,7 +311,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         if (!found) {
             VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern_.c_str());
         }
-        
     }
 
     virtual inline size_t num_partition_add_atom(partition_info& part_info) final {

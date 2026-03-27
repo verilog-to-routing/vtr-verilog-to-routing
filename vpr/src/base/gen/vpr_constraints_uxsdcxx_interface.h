@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Cmdline: ../uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
  * Input file: /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: eff50f11750fcc30c56815b8f143ac58
+ * md5sum of input file: 4183636892e0f68ed1c60cf009745773
  */
 
 #include <functional>
@@ -57,11 +57,11 @@ class VprConstraintsBase {
     /** Generated for complex type "add_atom":
      * <xs:complexType name="add_atom">
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
-     *   <xs:attribute name="is_regex" type="xs:boolean" default="false" />
+     *   <xs:attribute name="is_regex" type="xs:string" default="false" />
      * </xs:complexType>
      */
-    virtual inline bool get_add_atom_is_regex(typename ContextTypes::AddAtomReadContext& ctx) = 0;
-    virtual inline void set_add_atom_is_regex(bool is_regex, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
+    virtual inline const char* get_add_atom_is_regex(typename ContextTypes::AddAtomReadContext& ctx) = 0;
+    virtual inline void set_add_atom_is_regex(const char* is_regex, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
     virtual inline const char* get_add_atom_name_pattern(typename ContextTypes::AddAtomReadContext& ctx) = 0;
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
 
