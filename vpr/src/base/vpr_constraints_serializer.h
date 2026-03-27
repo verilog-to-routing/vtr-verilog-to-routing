@@ -128,6 +128,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     /** Generated for complex type "add_atom":
      * <xs:complexType name="add_atom">
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     *   <xs:attribute name="is_regex" type="xs:boolean" default="false" />
      * </xs:complexType>
      */
     virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
@@ -136,43 +137,16 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return temp_atom_string_.c_str();
     }
 
+    virtual inline bool get_add_atom_is_regex(AtomBlockId& /*blk_id*/) final{
+        return false;
+    }
+
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
-        auto& atom_ctx = g_vpr_ctx.atom();
-        std::string atom_name = name_pattern;
+        name_pattern_ = name_pattern;
+    }
 
-        auto atom_name_regex = std::regex(atom_name);
-
-        atoms_.clear();
-
-        atom_id_ = atom_ctx.netlist().find_block(name_pattern);
-
-        /* The constraints file may either provide a specific atom name or a regex.
-         * If the a valid atom ID is found for the atom name, then a specific atom name
-         * must have been read in from the file. The if condition checks for this case.
-         * The else statement checks for atoms that may match a regex.
-         * This code may get slow if many regexes are given in the file.
-         */
-        if (atom_id_ != AtomBlockId::INVALID()) {
-            atoms_.push_back(atom_id_);
-        } else {
-            /*If the atom name returns an invalid ID, it might be a regular expression, so loop through the atoms blocks
-             * and see if any block names match atom_name_regex.
-             */
-            for (auto block_id : atom_ctx.netlist().blocks()) {
-                auto block_name = atom_ctx.netlist().block_name(block_id);
-
-                if (std::regex_search(block_name, atom_name_regex)) {
-                    atoms_.push_back(block_id);
-                }
-            }
-        }
-
-        /*If the atoms_ vector is empty by this point, no atoms were found that matched the name,
-         * so the name is invalid.
-         */
-        if (atoms_.empty()) {
-            VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern);
-        }
+    virtual inline void set_add_atom_is_regex(bool is_regex, void*& /*ctx*/) final {   
+        is_regex_ = is_regex;
     }
 
     /** Generated for complex type "add_region":
@@ -292,15 +266,41 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_add_atom(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_atom(void*& /*ctx*/) final {
+        //clear out the temporary data for this atom
+        name_pattern_.clear();
+        is_regex_ = false;
         return nullptr;
     }
 
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
         PartitionId part_id(num_partitions_);
+        auto& atom_ctx = g_vpr_ctx.atom();
+        bool found = false;
 
-        for (auto atom : atoms_) {
-            constraints_.mutable_place_constraints().add_constrained_atom(atom, part_id);
+        if (!is_regex_){ //the name pattern is not a regex, look for an exact match for the atom name
+            AtomBlockId atom_id = atom_ctx.netlist().find_block(name_pattern_);
+            if (atom_id != AtomBlockId::INVALID()) {
+                found = true;
+                constraints_.mutable_place_constraints().add_constrained_atom(atom_id, part_id);
+            }
+
         }
+        else{ //the name pattern is a regex, look for all atoms matching the regex pattern
+            auto atom_name_regex = std::regex(name_pattern_);
+            for (auto block_id : atom_ctx.netlist().blocks()) { // loop through all block names and add the names that matches with the name_pattern
+                auto block_name = atom_ctx.netlist().block_name(block_id);
+
+                if (std::regex_search(block_name, atom_name_regex)) {
+                    constraints_.mutable_place_constraints().add_constrained_atom(block_id, part_id);
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) {
+            VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern_.c_str());
+        }
+        
     }
 
     virtual inline size_t num_partition_add_atom(partition_info& part_info) final {
@@ -596,8 +596,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     int num_partitions_ = 0;
 
     //used when reading in atom names and regular expressions for atoms
-    AtomBlockId atom_id_;
-    std::vector<AtomBlockId> atoms_;
+    bool is_regex_;
+    std::string name_pattern_;
 
     // Used when reading in regex LB type constraints for a partition.
     std::unordered_set<t_logical_block_type_ptr> lb_types_;
