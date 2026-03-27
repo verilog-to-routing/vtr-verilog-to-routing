@@ -346,25 +346,26 @@ static PrimitiveVector calc_block_mass(APBlockId blk_id,
                                        const Prepacker& prepacker,
                                        const AtomNetlist& atom_netlist) {
     PrimitiveVector mass;
-    PackMoleculeId mol_id = netlist.block_molecule(blk_id);
-    const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
-    for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-        // See issue #2791, some of the atom_block_ids may be invalid. They can
-        // safely be ignored.
-        if (!atom_blk_id.is_valid())
-            continue;
+    for (PackMoleculeId mol_id : netlist.block_molecules(blk_id)) {
+        const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+            // See issue #2791, some of the atom_block_ids may be invalid. They can
+            // safely be ignored.
+            if (!atom_blk_id.is_valid())
+                continue;
 
-        // Get the dimension in the vector to add value to.
-        LogicalModelId model_id = atom_netlist.block_model(atom_blk_id);
-        VTR_ASSERT_SAFE(model_id.is_valid());
-        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
-        VTR_ASSERT(dim.is_valid());
+            // Get the dimension in the vector to add value to.
+            LogicalModelId model_id = atom_netlist.block_model(atom_blk_id);
+            VTR_ASSERT_SAFE(model_id.is_valid());
+            PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
+            VTR_ASSERT(dim.is_valid());
 
-        // Get the amount of mass in this dimension to add.
-        float atom_mass = get_atom_mass(atom_blk_id, prepacker, atom_netlist);
+            // Get the amount of mass in this dimension to add.
+            float atom_mass = get_atom_mass(atom_blk_id, prepacker, atom_netlist);
 
-        // Add mass to the dimension.
-        mass.add_val_to_dim(atom_mass, dim);
+            // Add mass to the dimension.
+            mass.add_val_to_dim(atom_mass, dim);
+        }
     }
     return mass;
 }

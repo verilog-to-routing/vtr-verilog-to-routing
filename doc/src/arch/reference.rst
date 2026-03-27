@@ -1960,13 +1960,13 @@ of the NoC; refer below for its contents.
         Specifies a string which represents the name used to identify a NoC router tile (physical hard block) in the 
         corresponding FPGA architecture. This information is needed to create a model of the NoC.
 
-The ``<noc>`` tag contains a single ``<topology>`` tag which describes the topology of the NoC.
+The ``<noc>`` tag contains either a ``<topology>`` tag or a ``<mesh>`` tag (but not both) which describes the topology of the NoC.
 
 NoC topology
 ~~~~~~~~~~~~
 
-As mentioned above the ``<topology>`` tag can be used to specify the topology or how the routers in the NoC
-are connected to each other. The ``<topology>`` tag consists of multiple ``<router>`` tags.
+The ``<topology>`` tag can be used to specify an arbitrary topology by enumerating each router and its connections.
+The ``<topology>`` tag consists of multiple ``<router>`` tags.
 
 Below is an example of how the ``<topology>`` tag is used.
 
@@ -1986,7 +1986,7 @@ The ``<router>`` tag and its contents are described below.
         Specifies a user identification (ID) number which is associate to the physical
         router that this tag is identifying. This ID is used to report errors and
         warnings to the user.
-    
+
     :req_param positionx:
         Specifies the horizontal position of the physical router block that this
         tag is identifying. This position does not have to be exact, it can
@@ -2001,7 +2001,7 @@ The ``<router>`` tag and its contents are described below.
         Specifies a list of numbers separated by spaces which are the user IDs supplied to other
         ``<router>`` tags. This describes how the current physical Noc router
         that this tag is identifying is connected to the other physical NoC routers on the device.
-    
+
     Below is an example of the ``<router>`` tag which identifies a physical router located near (0,0) with ID 0. This router
     is also connected to two other routers identified by IDs 1 and 2.
 
@@ -2009,14 +2009,67 @@ The ``<router>`` tag and its contents are described below.
 
         <router id="0" positionx="0" positiony="0" connections="1 2"/>
 
+NoC mesh topology
+~~~~~~~~~~~~~~~~~
+
+As an alternative to the ``<topology>`` tag, the ``<mesh>`` tag can be used to automatically generate a
+uniform 2D mesh NoC topology. The mesh consists of ``size`` x ``size`` routers per layer, evenly distributed
+within the specified rectangular region of the device. Routers are connected to their immediate neighbours
+(left, right, above, below, and vertically adjacent layers where applicable).
+Router IDs are assigned starting from 0 at the bottom-left corner of the first layer and increasing
+in row-major order across layers.
+
+.. arch:tag:: <mesh startx="float" endx="float" starty="float" endy="float" startlayer="int" endlayer="int" size="int">
+
+    :req_param startx:
+        Specifies the horizontal position of the left edge of the rectangular region in which the
+        mesh of NoC routers is placed.
+
+    :req_param endx:
+        Specifies the horizontal position of the right edge of the rectangular region in which the
+        mesh of NoC routers is placed.
+
+    :req_param starty:
+        Specifies the vertical position of the bottom edge of the rectangular region in which the
+        mesh of NoC routers is placed.
+
+    :req_param endy:
+        Specifies the vertical position of the top edge of the rectangular region in which the
+        mesh of NoC routers is placed.
+
+    :opt_param startlayer:
+        Specifies the index of the first device layer on which NoC routers are placed.
+        Defaults to ``0`` if not provided.
+
+    :opt_param endlayer:
+        Specifies the index of the last device layer on which NoC routers are placed.
+        Defaults to ``0`` if not provided.
+        Must be greater than or equal to ``startlayer``.
+
+    :req_param size:
+        Specifies the number of routers along each dimension of the mesh grid.
+        A value of ``N`` produces an ``N`` x ``N`` grid of routers per layer,
+        for a total of ``N * N * (endlayer - startlayer + 1)`` routers.
+        Must be greater than ``1``.
+
+    The first and last router in each row or column are positioned on the boundary of the
+    specified region. The remaining routers are evenly spaced within the region.
+
+    Below is an example of the ``<mesh>`` tag which creates a 3x3 mesh of NoC routers
+    spanning the device region from (0,0) to (10,10) on a single layer.
+
+    .. code-block:: xml
+
+        <mesh startx="0" endx="10" starty="0" endy="10" size="3"/>
+
 NoC Description Example
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Below is an example which describes a NoC architecture which has 4 physical routers that are connected to each other to form a 
-2x2 mesh topology.
+Below is an example which describes a NoC architecture which has 4 physical routers that are connected to each other to form a
+2x2 mesh topology using the ``<topology>`` tag.
 
 .. code-block:: xml
-    
+
     <!-- Description of a 2x2 mesh NoC-->
     <noc link_bandwidth="1.2e9" router_latency="1e-9" link_latency="1e-9" noc_router_tile_name="noc_router_adapter">
         <topology>
@@ -2025,6 +2078,15 @@ Below is an example which describes a NoC architecture which has 4 physical rout
                 <router id="2" positionx="0" positiony="5" connections="0 3"/>
                 <router id="3" positionx="5" positiony="5" connections="1 2"/>
         </topology>
+    </noc>
+
+The same 2x2 topology can be described more concisely using the ``<mesh>`` tag.
+
+.. code-block:: xml
+
+    <!-- Description of a 2x2 mesh NoC using the <mesh> tag -->
+    <noc link_bandwidth="1.2e9" router_latency="1e-9" link_latency="1e-9" noc_router_tile_name="noc_router_adapter">
+        <mesh startx="0" endx="5" starty="0" endy="5" size="2"/>
     </noc>
 
 Wire Segments
