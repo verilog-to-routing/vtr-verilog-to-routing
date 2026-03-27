@@ -148,7 +148,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void set_add_atom_is_regex(const char* is_regex, void*& /*ctx*/) final {
         std::string val = is_regex;
         std::transform(val.begin(), val.end(), val.begin(),
-                    [](unsigned char c) { return std::tolower(c); });
+                       [](unsigned char c) { return std::tolower(c); });
 
         if (val == "true" || val == "1") {
             is_regex_ = true;
@@ -156,8 +156,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             is_regex_ = false;
         } else {
             VPR_THROW(VPR_ERROR_OTHER,
-                    "Invalid value '%s' for add_atom is_regex. Expected true/false or 1/0.",
-                    is_regex);
+                      "Invalid value '%s' for add_atom is_regex. Expected true/false or 1/0.",
+                      is_regex);
         }
     }
 
