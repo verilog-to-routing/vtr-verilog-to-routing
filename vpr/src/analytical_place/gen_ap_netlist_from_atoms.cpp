@@ -10,6 +10,7 @@
 #include "ap_netlist.h"
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
+#include "logical_ram_infer.h"
 #include "netlist_fwd.h"
 #include "partition.h"
 #include "partition_region.h"
@@ -19,11 +20,14 @@
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_time.h"
+#include "vtr_vector.h"
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
+                                    const RamMapper& ram_mapper,
                                     const UserPlaceConstraints& constraints,
                                     int high_fanout_threshold) {
     // Create a scoped timer for reading the atom netlist.
@@ -33,18 +37,39 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
     //        using empty strings.
     APNetlist ap_netlist;
 
+    // Pre-create one AP block per physical RAM group. Each group's molecules
+    // are packed into a single super-block so the global placer treats all
+    // atoms in the group as one moveable unit.
+    // Build a map from each RAM atom to the AP block that represents its group.
+    vtr::vector<AtomBlockId, APBlockId> ram_atom_to_ap_block(atom_netlist.blocks().size());
+    for (const PhysicalRamGroup& phys_group : ram_mapper.physical_ram_groups()) {
+        VTR_ASSERT(!phys_group.atoms.empty());
+        // Name the super-block after the first valid atom in the group.
+        const std::string& blk_name = atom_netlist.block_name(phys_group.atoms[0]);
+        APBlockId ram_ap_blk_id = ap_netlist.create_block(blk_name, phys_group.molecules);
+        for (AtomBlockId atom_id : phys_group.atoms) {
+            ram_atom_to_ap_block[atom_id] = ram_ap_blk_id;
+        }
+    }
+
     // Add the APBlocks based on the atom block molecules. This essentially
     // creates supernodes.
     // Each AP block has the name of the first atom block in the molecule.
     // Each port is named "<atom_blk_name>_<atom_port_name>"
     // Each net has the exact same name as in the atom netlist
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
-        // Get the molecule of this block
-        PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
-        const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
-        // Create the AP block (if not already done)
-        const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
-        APBlockId ap_blk_id = ap_netlist.create_block(first_blk_name, molecule_id);
+        APBlockId ap_blk_id;
+        if (ram_atom_to_ap_block[atom_blk_id].is_valid()) {
+            // RAM atom: use the pre-created super-block for its physical group.
+            ap_blk_id = ram_atom_to_ap_block[atom_blk_id];
+        } else {
+            // Non-RAM atom: Get the molecule of this block and create the AP
+            // block (if not already done)
+            PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
+            const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
+            const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
+            ap_blk_id = ap_netlist.create_block(first_blk_name, {molecule_id});
+        }
         // Add the ports and pins of this block to the supernode
         for (AtomPortId atom_port_id : atom_netlist.block_ports(atom_blk_id)) {
             BitIndex port_width = atom_netlist.port_width(atom_port_id);
@@ -69,44 +94,45 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     // Fix the block locations given by the VPR constraints
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
-        PackMoleculeId molecule_id = ap_netlist.block_molecule(ap_blk_id);
-        const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
-        for (AtomBlockId mol_atom_blk_id : mol.atom_block_ids) {
-            PartitionId part_id = constraints.get_atom_partition(mol_atom_blk_id);
-            if (!part_id.is_valid())
-                continue;
-            // We should not fix a block twice. This would imply that a molecule
-            // contains two fixed blocks. This would only make sense if the blocks
-            // were fixed to the same location. I am not sure if that is even
-            // possible.
-            VTR_ASSERT(ap_netlist.block_mobility(ap_blk_id) == APBlockMobility::MOVEABLE);
-            // Get the partition region.
-            const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
-            // TODO: Either handle the union of legal locations or turn into a
-            //       proper error.
-            VTR_ASSERT(partition_pr.get_regions().size() == 1 && "AP: Each partition should contain only one region for AP right now.");
-            const Region& region = partition_pr.get_regions()[0];
-            // Get the x and y.
-            const vtr::Rect<int>& region_rect = region.get_rect();
-            VTR_ASSERT(region_rect.xmin() == region_rect.xmax() && "AP: Expect each region to be a single point in x!");
-            VTR_ASSERT(region_rect.ymin() == region_rect.ymax() && "AP: Expect each region to be a single point in y!");
-            // Here we offset by 0.5 to put the fixed point in the center of the
-            // tile (assuming the tile is 1x1).
-            // TODO: Think about what to do when the user fixes blocks to large
-            //       tiles. However, this solution will at least keep the atoms
-            //       away from the edge of tiles.
-            float blk_x_loc = region_rect.xmin() + 0.5f;
-            float blk_y_loc = region_rect.ymin() + 0.5f;
-            // Get the layer.
-            VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second && "AP: Expect each region to be a single point in layer!");
-            int blk_layer_num = region.get_layer_range().first;
-            // Get the sub_tile (if fixed).
-            int blk_sub_tile = APFixedBlockLoc::UNFIXED_DIM;
-            if (region.get_sub_tile() != NO_SUBTILE)
-                blk_sub_tile = region.get_sub_tile();
-            // Set the fixed block location.
-            APFixedBlockLoc loc = {blk_x_loc, blk_y_loc, blk_layer_num, blk_sub_tile};
-            ap_netlist.set_block_loc(ap_blk_id, loc);
+        for (PackMoleculeId molecule_id : ap_netlist.block_molecules(ap_blk_id)) {
+            const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
+            for (AtomBlockId mol_atom_blk_id : mol.atom_block_ids) {
+                PartitionId part_id = constraints.get_atom_partition(mol_atom_blk_id);
+                if (!part_id.is_valid())
+                    continue;
+                // We should not fix a block twice. This would imply that a molecule
+                // contains two fixed blocks. This would only make sense if the blocks
+                // were fixed to the same location. I am not sure if that is even
+                // possible.
+                VTR_ASSERT(ap_netlist.block_mobility(ap_blk_id) == APBlockMobility::MOVEABLE);
+                // Get the partition region.
+                const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
+                // TODO: Either handle the union of legal locations or turn into a
+                //       proper error.
+                VTR_ASSERT(partition_pr.get_regions().size() == 1 && "AP: Each partition should contain only one region for AP right now.");
+                const Region& region = partition_pr.get_regions()[0];
+                // Get the x and y.
+                const vtr::Rect<int>& region_rect = region.get_rect();
+                VTR_ASSERT(region_rect.xmin() == region_rect.xmax() && "AP: Expect each region to be a single point in x!");
+                VTR_ASSERT(region_rect.ymin() == region_rect.ymax() && "AP: Expect each region to be a single point in y!");
+                // Here we offset by 0.5 to put the fixed point in the center of the
+                // tile (assuming the tile is 1x1).
+                // TODO: Think about what to do when the user fixes blocks to large
+                //       tiles. However, this solution will at least keep the atoms
+                //       away from the edge of tiles.
+                float blk_x_loc = region_rect.xmin() + 0.5f;
+                float blk_y_loc = region_rect.ymin() + 0.5f;
+                // Get the layer.
+                VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second && "AP: Expect each region to be a single point in layer!");
+                int blk_layer_num = region.get_layer_range().first;
+                // Get the sub_tile (if fixed).
+                int blk_sub_tile = APFixedBlockLoc::UNFIXED_DIM;
+                if (region.get_sub_tile() != NO_SUBTILE)
+                    blk_sub_tile = region.get_sub_tile();
+                // Set the fixed block location.
+                APFixedBlockLoc loc = {blk_x_loc, blk_y_loc, blk_layer_num, blk_sub_tile};
+                ap_netlist.set_block_loc(ap_blk_id, loc);
+            }
         }
     }
 

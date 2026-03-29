@@ -8,9 +8,25 @@
  *          RAM type by minimizing area and then tries to improve timing
  *          of the most critical groups.
  *
+ *          The logical RAM inference groups the RAM atom and pre-assigns a
+ *          physical type to that logical RAM. However, which atoms of that
+ *          logical RAM to be clustered together inside an instance of a physical
+ *          RAM is not determined in that step. The next step of physical RAM
+ *          inference determined that.
+ *
+ *          Physical RAM inference: given a logical RAM atoms, determines which
+ *          atoms of that logical RAM to be clustered together inside a physical
+ *          RAM instance of pre-assigned type. The assignmend is aware of the
+ *          capacity of the pre-assigned physical RAM type.
+ *
  * For example, a 128-bit wide RAM will generally have been cut into
  * 128 one-bit wide atoms which all have the same address and control signals.
- * This module determines those 128 atoms form a single 'logical RAM'.
+ * This module determines those 128 atoms form a single 'logical RAM group'.
+ *
+ * If we pre-assign that logical RAM to a physical RAM type that can support at
+ * most 64-bit wide mode, we need two instances of that physical RAM. Deciding
+ * which 64 atoms to be assigned together to a physical RAM is called 'physical
+ * ram mapping' and each created group is called a 'physical RAM group'.
  */
 
 #include <string>
@@ -20,15 +36,19 @@
 #include "atom_netlist_fwd.h"
 #include "physical_types.h"
 #include "PreClusterTimingManager.h"
+#include "prepack.h"
+#include "vtr_range.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
 // Forward declarations
 class AtomNetlist;
-class Prepacker;
 
 /// @brief Unique identifier for a logical RAM group.
 typedef vtr::StrongId<struct logical_ram_group_id_tag, size_t> LogicalRamGroupId;
+
+/// @brief Unique identifier for a physical RAM group.
+typedef vtr::StrongId<struct physical_ram_group_id_tag, size_t> PhysicalRamGroupId;
 
 /**
  * @brief Represents a group of RAM atom blocks that share the same non-data
@@ -61,6 +81,26 @@ struct LogicalRamGroup {
     bool is_output_registered = false;
     /// @brief Maximum setup timing criticality among atoms in this group.
     float max_atom_criticality = 0.0f;
+};
+
+/**
+ * @brief Represents a group of atoms that map to a single physical RAM tile.
+ *
+ * A LogicalRamGroup is partitioned into one or more PhysicalRamGroups based
+ * on the capacity of the pre-assigned physical tile type. Each PhysicalRamGroup
+ * holds the subset of atoms that fit within one tile without exceeding its
+ * memory slice capacity.
+ */
+struct PhysicalRamGroup {
+    /// The logical RAM group this physical group was derived from.
+    LogicalRamGroupId logical_ram_group_id;
+    /// Atoms assigned to this physical RAM tile.
+    std::vector<AtomBlockId> atoms;
+    /// Molecules corresponding to the atoms in this physical RAM tile.
+    /// Populated by create_physical_ram_groups() for use in AP block construction.
+    std::vector<PackMoleculeId> molecules;
+    /// Total memory slices consumed by the atoms in this group.
+    int total_memory_slices = 0;
 };
 
 /**
@@ -121,6 +161,8 @@ class RamMapper {
      *                            driving the timing based remap decisions.
      * @param precomputed_groups  RAM groups previously computed by DeviceSizeEstimator;
      *                            if non-empty, grouping and area assignment are skipped.
+     * @param verbosity           The verbosity level used to determine logging option for
+     *                            remappings in timing pass.
      * @param is_fixed_device     When true, area assignment respects device capacity limits.
      */
     RamMapper(const AtomNetlist& atom_nlist,
@@ -134,8 +176,11 @@ class RamMapper {
     RamMapper(RamMapper&&) = default;
     RamMapper& operator=(RamMapper&&) = default;
 
-    /// @brief Returns the group ID for an atom, or INVALID if not a RAM atom.
+    /// @brief Returns the logical group ID for an atom, or INVALID if not a RAM atom.
     LogicalRamGroupId group_id_of(AtomBlockId blk) const;
+
+    /// @brief Returns the physical group ID for an atom, or INVALID if not a RAM atom.
+    PhysicalRamGroupId physical_group_id_of(AtomBlockId blk) const;
 
     /// @brief Returns a const reference to the group for a given ID.
     const LogicalRamGroup& group(LogicalRamGroupId id) const;
@@ -143,9 +188,32 @@ class RamMapper {
     /// @brief Returns the number of logical RAM groups.
     size_t num_groups() const { return logical_ram_groups_.size(); }
 
+    typedef typename vtr::vector<PhysicalRamGroupId, PhysicalRamGroup>::const_iterator physical_ram_group_iterator;
+    typedef typename vtr::Range<physical_ram_group_iterator> physical_ram_group_range;
+
+    /// @brief Returns the range of all physical RAM group IDs for iteration.
+    physical_ram_group_range physical_ram_groups() const {
+        return vtr::make_range(physical_ram_groups_.begin(), physical_ram_groups_.end());
+    }
+
+    /// @brief Returns the physical RAM group for a given ID.
+    const PhysicalRamGroup& physical_ram_group(PhysicalRamGroupId id) const {
+        VTR_ASSERT(id.is_valid() && size_t(id) < physical_ram_groups_.size());
+        return physical_ram_groups_[id];
+    }
+
   private:
-    /// @brief Builds the atom-to-group lookup map. Called once at the end of construction.
-    void build_atom_to_group_map(const AtomNetlist& atom_nlist);
+    /// @brief Builds the atom-to-logical-group lookup map.
+    void build_atom_to_logical_group_map(const AtomNetlist& atom_nlist);
+
+    /// @brief Builds the atom-to-physical-group lookup map from physical_ram_groups_.
+    void build_atom_to_physical_group_map();
+
+    /// @brief Partitions logical RAM groups into physical RAM groups.
+    /// TODO:  Currently we are assigning the atoms to physical ram groups
+    ///        by iterating over their order in the logical ram group. We should
+    ///        evaluate that decision and investigate mimicking the greedy packer here.
+    vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> create_physical_ram_groups(const Prepacker& prepacker) const;
 
     /// @brief Tries to remap timing-critical groups to the smallest (believed to be fastest) RAM type.
     void timing_pass(const AtomNetlist& atom_nlist,
@@ -162,8 +230,14 @@ class RamMapper {
     /// @brief All logical RAM groups, indexed by LogicalRamGroupId.
     vtr::vector<LogicalRamGroupId, LogicalRamGroup> logical_ram_groups_;
 
-    /// @brief Maps each RAM atom to its group ID for fast lookup during packing.
+    /// @brief Physical RAM groups derived from logical groups, indexed by PhysicalRamGroupId.
+    vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> physical_ram_groups_;
+
+    /// @brief Maps each RAM atom to its logical group ID for fast lookup during packing.
     vtr::vector<AtomBlockId, LogicalRamGroupId> atom_to_group_;
+
+    /// @brief Maps each RAM atom to its physical group ID for fast lookup during packing.
+    vtr::vector<AtomBlockId, PhysicalRamGroupId> atom_to_physical_group_;
 
     /// @brief Packing verbosity level.
     int log_verbosity_ = 0;
