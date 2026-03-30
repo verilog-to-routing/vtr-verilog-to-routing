@@ -102,7 +102,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const bool& concat_wire,
                                     const bool& wire_opposite_side,
                                     const int route_verbosity,
-                                    int* Warnings) {
+                                    int* Warnings,
+                                    bool warn_arch_rr_lookahead) {
     vtr::ScopedStartFinishTimer timer("Build tileable routing resource graph");
 
     // Reset warning flag
@@ -330,7 +331,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     // No clock network support yet; Does not support flatten rr_graph yet
 
-    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, e_graph_type::UNIDIR_TILEABLE, false);
+    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, e_graph_type::UNIDIR_TILEABLE, false, warn_arch_rr_lookahead);
 }
 
 static void remove_dangling_chan_nodes(const DeviceGrid& grid,

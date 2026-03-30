@@ -406,7 +406,8 @@ void create_rr_graph(e_graph_type graph_type,
                                                det_routing_arch.concat_wire,      // Allow end-point tracks to be wired to a starting point track on the opposite in a switch block.It means a wire can be continued in the same direction to another wire
                                                det_routing_arch.concat_pass_wire, // Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another
                                                router_opts.route_verbosity,
-                                               Warnings);
+                                               Warnings,
+                                               router_opts.warn_arch_rr_lookahead);
             }
         }
 
@@ -435,7 +436,8 @@ void create_rr_graph(e_graph_type graph_type,
                                      det_routing_arch.R_minW_pmos,
                                      mutable_device_ctx.rr_graph_builder,
                                      is_flat,
-                                     load_rr_graph);
+                                     load_rr_graph,
+                                     router_opts.warn_arch_rr_lookahead);
 
         // Reorder nodes upon needs in algorithms and router options
         if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
@@ -983,7 +985,8 @@ static void build_rr_graph(e_graph_type graph_type,
                    vib_grid,
                    device_ctx.chan_width,
                    graph_type,
-                   is_flat);
+                   is_flat,
+                   warn_arch_rr_lookahead);
 
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
