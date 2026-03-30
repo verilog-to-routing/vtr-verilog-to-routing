@@ -155,7 +155,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const e_clock_modeling clock_modeling,
-                                                                  const int route_verbosity);
+                                                                  const int route_verbosity,
+                                                                  bool warn_arch_rr_lookahead);
 
 /**
  * @brief Add the edges between pins and their respective SINK/SRC. It is important to mention that in contrast to another similar function,
@@ -278,7 +279,8 @@ static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_layer_def>& interposer_inf,
                            bool is_flat,
                            int* Warnings,
-                           const int route_verbosity);
+                           const int route_verbosity,
+                           bool warn_arch_rr_lookahead);
 
 /**
  * Return the ID for delay-less switch. If the RR graph is loaded from a file, then the assumption
@@ -378,7 +380,8 @@ void create_rr_graph(e_graph_type graph_type,
                                device_ctx.arch->grid_layout().layers,
                                is_flat,
                                Warnings,
-                               router_opts.route_verbosity);
+                               router_opts.route_verbosity,
+                               router_opts.warn_arch_rr_lookahead);
             } else {
                 // Note: We do not support dedicated network for clocks in tileable rr_graph generation
                 build_tileable_unidir_rr_graph(block_types,
@@ -546,7 +549,8 @@ static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_layer_def>& interposer_inf,
                            bool is_flat,
                            int* Warnings,
-                           const int route_verbosity) {
+                           const int route_verbosity,
+                           bool warn_arch_rr_lookahead) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     // Reset warning flag
@@ -812,7 +816,8 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                                                       chan_details_x, chan_details_y,
                                                                                                       nodes_per_chan,
                                                                                                       switchpoint_rng,
-                                                                                                      interdie_3d_links);
+                                                                                                      interdie_3d_links,
+                                                                                                      warn_arch_rr_lookahead);
 
     // Check whether RR graph need to allocate new nodes for 3D connections.
     // To avoid wasting memory, the data structures are only allocated if we have more than one die in device grid.
@@ -922,7 +927,8 @@ static void build_rr_graph(e_graph_type graph_type,
         clb_to_clb_directs,
         is_global_graph,
         clock_modeling,
-        route_verbosity);
+        route_verbosity,
+        warn_arch_rr_lookahead);
 
     // Verify no incremental node allocation.
     // AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks.
@@ -1339,7 +1345,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const e_clock_modeling clock_modeling,
-                                                                  const int route_verbosity) {
+                                                                  const int route_verbosity,
+                                                                  bool warn_arch_rr_lookahead) {
     // We take special care when creating RR graph edges (there are typically many more
     // edges than nodes in an RR graph).
     //
@@ -1405,7 +1412,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                         chan_width, chan_details_x, chan_details_y,
                         seg_index_map, opin_to_track_map, interdie_3d_links,
                         Fc_out, directs, clb_to_clb_directs, directionality,
-                        num_edges, rr_edges_before_directs, Fc_clipped);
+                        num_edges, rr_edges_before_directs, Fc_clipped,
+                        warn_arch_rr_lookahead);
 
     VTR_LOGV(route_verbosity > 1, "OPIN->CHANX/CHANY edge count before creating direct connections: %d\n", rr_edges_before_directs);
     VTR_LOGV(route_verbosity > 1, "OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);

@@ -87,7 +87,8 @@ void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
                                     const t_unified_to_parallel_seg_index& seg_index_map,
                                     int num_seg_types,
                                     t_rr_edge_info_set& rr_edges_to_create,
-                                    const std::vector<t_bottleneck_link>& interdie_3d_links);
+                                    const std::vector<t_bottleneck_link>& interdie_3d_links,
+                                    bool warn_arch_rr_lookahead);
 
 /**
  * @brief Adds and connects non-3D scatter–gather (SG) links to the RR graph.

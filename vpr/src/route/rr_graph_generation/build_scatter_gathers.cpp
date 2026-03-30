@@ -326,7 +326,8 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
                                                                          vtr::RngContainer& rng,
-                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
+                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                                                         bool warn_arch_rr_lookahead) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     // Storage for identifying source/destination channels of an SG link.
@@ -430,14 +431,14 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                 if (fwd_bottleneck_fanin == 0 || fwd_bottleneck_fanout == 0) {
 
-                    VTR_LOGV_WARN(fwd_bottleneck_fanin == 0,
+                    VTR_LOGV_WARN(warn_arch_rr_lookahead && fwd_bottleneck_fanin == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero gather fanin connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   gather_loc.layer_num, gather_loc.x, gather_loc.y,
                                   fwd_gather_wire_candidates.size());
 
-                    VTR_LOGV_WARN(fwd_bottleneck_fanout == 0,
+                    VTR_LOGV_WARN(warn_arch_rr_lookahead && fwd_bottleneck_fanout == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero scatter fanout connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
