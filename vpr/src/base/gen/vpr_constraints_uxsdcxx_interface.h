@@ -6,7 +6,7 @@
  *
  * Cmdline: ../uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
  * Input file: /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: 4183636892e0f68ed1c60cf009745773
+ * md5sum of input file: 6936fbaffca2fb14f99f745efdf87df0
  */
 
 #include <functional>
@@ -90,8 +90,11 @@ class VprConstraintsBase {
     /** Generated for complex type "add_logical_block":
      * <xs:complexType name="add_logical_block">
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     *   <xs:attribute name="is_regex" type="xs:string" default="false" />
      * </xs:complexType>
      */
+    virtual inline const char* get_add_logical_block_is_regex(typename ContextTypes::AddLogicalBlockReadContext& ctx) = 0;
+    virtual inline void set_add_logical_block_is_regex(const char* is_regex, typename ContextTypes::AddLogicalBlockWriteContext& ctx) = 0;
     virtual inline const char* get_add_logical_block_name_pattern(typename ContextTypes::AddLogicalBlockReadContext& ctx) = 0;
     virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, typename ContextTypes::AddLogicalBlockWriteContext& ctx) = 0;
 
