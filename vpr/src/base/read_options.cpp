@@ -2925,7 +2925,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               " These warnings are intended for architecture developers."
               " End users who are given fixed architecture and RR graph files can safely ignore them."
               " Also enabled automatically when --route_verbosity is set above 1.")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
