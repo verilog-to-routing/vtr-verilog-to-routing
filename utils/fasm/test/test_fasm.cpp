@@ -296,7 +296,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        echo_enabled,
                        echo_file_name,
                        vpr_setup.RouterOpts.route_verbosity,
-                       is_flat);
+                       is_flat,
+                       vpr_setup.RouterOpts.warn_arch_rr_lookahead);
         vpr_free_all(arch, vpr_setup);
     }
 

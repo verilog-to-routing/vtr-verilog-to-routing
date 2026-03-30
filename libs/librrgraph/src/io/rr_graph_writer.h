@@ -24,4 +24,5 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     bool echo_enabled,
                     const char* echo_file_name,
                     const int route_verbosity,
-                    bool is_flat);
+                    bool is_flat,
+                    bool warn_arch_rr_lookahead);

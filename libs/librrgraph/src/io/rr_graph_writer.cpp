@@ -39,7 +39,8 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     bool echo_enabled,
                     const char* echo_file_name,
                     const int route_verbosity,
-                    bool is_flat) {
+                    bool is_flat,
+                    bool warn_arch_rr_lookahead) {
 
     // If Cap'n Proto is enabled, a unique ID is assigned to the schema used to serialize the RR graph.
     // This ID is used to verify that the schema used to serialize the RR graph matches the
@@ -79,7 +80,8 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
         &rr_graph_builder->rr_edge_metadata(),
         &arch->strings,
         schema_file_id,
-        is_flat);
+        is_flat,
+        warn_arch_rr_lookahead);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {
         std::fstream fp;

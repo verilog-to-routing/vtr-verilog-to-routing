@@ -468,7 +468,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
 }
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity,
-                                                      bool warn_arch_rr_lookahead) {
+                                                       bool warn_arch_rr_lookahead) {
     vtr::ScopedStartFinishTimer timer("Computing chan/ipin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();

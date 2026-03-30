@@ -295,7 +295,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
         vtr::string_internment* strings,
         unsigned long schema_file_id,
-        bool is_flat)
+        bool is_flat,
+        bool warn_arch_rr_lookahead)
         : chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
         , rr_graph_builder_(rr_graph_builder)
@@ -321,7 +322,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , empty_(strings_->intern_string(""))
         , report_error_(nullptr)
         , schema_file_id_(schema_file_id)
-        , is_flat_(is_flat) {
+        , is_flat_(is_flat)
+        , warn_arch_rr_lookahead_(warn_arch_rr_lookahead) {
         // Initialize internal data
         init_side_map();
         init_segment_inf_xyz();
@@ -1848,7 +1850,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                            vib_grid_,
                            *chan_width_,
                            graph_type_,
-                           is_flat_);
+                           is_flat_,
+                           warn_arch_rr_lookahead_);
         }
     }
 
@@ -2211,6 +2214,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const std::function<void(const char*)>* report_error_;
     unsigned long schema_file_id_;
     bool is_flat_;
+    bool warn_arch_rr_lookahead_;
 
     // Temporary data to check grid block types
     int curr_tmp_block_type_id;

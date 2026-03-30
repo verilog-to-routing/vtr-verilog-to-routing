@@ -169,7 +169,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        echo_enabled,
                        echo_file_name,
                        vpr_setup.RouterOpts.route_verbosity,
-                       false);
+                       false,
+                       vpr_setup.RouterOpts.warn_arch_rr_lookahead);
         vpr_free_all(arch, vpr_setup);
     }
 
@@ -292,7 +293,8 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            echo_enabled,
                            echo_file_name,
                            vpr_setup.RouterOpts.route_verbosity,
-                           false);
+                           false,
+                           vpr_setup.RouterOpts.warn_arch_rr_lookahead);
 
             vpr_free_all(arch, vpr_setup);
         }
@@ -337,7 +339,8 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            echo_enabled,
                            echo_file_name,
                            vpr_setup.RouterOpts.route_verbosity,
-                           false);
+                           false,
+                           vpr_setup.RouterOpts.warn_arch_rr_lookahead);
 
             vpr_free_all(arch, vpr_setup);
         }

@@ -350,7 +350,8 @@ void create_rr_graph(e_graph_type graph_type,
                              echo_enabled,
                              echo_file_name,
                              router_opts.route_verbosity,
-                             is_flat);
+                             is_flat,
+                             router_opts.warn_arch_rr_lookahead);
                 if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                     mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                                       router_opts.reorder_rr_graph_nodes_threshold,
@@ -481,7 +482,8 @@ void create_rr_graph(e_graph_type graph_type,
                        echo_enabled,
                        echo_file_name,
                        router_opts.route_verbosity,
-                       is_flat);
+                       is_flat,
+                       router_opts.warn_arch_rr_lookahead);
     }
 }
 

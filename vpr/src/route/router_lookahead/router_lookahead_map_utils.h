@@ -314,7 +314,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                                                     bool warn_arch_rr_lookahead);
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity,
-                                                      bool warn_arch_rr_lookahead);
+                                                       bool warn_arch_rr_lookahead);
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
