@@ -137,6 +137,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return temp_atom_string_.c_str();
     }
 
+    // we don't need to set is_regex when we write back the XML file as we only write the atom name, not regex patterns, to the XML file
     virtual inline const char* get_add_atom_is_regex(AtomBlockId& /*blk_id*/) final {
         return "false";
     }
@@ -225,33 +226,28 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return logical_block_type->name.c_str();
     }
 
+    // we don't need to set is_regex when we write back the XML file as we only write the logical block type name, not regex patterns, to the XML file
+    virtual inline const char* get_add_logical_block_is_regex(t_logical_block_type_ptr& logical_block_type) final {
+        return "false";
+    }
+
     virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
-        const DeviceContext& device_ctx = g_vpr_ctx.device();
-        std::regex logical_block_name_regex = std::regex(name_pattern);
+        lb_type_name_pattern_ = name_pattern;
+    }
 
-        // Clear the temporary data for this partition.
-        lb_types_.clear();
+    virtual inline void set_add_logical_block_is_regex(const char* is_regex, void*& /*ctx*/) final {
+        std::string val = is_regex;
+        std::transform(val.begin(), val.end(), val.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
 
-        // Try to look for an exact match for the name pattern.
-        for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) {
-            if (logical_block_type.name == name_pattern) {
-                lb_types_.insert(&logical_block_type);
-            }
-        }
-
-        // If an exact match for the name pattern cannot be found, assume that this is a regex pattern.
-        if (lb_types_.empty()) {
-            // Use regex to pattern match for all of the logical blocks matching this pattern.
-            for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) {
-                if (std::regex_search(logical_block_type.name, logical_block_name_regex)) {
-                    lb_types_.insert(&logical_block_type);
-                }
-            }
-        }
-
-        // If the pattern cannot be found, raise a warning.
-        if (lb_types_.empty()) {
-            VTR_LOG_WARN("Logical block with name pattern %s was not found, skipping this pattern.\n", name_pattern);
+        if (val == "true" || val == "1") {
+            lb_type_is_regex_ = true;
+        } else if (val == "false" || val == "0") {
+            lb_type_is_regex_ = false;
+        } else {
+            VPR_THROW(VPR_ERROR_OTHER,
+                      "Invalid value '%s' for add_logical_block is_regex. Expected true/false or 1/0.",
+                      is_regex);
         }
     }
 
@@ -367,14 +363,39 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_add_logical_block(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_logical_block(void*& /*ctx*/) final {
+        //clear out the temporary data for this logical block name
+        lb_type_name_pattern_.clear();
+        lb_type_is_regex_ = false;
         return nullptr;
     }
 
     virtual inline void finish_partition_add_logical_block(void*& /*ctx*/) final {
+        const auto& device_ctx = g_vpr_ctx.device();
         PartitionId part_id(num_partitions_);
+        bool found = false;
 
-        for (t_logical_block_type_ptr lb_type : lb_types_) {
-            constraints_.mutable_place_constraints().constrain_part_lb_type(part_id, lb_type);
+        if (!lb_type_is_regex_) { //the logical block type name pattern is not a regex, look for an exact match for the logical block type name
+            for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) {
+                if (logical_block_type.name == lb_type_name_pattern_) {
+                    constraints_.mutable_place_constraints().constrain_part_lb_type(part_id, &logical_block_type);
+                    found = true;
+                }
+            }
+        } else { //the logical block type name pattern is a regex, look for all logical block types matching the regex pattern
+            auto lb_type_name_regex = std::regex(lb_type_name_pattern_);
+            for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) { // loop through all logical block type names and add the names that matches with the name_pattern
+
+                if (std::regex_search(logical_block_type.name, lb_type_name_regex)) {
+                    constraints_.mutable_place_constraints().constrain_part_lb_type(part_id, &logical_block_type);
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) {
+            VTR_LOG_WARN("Logical block type %s was not found, skipping logical block type.\n",
+                         lb_type_name_pattern_.c_str());
+            return;
         }
     }
 
@@ -610,5 +631,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     std::string name_pattern_;
 
     // Used when reading in regex LB type constraints for a partition.
-    std::unordered_set<t_logical_block_type_ptr> lb_types_;
+    bool lb_type_is_regex_;
+    std::string lb_type_name_pattern_;
 };
