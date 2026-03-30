@@ -18,7 +18,7 @@ A Placement Constraints File Example
 		<partition_list>
 			<partition name="Part0">
 					<add_atom name_pattern="li354"/>
-					<add_atom name_pattern="alu.*"/> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
+					<add_atom name_pattern="alu.*" is_regex="true"/> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
 					<add_atom name_pattern="n877"/>
 					<add_region x_low="3" y_low="1" x_high="7" y_high="2"/> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
 					<add_region x_low="7" y_low="3" x_high="7" y_high="6"/>
@@ -73,11 +73,15 @@ Partitions, Atoms, Regions, and Logical Block Types
 
 		:req_param name_pattern:
 			The name of the atom which can be the exact name of an atom from the input atom netlist passed to VPR, or a regular expression pattern matching one or more atom names. 
-			VPR first searches the netlist for an exact match. 
-			If no exact match is found, it then assumes that the given name is a regex pattern and searches for atoms whose names match the pattern.
-			For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` in the ``<add_atom>`` tag.
-	
-	.. arch:tag:: <add_region x_low="int" y_low="int" x_high="int" y_high="int" subtile="int" layer_low="int" layer_high="int">
+			By default, name_pattern is treated as an exact atom name.
+			If ``is_regex`` is set to ``false`` or not provided, VPR will only attempt to find an exact match. If no match is found, the constraint will be ignored and a warning will be printed to the user. 
+			If ``is_regex`` is set to ``true``, VPR will search for all atoms whose names match the regex pattern provided. If no matches are found, the constraint will be ignored and a warning will be printed to the user.
+			
+			For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` and set ``is_regex="true"`` in the ``<add_atom>`` tag.
+		
+		:opt_param is_regex:
+			A boolean value indicating whether the ``name_pattern`` should be treated as a regular expression.
+			**Default:** ``false``
 
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
@@ -134,9 +138,14 @@ Partitions, Atoms, Regions, and Logical Block Types
 
 		:req_param name_pattern:
 			The name of the logical block type that atoms in this partition are allowed to be mapped to. This can be the exact name of a logical block type from the device architecture, or a regular expression pattern matching one or more logical block type names.
-			VPR first searches the architecture for an exact match.
-			If no exact match is found, it then assumes that the given name is a regex pattern and searches for logical block types whose names match the pattern.
+			If ``is_regex`` is set to ``false`` or not provided, VPR will only attempt to find an exact match. If no match is found, the ``<add_logical_block>`` tag will be ignored and a warning will be printed to the user. 
+			If ``is_regex`` is set to ``true``, VPR will search for all logical blocks whose names match the regex pattern provided. If no matches are found, the ``<add_logical_block>`` tag will be ignored and a warning will be printed to the user.
 			For example, to constrain atoms to both ``clbA`` and ``clbB`` logical block types, the user can add two ``<add_logical_block>`` tags with ``name_pattern`` values of ``clbA`` and ``clbB`` respectively, or use a single tag with ``name_pattern="clb[AB]"``.
+		
+		:opt_param is_regex:
+			A boolean value indicating whether the ``name_pattern`` should be treated as a regular expression.
+			**Default:** ``false``
+
 
 		**Use Case Example:** Architectures such as Stratix-IV contain multiple types of RAM blocks (e.g., M9K and M144K). This tag can be used to constrain certain RAM slices to specific RAM logical block types. For instance, if certain memory operations require the larger M144K blocks, you can add ``<add_logical_block name_pattern="M144K"/>`` to ensure those atoms are mapped only to the appropriate RAM block type.
 
