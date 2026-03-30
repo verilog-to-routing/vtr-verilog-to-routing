@@ -24,7 +24,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     std::vector<t_logical_block_type> logical_block_types;
 
     xml_read_arch(kArchFile, /*timing_enabled=*/false,
-                  &arch, physical_tile_types, logical_block_types);
+                  &arch, physical_tile_types, logical_block_types, /*warn_arch_rr_lookahead=*/true);
 
     auto type_str = arch.strings.intern_string("type");
     auto pb_type_type = arch.strings.intern_string("pb_type_type");
