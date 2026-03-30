@@ -227,7 +227,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     // we don't need to set is_regex when we write back the XML file as we only write the logical block type name, not regex patterns, to the XML file
-    virtual inline const char* get_add_logical_block_is_regex(t_logical_block_type_ptr& logical_block_type) final {
+    virtual inline const char* get_add_logical_block_is_regex(t_logical_block_type_ptr& /*logical_block_type*/) final {
         return "false";
     }
 
