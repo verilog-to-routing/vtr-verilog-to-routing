@@ -52,7 +52,7 @@ class CostMap {
      * @param delay_costs delay costs calculated with the dijkstra expansions
      * @param base_costs congestion costs calculated with the dijkstra expansions
      */
-    void set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs);
+    void set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs, bool warn_arch_rr_lookahead);
 
     /**
      * @brief Gets the cost of an entry that is close to a hole in the cost map
@@ -116,5 +116,5 @@ class CostMap {
      * @param bounding_box_height height of the segment type cost map bounding box
      * @param delay_penalty penalty corresponding to the current segment cost map
      */
-    void fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty);
+    void fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty, bool warn_arch_rr_lookahead);
 };

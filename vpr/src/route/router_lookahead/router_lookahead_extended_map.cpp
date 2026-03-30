@@ -418,9 +418,9 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, warn_arch_rr_lookahead_);
 
-    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_);
+    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_, warn_arch_rr_lookahead_);
 
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
 
@@ -507,8 +507,9 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #endif
 
         if (total_path_count == 0) {
-            VTR_LOG_WARN("No paths found for sample region %s(%d, %d)\n",
-                         segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
+            VTR_LOGV_WARN(warn_arch_rr_lookahead_ || route_verbosity_ > 1,
+                          "No paths found for sample region %s(%d, %d)\n",
+                          segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
         }
 
         // combine the cost map from this run with the final cost maps for each segment
@@ -539,7 +540,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     VTR_LOG("Combining results\n");
     /* boil down the cost list in routing_cost_map at each coordinate to a
      * representative cost entry and store it in the lookahead cost map */
-    cost_map_.set_cost_map(all_delay_costs, all_base_costs);
+    cost_map_.set_cost_map(all_delay_costs, all_base_costs, warn_arch_rr_lookahead_);
 
 // diagnostics
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_ENTRIES)
@@ -601,9 +602,9 @@ void ExtendedMapLookahead::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
     cost_map_.read(file);
 
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, warn_arch_rr_lookahead_);
 
-    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_);
+    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_, warn_arch_rr_lookahead_);
 #else  // VTR_ENABLE_CAPNPROTO
     (void)file;
     VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
