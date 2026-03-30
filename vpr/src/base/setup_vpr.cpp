@@ -195,7 +195,8 @@ void SetupVPR(const t_options* options,
                               timingenabled,
                               arch,
                               device_ctx.physical_tile_types,
-                              device_ctx.logical_block_types);
+                              device_ctx.logical_block_types,
+                              options->warn_arch_rr_lookahead);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
@@ -487,6 +488,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
     RouterOpts->route_verbosity = Options.route_verbosity;
+    RouterOpts->warn_arch_rr_lookahead = Options.warn_arch_rr_lookahead;
 
     RouterOpts->full_stats = Options.full_stats;
 

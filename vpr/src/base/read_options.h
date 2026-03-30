@@ -240,6 +240,7 @@ struct t_options {
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> router_opt_choke_points;
     argparse::ArgValue<int> route_verbosity;
+    argparse::ArgValue<bool> warn_arch_rr_lookahead;
 
     // Timing-driven router options only
     argparse::ArgValue<float> astar_fac;

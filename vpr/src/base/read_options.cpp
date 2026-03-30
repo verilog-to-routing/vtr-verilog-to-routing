@@ -2920,6 +2920,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument<bool, ParseOnOff>(args.warn_arch_rr_lookahead, "--warn_arch_rr_lookahead")
+        .help("Show warnings related to architecture files, RR graph generation, and router lookahead."
+              " These warnings are intended for architecture developers."
+              " End users who are given fixed architecture and RR graph files can safely ignore them."
+              " Also enabled automatically when --route_verbosity is set above 1.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
