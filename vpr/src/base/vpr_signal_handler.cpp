@@ -18,8 +18,12 @@
 #include "read_route.h"
 
 // Currently safe_write uses the POSIX write system call. This could be extended to other platforms in the future.
-#if defined(__unix__)
+#if defined(__APPLE__) || defined(__unix__)
 #include "unistd.h"
+#endif
+
+#ifdef _WIN32
+#include <unistd.h>
 #endif
 
 #include "string.h"
@@ -27,6 +31,7 @@
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
 #endif
+
 
 void vpr_signal_handler(int signal);
 void checkpoint();

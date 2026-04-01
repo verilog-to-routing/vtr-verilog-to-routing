@@ -107,7 +107,12 @@ class MultiQueueIO {
         // std::uniform_real_distribution<> distribution(min,max);
         // return distribution(generator);
         static uint64_t modMask = NUM_QUEUES - 1;
+        #if defined(__APPLE__) && defined(__MACH__)
+        static thread_local pthread_t self_thread = pthread_self();
+        static thread_local uint64_t x = (uint64_t)pthread_mach_thread_np(self_thread);
+#else // #if defined(__APPLE__) && defined(__MACH__)
         static thread_local uint64_t x = pthread_self();
+#endif // #if defined(__APPLE__) && defined(__MACH__)
         uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
         z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
         z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
