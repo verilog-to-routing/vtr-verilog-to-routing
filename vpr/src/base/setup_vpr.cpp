@@ -204,7 +204,8 @@ void SetupVPR(const t_options* options,
                                         timingenabled,
                                         arch,
                                         device_ctx.physical_tile_types,
-                                        device_ctx.logical_block_types);
+                                        device_ctx.logical_block_types,
+                                        options->warn_arch_rr_lookahead);
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Invalid architecture format!");

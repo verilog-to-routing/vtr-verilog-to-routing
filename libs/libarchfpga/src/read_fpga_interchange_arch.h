@@ -18,7 +18,8 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
                              const bool timing_enabled,
                              t_arch* arch,
                              std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                             std::vector<t_logical_block_type>& LogicalBlockTypes);
+                             std::vector<t_logical_block_type>& LogicalBlockTypes,
+                             bool warn_arch_rr_lookahead);
 
 #ifdef __cplusplus
 }
