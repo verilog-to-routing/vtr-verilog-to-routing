@@ -317,7 +317,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate external data structures
     //  a. cost_index
     //  b. RC tree
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type, warn_arch_rr_lookahead);
 
     // Sanitizer for the rr_graph, check connectivities of rr_nodes
     // Essential check for rr_graph, build look-up and

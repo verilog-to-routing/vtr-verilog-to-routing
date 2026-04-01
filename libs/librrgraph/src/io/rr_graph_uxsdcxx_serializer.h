@@ -1830,7 +1830,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             *rr_indexed_data_,
             base_cost_type_,
             echo_enabled_,
-            echo_file_name_);
+            echo_file_name_,
+            warn_arch_rr_lookahead_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {

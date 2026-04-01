@@ -977,7 +977,7 @@ static void build_rr_graph(e_graph_type graph_type,
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type, warn_arch_rr_lookahead);
 
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
@@ -1109,7 +1109,8 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
                         const std::vector<t_segment_inf>& segment_inf_y,
                         const std::vector<t_segment_inf>& segment_inf_z,
-                        e_base_cost_type base_cost_type) {
+                        e_base_cost_type base_cost_type,
+                        bool warn_arch_rr_lookahead) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
     const DeviceGrid& grid = device_ctx.grid;
@@ -1119,7 +1120,7 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     add_rr_graph_C_from_switches();
     alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x, segment_inf_y, segment_inf_z,
-                                   rr_indexed_data, base_cost_type, echo_enabled, echo_file_name);
+                                   rr_indexed_data, base_cost_type, echo_enabled, echo_file_name, warn_arch_rr_lookahead);
     //load_rr_index_segments(segment_inf.size());
 }
 
