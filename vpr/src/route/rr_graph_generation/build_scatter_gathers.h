@@ -69,7 +69,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_width& nodes_per_chan,
                                                                          vtr::RngContainer& rng,
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
-                                                                         bool warn_arch_rr_lookahead);
+                                                                         bool device_model_warnings);
 
 /**
  * @brief Converts interposer cut definitions into scatter–gather (SG) specifications.

@@ -48,4 +48,4 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                          int& num_edges,
                          int& rr_edges_before_directs,
                          bool* Fc_clipped,
-                         bool warn_arch_rr_lookahead);
+                         bool device_model_warnings);

@@ -36,6 +36,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const bool& wire_opposite_side,
                                     const int route_verbosity,
                                     int* Warnings,
-                                    bool warn_arch_rr_lookahead);
+                                    bool device_model_warnings);
 
 #endif

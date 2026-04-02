@@ -111,7 +111,7 @@ struct ParmysArchPass : public Pass {
             std::vector<t_logical_block_type> logical_block_types;
 
             try {
-                xml_read_arch(arch_file_path.c_str(), false, &arch, physical_tile_types, logical_block_types, /*warn_arch_rr_lookahead=*/true);
+                xml_read_arch(arch_file_path.c_str(), false, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
             } catch (vtr::VtrError &vtr_error) {
                 log_error("Parmys Failed to load architecture file: %s with exit code %s at line: %ld\n", vtr_error.what(), "ERROR_PARSE_ARCH",
                         vtr_error.line());

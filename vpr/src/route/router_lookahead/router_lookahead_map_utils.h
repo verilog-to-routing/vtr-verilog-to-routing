@@ -311,10 +311,10 @@ typedef Cost_Entry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
  */
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                                                     int route_verbosity,
-                                                    bool warn_arch_rr_lookahead);
+                                                    bool device_model_warnings);
 
 t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity,
-                                                       bool warn_arch_rr_lookahead);
+                                                       bool device_model_warnings);
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
@@ -341,7 +341,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
                                         int route_verbosity,
-                                        bool warn_arch_rr_lookahead);
+                                        bool device_model_warnings);
 
 /**
  * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink

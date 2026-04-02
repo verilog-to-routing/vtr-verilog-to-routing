@@ -15,7 +15,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name,
-                                    bool warn_arch_rr_lookahead);
+                                    bool device_model_warnings);
 
 std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
                                        const std::vector<t_segment_inf>& segment_inf_x,

@@ -55,7 +55,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const t_chan_width& chan_width,
                     const e_graph_type graph_type,
                     bool is_flat,
-                    bool warn_arch_rr_lookahead) {
+                    bool device_model_warnings) {
     e_route_type route_type = e_route_type::DETAILED;
     if (graph_type == e_graph_type::GLOBAL) {
         route_type = e_route_type::GLOBAL;
@@ -295,7 +295,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                                       inode, rr_graph.node_type_string(rr_node));
                     }
                 } else if (!is_chain && !is_fringe_warning_sent) {
-                    VTR_LOGV_WARN(warn_arch_rr_lookahead,
+                    VTR_LOGV_WARN(device_model_warnings,
                                   "in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
                                   "\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
                                   inode, rr_graph.node_type_string(rr_node), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));

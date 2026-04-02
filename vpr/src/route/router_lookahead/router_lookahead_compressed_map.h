@@ -7,7 +7,7 @@
 
 class CompressedMapLookahead : public RouterLookahead {
   public:
-    explicit CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool warn_arch_rr_lookahead);
+    explicit CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings);
 
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
@@ -18,7 +18,7 @@ class CompressedMapLookahead : public RouterLookahead {
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
     int route_verbosity_;
-    bool warn_arch_rr_lookahead_;
+    bool device_model_warnings_;
 
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;

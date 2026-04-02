@@ -16,7 +16,7 @@ extern "C" {
 // function declarations
 
 /// Loads the given architecture file.
-/// @param warn_arch_rr_lookahead When true, emit warnings about architecture
+/// @param device_model_warnings When true, emit warnings about architecture
 ///        file quality (e.g. unexpected file format). Intended for architecture
 ///        developers; end users can safely leave this off.
 void xml_read_arch(std::string_view arch_file,
@@ -24,7 +24,7 @@ void xml_read_arch(std::string_view arch_file,
                    t_arch* arch,
                    std::vector<t_physical_tile_type>& physical_tile_types,
                    std::vector<t_logical_block_type>& logical_block_types,
-                   bool warn_arch_rr_lookahead);
+                   bool device_model_warnings);
 
 #ifdef __cplusplus
 }

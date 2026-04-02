@@ -166,7 +166,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                   /*segment_inf=*/{},
                                                   is_flat,
                                                   /*route_verbosity=*/1,
-                                                  /*warn_arch_rr_lookahead=*/false);
+                                                  /*device_model_warnings=*/false);
 
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,

@@ -75,7 +75,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const char* echo_file_name,
                   int route_verbosity,
                   bool is_flat,
-                  bool warn_arch_rr_lookahead) {
+                  bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
     size_t num_segments = segment_inf.size();
@@ -127,7 +127,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         &arch->strings,
         schema_file_id,
         is_flat,
-        warn_arch_rr_lookahead);
+        device_model_warnings);
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {
         try {

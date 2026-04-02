@@ -24,7 +24,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     std::vector<t_logical_block_type> logical_block_types;
 
     xml_read_arch(kArchFile, /*timing_enabled=*/false,
-                  &arch, physical_tile_types, logical_block_types, /*warn_arch_rr_lookahead=*/true);
+                  &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
 
     auto type_str = arch.strings.intern_string("type");
     auto pb_type_type = arch.strings.intern_string("pb_type_type");
@@ -170,7 +170,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        echo_file_name,
                        vpr_setup.RouterOpts.route_verbosity,
                        false,
-                       vpr_setup.RouterOpts.warn_arch_rr_lookahead);
+                       vpr_setup.RouterOpts.device_model_warnings);
         vpr_free_all(arch, vpr_setup);
     }
 
@@ -294,7 +294,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            echo_file_name,
                            vpr_setup.RouterOpts.route_verbosity,
                            false,
-                           vpr_setup.RouterOpts.warn_arch_rr_lookahead);
+                           vpr_setup.RouterOpts.device_model_warnings);
 
             vpr_free_all(arch, vpr_setup);
         }
@@ -340,7 +340,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            echo_file_name,
                            vpr_setup.RouterOpts.route_verbosity,
                            false,
-                           vpr_setup.RouterOpts.warn_arch_rr_lookahead);
+                           vpr_setup.RouterOpts.device_model_warnings);
 
             vpr_free_all(arch, vpr_setup);
         }

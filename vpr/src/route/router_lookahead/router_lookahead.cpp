@@ -24,15 +24,15 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(const t_det
                                                                      e_router_lookahead router_lookahead_type,
                                                                      bool is_flat,
                                                                      int route_verbosity,
-                                                                     bool warn_arch_rr_lookahead) {
+                                                                     bool device_model_warnings) {
     if (router_lookahead_type == e_router_lookahead::CLASSIC) {
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
-        return std::make_unique<MapLookahead>(det_routing_arch, is_flat, route_verbosity, warn_arch_rr_lookahead);
+        return std::make_unique<MapLookahead>(det_routing_arch, is_flat, route_verbosity, device_model_warnings);
     } else if (router_lookahead_type == e_router_lookahead::COMPRESSED_MAP) {
-        return std::make_unique<CompressedMapLookahead>(det_routing_arch, is_flat, route_verbosity, warn_arch_rr_lookahead);
+        return std::make_unique<CompressedMapLookahead>(det_routing_arch, is_flat, route_verbosity, device_model_warnings);
     } else if (router_lookahead_type == e_router_lookahead::EXTENDED_MAP) {
-        return std::make_unique<ExtendedMapLookahead>(is_flat, route_verbosity, warn_arch_rr_lookahead);
+        return std::make_unique<ExtendedMapLookahead>(is_flat, route_verbosity, device_model_warnings);
     } else if (router_lookahead_type == e_router_lookahead::SIMPLE) {
         return std::make_unique<SimpleLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
@@ -50,12 +50,12 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        bool is_flat,
                                                        int route_verbosity,
-                                                       bool warn_arch_rr_lookahead) {
+                                                       bool device_model_warnings) {
     std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(det_routing_arch,
                                                                                      router_lookahead_type,
                                                                                      is_flat,
                                                                                      route_verbosity,
-                                                                                     warn_arch_rr_lookahead);
+                                                                                     device_model_warnings);
 
     if (read_lookahead.empty()) {
         router_lookahead->compute(segment_inf);
@@ -221,7 +221,7 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    const std::vector<t_segment_inf>& segment_inf,
                                                    bool is_flat,
                                                    int route_verbosity,
-                                                   bool warn_arch_rr_lookahead) {
+                                                   bool device_model_warnings) {
     auto& router_ctx = g_vpr_ctx.routing();
     auto& mut_router_ctx = g_vpr_ctx.mutable_routing();
 
@@ -242,6 +242,6 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                   segment_inf,
                                   is_flat,
                                   route_verbosity,
-                                  warn_arch_rr_lookahead));
+                                  device_model_warnings));
     }
 }

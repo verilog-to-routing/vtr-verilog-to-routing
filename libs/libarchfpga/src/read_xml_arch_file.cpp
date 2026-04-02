@@ -214,7 +214,7 @@ static void process_pb_type(pugi::xml_node Parent,
                             const t_arch& arch,
                             const pugiutil::loc_data& loc_data,
                             int& pb_idx,
-                            bool warn_arch_rr_lookahead);
+                            bool device_model_warnings);
 
 static void process_pb_type_port(pugi::xml_node Parent,
                                  t_port* port,
@@ -261,7 +261,7 @@ static void process_mode(pugi::xml_node Parent,
                          const t_arch& arch,
                          const pugiutil::loc_data& loc_data,
                          int& parent_pb_idx,
-                         bool warn_arch_rr_lookahead);
+                         bool device_model_warnings);
 
 static void process_fc_values(pugi::xml_node node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
 
@@ -313,7 +313,7 @@ static void process_chan_width_distr_dir(pugi::xml_node node,
                                          t_chan* chan,
                                          const pugiutil::loc_data& loc_data);
 
-static void process_models(pugi::xml_node node, t_arch* arch, const pugiutil::loc_data& loc_data, bool warn_arch_rr_lookahead);
+static void process_models(pugi::xml_node node, t_arch* arch, const pugiutil::loc_data& loc_data, bool device_model_warnings);
 static void process_model_ports(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void process_layout(pugi::xml_node node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
 static t_grid_def process_grid_layout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
@@ -345,7 +345,7 @@ static void process_complex_blocks(pugi::xml_node node,
                                    const t_arch& arch,
                                    bool timing_enabled,
                                    const pugiutil::loc_data& loc_data,
-                                   bool warn_arch_rr_lookahead);
+                                   bool device_model_warnings);
 
 static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node node,
                                                        const bool timing_enabled,
@@ -426,7 +426,7 @@ void xml_read_arch(std::string_view arch_file,
                    t_arch* arch,
                    std::vector<t_physical_tile_type>& physical_tile_types,
                    std::vector<t_logical_block_type>& logical_block_types,
-                   bool warn_arch_rr_lookahead) {
+                   bool device_model_warnings) {
     if (!vtr::check_file_name_extension(arch_file, ".xml")) {
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
@@ -464,7 +464,7 @@ void xml_read_arch(std::string_view arch_file,
 
         // Process models
         next = get_single_child(architecture, "models", loc_data);
-        process_models(next, arch, loc_data, warn_arch_rr_lookahead);
+        process_models(next, arch, loc_data, device_model_warnings);
 
         // Process layout
         int num_of_avail_layers = 0;
@@ -500,7 +500,7 @@ void xml_read_arch(std::string_view arch_file,
 
         // Process logical block types
         next = get_single_child(architecture, "complexblocklist", loc_data);
-        process_complex_blocks(next, logical_block_types, *arch, timing_enabled, loc_data, warn_arch_rr_lookahead);
+        process_complex_blocks(next, logical_block_types, *arch, timing_enabled, loc_data, device_model_warnings);
 
         // Process logical block types
         next = get_single_child(architecture, "tiles", loc_data);
@@ -1340,7 +1340,7 @@ static void process_pb_type(pugi::xml_node Parent,
                             const t_arch& arch,
                             const pugiutil::loc_data& loc_data,
                             int& pb_idx,
-                            bool warn_arch_rr_lookahead) {
+                            bool device_model_warnings) {
     const char* prop;
     pugi::xml_node cur;
 
@@ -1532,7 +1532,7 @@ static void process_pb_type(pugi::xml_node Parent,
         VTR_ASSERT(annotation_idx == num_annotations);
 
         if (timing_enabled) {
-            check_leaf_pb_model_timing_consistency(pb_type, arch, warn_arch_rr_lookahead);
+            check_leaf_pb_model_timing_consistency(pb_type, arch, device_model_warnings);
         }
 
         /* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
@@ -1558,7 +1558,7 @@ static void process_pb_type(pugi::xml_node Parent,
             pb_type->modes = new t_mode[pb_type->num_modes];
             pb_type->modes[mode_idx].parent_pb_type = pb_type;
             pb_type->modes[mode_idx].index = mode_idx;
-            process_mode(Parent, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx, warn_arch_rr_lookahead);
+            process_mode(Parent, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx, device_model_warnings);
             mode_idx++;
         } else {
             pb_type->modes = new t_mode[pb_type->num_modes];
@@ -1571,7 +1571,7 @@ static void process_pb_type(pugi::xml_node Parent,
                 if (0 == strcmp(cur.name(), "mode")) {
                     pb_type->modes[mode_idx].parent_pb_type = pb_type;
                     pb_type->modes[mode_idx].index = mode_idx;
-                    process_mode(cur, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx, warn_arch_rr_lookahead);
+                    process_mode(cur, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx, device_model_warnings);
 
                     auto [_, success] = mode_names.insert(pb_type->modes[mode_idx].name);
                     if (!success) {
@@ -1933,7 +1933,7 @@ static void process_mode(pugi::xml_node Parent,
                          const t_arch& arch,
                          const pugiutil::loc_data& loc_data,
                          int& parent_pb_idx,
-                         bool warn_arch_rr_lookahead) {
+                         bool device_model_warnings) {
     pugi::xml_node cur;
 
     bool implied_mode = (0 == strcmp(Parent.name(), "pb_type"));
@@ -1977,7 +1977,7 @@ static void process_mode(pugi::xml_node Parent,
         while (cur != nullptr) {
             if (0 == strcmp(cur.name(), "pb_type")) {
                 parent_pb_idx++;
-                process_pb_type(cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx, warn_arch_rr_lookahead);
+                process_pb_type(cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx, device_model_warnings);
 
                 auto [_, success] = pb_type_names.insert(mode->pb_type_children[pb_type_child_idx].name);
                 if (!success) {
@@ -2376,7 +2376,7 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
 
 /* Takes in node pointing to <models> and loads all the
  * child type objects.  */
-static void process_models(pugi::xml_node node, t_arch* arch, const pugiutil::loc_data& loc_data, bool warn_arch_rr_lookahead) {
+static void process_models(pugi::xml_node node, t_arch* arch, const pugiutil::loc_data& loc_data, bool device_model_warnings) {
     // std::maps for checking duplicates
     std::map<std::string, int> model_name_map;
 
@@ -2443,7 +2443,7 @@ static void process_models(pugi::xml_node node, t_arch* arch, const pugiutil::lo
             //Sanity check the model
             check_model_clocks(new_model, loc_data.filename_c_str(), loc_data.line(model));
             check_model_combinational_sinks(new_model, loc_data.filename_c_str(), loc_data.line(model));
-            warn_model_missing_timing(new_model, loc_data.filename_c_str(), loc_data.line(model), warn_arch_rr_lookahead);
+            warn_model_missing_timing(new_model, loc_data.filename_c_str(), loc_data.line(model), device_model_warnings);
         } catch (ArchFpgaError& e) {
             throw;
         }
@@ -3768,7 +3768,7 @@ static void process_complex_blocks(pugi::xml_node node,
                                    const t_arch& arch,
                                    const bool timing_enabled,
                                    const pugiutil::loc_data& loc_data,
-                                   bool warn_arch_rr_lookahead) {
+                                   bool device_model_warnings) {
     // used to find duplicate pb_types names
     std::set<std::string> pb_type_descriptors;
 
@@ -3804,7 +3804,7 @@ static void process_complex_blocks(pugi::xml_node node,
         // Load pb_type info to assign to the Logical Block Type
         logical_block_type.pb_type = new t_pb_type;
         logical_block_type.pb_type->name = vtr::strdup(logical_block_type.name.c_str());
-        process_pb_type(cur_block_type, logical_block_type.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx, warn_arch_rr_lookahead);
+        process_pb_type(cur_block_type, logical_block_type.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx, device_model_warnings);
 
         logical_block_type.index = index;
 

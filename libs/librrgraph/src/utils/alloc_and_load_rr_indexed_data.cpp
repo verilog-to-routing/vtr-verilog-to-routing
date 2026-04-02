@@ -26,13 +26,13 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
                                             e_base_cost_type base_cost_type,
                                             const bool echo_enabled,
                                             const char* echo_file_name,
-                                            bool warn_arch_rr_lookahead);
+                                            bool device_model_warnings);
 
-static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, const bool echo_enabled, const char* echo_file_name, bool warn_arch_rr_lookahead);
+static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, const bool echo_enabled, const char* echo_file_name, bool device_model_warnings);
 
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                          bool warn_arch_rr_lookahead);
+                                          bool device_model_warnings);
 
 /**
  * @brief Computes average R, Tdel, and Cinternal of fan-in switches for a given node.
@@ -91,7 +91,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name,
-                                    bool warn_arch_rr_lookahead) {
+                                    bool device_model_warnings) {
     const size_t total_num_segment = segment_inf_x.size() + segment_inf_y.size() + segment_inf_z.size();
 
     // CHAX & CHANY segment list sizes may differ, but if we're using uniform channels, they will have equal sizes
@@ -159,11 +159,11 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[index].seg_index = seg_ptr->seg_index;
     }
 
-    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data, warn_arch_rr_lookahead);
+    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data, device_model_warnings);
 
     fixup_rr_indexed_data_T_values(rr_indexed_data, total_num_segment);
 
-    load_rr_indexed_data_base_costs(rr_graph, rr_indexed_data, base_cost_type, echo_enabled, echo_file_name, warn_arch_rr_lookahead);
+    load_rr_indexed_data_base_costs(rr_graph, rr_indexed_data, base_cost_type, echo_enabled, echo_file_name, device_model_warnings);
 
     if (echo_enabled) {
         print_rr_index_info(rr_indexed_data,
@@ -351,14 +351,14 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
                                             e_base_cost_type base_cost_type,
                                             const bool echo_enabled,
                                             const char* echo_file_name,
-                                            bool warn_arch_rr_lookahead) {
+                                            bool device_model_warnings) {
     // Loads the base_cost member of rr_indexed_data according to the specified base_cost_type.
 
     float delay_normalization_fac;
     if (base_cost_type == DEMAND_ONLY || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
         delay_normalization_fac = 1.;
     } else {
-        delay_normalization_fac = get_delay_normalization_fac(rr_indexed_data, echo_enabled, echo_file_name, warn_arch_rr_lookahead);
+        delay_normalization_fac = get_delay_normalization_fac(rr_indexed_data, echo_enabled, echo_file_name, device_model_warnings);
     }
 
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
@@ -468,7 +468,7 @@ static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph,
 static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                                          const bool echo_enabled,
                                          const char* echo_file_name,
-                                         bool warn_arch_rr_lookahead) {
+                                         bool device_model_warnings) {
     /* Returns the average delay to go 1 CLB distance along a wire.  */
 
     float Tdel_sum = 0.0;
@@ -484,7 +484,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
     }
 
     if (Tdel_num == 0) {
-        VTR_LOGV_WARN(warn_arch_rr_lookahead, "No valid cost index was found to get the delay normalization factor. Setting delay normalization factor to 1e-9 (1 ns)\n");
+        VTR_LOGV_WARN(device_model_warnings, "No valid cost index was found to get the delay normalization factor. Setting delay normalization factor to 1e-9 (1 ns)\n");
         return 1e-9;
     }
 
@@ -517,7 +517,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  */
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                          bool warn_arch_rr_lookahead) {
+                                          bool device_model_warnings) {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
 
     vtr::vector<RRIndexedDataId, int> num_nodes_of_index(rr_indexed_data.size(), 0);
@@ -579,7 +579,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         if (num_switches == 0) {
             if (num_shorts == 0) {
                 std::string node_cords = rr_graph.node_coordinate_to_string(RRNodeId(rr_id));
-                VTR_LOGV_WARN(warn_arch_rr_lookahead, "Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
+                VTR_LOGV_WARN(device_model_warnings, "Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
                               rr_graph.node_type_string(rr_id), node_cords.c_str());
             }
             continue;
@@ -617,7 +617,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     // Set the T_linear value for the IPIN cost index
     {
         if (ipin_switch_count == 0) {
-            VTR_LOGV_WARN(warn_arch_rr_lookahead, "No IPIN switches found. Setting T_linear to 0\n");
+            VTR_LOGV_WARN(device_model_warnings, "No IPIN switches found. Setting T_linear to 0\n");
             rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = 0.0;
         } else {
             float average_ipin_switch_T_del = ipin_switch_T_total / ipin_switch_count;
@@ -671,7 +671,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
             }
         }
     }
-    VTR_LOGV_WARN(warn_arch_rr_lookahead && num_occurences_of_no_instances_with_cost_index > 0,
+    VTR_LOGV_WARN(device_model_warnings && num_occurences_of_no_instances_with_cost_index > 0,
                   "Found %u cost indices where no instances of RR nodes could be found\n",
                   num_occurences_of_no_instances_with_cost_index);
 }

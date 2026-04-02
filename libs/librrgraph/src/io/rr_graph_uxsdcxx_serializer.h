@@ -296,7 +296,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::string_internment* strings,
         unsigned long schema_file_id,
         bool is_flat,
-        bool warn_arch_rr_lookahead)
+        bool device_model_warnings)
         : chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
         , rr_graph_builder_(rr_graph_builder)
@@ -323,7 +323,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , report_error_(nullptr)
         , schema_file_id_(schema_file_id)
         , is_flat_(is_flat)
-        , warn_arch_rr_lookahead_(warn_arch_rr_lookahead) {
+        , device_model_warnings_(device_model_warnings) {
         // Initialize internal data
         init_side_map();
         init_segment_inf_xyz();
@@ -1831,7 +1831,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             base_cost_type_,
             echo_enabled_,
             echo_file_name_,
-            warn_arch_rr_lookahead_);
+            device_model_warnings_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {
@@ -1852,7 +1852,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                            *chan_width_,
                            graph_type_,
                            is_flat_,
-                           warn_arch_rr_lookahead_);
+                           device_model_warnings_);
         }
     }
 
@@ -2215,7 +2215,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const std::function<void(const char*)>* report_error_;
     unsigned long schema_file_id_;
     bool is_flat_;
-    bool warn_arch_rr_lookahead_;
+    bool device_model_warnings_;
 
     // Temporary data to check grid block types
     int curr_tmp_block_type_id;

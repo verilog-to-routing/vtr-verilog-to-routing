@@ -52,7 +52,7 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                                           segment_inf,
                                                                           is_flat,
                                                                           router_opts.route_verbosity,
-                                                                          router_opts.warn_arch_rr_lookahead);
+                                                                          router_opts.device_model_warnings);
 
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 

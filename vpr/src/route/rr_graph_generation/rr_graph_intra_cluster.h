@@ -26,4 +26,4 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                   RRGraphBuilder& rr_graph_builder,
                                   bool is_flat,
                                   bool load_rr_graph,
-                                  bool warn_arch_rr_lookahead);
+                                  bool device_model_warnings);

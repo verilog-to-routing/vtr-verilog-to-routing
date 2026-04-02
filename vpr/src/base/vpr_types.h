@@ -1368,7 +1368,7 @@ struct t_router_opts {
     /// and router lookahead quality. These warnings are intended for architecture
     /// developers. End users who are given fixed architecture and RR graph files
     /// can safely ignore them. Also enabled when route_verbosity > 1.
-    bool warn_arch_rr_lookahead = false;
+    bool device_model_warnings = false;
 };
 
 struct t_analysis_opts {

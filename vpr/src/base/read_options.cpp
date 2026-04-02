@@ -2920,7 +2920,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_grp.add_argument<bool, ParseOnOff>(args.warn_arch_rr_lookahead, "--warn_arch_rr_lookahead")
+    route_grp.add_argument<bool, ParseOnOff>(args.device_model_warnings, "--device_model_warnings")
         .help("Show warnings related to architecture files, RR graph generation, and router lookahead."
               " These warnings are intended for architecture developers."
               " End users who are given fixed architecture and RR graph files can safely ignore them."

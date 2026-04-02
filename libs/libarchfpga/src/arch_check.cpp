@@ -71,7 +71,7 @@ bool check_model_combinational_sinks(const t_model& model, const char* file, uin
     return true;
 }
 
-void warn_model_missing_timing(const t_model& model, const char* file, uint32_t line, bool warn_arch_rr_lookahead) {
+void warn_model_missing_timing(const t_model& model, const char* file, uint32_t line, bool device_model_warnings) {
     //Check whether there are missing edges and warn the user
     std::set<std::string> comb_connected_outputs;
     for (t_model_ports* port = model.inputs; port != nullptr; port = port->next) {
@@ -79,7 +79,7 @@ void warn_model_missing_timing(const t_model& model, const char* file, uint32_t 
             && port->combinational_sink_ports.empty() //Doesn't drive any combinational outputs
             && !port->is_clock                        //Not an input clock
         ) {
-            if (warn_arch_rr_lookahead) {
+            if (device_model_warnings) {
                 VTR_LOGF_WARN(file, line,
                               "Model '%s' input port '%s' has no timing specification (no clock specified to create a sequential input port, not combinationally connected to any outputs, not a clock input)\n", model.name, port->name);
             }
@@ -93,7 +93,7 @@ void warn_model_missing_timing(const t_model& model, const char* file, uint32_t 
             && !comb_connected_outputs.count(port->name) //Not combinationally driven
             && !port->is_clock                           //Not an output clock
         ) {
-            if (warn_arch_rr_lookahead) {
+            if (device_model_warnings) {
                 VTR_LOGF_WARN(file, line,
                               "Model '%s' output port '%s' has no timing specification (no clock specified to create a sequential output port, not combinationally connected to any inputs, not a clock output)\n", model.name, port->name);
             }
@@ -137,7 +137,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
     }
 }
 
-bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch, bool warn_arch_rr_lookahead) {
+bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch, bool device_model_warnings) {
     //Normalize the blif model name to match the model name
     // by removing the leading '.' (.latch, .inputs, .names etc.)
     // by removing the leading '.subckt'
@@ -287,7 +287,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                         if (arch.models.is_library_model(blif_model_id)) {
                             //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            if (warn_arch_rr_lookahead) {
+                            if (device_model_warnings) {
                                 VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                             }
                         } else {
@@ -307,7 +307,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                             if (arch.models.is_library_model(blif_model_id)) {
                                 //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                                if (warn_arch_rr_lookahead) {
+                                if (device_model_warnings) {
                                     VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                                 }
                             } else {
@@ -328,7 +328,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                         if (arch.models.is_library_model(blif_model_id)) {
                             //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            if (warn_arch_rr_lookahead) {
+                            if (device_model_warnings) {
                                 VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                             }
                         } else {
@@ -348,7 +348,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                             if (arch.models.is_library_model(blif_model_id)) {
                                 //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                                if (warn_arch_rr_lookahead) {
+                                if (device_model_warnings) {
                                     VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                                 }
                             } else {
@@ -371,7 +371,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                         if (arch.models.is_library_model(blif_model_id)) {
                             //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            if (warn_arch_rr_lookahead) {
+                            if (device_model_warnings) {
                                 VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
                             }
                         } else {
