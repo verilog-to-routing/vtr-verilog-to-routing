@@ -494,7 +494,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     bool pack_only = is_pack_only(vpr_setup);
 
-    vpr_create_device(vpr_setup, arch, pack_only);
+    if (vpr_setup.APOpts.doAP != e_stage_action::DO) {
+        vpr_create_device(vpr_setup, arch, pack_only);
+    }
     // If packing is not skipped, cluster netlist contain valid information, so
     // we can print the resource usage and device utilization
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
