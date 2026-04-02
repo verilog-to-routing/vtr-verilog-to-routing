@@ -43,7 +43,7 @@ bool check_model_combinational_sinks(const t_model& model, const char* file, uin
  * @param file architecture file
  * @param line line in the architecture file that generates the failure
  */
-void warn_model_missing_timing(const t_model& model, const char* file, uint32_t line);
+void warn_model_missing_timing(const t_model& model, const char* file, uint32_t line, bool device_model_warnings);
 
 /**
  * @brief Checks the consistency of the mappings between a logical block and the corresponding physical tile.
@@ -60,7 +60,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
  * @param pb_type pb type to check
  * @param arch architecture data structure
  */
-bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
+bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch, bool device_model_warnings);
 
 /**
  * @brief Checks that each model has at least one corresponding pb type. This function also updates the port indices of the models

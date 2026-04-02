@@ -76,7 +76,7 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type,
                                             int delta_y,
                                             int to_layer_num);
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, int route_verbosity);
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, int route_verbosity, bool device_model_warnings);
 
 /***
  * @brief Compute the cost from pin to sinks of tiles - Compute the minimum cost to get to each tile sink from pins on the cluster
@@ -163,10 +163,11 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
                                                                 int chan_index);
 
 /******** Interface class member function definitions ********/
-MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity)
+MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings)
     : det_routing_arch_(det_routing_arch)
     , is_flat_(is_flat)
-    , route_verbosity_(route_verbosity) {}
+    , route_verbosity_(route_verbosity)
+    , device_model_warnings_(device_model_warnings) {}
 
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -404,11 +405,11 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     // First compute the delay map when starting from the various wire types
     // (CHANX/CHANY/CHANZ) in the routing architecture
-    compute_router_wire_lookahead(segment_inf, route_verbosity_);
+    compute_router_wire_lookahead(segment_inf, route_verbosity_, device_model_warnings_);
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, device_model_warnings_);
 
     min_chann_global_cost_map(chann_distance_based_min_cost);
     min_opin_distance_cost_map(src_opin_delays, opin_distance_based_min_cost);
@@ -431,7 +432,7 @@ void MapLookahead::read(const std::string& file) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, device_model_warnings_);
 
     min_chann_global_cost_map(chann_distance_based_min_cost);
     min_opin_distance_cost_map(src_opin_delays, opin_distance_based_min_cost);
@@ -493,7 +494,8 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, in
 }
 
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf_vec,
-                                          int route_verbosity) {
+                                          int route_verbosity,
+                                          bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -543,7 +545,8 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                                                                                        segment_inf,
                                                                                        std::unordered_map<int, std::unordered_set<int>>(),
                                                                                        /*sample_all_locs=*/true,
-                                                                                       route_verbosity);
+                                                                                       route_verbosity,
+                                                                                       device_model_warnings);
                 if (routing_cost_map.empty()) {
                     continue;
                 }

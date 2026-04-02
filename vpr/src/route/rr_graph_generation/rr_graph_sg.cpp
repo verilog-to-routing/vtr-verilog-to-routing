@@ -297,7 +297,8 @@ void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
                                     const t_unified_to_parallel_seg_index& seg_index_map,
                                     int num_seg_types,
                                     t_rr_edge_info_set& rr_edges_to_create,
-                                    const std::vector<t_bottleneck_link>& interdie_3d_links) {
+                                    const std::vector<t_bottleneck_link>& interdie_3d_links,
+                                    bool device_model_warnings) {
     const RRSpatialLookup& node_lookup = rr_graph.node_lookup();
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
@@ -328,8 +329,9 @@ void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
 
         // Check for empty selected nodes vector to avoid modulo by zero
         if (selected_chanz_nodes.empty()) {
-            VTR_LOG_WARN("No CHANZ nodes found for layer %d at (%d, %d) for segment type %d. Skipping edge creation.\n",
-                         layer, x, y, iseg);
+            VTR_LOGV_WARN(device_model_warnings,
+                          "No CHANZ nodes found for layer %d at (%d, %d) for segment type %d. Skipping edge creation.\n",
+                          layer, x, y, iseg);
             continue; // Skip to the next 'iseg'
         }
 
