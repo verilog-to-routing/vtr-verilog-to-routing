@@ -17,8 +17,6 @@ extern "C" {
 
 /// Loads the given architecture file.
 /// @param device_model_warnings When true, emit warnings about architecture
-///        file quality (e.g. unexpected file format). Intended for architecture
-///        developers; end users can safely leave this off.
 void xml_read_arch(std::string_view arch_file,
                    const bool timing_enabled,
                    t_arch* arch,

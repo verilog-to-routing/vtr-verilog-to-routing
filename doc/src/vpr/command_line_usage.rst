@@ -1729,6 +1729,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default**: ``1``
 
+.. option:: --device_model_warnings <on|off>
+
+    Show warnings related to architecture files, RR graph generation, and router lookahead.
+    These warnings are intended for VTR developers.
+    End users who are given fixed architecture and RR graph files can safely set this parameter to off.
+
+    **Default:** ``on``
+
 .. _timing_driven_router_options:
 
 Timing-Driven Router Options
