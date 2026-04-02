@@ -879,7 +879,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
 
             // If the bin is not 1x1, then we only want to apply the capacity to the
-            // center "sub-tile" of this bin. The other sub-tiles will have zero
+            // center tile of this bin. The other tiles will have zero
             // capacity. This must be done since the prefix-sum assumes 1x1 grid of
             // values, so we set the center bin as the representative of the entire
             // bin.
@@ -1178,7 +1178,7 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
             // Matching the code for the capacity prefix sum, we assume that all of the
             // mass of a tile is concentrated in its center. All other bins are zeroed out.
             // TODO: A better way of doing this is actually using the solved positions to find
-            //       the capacity of sub-tiles within each larger tile. However, this may slow
+            //       the capacity of tiles within each non-1x1 bin. However, this may slow
             //       things down a lot.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
             size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
