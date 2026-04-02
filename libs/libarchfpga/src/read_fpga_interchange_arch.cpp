@@ -2541,6 +2541,7 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
     (void)arch;
     (void)PhysicalTileTypes;
     (void)LogicalBlockTypes;
+    (void)warn_arch_rr_lookahead;
     throw vtr::VtrError("Unable to read FPGA interchange if CAPNPROTO is not enabled", __FILE__, __LINE__);
 #endif // VTR_ENABLE_CAPNPROTO
 }
