@@ -74,8 +74,8 @@ Partitions, Atoms, Regions, and Logical Block Types
 		:req_param name_pattern:
 			The name of the atom which can be the exact name of an atom from the input atom netlist passed to VPR, or a regular expression pattern matching one or more atom names. 
 			By default, name_pattern is treated as an exact atom name.
-			If ``is_regex`` is set to ``false`` or not provided, VPR will only attempt to find an exact match. If no match is found, the constraint will be ignored and a warning will be printed to the user. 
-			If ``is_regex`` is set to ``true``, VPR will search for all atoms whose names match the regex pattern provided. If no matches are found, the constraint will be ignored and a warning will be printed to the user.
+			If ``is_regex`` is set to ``false`` or not provided, VPR will only attempt to find an exact match. If no match is found, the constraint will be ignored and a warning will be printed. 
+			If ``is_regex`` is set to ``true``, VPR will search for all atoms whose names match the regex pattern provided. If no matches are found, the constraint will be ignored and a warning will be printed.
 			
 			For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` and set ``is_regex="true"`` in the ``<add_atom>`` tag.
 		
@@ -138,8 +138,8 @@ Partitions, Atoms, Regions, and Logical Block Types
 
 		:req_param name_pattern:
 			The name of the logical block type that atoms in this partition are allowed to be mapped to. This can be the exact name of a logical block type from the device architecture, or a regular expression pattern matching one or more logical block type names.
-			If ``is_regex`` is set to ``false`` or not provided, VPR will only attempt to find an exact match. If no match is found, the ``<add_logical_block>`` tag will be ignored and a warning will be printed to the user. 
-			If ``is_regex`` is set to ``true``, VPR will search for all logical blocks whose names match the regex pattern provided. If no matches are found, the ``<add_logical_block>`` tag will be ignored and a warning will be printed to the user.
+			If ``is_regex`` is set to ``false`` or not provided, VPR will only attempt to find an exact match. If no match is found, the ``<add_logical_block>`` tag will be ignored and a warning will be printed. 
+			If ``is_regex`` is set to ``true``, VPR will search for all logical blocks whose names match the regex pattern provided. If no matches are found, the ``<add_logical_block>`` tag will be ignored and a warning will be printed.
 			For example, to constrain atoms to both ``clbA`` and ``clbB`` logical block types, the user can add two ``<add_logical_block>`` tags with ``name_pattern`` values of ``clbA`` and ``clbB`` respectively, or use a single tag with ``name_pattern="clb[AB]"``.
 		
 		:opt_param is_regex:
