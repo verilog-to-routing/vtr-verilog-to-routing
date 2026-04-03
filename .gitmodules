@@ -21,4 +21,4 @@
 	url = https://github.com/jbeder/yaml-cpp.git
 [submodule "libs/EXTERNAL/libsdcparse"]
 	path = libs/EXTERNAL/libsdcparse
-	url = https://github.com/verilog-to-routing/libsdcparse.git
+	url = https://github.com/coolbreeze413/libsdcparse.git
