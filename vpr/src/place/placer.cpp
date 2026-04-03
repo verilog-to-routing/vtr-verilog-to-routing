@@ -69,6 +69,8 @@ Placer::Placer(const Netlist<>& net_list,
         // If an initial placement has been provided, use that.
         blk_loc_registry = *init_place;
 
+        // If an initial placement has been provided, re-compute the NoC cost
+        // handler for this given placement.
         if (noc_opts.noc) {
             noc_cost_handler_.value().initial_noc_routing({});
         }

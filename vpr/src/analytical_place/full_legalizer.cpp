@@ -1321,8 +1321,8 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     }
 
     // Setup NoCs
-    // TODO: We have some flow divergence. When the device grid is ever created,
-    //       we should set this up.
+    // TODO: We have some flow divergence. When the device grid is created the
+    //       final time, we should set this up.
     vpr_setup_noc(vpr_setup_, arch_);
 
     // Setup the global variables for placement.
