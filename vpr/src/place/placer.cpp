@@ -68,6 +68,12 @@ Placer::Placer(const Netlist<>& net_list,
     if (init_place.has_value()) {
         // If an initial placement has been provided, use that.
         blk_loc_registry = *init_place;
+
+        // If an initial placement has been provided, re-compute the NoC cost
+        // handler for this given placement.
+        if (noc_opts.noc) {
+            noc_cost_handler_.value().initial_noc_routing({});
+        }
     } else {
         // If an initial placement has not been provided, run the initial placer.
         initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
