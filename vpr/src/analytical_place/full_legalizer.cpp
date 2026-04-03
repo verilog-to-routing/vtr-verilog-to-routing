@@ -1320,12 +1320,9 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         vpr_create_device_grid(vpr_setup_, arch_);
     }
 
-    // Setup the clock networks.
-    // TODO
-
     // Setup NoCs
     // TODO: We have some flow divergence. When the device grid is ever created,
-    //       we should set this and the clock networks up.
+    //       we should set this up.
     vpr_setup_noc(vpr_setup_, arch_);
 
     // Setup the global variables for placement.
