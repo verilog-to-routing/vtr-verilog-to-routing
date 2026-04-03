@@ -1363,6 +1363,12 @@ struct t_router_opts {
     int reorder_rr_graph_nodes_seed = 1;
 
     bool generate_router_lookahead_report;
+
+    /// When true, emit warnings about architecture files, RR graph generation,
+    /// and router lookahead quality. These warnings are intended for architecture
+    /// developers. End users who are given fixed architecture and RR graph files
+    /// can safely ignore them. Also enabled when route_verbosity > 1.
+    bool device_model_warnings = false;
 };
 
 struct t_analysis_opts {

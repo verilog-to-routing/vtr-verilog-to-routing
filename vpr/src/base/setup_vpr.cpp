@@ -195,7 +195,8 @@ void SetupVPR(const t_options* options,
                               timingenabled,
                               arch,
                               device_ctx.physical_tile_types,
-                              device_ctx.logical_block_types);
+                              device_ctx.logical_block_types,
+                              options->device_model_warnings);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
@@ -203,7 +204,8 @@ void SetupVPR(const t_options* options,
                                         timingenabled,
                                         arch,
                                         device_ctx.physical_tile_types,
-                                        device_ctx.logical_block_types);
+                                        device_ctx.logical_block_types,
+                                        options->device_model_warnings);
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Invalid architecture format!");
@@ -487,6 +489,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
     RouterOpts->route_verbosity = Options.route_verbosity;
+    RouterOpts->device_model_warnings = Options.device_model_warnings;
 
     RouterOpts->full_stats = Options.full_stats;
 
