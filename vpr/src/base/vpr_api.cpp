@@ -501,7 +501,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-
     // The AP flow creates the device internally. All other flows create the
     // device here.
     if (vpr_setup.APOpts.doAP != e_stage_action::DO) {
