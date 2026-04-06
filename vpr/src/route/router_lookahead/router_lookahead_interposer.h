@@ -22,8 +22,9 @@ class InterposerLookahead {
      * @brief Constructs the lookahead and populates the internal delay matrix.
      * @param rr_graph The Routing Resource Graph.
      * @param grid The Device Grid, used to determine die boundaries and interposer positions.
+     * @param interposer_cut_base_cost_multiplier Final interposer crossing base cost is multiplied by this value
      */
-    InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx);
+    InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx, float interposer_cut_base_cost_multiplier);
 
     /**
      * @brief Estimates the interposer delay between two nodes based on their die locations.

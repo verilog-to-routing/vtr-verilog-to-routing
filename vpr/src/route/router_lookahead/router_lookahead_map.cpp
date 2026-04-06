@@ -172,11 +172,12 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
                                                                 int chan_index);
 
 /******** Interface class member function definitions ********/
-MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings)
+MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier)
     : det_routing_arch_(det_routing_arch)
     , is_flat_(is_flat)
     , route_verbosity_(route_verbosity)
-    , device_model_warnings_(device_model_warnings) {
+    , device_model_warnings_(device_model_warnings)
+    , interposer_base_cost_multiplier_(interposer_base_cost_multiplier){
     has_interposer_cuts_ = g_vpr_ctx.device().grid.has_interposer_cuts();
 }
 
@@ -436,7 +437,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
 
     if (has_interposer_cuts_) {
-        interposer_lookahead_.emplace(rr_graph, grid, g_vpr_ctx.device());
+        interposer_lookahead_.emplace(rr_graph, grid, g_vpr_ctx.device(), interposer_base_cost_multiplier_);
     }
 }
 

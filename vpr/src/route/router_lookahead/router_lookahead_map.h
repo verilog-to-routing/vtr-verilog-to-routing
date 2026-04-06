@@ -12,7 +12,7 @@
  */
 class MapLookahead : public RouterLookahead {
   public:
-    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings);
+    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier);
 
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
@@ -32,6 +32,7 @@ class MapLookahead : public RouterLookahead {
     int route_verbosity_;
     bool device_model_warnings_;
     bool has_interposer_cuts_;
+    const float interposer_base_cost_multiplier_;
 
   protected:
     float get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;

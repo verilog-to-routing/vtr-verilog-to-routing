@@ -36,7 +36,8 @@
  */
 static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid,
                                                                                                    const RRGraphView& rr_graph,
-                                                                                                   const DeviceContext& device_ctx);
+                                                                                                   const DeviceContext& device_ctx,
+                                                                                                   float interposer_cut_base_cost_multiplier);
 
 /**
  * @brief Get all input edges of a given list of nodes. This function is expensive and works in O(n.logk)
@@ -46,10 +47,10 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
  */
 static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(const RRGraphView& rr_graph, std::vector<RRNodeId>& nodes);
 
-InterposerLookahead::InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx)
+InterposerLookahead::InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx, float interposer_cut_base_cost_multiplier)
     : rr_graph_(rr_graph)
     , grid_(grid) {
-    auto [delay_matrix, cong_matrix] = compute_interposer_delay_matrix(grid, rr_graph, device_ctx);
+    auto [delay_matrix, cong_matrix] = compute_interposer_delay_matrix(grid, rr_graph, device_ctx, interposer_cut_base_cost_multiplier);
     die_to_die_delay_matrix_ = std::move(delay_matrix);
     die_to_die_cong_matrix_ = std::move(cong_matrix);
 }
@@ -86,8 +87,11 @@ static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(co
     return node_in_edges;
 }
 
-static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid, const RRGraphView& rr_graph, const DeviceContext& device_ctx) {
-    vtr::ScopedStartFinishTimer timer("Computing interposer delay lookahead");
+static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid,
+                                                                                                   const RRGraphView& rr_graph,
+                                                                                                   const DeviceContext& device_ctx,
+                                                                                                   float interposer_cut_base_cost_multiplier) {
+    vtr::ScopedStartFinishTimer timer("Computing interposer lookahead");
     const auto [layer_size, device_width, device_height] = grid.dim_sizes();
     const std::vector<std::vector<int>>& horizontal_interposer_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_interposer_cuts = grid.get_vertical_interposer_cuts();
@@ -192,7 +196,7 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
             // We multiply the base cost of an interposer crossing by a factor of 2. This tells the router that interposer wires are a rare and expensive resource.
             interposer_cong_matrix[(size_t)first_die_id][(size_t)second_die_id] =
-                2 * get_die_crossing_cost(horizontal_cong_sum, vertical_cong_sum, first_die_region, second_die_region);
+                interposer_cut_base_cost_multiplier * get_die_crossing_cost(horizontal_cong_sum, vertical_cong_sum, first_die_region, second_die_region);
         }
     }
 

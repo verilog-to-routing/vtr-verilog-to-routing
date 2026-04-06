@@ -280,7 +280,8 @@ static void profile_lookahead_overestimation(std::ofstream& os,
                                                                                    /*segment_inf=*/{},
                                                                                    false /*is_flat*/,
                                                                                    1 /*route_verbosity*/,
-                                                                                   false /*device_model_warnings*/);
+                                                                                   false /*device_model_warnings*/,
+                                                                                   0 /*router_lookahead_interposer_base_cut_multiplier*/);
 
     // Create the router to perform the all-destination dijkstra search,
     // TODO: The parallel connection router would be ideal for this use case.
