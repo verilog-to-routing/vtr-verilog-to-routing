@@ -64,13 +64,13 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
     average_fanout /= static_cast<float>(net_count);
     // Print the statistics
     VTR_LOG("Analytical Placement Netlist Statistics:\n");
-    VTR_LOG("\tBlocks: %zu\n", netlist.blocks().size());
-    VTR_LOG("\t\tMoveable Blocks: %zu\n", num_moveable_blocks);
-    VTR_LOG("\t\tFixed Blocks: %zu\n", num_fixed_blocks);
-    VTR_LOG("\tNets: %zu\n", net_count);
+    VTR_LOG("\tAP Blocks: %zu\n", netlist.blocks().size());
+    VTR_LOG("\t\tMoveable AP Blocks: %zu\n", num_moveable_blocks);
+    VTR_LOG("\t\tFixed AP Blocks: %zu\n", num_fixed_blocks);
+    VTR_LOG("\tAP Nets: %zu\n", net_count);
     VTR_LOG("\t\tAverage Fanout: %.2f\n", average_fanout);
     VTR_LOG("\t\tHighest Fanout: %zu\n", highest_fanout);
-    VTR_LOG("\tPins: %zu\n", netlist.pins().size());
+    VTR_LOG("\tAP Pins: %zu\n", netlist.pins().size());
     VTR_LOG("\n");
 }
 
