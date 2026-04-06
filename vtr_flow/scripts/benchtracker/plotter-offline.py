@@ -3,13 +3,13 @@ this is to plot graphs based on the db output:
 db should be like this:
      task | run | arch | benchmark | settings(fc, wl, sb, ...) | measuremnts(delay, min_cw, area ...)
 
-take as input: 
+take as input:
     the user filtered table
 
 prompt user input:
     the overlay axis, and the choice of geometric mean
 
-input data from the database: 
+input data from the database:
     in the form of [(a,b,c), (a,b,c), ...]: a list of tuples
 """
 

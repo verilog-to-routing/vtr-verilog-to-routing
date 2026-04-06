@@ -1,3 +1,4 @@
+regression_tests/vtr_reg_weekly/s10_complex_alm
 regression_tests/vtr_reg_weekly/vtr_reg_titan_he
 regression_tests/vtr_reg_weekly/vtr_reg_titan
 regression_tests/vtr_reg_weekly/vtr_reg_qor_chain_predictor_off

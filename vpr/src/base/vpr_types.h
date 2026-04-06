@@ -797,6 +797,7 @@ struct t_packer_opts {
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
     int pack_verbosity;
+    bool memoize_cluster_packings;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
@@ -1362,6 +1363,12 @@ struct t_router_opts {
     int reorder_rr_graph_nodes_seed = 1;
 
     bool generate_router_lookahead_report;
+
+    /// When true, emit warnings about architecture files, RR graph generation,
+    /// and router lookahead quality. These warnings are intended for architecture
+    /// developers. End users who are given fixed architecture and RR graph files
+    /// can safely ignore them. Also enabled when route_verbosity > 1.
+    bool device_model_warnings = false;
 };
 
 struct t_analysis_opts {

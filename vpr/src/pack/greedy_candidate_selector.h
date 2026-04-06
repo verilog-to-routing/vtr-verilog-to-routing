@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <vector>
 #include "flat_placement_types.h"
+#include "logical_ram_infer.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "greedy_clusterer.h"
@@ -118,6 +119,14 @@ struct ClusterGainStats {
     ///        set when the stats are created based on the primitive pb type
     ///        of the seed.
     bool is_memory = false;
+
+    /// @brief The logical RAM group ID of this cluster's seed atom.
+    ///        Set to INVALID for non-memory clusters.
+    LogicalRamGroupId logical_ram_id;
+
+    /// @brief The physical RAM group ID of this cluster's seed atom.
+    ///        Set to INVALID for non-memory clusters.
+    PhysicalRamGroupId physical_ram_id;
 
     /// @brief List of feasible block and its gain pairs.
     ///        The list is maintained in heap structure with the highest gain block
@@ -249,6 +258,7 @@ class GreedyCandidateSelector {
      */
     GreedyCandidateSelector(const AtomNetlist& atom_netlist,
                             const Prepacker& prepacker,
+                            const RamMapper& ram_mapper,
                             const t_packer_opts& packer_opts,
                             bool allow_unrelated_clustering,
                             const t_molecule_stats& max_molecule_stats,
@@ -549,6 +559,13 @@ class GreedyCandidateSelector {
 
     /// @brief The prepacker used to pack atoms into molecule pack patterns.
     const Prepacker& prepacker_;
+
+    /// @brief Used to look up the logical RAM group of an atom for memory cluster filtering.
+    const RamMapper& ram_mapper_;
+
+    /// @brief True if the RAM mapper has at least one logical RAM group.
+    ///        Used to guard RAM-specific candidate filtering.
+    bool has_ram_groups_ = false;
 
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;

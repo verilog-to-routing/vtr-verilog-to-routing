@@ -30,7 +30,8 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   bool echo_enabled,
                   const char* echo_file_name,
                   int route_verbosity,
-                  bool is_flat);
+                  bool is_flat,
+                  bool device_model_warnings);
 
 /**
  * @brief Reads a text file where the intrinsic delay of edges are overridden.

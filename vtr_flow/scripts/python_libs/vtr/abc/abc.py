@@ -1,5 +1,5 @@
 """
-    Module to run ABC with its various options
+Module to run ABC with its various options
 """
 
 import shutil

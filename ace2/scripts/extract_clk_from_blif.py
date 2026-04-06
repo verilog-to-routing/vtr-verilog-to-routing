@@ -2,7 +2,6 @@
 import sys
 import re
 
-
 with open(sys.argv[2], "r") as fp:
     text = fp.read()
 

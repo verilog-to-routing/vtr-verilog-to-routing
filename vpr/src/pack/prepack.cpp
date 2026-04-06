@@ -83,9 +83,6 @@ static void print_pack_molecules(const char* fname,
                                  const vtr::vector_map<PackMoleculeId, t_pack_molecule>& pack_molecules,
                                  const AtomNetlist& atom_nlist);
 
-static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
-                                                                          const std::vector<t_logical_block_type>& logical_block_types);
-
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node, float* cost);
 
 static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id,
@@ -806,6 +803,28 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
     }
 }
 
+t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+                                                                              const std::vector<t_logical_block_type>& logical_block_types) const {
+    float cost, best_cost;
+    t_pb_graph_node *current, *best;
+
+    best_cost = UNDEFINED;
+    best = nullptr;
+    current = nullptr;
+    for (const t_logical_block_type& type : logical_block_types) {
+        cost = UNDEFINED;
+        current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, type.pb_graph_head, &cost);
+        if (cost != UNDEFINED) {
+            if (best_cost == UNDEFINED || best_cost > cost) {
+                best_cost = cost;
+                best = current;
+            }
+        }
+    }
+
+    return best;
+}
+
 /**
  * Pre-pack atoms in netlist to molecules
  * 1.  Single atoms are by definition a molecule.
@@ -1300,29 +1319,6 @@ static void print_pack_molecules(const char* fname,
     }
 
     fclose(fp);
-}
-
-/* Search through all primitives and return the lowest cost primitive that fits this atom block */
-static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
-                                                                          const std::vector<t_logical_block_type>& logical_block_types) {
-    float cost, best_cost;
-    t_pb_graph_node *current, *best;
-
-    best_cost = UNDEFINED;
-    best = nullptr;
-    current = nullptr;
-    for (const t_logical_block_type& type : logical_block_types) {
-        cost = UNDEFINED;
-        current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, type.pb_graph_head, &cost);
-        if (cost != UNDEFINED) {
-            if (best_cost == UNDEFINED || best_cost > cost) {
-                best_cost = cost;
-                best = current;
-            }
-        }
-    }
-
-    return best;
 }
 
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node, float* cost) {
@@ -1876,6 +1872,74 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
     molecule_stats.num_used_ext_pins = molecule_stats.num_used_ext_inputs + molecule_stats.num_used_ext_outputs;
 
     return molecule_stats;
+}
+
+t_molecule_external_nets Prepacker::calc_molecule_external_nets(
+    PackMoleculeId molecule_id,
+    const AtomNetlist& atom_nlist) const {
+
+    VTR_ASSERT(molecule_id.is_valid());
+
+    t_molecule_external_nets external_nets;
+
+    const t_pack_molecule& molecule = pack_molecules_[molecule_id];
+
+    // Set of all atoms in this molecule
+    std::unordered_set<AtomBlockId> mol_atoms(
+        molecule.atom_block_ids.begin(),
+        molecule.atom_block_ids.end());
+
+    // Returns true if the net has at least one sink outside the molecule.
+    auto net_leaves_molecule = [&](AtomNetId net) -> bool {
+        if (!net)
+            return false;
+        for (AtomPinId sink_pin : atom_nlist.net_sinks(net)) {
+            AtomBlockId sink_block = atom_nlist.pin_block(sink_pin);
+            if (!mol_atoms.count(sink_block))
+                return true;
+        }
+        return false;
+    };
+
+    for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
+        if (!atom_blk_id)
+            continue;
+
+        // Clock pins are sinks; a net is external if its driver is outside the molecule.
+        for (AtomPinId pin : atom_nlist.block_clock_pins(atom_blk_id)) {
+            AtomNetId net = atom_nlist.pin_net(pin);
+            if (!net)
+                continue;
+            AtomBlockId driver_block = atom_nlist.net_driver_block(net);
+            if (!driver_block)
+                continue;
+            if (!mol_atoms.count(driver_block))
+                external_nets.ext_clock_nets.insert(net);
+        }
+
+        // Input pins are sinks; a net is external if its driver is outside the molecule.
+        for (AtomPinId pin : atom_nlist.block_input_pins(atom_blk_id)) {
+            AtomNetId net = atom_nlist.pin_net(pin);
+            if (!net)
+                continue;
+            AtomBlockId driver_block = atom_nlist.net_driver_block(net);
+            if (!driver_block)
+                continue;
+            if (!mol_atoms.count(driver_block))
+                external_nets.ext_input_nets.insert(net);
+        }
+
+        // Output pins are drivers; a net is external if any of its sinks are outside the molecule.
+        for (AtomPinId pin : atom_nlist.block_output_pins(atom_blk_id)) {
+            AtomNetId net = atom_nlist.pin_net(pin);
+            if (!net)
+                continue;
+            if (net_leaves_molecule(net))
+                external_nets.ext_output_nets.insert(net);
+        }
+    }
+
+    return external_nets;
 }
 
 t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist, const LogicalModels& models) const {

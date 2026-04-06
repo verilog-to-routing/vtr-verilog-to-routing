@@ -24,6 +24,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "logical_ram_infer.h"
 #include "timing_info.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
@@ -83,9 +84,35 @@ static t_flat_pl_loc get_molecule_pos(PackMoleculeId molecule_id,
     return appack_ctx.flat_placement_info.get_pos(root_blk_id);
 }
 
+/**
+ * @brief Returns true if the candidate atom is feasible to add to the cluster
+ *        based on physical RAM group compatibility. Non-memory clusters always
+ *        return true. Memory clusters require the candidate atom to belong to
+ *        the same physical RAM group as the cluster's seed atom, ensuring that
+ *        only atoms destined for the same physical tile are packed together.
+ *
+ * @param blk_id              Atom to check.
+ * @param cluster_gain_stats  Cluster state, checked for is_memory and physical_ram_id.
+ * @param ram_mapper          Used to look up the atom's physical RAM group.
+ * @return True if the atom is physical-RAM-group compatible with the cluster.
+ *
+ * TODO: Non-RAM candidates (invalid physical_ram_id) are currently rejected for
+ *       clusters seeded by RAM atoms. While intentional, this may be overly
+ *       conservative for architectures that support mixed RAM + non-RAM clusters.
+ *       In such cases, non-RAM candidates should be permitted.
+ */
+static bool candidate_atom_physical_ram_group_feasible(AtomBlockId blk_id,
+                                                       const ClusterGainStats& cluster_gain_stats,
+                                                       const RamMapper& ram_mapper) {
+    if (!cluster_gain_stats.is_memory)
+        return true;
+    return ram_mapper.physical_group_id_of(blk_id) == cluster_gain_stats.physical_ram_id;
+}
+
 GreedyCandidateSelector::GreedyCandidateSelector(
     const AtomNetlist& atom_netlist,
     const Prepacker& prepacker,
+    const RamMapper& ram_mapper,
     const t_packer_opts& packer_opts,
     bool allow_unrelated_clustering,
     const t_molecule_stats& max_molecule_stats,
@@ -100,6 +127,8 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     int log_verbosity)
     : atom_netlist_(atom_netlist)
     , prepacker_(prepacker)
+    , ram_mapper_(ram_mapper)
+    , has_ram_groups_(ram_mapper.num_groups() > 0)
     , packer_opts_(packer_opts)
     , allow_unrelated_clustering_(allow_unrelated_clustering)
     , log_verbosity_(log_verbosity)
@@ -256,6 +285,13 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     AtomBlockId seed_atom = seed_mol.atom_block_ids[seed_mol.root];
     const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
+
+    if (cluster_gain_stats.is_memory) {
+        cluster_gain_stats.logical_ram_id = ram_mapper_.group_id_of(seed_atom);
+        cluster_gain_stats.physical_ram_id = ram_mapper_.physical_group_id_of(seed_atom);
+        VTR_LOGV(log_verbosity_ > 2, "Cluster of seed atom %zu is a memory cluster in logical RAM group %zu, physical RAM group %zu.\n",
+                 size_t(seed_atom), size_t(cluster_gain_stats.logical_ram_id), size_t(cluster_gain_stats.physical_ram_id));
+    }
 
     // Return the cluster gain stats.
     return cluster_gain_stats;
@@ -792,6 +828,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
     cluster_gain_stats.candidates_propose_limit = packer_opts_.feasible_block_array_size; // set the limit of candidates to propose
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
+        if (has_ram_groups_ && !candidate_atom_physical_ram_group_feasible(blk_id, cluster_gain_stats, ram_mapper_))
+            continue;
         // Get the molecule that contains this block.
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         // Add the molecule as a candidate if the molecule is not clustered and
@@ -824,6 +862,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
 
     /* Only consider candidates that pass a very simple legality check */
     for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
+        if (has_ram_groups_ && !candidate_atom_physical_ram_group_feasible(transitive_candidate.first, cluster_gain_stats, ram_mapper_))
+            continue;
         PackMoleculeId molecule_id = transitive_candidate.second;
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
@@ -856,6 +896,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         }
 
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
+        if (has_ram_groups_ && !candidate_atom_physical_ram_group_feasible(blk_id, cluster_gain_stats, ram_mapper_))
+            continue;
 
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
@@ -916,6 +958,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
     if (num_available_atoms < attraction_group_num_atoms_threshold_) {
         for (AtomBlockId atom_id : available_atoms) {
+            if (has_ram_groups_ && !candidate_atom_physical_ram_group_feasible(atom_id, cluster_gain_stats, ram_mapper_))
+                continue;
             //Only consider molecules that are unpacked and of the correct type
             PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
             if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
@@ -936,6 +980,9 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         int selected_atom = rng_.irand(num_available_atoms - 1);
 
         AtomBlockId blk_id = available_atoms[selected_atom];
+
+        if (has_ram_groups_ && !candidate_atom_physical_ram_group_feasible(blk_id, cluster_gain_stats, ram_mapper_))
+            continue;
 
         //Only consider molecules that are unpacked and of the correct type
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);

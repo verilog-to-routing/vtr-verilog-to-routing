@@ -1059,7 +1059,8 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                   float R_minW_pmos,
                                   RRGraphBuilder& rr_graph_builder,
                                   bool is_flat,
-                                  bool load_rr_graph) {
+                                  bool load_rr_graph,
+                                  bool device_model_warnings) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -1116,5 +1117,6 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                    vib_grid,
                    device_ctx.chan_width,
                    graph_type,
-                   is_flat);
+                   is_flat,
+                   device_model_warnings);
 }

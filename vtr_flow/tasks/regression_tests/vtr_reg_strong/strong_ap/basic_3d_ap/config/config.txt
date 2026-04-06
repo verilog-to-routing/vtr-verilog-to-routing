@@ -43,7 +43,9 @@ qor_parse_file=qor_ap_fixed_chan_width.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
 
-script_params_common=-starting_stage vpr -track_memory_usage --analytical_place --route --device FPGA3D --route_chan_width 100
+# NOTE: The suppressions are to suppress currently known warnings that are killing the performance of the task parser.
+#       These can be removed once those warnings are fixed.
+script_params_common=-starting_stage vpr -track_memory_usage --analytical_place --route --device FPGA3D --route_chan_width 100 --suppress_warnings 'alloc_and_load_scatter_gather_connections,load_rr_indexed_data_T_values'
 
 # Test only the packer and the initial placer of the AP flow.
 script_params_list_add=--ap_analytical_solver identity --ap_partial_legalizer none

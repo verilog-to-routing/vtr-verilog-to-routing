@@ -877,6 +877,19 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
         [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
             // Get the bin at this grid location.
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+
+            // If the bin is not 1x1, then we only want to apply the capacity to the
+            // center tile of this bin. The other tiles will have zero
+            // capacity. This must be done since the prefix-sum assumes 1x1 grid of
+            // values, so we set the center bin as the representative of the entire
+            // bin.
+            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
+            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
+            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
+            if (x != center_x || y != center_y) {
+                return 0.0f;
+            }
+
             // Get the capacity of the bin for this dim.
             float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(cap >= 0.0f);
@@ -886,14 +899,6 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
             // is during partial legalization.
             float target_density = density_manager_->get_bin_target_density(bin_id);
             cap *= target_density;
-
-            // Bins may be large, but the prefix sum assumes a 1x1 grid of
-            // values. Normalize by the area of the bin to turn this into
-            // a 1x1 bin equivalent.
-            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            float bin_area = bin_region.width() * bin_region.height();
-            VTR_ASSERT_SAFE(!vtr::isclose(bin_area, 0.0f));
-            cap /= bin_area;
 
             return cap;
         });
@@ -1169,12 +1174,22 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
         *density_manager_,
         [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-            // This is computed the same way as the capacity prefix sum above.
+
+            // Matching the code for the capacity prefix sum, we assume that all of the
+            // mass of a tile is concentrated in its center. All other bins are zeroed out.
+            // TODO: A better way of doing this is actually using the solved positions to find
+            //       the capacity of tiles within each non-1x1 bin. However, this may slow
+            //       things down a lot.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            float bin_area = bin_region.width() * bin_region.height();
+            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
+            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
+            if (x != center_x || y != center_y) {
+                return 0.0f;
+            }
+
             float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(util >= 0.0f);
-            return util / bin_area;
+            return util;
         });
 
     // Create windows for each overfilled bin cluster.
@@ -1546,28 +1561,6 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
 
     PartitionedWindow partitioned_window;
 
-    // We always start by partitioning the layer first.
-    if (window.layer_low != window.layer_high) {
-        // Set the pivot to be the middle of the layer.
-        // TODO: We should do a proper search here to find a good partition line.
-        size_t pivot_layer = window.layer_low + (window.layer_high - window.layer_low) / 2;
-        double pivot = static_cast<double>(pivot_layer) + 0.5;
-
-        partitioned_window.partition_dir = e_partition_dir::PLANAR;
-        partitioned_window.pivot_pos = pivot;
-        partitioned_window.lower_window.region = window.region;
-        partitioned_window.upper_window.region = window.region;
-
-        partitioned_window.lower_window.layer_low = window.layer_low;
-        partitioned_window.lower_window.layer_high = pivot_layer;
-        partitioned_window.upper_window.layer_low = pivot_layer + 1;
-        partitioned_window.upper_window.layer_high = window.layer_high;
-
-        return partitioned_window;
-    }
-    VTR_ASSERT_SAFE(window.layer_low == window.layer_high);
-    size_t layer = window.layer_low;
-
     // Search for the ideal partition line on the window. Here, we attempt each
     // partition and measure how well this cuts the capacity of the region in
     // half. Cutting the capacity of the region in half should allow the blocks
@@ -1583,7 +1576,44 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     float best_score = -1.0f;
     const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
 
-    // First, try all of the vertical partitions.
+    // First, try all of the planar partitions, if any.
+    if (window.layer_high > window.layer_low) {
+        for (size_t pivot_layer = window.layer_low; pivot_layer < window.layer_high; pivot_layer++) {
+            float lower_window_capacity = 0.0f;
+            for (size_t layer = window.layer_low; layer <= pivot_layer; layer++) {
+                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
+            }
+            float upper_window_capacity = 0.0f;
+            for (size_t layer = pivot_layer + 1; layer <= window.layer_high; layer++) {
+                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer).manhattan_norm();
+            }
+            lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+            upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+
+            // Compute the score of this partition line. The score is simply just
+            // the minimum of the two capacities dividided by the maximum of the
+            // two capacities.
+            float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+            float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+            float cut_score = smaller_capacity / larger_capacity;
+
+            // If this is the best cut we have ever seen, save it as the result.
+            if (cut_score > best_score) {
+                best_score = cut_score;
+                partitioned_window.partition_dir = e_partition_dir::PLANAR;
+                partitioned_window.pivot_pos = static_cast<double>(pivot_layer) + 0.5;
+                partitioned_window.lower_window.region = window.region;
+                partitioned_window.upper_window.region = window.region;
+
+                partitioned_window.lower_window.layer_low = window.layer_low;
+                partitioned_window.lower_window.layer_high = pivot_layer;
+                partitioned_window.upper_window.layer_low = pivot_layer + 1;
+                partitioned_window.upper_window.layer_high = window.layer_high;
+            }
+        }
+    }
+
+    // Next, try all of the vertical partitions.
     double min_pivot_x = std::floor(window.region.xmin()) + 1.0;
     double max_pivot_x = std::ceil(window.region.xmax()) - 1.0;
     for (double pivot_x = min_pivot_x; pivot_x <= max_pivot_x; pivot_x++) {
@@ -1602,9 +1632,13 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
         // about.
         // TODO: This can be made better by looking at the mass of all blocks
         //       within the window and scaling the capacity based on that.
-        float lower_window_capacity = capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+        float lower_window_capacity = 0.0f;
+        float upper_window_capacity = 0.0f;
+        for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+            lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+            upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+        }
         lower_window_capacity = std::max(lower_window_capacity, 0.0f);
-        float upper_window_capacity = capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
         upper_window_capacity = std::max(upper_window_capacity, 0.0f);
 
         // Compute the score of this partition line. The score is simply just
@@ -1622,10 +1656,10 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
             partitioned_window.lower_window.region = lower_region;
             partitioned_window.upper_window.region = upper_region;
 
-            partitioned_window.lower_window.layer_low = layer;
-            partitioned_window.lower_window.layer_high = layer;
-            partitioned_window.upper_window.layer_low = layer;
-            partitioned_window.upper_window.layer_high = layer;
+            partitioned_window.lower_window.layer_low = window.layer_low;
+            partitioned_window.lower_window.layer_high = window.layer_high;
+            partitioned_window.upper_window.layer_low = window.layer_low;
+            partitioned_window.upper_window.layer_high = window.layer_high;
         }
     }
 
@@ -1648,9 +1682,13 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
         // about.
         // TODO: This can be made better by looking at the mass of all blocks
         //       within the window and scaling the capacity based on that.
-        float lower_window_capacity = capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+        float lower_window_capacity = 0.0f;
+        float upper_window_capacity = 0.0f;
+        for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+            lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+            upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+        }
         lower_window_capacity = std::max(lower_window_capacity, 0.0f);
-        float upper_window_capacity = capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
         upper_window_capacity = std::max(upper_window_capacity, 0.0f);
 
         // Compute the score of this partition line. The score is simply just
@@ -1668,10 +1706,10 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
             partitioned_window.lower_window.region = lower_region;
             partitioned_window.upper_window.region = upper_region;
 
-            partitioned_window.lower_window.layer_low = layer;
-            partitioned_window.lower_window.layer_high = layer;
-            partitioned_window.upper_window.layer_low = layer;
-            partitioned_window.upper_window.layer_high = layer;
+            partitioned_window.lower_window.layer_low = window.layer_low;
+            partitioned_window.lower_window.layer_high = window.layer_high;
+            partitioned_window.upper_window.layer_low = window.layer_low;
+            partitioned_window.upper_window.layer_high = window.layer_high;
         }
     }
 

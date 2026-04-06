@@ -1,5 +1,5 @@
 """
-    Module to run the VTR flow. This module calls other modules that then access the tools like VPR.
+Module to run the VTR flow. This module calls other modules that then access the tools like VPR.
 """
 
 import shutil

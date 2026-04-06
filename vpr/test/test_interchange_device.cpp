@@ -15,7 +15,7 @@ TEST_CASE("read_interchange_models", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
 
     std::unordered_set<std::string> models = {"IB", "OB", "DFFR", "DFFS", "GND", "VCC"};
 
@@ -48,7 +48,7 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
 
     auto& gd = arch.grid_layouts[0];
     REQUIRE(gd.grid_type == e_grid_def_type::FIXED);
@@ -74,7 +74,7 @@ TEST_CASE("read_interchange_luts", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
 
     std::unordered_set<std::string> lut_cells = {"LUT1", "LUT2", "LUT3", "LUT4"};
     std::unordered_set<std::string> lut_bels = {"ALUT", "BLUT"};
@@ -110,7 +110,7 @@ TEST_CASE("read_interchange_tiles", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
 
     std::unordered_set<std::string> ptypes = {"EMPTY", "IOB", "IB", "OB", "CLB", "constant_block"};
 
@@ -134,7 +134,7 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
 
     std::unordered_set<std::string> ltypes = {"EMPTY", "IOPAD", "IPAD", "OPAD", "SLICE", "constant_block"};
 

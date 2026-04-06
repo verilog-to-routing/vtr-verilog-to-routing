@@ -22,6 +22,7 @@ struct PartialPlacement;
 class PlaceMacros;
 class PreClusterTimingManager;
 class Prepacker;
+class RamMapper;
 struct t_arch;
 struct t_vpr_setup;
 
@@ -40,6 +41,7 @@ class FullLegalizer {
                   const AtomNetlist& atom_netlist,
                   const Prepacker& prepacker,
                   const PreClusterTimingManager& pre_cluster_timing_manager,
+                  const RamMapper& ram_mapper,
                   const t_vpr_setup& vpr_setup,
                   const t_arch& arch,
                   const DeviceGrid& device_grid)
@@ -47,6 +49,7 @@ class FullLegalizer {
         , atom_netlist_(atom_netlist)
         , prepacker_(prepacker)
         , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+        , ram_mapper_(ram_mapper)
         , vpr_setup_(vpr_setup)
         , arch_(arch)
         , device_grid_(device_grid) {}
@@ -77,6 +80,8 @@ class FullLegalizer {
     ///        at the primitive level prior to packing.
     const PreClusterTimingManager& pre_cluster_timing_manager_;
 
+    const RamMapper& ram_mapper_;
+
     /// @brief The VPR setup options passed into the VPR flow. This must be
     ///        mutable since some parts of packing modify the options.
     const t_vpr_setup& vpr_setup_;
@@ -96,6 +101,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const AtomNetlist& atom_netlist,
                                                    const Prepacker& prepacker,
                                                    const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                   const RamMapper& ram_mapper,
                                                    const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
                                                    const DeviceGrid& device_grid);

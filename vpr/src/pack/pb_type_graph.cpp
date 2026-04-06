@@ -1222,19 +1222,30 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int num_output_sets,
                                             const int* num_output_ptrs) {
     int i_inset, i_inpin, i_outpin;
-    t_pb_graph_edge* edges;
     vtr::t_linked_vptr* cur;
 
     VTR_ASSERT(interconnect->infer_annotations == false);
 
-    /* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
     if (num_output_sets != 1) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
                   "Mux must have one output\n");
     }
 
-    edges = new t_pb_graph_edge[num_input_sets];
-    for (int i = 0; i < (num_input_sets); i++)
+    /* Validate that every input set has the same width as the output */
+    for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
+        if (num_output_ptrs[0] != num_input_ptrs[i_inset]) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
+                      "# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
+        }
+    }
+
+    /* One edge per (input_set, pin) pair so every edge remains single-pin.
+     * For a 1-bit mux this is identical to the original behaviour. */
+    const int pins_per_set = num_output_ptrs[0];
+    const int total_edges = num_input_sets * pins_per_set;
+
+    t_pb_graph_edge* edges = new t_pb_graph_edge[total_edges];
+    for (int i = 0; i < total_edges; i++)
         edges[i] = t_pb_graph_edge();
     cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
@@ -1243,52 +1254,43 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
     cur = new vtr::t_linked_vptr;
     cur->next = num_edges_head;
     num_edges_head = cur;
-    cur->data_vptr = (void*)((intptr_t)num_input_sets);
+    cur->data_vptr = (void*)((intptr_t)total_edges);
 
+    /* Pre-size all pin edge arrays to their exact final count before wiring.
+     * Each input pin gains exactly 1 new output edge (appears in one set only).
+     * Each output pin gains exactly num_input_sets new input edges. */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-            input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges.resize(input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges + 1);
+        for (i_inpin = 0; i_inpin < pins_per_set; i_inpin++) {
+            auto in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
+            in_pin->output_edges.resize(in_pin->num_output_edges + 1);
         }
     }
-
-    for (i_outpin = 0; i_outpin < num_output_ptrs[0]; i_outpin++) {
-        output_pb_graph_node_pin_ptrs[0][i_outpin]->input_edges.resize(output_pb_graph_node_pin_ptrs[0][i_outpin]->num_input_edges
-                                                                       + num_input_sets);
+    for (i_outpin = 0; i_outpin < pins_per_set; i_outpin++) {
+        auto out_pin = output_pb_graph_node_pin_ptrs[0][i_outpin];
+        out_pin->input_edges.resize(out_pin->num_input_edges + num_input_sets);
     }
 
-    /* Load connections between pins and record these updates in the edges */
+    /* Create one single-pin edge per (input_set, pin) pair */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        if (num_output_ptrs[0] != num_input_ptrs[i_inset]) {
-            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
-                      "# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
-        }
-        edges[i_inset].input_pins = new t_pb_graph_pin*[num_output_ptrs[0]];
-        edges[i_inset].output_pins = new t_pb_graph_pin*[num_output_ptrs[0]];
-        for (int i = 0; i < num_output_ptrs[0]; i++) {
-            edges[i_inset].input_pins[i] = nullptr;
-            edges[i_inset].output_pins[i] = nullptr;
-        }
-
-        edges[i_inset].num_input_pins = num_output_ptrs[0];
-        edges[i_inset].num_output_pins = num_output_ptrs[0];
-        for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
+        for (i_inpin = 0; i_inpin < pins_per_set; i_inpin++) {
+            const int edge_idx = i_inset * pins_per_set + i_inpin;
             auto in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
             auto out_pin = output_pb_graph_node_pin_ptrs[0][i_inpin];
-            in_pin->output_edges[in_pin->num_output_edges] = &edges[i_inset];
+
+            edges[edge_idx].input_pins = new t_pb_graph_pin*[1];
+            edges[edge_idx].output_pins = new t_pb_graph_pin*[1];
+            edges[edge_idx].input_pins[0] = in_pin;
+            edges[edge_idx].output_pins[0] = out_pin;
+            edges[edge_idx].num_input_pins = 1;
+            edges[edge_idx].num_output_pins = 1;
+            edges[edge_idx].interconnect = interconnect;
+            edges[edge_idx].driver_set = i_inset;
+            edges[edge_idx].driver_pin = i_inpin;
+
+            in_pin->output_edges[in_pin->num_output_edges] = &edges[edge_idx];
             in_pin->num_output_edges++;
-            out_pin->input_edges[out_pin->num_input_edges] = &edges[i_inset];
+            out_pin->input_edges[out_pin->num_input_edges] = &edges[edge_idx];
             out_pin->num_input_edges++;
-
-            edges[i_inset].input_pins[i_inpin] = in_pin;
-            edges[i_inset].output_pins[i_inpin] = out_pin;
-
-            if (i_inpin != 0) {
-                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
-                          "Bus-based mux not yet supported, will consider for future work\n");
-            }
-            edges[i_inset].interconnect = interconnect;
-            edges[i_inset].driver_set = i_inset;
-            edges[i_inset].driver_pin = i_inpin;
         }
     }
 }

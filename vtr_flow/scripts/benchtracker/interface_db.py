@@ -148,7 +148,7 @@ def describe_param(param, mode, tasks, dbname="results.db"):
     db = connect_db(dbname)
     cursor = db.cursor()
 
-    (param_name, param_type) = param.split()
+    param_name, param_type = param.split()
     if param_type == "TEXT":
         mode = "categorical"
     elif mode not in {"categorical", "range"}:

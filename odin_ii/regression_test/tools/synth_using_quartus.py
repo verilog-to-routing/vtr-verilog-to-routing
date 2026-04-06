@@ -38,7 +38,7 @@ if __name__ == "__main__":
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True
         )
-        (out, err) = process.communicate()
+        out, err = process.communicate()
 
         # Log our failures and successes
         if process.returncode != 0:
@@ -67,12 +67,12 @@ if __name__ == "__main__":
     move = "mv  " + sys.argv[1] + "*.blif " + sys.argv[1] + "/Quartus_Blifs/"
 
     process = subprocess.Popen(clean, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    (out, err) = process.communicate()
+    out, err = process.communicate()
     print(out + "\n")
 
     process = subprocess.Popen(create, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    (out, err) = process.communicate()
+    out, err = process.communicate()
     print(out + "\n")
 
     process = subprocess.Popen(move, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    (out, err) = process.communicate()
+    out, err = process.communicate()

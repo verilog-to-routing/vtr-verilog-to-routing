@@ -360,7 +360,8 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                              std::greater<PQ_Entry_Base_Cost>>* pq);
 
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
-                                                    int route_verbosity) {
+                                                    int route_verbosity,
+                                                    bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -407,7 +408,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
 
                     if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                         //No untried instances of the current tile type left
-                        VTR_LOGV_WARN(route_verbosity > 1,
+                        VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
                                       "Found no %ssample locations for %s in %s\n",
                                       (num_sampled_locs == 0) ? "" : "more ",
                                       rr_node_typename[rr_type],
@@ -460,7 +461,8 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
     return src_opin_delays;
 }
 
-t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
+t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity,
+                                                       bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Computing chan/ipin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
@@ -485,7 +487,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
 
             if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                 //No untried instances of the current tile type left
-                VTR_LOGV_WARN(route_verbosity > 1,
+                VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
                               "Found no sample locations for %s\n",
                               tile_type.name.c_str());
                 continue;
@@ -729,7 +731,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
-                                        int route_verbosity) {
+                                        int route_verbosity,
+                                        bool device_model_warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
@@ -819,7 +822,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     t_routing_cost_map routing_cost_map({device_ctx.grid.get_num_layers(), device_ctx.grid.width(), device_ctx.grid.height()});
 
     if (sample_nodes.empty()) {
-        VTR_LOGV_WARN(route_verbosity > 0,
+        VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
                       "Unable to find any sample location for segment %s type '%s' (length %d)\n",
                       rr_node_typename[chan_type],
                       segment_inf.name.c_str(),
