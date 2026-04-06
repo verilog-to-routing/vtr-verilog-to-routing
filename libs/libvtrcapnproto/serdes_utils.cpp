@@ -2,7 +2,12 @@
 
 #include "capnp/serialize.h"
 #include <fcntl.h>
+
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "vtr_error.h"
 #include "kj/filesystem.h"

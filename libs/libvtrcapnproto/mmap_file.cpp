@@ -7,7 +7,12 @@
 #ifndef _WIN32
     #include <sys/mman.h>
 #endif
+
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "kj/filesystem.h"
 

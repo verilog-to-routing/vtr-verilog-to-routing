@@ -44,8 +44,9 @@ if (VPR_ENABLE_INTERCHANGE)
         OUTPUT ${JAVA_SCHEMA}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/
         COMMAND ${WGET}
+            -L
             https://raw.githubusercontent.com/capnproto/capnproto-java/master/compiler/src/main/schema/capnp/java.capnp
-            -O ${JAVA_SCHEMA}
+            -o ${JAVA_SCHEMA}
     )
 
     add_custom_target(
