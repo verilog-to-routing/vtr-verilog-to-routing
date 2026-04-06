@@ -81,8 +81,8 @@ parse_key_val_arg(const std::string& arg, unsigned expected_num_vals_per_key) {
     if (colon_count != 1) {
         VTR_LOG_ERROR("Invalid argument string: %s\n",
                       arg.c_str());
-        VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                        "Error when parsing argument string");
+        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+                  "Error when parsing argument string");
     }
 
     // Split the string along the colon.
@@ -100,8 +100,8 @@ parse_key_val_arg(const std::string& arg, unsigned expected_num_vals_per_key) {
     if (comma_count != expected_num_vals_per_key - 1) {
         VTR_LOG_ERROR("Invalid argument string (too many commas): %s\n",
                       arg.c_str());
-        VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                        "Error when parsing argument string");
+        vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
+                  "Error when parsing argument string");
     }
 
     // Collect the comma separated values into a vector.

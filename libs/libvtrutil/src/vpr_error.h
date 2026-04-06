@@ -104,10 +104,16 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
  *
  * This macro is a wrapper around VPR_THOW()
  */
-#define VPR_FATAL_ERROR(...)    \
-    do {                        \
-        VPR_THROW(__VA_ARGS__); \
+
+#define VPR_FATAL_ERROR(type, ...)                        \
+    do {                                                  \
+        vpr_throw(type, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
+
+//#define VPR_FATAL_ERROR(...)    \
+//    do {                        \
+//        VPR_THROW(__VA_ARGS__); \
+//    } while (false)
 
 /*
  * VPR_ERROR() is used to signal an error (potentially non-fatal) which by

@@ -20,6 +20,8 @@
 #include <unistd.h>
 
 #include "string.h"
+#include <cstdio>   // for fwrite, stderr
+#include <cstring>  // strlen
 
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
@@ -36,7 +38,11 @@ void checkpoint();
  * @param msg Message string to write.
  */
 static inline void safe_write(const char* msg) {
+#ifdef _WIN32
+    fwrite(msg, 1, strlen(msg), stderr);
+#else
     (void)!write(STDERR_FILENO, msg, strlen(msg));
+#endif
 }
 
 #ifdef VPR_USE_SIGACTION

@@ -7,6 +7,11 @@
 #include <cstdarg>
 #include <array>
 
+#ifdef _MSC_VER
+#define __attribute__(x)
+#define __builtin_prefetch(...) ((void)0)
+#endif
+
 namespace vtr {
 
 ///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'

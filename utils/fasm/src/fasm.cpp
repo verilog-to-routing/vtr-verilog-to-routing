@@ -18,6 +18,14 @@
 
 #include "fasm_utils.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+
+inline int __builtin_popcount(unsigned int x) {
+    return __popcnt(x);
+}
+#endif
+
 namespace fasm {
 
 FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool is_flat) : strings_(strings), os_(f),

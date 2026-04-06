@@ -23,6 +23,10 @@
 #include <string>
 #include <vector>
 
+#ifdef _MSC_VER
+#define __builtin_prefetch(...) ((void)0)
+#endif
+
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *

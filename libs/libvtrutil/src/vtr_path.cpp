@@ -4,7 +4,11 @@
 
 //TODO: currently this file assumes unix-like
 //      in the future support windows
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <sstream>
 
@@ -65,7 +69,11 @@ std::string getcwd() {
     constexpr size_t BUF_SIZE = 500;
     char buf[BUF_SIZE];
 
+#ifdef _WIN32
+    if (::_getcwd(buf, static_cast<int>(BUF_SIZE))) {
+#else
     if (::getcwd(buf, BUF_SIZE)) {
+#endif
         return std::string(buf);
     }
 

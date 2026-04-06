@@ -6,6 +6,13 @@
 #include "vpr_error.h"
 #include "vtr_util.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+
+#define __builtin_popcount(x) __popcnt(x)
+#define __builtin_ctz(x) _tzcnt_u32(x)
+#endif
+
 namespace fasm {
 
 Lut::Lut(size_t num_inputs) : num_inputs_(num_inputs), table_(1 << num_inputs, vtr::LogicValue::DONT_CARE) {}
