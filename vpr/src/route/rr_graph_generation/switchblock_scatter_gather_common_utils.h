@@ -56,6 +56,17 @@ bool sb_not_here(const DeviceGrid& grid,
                  const t_specified_loc& specified_loc);
 
 /**
+ * @brief True if switchblock location (loc) matches an architecture XY_SPECIFIED rule.
+ *
+ * When ``x`` and/or ``y`` are set on ``specified_loc``, the match is an exact coordinate or
+ * a row/column wildcard. Otherwise ``reg_x`` / ``reg_y`` describe a
+ * tiled rectangular region with optional repeat and stride (incrx/incry).
+ */
+bool match_sb_xy(const DeviceGrid& grid,
+                 const t_physical_tile_loc& loc,
+                  const t_specified_loc& specified_loc);
+
+/**
  * @brief finds the correct channel (x or y), and the coordinates to index into it based on the
  * specified tile coordinates (x,y,layer) and the switch block side.
  *
