@@ -413,7 +413,7 @@ inline void stat() const {
 // Note: this is only called at the end of algorithm as a
 // sanity check, therefore it is not lock protected.
 inline bool empty() const {
-    for (uint i = 0; i < NUM_QUEUES; i++) {
+    for (uint64_t i = 0; i < NUM_QUEUES; i++) {
         if (!queues[i].pq.empty()) {
             return false;
         }
