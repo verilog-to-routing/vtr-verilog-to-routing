@@ -55,6 +55,12 @@ The VTR benchmarks are also included as pre-synthesized BLIF files under: ::
 
 Titanium Benchmarks
 -------------------
+The Titanium benchmarks are a set of 25 large modern FPGA benchmarks (Titanium25) that augment the :ref:`titan_benchmarks` suite introduced in VTR 9.
+They include recent applications such as deep learning accelerators, RISC-V processors, and DSP designs, with an average primitive count of approximately 850k.
+Like the Titan benchmarks, they incorporate Intel/Altera-specific IPs and are compiled using Quartus synthesis with VTR placement and routing (the Titan flow).
+They are compatible with both Intel Stratix IV and Stratix 10 devices, making them suitable for large-scale FPGA CAD and architecture research.
+
+.. note:: The Titanium benchmarks are not included with the VTR release (due to their size). However they can be downloaded and extracted by running ``make get_titan_benchmarks`` from the root of the VTR tree.
 
 .. _table_titanium_benchmarks:
 
