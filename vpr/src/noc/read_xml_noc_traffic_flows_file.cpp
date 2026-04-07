@@ -1,7 +1,7 @@
 
 #include "read_xml_noc_traffic_flows_file.h"
 #include <regex>
-#include "ShowSetup.h"
+#include "show_setup.h"
 #include "echo_files.h"
 #include "globals.h"
 #include "physical_types_util.h"
