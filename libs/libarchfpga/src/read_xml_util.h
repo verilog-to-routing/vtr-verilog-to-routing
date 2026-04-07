@@ -53,5 +53,5 @@ t_metadata_dict process_meta_data(vtr::string_internment& strings,
  * @return A negative integer if no switch was found with the given name; otherwise
  * the index of the matching switch is returned.
  */
- int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches,
-                         std::string_view switch_name);
+int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches,
+                        std::string_view switch_name);

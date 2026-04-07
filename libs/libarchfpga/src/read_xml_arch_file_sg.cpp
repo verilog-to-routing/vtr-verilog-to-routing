@@ -27,7 +27,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
 
         t_sg_link sg_link;
         sg_link.name = pugiutil::get_attribute(node, "name", loc_data).as_string();
-    
+
         std::string_view mux_name = pugiutil::get_attribute(node, "mux", loc_data).as_string();
         if (!mux_name.empty()) {
             int mux_index = find_switch_by_name(switches, mux_name);
@@ -38,7 +38,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
                 sg_link.mux_index = mux_index;
             }
         }
- 
+
         sg_link.seg_type = pugiutil::get_attribute(node, "seg_type", loc_data).as_string();
 
         // Since the offset attributes are optional and might not exist, the as_int method will return a value of zero if the attribute is empty
