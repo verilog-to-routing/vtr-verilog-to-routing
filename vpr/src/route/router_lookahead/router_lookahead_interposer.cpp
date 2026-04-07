@@ -87,11 +87,26 @@ static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(co
     return node_in_edges;
 }
 
-static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid,
-                                                                                                   const RRGraphView& rr_graph,
-                                                                                                   const DeviceContext& device_ctx,
-                                                                                                   float interposer_cut_base_cost_multiplier) {
-    vtr::ScopedStartFinishTimer timer("Computing interposer lookahead");
+struct t_interposer_cost_prefix_sums {
+    t_interposer_cost_prefix_sums(int num_layers) {
+        horizontal_delay_sum = std::vector<std::vector<float>>(num_layers);
+        horizontal_cong_sum = std::vector<std::vector<float>>(num_layers);
+
+        vertical_delay_sum = std::vector<std::vector<float>>(num_layers);
+        vertical_cong_sum = std::vector<std::vector<float>>(num_layers);
+    }
+
+    std::vector<std::vector<float>> horizontal_delay_sum;
+    std::vector<std::vector<float>> vertical_delay_sum;
+
+    std::vector<std::vector<float>> horizontal_cong_sum;
+    std::vector<std::vector<float>> vertical_cong_sum;
+};
+
+static t_interposer_cost_prefix_sums compute_die_crossing_prefix_sums(const DeviceGrid& grid,
+                                                                      const RRGraphView& rr_graph,
+                                                                      const DeviceContext& device_ctx) {
+
     const auto [layer_size, device_width, device_height] = grid.dim_sizes();
     const std::vector<std::vector<int>>& horizontal_interposer_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_interposer_cuts = grid.get_vertical_interposer_cuts();
@@ -122,22 +137,17 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
     // By calculating the cumulative cost at each cut, we can determine the cost
     // between any two regions in O(1) time using the difference between their
     // prefix sum values.
-
-    std::vector<std::vector<float>> horizontal_delay_sum(layer_size);
-    std::vector<std::vector<float>> vertical_delay_sum(layer_size);
-
-    std::vector<std::vector<float>> horizontal_cong_sum(layer_size);
-    std::vector<std::vector<float>> vertical_cong_sum(layer_size);
+    t_interposer_cost_prefix_sums interposer_sums(layer_size);
 
     for (size_t layer_num = 0; layer_num < layer_size; layer_num++) {
         const std::vector<int>& layer_horizontal_interposer_cuts = horizontal_interposer_cuts[layer_num];
         const std::vector<int>& layer_vertical_interposer_cuts = vertical_interposer_cuts[layer_num];
 
-        horizontal_delay_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
-        vertical_delay_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
+        interposer_sums.horizontal_delay_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
+        interposer_sums.vertical_delay_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
 
-        horizontal_cong_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
-        vertical_cong_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
+        interposer_sums.horizontal_cong_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
+        interposer_sums.vertical_cong_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
 
         // Calculate the vertical delay and congestion cost prefix sums
         for (size_t vertical_interposer_index = 0; vertical_interposer_index < layer_vertical_interposer_cuts.size(); vertical_interposer_index++) {
@@ -151,8 +161,8 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
             std::unordered_map<RRNodeId, std::vector<RREdgeId>> node_in_edges = get_nodes_in_edges(rr_graph, channel_nodes);
             auto [interposer_delay, interposer_cong_cost] = get_channel_min_delay(node_in_edges);
-            horizontal_delay_sum[layer_num][vertical_interposer_index + 1] = horizontal_delay_sum[layer_num][vertical_interposer_index] + interposer_delay;
-            horizontal_cong_sum[layer_num][vertical_interposer_index + 1] = horizontal_cong_sum[layer_num][vertical_interposer_index] + interposer_cong_cost;
+            interposer_sums.horizontal_delay_sum[layer_num][vertical_interposer_index + 1] = interposer_sums.horizontal_delay_sum[layer_num][vertical_interposer_index] + interposer_delay;
+            interposer_sums.horizontal_cong_sum[layer_num][vertical_interposer_index + 1] = interposer_sums.horizontal_cong_sum[layer_num][vertical_interposer_index] + interposer_cong_cost;
         }
 
         // Calculate the horizontal delay and congestion cost prefix sums
@@ -167,10 +177,21 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
             std::unordered_map<RRNodeId, std::vector<RREdgeId>> node_in_edges = get_nodes_in_edges(rr_graph, channel_nodes);
             auto [interposer_delay, interposer_cong_cost] = get_channel_min_delay(node_in_edges);
-            vertical_delay_sum[layer_num][horizontal_interposer_index + 1] = vertical_delay_sum[layer_num][horizontal_interposer_index] + interposer_delay;
-            vertical_cong_sum[layer_num][horizontal_interposer_index + 1] = vertical_cong_sum[layer_num][horizontal_interposer_index] + interposer_cong_cost;
+            interposer_sums.vertical_delay_sum[layer_num][horizontal_interposer_index + 1] = interposer_sums.vertical_delay_sum[layer_num][horizontal_interposer_index] + interposer_delay;
+            interposer_sums.vertical_cong_sum[layer_num][horizontal_interposer_index + 1] = interposer_sums.vertical_cong_sum[layer_num][horizontal_interposer_index] + interposer_cong_cost;
         }
     }
+
+    return interposer_sums;
+}
+
+static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid,
+                                                                                                   const RRGraphView& rr_graph,
+                                                                                                   const DeviceContext& device_ctx,
+                                                                                                   float interposer_cut_base_cost_multiplier) {
+    vtr::ScopedStartFinishTimer timer("Computing interposer lookahead");
+    
+    t_interposer_cost_prefix_sums interposer_sums = compute_die_crossing_prefix_sums(grid, rr_graph, device_ctx);
 
     vtr::NdMatrix<float, 2> interposer_delay_matrix({grid.get_die_count(), grid.get_die_count()}, 0.0f);
     vtr::NdMatrix<float, 2> interposer_cong_matrix({grid.get_die_count(), grid.get_die_count()}, 0.0f);
@@ -192,11 +213,10 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
             DeviceDieId second_die_id = grid.get_die_region_id(second_die_region);
 
             interposer_delay_matrix[(size_t)first_die_id][(size_t)second_die_id] =
-                get_die_crossing_cost(horizontal_delay_sum, vertical_delay_sum, first_die_region, second_die_region);
+                get_die_crossing_cost(interposer_sums.horizontal_delay_sum, interposer_sums.vertical_delay_sum, first_die_region, second_die_region);
 
-            // We multiply the base cost of an interposer crossing by a factor of 2. This tells the router that interposer wires are a rare and expensive resource.
             interposer_cong_matrix[(size_t)first_die_id][(size_t)second_die_id] =
-                interposer_cut_base_cost_multiplier * get_die_crossing_cost(horizontal_cong_sum, vertical_cong_sum, first_die_region, second_die_region);
+                interposer_cut_base_cost_multiplier * get_die_crossing_cost(interposer_sums.horizontal_cong_sum, interposer_sums.vertical_cong_sum, first_die_region, second_die_region);
         }
     }
 
