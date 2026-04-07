@@ -94,10 +94,12 @@ static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_patte
             sg_location.region.y = pugiutil::get_attribute(node, "y", loc_data, pugiutil::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
 
             sg_location.region.reg_x.start = pugiutil::get_attribute(node, "startx", loc_data, pugiutil::OPTIONAL).as_int(0);
-            sg_location.region.reg_x.end = pugiutil::get_attribute(node, "endx", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max() / 2);
+            // No explicit endx: use INT_MAX so the region extends to the device edge.
+            sg_location.region.reg_x.end = pugiutil::get_attribute(node, "endx", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max());
 
             sg_location.region.reg_y.start = pugiutil::get_attribute(node, "starty", loc_data, pugiutil::OPTIONAL).as_int(0);
-            sg_location.region.reg_y.end = pugiutil::get_attribute(node, "endy", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max() / 2);
+            // Same as endx: default means extend to the device edge.
+            sg_location.region.reg_y.end = pugiutil::get_attribute(node, "endy", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max());
 
             sg_location.region.reg_x.repeat = pugiutil::get_attribute(node, "repeatx", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max());
             sg_location.region.reg_y.repeat = pugiutil::get_attribute(node, "repeaty", loc_data, pugiutil::OPTIONAL).as_int(std::numeric_limits<int>::max());
