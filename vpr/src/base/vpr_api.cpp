@@ -49,7 +49,7 @@
 #include "read_options.h"
 #include "echo_files.h"
 #include "setup_vpr.h"
-#include "ShowSetup.h"
+#include "show_setup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
 #include "rr_graph.h"
@@ -801,7 +801,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 
     // Output the netlist stats to console and optionally to file.
-    writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
+    write_clustered_netlist_stats(vpr_setup.FileNameOpts.write_block_usage);
 
     // print the total number of used physical blocks for each
     // physical block type after finishing the packing stage
@@ -1472,7 +1472,7 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
 
 ///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup) {
-    ShowSetup(vpr_setup);
+    show_setup(vpr_setup);
 }
 
 bool vpr_analysis_flow(const Netlist<>& net_list,
