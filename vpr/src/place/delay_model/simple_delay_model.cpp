@@ -49,7 +49,7 @@ void SimpleDelayModel::compute(RouterDelayProfiler& route_profiler,
 
     if (grid.has_interposer_cuts()) {
         // We don't use the base cost in the simple delay model, so we set the multiplier to 1.
-        interposer_lookahead_.emplace(device.rr_graph, grid, device,  /*interposer_cut_base_cost_multiplier*/ 1);
+        interposer_lookahead_.emplace(device.rr_graph, grid, device, /*interposer_cut_base_cost_multiplier*/ 1);
     }
 }
 
