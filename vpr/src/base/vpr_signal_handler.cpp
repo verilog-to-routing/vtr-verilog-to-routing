@@ -32,7 +32,6 @@
 #include <csignal>
 #endif
 
-
 void vpr_signal_handler(int signal);
 void checkpoint();
 
