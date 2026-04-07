@@ -545,6 +545,12 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 
         VTR_LOG("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 
+        VTR_LOG("PlacerOpts.congestion_factor: %f\n", PlacerOpts.congestion_factor);
+        if (PlacerOpts.congestion_factor > 0.0f) {
+            VTR_LOG("PlacerOpts.congestion_rlim_trigger_ratio: %f\n", PlacerOpts.congestion_rlim_trigger_ratio);
+            VTR_LOG("PlacerOpts.congestion_chan_util_threshold: %f\n", PlacerOpts.congestion_chan_util_threshold);
+        }
+
         if (PlacerOpts.place_algorithm.is_timing_driven()) {
             VTR_LOG("PlacerOpts.inner_loop_recompute_divider: %d\n", PlacerOpts.inner_loop_recompute_divider);
             VTR_LOG("PlacerOpts.recompute_crit_iter: %d\n", PlacerOpts.recompute_crit_iter);
@@ -601,6 +607,18 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
         VTR_LOG("PlaceOpts.seed: %d\n", PlacerOpts.seed);
 
         ShowAnnealSched(PlacerOpts.anneal_sched);
+
+        VTR_LOG("PlacerOpts.anneal_init_t_estimator: ");
+        switch (PlacerOpts.anneal_init_t_estimator) {
+            case e_anneal_init_t_estimator::COST_VARIANCE:
+                VTR_LOG("COST_VARIANCE\n");
+                break;
+            case e_anneal_init_t_estimator::EQUILIBRIUM:
+                VTR_LOG("EQUILIBRIUM\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown anneal_init_t_estimator\n");
+        }
     }
     VTR_LOG("\n");
 }
