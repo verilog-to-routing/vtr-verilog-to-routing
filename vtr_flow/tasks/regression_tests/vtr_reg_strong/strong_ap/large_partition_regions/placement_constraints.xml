@@ -1,11 +1,10 @@
 <!--
-Regression test placement constraint file. The purpose of this file
-is to verify that we are able to constrain atoms to different logical
-block types (even though the atoms can implement either one).
+Basic test placement constraint file. Constrains half of the blocks to one side
+of the chip and the other half to the other side. This is just simply to test
+that AP is able to adhere to large placement constraint regions.
 
-This was implemented to fix an issue where the packer was implementing
-atoms into a logical block type that could not feasibly be placed in
-the partition region.
+This also constrains the block to particular logical block types. This should
+not be an issue for AP.
 -->
 <vpr_constraints tool_name="vpr">
 <partition_list>
