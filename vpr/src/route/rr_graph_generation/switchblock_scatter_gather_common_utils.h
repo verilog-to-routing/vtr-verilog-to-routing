@@ -64,7 +64,7 @@ bool sb_not_here(const DeviceGrid& grid,
  */
 bool match_sb_xy(const DeviceGrid& grid,
                  const t_physical_tile_loc& loc,
-                  const t_specified_loc& specified_loc);
+                 const t_specified_loc& specified_loc);
 
 /**
  * @brief finds the correct channel (x or y), and the coordinates to index into it based on the

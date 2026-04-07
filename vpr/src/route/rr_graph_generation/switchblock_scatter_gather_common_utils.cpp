@@ -277,7 +277,7 @@ bool match_sb_xy(const DeviceGrid& grid,
     // step must be non-negative
     x_reg_step = std::max(0, x_reg_step);
     y_reg_step = std::max(0, y_reg_step);
-    
+
     const int repeat_offset_x = x_reg_step * specified_loc.reg_x.repeat;
     const int repeat_offset_y = y_reg_step * specified_loc.reg_y.repeat;
 
@@ -285,10 +285,10 @@ bool match_sb_xy(const DeviceGrid& grid,
     // Omitted endx in the arch uses INT_MAX; end + repeat_offset_x overflows int before the min()
     // with the grid width, so evaluate that sum in int64_t.
     const int reg_endx = static_cast<int>(std::min(static_cast<int64_t>(specified_loc.reg_x.end) + static_cast<int64_t>(repeat_offset_x),
-                                                    static_cast<int64_t>(grid.width() - 1)));
+                                                   static_cast<int64_t>(grid.width() - 1)));
     const int reg_starty = specified_loc.reg_y.start + repeat_offset_y;
     const int reg_endy = static_cast<int>(std::min(static_cast<int64_t>(specified_loc.reg_y.end) + static_cast<int64_t>(repeat_offset_y),
-                                                    static_cast<int64_t>(grid.height() - 1)));
+                                                   static_cast<int64_t>(grid.height() - 1)));
 
     // check x coordinate
     if (loc.x >= reg_startx && loc.x <= reg_endx) { //should fall into the region
