@@ -51,6 +51,45 @@ The VTR benchmarks are also included as pre-synthesized BLIF files under: ::
 
     $VTR_ROOT/vtr_flow/benchmarks/vtr_benchmarks_blif
 
+.. _titanium_benchmarks:
+
+Titanium Benchmarks
+-------------------
+
+.. _table_titanium_benchmarks:
+
+.. table:: The Titanium benchmarks.
+
+    =============   ========================================   ============================   ===============================
+    Benchmark       Approximate Number of Netlist Primitives   S10 Smallest Feasible Device   Description
+    =============   ========================================   ============================   ===============================
+    mem_test_max    7605183                                    Can't fit on any S10 device    Mem. parametric failure testing
+    rocket31        1448187                                    1SG280HH1F55E1VG               31-core RISC-V Rocket chip
+    ASU_LRN         955146                                     1SG211HN1F43E1VG               AlexNet accelerator
+    ChainNN_LRN     937695                                     1SG280HH1F55E1VG               AlexNet accelerator
+    ChainNN_ELT     937300                                     1SG280HH1F55E1VG               ResNet-50 accelerator
+    ChainNN_BSC     905098                                     1SG280HH1F55E1VG               VGG-16 accelerator
+    rocket17        801897                                     1SG280HH1F55E1VG               17-core RISC-V Rocket chip
+    ASU_ELT         767837                                     1SG211HN1F43E1VG               ResNet-50 accelerator
+    ASU_BSC         734883                                     1SG211HN1F43E1VG               VGG-16 accelerator
+    tdfir           706338                                     1SX110HN1F43E1VG               DSP
+    pricing         668537                                     1SX110HN1F43E1VG               Option pricing algorithm
+    mem_tester      621351                                     1SX110HN1F43E1VG               Mem. parametric failure testing
+    mandelbrot      579813                                     1SX110HN1F43E1VG               Fractal rendering
+    channelizer     462003                                     1SG280HH1F55E1VG               DSP
+    fft1d_offchip   440661                                     1SG280HH1F55E1VG               DSP spectral analysis
+    DLA_LRN         414250                                     1SX110HN1F43E1VG               AlexNet accelerator
+    matrix_mult     392682                                     1SX110HN1F43E1VG               Matrix multiplication
+    fft1d           389350                                     1SX110HN1F43E1VG               DSP spectral analysis
+    fft2d           354506                                     1SX110HN1F43E1VG               DSP spectral analysis
+    neko            304581                                     1SX110HN1F43E1VG               GPU simulation
+    DLA_ELT         296292                                     1SX110HN1F43E1VG               ResNet-50 accelerator
+    DLA_BSC         285347                                     1SX110HN1F43E1VG               VGG-16 accelerator
+    jpeg_deco       209313                                     1SG280HH1F55E1VG               Image processing
+    nyuzi           90857                                      1SX040HH1F35E1VG               GPGPU processor
+    sobel           23224                                      1SX065HH1F35E1VG               Image processing
+    =============   ========================================   ============================   ===============================
+
 .. _titan_benchmarks:
 
 Titan Benchmarks
