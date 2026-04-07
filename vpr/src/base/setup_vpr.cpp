@@ -22,7 +22,7 @@
 #include "read_options.h"
 #include "echo_files.h"
 #include "clock_modeling.h"
-#include "ShowSetup.h"
+#include "show_setup.h"
 
 #include "setup_vib_utils.h"
 
@@ -335,7 +335,7 @@ void SetupVPR(const t_options* options,
         }
     }
 
-    ShowSetup(*vpr_setup);
+    show_setup(*vpr_setup);
 
     // init global variables
     vtr::out_file_prefix = options->out_file_prefix;
