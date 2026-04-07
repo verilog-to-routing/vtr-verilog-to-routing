@@ -190,7 +190,7 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
                                                                                                    const DeviceContext& device_ctx,
                                                                                                    float interposer_cut_base_cost_multiplier) {
     vtr::ScopedStartFinishTimer timer("Computing interposer lookahead");
-    
+
     t_interposer_cost_prefix_sums interposer_sums = compute_die_crossing_prefix_sums(grid, rr_graph, device_ctx);
 
     vtr::NdMatrix<float, 2> interposer_delay_matrix({grid.get_die_count(), grid.get_die_count()}, 0.0f);

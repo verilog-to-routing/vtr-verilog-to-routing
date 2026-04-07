@@ -177,7 +177,7 @@ MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_f
     , is_flat_(is_flat)
     , route_verbosity_(route_verbosity)
     , device_model_warnings_(device_model_warnings)
-    , interposer_base_cost_multiplier_(interposer_base_cost_multiplier){
+    , interposer_base_cost_multiplier_(interposer_base_cost_multiplier) {
     has_interposer_cuts_ = g_vpr_ctx.device().grid.has_interposer_cuts();
 }
 
