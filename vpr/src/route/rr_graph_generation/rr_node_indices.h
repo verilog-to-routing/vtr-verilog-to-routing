@@ -44,8 +44,12 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 /**
  * @brief Allocates RR nodes for non-3D scatter–gather links.
  *
- * Creates RR node indices for each bottleneck link, assigns track numbers
- * within CHANX/CHANY channels, and updates the RR graph lookup tables.
+ * Creates RR node indices for each bottleneck link, assigns the minimum
+ * unused track number (ptc) on every grid location in the link span within
+ * CHANX/CHANY channels, and updates the RR graph lookup tables. The search
+ * for a free ptc starts at `chan_width_inf.x_max` for CHANX and
+ * `chan_width_inf.y_max` for CHANY (tracks below are reserved for ordinary
+ * channel wires).
  *
  * @return A list of created RR node IDs paired with their track numbers.
  */

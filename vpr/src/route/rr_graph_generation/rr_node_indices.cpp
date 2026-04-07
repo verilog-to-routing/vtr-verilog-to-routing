@@ -369,13 +369,7 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
                                                                                        const std::vector<t_bottleneck_link>& bottleneck_links,
                                                                                        const t_chan_width& chan_width_inf,
                                                                                        int& index) {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const DeviceGrid& grid = device_ctx.grid;
-
-    // Initialize matrices tracking the next free track number (ptc)
-    vtr::NdMatrix<int, 3> chanx_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.x_max);
-    vtr::NdMatrix<int, 3> chany_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.y_max);
-
+    RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     std::vector<std::pair<RRNodeId, int>> node_indices;
     node_indices.reserve(bottleneck_links.size());
 
@@ -388,33 +382,22 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
         const int layer = link.gather_loc.layer_num;
         compute_non_3d_sg_link_geometry(link, chan_type, xlow, xhigh, ylow, yhigh, direction);
 
-        // Select the appropriate ptc matrix for this channel type
-        vtr::NdMatrix<int, 3>& ptc_matrix = (chan_type == e_rr_type::CHANX) ? chanx_ptc : chany_ptc;
-
-        // Step 2: Find the maximum next-free ptc value across all (x,y) cells
-        // spanned by this SG link. We use the max to ensure that the chosen
-        // ptc number is free along the entire length of the node
-        int ptc = 0;
-        for (int x = xlow; x <= xhigh; x++) {
-            for (int y = ylow; y <= yhigh; y++) {
-                ptc = std::max(ptc, ptc_matrix[layer][x][y]);
-            }
+        // Step 2: Smallest ptc >= x_max (CHANX) or y_max (CHANY) with no node at that track on
+        // any (layer,x,y) in the span (ordinary wires use lower track indices; SG may share higher indices).
+        int ptc = (chan_type == e_rr_type::CHANX) ? chan_width_inf.x_max : chan_width_inf.y_max;
+        while (!node_lookup.find_nodes_in_range(layer, xlow, ylow, xhigh, yhigh, chan_type, ptc).empty()) {
+            ++ptc;
         }
 
-        // Step 3: Sanity check: no existing node should occupy this (layer,x,y,ptc)
-        VTR_ASSERT(rr_graph_builder.node_lookup().find_nodes_in_range(layer, xlow, ylow, xhigh, yhigh, chan_type, ptc).empty());
-
-        // Step 4: Allocate a new RR node ID and record its (inode, ptc)
+        // Step 3: Allocate a new RR node ID and record its (inode, ptc)
         const RRNodeId inode = RRNodeId(index);
         node_indices.push_back({inode, ptc});
         index++;
 
-        // Step 5: Register this node in the spatial lookup for every (x,y)
-        // location it spans, and update ptc_matrix to mark this track as used.
+        // Step 4: Register this node in the spatial lookup for every (x,y) it spans
         for (int x = xlow; x <= xhigh; x++) {
             for (int y = ylow; y <= yhigh; y++) {
-                rr_graph_builder.node_lookup().add_node(inode, layer, x, y, chan_type, ptc);
-                ptc_matrix[layer][x][y] = ptc + 1;
+                node_lookup.add_node(inode, layer, x, y, chan_type, ptc);
             }
         }
     }
