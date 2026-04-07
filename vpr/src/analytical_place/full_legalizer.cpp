@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "PreClusterTimingManager.h"
-#include "ShowSetup.h"
+#include "show_setup.h"
 #include "ap_flow_enums.h"
 #include "ap_netlist_fwd.h"
 #include "blk_loc_registry.h"
@@ -915,7 +915,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
     // Verify the packing
     check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
-    writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
+    write_clustered_netlist_stats(vpr_setup_.FileNameOpts.write_block_usage);
 }
 
 void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
@@ -1147,7 +1147,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
 
     // Verify the packing and print some info
     check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
-    writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
+    write_clustered_netlist_stats(vpr_setup_.FileNameOpts.write_block_usage);
     print_pb_type_count(clb_nlist);
 }
 
