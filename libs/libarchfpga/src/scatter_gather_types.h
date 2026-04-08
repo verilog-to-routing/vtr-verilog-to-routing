@@ -38,11 +38,11 @@ struct t_sg_link {
     std::optional<int> mux_index;
     /// Segment/wire used to move through the device to the scatter location.
     std::string seg_type;
-    /// X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
+    /// X offset of where the scatter happens relative to the gather. If set, the Y and Z offsets must be zero.
     int x_offset;
-    /// Y offset of where the scatter happens relative to the gather. If set, the x and z offsets must be zero.
+    /// Y offset of where the scatter happens relative to the gather. If set, the X and Z offsets must be zero.
     int y_offset;
-    /// z offset of where the scatter happens relative to the gather. If set, the x and y offsets must be zero.
+    /// Z offset of where the scatter happens relative to the gather. If set, the X and Y offsets must be zero.
     int z_offset;
 };
 
