@@ -50,8 +50,8 @@ t_metadata_dict process_meta_data(vtr::string_internment& strings,
  * @brief Searches for a switch whose matches with the given name.
  * @param switches Contains all the architecture switches.
  * @param switch_name The name with which switch names are compared.
- * @return A negative integer if no switch was found with the given name; otherwise
- * the index of the matching switch is returned.
+ * @return ARCH_FPGA_UNDEFINED_VAL if no switch was found with the given name; otherwise
+ * the index of the matching switch.
  */
 int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches,
                         std::string_view switch_name);
