@@ -61,6 +61,10 @@ bool sb_not_here(const DeviceGrid& grid,
  * When ``x`` and/or ``y`` are set on ``specified_loc``, the match is an exact coordinate or
  * a row/column wildcard. Otherwise ``reg_x`` / ``reg_y`` describe a
  * tiled rectangular region with optional repeat and stride (incrx/incry).
+ *
+ * @param grid Device grid (dimensions used when clamping region bounds).
+ * @param loc Candidate switchblock location to test.
+ * @param specified_loc XY_SPECIFIED rule from the architecture (exact x/y or region + stride).
  */
 bool match_sb_xy(const DeviceGrid& grid,
                  const t_physical_tile_loc& loc,

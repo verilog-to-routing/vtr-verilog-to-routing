@@ -259,15 +259,15 @@ bool match_sb_xy(const DeviceGrid& grid,
         return false;
     }
 
-    // if both sb_x and sb_y is not defined, we have a region that we should apply this SB pattern to, we just need to check
+    // if both sb_x and sb_y are not defined, we have a region that we should apply this SB pattern to, we just need to check
     // whether the location passed into this function falls within this region or not
     // calculate the appropriate region based on the repeatx/repeaty and current location.
     // This is to determine whether the given location is part of the current SB specified region with regular expression or not
     // After region calculation, the current SB will apply to this location if:
     // 1) the given (x,y) location falls into the calculated region
     // *AND*
-    // 2) incrx/incry are respected within the region, this means all locations within the calculated region do
-    //    not necessarily crosspond to the current SB. If incrx/incry is equal to 1, then all locations within the
+    // 2) incrx/incry are respected within the region; this means all locations within the calculated region do
+    //    not necessarily correspond to the current SB. If incrx/incry is equal to 1, then all locations within the
     //    calculated region are valid.
 
     // calculate the region

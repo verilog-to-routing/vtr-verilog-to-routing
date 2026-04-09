@@ -34,7 +34,8 @@ struct t_sg_location {
 struct t_sg_link {
     /// Name of the sg_link.
     std::string name;
-    /// Index of the multiplexer used to gather connections.
+    /// If set, index into the architecture switch list (`t_arch_switch_inf`) for the
+    /// gather mux (resolved from the `mux` attribute on `<sg_link>`). Unset when `mux` is empty.
     std::optional<int> mux_index;
     /// Segment/wire used to move through the device to the scatter location.
     std::string seg_type;

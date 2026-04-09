@@ -47,9 +47,10 @@ t_metadata_dict process_meta_data(vtr::string_internment& strings,
                                   const pugiutil::loc_data& loc_data);
 
 /**
- * @brief Searches for a switch whose matches with the given name.
+ * @brief Searches for a switch that matches the given name (linear scan).
  * @param switches Contains all the architecture switches.
  * @param switch_name The name with which switch names are compared.
+ * @note Time is O(|switches|); used during architecture XML parsing, not inner P&R loops.
  * @return ARCH_FPGA_UNDEFINED_VAL if no switch was found with the given name; otherwise
  * the index of the matching switch.
  */
