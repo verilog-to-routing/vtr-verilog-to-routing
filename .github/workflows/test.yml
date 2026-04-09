@@ -357,6 +357,12 @@ jobs:
             extra_pkgs: ''
           },
           {
+            name: 'Parallel',
+            suite: 'vtr_reg_parallel',
+            extra_pkgs: '',
+            num_cores: 2
+          },
+          {
             name: 'SystemVerilog',
             suite: 'vtr_reg_system_verilog',
             extra_pkgs: ''
@@ -408,7 +414,7 @@ jobs:
     - name: Test
       timeout-minutes: 30
       run: |
-        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ matrix.num_cores || steps.cpu-cores.outputs.count}}
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
