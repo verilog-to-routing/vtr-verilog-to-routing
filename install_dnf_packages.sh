@@ -14,7 +14,7 @@ sudo dnf install --refresh -y \
 
 # Required for parsing SDC files (see LibSDCParse)
 sudo dnf install --refresh -y \
-    tcl-devel \
+    tcl8-devel \
     swig
 
 # Required for graphics
