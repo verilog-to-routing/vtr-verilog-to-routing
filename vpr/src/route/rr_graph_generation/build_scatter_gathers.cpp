@@ -498,24 +498,25 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     bottleneck_link.C_metal = seg_it->Cmetal;
 
                     // Choose the correct switch (INC vs DEC) based on the link's physical direction.
-                    if (is_3d_link) {
-                        if (sg_link.z_offset < 0
+                    if (sg_link.mux_index.has_value()) {
+                        bottleneck_link.arch_wire_switch = sg_link.mux_index.value();
+                    } else {
+                        const bool has_negative_offset = is_3d_link
+                                                             ? (sg_link.z_offset < 0)
+                                                             : (sg_link.x_offset < 0 || sg_link.y_offset < 0);
+
+                        if (has_negative_offset
                             && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL
                             && sg_pattern.type != e_scatter_gather_type::BIDIR) {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
                         } else {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
                         }
+                    }
+
+                    if (is_3d_link) {
                         interdie_3d_links[gather_loc.x][gather_loc.y].push_back(std::move(bottleneck_link));
                     } else {
-                        if ((sg_link.x_offset < 0 || sg_link.y_offset < 0)
-                            && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL
-                            && sg_pattern.type != e_scatter_gather_type::BIDIR) {
-                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
-                        } else {
-                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
-                        }
-
                         bottleneck_links.push_back(std::move(bottleneck_link));
                     }
                 }
