@@ -2036,6 +2036,13 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``-2``
 
+.. option:: --router_lookahead_interposer_base_cut_multiplier
+    .. note:: This option only works affects the map router lookahead and devices that have interposer cuts
+    
+    A multiplier that's applied to the base cost of interposer wires for the router lookahead.
+
+    **Default:** ``2``
+
 .. _analysis_options:
 
 Analysis Options
