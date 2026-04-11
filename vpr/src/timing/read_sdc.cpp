@@ -196,7 +196,7 @@ class SdcParseCallback : public sdcparse::Callback {
             AtomPinId clock_pin;
             if (object_type == sdcparse::ObjectType::Port || object_type == sdcparse::ObjectType::Pin) {
                 // When the target of the create_clock command is a pin, we implicitly are targeting
-                // the driver of the net that this pin is a part of.
+                // the driver of the net that this pin is a part of (i.e. the whole clock net).
                 AtomPinId target_pin = get_port_or_pin(object_id);
                 VTR_ASSERT(target_pin.is_valid());
                 AtomNetId target_net = netlist_.pin_net(target_pin);
