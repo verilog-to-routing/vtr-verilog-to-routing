@@ -9,7 +9,8 @@
 
 [submodule "libs/EXTERNAL/libezgl"]
 	path = libs/EXTERNAL/libezgl
-	url = https://github.com/verilog-to-routing/ezgl.git
+	url = https://github.com/QL-Proprietary/ezgl-QL.git
+	branch = qt_layer
 [submodule "libs/EXTERNAL/yosys"]
 	path = libs/EXTERNAL/yosys
 	url = https://github.com/YosysHQ/yosys.git
