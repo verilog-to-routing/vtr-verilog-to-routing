@@ -6,6 +6,50 @@ include(SupportCcache)
 project("VTR")
 
 #
+# macOS / Homebrew configuration
+#
+# On macOS, system-provided bison (2.3) and flex are outdated.
+# Homebrew installs newer versions in /opt/homebrew (Apple Silicon)
+# or /usr/local (Intel). We detect and prefer Homebrew's tools and
+# libraries automatically.
+#
+if(APPLE)
+    # Determine Homebrew prefix (works for both Apple Silicon and Intel)
+    execute_process(
+        COMMAND brew --prefix
+        OUTPUT_VARIABLE HOMEBREW_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(HOMEBREW_PREFIX)
+        message(STATUS "macOS: Homebrew detected at ${HOMEBREW_PREFIX}")
+
+        # Prefer Homebrew's bison and flex over the outdated system versions
+        if(NOT DEFINED BISON_EXECUTABLE)
+            set(BISON_EXECUTABLE "${HOMEBREW_PREFIX}/opt/bison/bin/bison" CACHE FILEPATH "Homebrew bison")
+        endif()
+        if(NOT DEFINED FLEX_EXECUTABLE)
+            set(FLEX_EXECUTABLE "${HOMEBREW_PREFIX}/opt/flex/bin/flex" CACHE FILEPATH "Homebrew flex")
+        endif()
+
+        # Add Homebrew Qt and library paths so find_package() can locate them.
+        # Homebrew splits Qt6 into separate packages (qtbase, qtsvg, etc.)
+        # so we must add each package's cmake dir to the prefix path.
+        list(PREPEND CMAKE_PREFIX_PATH
+            "${HOMEBREW_PREFIX}/opt/qtbase"
+            "${HOMEBREW_PREFIX}/opt/qtsvg"
+            "${HOMEBREW_PREFIX}"
+        )
+        # Qt6 component discovery also uses per-component _DIR variables
+        if(EXISTS "${HOMEBREW_PREFIX}/opt/qtsvg/lib/cmake/Qt6Svg")
+            set(Qt6Svg_DIR "${HOMEBREW_PREFIX}/opt/qtsvg/lib/cmake/Qt6Svg" CACHE PATH "Qt6Svg cmake dir")
+        endif()
+    else()
+        message(WARNING "macOS: Homebrew not found. Install from https://brew.sh")
+    endif()
+endif()
+
+#
 # VTR Build Options
 #
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -255,8 +299,13 @@ endif()
 set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
-    # -fuse-ld=gold force the gold linker to be used (required for sanitizers, but not enabled by default on some systems)
-    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fuse-ld=gold -static-libasan")
+    if(APPLE)
+        # macOS/Apple Clang: no -fuse-ld=gold, no -static-libasan, no leak sanitizer
+        set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=undefined")
+    else()
+        # Linux/GCC: use gold linker and static libasan
+        set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fuse-ld=gold -static-libasan")
+    endif()
     message(STATUS "SANITIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 

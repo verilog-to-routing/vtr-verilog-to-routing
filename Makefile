@@ -35,6 +35,9 @@ BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
 #CMake's standard build types)
 CMAKE_BUILD_TYPE := $(shell echo $(BUILD_TYPE) | sed 's/_\?pgo//' | sed 's/_\?strict//')
 
+#Detect the operating system
+UNAME_S := $(shell uname -s)
+
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
 override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
@@ -53,6 +56,13 @@ endif
 # -s : Suppresses makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
+
+#Detect number of CPU cores for parallel build suggestions
+ifeq ($(UNAME_S),Darwin)
+    NUM_CORES := $(shell sysctl -n hw.ncpu 2>/dev/null || echo 1)
+else
+    NUM_CORES := $(shell nproc 2>/dev/null || echo 1)
+endif
 
 SOURCE_DIR := $(PWD)
 BUILD_DIR ?= build
@@ -80,7 +90,11 @@ ifneq ($(BUILD_DIR),build)
 	ln -sf $(BUILD_DIR) build
 endif
 ifeq ($(CMAKE),)
-	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	ifeq ($(UNAME_S),Darwin)
+		$(error Required 'cmake' executable not found. On macOS try 'brew install cmake' to install)
+	else
+		$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	endif
 endif
 	@ mkdir -p $(BUILD_DIR)
 ifneq (,$(findstring pgo,$(BUILD_TYPE)))
@@ -131,7 +145,11 @@ distclean: clean
 
 clean:
 ifeq ($(CMAKE),)
-	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	ifeq ($(UNAME_S),Darwin)
+		$(error Required 'cmake' executable not found. On macOS try 'brew install cmake' to install)
+	else
+		$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
+	endif
 endif
 	@ echo "Cleaning files.."
 	#We run cmake so we can use the generated Makefile to clean any executables
