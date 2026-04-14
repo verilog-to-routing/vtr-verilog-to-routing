@@ -8,7 +8,8 @@
 #ifndef NO_GRAPHICS
 
 #include "ezgl/application.hpp"
-#include <gtk/gtk.h>
+
+#include "vpr_qtcompat.h"
 
 void save_graphics(std::string extension, std::string file_name);
 void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/);

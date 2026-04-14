@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "pathhelper.h"
 #include "telegramoptions.h"
-#include <gtk/gtk.h>
+#include "vpr_qtcompat.h"
 
 #include <ezgl/application.hpp>
 

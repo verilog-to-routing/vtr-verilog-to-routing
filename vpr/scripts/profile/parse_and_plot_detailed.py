@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.expanduser("~/benchtracker/"))
 from util import get_trailing_num, immediate_subdir, natural_sort
 
-
 NO_PARSE = 1
 NO_OUTPUT = 2
 
@@ -30,7 +29,7 @@ def main():
     params = Params()
     parse_args(params)
 
-    (param_names, param_options) = read_parse_file(params)
+    param_names, param_options = read_parse_file(params)
 
     results = parse_output(param_names, params)
 
@@ -255,8 +254,7 @@ def parse_args(ns=None):
     """parse arguments from command line and return as namespace object"""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(
-            """\
+        description=textwrap.dedent("""\
             parse parameters per iteration for a given benchmark and plots them
             
         Benchmark:
@@ -277,8 +275,7 @@ def parse_args(ns=None):
 
         Parameter Options:
         	log - make the y-axis log scale for this parameter
-        	"""
-        ),
+        	"""),
         usage="%(prog)s <output_file> <circuit> <channel_width> [OPTIONS]",
     )
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-    Module to run the VTR Flow
+Module to run the VTR Flow
 """
+
 import sys
 from pathlib import Path
 import argparse
@@ -53,17 +54,14 @@ def vtr_command_argparser(prog=None):
     The VTR command arg parser
     """
     usage = "%(prog)s circuit_file architecture_file [options]"
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
                     Runs a single architecture and circuit through the VTR CAD flow - mapping
                     the circuit onto the target archietcture.
 
                     Any unrecognzied arguments are passed to VPR.
-                    """
-    )
+                    """)
 
-    epilog = textwrap.dedent(
-        """
+    epilog = textwrap.dedent("""
                 Examples
                 --------
 
@@ -95,8 +93,7 @@ def vtr_command_argparser(prog=None):
 
                         %(prog)s arch.xml circuit.blif -start vpr -end vpr
 
-                """
-    )
+                """)
 
     parser = argparse.ArgumentParser(
         prog=prog,

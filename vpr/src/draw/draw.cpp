@@ -59,6 +59,12 @@
 
 #include "ui_setup.h"
 
+#include "vpr_qtcompat.h"
+#include <QLineEdit>
+#include <QTreeWidget>
+#include <QVBoxLayout>
+#include <QDialogButtonBox>
+
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
@@ -74,9 +80,9 @@ static constexpr ezgl::color OLD_BLK_LOC_COLOR = blk_GOLD;
 static constexpr ezgl::color NEW_BLK_LOC_COLOR = blk_GREEN;
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
-void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
-void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y);
+void act_on_key_press(ezgl::application* /*app*/, QKeyEvent* event, const char* key_name);
+void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, double y);
+void act_on_mouse_move(ezgl::application* app, QMouseEvent* event, double x, double y);
 
 static void highlight_blocks(double x, double y);
 
@@ -131,8 +137,12 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-ezgl::application::settings settings("/ezgl/main.ui", "MainWindow", "MainCanvas", "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()), setup_default_ezgl_callbacks);
-ezgl::application application(settings);
+ezgl::application::settings settings(":/ezgl/main.ui", "MainWindow", "MainCanvas", "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()), setup_default_ezgl_callbacks);
+// provide fake argc and argv required for QApplication initialization
+int argc = 1;
+char appName[] = "vpr";
+char* argv[] = { appName, nullptr };
+ezgl::application application(settings, argc, argv);
 
 bool window_mode = false;
 bool window_point_1_collected = false;
@@ -640,30 +650,34 @@ bool draw_if_net_highlighted(ParentNetId inet) {
  * At the moment, only does something if user is currently typing in searchBar and
  * hits enter, at which point it runs autocomplete
  */
-void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
+void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* key_name)
+{
     std::string key(key_name);
-    GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
-    std::string text(gtk_entry_get_text(GTK_ENTRY(searchBar)));
+    QLineEdit* searchBar = qobject_cast<QLineEdit*>(app->get_object("TextInput"));
+    if (!searchBar) {
+        return;
+    }
+    QString text(searchBar->text());
     t_draw_state* draw_state = get_draw_state_vars();
-    if (gtk_widget_is_focus(searchBar)) {
+    if (searchBar->hasFocus()) {
         if (key == "Return" || key == "Tab") {
             enable_autocomplete(app);
-            gtk_editable_set_position(GTK_EDITABLE(searchBar), text.length());
+            searchBar->setCursorPosition(text.length());
             return;
         }
     }
     if (draw_state->justEnabled) {
         draw_state->justEnabled = false;
     } else {
-        gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
+        searchBar->setCompleter(nullptr);
     }
     if (key == "Escape") {
         deselect_all();
     }
 }
 
-void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    if (event->button == 1) {
+void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, double y) {
+    if (event->button() == Qt::LeftButton) {
 
         if (window_mode) {
             //click on any two points to form new window rectangle bound
@@ -718,7 +732,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
             }
 
             /* Control + mouse click to select multiple nets. */
-            if (!(event->state & GDK_CONTROL_MASK))
+            if (!(event->modifiers() & Qt::ControlModifier))
                 deselect_all();
 
             //Check if we hit an rr node
@@ -732,7 +746,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
     }
 }
 
-void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, double x, double y) {
+void act_on_mouse_move(ezgl::application* app, QMouseEvent* /* event */, double x, double y) {
     // user has clicked the window button, in window mode
     if (window_point_1_collected) {
         // draw a grey, dashed-line box to indicate the zoom-in region
@@ -1039,40 +1053,52 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
 
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
-    GObject* proceed_button = app->get_object("ProceedButton");
-    g_signal_connect(proceed_button, "clicked", G_CALLBACK(ezgl::press_proceed),
-                     app);
+    QAbstractButton* proceed_button = app->get_abstract_button("ProceedButton");
+    QObject::connect(proceed_button, &QAbstractButton::clicked, [app](){
+        press_proceed(/*unused*/nullptr, app);
+    });
 
     // Connect press_zoom_fit function to the Zoom-fit button
-    GObject* zoom_fit_button = app->get_object("ZoomFitButton");
-    g_signal_connect(zoom_fit_button, "clicked",
-                     G_CALLBACK(ezgl::press_zoom_fit), app);
+    QAbstractButton* zoom_fit_button = app->get_abstract_button("ZoomFitButton");
+    QObject::connect(zoom_fit_button, &QAbstractButton::clicked, [app](){
+        press_zoom_fit(/*unused*/nullptr, app);
+    });
 
     // Connect Pause button
-    GObject* pause_button = app->get_object("PauseButton");
-    g_signal_connect(pause_button, "clicked", G_CALLBACK(set_force_pause), app);
+    QAbstractButton* pause_button = app->get_abstract_button("PauseButton");
+    QObject::connect(pause_button, &QAbstractButton::clicked, [app](){
+        set_force_pause(/*unused*/nullptr, /*unused*/-1, app);
+    });
 
     // Connect Block Outline checkbox
-    GObject* block_outline = app->get_object("blockOutline");
-    g_signal_connect(block_outline, "toggled", G_CALLBACK(set_block_outline),
-                     app);
+    QAbstractButton* block_outline = app->get_abstract_button("blockOutline");
+    QObject::connect(block_outline, &QAbstractButton::toggled, [app](){
+        set_block_outline(/*unused*/nullptr, /*unused*/-1, app);
+    });
 
     // Connect Block Text checkbox
-    GObject* block_text = app->get_object("blockText");
-    g_signal_connect(block_text, "toggled", G_CALLBACK(set_block_text), app);
+    QAbstractButton* block_text = app->get_abstract_button("blockText");
+    QObject::connect(block_text, &QAbstractButton::toggled, [app](){
+        set_block_text(/*unused*/nullptr, /*unused*/-1, app);
+    });
 
     // Connect Clip Routing Util checkbox
-    GObject* clip_routing = app->get_object("clipRoutingUtil");
-    g_signal_connect(clip_routing, "toggled", G_CALLBACK(clip_routing_util),
-                     app);
+    QAbstractButton* clip_routing = app->get_abstract_button("clipRoutingUtil");
+    QObject::connect(clip_routing, &QAbstractButton::toggled, [app](){
+        clip_routing_util(/*unused*/nullptr, /*unused*/-1, app);
+    });
 
     // Connect Debug Button
-    GObject* debugger = app->get_object("debugButton");
-    g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
+    QAbstractButton* debugger = app->get_abstract_button("debugButton");
+    QObject::connect(debugger, &QAbstractButton::clicked, [app](){
+        draw_debug_window();
+    });
 
     // Connect Draw Partitions Checkbox
-    GObject* draw_partitions = app->get_object("drawPartitions");
-    g_signal_connect(draw_partitions, "toggled", G_CALLBACK(set_draw_partitions), app);
+    QAbstractButton* draw_partitions = app->get_abstract_button("drawPartitions");
+    QObject::connect(draw_partitions, &QAbstractButton::toggled, [app](){
+        set_draw_partitions(/*unused*/nullptr, /*unused*/-1, app);
+    });
 }
 
 // Callback function for Block Outline checkbox
@@ -1142,49 +1168,34 @@ static void on_dialog_response(GtkDialog* dialog, gint response_id, gpointer /* 
 static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    GObject* window;
-    GtkWidget* dialog;
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
+        QWidget* window = application.get_widget(application.get_main_window_id().c_str());
 
-    window = application.get_object(application.get_main_window_id().c_str());
+        QDialog* dialog = new QDialog(window);
+        dialog->setWindowTitle("Floorplanning Legend");
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->resize(400, 500);
 
-    dialog = gtk_dialog_new_with_buttons(
-        "Floorplanning Legend",
-        (GtkWindow*)window,
-        GTK_DIALOG_DESTROY_WITH_PARENT,
-        ("CLOSE"),
-        GTK_RESPONSE_ACCEPT,
-        NULL);
+        QVBoxLayout* layout = new QVBoxLayout(dialog);
 
-    GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    GtkWidget* content_tree = gtk_tree_view_new();
-    content_tree = setup_floorplanning_legend(content_tree);
+        QTreeWidget* tree = new QTreeWidget(dialog);
+        setup_floorplanning_legend(tree);
+        layout->addWidget(tree);
 
-    gtk_container_add(GTK_CONTAINER(content_area), content_tree);
+        QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+        QObject::connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::close);
+        layout->addWidget(buttons);
 
-    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(content_tree));
-    g_signal_connect(selection,
-                     "changed",
-                     G_CALLBACK(highlight_selected_partition),
-                     NULL);
+        QObject::connect(tree, &QTreeWidget::itemSelectionChanged, tree, [tree]() {
+            highlight_selected_partition(tree);
+        });
 
-    // assign corresponding bool value to draw_state->draw_partitions
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget)) {
-        gtk_widget_show_all(dialog);
-
-        g_signal_connect(
-            GTK_DIALOG(dialog),
-            "response",
-            G_CALLBACK(on_dialog_response),
-            NULL);
-
+        dialog->show();
         draw_state->draw_partitions = true;
-
     } else {
-        gtk_widget_destroy(GTK_WIDGET(dialog));
         draw_state->draw_partitions = false;
     }
 
-    //redraw
     application.update_message(draw_state->default_message);
     application.refresh_drawing();
 }

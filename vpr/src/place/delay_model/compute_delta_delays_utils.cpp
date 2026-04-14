@@ -583,7 +583,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
 
 #ifdef VERBOSE
                         VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
-                                delays[size_t(sink_rr_node)],
+                                delays[sink_rr_node],
                                 delta_x, delta_y,
                                 source_x, source_y,
                                 sink_x, sink_y);

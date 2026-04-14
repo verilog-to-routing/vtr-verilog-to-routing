@@ -68,7 +68,7 @@ jobs:
         tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: build-release.tar.gz
         path: build.tar.gz
@@ -115,7 +115,7 @@ jobs:
         tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: build-release-with-odin.tar.gz
         path: build.tar.gz
@@ -215,7 +215,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: build-release.tar.gz
 
@@ -396,7 +396,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: build-release.tar.gz
 
@@ -412,7 +412,7 @@ jobs:
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -424,7 +424,7 @@ jobs:
 
     - name: Upload regression results
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -484,7 +484,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: build-release-with-odin.tar.gz
 
@@ -500,7 +500,7 @@ jobs:
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -512,7 +512,7 @@ jobs:
 
     - name: Upload regression results
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -605,7 +605,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Download Build Artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build-release.tar.gz
 
@@ -645,7 +645,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: build-release-with-odin.tar.gz
 
@@ -682,7 +682,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: build-release.tar.gz
 

@@ -2,8 +2,7 @@
 
 #ifndef NO_SERVER
 
-#include <glib.h>
-
+#include "vpr_qtcompat.h"
 namespace server {
 
 /**

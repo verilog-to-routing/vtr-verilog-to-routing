@@ -194,7 +194,8 @@ void IdentityAnalyticalSolver::solve(unsigned iteration, PartialPlacement& p_pla
 
         p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
         p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
-        p_placement.block_layer_nums[blk_id] = device_grid_num_layers_ / 2.0;
+        VTR_ASSERT_SAFE(device_grid_num_layers_ > 0);
+        p_placement.block_layer_nums[blk_id] = (device_grid_num_layers_ - 1) / 2.0;
     }
 }
 
@@ -601,7 +602,7 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
             if (is_multi_die()) {
                 std::fill(p_placement.block_layer_nums.begin(),
                           p_placement.block_layer_nums.end(),
-                          device_grid_num_layers_ / 2.0);
+                          (device_grid_num_layers_ - 1) / 2.0);
                 block_z_locs_solved = p_placement.block_layer_nums;
             }
             return;
@@ -682,7 +683,7 @@ void B2BSolver::initialize_placement_least_dense(PartialPlacement& p_placement) 
         p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
         p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
         if (is_multi_die()) {
-            p_placement.block_layer_nums[blk_id] = device_grid_num_layers_ / 2.0;
+            p_placement.block_layer_nums[blk_id] = (device_grid_num_layers_ - 1) / 2.0;
         }
     }
 }
@@ -787,7 +788,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
             p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
             p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
             if (is_multi_die()) {
-                p_placement.block_layer_nums[blk_id] = device_grid_num_layers_ / 2.0;
+                p_placement.block_layer_nums[blk_id] = (device_grid_num_layers_ - 1) / 2.0;
             }
         }
     } else {

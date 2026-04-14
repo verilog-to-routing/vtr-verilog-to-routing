@@ -1,5 +1,5 @@
 """
-    Module to run ACE with its various options
+Module to run ACE with its various options
 """
 
 from pathlib import Path

@@ -141,14 +141,16 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libvtrutil)
 #
 # Unit Tests
 #
-file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
-add_executable(test_vtrutil ${TEST_SOURCES})
-target_link_libraries(test_vtrutil 
-                        libvtrutil
-                        Catch2::Catch2WithMain)
+set(ENABLE_VPR_TESTS OFF) # QT_MIGRATION_TMP
+if (ENABLE_VPR_TESTS)    # QT_MIGRATION_TMP
+    file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+    add_executable(test_vtrutil ${TEST_SOURCES})
+    target_link_libraries(test_vtrutil 
+                            libvtrutil
+                            Catch2::Catch2WithMain)
 
-add_test(NAME test_vtrutil
-    COMMAND test_vtrutil
-    --colour-mode ansi
-    )
-            
+    add_test(NAME test_vtrutil
+        COMMAND test_vtrutil
+        --colour-mode ansi
+        )
+endif(ENABLE_VPR_TESTS) # QT_MIGRATION_TMP

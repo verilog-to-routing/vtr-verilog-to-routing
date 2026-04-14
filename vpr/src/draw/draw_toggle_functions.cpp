@@ -1,6 +1,8 @@
 
 #ifndef NO_GRAPHICS
 
+#include "vpr_qtcompat.h"
+
 #include <cstring>
 
 #include "vpr_error.h"
@@ -410,62 +412,30 @@ void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
  */
 void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkBox* box = GTK_BOX(parent);
-
-    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
     int index = 0;
-    // Iterate over the checkboxes
-    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
-        if (GTK_IS_CHECK_BUTTON(iter->data)) {
-            GtkWidget* checkbox = GTK_WIDGET(iter->data);
-            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
-            const gchar* name = gtk_button_get_label(GTK_BUTTON(checkbox));
-
-            // Only iterate through checkboxes with name "Layer ...", skip Cross Layer Connection
-            if (std::string(name).find("Layer") != std::string::npos
-                && std::string(name).find("Cross") == std::string::npos) {
-                // Change the boolean of the draw_layer_display vector depending on checkbox
-                if (state) {
-                    draw_state->draw_layer_display[index].visible = true;
-                } else {
-                    draw_state->draw_layer_display[index].visible = false;
-                }
-                index++;
-            }
+    for (QCheckBox* checkbox : widget->parentWidget()->findChildren<QCheckBox*>(QString(), Qt::FindDirectChildrenOnly)) {
+        const QString label = checkbox->text();
+        if (label.contains("Layer") && !label.contains("Cross")) {
+            draw_state->draw_layer_display[index].visible = checkbox->isChecked();
+            index++;
         }
     }
     application.refresh_drawing();
-    g_list_free(children);
 }
 /**
  * @brief Callback function for 3d layer transparency spin buttons
  */
 void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkBox* box = GTK_BOX(parent);
-    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
-
     int index = 0;
-    // Iterate over transparency layers
-    for (GList* iter = children; iter != nullptr; iter = g_list_next(iter)) {
-        if (GTK_IS_SPIN_BUTTON(iter->data)) {
-            GtkWidget* spin_button = GTK_WIDGET(iter->data);
-            const gchar* name = gtk_widget_get_name(spin_button);
-
-            if (std::string(name).find("Transparency") != std::string::npos
-                && std::string(name).find("Cross") == std::string::npos) {
-                gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
-                draw_state->draw_layer_display[index].alpha = 255 - value;
-                index++;
-            }
+    for (QSpinBox* spin_button : widget->parentWidget()->findChildren<QSpinBox*>(QString(), Qt::FindDirectChildrenOnly)) {
+        const QString name = spin_button->objectName();
+        if (name.contains("Transparency") && !name.contains("Cross")) {
+            draw_state->draw_layer_display[index].alpha = 255 - gtk_spin_button_get_value(spin_button);
+            index++;
         }
     }
     application.refresh_drawing();
-    g_list_free(children);
 }
 
 /**

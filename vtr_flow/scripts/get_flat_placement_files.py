@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-    Script to get the Flat Placement Files.
+Script to get the Flat Placement Files.
 """
 
 import sys
@@ -15,12 +15,10 @@ def parse_args():
     Parses and returns script's arguments
     """
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
             Extracts the flat placemnets for the Titan benchmarks which are
             stored in zip format to reduce the amount of space they take up.
-        """
-    )
+        """)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
     )

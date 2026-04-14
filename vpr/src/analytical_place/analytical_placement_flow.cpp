@@ -14,7 +14,9 @@
 #include "atom_netlist.h"
 #include "cluster_util.h"
 #include "detailed_placer.h"
+#include "device_size_estimate.h"
 #include "full_legalizer.h"
+#include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
 #include "globals.h"
@@ -31,6 +33,7 @@
 #include "stats.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
+#include "vtr_math.h"
 
 /**
  * @brief A helper method to log statistics on the APNetlist.
@@ -232,6 +235,18 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
 
+    // Estimate the device size before packing and build the RR graph if necessary.
+    DeviceSizeEstimator device_size_estimator(vpr_setup, *device_ctx.arch, prepacker);
+
+    // Infer logical RAMs and assign to physical types to prioritize during packing.
+    // For the auto-device flow, reuse the groups already computed by the estimator.
+    RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
+                         prepacker,
+                         pre_cluster_timing_manager,
+                         device_size_estimator.ram_groups(),
+                         ap_opts.log_verbosity,
+                         vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+
     // Pre-compute the place delay model. This will be passed into the global
     // placer to create a more accurate timing model.
     std::shared_ptr<PlaceDelayModel> place_delay_model;
@@ -271,6 +286,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         atom_nlist,
                                                                         prepacker,
                                                                         pre_cluster_timing_manager,
+                                                                        ram_mapper,
                                                                         vpr_setup,
                                                                         *device_ctx.arch,
                                                                         device_ctx.grid);

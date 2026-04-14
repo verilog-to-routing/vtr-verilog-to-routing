@@ -3911,7 +3911,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         tmp = get_attribute(node, "res_type", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
         if (tmp) {
-            auto it = std::ranges::find(RES_TYPE_STRING, tmp);
+            auto it = std::ranges::find(RES_TYPE_STRING, std::string_view(tmp));
             if (it != RES_TYPE_STRING.end()) {
                 segs[i].res_type = static_cast<SegResType>(std::distance(RES_TYPE_STRING.begin(), it));
             } else {

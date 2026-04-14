@@ -1,5 +1,5 @@
 """
-    Module to run Parmys with its various arguments
+Module to run Parmys with its various arguments
 """
 
 import os
