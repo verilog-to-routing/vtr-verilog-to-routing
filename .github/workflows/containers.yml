@@ -39,9 +39,18 @@ jobs:
 
       - name: 🧰 Repository Checkout
         uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-          ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
+
+      - name: Fetch submodules
+        env:
+          EZGL_DEPLOY_KEY: ${{ secrets.EZGL_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EZGL_DEPLOY_KEY" > ~/.ssh/ezgl_deploy_key
+          chmod 600 ~/.ssh/ezgl_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          git config submodule.libs/EXTERNAL/libezgl.url "git@github.com:QL-Proprietary/ezgl-QL.git"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/ezgl_deploy_key -o StrictHostKeyChecking=no" git submodule update --init --recursive
+          rm -f ~/.ssh/ezgl_deploy_key
   
       - name: 🔧 Generate image name
         id: generate
