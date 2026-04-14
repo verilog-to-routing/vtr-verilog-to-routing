@@ -530,6 +530,16 @@ class GreedyCandidateSelector {
         AttractionInfo& attraction_groups);
 
     /**
+     * @brief For RAM clusters, offers only atoms from the same physical RAM
+     *        group as candidates, bypassing all net-traversal paths.
+     */
+    void add_cluster_molecule_candidates_by_ram_group(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
+
+    /**
      * @brief Finds a molecule to propose which is unrelated but may be good to
      *        cluster.
      */
