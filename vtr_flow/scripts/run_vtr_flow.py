@@ -369,6 +369,13 @@ def vtr_command_argparser(prog=None):
         + "system-verilog]. The script used the Yosys conventional Verilog"
         + " parser if this argument is not specified.",
     )
+    parmys.add_argument(
+        "-synthesis_params",
+        default="",
+        dest="synthesis_params",
+        help="Extra parameters passed to the parmys synthesis command "
+        + "(replaces YYY placeholder in synthesis.tcl).",
+    )
     #
     # VPR arguments
     #
@@ -733,6 +740,7 @@ def process_parmys_args(args):
     """
     parmys_args = OrderedDict()
     parmys_args["parser"] = args.parser
+    parmys_args["synthesis_params"] = args.synthesis_params
 
     return parmys_args
 
