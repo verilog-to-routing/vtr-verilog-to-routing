@@ -68,6 +68,7 @@ def init_script_file(
         {
             "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
             # "TTT": str(vtr.paths.yosys_tcl_path),
+            "YYY": "",
             "CCC": odin_config_full_path,
             "ZZZ": output_netlist,
             "QQQ": architecture_file_path,

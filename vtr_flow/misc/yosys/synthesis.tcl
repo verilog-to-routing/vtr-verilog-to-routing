@@ -22,6 +22,7 @@ if {$env(PARSER) == "slang" } {
 
 # arch file: QQQ
 # input files: [XXX]
+# other args: [YYY]
 # config file: CCC
 # output file: ZZZ
 
@@ -82,7 +83,7 @@ opt -full
 # Separate options for Parmys execution (Verilog or SystemVerilog)
 if {$env(PARSER) == "default" || $env(PARSER) == "slang"} {
     # For Verilog, use -nopass for a simpler, faster flow
-    parmys -a QQQ -nopass -c CCC
+    parmys -a QQQ -nopass -c CCC YYY
 } 
 
 opt -full
