@@ -240,9 +240,12 @@ endforeach()
 # after this line will have these warnings suppressed at link time.
 if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     message(STATUS "IPO: Suppressing known VTR warnings.")
-    add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
-                     -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
-                     )
+    # These warning flags are GCC-specific; skip on Clang (e.g. Apple Clang on macOS)
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
+                         -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
+                         )
+    endif()
 endif()
 
 #
@@ -407,18 +410,16 @@ set(READLINE_FOUND FALSE)
 # without gtk/x11 libraries installed to build. VPR_USE_EZGL is
 # being used in both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
 #
-# check if GTK and X11 are installed and turn on/off graphics
+# check if Qt6 is available and turn on/off graphics
 if (VPR_USE_EZGL STREQUAL "auto")
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GTK3 QUIET gtk+-3.0)
-    pkg_check_modules(X11 QUIET x11)
+    find_package(Qt6 QUIET COMPONENTS Core Gui Widgets)
 
-    if(GTK3_FOUND AND X11_FOUND)
+    if(Qt6_FOUND)
         set(VPR_USE_EZGL "on")
-        message(STATUS "VPR Graphics: Enabled")
+        message(STATUS "VPR Graphics: Enabled (Qt6 found)")
     else()
         set(VPR_USE_EZGL "off")
-        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debian/ubuntu try: sudo apt install libgtk-3-dev libx11-dev")
+        message(STATUS "VPR Graphics: Disabled (Qt6 not found, install Qt6 base dev packages)")
     endif()
 endif()
 

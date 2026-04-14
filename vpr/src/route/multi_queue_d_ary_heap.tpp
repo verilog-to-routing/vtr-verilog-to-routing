@@ -26,6 +26,7 @@
 #include <vector>
 #include <algorithm>
 #include <atomic>
+#include <thread>
 #include <cassert>
 #include "d_ary_heap.tpp"
 
@@ -107,7 +108,7 @@ class MultiQueueIO {
         // std::uniform_real_distribution<> distribution(min,max);
         // return distribution(generator);
         static uint64_t modMask = NUM_QUEUES - 1;
-        static thread_local uint64_t x = pthread_self();
+        static thread_local uint64_t x = std::hash<std::thread::id>{}(std::this_thread::get_id());
         uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
         z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
         z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
