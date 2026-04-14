@@ -249,6 +249,13 @@ Detailed Command-line Options
     
     **Default:** default
 
+.. option:: -synthesis_params <SYNTHESIS_PARAMS>
+
+    Extra parameters passed to the ``parmys`` synthesis command in the Yosys script.
+    This replaces the ``YYY`` placeholder in ``synthesis.tcl``.
+
+    **Default:** "" (empty string)
+
 .. note::
 
     Yosys-Slang is a Yosys plugin that is built on top of the slang library to provide comprehensive SystemVerilog support.
