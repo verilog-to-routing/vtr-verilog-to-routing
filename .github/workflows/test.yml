@@ -41,7 +41,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -83,7 +83,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -138,7 +138,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: ${{ matrix.with_submodules }}
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
       # NOTE: We usually do not need sub-modules. We do not check sub-modules
       #       for formatting. However we may need to build make-format which
       #       requires building VTR which will not build without submodules.
@@ -209,7 +209,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -253,7 +253,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: 'Get number of CPU cores'
       uses: SimenB/github-actions-cpu-cores@v2
@@ -382,7 +382,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -471,7 +471,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -551,7 +551,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -600,7 +600,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+          ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
       - name: Get number of CPU cores
         uses: SimenB/github-actions-cpu-cores@v2
@@ -641,7 +641,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -683,7 +683,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -729,7 +729,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -761,7 +761,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: 'true'
-        ssh-key: \${{ secrets.EZGL_DEPLOY_KEY }}
+        ssh-key: ${{ secrets.EZGL_DEPLOY_KEY }}
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
