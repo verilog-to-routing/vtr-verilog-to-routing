@@ -1,0 +1,3 @@
+create_clock -period 10.0 clk
+
+create_generated_clock -source clk -divide_by 2 clk2
