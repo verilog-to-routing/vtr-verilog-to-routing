@@ -9,7 +9,7 @@
 
 [submodule "libs/EXTERNAL/libezgl"]
 	path = libs/EXTERNAL/libezgl
-	url = https://github.com/QL-Proprietary/ezgl-QL.git
+	url = git@github.com:QL-Proprietary/ezgl-QL.git
 	branch = qt_layer
 [submodule "libs/EXTERNAL/yosys"]
 	path = libs/EXTERNAL/yosys
@@ -23,3 +23,4 @@
 [submodule "libs/EXTERNAL/libsdcparse"]
 	path = libs/EXTERNAL/libsdcparse
 	url = https://github.com/verilog-to-routing/libsdcparse.git
+	ignore = dirty
