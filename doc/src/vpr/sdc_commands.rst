@@ -63,6 +63,72 @@ If a virtual clock is assigned using a create_clock command, it must be referenc
 
 .. warning:: If a netlist clock is not specified with a :sdc:command:`create_clock` command, paths to and from that clock domain will not be analysed.
 
+create_generated_clock
+----------------------
+
+Defines a derived clock based on an existing source clock.
+
+Generated clocks are used to describe clock signals created by internal design logic (such as clock dividers or multipliers). The frequency of the generated clock is defined by scaling the frequency of a master clock.
+
+*Example Usage:*
+
+.. code-block:: tcl
+
+    # Create a master clock to generate the clocks relative to.
+    create_clock -period 6.0 -name master_clk [get_pins {div_clk.clk[0]}]
+
+    # Create a clock that is half the frequency of 'master_clk'
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -divide_by 2 [get_pins {div_clk.Q[0]}]
+
+    # Create a clock that is triple the frequency of 'master_clk' with a custom name
+    create_generated_clock -name fast_clk -source [get_pins {pll.ref[0]}] -multiply_by 3 [get_pins {pll.out[0]}]
+
+.. sdc:command:: create_generated_clock
+
+    .. sdc:option:: -name <string>
+
+        Specifies the name of the generated clock.
+
+        **Required:** No (Required if no targets are specified)
+
+    .. sdc:option:: -source <pin>
+
+        Specifies the pin or port in the design that serves as the master source for the generated clock.
+
+        **Required:** Yes
+
+    .. sdc:option:: -divide_by <integer>
+
+        Specifies the division factor applied to the source clock frequency.
+
+        For example, `-divide_by 2` would increase the period by 2x (thus dividing the frequency in half).
+
+        **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
+
+    .. sdc:option:: -multiply_by <integer>
+
+        Specifies the multiplication factor applied to the source clock frequency.
+
+        For example, `-multiply_by 2` would decrease the period by 2x (thus doubling the frequency).
+
+        **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
+
+    .. sdc:option:: <pin_list>
+
+        Specifies the netlist pins or ports where the generated clock is defined.
+
+        If none are specified, this is assumed to be a virtual clock.
+
+        **Required:** No
+
+.. note::
+
+    In the current implementation, all generated clocks are produced with a 50% duty cycle, as the scaling factors are calculated relative to the rising edge of the source clock.
+
+.. note::
+
+    Temporary Limitation: VPR currently only supports master source clocks whose rising edge starts at time 0 (e.g., -waveform {0 <half_period>}). Support for source clocks with non-zero initial phases is currently under development.
+
 
 set_clock_groups
 ----------------

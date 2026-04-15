@@ -1,0 +1,38 @@
+# This is the same model structure as multiclock.blif; however,
+# the second clock is a generated clock which is a basic clock
+# dividor.
+
+.model clock_divider
+.inputs in1 in2 in3 clk
+.outputs out1 out2 out3
+
+# Create a clock divider which will cause div_inst to have a period
+# of half of clk.
+.latch div_clk div_clk re clk 0
+
+.latch to_FFA FFA re clk 0
+.latch to_FFC FFC re clk 0
+.latch to_FFD FFD re div_clk 0
+.latch to_FFB FFB re div_clk 0
+
+.names FFA FFB to_FFC
+11 1
+.names FFA FFB to_FFD
+11 1
+
+.names in1 to_FFA
+1 1
+
+.names in2 to_FFB
+1 1
+
+.names FFC out1
+1 1
+
+.names FFD out2
+1 1
+
+.names in3 out3
+1 1
+
+.end
