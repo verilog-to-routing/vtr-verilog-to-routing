@@ -774,7 +774,7 @@ For people not working on CAD, you can probably leave all the options to their d
     Architectures with simple logic block interconnects (i.e. those with full or regular crossbars) are likely to only see a marginal improvement, if any.
     Enabling this option does not affect circuit quality metrics like routed wirelength or critical path delay.
 
-    Note: Use of this feature with `--analytical_place` is experimental. For now, `--memoize_cluster_packings` is unsupported if `--ap_full_legalizer` is set to `flat-recon`, and will be ignored.
+    Note: Use of this feature with ``--analytical_place`` is experimental. For now, ``--memoize_cluster_packings`` is unsupported if ``--ap_full_legalizer`` is set to ``flat-recon``, and will be ignored.
 
     **Default:** ``off``
 
