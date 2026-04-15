@@ -8,7 +8,11 @@
 
 # Create a clock divider which will cause div_inst to have a period
 # of half of clk.
-.latch div_clk div_clk re clk 0
+.latch div_clk_inv div_clk re clk 0
+
+# Inverted version of div_clk used for the clock divider.
+.names div_clk div_clk_inv
+0 1
 
 .latch to_FFA FFA re clk 0
 .latch to_FFC FFC re clk 0

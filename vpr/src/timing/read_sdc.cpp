@@ -231,6 +231,7 @@ class SdcParseCallback : public sdcparse::Callback {
     void create_generated_clock(const sdcparse::CreateGeneratedClock& cmd) override {
         num_commands_++;
 
+        // Check that the arguments to the command are valid.
         if (cmd.add) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "-add option not supported for create_generated_clock");
@@ -269,6 +270,7 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         // Get the source clock.
+        //  Get the clock pins referred to by the source argument.
         std::map<AtomPinId, std::string> source_clock_pins = get_clock_target_pins(cmd.sources);
         if (source_clock_pins.size() > 1) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -278,6 +280,7 @@ class SdcParseCallback : public sdcparse::Callback {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "Cannot find source pin for create_generated_clock");
         }
+        //  Get the clock domain for the found pins.
         AtomPinId source_clock_pin = source_clock_pins.begin()->first;
         tatum::NodeId source_clock_tnode = get_clock_source(source_clock_pin);
         tatum::DomainId source_domain_id;
@@ -294,7 +297,8 @@ class SdcParseCallback : public sdcparse::Callback {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "Cannot find source clock for create_generated_clock. Make sure that the source clock has been created using create_clock.");
         }
-        assert(sdc_clocks_.contains(source_domain_id));
+        //  Find the command that created this clock.
+        VTR_ASSERT(sdc_clocks_.contains(source_domain_id));
         const sdcparse::CreateClock& source_clock_cmd = sdc_clocks_[source_domain_id];
 
         // Get the generated clock period.
@@ -303,7 +307,7 @@ class SdcParseCallback : public sdcparse::Callback {
         if (cmd.divide_by != sdcparse::UNINITIALIZED_INT) {
             generated_clock_period = source_clock_period * static_cast<double>(cmd.divide_by);
         } else {
-            assert(cmd.multiply_by != sdcparse::UNINITIALIZED_INT);
+            VTR_ASSERT(cmd.multiply_by != sdcparse::UNINITIALIZED_INT);
             generated_clock_period = source_clock_period / static_cast<double>(cmd.multiply_by);
         }
 
@@ -338,7 +342,7 @@ class SdcParseCallback : public sdcparse::Callback {
             create_clock_object(cmd.name, tatum::NodeId::INVALID(), new_create_clock_cmd);
         }
 
-        // Get the targets.
+        // Get the targets pins.
         std::map<AtomPinId, std::string> target_pins = get_clock_target_pins(cmd.targets);
 
         // Check that if the clock is named, there is only one unique clock driver.
@@ -349,6 +353,7 @@ class SdcParseCallback : public sdcparse::Callback {
             // NOTE: The reason this is not supported is because we currently
             //       create unique clock domains for each target. This may not
             //       be standard and they cannot all be named the same thing.
+            //       This is the same issue in create_clock.
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "named clocks with more than 1 unique target are not supported for create_generated_clock");
         }
@@ -1246,6 +1251,23 @@ class SdcParseCallback : public sdcparse::Callback {
         return clock_source;
     }
 
+    /**
+     * @brief Get the clock target pins referred to by the given objects.
+     *
+     * This is used by the clock creating SDC commands to get the driver pins of the
+     * netlist clocks. This allows us to unify the code such that the target objects
+     * can be pins, ports, and/or nets and naturally dedupe them.
+     *
+     * NOTE: This method returns a pair of pins and their names. The reason is that the
+     *       object contains the name information. Once the objects are parsed into pins,
+     *       this information gets lost, but it is still needed. In the case of dupes, the
+     *       first object found is chosen as the name (which matches other SDC
+     *       implementations).
+     *
+     *  @param target_objects   List of objects to get the clock target pins of.
+     *
+     *  @return A map containing the set of clock target pins and their names.
+     */
     std::map<AtomPinId, std::string> get_clock_target_pins(const std::vector<sdcparse::ObjectId>& target_objects) {
         std::map<AtomPinId, std::string> target_pins;
         for (sdcparse::ObjectId object_id : target_objects) {
