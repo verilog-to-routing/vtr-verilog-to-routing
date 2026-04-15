@@ -108,20 +108,19 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
                                double congestion_chan_util_threshold)
     : congestion_modeling_started_(false)
     , interposer_cost_enabled_(interposer_cost_enabled)
+    , interposer_cong_modeling_started_(false)
     , cube_bb_(cube_bb)
     , placer_state_(placer_state)
     , place_algorithm_(place_algorithm)
     , interposer_cong_threshold_(interposer_cong_threshold)
     , congestion_chan_util_threshold_(congestion_chan_util_threshold) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid = device_ctx.grid;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
 
     const size_t num_layers = grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
-
-    interposer_cong_modeling_started_ = false;
 
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {
@@ -173,6 +172,7 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
         net_interposer_cong_cost_.resize(num_nets, -1.);
         proposed_net_interposer_cong_cost_.resize(num_nets, -1.);
 
+        // Interposer cut locations can vary by layer, so allocate using the maximum cut count across layers.
         size_t max_h_cuts = 0, max_v_cuts = 0;
         for (size_t layer = 0; layer < num_layers; layer++) {
             max_h_cuts = std::max(max_h_cuts, grid.get_horizontal_interposer_cuts()[layer].size());
@@ -200,7 +200,7 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
     const size_t grid_height = grid.height();
@@ -302,9 +302,10 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
 std::pair<t_net_cost_terms, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    // TODO: compute congestion cost
-    // Congestion modeling is not supported for per-layer mode, so 0 is returned.
-    t_net_cost_terms cost_terms;
+    // Per-layer mode currently computes only BB-based wirelength cost (and optional expected
+    // wirelength in CHECK mode). Congestion modeling and interposer crossing cost
+    // is not implemented for per-layer BBs, so these terms are always 0.
+    t_net_cost_terms cost_terms{}; // value-initialize all terms
     double expected_wirelength = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
@@ -1414,8 +1415,10 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 }
 
 double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
-    const auto& grid = g_vpr_ctx.device().grid;
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
+    // Estimate whether/where this net is likely to cross interposer cut-lines by looking at
+    // its (cube) bounding box. Any cut-line inside the BB implies one interposer crossing.
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
@@ -1425,12 +1428,15 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
     int num_vertical_crossings = 0;
 
     for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+        // Count vertical cut-lines that pass through the interior of the BB on this layer.
         const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
         for (int cut_y : layer_h_cuts) {
             if (cut_y >= bb.ymin && cut_y < bb.ymax) {
                 num_horizontal_crossings++;
             }
         }
+
+        // Count vertical cut-lines that pass through the interior of the BB on this layer.
         const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
         for (int cut_x : layer_v_cuts) {
             if (cut_x >= bb.xmin && cut_x < bb.xmax) {
@@ -1439,6 +1445,9 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
         }
     }
 
+    // Weight crossings by the normalized BB span orthogonal to the cut direction:
+    // - a horizontal cut spans X, so we scale by BB height / grid height
+    // - a vertical cut spans Y, so we scale by BB width / grid width
     const double bb_width_factor = double(bb.xmax - bb.xmin + 1) / grid.width();
     const double bb_height_factor = double(bb.ymax - bb.ymin + 1) / grid.height();
 
@@ -1611,7 +1620,7 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
 }
 
 t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     t_net_cost_terms cost_terms;
 
@@ -1970,7 +1979,7 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
 }
 
 double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     const size_t grid_width = device_ctx.grid.width();
