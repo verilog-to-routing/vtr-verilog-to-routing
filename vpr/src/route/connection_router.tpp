@@ -276,12 +276,10 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
     bool reached_configurably = rr_switch_inf_[iswitch].configurable();
     float switch_R = rr_switch_inf_[iswitch].R;
-    float switch_Tdel = rr_switch_inf_[iswitch].Tdel;
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     //To node info
     auto rc_index = rr_graph_->node_rc_index(to->index);
-    float node_C = rr_rc_data_[rc_index].C;
     float node_R = rr_rc_data_[rc_index].R;
 
     //From node info
@@ -298,8 +296,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
     to->R_upstream += node_R;   //Node resistance
 
     //Calculate delay
-    float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
-    float Tdel = switch_Tdel + Rdel * node_C;
+    float Tdel = get_rr_node_delay_cost(to->index, to->prev_edge);
 
     //Depending on the switch used, the Tdel of the upstream node (from_node) may change due to
     //increased loading from the switch's internal capacitance.
