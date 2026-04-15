@@ -142,6 +142,14 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     }
 
     // Automatically determine exit temperature.
+    //
+    // This heuristic assumes the total placement cost mainly reflects the
+    // (normalized) bbox and timing terms, which typically makes costs.cost close to ~1.0
+    // after cost normalization and timing_tradeoff are applied.
+    //
+    // When additional cost terms are enabled (e.g. congestion, interposer costs),
+    // the total cost magnitude increases, so we scale t_exit to keep a comparable
+    // effective annealing temperature scale.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
     t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor + placer_opts.interposer_cong_factor);
@@ -509,9 +517,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    double delta_c = 0.; // Change in cost due to this swap.
-    t_net_cost_terms cost_terms_delta;
-    double timing_delta_c = 0.; // Change in the timing cost (delay * criticality).
+    double delta_c = 0.;                 // Change in cost due to this swap.
+    t_net_cost_terms cost_terms_delta;   // Per-net cost term deltas due to this swap.
+    double timing_delta_c = 0.;          // Change in the timing cost (delay * criticality).
 
     // Allow some fraction of moves to not be restricted by rlim,
     // in the hopes of better escaping local minima.
@@ -583,11 +591,11 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         // Update the block positions
         blk_loc_registry.apply_move_blocks(blocks_affected_);
 
-        /* Find all the nets affected by this swap and update the wiring costs.
-         * This cost value doesn't depend on the timing info.
-         * Also find all the pins affected by the swap, and calculates new connection
-         * delays and timing costs and store them in proposed_* data structures.
-         */
+        // Find all the nets affected by this swap and update their wiring costs.
+        // This cost value doesn't depend on the timing info.
+        //
+        // Also find all the pins affected by the swap, and calculates new connection
+        // delays and timing costs.
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
                                                               cost_terms_delta, timing_delta_c);
 
@@ -826,7 +834,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     // as early placements are typically highly congested and unstable. So, we delay congestion modeling
     // until the placement is more settled and wirelength has been reasonably optimized.
     if ((annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio
-         && placer_opts_.congestion_factor != 0.)
+         && placer_opts_.congestion_factor > 0.)
         || congestion_modeling_started_) {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
 
@@ -836,6 +844,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         }
     }
 
+    // Similar to congestion modeling: trigger interposer congestion estimation once rlim shrinks enough (or once started, keep updating).
     if ((placer_opts_.interposer_cong_factor > 0.
          && annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio)
         || interposer_cong_modeling_started_) {
