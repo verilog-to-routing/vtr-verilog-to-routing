@@ -19,6 +19,26 @@
 #include "router_lookahead_interposer.h"
 
 /**
+ * @brief Internal struct used for returning the delay and congestion cost data of interposer cuts in helper functions.
+ * 
+ */
+struct t_interposer_cost_prefix_sums {
+    t_interposer_cost_prefix_sums(int num_layers) {
+        horizontal_delay_sum = std::vector<std::vector<float>>(num_layers);
+        horizontal_cong_sum = std::vector<std::vector<float>>(num_layers);
+
+        vertical_delay_sum = std::vector<std::vector<float>>(num_layers);
+        vertical_cong_sum = std::vector<std::vector<float>>(num_layers);
+    }
+
+    std::vector<std::vector<float>> horizontal_delay_sum;
+    std::vector<std::vector<float>> vertical_delay_sum;
+
+    std::vector<std::vector<float>> horizontal_cong_sum;
+    std::vector<std::vector<float>> vertical_cong_sum;
+};
+
+/**
  * @brief Compute the delay matrix for interposer delays. End result is a 2D matrix with an entry for each pair of DeviceDieIds.
  * Each element of the matrix represents the interposer delay of going from one die to another die.
  * For example, in a device with 2 interposer cuts with a delay of 5ns each, this function returns the following 3x3 matrix:
@@ -38,7 +58,14 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
                                                                                                    const RRGraphView& rr_graph,
                                                                                                    const DeviceContext& device_ctx,
                                                                                                    float interposer_cut_base_cost_multiplier);
-
+/**
+ * @brief Computes prefix sums for delay and congestion cost of crossing interposer cuts
+ * 
+ * @return t_interposer_cost_prefix_sums Struct containing 4 prefix sums, for delay and congestion cost of horizontal and vertical cuts.
+ */
+static t_interposer_cost_prefix_sums compute_die_crossing_prefix_sums(const DeviceGrid& grid,
+                                                                      const RRGraphView& rr_graph,
+                                                                      const DeviceContext& device_ctx);
 /**
  * @brief Get all input edges of a given list of nodes. This function is expensive and works in O(n.logk)
  * with n being the total number of edges in the RR Graph and k being the number of nodes you want the input edges of.
@@ -90,22 +117,6 @@ static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(co
 
     return node_in_edges;
 }
-
-struct t_interposer_cost_prefix_sums {
-    t_interposer_cost_prefix_sums(int num_layers) {
-        horizontal_delay_sum = std::vector<std::vector<float>>(num_layers);
-        horizontal_cong_sum = std::vector<std::vector<float>>(num_layers);
-
-        vertical_delay_sum = std::vector<std::vector<float>>(num_layers);
-        vertical_cong_sum = std::vector<std::vector<float>>(num_layers);
-    }
-
-    std::vector<std::vector<float>> horizontal_delay_sum;
-    std::vector<std::vector<float>> vertical_delay_sum;
-
-    std::vector<std::vector<float>> horizontal_cong_sum;
-    std::vector<std::vector<float>> vertical_cong_sum;
-};
 
 static t_interposer_cost_prefix_sums compute_die_crossing_prefix_sums(const DeviceGrid& grid,
                                                                       const RRGraphView& rr_graph,

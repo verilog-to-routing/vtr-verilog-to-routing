@@ -161,14 +161,6 @@ class SdcParseCallback : public sdcparse::Callback {
                       "-add option not supported for create_clock");
         }
 
-        if (cmd.targets.size() > 1 && !cmd.name.empty()) {
-            // NOTE: The reason this is not supported is because we currently
-            //       create unique clock domains for each target. This may not
-            //       be standard and they cannot all be named the same thing.
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "named clocks with more than 1 targets are not supported for create_clock");
-        }
-
         if (cmd.is_virtual) {
             if (cmd.name.empty()) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -203,7 +195,12 @@ class SdcParseCallback : public sdcparse::Callback {
             sdcparse::ObjectType object_type = obj_database.get_object_type(object_id);
             AtomPinId clock_pin;
             if (object_type == sdcparse::ObjectType::Port || object_type == sdcparse::ObjectType::Pin) {
-                clock_pin = get_port_or_pin(object_id);
+                // When the target of the create_clock command is a pin, we implicitly are targeting
+                // the driver of the net that this pin is a part of (i.e. the whole clock net).
+                AtomPinId target_pin = get_port_or_pin(object_id);
+                VTR_ASSERT(target_pin.is_valid());
+                AtomNetId target_net = netlist_.pin_net(target_pin);
+                clock_pin = netlist_.net_driver(target_net);
             } else {
                 VTR_ASSERT(object_type == sdcparse::ObjectType::Net);
                 // When the target of the create_clock command is a net, we implicitly are targeting
@@ -226,6 +223,18 @@ class SdcParseCallback : public sdcparse::Callback {
             }
         }
 
+        // Check that if the clock is named, there is only one unique clock driver.
+        if (target_pins.size() > 1 && !cmd.name.empty()) {
+            for (const auto& p : target_pins) {
+                VTR_LOG("Name: %s\n", p.second.c_str());
+            }
+            // NOTE: The reason this is not supported is because we currently
+            //       create unique clock domains for each target. This may not
+            //       be standard and they cannot all be named the same thing.
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "named clocks with more than 1 unique target are not supported for create_clock");
+        }
+
         // Create a netlist clock for every target pin.
         for (const auto& p : target_pins) {
             AtomPinId clock_pin = p.first;
@@ -236,7 +245,7 @@ class SdcParseCallback : public sdcparse::Callback {
             if (cmd.name.empty()) {
                 clock_name = object_name;
             } else {
-                VTR_ASSERT(cmd.targets.size() == 1);
+                VTR_ASSERT(target_pins.size() == 1);
                 clock_name = cmd.name;
             }
 

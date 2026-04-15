@@ -338,6 +338,11 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
  * @brief Computes the adjusted position of an RR graph node.
  * This function does not modify the position of the given node.
  * It only returns the computed adjusted position.
+ * Adjusted position is:
+ *  - CHANX/CHANY nodes: Position of the driver for directional wires and wire center for bidirectional wires
+ *  - CHANZ nodes: (xlow, ylow) of the node, which would be the same as (xhigh, yhigh)
+ *  - OPIN/IPIN nodes: Position of the channel it can reach based on which side of the block it is at.
+ *  - SOURCE/SINK nodes: Centroid of the tile
  * @param rr The ID of the node whose adjusted position is desired.
  * @return The adjusted position (x, y).
  */
