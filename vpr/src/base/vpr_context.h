@@ -257,7 +257,22 @@ struct DeviceContext : public Context {
     /// Stores the number of wire segments in each routing channel segment at [layer][x][y]
     ChannelMetric<vtr::NdMatrix<int, 3>> rr_chan_segment_width;
 
+    /**
+     * @brief Available routing capacity crossing each horizontal interposer cut.
+     *
+     * Indexed as `[layer][cut_idx][x]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_horizontal_interposer_cuts()[layer]`.
+     * Values are accumulated from the capacities of `CHANY` rr_nodes which cross the cut.
+     */
     vtr::NdMatrix<int, 3> horz_interposer_capacity_;
+
+    /**
+     * @brief Available routing capacity crossing each vertical interposer cut.
+     *
+     * Indexed as `[layer][cut_idx][y]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_vertical_interposer_cuts()[layer]`.
+     * Values are accumulated from the capacities of `CHANX` rr_nodes which cross the cut.
+     */
     vtr::NdMatrix<int, 3> vert_interposer_capacity_;
 
     /// Stores the maximum channel segment width in each horizontal/vertical channel
