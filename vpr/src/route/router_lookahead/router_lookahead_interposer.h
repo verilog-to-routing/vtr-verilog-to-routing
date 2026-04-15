@@ -30,10 +30,16 @@ class InterposerLookahead {
      * @brief Estimates the interposer delay between two nodes based on their die locations.
      * @param from_node The source routing resource node.
      * @param to_node The destination routing resource node.
-     * @return {float, float} The estimated delay and congestion costs
+     * @return {float, float} The estimated interposer delay and congestion costs
      */
     std::pair<float, float> get_interposer_lookahead_cost(RRNodeId from_node, RRNodeId to_node) const;
 
+    /**
+     * @brief Estimates the interposer delay between two locations.
+     * @param loc_a Starting location.
+     * @param loc_b Final location.
+     * @return {float, float} The estimated interposer delay and congestion costs going from loc_a to loc_b
+     */
     std::pair<float, float> get_interposer_lookahead_cost(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const;
 
   private:
