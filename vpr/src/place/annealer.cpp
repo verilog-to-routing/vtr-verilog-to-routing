@@ -517,9 +517,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    double delta_c = 0.;                 // Change in cost due to this swap.
-    t_net_cost_terms cost_terms_delta;   // Per-net cost term deltas due to this swap.
-    double timing_delta_c = 0.;          // Change in the timing cost (delay * criticality).
+    double delta_c = 0.;               // Change in cost due to this swap.
+    t_net_cost_terms cost_terms_delta; // Per-net cost term deltas due to this swap.
+    double timing_delta_c = 0.;        // Change in the timing cost (delay * criticality).
 
     // Allow some fraction of moves to not be restricted by rlim,
     // in the hopes of better escaping local minima.
