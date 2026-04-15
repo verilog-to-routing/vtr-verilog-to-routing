@@ -84,7 +84,6 @@ static t_flat_pl_loc get_molecule_pos(PackMoleculeId molecule_id,
     return appack_ctx.flat_placement_info.get_pos(root_blk_id);
 }
 
-
 GreedyCandidateSelector::GreedyCandidateSelector(
     const AtomNetlist& atom_netlist,
     const Prepacker& prepacker,
@@ -829,7 +828,6 @@ void GreedyCandidateSelector::add_ram_cluster_molecule_candidates(
                                                      attraction_groups);
     }
 }
-
 
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_and_timing(
     ClusterGainStats& cluster_gain_stats,
