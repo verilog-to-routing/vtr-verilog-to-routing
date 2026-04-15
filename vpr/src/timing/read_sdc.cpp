@@ -246,8 +246,7 @@ class SdcParseCallback : public sdcparse::Callback {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "Either -divide_by or -multiply_by is required for create_generated_clock");
         }
-        if ((cmd.divide_by != sdcparse::UNINITIALIZED_INT && cmd.divide_by <= 0) ||
-            (cmd.multiply_by != sdcparse::UNINITIALIZED_INT && cmd.multiply_by <= 0)) {
+        if ((cmd.divide_by != sdcparse::UNINITIALIZED_INT && cmd.divide_by <= 0) || (cmd.multiply_by != sdcparse::UNINITIALIZED_INT && cmd.multiply_by <= 0)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "-divide_by and -multiply_by must be strictly positive for create_generated_clock");
         }
@@ -265,7 +264,7 @@ class SdcParseCallback : public sdcparse::Callback {
             bool targets_valid = check_objects(cmd.targets, {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin, sdcparse::ObjectType::Net});
             if (!targets_valid) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                        "create_generated_clock command only supports ports, pins, and nets");
+                          "create_generated_clock command only supports ports, pins, and nets");
             }
         }
 
