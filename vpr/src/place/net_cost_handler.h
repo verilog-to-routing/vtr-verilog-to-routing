@@ -35,6 +35,7 @@ enum class e_cost_methods {
     CHECK
 };
 
+/// @brief Per-net placement cost components (wirelength/BB, interposer, and congestion terms).
 struct t_net_cost_terms {
     double bb_cost = 0.;
     double interposer_cost = 0.;
@@ -53,11 +54,14 @@ class NetCostHandler {
     /**
      * @brief Initializes a NetCostHandler object, which contains temporary swap data structures needed to determine which nets
      * are affected by a move and data needed per net about where their terminals are in order to quickly (incrementally) update
-     * their wirelength costs. These data structures are (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count,
-     * and ts_nets_to_update.
-     * @param placer_opts Contains some parameters that determine how the bounding box is computed.
+     * their wirelength costs.
+     *
      * @param placer_state Contains information about block locations and net bounding boxes.
-     * @param cube_bb True if the 3D bounding box should be used, false otherwise.
+     * @param cube_bb True if the 3D cube bounding box should be used, false otherwise.
+     * @param place_algorithm The placement algorithm in use (e.g. bounding-box only vs timing-driven).
+     * @param interposer_cost_enabled Enables interposer cost term.
+     * @param interposer_cong_threshold Congestion threshold used for interposer congestion cost.
+     * @param congestion_chan_util_threshold Channel utilization threshold used for congestion cost.
      */
     NetCostHandler(PlacerState& placer_state,
                    bool cube_bb,
@@ -76,8 +80,9 @@ class NetCostHandler {
      * non_updateable_bb routine, to provide a cost which can be
      * used to check the correctness of the other routine.
      * @param method The method used to calculate placement cost.
-     * @return (bounding box cost of the placement, estimated wirelength, congestion cost)
+     * @return (cost terms, estimated wirelength)
      *
+     * @note Cost terms are: bb_cost, interposer_cost, interposer_cong_cost, cong_cost.
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
     std::pair<t_net_cost_terms, double> comp_bb_cong_cost(e_cost_methods method);
@@ -174,7 +179,9 @@ class NetCostHandler {
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;
+    /// Enables interposer crossing cost term.
     bool interposer_cost_enabled_;
+    /// Indicates whether interposer congestion modeling has been initialized/activated.
     bool interposer_cong_modeling_started_;
     /// Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
@@ -188,7 +195,7 @@ class NetCostHandler {
     double interposer_cong_threshold_;
     double congestion_chan_util_threshold_;
 
-    /// Points to the proper method for computing the bounding box cost, estimated wirelength and congestion cost from scratch.
+    /// Points to the proper method for computing BB/wirelength, congestion, and interposer cost terms (crossing + congestion) from scratch.
     std::function<std::pair<t_net_cost_terms, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     /// Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
@@ -254,6 +261,13 @@ class NetCostHandler {
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::Matrix<int> num_sink_pin_layer_;
 
+    /**
+     * @brief Estimated interposer cut utilization, stored as 1D prefix sums for O(1) queries.
+     *
+     * Stores (estimated demand / capacity) per cut segment, then converted to prefix sums.
+     * Indexing is [layer][i_cut][coord_prefix]; the last dimension has length (N+1) (prefix[0]=0),
+     * so sum over ([a,b]) is prefix[b+1] - prefix[a].
+     */
     vtr::NdMatrix<double, 3> horz_interposer_est_cong_;
     vtr::NdMatrix<double, 3> vert_interposer_est_cong_;
 
@@ -278,7 +292,9 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
 
+    /// Per-net interposer crossing cost (and temporary value during move evaluation).
     vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
+    /// Per-net interposer congestion cost (and temporary value during move evaluation).
     vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
     /**
@@ -361,10 +377,9 @@ class NetCostHandler {
                                       bool is_src_moving);
 
     /**
-     * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks
-     * indicated in the blocks_affected data structure.
-     * @param bb_delta_c Bounding box cost difference after and before moving the block.
-     * @param congestion_delta_c Congestion cost difference after and before moving the block.
+     * @brief Accumulates the placement cost deltas for all nets affected by the proposed move.
+     * @param cost_terms_delta Updated with the delta in bb (wirelength) cost, and (when enabled) the deltas in
+     * congestion, interposer crossing, and interposer congestion costs.
      */
     void set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta);
 
@@ -574,9 +589,11 @@ class NetCostHandler {
      *        and calculates BB cost, estimated wirelength, and congestion cost (if enabled).
      * @param method The method used to calculate placement cost. Specifies whether the cost is
      *               computed from scratch or incrementally.
-     * @return (bounding box cost of the placement, estimated wirelength, congestion cost)
+     * @return {cost_terms, expected_wirelength} where `cost_terms` contains the accumulated placement cost
+     *         components (e.g. bb/wirelength and any enabled congestion/interposer terms), and `expected_wirelength`
+     *         is only computed when method == CHECK (otherwise 0).
      *
-     * @note The returned estimated wirelength is valid only when method == CHECK
+     * @note The returned expected wirelength is valid only when method == CHECK
      */
     std::pair<t_net_cost_terms, double> comp_cube_bb_cong_cost_(e_cost_methods method);
 
@@ -591,7 +608,7 @@ class NetCostHandler {
      *        This function is called to do that for bb and congestion cost.
      *        It doesn't calculate the BBs or channel usage estimate from scratch,
      *        it would only add the costs again.
-     * @return (total bb cost, total congestion cost)
+     * @return Total cost terms summed across all nets (bb cost, and any enabled congestion/interposer terms).
      */
     t_net_cost_terms recompute_bb_cong_cost_();
 
@@ -604,6 +621,12 @@ class NetCostHandler {
      */
     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
 
+    /**
+     * @brief Compute the interposer crossing cost of a net from its bounding box.
+     * @param net_id ID of the net whose cost is requested.
+     * @param use_ts Use the proposed (ts) bounding box if true, otherwise the committed one.
+     * @return Interposer crossing cost of the net.
+     */
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
 
     /**
@@ -615,6 +638,12 @@ class NetCostHandler {
      */
     double get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts);
 
+    /**
+     * @brief Calculate the interposer congestion cost of a net using its bounding box.
+     * @param net_id ID of the net whose cost is requested.
+     * @param use_ts Use the proposed (ts) bounding box if true, otherwise the committed one.
+     * @return Interposer congestion cost of the net.
+     */
     double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
