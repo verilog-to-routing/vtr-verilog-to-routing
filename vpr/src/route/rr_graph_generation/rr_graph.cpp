@@ -1075,7 +1075,15 @@ static void alloc_and_init_channel_width() {
         chan_width_list.y[loc.x] = std::max(chan_width.y[loc.layer_num][loc.x][loc.y], chan_width_list.y[loc.x]);
     }
 
-    // Initialize interposer capacity: for each (layer, cut_idx), capacity at each (x or y) along the cut
+    // Initialize interposer capacity.
+    //
+    // For each routing layer and each interposer cut on that layer, build a 1D array of the
+    // total routing capacity that crosses that cut at every coordinate along the cut line.
+    //
+    // - Horizontal cut at y = cut_y: we index by x along the cut, and accumulate capacities of
+    //   CHANY nodes that span across cut_y at that x.
+    // - Vertical cut at x = cut_x: we index by y along the cut, and accumulate capacities of
+    //   CHANX nodes that span across cut_x at that y.
     if (grid.has_interposer_cuts()) {
         const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
         const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
@@ -1090,6 +1098,8 @@ static void alloc_and_init_channel_width() {
         vtr::NdMatrix<int, 3>& horz_interposer_capacity = mutable_device_ctx.horz_interposer_capacity_;
         vtr::NdMatrix<int, 3>& vert_interposer_capacity = mutable_device_ctx.vert_interposer_capacity_;
 
+        // Matrices are sized to the maximum cut count across layers.
+        // Layers with fewer cuts will leave the extra [cut_idx] planes at zero.
         horz_interposer_capacity.resize({num_layers, max_h_cuts, grid.width()});
         vert_interposer_capacity.resize({num_layers, max_v_cuts, grid.height()});
         horz_interposer_capacity.fill(0);
@@ -1107,6 +1117,7 @@ static void alloc_and_init_channel_width() {
                 const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
                 for (size_t cut_idx = 0; cut_idx < layer_h_cuts.size(); cut_idx++) {
                     int cut_y = layer_h_cuts[cut_idx];
+                    // This CHANY node crosses the horizontal cut at y = cut_y.
                     if (ylow <= cut_y && cut_y < yhigh) {
                         horz_interposer_capacity[layer][cut_idx][x] += cap;
                     }
@@ -1118,6 +1129,7 @@ static void alloc_and_init_channel_width() {
                 const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
                 for (size_t cut_idx = 0; cut_idx < layer_v_cuts.size(); cut_idx++) {
                     int cut_x = layer_v_cuts[cut_idx];
+                    // This CHANX node crosses the vertical cut at x = cut_x.
                     if (xlow <= cut_x && cut_x < xhigh) {
                         vert_interposer_capacity[layer][cut_idx][y] += cap;
                     }
