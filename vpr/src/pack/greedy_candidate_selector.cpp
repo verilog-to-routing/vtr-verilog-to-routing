@@ -678,85 +678,20 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
      * If there are no feasible blocks it returns a nullptr.
      */
 
-    /*
-     * @brief Get candidate molecule to pack into currently open cluster
-     *
-     * Molecule selection priority:
-     * 1. Find unpacked molecules based on criticality and strong connectedness
-     *    (connected by low fanout nets) with current cluster.
-     * 2. Find unpacked molecules based on transitive connections (eg. 2 hops away)
-     *    with current cluster.
-     * 3. Find unpacked molecules based on weak connectedness (connected by high
-     *    fanout nets) with current cluster.
-     * 4. Find unpacked molecules based on attraction group of the current cluster
-     *    (if the cluster has an attraction group).
-     */
-
-    // RAM clusters have a dedicated path: only atoms from the same physical
-    // RAM group are valid candidates, so bypass all net-traversal paths.
-    if (cluster_gain_stats.is_memory) {
-        if (cluster_gain_stats.initial_search_for_feasible_blocks) {
-            cluster_gain_stats.initial_search_for_feasible_blocks = false;
-            add_cluster_molecule_candidates_by_ram_group(cluster_gain_stats,
-                                                         cluster_id,
-                                                         cluster_legalizer,
-                                                         attraction_groups);
-        }
+    // RAM clusters offer only atoms from the same physical RAM group. All other
+    // clusters use net-traversal based candidate search (connectivity and timing,
+    // transitive, high-fanout, and attraction groups).
+    if (cluster_gain_stats.is_memory && has_ram_groups_) {
+        add_ram_cluster_molecule_candidates(cluster_gain_stats,
+                                            cluster_id,
+                                            cluster_legalizer,
+                                            attraction_groups);
     } else {
-
-    // 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
-    if (cluster_gain_stats.initial_search_for_feasible_blocks) {
-        cluster_gain_stats.initial_search_for_feasible_blocks = false;
-        add_cluster_molecule_candidates_by_connectivity_and_timing(cluster_gain_stats,
-                                                                   cluster_id,
-                                                                   cluster_legalizer,
-                                                                   attraction_groups);
-        cluster_gain_stats.has_done_connectivity_and_timing = true;
+        add_cluster_molecule_candidates(cluster_gain_stats,
+                                        cluster_id,
+                                        cluster_legalizer,
+                                        attraction_groups);
     }
-
-    if (packer_opts_.prioritize_transitive_connectivity) {
-        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
-            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-
-        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
-            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-    } else { //Reverse order
-        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
-            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-
-        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
-            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-    }
-
-    // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
-    if (cluster_gain_stats.feasible_blocks.empty()) {
-        add_cluster_molecule_candidates_by_attraction_group(cluster_gain_stats,
-                                                            cluster_id,
-                                                            cluster_legalizer,
-                                                            attraction_groups);
-    }
-
-    } // end non-RAM cluster paths
 
     /* Grab highest gain molecule */
     PackMoleculeId best_molecule = PackMoleculeId::INVALID();
@@ -807,6 +742,94 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
 
     return best_molecule;
 }
+
+void GreedyCandidateSelector::add_cluster_molecule_candidates(
+    ClusterGainStats& cluster_gain_stats,
+    LegalizationClusterId legalization_cluster_id,
+    const ClusterLegalizer& cluster_legalizer,
+    AttractionInfo& attraction_groups) {
+
+    /*
+     * @brief Get candidate molecule to pack into currently open cluster
+     *
+     * Molecule selection priority:
+     * 1. Find unpacked molecules based on criticality and strong connectedness
+     *    (connected by low fanout nets) with current cluster.
+     * 2. Find unpacked molecules based on transitive connections (eg. 2 hops away)
+     *    with current cluster.
+     * 3. Find unpacked molecules based on weak connectedness (connected by high
+     *    fanout nets) with current cluster.
+     * 4. Find unpacked molecules based on attraction group of the current cluster
+     *    (if the cluster has an attraction group).
+     */
+
+    // 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
+    if (cluster_gain_stats.initial_search_for_feasible_blocks) {
+        cluster_gain_stats.initial_search_for_feasible_blocks = false;
+        add_cluster_molecule_candidates_by_connectivity_and_timing(cluster_gain_stats,
+                                                                   legalization_cluster_id,
+                                                                   cluster_legalizer,
+                                                                   attraction_groups);
+        cluster_gain_stats.has_done_connectivity_and_timing = true;
+    }
+
+    if (packer_opts_.prioritize_transitive_connectivity) {
+        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
+            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+
+        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+    } else { //Reverse order
+        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+
+        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
+            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+    }
+
+    // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
+    if (cluster_gain_stats.feasible_blocks.empty()) {
+        add_cluster_molecule_candidates_by_attraction_group(cluster_gain_stats,
+                                                            legalization_cluster_id,
+                                                            cluster_legalizer,
+                                                            attraction_groups);
+    }
+}
+
+void GreedyCandidateSelector::add_ram_cluster_molecule_candidates(
+    ClusterGainStats& cluster_gain_stats,
+    LegalizationClusterId legalization_cluster_id,
+    const ClusterLegalizer& cluster_legalizer,
+    AttractionInfo& attraction_groups) {
+    if (cluster_gain_stats.initial_search_for_feasible_blocks) {
+        cluster_gain_stats.initial_search_for_feasible_blocks = false;
+        add_cluster_molecule_candidates_by_ram_group(cluster_gain_stats,
+                                                     legalization_cluster_id,
+                                                     cluster_legalizer,
+                                                     attraction_groups);
+    }
+}
+
 
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_and_timing(
     ClusterGainStats& cluster_gain_stats,
@@ -902,6 +925,12 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_ram_group(
     LegalizationClusterId legalization_cluster_id,
     const ClusterLegalizer& cluster_legalizer,
     AttractionInfo& attraction_groups) {
+    // TODO: Atoms are offered in the order they appear in the physical RAM group,
+    //       which determines the order they are packed into the cluster. Note that
+    //       changing this order will not affect which atoms end up in the cluster
+    //       (that is fixed by the RAM mapper), only the order they are packed in.
+    //       Investigate whether offering them in a more meaningful order (e.g. by
+    //       timing criticality) would improve packing quality within the RAM cluster.
     const PhysicalRamGroup& phys_group = ram_mapper_.physical_ram_group(cluster_gain_stats.physical_ram_id);
     for (AtomBlockId atom_id : phys_group.atoms) {
         if (cluster_legalizer.is_atom_clustered(atom_id))

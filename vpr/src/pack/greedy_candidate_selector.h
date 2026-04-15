@@ -466,6 +466,28 @@ class GreedyCandidateSelector {
     // ===================================================================== //
 
     /**
+     * @brief Populate the feasible blocks list for the given cluster using
+     *        net-traversal based candidate search. Candidates are found
+     *        progressively by connectivity and timing, transitive connections,
+     *        high-fanout nets, and attraction groups.
+     */
+    void add_cluster_molecule_candidates(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
+
+    /**
+     * @brief Populate the feasible blocks list for a RAM cluster by offering
+     *        only atoms from the same physical RAM group as the cluster seed.
+     */
+    void add_ram_cluster_molecule_candidates(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
+
+    /**
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
      */
@@ -530,8 +552,9 @@ class GreedyCandidateSelector {
         AttractionInfo& attraction_groups);
 
     /**
-     * @brief For RAM clusters, offers only atoms from the same physical RAM
-     *        group as candidates, bypassing all net-traversal paths.
+     * @brief Add molecules from the same physical RAM group as candidates for
+     *        the given RAM cluster. Molecules in the same physical RAM group are
+     *        pre-determined by the RAM mapper to be packable together.
      */
     void add_cluster_molecule_candidates_by_ram_group(
         ClusterGainStats& cluster_gain_stats,
