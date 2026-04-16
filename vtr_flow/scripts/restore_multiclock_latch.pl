@@ -21,11 +21,33 @@ open(my $abcInFile, "<".$ARGV[1]) || die "Error Opening ABC Input File $ARGV[1]:
 #Open the ABC Optimized (ODIN II) BLIF File
 open(my $abcOutFile, ">".$ARGV[2]) || die "Error Opening Output File $ARGV[2]: $!\n";
 
+#Variables to store outputs declaration
+my $outputs_line = "";
+my $found_outputs = 0;
+
+#First pass: extract the outputs from the ODIN BLIF
+seek $odinInFile, 0, 0;
+while(($lineOdn = <$odinInFile>))
+{
+	if ($lineOdn =~ /^\.outputs/ )
+	{
+		$outputs_line = $lineOdn;
+		$found_outputs = 1;
+		last;
+	}
+}
+
 #While there are lines in the ABC Optimized (ODIN II) BLIF File
 while(($line = <$abcInFile>))
 {
+	#If the Line is an outputs declaration and we didn't find outputs in ABC
+	if ($line =~ /^\.outputs/ && $found_outputs)
+	{
+		#Replace the ABC outputs line with the original outputs from ODIN BLIF
+		print $abcOutFile $outputs_line;
+	}
 	#If the Line is a Latch
-	if ($line =~ /^\.latch/ )
+	elsif ($line =~ /^\.latch/ )
 	{
 		#Tokenize the Line
 		my @tokens = split(/[\s]+/, $line);

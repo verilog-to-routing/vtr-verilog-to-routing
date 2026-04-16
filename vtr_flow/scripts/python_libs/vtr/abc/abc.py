@@ -10,6 +10,58 @@ from vtr import paths
 from vtr.error import InspectError
 
 
+def restore_outputs_from_blif(original_blif_path, output_blif_path):
+    """
+    Restore the .outputs declaration from original BLIF to output BLIF.
+    This is needed because ABC's write_hie command may strip outputs that
+    only feed blackbox inputs.
+    
+    Arguments
+    ---------
+        original_blif_path : Path
+            Path to the original BLIF file (with outputs)
+        output_blif_path : Path
+            Path to the output BLIF file (may be missing outputs)
+    """
+    # Read the original BLIF to extract outputs declaration
+    outputs_line = None
+    original_model_name = None
+    with open(original_blif_path, 'r') as f:
+        for line in f:
+            if line.strip().startswith('.model'):
+                original_model_name = line.split()[1] if len(line.split()) > 1 else None
+            if line.strip().startswith('.outputs') and original_model_name:
+                outputs_line = line
+                break
+    
+    if not outputs_line:
+        return  # No outputs found in original, nothing to restore
+    
+    # Read the output BLIF and restore the outputs declaration in the main model only
+    lines = []
+    in_main_model = False
+    model_found = False
+    with open(output_blif_path, 'r') as f:
+        for line in f:
+            # Track which model we're in
+            if line.strip().startswith('.model'):
+                model_name = line.split()[1] if len(line.split()) > 1 else None
+                in_main_model = (model_name == original_model_name)
+                model_found = in_main_model
+                lines.append(line)
+            elif line.strip().startswith('.outputs') and in_main_model:
+                # Replace only the first .outputs in the main model
+                lines.append(outputs_line if outputs_line.endswith('\n') else outputs_line + '\n')
+                in_main_model = False  # Only replace once
+            else:
+                lines.append(line)
+    
+    # Write back the modified BLIF
+    with open(output_blif_path, 'w') as f:
+        f.writelines(lines)
+
+
+
 # pylint: disable=too-many-arguments, too-many-locals
 def run(
     architecture_file,
@@ -272,6 +324,10 @@ def run(
         log_filename="restore_latch" + str(i) + ".out",
         indent_depth=1,
     )
+    
+    # Restore outputs that may have been stripped by ABC
+    restore_outputs_from_blif(temp_dir / pre_abc_blif.name, temp_dir / output_netlist.name)
+    
     if not keep_intermediate_files:
         for file in temp_dir.iterdir():
             if file.suffix in (".dot", ".v", ".rc"):
