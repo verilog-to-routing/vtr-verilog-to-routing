@@ -98,7 +98,8 @@ static void do_one_route(const Netlist<>& net_list,
                                                   segment_inf,
                                                   is_flat,
                                                   router_opts.route_verbosity,
-                                                  router_opts.device_model_warnings);
+                                                  router_opts.device_model_warnings,
+                                                  router_opts.router_lookahead_interposer_base_cut_multiplier);
 
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
@@ -166,7 +167,8 @@ static void profile_source(const Netlist<>& net_list,
                                                   segment_inf,
                                                   is_flat,
                                                   router_opts.route_verbosity,
-                                                  router_opts.device_model_warnings);
+                                                  router_opts.device_model_warnings,
+                                                  router_opts.router_lookahead_interposer_base_cut_multiplier);
     RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);
 
     int start_x = 0;
