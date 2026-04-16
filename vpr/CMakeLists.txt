@@ -23,13 +23,9 @@ if (VPR_USE_EZGL STREQUAL "on")
     # Qt flow: enable CMAKE_AUTORCC so any .qrc added as a target source
     # is compiled automatically by rcc (same mechanism as libezgl).
     find_package(Qt6 REQUIRED COMPONENTS Core)
-    # Qt 6.8 contains a bug in the RHI backend where geometry buffers are not
-    # properly invalidated/refreshed after the MVP matrix changes, causing
-    # incorrect rendering artifacts. The bug is not seen in Qt 6.9.3.
-    if(Qt6_VERSION VERSION_LESS "6.9.3")
-        message(FATAL_ERROR "Qt 6.9.3 or higher is required (found ${Qt6_VERSION})")
-    endif()
     set(CMAKE_AUTORCC ON)
+    # Prevent Qt's 'emit' macro from conflicting with TBB headers
+    add_definitions(-DQT_NO_EMIT)
 else()
     list(APPEND GRAPHICS_DEFINES "-DNO_GRAPHICS")
     message(STATUS "EZGL: graphics disabled")
@@ -82,7 +78,12 @@ target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 # Find if Eigen is installed. Eigen is used within the Analytical Solver of the
 # Analytical Placement flow. If Eigen is not installed, certain solvers cannot
 # be used.
-find_package(Eigen3 3.3 NO_MODULE)
+# First try with version constraint; fall back to unversioned search to support
+# Eigen 5.x (which does not declare compatibility with the 3.x series).
+find_package(Eigen3 3.3 NO_MODULE QUIET)
+if(NOT TARGET Eigen3::Eigen)
+    find_package(Eigen3 NO_MODULE QUIET)
+endif()
 if (TARGET Eigen3::Eigen)
     target_link_libraries (libvpr Eigen3::Eigen)
     target_compile_definitions(libvpr PUBLIC -DEIGEN_INSTALLED)
@@ -223,8 +224,8 @@ endif()
 #Configure the build to use the selected engine
 if (VPR_USE_EXECUTION_ENGINE STREQUAL "tbb")
     target_compile_definitions(libvpr PRIVATE VPR_USE_TBB)
-    target_link_libraries(libvpr tbb)
-    target_link_libraries(libvpr ${TBB_tbbmalloc_proxy_LIBRARY}) #Use the scalable memory allocator
+    target_link_libraries(libvpr TBB::tbb)
+    target_link_libraries(libvpr TBB::tbbmalloc_proxy) #Use the scalable memory allocator
     message(STATUS "VPR: will support parallel execution using '${VPR_USE_EXECUTION_ENGINE}'")
 elseif(VPR_USE_EXECUTION_ENGINE STREQUAL "serial")
     message(STATUS "VPR: will only support serial execution")
