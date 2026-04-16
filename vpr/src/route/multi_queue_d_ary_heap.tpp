@@ -29,7 +29,9 @@
 #include <cassert>
 #include "d_ary_heap.tpp"
 
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
+// Windows thread identification uses Win32 APIs from <windows.h>.
+// POSIX platforms use pthread APIs from <pthread.h>.
 #include <windows.h>
 #else
 #include <pthread.h>
@@ -113,9 +115,6 @@ class MultiQueueIO {
 #if defined(_WIN32)
         static thread_local uint64_t x = static_cast<uint64_t>(GetCurrentThreadId());
 #elif defined(__APPLE__) && defined(__MACH__)
-        // On macOS, pthread_t is an opaque pointer type (not an integer), so it cannot
-        // be directly assigned to uint64_t. Use pthread_mach_thread_np() to obtain a
-        // numeric (Mach) thread ID instead.
         static thread_local pthread_t self_thread = pthread_self();
         static thread_local uint64_t x = static_cast<uint64_t>(pthread_mach_thread_np(self_thread));
 #else

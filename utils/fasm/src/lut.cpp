@@ -6,10 +6,13 @@
 #include "vpr_error.h"
 #include "vtr_util.h"
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER // MSVC
+// MSVC does not provide GCC builtins like __builtin_popcount and __builtin_ctz.
+// Map them to equivalent MSVC intrinsics from <intrin.h>.
 #include <intrin.h>
 
 #define __builtin_popcount(x) __popcnt(x)
+// _tzcnt_u32 counts trailing zeros (equivalent to __builtin_ctz for 32-bit values)
 #define __builtin_ctz(x) _tzcnt_u32(x)
 #endif
 

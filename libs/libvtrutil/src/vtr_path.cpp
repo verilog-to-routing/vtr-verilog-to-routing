@@ -2,9 +2,11 @@
 
 #include "vtr_util.h"
 
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
+// Windows provides _getcwd() via <direct.h>, not POSIX getcwd().
 #include <direct.h>
 #else
+// POSIX systems provide getcwd() via <unistd.h>.
 #include <unistd.h>
 #endif
 
@@ -67,9 +69,11 @@ std::string getcwd() {
     constexpr size_t BUF_SIZE = 500;
     char buf[BUF_SIZE];
 
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
+    // Windows uses _getcwd() instead of POSIX getcwd().
     if (::_getcwd(buf, static_cast<int>(BUF_SIZE))) {
 #else
+    // POSIX getcwd() returns the current working directory.
     if (::getcwd(buf, BUF_SIZE)) {
 #endif
         return std::string(buf);

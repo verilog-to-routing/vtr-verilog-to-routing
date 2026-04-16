@@ -3,7 +3,9 @@
 #include <iterator>
 #include "vtr_assert.h"
 
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
+// Windows does not define the POSIX type ssize_t.
+// Use SSIZE_T from BaseTsd.h as a compatible replacement.
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #endif

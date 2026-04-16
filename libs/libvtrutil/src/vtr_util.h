@@ -7,10 +7,11 @@
 #include <cstdarg>
 #include <array>
 
-// MSVC does not support GCC-style __attribute__ or __builtin_prefetch.
-// __builtin_prefetch is only a performance hint, so it is safe to define
-// it as a no-op when compiling with MSVC.
-#ifdef _MSC_VER
+#ifdef _MSC_VER // MSVC
+// MSVC does not support GCC __attribute__ or __builtin_prefetch.
+// Without this guard, GCC-specific constructs can cause syntax errors
+// (e.g., in multi_queue_d_ary_heap.tpp). Since prefetch is only a
+// performance hint, it is safe to make it a no-op and ignore attributes.
 #define __attribute__(x)
 #define __builtin_prefetch(...) ((void)0)
 #endif
