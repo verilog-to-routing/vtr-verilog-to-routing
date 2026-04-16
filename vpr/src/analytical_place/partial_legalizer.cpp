@@ -877,6 +877,19 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
         [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
             // Get the bin at this grid location.
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+
+            // If the bin is not 1x1, then we only want to apply the capacity to the
+            // center tile of this bin. The other tiles will have zero
+            // capacity. This must be done since the prefix-sum assumes 1x1 grid of
+            // values, so we set the center bin as the representative of the entire
+            // bin.
+            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
+            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
+            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
+            if (x != center_x || y != center_y) {
+                return 0.0f;
+            }
+
             // Get the capacity of the bin for this dim.
             float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(cap >= 0.0f);
@@ -886,14 +899,6 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
             // is during partial legalization.
             float target_density = density_manager_->get_bin_target_density(bin_id);
             cap *= target_density;
-
-            // Bins may be large, but the prefix sum assumes a 1x1 grid of
-            // values. Normalize by the area of the bin to turn this into
-            // a 1x1 bin equivalent.
-            const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            float bin_area = bin_region.width() * bin_region.height();
-            VTR_ASSERT_SAFE(!vtr::isclose(bin_area, 0.0f));
-            cap /= bin_area;
 
             return cap;
         });
@@ -1169,12 +1174,22 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
         *density_manager_,
         [&](PrimitiveVectorDim dim, size_t layer, size_t x, size_t y) {
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-            // This is computed the same way as the capacity prefix sum above.
+
+            // Matching the code for the capacity prefix sum, we assume that all of the
+            // mass of a tile is concentrated in its center. All other bins are zeroed out.
+            // TODO: A better way of doing this is actually using the solved positions to find
+            //       the capacity of tiles within each non-1x1 bin. However, this may slow
+            //       things down a lot.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
-            float bin_area = bin_region.width() * bin_region.height();
+            size_t center_x = std::floor(bin_region.xmin() + bin_region.width() / 2.0);
+            size_t center_y = std::floor(bin_region.ymin() + bin_region.height() / 2.0);
+            if (x != center_x || y != center_y) {
+                return 0.0f;
+            }
+
             float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(util >= 0.0f);
-            return util / bin_area;
+            return util;
         });
 
     // Create windows for each overfilled bin cluster.

@@ -22,7 +22,7 @@
 #include "read_options.h"
 #include "echo_files.h"
 #include "clock_modeling.h"
-#include "ShowSetup.h"
+#include "show_setup.h"
 
 #include "setup_vib_utils.h"
 
@@ -195,7 +195,8 @@ void SetupVPR(const t_options* options,
                               timingenabled,
                               arch,
                               device_ctx.physical_tile_types,
-                              device_ctx.logical_block_types);
+                              device_ctx.logical_block_types,
+                              options->device_model_warnings);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
@@ -203,7 +204,8 @@ void SetupVPR(const t_options* options,
                                         timingenabled,
                                         arch,
                                         device_ctx.physical_tile_types,
-                                        device_ctx.logical_block_types);
+                                        device_ctx.logical_block_types,
+                                        options->device_model_warnings);
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Invalid architecture format!");
@@ -333,7 +335,7 @@ void SetupVPR(const t_options* options,
         }
     }
 
-    ShowSetup(*vpr_setup);
+    show_setup(*vpr_setup);
 
     // init global variables
     vtr::out_file_prefix = options->out_file_prefix;
@@ -487,6 +489,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
     RouterOpts->route_verbosity = Options.route_verbosity;
+    RouterOpts->device_model_warnings = Options.device_model_warnings;
 
     RouterOpts->full_stats = Options.full_stats;
 
@@ -528,6 +531,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->lookahead_type = Options.router_lookahead_type;
     RouterOpts->initial_acc_cost_chan_congestion_threshold = Options.router_initial_acc_cost_chan_congestion_threshold;
     RouterOpts->initial_acc_cost_chan_congestion_weight = Options.router_initial_acc_cost_chan_congestion_weight;
+    RouterOpts->router_lookahead_interposer_base_cut_multiplier = Options.router_lookahead_interposer_base_cut_multiplier;
 
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;

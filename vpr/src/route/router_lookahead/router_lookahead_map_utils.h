@@ -310,9 +310,11 @@ typedef Cost_Entry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
  * @brief For each tile, iterate over its OPINs and store which segment types are accessible from each OPIN
  */
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
-                                                    int route_verbosity);
+                                                    int route_verbosity,
+                                                    bool device_model_warnings);
 
-t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity);
+t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity,
+                                                       bool device_model_warnings);
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
@@ -332,13 +334,28 @@ RRNodeId get_chanz_start_node(int start_x, int start_y, int seg_index, int track
  */
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
+/**
+ * @brief Computes the adjusted position of an RR graph node.
+ * This function does not modify the position of the given node.
+ * It only returns the computed adjusted position.
+ * Adjusted position is:
+ *  - CHANX/CHANY nodes: Position of the driver for directional wires and wire center for bidirectional wires
+ *  - CHANZ nodes: (xlow, ylow) of the node, which would be the same as (xhigh, yhigh)
+ *  - OPIN/IPIN nodes: Position of the channel it can reach based on which side of the block it is at.
+ *  - SOURCE/SINK nodes: Centroid of the tile
+ * @param rr The ID of the node whose adjusted position is desired.
+ * @return The adjusted position (x, y).
+ */
+std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr);
+
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         unsigned from_layer_num,
                                         const e_rr_type chan_type,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
-                                        int route_verbosity);
+                                        int route_verbosity,
+                                        bool device_model_warnings);
 
 /**
  * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink

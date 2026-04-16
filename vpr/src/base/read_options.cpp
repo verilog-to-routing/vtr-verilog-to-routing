@@ -2920,6 +2920,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument<bool, ParseOnOff>(args.device_model_warnings, "--device_model_warnings")
+        .help("Show warnings related to architecture files, RR graph generation, and router lookahead."
+              " These warnings are intended for VTR developers."
+              " End users who are given fixed architecture and RR graph files can safely set this parameter to off.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
@@ -3134,6 +3141,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               "when computing the initial accumulated cost (acc_cost)of routing resources. "
               "Higher values make the router more sensitive to early congestion.")
         .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<float>(args.router_lookahead_interposer_base_cut_multiplier, "--router_lookahead_interposer_base_cut_multiplier")
+        .help("Multiplier applied to base cost of interposer wires for the router lookahead.")
+        .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")

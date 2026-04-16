@@ -240,6 +240,7 @@ struct t_options {
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> router_opt_choke_points;
     argparse::ArgValue<int> route_verbosity;
+    argparse::ArgValue<bool> device_model_warnings;
 
     // Timing-driven router options only
     argparse::ArgValue<float> astar_fac;
@@ -269,6 +270,7 @@ struct t_options {
     argparse::ArgValue<bool> generate_router_lookahead_report;
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_threshold;
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_weight;
+    argparse::ArgValue<float> router_lookahead_interposer_base_cut_multiplier;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<bool> router_update_lower_bound_delays;

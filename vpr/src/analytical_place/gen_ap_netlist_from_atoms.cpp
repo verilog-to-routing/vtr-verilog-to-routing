@@ -21,9 +21,36 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+/**
+ * @brief Returns true of the given partition region covers a single point on
+ *        the grid, false otherwise.
+ */
+static bool is_single_point_pr(const PartitionRegion& pr) {
+    // If there are multiple regions in this partition region, we assume that
+    // they point to different regions.
+    // TODO: Although very strange, it is possible that a user made multiple
+    //       regions point to the same point. Should probably be cleaned up in
+    //       a pre-processing step for the partition regions.
+    if (pr.get_regions().size() != 1)
+        return false;
+    // Get the region.
+    const Region& region = pr.get_regions()[0];
+
+    // Check that the region covers exactly one point in x, y, and layer.
+    const vtr::Rect<int>& region_rect = region.get_rect();
+    if (region_rect.xmin() != region_rect.xmax())
+        return false;
+    if (region_rect.ymin() != region_rect.ymax())
+        return false;
+    if (region.get_layer_range().first != region.get_layer_range().second)
+        return false;
+
+    // If all prior passes, this is a single-point partition region.
+    return true;
+}
 
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
@@ -107,6 +134,14 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                 VTR_ASSERT(ap_netlist.block_mobility(ap_blk_id) == APBlockMobility::MOVEABLE);
                 // Get the partition region.
                 const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
+                if (!is_single_point_pr(partition_pr)) {
+                    // The code below currently assumes that the partition region is
+                    // a single point.
+                    // TODO: AP should understand larger partition regions so it
+                    //       can optimize them better. For now we just ignore them
+                    //       and let the legalizer deal with them.
+                    continue;
+                }
                 // TODO: Either handle the union of legal locations or turn into a
                 //       proper error.
                 VTR_ASSERT(partition_pr.get_regions().size() == 1 && "AP: Each partition should contain only one region for AP right now.");

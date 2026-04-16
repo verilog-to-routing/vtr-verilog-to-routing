@@ -13,6 +13,7 @@
 #include <fstream>
 #include <ranges>
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -22,6 +23,7 @@
 #include "vtr_time.h"
 #include "route_common.h"
 #include "route_debug.h"
+#include "vtr_util.h"
 
 /**
  * We will profile delay/congestion using this many tracks for each wire type.
@@ -60,16 +62,8 @@ static void run_dijkstra(RRNodeId start_node,
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<util::PQ_Entry>& pq);
-
-/**
- * @brief Computes the adjusted position of an RR graph node.
- * This function does not modify the position of the given node.
- * It only returns the computed adjusted position.
- * @param rr The ID of the node whose adjusted position is desired.
- * @return The adjusted position (x, y).
- */
-static std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
+                                       std::priority_queue<util::PQ_Entry>& pq,
+                                       bool has_interposer_cuts = false);
 
 /**
  * @brief Computes the adjusted location of a pin to match the position of
@@ -366,7 +360,8 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                              std::greater<PQ_Entry_Base_Cost>>* pq);
 
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
-                                                    int route_verbosity) {
+                                                    int route_verbosity,
+                                                    bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -413,7 +408,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
 
                     if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                         //No untried instances of the current tile type left
-                        VTR_LOGV_WARN(route_verbosity > 1,
+                        VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
                                       "Found no %ssample locations for %s in %s\n",
                                       (num_sampled_locs == 0) ? "" : "more ",
                                       rr_node_typename[rr_type],
@@ -466,7 +461,8 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
     return src_opin_delays;
 }
 
-t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
+t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity,
+                                                       bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Computing chan/ipin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
@@ -491,7 +487,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
 
             if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                 //No untried instances of the current tile type left
-                VTR_LOGV_WARN(route_verbosity > 1,
+                VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
                               "Found no sample locations for %s\n",
                               tile_type.name.c_str());
                 continue;
@@ -539,6 +535,24 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     }
 
     return pin_delays;
+}
+
+std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    e_rr_type rr_type = rr_graph.node_type(rr);
+
+    if (is_chanxy(rr_type)) {
+        return get_adjusted_rr_wire_position(rr);
+    } else if (is_pin(rr_type)) {
+        return get_adjusted_rr_pin_position(rr);
+    } else if (is_src_sink(rr_type)) {
+        return get_adjusted_rr_src_sink_position(rr);
+    } else {
+        VTR_ASSERT_SAFE(is_chanz(rr_type));
+        return {rr_graph.node_xlow(rr), rr_graph.node_ylow(rr)};
+    }
 }
 
 RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset) {
@@ -617,8 +631,8 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
 
     if (!is_chanxy(from_type) && !is_chanxy(to_type)) {
         //Alternate formulation for non-channel types
-        auto [from_x, from_y] = get_adjusted_rr_position(from_node);
-        auto [to_x, to_y] = get_adjusted_rr_position(to_node);
+        auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
+        auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
 
         delta_x = to_x - from_x;
         delta_y = to_y - from_y;
@@ -717,7 +731,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
-                                        int route_verbosity) {
+                                        int route_verbosity,
+                                        bool device_model_warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
@@ -731,9 +746,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     // edge effects for shorter distances)
     std::vector<int> ref_increments{0, 1, longest_seg_length, longest_seg_length + 1};
 
-    // Uniquify the increments (avoid sampling the same locations repeatedly if they happen to overlap)
-    std::stable_sort(ref_increments.begin(), ref_increments.end());
-    ref_increments.erase(std::unique(ref_increments.begin(), ref_increments.end()), ref_increments.end());
+    // Uniquify the increments to avoid sampling the same locations repeatedly if they happen to overlap
+    vtr::uniquify(ref_increments);
 
     // Upper right non-corner
     const int target_x = device_ctx.grid.width() - 2;
@@ -808,7 +822,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     t_routing_cost_map routing_cost_map({device_ctx.grid.get_num_layers(), device_ctx.grid.width(), device_ctx.grid.height()});
 
     if (sample_nodes.empty()) {
-        VTR_LOGV_WARN(route_verbosity > 1,
+        VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
                       "Unable to find any sample location for segment %s type '%s' (length %d)\n",
                       rr_node_typename[chan_type],
                       segment_inf.name.c_str(),
@@ -1324,6 +1338,8 @@ static void run_dijkstra(RRNodeId start_node,
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
+    const bool has_interposer_cuts = device_ctx.grid.has_interposer_cuts();
+
     vtr::vector<RRNodeId, bool>& node_expanded = data.node_expanded;
     node_expanded.resize(rr_graph.num_nodes());
     std::fill(node_expanded.begin(), node_expanded.end(), false);
@@ -1389,7 +1405,7 @@ static void run_dijkstra(RRNodeId start_node,
             }
         }
 
-        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
+        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, has_interposer_cuts);
         node_expanded[curr_node] = true;
     }
 }
@@ -1397,7 +1413,8 @@ static void run_dijkstra(RRNodeId start_node,
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<util::PQ_Entry>& pq) {
+                                       std::priority_queue<util::PQ_Entry>& pq,
+                                       bool has_interposer_cuts /*=false*/) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -1422,6 +1439,23 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
                                    parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
+        if (has_interposer_cuts) {
+            // If child node crosses an interposer cut, ignore its costs
+            // Interposer crossing delay is added later using the InterposerLookahead class
+            t_physical_tile_loc child_side_a = {rr_graph.node_xhigh(child_node),
+                                                rr_graph.node_yhigh(child_node),
+                                                rr_graph.node_layer_high(child_node)};
+            t_physical_tile_loc child_side_b = {rr_graph.node_xlow(child_node),
+                                                rr_graph.node_ylow(child_node),
+                                                rr_graph.node_layer_low(child_node)};
+
+            if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b)
+                && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
+                child_entry.delay = parent_entry.delay;
+                child_entry.cost = parent_entry.cost;
+                child_entry.congestion_upstream = parent_entry.congestion_upstream;
+            }
+        }
         //VTR_ASSERT(child_entry.cost >= 0); //Assertion fails in practise. TODO: debug
 
         /* skip this child if it has been visited with smaller cost */
@@ -1432,24 +1466,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         /* finally, record the cost with which the child was visited and put the child entry on the queue */
         node_visited_costs[child_node] = child_entry.cost;
         pq.push(child_entry);
-    }
-}
-
-static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    e_rr_type rr_type = rr_graph.node_type(rr);
-
-    if (is_chanxy(rr_type)) {
-        return get_adjusted_rr_wire_position(rr);
-    } else if (is_pin(rr_type)) {
-        return get_adjusted_rr_pin_position(rr);
-    } else if (is_src_sink(rr_type)) {
-        return get_adjusted_rr_src_sink_position(rr);
-    } else {
-        VTR_ASSERT_SAFE(is_chanz(rr_type));
-        return {rr_graph.node_xlow(rr), rr_graph.node_ylow(rr)};
     }
 }
 

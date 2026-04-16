@@ -19,7 +19,7 @@ t_compressed_wire_cost_map f_compressed_wire_cost_map;
 
 static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec);
 
-static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec, int route_verbosity);
+static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec, int route_verbosity, bool device_model_warnings);
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
@@ -110,7 +110,8 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
 }
 
 static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec,
-                                                     int route_verbosity) {
+                                                     int route_verbosity,
+                                                     bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -152,7 +153,8 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
                                                                                        segment_inf,
                                                                                        sample_locations,
                                                                                        /*sample_all_locs=*/false,
-                                                                                       route_verbosity);
+                                                                                       route_verbosity,
+                                                                                       device_model_warnings);
                 if (routing_cost_map.empty()) {
                     continue;
                 }
@@ -390,10 +392,11 @@ static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_ty
 }
 
 /******** Interface class member function definitions ********/
-CompressedMapLookahead::CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity)
+CompressedMapLookahead::CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings)
     : det_routing_arch_(det_routing_arch)
     , is_flat_(is_flat)
-    , route_verbosity_(route_verbosity) {}
+    , route_verbosity_(route_verbosity)
+    , device_model_warnings_(device_model_warnings) {}
 
 float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
@@ -515,11 +518,11 @@ void CompressedMapLookahead::compute(const std::vector<t_segment_inf>& segment_i
 
     // First compute the delay map when starting from the various wire types
     // (CHANX/CHANY) in the routing architecture
-    compute_router_wire_compressed_lookahead(segment_inf, route_verbosity_);
+    compute_router_wire_compressed_lookahead(segment_inf, route_verbosity_, device_model_warnings_);
 
     // Next, compute which wire types are accessible (and the cost to reach them)
     // from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, device_model_warnings_);
 }
 
 void CompressedMapLookahead::write(const std::string& file_name) const {

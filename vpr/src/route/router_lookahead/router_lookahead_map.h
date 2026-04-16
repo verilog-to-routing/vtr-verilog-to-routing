@@ -1,16 +1,18 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
+#include "router_lookahead_interposer.h"
 
 /**
  * @brief Current VPR RouterLookahead implementation.
  */
 class MapLookahead : public RouterLookahead {
   public:
-    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity);
+    explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier);
 
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
@@ -23,10 +25,14 @@ class MapLookahead : public RouterLookahead {
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
     vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost;  // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
+    std::optional<InterposerLookahead> interposer_lookahead_;
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
     int route_verbosity_;
+    bool device_model_warnings_;
+    bool has_interposer_cuts_;
+    const float interposer_base_cost_multiplier_;
 
   protected:
     float get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;

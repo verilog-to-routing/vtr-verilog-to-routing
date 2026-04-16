@@ -1325,6 +1325,7 @@ struct t_router_opts {
     e_router_lookahead lookahead_type;
     double initial_acc_cost_chan_congestion_threshold;
     double initial_acc_cost_chan_congestion_weight;
+    float router_lookahead_interposer_base_cut_multiplier; ///< Multiplier to apply for base cost of interposer wires in the router lookahead
     int max_convergence_count;
     int route_verbosity;
     float reconvergence_cpd_threshold;
@@ -1363,6 +1364,12 @@ struct t_router_opts {
     int reorder_rr_graph_nodes_seed = 1;
 
     bool generate_router_lookahead_report;
+
+    /// When true, emit warnings about architecture files, RR graph generation,
+    /// and router lookahead quality. These warnings are intended for architecture
+    /// developers. End users who are given fixed architecture and RR graph files
+    /// can safely ignore them. Also enabled when route_verbosity > 1.
+    bool device_model_warnings = false;
 };
 
 struct t_analysis_opts {
