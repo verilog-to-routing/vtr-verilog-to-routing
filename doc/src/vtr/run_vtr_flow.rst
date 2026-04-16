@@ -251,8 +251,8 @@ Detailed Command-line Options
 
 .. option:: -synthesis_params <SYNTHESIS_PARAMS>
 
-    Extra parameters passed to the ``parmys`` synthesis command in the Yosys script.
-    This replaces the ``YYY`` placeholder in ``synthesis.tcl``.
+    Specify additional synthesis parameters that are directly appended to the ``parmys`` command in the **default** synthesis flow. (e.g., ``-mults_ratio 0.5``, ``-exact_mults 0``).
+    For users using a **custom** Yosys script with ``-yosys_script``, this option acts as a dynamic substitute for the ``YYY`` placeholder (if present).
 
     **Default:** "" (empty string)
 

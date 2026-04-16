@@ -373,8 +373,9 @@ def vtr_command_argparser(prog=None):
         "-synthesis_params",
         default="",
         dest="synthesis_params",
-        help="Extra parameters passed to the parmys synthesis command "
-        + "(replaces YYY placeholder in synthesis.tcl).",
+        help="Specify additional synthesis parameters directly appended to the parmys command in the default flow"
+        + " (e.g., -mults_ratio 0.5), or used to substitute the 'YYY' placeholder"
+        + " in a custom Yosys script.",
     )
     #
     # VPR arguments
