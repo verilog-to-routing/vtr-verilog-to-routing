@@ -609,8 +609,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
     for (auto blk_id : blocks()) {
         const auto& name = block_name(blk_id);
         if (find_block(name) != blk_id) {
-            // VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Block lookup by name mismatch");
-            vpr_throw(VPR_ERROR_NETLIST, __FILE__, __LINE__, "Block lookup by name mismatch");
+            VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Block lookup by name mismatch");
         }
     }
 
@@ -619,8 +618,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
         auto blk_id = port_block(port_id);
         const auto& name = port_name(port_id);
         if (find_port(blk_id, name) != port_id) {
-            // VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Port lookup by name mismatch");
-            vpr_throw(VPR_ERROR_NETLIST, __FILE__, __LINE__, "Port lookup by name mismatch");
+            VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Port lookup by name mismatch");
         }
     }
 
@@ -629,8 +627,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
         auto port_id = pin_port(pin_id);
         auto bit = pin_port_bit(pin_id);
         if (find_pin(port_id, bit) != pin_id) {
-            // VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Pin lookup by name mismatch");
-            vpr_throw(VPR_ERROR_NETLIST, __FILE__, __LINE__, "Pin lookup by name mismatch");
+            VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Pin lookup by name mismatch");
         }
     }
 
@@ -638,8 +635,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
     for (auto net_id : nets()) {
         const auto& name = net_name(net_id);
         if (find_net(name) != net_id) {
-            // VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Net lookup by name mismatch");
-            vpr_throw(VPR_ERROR_NETLIST, __FILE__, __LINE__, "Net lookup by name mismatch");
+            VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Net lookup by name mismatch");
         }
     }
 
@@ -647,8 +643,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
     for (auto str_id : string_ids_) {
         const auto& name = strings_[str_id];
         if (find_string(name) != str_id) {
-            // VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "String lookup by name mismatch");
-            vpr_throw(VPR_ERROR_NETLIST, __FILE__, __LINE__, "String lookup by name mismatch");
+            VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "String lookup by name mismatch");
         }
     }
     return true;

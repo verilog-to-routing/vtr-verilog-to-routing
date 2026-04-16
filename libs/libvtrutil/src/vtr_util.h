@@ -7,6 +7,9 @@
 #include <cstdarg>
 #include <array>
 
+// MSVC does not support GCC-style __attribute__ or __builtin_prefetch.
+// __builtin_prefetch is only a performance hint, so it is safe to define
+// it as a no-op when compiling with MSVC.
 #ifdef _MSC_VER
 #define __attribute__(x)
 #define __builtin_prefetch(...) ((void)0)
