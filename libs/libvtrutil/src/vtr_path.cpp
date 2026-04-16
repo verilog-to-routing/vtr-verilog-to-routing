@@ -2,8 +2,6 @@
 
 #include "vtr_util.h"
 
-//TODO: currently this file assumes unix-like
-//      in the future support windows
 #ifdef _WIN32
 #include <direct.h>
 #else

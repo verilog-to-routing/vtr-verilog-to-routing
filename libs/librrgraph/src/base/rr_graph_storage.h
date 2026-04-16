@@ -23,6 +23,9 @@
 #include <string>
 #include <vector>
 
+// MSVC does not support GCC-style __builtin_prefetch.
+// __builtin_prefetch is only a performance hint, so it is safe to define
+// it as a no-op when compiling with MSVC.
 #ifdef _MSC_VER
 #define __builtin_prefetch(...) ((void)0)
 #endif

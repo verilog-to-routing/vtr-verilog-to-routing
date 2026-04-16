@@ -75,8 +75,7 @@ inline e_rr_type get_rr_type(const std::string& type_name) {
     } else if (type_name == "MUX") {
         return e_rr_type::MUX;
     } else {
-        //VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid RR type name: %s\n", type_name.c_str());
-        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, "Invalid RR type name: %s\n", type_name.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid RR type name: %s\n", type_name.c_str());
         return e_rr_type::NUM_RR_TYPES;
     }
 }
