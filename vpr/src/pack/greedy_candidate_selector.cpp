@@ -686,10 +686,10 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
                                             cluster_legalizer,
                                             attraction_groups);
     } else {
-        add_cluster_molecule_candidates(cluster_gain_stats,
-                                        cluster_id,
-                                        cluster_legalizer,
-                                        attraction_groups);
+        add_general_cluster_molecule_candidates(cluster_gain_stats,
+                                                cluster_id,
+                                                cluster_legalizer,
+                                                attraction_groups);
     }
 
     /* Grab highest gain molecule */
@@ -742,7 +742,7 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
     return best_molecule;
 }
 
-void GreedyCandidateSelector::add_cluster_molecule_candidates(
+void GreedyCandidateSelector::add_general_cluster_molecule_candidates(
     ClusterGainStats& cluster_gain_stats,
     LegalizationClusterId legalization_cluster_id,
     const ClusterLegalizer& cluster_legalizer,

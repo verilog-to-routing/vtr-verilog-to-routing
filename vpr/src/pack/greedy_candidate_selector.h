@@ -471,7 +471,7 @@ class GreedyCandidateSelector {
      *        progressively by connectivity and timing, transitive connections,
      *        high-fanout nets, and attraction groups.
      */
-    void add_cluster_molecule_candidates(
+    void add_general_cluster_molecule_candidates(
         ClusterGainStats& cluster_gain_stats,
         LegalizationClusterId legalization_cluster_id,
         const ClusterLegalizer& cluster_legalizer,
