@@ -15,7 +15,7 @@ def restore_outputs_from_blif(original_blif_path, output_blif_path):
     Restore the .outputs declaration from original BLIF to output BLIF.
     This is needed because ABC's write_hie command may strip outputs that
     only feed blackbox inputs.
-    
+
     Arguments
     ---------
         original_blif_path : Path
@@ -23,43 +23,108 @@ def restore_outputs_from_blif(original_blif_path, output_blif_path):
         output_blif_path : Path
             Path to the output BLIF file (may be missing outputs)
     """
-    # Read the original BLIF to extract outputs declaration
-    outputs_line = None
+    # Read the original BLIF to extract full .outputs declaration block
+    outputs_block = []
     original_model_name = None
-    with open(original_blif_path, 'r') as f:
-        for line in f:
-            if line.strip().startswith('.model'):
-                original_model_name = line.split()[1] if len(line.split()) > 1 else None
-            if line.strip().startswith('.outputs') and original_model_name:
-                outputs_line = line
-                break
-    
-    if not outputs_line:
+    with open(original_blif_path, "r") as f:
+        lines = f.readlines()
+
+    i = 0
+    in_main_model = False
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        if stripped.startswith(".model"):
+            tokens = stripped.split()
+            if original_model_name is None:
+                original_model_name = tokens[1] if len(tokens) > 1 else None
+                in_main_model = True
+            else:
+                in_main_model = False
+
+        if in_main_model and stripped.startswith(".end"):
+            in_main_model = False
+
+        if in_main_model and stripped.startswith(".outputs") and original_model_name:
+            outputs_block.append(line if line.endswith("\n") else line + "\n")
+            while line.rstrip().endswith("\\") and i + 1 < len(lines):
+                i += 1
+                line = lines[i]
+                outputs_block.append(line if line.endswith("\n") else line + "\n")
+            break
+
+        i += 1
+
+    if not outputs_block:
         return  # No outputs found in original, nothing to restore
-    
-    # Read the output BLIF and restore the outputs declaration in the main model only
+
+    # Read the output BLIF and restore the .outputs block in the main model only
+    # when that .outputs is empty. If outputs are already present, leave the file
+    # untouched to avoid reformatting valid multiline output lists.
     lines = []
     in_main_model = False
-    model_found = False
-    with open(output_blif_path, 'r') as f:
-        for line in f:
-            # Track which model we're in
-            if line.strip().startswith('.model'):
-                model_name = line.split()[1] if len(line.split()) > 1 else None
-                in_main_model = (model_name == original_model_name)
-                model_found = in_main_model
-                lines.append(line)
-            elif line.strip().startswith('.outputs') and in_main_model:
-                # Replace only the first .outputs in the main model
-                lines.append(outputs_line if outputs_line.endswith('\n') else outputs_line + '\n')
-                in_main_model = False  # Only replace once
-            else:
-                lines.append(line)
-    
-    # Write back the modified BLIF
-    with open(output_blif_path, 'w') as f:
-        f.writelines(lines)
+    replaced_outputs = False
+    skip_continuations = False
 
+    with open(output_blif_path, "r") as f:
+        out_lines = f.readlines()
+
+    needs_restore = False
+    in_main_model_probe = False
+    for line in out_lines:
+        stripped = line.strip()
+        if stripped.startswith(".model"):
+            tokens = stripped.split()
+            model_name = tokens[1] if len(tokens) > 1 else None
+            in_main_model_probe = model_name == original_model_name
+            continue
+
+        if in_main_model_probe and stripped.startswith(".end"):
+            in_main_model_probe = False
+            continue
+
+        if in_main_model_probe and stripped.startswith(".outputs"):
+            needs_restore = len(stripped.split()) <= 1
+            break
+
+    if not needs_restore:
+        return
+
+    for line in out_lines:
+        stripped = line.strip()
+
+        if stripped.startswith(".model"):
+            tokens = stripped.split()
+            model_name = tokens[1] if len(tokens) > 1 else None
+            in_main_model = model_name == original_model_name
+            lines.append(line)
+            skip_continuations = False
+            continue
+
+        if in_main_model and stripped.startswith(".end"):
+            in_main_model = False
+            lines.append(line)
+            skip_continuations = False
+            continue
+
+        if skip_continuations:
+            # Skip old .outputs continuation tokens until the next BLIF
+            # directive. This avoids leaving dangling output tokens.
+            if not stripped.startswith("."):
+                continue
+            skip_continuations = False
+
+        if stripped.startswith(".outputs") and in_main_model and not replaced_outputs:
+            lines.extend(outputs_block)
+            replaced_outputs = True
+            skip_continuations = True
+            continue
+
+        lines.append(line)
+
+    # Write back the modified BLIF
+    with open(output_blif_path, "w") as f:
+        f.writelines(lines)
 
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -146,9 +211,13 @@ def run(
         use_old_latches_restoration_script,
     ) = parse_abc_args(abc_args)
 
-    lut_size = determine_lut_size(str(architecture_file)) if lut_size is None else lut_size
+    lut_size = (
+        determine_lut_size(str(architecture_file)) if lut_size is None else lut_size
+    )
 
-    populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir)
+    populate_clock_list(
+        circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir
+    )
 
     abc_exec = str(paths.abc_exe_path) if abc_exec is None else abc_exec
     abc_rc = str(paths.abc_rc_path) if abc_rc is None else abc_rc
@@ -324,10 +393,12 @@ def run(
         log_filename="restore_latch" + str(i) + ".out",
         indent_depth=1,
     )
-    
+
     # Restore outputs that may have been stripped by ABC
-    restore_outputs_from_blif(temp_dir / pre_abc_blif.name, temp_dir / output_netlist.name)
-    
+    restore_outputs_from_blif(
+        temp_dir / pre_abc_blif.name, temp_dir / output_netlist.name
+    )
+
     if not keep_intermediate_files:
         for file in temp_dir.iterdir():
             if file.suffix in (".dot", ".v", ".rc"):
@@ -366,10 +437,18 @@ def parse_abc_args(abc_args):
             abc_run_args += ["--" + arg, str(value)]
         else:
             pass
-    return abc_args, abc_flow_type, lut_size, abc_run_args, use_old_latches_restoration_script
+    return (
+        abc_args,
+        abc_flow_type,
+        lut_size,
+        abc_run_args,
+        use_old_latches_restoration_script,
+    )
 
 
-def populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir):
+def populate_clock_list(
+    circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir
+):
     """
     function to populate the clock list
     """
@@ -433,7 +512,11 @@ def run_lec(
     if abc_exec is None:
         abc_exec = str(paths.abc_exe_path)
 
-        abc_script = ("dsec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
+        abc_script = (
+            "dsec {ref} {imp}".format(
+                ref=reference_netlist, imp=implementation_netlist
+            ),
+        )
         abc_script = "; ".join(abc_script)
 
     cmd = [abc_exec, "-c", abc_script]
@@ -445,7 +528,9 @@ def run_lec(
     # Check if ABC's LEC engine passed
     lec_passed, errored = check_abc_lec_status(output)
     if errored:
-        abc_script = ("cec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
+        abc_script = (
+            "cec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),
+        )
         abc_script = "; ".join(abc_script)
         cmd = [abc_exec, "-c", abc_script]
         output, _ = command_runner.run_system_command(
