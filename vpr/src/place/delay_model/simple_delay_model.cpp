@@ -1,6 +1,6 @@
 
 #include "simple_delay_model.h"
-#include <utility>
+#include <tuple>
 #include "device_grid.h"
 #include "globals.h"
 #include "router_lookahead_interposer.h"
@@ -60,11 +60,10 @@ float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pi
 
     int from_tile_idx = grid.get_physical_type(from_loc)->index;
 
-    float interposer_delay = 0;
+    float interposer_delay = 0.f;
     if (interposer_lookahead_) {
         VTR_ASSERT_SAFE(grid.has_interposer_cuts());
-        std::pair<float, float> interposer_costs = interposer_lookahead_->get_interposer_lookahead_cost(from_loc, to_loc);
-        interposer_delay = interposer_costs.first;
+        std::tie(interposer_delay, std::ignore) = interposer_lookahead_->get_interposer_lookahead_cost(from_loc, to_loc);
     }
     return delays_[from_tile_idx][from_loc.layer_num][to_loc.layer_num][delta_x][delta_y] + interposer_delay;
 }
