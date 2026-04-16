@@ -10,6 +10,107 @@ from vtr import paths
 from vtr.error import InspectError
 
 
+def _read_text_lines(file_path):
+    with open(file_path, "r", encoding="utf-8") as file_obj:
+        return file_obj.readlines()
+
+
+def _extract_top_model_outputs(lines):
+    outputs_block = []
+    model_name = None
+    in_top_model = False
+    index = 0
+
+    while index < len(lines):
+        line = lines[index]
+        stripped = line.strip()
+
+        if stripped.startswith(".model"):
+            tokens = stripped.split()
+            if model_name is None:
+                model_name = tokens[1] if len(tokens) > 1 else None
+                in_top_model = True
+            else:
+                in_top_model = False
+
+        if in_top_model and stripped.startswith(".end"):
+            in_top_model = False
+
+        if in_top_model and stripped.startswith(".outputs") and model_name:
+            outputs_block.append(line if line.endswith("\n") else line + "\n")
+            while line.rstrip().endswith("\\") and index + 1 < len(lines):
+                index += 1
+                line = lines[index]
+                outputs_block.append(line if line.endswith("\n") else line + "\n")
+            break
+
+        index += 1
+
+    return model_name, outputs_block
+
+
+def _top_model_outputs_needs_restore(lines, model_name):
+    in_top_model = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(".model"):
+            tokens = stripped.split()
+            current_name = tokens[1] if len(tokens) > 1 else None
+            in_top_model = current_name == model_name
+            continue
+
+        if in_top_model and stripped.startswith(".end"):
+            in_top_model = False
+            continue
+
+        if in_top_model and stripped.startswith(".outputs"):
+            return len(stripped.split()) <= 1
+
+    return False
+
+
+def _replace_top_model_outputs(lines, model_name, outputs_block):
+    updated_lines = []
+    in_top_model = False
+    replaced_outputs = False
+    skip_continuations = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith(".model"):
+            tokens = stripped.split()
+            current_name = tokens[1] if len(tokens) > 1 else None
+            in_top_model = current_name == model_name
+            updated_lines.append(line)
+            skip_continuations = False
+            continue
+
+        if in_top_model and stripped.startswith(".end"):
+            in_top_model = False
+            updated_lines.append(line)
+            skip_continuations = False
+            continue
+
+        if skip_continuations:
+            # Skip old .outputs continuation tokens until the next BLIF
+            # directive. This avoids leaving dangling output tokens.
+            if not stripped.startswith("."):
+                continue
+            skip_continuations = False
+
+        if stripped.startswith(".outputs") and in_top_model and not replaced_outputs:
+            updated_lines.extend(outputs_block)
+            replaced_outputs = True
+            skip_continuations = True
+            continue
+
+        updated_lines.append(line)
+
+    return updated_lines
+
+
 def restore_outputs_from_blif(original_blif_path, output_blif_path):
     """
     Restore the .outputs declaration from original BLIF to output BLIF.
@@ -23,37 +124,8 @@ def restore_outputs_from_blif(original_blif_path, output_blif_path):
         output_blif_path : Path
             Path to the output BLIF file (may be missing outputs)
     """
-    # Read the original BLIF to extract full .outputs declaration block
-    outputs_block = []
-    original_model_name = None
-    with open(original_blif_path, "r") as f:
-        lines = f.readlines()
-
-    i = 0
-    in_main_model = False
-    while i < len(lines):
-        line = lines[i]
-        stripped = line.strip()
-        if stripped.startswith(".model"):
-            tokens = stripped.split()
-            if original_model_name is None:
-                original_model_name = tokens[1] if len(tokens) > 1 else None
-                in_main_model = True
-            else:
-                in_main_model = False
-
-        if in_main_model and stripped.startswith(".end"):
-            in_main_model = False
-
-        if in_main_model and stripped.startswith(".outputs") and original_model_name:
-            outputs_block.append(line if line.endswith("\n") else line + "\n")
-            while line.rstrip().endswith("\\") and i + 1 < len(lines):
-                i += 1
-                line = lines[i]
-                outputs_block.append(line if line.endswith("\n") else line + "\n")
-            break
-
-        i += 1
+    source_lines = _read_text_lines(original_blif_path)
+    original_model_name, outputs_block = _extract_top_model_outputs(source_lines)
 
     if not outputs_block:
         return  # No outputs found in original, nothing to restore
@@ -61,70 +133,17 @@ def restore_outputs_from_blif(original_blif_path, output_blif_path):
     # Read the output BLIF and restore the .outputs block in the main model only
     # when that .outputs is empty. If outputs are already present, leave the file
     # untouched to avoid reformatting valid multiline output lists.
-    lines = []
-    in_main_model = False
-    replaced_outputs = False
-    skip_continuations = False
-
-    with open(output_blif_path, "r") as f:
-        out_lines = f.readlines()
-
-    needs_restore = False
-    in_main_model_probe = False
-    for line in out_lines:
-        stripped = line.strip()
-        if stripped.startswith(".model"):
-            tokens = stripped.split()
-            model_name = tokens[1] if len(tokens) > 1 else None
-            in_main_model_probe = model_name == original_model_name
-            continue
-
-        if in_main_model_probe and stripped.startswith(".end"):
-            in_main_model_probe = False
-            continue
-
-        if in_main_model_probe and stripped.startswith(".outputs"):
-            needs_restore = len(stripped.split()) <= 1
-            break
-
-    if not needs_restore:
+    output_lines = _read_text_lines(output_blif_path)
+    if not _top_model_outputs_needs_restore(output_lines, original_model_name):
         return
 
-    for line in out_lines:
-        stripped = line.strip()
-
-        if stripped.startswith(".model"):
-            tokens = stripped.split()
-            model_name = tokens[1] if len(tokens) > 1 else None
-            in_main_model = model_name == original_model_name
-            lines.append(line)
-            skip_continuations = False
-            continue
-
-        if in_main_model and stripped.startswith(".end"):
-            in_main_model = False
-            lines.append(line)
-            skip_continuations = False
-            continue
-
-        if skip_continuations:
-            # Skip old .outputs continuation tokens until the next BLIF
-            # directive. This avoids leaving dangling output tokens.
-            if not stripped.startswith("."):
-                continue
-            skip_continuations = False
-
-        if stripped.startswith(".outputs") and in_main_model and not replaced_outputs:
-            lines.extend(outputs_block)
-            replaced_outputs = True
-            skip_continuations = True
-            continue
-
-        lines.append(line)
+    updated_lines = _replace_top_model_outputs(
+        output_lines, original_model_name, outputs_block
+    )
 
     # Write back the modified BLIF
-    with open(output_blif_path, "w") as f:
-        f.writelines(lines)
+    with open(output_blif_path, "w", encoding="utf-8") as file_obj:
+        file_obj.writelines(updated_lines)
 
 
 # pylint: disable=too-many-arguments, too-many-locals
