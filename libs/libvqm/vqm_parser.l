@@ -22,7 +22,9 @@
 #include "vqm_parser.gen.h"
 #include "vqm_common.h"
 
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
+// Windows does not provide POSIX isatty() in <unistd.h>.
+// Map isatty to the Windows equivalent _isatty() from <io.h>.
 #include <io.h>
 #define isatty _isatty
 #else

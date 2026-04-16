@@ -4,13 +4,15 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
-#ifndef _WIN32
-    #include <sys/mman.h>
-#endif
 
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
+// Windows does not provide POSIX mmap() or unistd.h.
+// Use Windows-specific headers instead. Note that actual file mapping is
+// handled via the KJ filesystem abstraction.
 #include <io.h>
 #else
+// POSIX systems provide mmap() and unistd.h for file access and mapping.
+#include <sys/mman.h>
 #include <unistd.h>
 #endif
 

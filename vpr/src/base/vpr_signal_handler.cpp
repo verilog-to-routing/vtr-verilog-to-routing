@@ -38,9 +38,12 @@ void checkpoint();
  * @param msg Message string to write.
  */
 static inline void safe_write(const char* msg) {
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
+    // Windows does not support POSIX write() or STDERR_FILENO.
+    // Use fwrite() as a portable fallback for writing to stderr.
     fwrite(msg, 1, strlen(msg), stderr);
 #else
+    // Use async-signal-safe POSIX write() when available.
     (void)!write(STDERR_FILENO, msg, strlen(msg));
 #endif
 }

@@ -23,10 +23,11 @@
 #include <string>
 #include <vector>
 
-// MSVC does not support GCC-style __builtin_prefetch.
-// __builtin_prefetch is only a performance hint, so it is safe to define
-// it as a no-op when compiling with MSVC.
-#ifdef _MSC_VER
+#ifdef _MSC_VER // MSVC
+// MSVC does not support GCC __builtin_prefetch.
+// Without this guard, GCC-specific constructs can cause syntax errors
+// (e.g., in multi_queue_d_ary_heap.tpp). Since prefetch is only a
+// performance hint, it is safe to make it a no-op and ignore attributes.
 #define __builtin_prefetch(...) ((void)0)
 #endif
 

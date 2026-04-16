@@ -18,7 +18,9 @@
 
 #include "fasm_utils.h"
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER // MSVC
+// MSVC does not provide GCC-style __builtin_popcount.
+// Map it to the equivalent MSVC intrinsic __popcnt from <intrin.h>.
 #include <intrin.h>
 
 inline int __builtin_popcount(unsigned int x) {
