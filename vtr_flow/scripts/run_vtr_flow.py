@@ -373,7 +373,8 @@ def vtr_command_argparser(prog=None):
         "-synthesis_params",
         default=None,
         dest="synthesis_params",
-        help="Specify additional synthesis parameters directly appended to the parmys command in the default flow"
+        help="Specify additional synthesis parameters"
+        + " directly appended to the parmys command in the default flow"
         + " (e.g., -mults_ratio 0.5), or used to substitute the 'YYY' placeholder"
         + " in a custom Yosys script.",
     )
