@@ -264,6 +264,9 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     if (cluster_gain_stats.is_memory) {
         cluster_gain_stats.logical_ram_id = ram_mapper_.group_id_of(seed_atom);
         cluster_gain_stats.physical_ram_id = ram_mapper_.physical_group_id_of(seed_atom);
+
+        // Set the candidate propose limit to number of atoms in the physical RAM group.
+        cluster_gain_stats.candidates_propose_limit = ram_mapper_.physical_ram_group(cluster_gain_stats.physical_ram_id).atoms.size();
         VTR_LOGV(log_verbosity_ > 2, "Cluster of seed atom %zu is a memory cluster in logical RAM group %zu, physical RAM group %zu.\n",
                  size_t(seed_atom), size_t(cluster_gain_stats.logical_ram_id), size_t(cluster_gain_stats.physical_ram_id));
     }
@@ -824,6 +827,8 @@ void GreedyCandidateSelector::add_ram_cluster_molecule_candidates(
         return;
     cluster_gain_stats.initial_search_for_feasible_blocks = false;
     const PhysicalRamGroup& phys_group = ram_mapper_.physical_ram_group(cluster_gain_stats.physical_ram_id);
+    VTR_ASSERT_DEBUG_MSG(cluster_gain_stats.candidates_propose_limit == phys_group.atoms.size(),
+                         "The limit of candidates to be proposed should be same as the number of atoms in the physical RAM group.");
     for (AtomBlockId atom_id : phys_group.atoms) {
         if (cluster_legalizer.is_atom_clustered(atom_id))
             continue;
