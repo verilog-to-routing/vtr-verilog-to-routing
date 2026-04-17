@@ -1,6 +1,5 @@
-set(QT_MIGRATION_FAST_BUILD ON)
 if (QT_MIGRATION_FAST_BUILD)
-    message("WARNING: skipping fasm, route_diag, vqm2blif to speed up build process withing Qt-migration task")
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip fasm, route_diag, vqm2blif build")
 else()
     add_subdirectory(fasm)
     add_subdirectory(route_diag)

@@ -94,7 +94,7 @@ option(VPR_ENABLE_NOC_SAT_ROUTING "Enable NoC SAT routing." OFF)
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
 if(QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD: force WITH_ABC=OFF")
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: force WITH_ABC=OFF")
     option(WITH_ABC "Enable building abc" OFF)
 else()
     option(WITH_ABC "Enable building abc" ON)
@@ -108,14 +108,14 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
 if(QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD: force WITH_PARMYS=OFF")
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: force WITH_PARMYS=OFF")
     option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" OFF)
 else()
     option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
 endif()
 
 if(QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD: force WITH_PARMYS=OFF")
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: force WITH_PARMYS=OFF")
     option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" OFF)
 else()
     if(FORCE_SLANG_SYSTEMVERILOG_DISABLE)
@@ -456,7 +456,7 @@ add_custom_target(get_flat_placements
 # Unit Testing
 #
 if(QT_MIGRATION_FAST_BUILD)
-
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip VTR tests build")
 else()
     enable_testing()
 endif()

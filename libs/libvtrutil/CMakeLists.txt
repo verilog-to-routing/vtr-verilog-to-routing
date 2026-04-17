@@ -142,7 +142,7 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libvtrutil)
 # Unit Tests
 #
 if(QT_MIGRATION_FAST_BUILD)
-
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip vtrutils tests build")
 else()
     file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
     add_executable(test_vtrutil ${TEST_SOURCES})

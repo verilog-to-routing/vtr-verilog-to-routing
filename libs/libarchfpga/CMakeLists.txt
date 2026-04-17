@@ -63,9 +63,8 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libarchfpga)
 # 
 # Unit Tests
 #
-set(QT_MIGRATION_FAST_BUILD ON)
 if (QT_MIGRATION_FAST_BUILD)
-    message("WARNING: skipping test_archfpga to speed up build process withing Qt-migration task")
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skipping test_archfpga build")
 else()
     file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
     add_executable(test_archfpga ${TEST_SOURCES})

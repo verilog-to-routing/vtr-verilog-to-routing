@@ -267,7 +267,7 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libvpr)
 # Unit Tests
 #
 if (QT_MIGRATION_FAST_BUILD)
-
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip VPR tests build")
 else()
     file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
     add_executable(test_vpr ${TEST_SOURCES})
