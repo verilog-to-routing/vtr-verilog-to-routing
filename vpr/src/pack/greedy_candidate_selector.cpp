@@ -820,12 +820,23 @@ void GreedyCandidateSelector::add_ram_cluster_molecule_candidates(
     LegalizationClusterId legalization_cluster_id,
     const ClusterLegalizer& cluster_legalizer,
     AttractionInfo& attraction_groups) {
-    if (cluster_gain_stats.initial_search_for_feasible_blocks) {
-        cluster_gain_stats.initial_search_for_feasible_blocks = false;
-        add_cluster_molecule_candidates_by_ram_group(cluster_gain_stats,
-                                                     legalization_cluster_id,
-                                                     cluster_legalizer,
-                                                     attraction_groups);
+    if (!cluster_gain_stats.initial_search_for_feasible_blocks)
+        return;
+    cluster_gain_stats.initial_search_for_feasible_blocks = false;
+    const PhysicalRamGroup& phys_group = ram_mapper_.physical_ram_group(cluster_gain_stats.physical_ram_id);
+    for (AtomBlockId atom_id : phys_group.atoms) {
+        if (cluster_legalizer.is_atom_clustered(atom_id))
+            continue;
+        PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
+        if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+            add_molecule_to_pb_stats_candidates(molecule_id,
+                                                cluster_gain_stats,
+                                                cluster_legalizer.get_cluster_type(legalization_cluster_id),
+                                                attraction_groups,
+                                                prepacker_,
+                                                atom_netlist_,
+                                                appack_ctx_);
+        }
     }
 }
 
@@ -916,34 +927,6 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         }
     }
     cluster_gain_stats.tie_break_high_fanout_net = AtomNetId::INVALID(); /* Mark off that this high fanout net has been considered */
-}
-
-void GreedyCandidateSelector::add_cluster_molecule_candidates_by_ram_group(
-    ClusterGainStats& cluster_gain_stats,
-    LegalizationClusterId legalization_cluster_id,
-    const ClusterLegalizer& cluster_legalizer,
-    AttractionInfo& attraction_groups) {
-    // TODO: Atoms are offered in the order they appear in the physical RAM group,
-    //       which determines the order they are packed into the cluster. Note that
-    //       changing this order will not affect which atoms end up in the cluster
-    //       (that is fixed by the RAM mapper), only the order they are packed in.
-    //       Investigate whether offering them in a more meaningful order (e.g. by
-    //       timing criticality) would improve packing quality within the RAM cluster.
-    const PhysicalRamGroup& phys_group = ram_mapper_.physical_ram_group(cluster_gain_stats.physical_ram_id);
-    for (AtomBlockId atom_id : phys_group.atoms) {
-        if (cluster_legalizer.is_atom_clustered(atom_id))
-            continue;
-        PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
-        if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
-            add_molecule_to_pb_stats_candidates(molecule_id,
-                                                cluster_gain_stats,
-                                                cluster_legalizer.get_cluster_type(legalization_cluster_id),
-                                                attraction_groups,
-                                                prepacker_,
-                                                atom_netlist_,
-                                                appack_ctx_);
-        }
-    }
 }
 
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_group(
