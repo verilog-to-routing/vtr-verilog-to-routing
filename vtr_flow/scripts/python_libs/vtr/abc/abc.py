@@ -137,9 +137,7 @@ def restore_outputs_from_blif(original_blif_path, output_blif_path):
     if not _top_model_outputs_needs_restore(output_lines, original_model_name):
         return
 
-    updated_lines = _replace_top_model_outputs(
-        output_lines, original_model_name, outputs_block
-    )
+    updated_lines = _replace_top_model_outputs(output_lines, original_model_name, outputs_block)
 
     # Write back the modified BLIF
     with open(output_blif_path, "w", encoding="utf-8") as file_obj:
@@ -230,13 +228,9 @@ def run(
         use_old_latches_restoration_script,
     ) = parse_abc_args(abc_args)
 
-    lut_size = (
-        determine_lut_size(str(architecture_file)) if lut_size is None else lut_size
-    )
+    lut_size = determine_lut_size(str(architecture_file)) if lut_size is None else lut_size
 
-    populate_clock_list(
-        circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir
-    )
+    populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir)
 
     abc_exec = str(paths.abc_exe_path) if abc_exec is None else abc_exec
     abc_rc = str(paths.abc_rc_path) if abc_rc is None else abc_rc
@@ -414,9 +408,7 @@ def run(
     )
 
     # Restore outputs that may have been stripped by ABC
-    restore_outputs_from_blif(
-        temp_dir / pre_abc_blif.name, temp_dir / output_netlist.name
-    )
+    restore_outputs_from_blif(temp_dir / pre_abc_blif.name, temp_dir / output_netlist.name)
 
     if not keep_intermediate_files:
         for file in temp_dir.iterdir():
@@ -465,9 +457,7 @@ def parse_abc_args(abc_args):
     )
 
 
-def populate_clock_list(
-    circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir
-):
+def populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir):
     """
     function to populate the clock list
     """
@@ -531,11 +521,7 @@ def run_lec(
     if abc_exec is None:
         abc_exec = str(paths.abc_exe_path)
 
-        abc_script = (
-            "dsec {ref} {imp}".format(
-                ref=reference_netlist, imp=implementation_netlist
-            ),
-        )
+        abc_script = ("dsec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
         abc_script = "; ".join(abc_script)
 
     cmd = [abc_exec, "-c", abc_script]
@@ -547,9 +533,7 @@ def run_lec(
     # Check if ABC's LEC engine passed
     lec_passed, errored = check_abc_lec_status(output)
     if errored:
-        abc_script = (
-            "cec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),
-        )
+        abc_script = ("cec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
         abc_script = "; ".join(abc_script)
         cmd = [abc_exec, "-c", abc_script]
         output, _ = command_runner.run_system_command(
