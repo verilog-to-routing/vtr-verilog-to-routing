@@ -479,7 +479,13 @@ class GreedyCandidateSelector {
 
     /**
      * @brief Populate the feasible blocks list for a RAM cluster by offering
-     *        only atoms from the same physical RAM group as the cluster seed.
+     *        all unclustered atoms from the same physical RAM group as the
+     *        cluster seed.
+     *        TODO: Although this function adds all unclustered atoms in the
+     *        physical RAM group to feasible blocks list, the caller (get_next_candidate_for_cluster)
+     *        still uses candidate propose limit. We can hoist the RAM clustering
+     *        path and create their clusters in a similar way to "flat-recon" without
+     *        any propose limit.
      */
     void add_ram_cluster_molecule_candidates(
         ClusterGainStats& cluster_gain_stats,
@@ -546,17 +552,6 @@ class GreedyCandidateSelector {
      * candidates will vary each time you call this function.
      */
     void add_cluster_molecule_candidates_by_attraction_group(
-        ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
-        const ClusterLegalizer& cluster_legalizer,
-        AttractionInfo& attraction_groups);
-
-    /**
-     * @brief Add molecules from the same physical RAM group as candidates for
-     *        the given RAM cluster. Molecules in the same physical RAM group are
-     *        pre-determined by the RAM mapper to be packable together.
-     */
-    void add_cluster_molecule_candidates_by_ram_group(
         ClusterGainStats& cluster_gain_stats,
         LegalizationClusterId legalization_cluster_id,
         const ClusterLegalizer& cluster_legalizer,
