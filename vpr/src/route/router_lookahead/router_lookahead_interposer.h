@@ -35,7 +35,8 @@ class InterposerLookahead {
     std::pair<float, float> get_interposer_lookahead_cost(RRNodeId from_node, RRNodeId to_node) const;
 
     /**
-     * @brief Estimates the interposer delay between two locations.
+     * @brief Estimates the interposer delay between two locations in VPRs coordinate system.
+     * Location could either refer to a switchblock location or the owning tile's location.
      * @param loc_a Starting location.
      * @param loc_b Final location.
      * @return {float, float} The estimated interposer delay and congestion costs going from loc_a to loc_b

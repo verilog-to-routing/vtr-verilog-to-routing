@@ -93,8 +93,8 @@ std::pair<float, float> InterposerLookahead::get_interposer_lookahead_cost(RRNod
 }
 
 std::pair<float, float> InterposerLookahead::get_interposer_lookahead_cost(t_physical_tile_loc from_loc, t_physical_tile_loc to_loc) const {
-    size_t to_die_index = static_cast<size_t>(grid_.get_loc_die_id(from_loc));
-    size_t from_die_index = static_cast<size_t>(grid_.get_loc_die_id(to_loc));
+    size_t from_die_index = static_cast<size_t>(grid_.get_loc_die_id(from_loc));
+    size_t to_die_index = static_cast<size_t>(grid_.get_loc_die_id(to_loc));
 
     float interposer_delay = die_to_die_delay_matrix_[from_die_index][to_die_index];
     float interposer_cong = die_to_die_cong_matrix_[from_die_index][to_die_index];
