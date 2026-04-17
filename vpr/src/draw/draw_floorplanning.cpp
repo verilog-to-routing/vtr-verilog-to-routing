@@ -271,7 +271,6 @@ void highlight_selected_partition(QWidget* widget) {
     application->refresh_drawing();
 }
 
-
 QWidget* setup_floorplanning_legend(QWidget* content_tree) {
     QTreeWidget* tree = qobject_cast<QTreeWidget*>(content_tree);
     if (!tree) return content_tree;

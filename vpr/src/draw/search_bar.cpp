@@ -430,7 +430,6 @@ void search_type_changed(QComboBox* self, ezgl::application* app) {
  * @return false | if the string pointed to does not contain key
  */
 
-
 /**
  * @brief Turns on autocomplete
  *

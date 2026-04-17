@@ -28,7 +28,6 @@ void highlight_nets(std::string net_name);
 
 void highlight_atom_block(AtomBlockId block_id);
 
-
 //Function to manage entry completions when search type is changed
 void search_type_changed(QComboBox* /*self*/, ezgl::application* app);
 
@@ -40,7 +39,6 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 
 //Turns on autocomplete/suggestions
 void enable_autocomplete(ezgl::application* app);
-
 
 //Returns current search type
 std::string get_search_type(ezgl::application* app);

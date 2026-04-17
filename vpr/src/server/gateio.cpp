@@ -167,7 +167,7 @@ static void handle_activity_status(ActivityStatus status, std::unique_ptr<Client
 GateIO::GateIO() {
     m_is_running.store(false);
     m_updateTimer.setInterval(SERVER_UPDATE_INTERVAL_MS);
-    QObject::connect(&m_updateTimer, &QTimer::timeout, &m_updateTimer, [](){
+    QObject::connect(&m_updateTimer, &QTimer::timeout, &m_updateTimer, []() {
         server::update(application);
     });
     m_updateTimer.start();

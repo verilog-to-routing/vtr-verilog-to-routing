@@ -144,7 +144,7 @@ ezgl::application::settings settings(":/ezgl/main.ui", "MainWindow", "MainCanvas
 // provide fake argc and argv required for QApplication initialization
 int argc = 1;
 char appName[] = "vpr";
-char* argv[] = { appName, nullptr };
+char* argv[] = {appName, nullptr};
 ezgl::application* application = nullptr;
 
 bool window_mode = false;
@@ -380,7 +380,7 @@ void update_screen(ScreenUpdatePriority priority,
         }
 
         application->run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
-                        act_on_key_press);
+                         act_on_key_press);
 
         if (!draw_state->graphics_commands.empty()) {
             run_graphics_commands(draw_state->graphics_commands);
@@ -663,8 +663,7 @@ bool draw_if_net_highlighted(ParentNetId inet) {
  * At the moment, only does something if user is currently typing in searchBar and
  * hits enter, at which point it runs autocomplete
  */
-void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* key_name)
-{
+void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* key_name) {
     std::string key(key_name);
     QLineEdit* searchBar = app->find_line_edit("TextInput");
     if (!searchBar) {
@@ -1067,50 +1066,50 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     QPushButton* proceed_button = app->find_push_button("ProceedButton");
-    QObject::connect(proceed_button, &QPushButton::clicked, [app](){
-        press_proceed(/*unused*/nullptr, app);
+    QObject::connect(proceed_button, &QPushButton::clicked, [app]() {
+        press_proceed(/*unused*/ nullptr, app);
     });
 
     // Connect press_zoom_fit function to the Zoom-fit button
     QPushButton* zoom_fit_button = app->find_push_button("ZoomFitButton");
-    QObject::connect(zoom_fit_button, &QPushButton::clicked, [app](){
-        press_zoom_fit(/*unused*/nullptr, app);
+    QObject::connect(zoom_fit_button, &QPushButton::clicked, [app]() {
+        press_zoom_fit(/*unused*/ nullptr, app);
     });
 
     // Connect Pause button
     QPushButton* pause_button = app->find_push_button("PauseButton");
-    QObject::connect(pause_button, &QPushButton::clicked, [app](){
-        set_force_pause(/*unused*/nullptr, /*unused*/-1, app);
+    QObject::connect(pause_button, &QPushButton::clicked, [app]() {
+        set_force_pause(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Block Outline checkbox
     QCheckBox* block_outline = app->find_check_box("blockOutline");
-    QObject::connect(block_outline, &QCheckBox::toggled, [app](){
-        set_block_outline(/*unused*/nullptr, /*unused*/-1, app);
+    QObject::connect(block_outline, &QCheckBox::toggled, [app]() {
+        set_block_outline(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Block Text checkbox
     QCheckBox* block_text = app->find_check_box("blockText");
-    QObject::connect(block_text, &QCheckBox::toggled, [app](){
-        set_block_text(/*unused*/nullptr, /*unused*/-1, app);
+    QObject::connect(block_text, &QCheckBox::toggled, [app]() {
+        set_block_text(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Clip Routing Util checkbox
     QCheckBox* clip_routing = app->find_check_box("clipRoutingUtil");
-    QObject::connect(clip_routing, &QCheckBox::toggled, [app](){
-        clip_routing_util(/*unused*/nullptr, /*unused*/-1, app);
+    QObject::connect(clip_routing, &QCheckBox::toggled, [app]() {
+        clip_routing_util(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Debug Button
     QPushButton* debugger = app->find_push_button("debugButton");
-    QObject::connect(debugger, &QPushButton::clicked, [app](){
+    QObject::connect(debugger, &QPushButton::clicked, [app]() {
         draw_debug_window();
     });
 
     // Connect Draw Partitions Checkbox
     QCheckBox* draw_partitions = app->find_check_box("drawPartitions");
-    QObject::connect(draw_partitions, &QCheckBox::toggled, [app](){
-        set_draw_partitions(/*unused*/nullptr, /*unused*/-1, app);
+    QObject::connect(draw_partitions, &QCheckBox::toggled, [app]() {
+        set_draw_partitions(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 }
 

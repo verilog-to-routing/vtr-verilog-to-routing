@@ -30,7 +30,7 @@ typedef enum operator_type_in_expression {
 class DrawDebuggerGlobals {
   public:
     std::vector<std::string> bp_labels; ///holds all breakpoint labels to be displayed in the GUI
-    QWidget* bpGrid;                  ///holds the grid where all the labels are
+    QWidget* bpGrid;                    ///holds the grid where all the labels are
     int bpList_row = -1;                ///keeps track of where to insert the next breakpoint label in the list
     open_windows openWindows;           ///keeps track of all open window (related to breakpoints)
 
@@ -135,27 +135,27 @@ void draw_debug_window() {
         scrollArea->setWidget(draw_debug_glob_vars.bpGrid);
         scrollArea->setMinimumHeight(100);
 
-        ezgl::grid_attach(mainGrid, placerOpts,  0, 0, 3, 1);
-        ezgl::grid_attach(mainGrid, movesLabel,  0, 1, 1, 1);
-        ezgl::grid_attach(mainGrid, movesEntry,  1, 1, 1, 1);
-        ezgl::grid_attach(mainGrid, setM,        2, 1, 1, 1);
-        ezgl::grid_attach(mainGrid, tempsLabel,  0, 2, 1, 1);
-        ezgl::grid_attach(mainGrid, tempsEntry,  1, 2, 1, 1);
-        ezgl::grid_attach(mainGrid, setT,        2, 2, 1, 1);
-        ezgl::grid_attach(mainGrid, blockLabel,  0, 3, 1, 1);
-        ezgl::grid_attach(mainGrid, blockEntry,  1, 3, 1, 1);
-        ezgl::grid_attach(mainGrid, setB,        2, 3, 1, 1);
-        ezgl::grid_attach(mainGrid, routerOpts,  0, 4, 3, 1);
-        ezgl::grid_attach(mainGrid, iterLabel,   0, 5, 1, 1);
-        ezgl::grid_attach(mainGrid, iterEntry,   1, 5, 1, 1);
-        ezgl::grid_attach(mainGrid, setI,        2, 5, 1, 1);
-        ezgl::grid_attach(mainGrid, netLabel,    0, 6, 1, 1);
-        ezgl::grid_attach(mainGrid, netEntry,    1, 6, 1, 1);
-        ezgl::grid_attach(mainGrid, setN,        2, 6, 1, 1);
-        ezgl::grid_attach(mainGrid, bplist,      0, 7, 3, 1);
-        ezgl::grid_attach(mainGrid, scrollArea,  0, 8, 3, 1);
-        ezgl::grid_attach(mainGrid, advanced,    2, 9, 1, 1);
-        ezgl::grid_attach(mainGrid, star,        0, 10, 3, 1);
+        ezgl::grid_attach(mainGrid, placerOpts, 0, 0, 3, 1);
+        ezgl::grid_attach(mainGrid, movesLabel, 0, 1, 1, 1);
+        ezgl::grid_attach(mainGrid, movesEntry, 1, 1, 1, 1);
+        ezgl::grid_attach(mainGrid, setM, 2, 1, 1, 1);
+        ezgl::grid_attach(mainGrid, tempsLabel, 0, 2, 1, 1);
+        ezgl::grid_attach(mainGrid, tempsEntry, 1, 2, 1, 1);
+        ezgl::grid_attach(mainGrid, setT, 2, 2, 1, 1);
+        ezgl::grid_attach(mainGrid, blockLabel, 0, 3, 1, 1);
+        ezgl::grid_attach(mainGrid, blockEntry, 1, 3, 1, 1);
+        ezgl::grid_attach(mainGrid, setB, 2, 3, 1, 1);
+        ezgl::grid_attach(mainGrid, routerOpts, 0, 4, 3, 1);
+        ezgl::grid_attach(mainGrid, iterLabel, 0, 5, 1, 1);
+        ezgl::grid_attach(mainGrid, iterEntry, 1, 5, 1, 1);
+        ezgl::grid_attach(mainGrid, setI, 2, 5, 1, 1);
+        ezgl::grid_attach(mainGrid, netLabel, 0, 6, 1, 1);
+        ezgl::grid_attach(mainGrid, netEntry, 1, 6, 1, 1);
+        ezgl::grid_attach(mainGrid, setN, 2, 6, 1, 1);
+        ezgl::grid_attach(mainGrid, bplist, 0, 7, 3, 1);
+        ezgl::grid_attach(mainGrid, scrollArea, 0, 8, 3, 1);
+        ezgl::grid_attach(mainGrid, advanced, 2, 9, 1, 1);
+        ezgl::grid_attach(mainGrid, star, 0, 10, 3, 1);
 
         QObject::connect(setM, &QPushButton::clicked,
                          [mainGrid]() { set_moves_button_callback(nullptr, mainGrid); });
@@ -199,32 +199,32 @@ void advanced_button_callback() {
         // GtkExpander equivalent: QGroupBox
         auto* expander = new QGroupBox("Variables");
         QWidget* varGrid = ezgl::grid_new();
-        QLabel* pLabel  = new QLabel;
+        QLabel* pLabel = new QLabel;
         pLabel->setTextFormat(Qt::RichText);
         pLabel->setText("<b>Placer Variables:</b>");
-        QLabel* mLabel  = new QLabel("move_num");
-        QLabel* tLabel  = new QLabel("temp_count");
-        QLabel* bLabel  = new QLabel("from_block");
-        QLabel* iLabel  = new QLabel("in_blocks_affected");
+        QLabel* mLabel = new QLabel("move_num");
+        QLabel* tLabel = new QLabel("temp_count");
+        QLabel* bLabel = new QLabel("from_block");
+        QLabel* iLabel = new QLabel("in_blocks_affected");
         QLabel* roLabel = new QLabel;
         roLabel->setTextFormat(Qt::RichText);
         roLabel->setText("<b>Router Variables:</b>");
-        QLabel* rLabel  = new QLabel("router_iter");
-        QLabel* nLabel  = new QLabel("route_net_id");
-        ezgl::widget_set_halign(mLabel,  Qt::AlignLeft);
-        ezgl::widget_set_halign(tLabel,  Qt::AlignLeft);
-        ezgl::widget_set_halign(bLabel,  Qt::AlignLeft);
-        ezgl::widget_set_halign(iLabel,  Qt::AlignLeft);
-        ezgl::widget_set_halign(rLabel,  Qt::AlignLeft);
-        ezgl::widget_set_halign(nLabel,  Qt::AlignLeft);
-        ezgl::grid_attach(varGrid, pLabel,  0, 0, 1, 1);
-        ezgl::grid_attach(varGrid, mLabel,  0, 1, 1, 1);
-        ezgl::grid_attach(varGrid, tLabel,  0, 2, 1, 1);
-        ezgl::grid_attach(varGrid, bLabel,  0, 3, 1, 1);
-        ezgl::grid_attach(varGrid, iLabel,  0, 4, 1, 1);
+        QLabel* rLabel = new QLabel("router_iter");
+        QLabel* nLabel = new QLabel("route_net_id");
+        ezgl::widget_set_halign(mLabel, Qt::AlignLeft);
+        ezgl::widget_set_halign(tLabel, Qt::AlignLeft);
+        ezgl::widget_set_halign(bLabel, Qt::AlignLeft);
+        ezgl::widget_set_halign(iLabel, Qt::AlignLeft);
+        ezgl::widget_set_halign(rLabel, Qt::AlignLeft);
+        ezgl::widget_set_halign(nLabel, Qt::AlignLeft);
+        ezgl::grid_attach(varGrid, pLabel, 0, 0, 1, 1);
+        ezgl::grid_attach(varGrid, mLabel, 0, 1, 1, 1);
+        ezgl::grid_attach(varGrid, tLabel, 0, 2, 1, 1);
+        ezgl::grid_attach(varGrid, bLabel, 0, 3, 1, 1);
+        ezgl::grid_attach(varGrid, iLabel, 0, 4, 1, 1);
         ezgl::grid_attach(varGrid, roLabel, 0, 5, 1, 1);
-        ezgl::grid_attach(varGrid, rLabel,  0, 6, 1, 1);
-        ezgl::grid_attach(varGrid, nLabel,  0, 7, 1, 1);
+        ezgl::grid_attach(varGrid, rLabel, 0, 6, 1, 1);
+        ezgl::grid_attach(varGrid, nLabel, 0, 7, 1, 1);
         expander->layout()->addWidget(varGrid);
         ezgl::widget_set_halign(expander, Qt::AlignLeft);
 
@@ -240,11 +240,11 @@ void advanced_button_callback() {
         ezgl::widget_set_margin_top(expander, 20);
 
         QWidget* advancedGrid = ezgl::grid_new();
-        ezgl::grid_attach(advancedGrid, instructions,    1, 0, 2, 1);
+        ezgl::grid_attach(advancedGrid, instructions, 1, 0, 2, 1);
         ezgl::grid_attach(advancedGrid, expression_here, 1, 1, 1, 1);
-        ezgl::grid_attach(advancedGrid, entry,           1, 2, 1, 1);
-        ezgl::grid_attach(advancedGrid, set,             2, 2, 1, 1);
-        ezgl::grid_attach(advancedGrid, expander,        0, 0, 1, 1);
+        ezgl::grid_attach(advancedGrid, entry, 1, 2, 1, 1);
+        ezgl::grid_attach(advancedGrid, set, 2, 2, 1, 1);
+        ezgl::grid_attach(advancedGrid, expander, 0, 0, 1, 1);
 
         QObject::connect(set, &QPushButton::clicked,
                          [advancedGrid]() { set_expression_button_callback(nullptr, advancedGrid); });
@@ -518,19 +518,19 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     ezgl::widget_set_halign(net_info, Qt::AlignLeft);
 
     if (in_placer) {
-        ezgl::grid_attach(info_grid, m,          0, 0, 1, 1);
-        ezgl::grid_attach(info_grid, t,          0, 1, 1, 1);
-        ezgl::grid_attach(info_grid, i,          2, 0, 1, 1);
-        ezgl::grid_attach(info_grid, b,          2, 1, 1, 1);
-        ezgl::grid_attach(info_grid, move_info,  1, 0, 1, 1);
-        ezgl::grid_attach(info_grid, temp_info,  1, 1, 1, 1);
-        ezgl::grid_attach(info_grid, ba_info,    3, 0, 1, 1);
+        ezgl::grid_attach(info_grid, m, 0, 0, 1, 1);
+        ezgl::grid_attach(info_grid, t, 0, 1, 1, 1);
+        ezgl::grid_attach(info_grid, i, 2, 0, 1, 1);
+        ezgl::grid_attach(info_grid, b, 2, 1, 1, 1);
+        ezgl::grid_attach(info_grid, move_info, 1, 0, 1, 1);
+        ezgl::grid_attach(info_grid, temp_info, 1, 1, 1, 1);
+        ezgl::grid_attach(info_grid, ba_info, 3, 0, 1, 1);
         ezgl::grid_attach(info_grid, block_info, 3, 1, 1, 1);
     } else {
-        ezgl::grid_attach(info_grid, n,       2, 2, 1, 1);
-        ezgl::grid_attach(info_grid, r,       0, 2, 1, 1);
+        ezgl::grid_attach(info_grid, n, 2, 2, 1, 1);
+        ezgl::grid_attach(info_grid, r, 0, 2, 1, 1);
         ezgl::grid_attach(info_grid, ri_info, 1, 2, 1, 1);
-        ezgl::grid_attach(info_grid, net_info,3, 2, 1, 1);
+        ezgl::grid_attach(info_grid, net_info, 3, 2, 1, 1);
     }
 
     ezgl::grid_attach(grid, info_grid, 0, 2, 1, 1);

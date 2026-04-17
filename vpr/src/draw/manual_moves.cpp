@@ -133,11 +133,11 @@ void calculate_cost_callback(QWidget* /*widget*/, QWidget* grid) {
     int layer_location = layer_position_entry->text().toInt();
     int subtile_location = subtile_position_entry->text().toInt();
 
-    if (block_entry->text().isEmpty() 
-    || x_position_entry->text().isEmpty() 
-    || y_position_entry->text().isEmpty() 
-    || layer_position_entry->text().isEmpty() 
-    || subtile_position_entry->text().isEmpty()) {
+    if (block_entry->text().isEmpty()
+        || x_position_entry->text().isEmpty()
+        || y_position_entry->text().isEmpty()
+        || layer_position_entry->text().isEmpty()
+        || subtile_position_entry->text().isEmpty()) {
         invalid_breakpoint_entry_window("Not all fields are complete");
         valid_input = false;
     }
