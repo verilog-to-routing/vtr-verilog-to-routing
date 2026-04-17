@@ -302,29 +302,6 @@ void update_screen(ScreenUpdatePriority priority,
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
 
-#ifdef _WIN32
-    // why use _WIN32 as rest of VPR uses WIN32 ? https://groups.google.com/g/fltkcoredev/c/BwKvvtJ_Mog
-    // For Windows, analysis stage needs to be run along with routing stage always.
-    // However, from Aurora, we don't want the VPR Viewer to run in the routing stage,
-    // and *only in the analysis stage* - so, we enable the viewer to run *only in the analysis stage*.
-    // NOTE: root cause of needing route and analysis together on Windows needs to be fixed
-    //       and this has been discussed previously with VPR, but as Windows is not their primary
-    //       target, there has not been any updates on this. Once the root cause is fixed (by us)
-    //       we can remove this workaround
-    bool enable_display_graphics = false;
-    if (draw_state->pic_on_screen != pic_on_screen_val) {
-        if (pic_on_screen_val == e_pic_type::ROUTING
-            && draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
-            if (setup_timing_info) {
-                enable_display_graphics = true;
-            }
-        }
-    }
-    if (!enable_display_graphics) {
-        return;
-    }
-#endif // #ifdef _WIN32
-
     strcpy(draw_state->default_message, msg);
 
     if (!draw_state->show_graphics) {
