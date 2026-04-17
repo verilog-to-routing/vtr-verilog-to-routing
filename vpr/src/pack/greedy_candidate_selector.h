@@ -485,7 +485,7 @@ class GreedyCandidateSelector {
      *        physical RAM group to feasible blocks list, the caller (get_next_candidate_for_cluster)
      *        still uses candidate propose limit. We can hoist the RAM clustering
      *        path and create their clusters in a similar way to "flat-recon" without
-     *        any propose limit.
+     *        any propose limit as we are trying to legalize physical RAM groups here.
      */
     void add_ram_cluster_molecule_candidates(
         ClusterGainStats& cluster_gain_stats,
