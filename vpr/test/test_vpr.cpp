@@ -24,13 +24,13 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     std::vector<t_logical_block_type> logical_block_types;
 
     xml_read_arch(kArchFile, /*timing_enabled=*/false,
-                  &arch, physical_tile_types, logical_block_types);
+                  &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);
 
-    auto type_str = arch.strings.intern_string(vtr::string_view("type"));
-    auto pb_type_type = arch.strings.intern_string(vtr::string_view("pb_type_type"));
-    auto single = arch.strings.intern_string(vtr::string_view("single"));
-    auto mode_str = arch.strings.intern_string(vtr::string_view("mode"));
-    auto interconnect_str = arch.strings.intern_string(vtr::string_view("interconnect"));
+    auto type_str = arch.strings.intern_string("type");
+    auto pb_type_type = arch.strings.intern_string("pb_type_type");
+    auto single = arch.strings.intern_string("single");
+    auto mode_str = arch.strings.intern_string("mode");
+    auto interconnect_str = arch.strings.intern_string("interconnect");
 
     bool found_perimeter_meta = false;
     bool found_single_meta = false;
@@ -153,8 +153,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         sink_inode = size_t(rr_graph.edge_sink_node(RRNodeId(src_inode), 0));
         switch_id = rr_graph.edge_switch(RRNodeId(src_inode), 0);
 
-        vpr::add_rr_node_metadata(rr_graph_builder.rr_node_metadata(), src_inode, vtr::string_view("node"), vtr::string_view("test node"), device_ctx.arch);
-        vpr::add_rr_edge_metadata(rr_graph_builder.rr_edge_metadata(), src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"), device_ctx.arch);
+        vpr::add_rr_node_metadata(rr_graph_builder.rr_node_metadata(), src_inode, "node", "test node", device_ctx.arch);
+        vpr::add_rr_edge_metadata(rr_graph_builder.rr_edge_metadata(), src_inode, sink_inode, switch_id, "edge", "test edge", device_ctx.arch);
 
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
                        &mutable_device_ctx.rr_graph,
@@ -168,7 +168,9 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        kRrGraphFile,
                        echo_enabled,
                        echo_file_name,
-                       false);
+                       vpr_setup.RouterOpts.route_verbosity,
+                       false,
+                       vpr_setup.RouterOpts.device_model_warnings);
         vpr_free_all(arch, vpr_setup);
     }
 
@@ -209,8 +211,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     CHECK(device_ctx.rr_graph_builder.rr_node_metadata_size() == 1);
     CHECK(device_ctx.rr_graph_builder.rr_edge_metadata_size() == 1);
 
-    auto node = arch.strings.intern_string(vtr::string_view("node"));
-    auto edge = arch.strings.intern_string(vtr::string_view("edge"));
+    auto node = arch.strings.intern_string("node");
+    auto edge = arch.strings.intern_string("edge");
 
     for (const auto& node_meta : device_ctx.rr_graph.rr_node_metadata_data()) {
         CHECK(src_order[node_meta.first] == src_inode);
@@ -290,7 +292,9 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            rr_graph_filename.c_str(),
                            echo_enabled,
                            echo_file_name,
-                           false);
+                           vpr_setup.RouterOpts.route_verbosity,
+                           false,
+                           vpr_setup.RouterOpts.device_model_warnings);
 
             vpr_free_all(arch, vpr_setup);
         }
@@ -334,7 +338,9 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            overridden_rr_graph_filename.c_str(),
                            echo_enabled,
                            echo_file_name,
-                           false);
+                           vpr_setup.RouterOpts.route_verbosity,
+                           false,
+                           vpr_setup.RouterOpts.device_model_warnings);
 
             vpr_free_all(arch, vpr_setup);
         }

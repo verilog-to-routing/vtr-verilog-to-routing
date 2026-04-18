@@ -112,7 +112,7 @@ void BlifPrettyPrinter::latch(std::string input, std::string output, LatchType t
         case LogicValue::FALSE:     printf("%s0", indent().c_str()); break;
         case LogicValue::TRUE:      printf("%s1", indent().c_str()); break;
         case LogicValue::DONT_CARE: printf("%s2", indent().c_str()); break;
-        case LogicValue::UNKOWN:    printf("%s3", indent().c_str()); break;
+        case LogicValue::UNKNOWN:   printf("%s3", indent().c_str()); break;
         default: assert(false);
     }
     --indent_level_;

@@ -8,6 +8,8 @@
 
 namespace fasm {
 
+constexpr int UNDEFINED = -1;
+
 // Parse a port name that may have an index.
 //
 // in="A" parts to *name="A", *index=0

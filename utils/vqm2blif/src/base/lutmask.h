@@ -18,8 +18,8 @@ class BlifLut {
 
 	bitset <6> col_mask;
 
-	string inports[6];
-	string outport;
+	string in_ports[6];
+	string out_port;
 
 public:
 
@@ -37,12 +37,12 @@ public:
 
 	void set_lutmask ( const char* );	//sets the lutmask and elaborates the truth table
 	void set_col_mask ( const char* );	//sets the column mask to a specified const char*
-	void set_inport ( int, const char* );	//assigns an inport name and sets the column mask
-	void set_outport ( const char* );	//assigns the outport name
+	void set_in_port ( int, const char* );	//assigns an in-port name and sets the column mask
+	void set_out_port ( const char* );	//assigns the outport name
 	void reset_ports();	//empties all port names and resets the column mask
 
-	string get_inport( int );
-	string get_outport();
+	string get_in_port( int );
+	string get_out_port();
 
 	//	*****PRINT FUNCTIONS*****
 	// - Each print the LUT data in to a different source in a specified format.
@@ -89,34 +89,34 @@ BlifLut::BlifLut ( const char* lmask, const char* a, const char* b, const char* 
  *  lmask:
  *	LUTmask string to be evaluated into a truth table for the LUT.
  *  a, b, c, d, e, f:
- *	Inport names. If a port is to be left unused, pass "". The column mask is updated accordingly.
+ *	In-port names. If a port is to be left unused, pass "". The column mask is updated accordingly.
  */
 
 	set_lutmask ( lmask );
 
-	//NOTE: At least two inports must be set before printing.
+	//NOTE: At least two in-ports must be set before printing.
 	if (strlen(a) > 0){
-		set_inport( 5, a );
+		set_in_port( 5, a );
 	}
 	if (strlen(b) > 0){
-		set_inport( 4, b );
+		set_in_port( 4, b );
 	}
 	if (strlen(c) > 0){
-		set_inport( 3, c );
+		set_in_port( 3, c );
 	}
 	if (strlen(d) > 0){
-		set_inport( 2, d );
+		set_in_port( 2, d );
 	}
 	if (strlen(e) > 0){
-		set_inport( 1, e );
+		set_in_port( 1, e );
 	}
 	if (strlen(f) > 0){
-		set_inport( 0, f );
+		set_in_port( 0, f );
 	}
 
 	//NOTE: The outport is the only mandatory port. If left open, it must be set using set_outport().
 	if (strlen(out) > 0){
-		set_outport( out );
+		set_out_port( out );
 	}
 
 }
@@ -131,7 +131,7 @@ void BlifLut::set_lutmask ( const char* lmask ){
  *
  *	ARGUMENTS:
  *  lmask
- *	A 16-character string of hexidecimal numbers detailing the truth table of a LUT.
+ *	A 16-character string of hexadecimal numbers detailing the truth table of a LUT.
  */
 
 	VTR_ASSERT(strlen(lmask) == 16);	//Currently, only 6-input LUTs are supported.
@@ -193,12 +193,12 @@ void BlifLut::set_col_mask ( const char* cmask ){
 //============================================================================================
 //============================================================================================
 
-void BlifLut::set_inport (int index, const char* name){
+void BlifLut::set_in_port (int index, const char* name){
 
 	//NOTE: Ports are printed as ".names [5] [4] [3] [2] [1] [0] out"
 	VTR_ASSERT((index >= 0)&&(index <= 5));
 	VTR_ASSERT(strlen(name) > 0);
-	inports[index] = name;	//assign the name of the port
+	in_ports[index] = name;	//assign the name of the port
 	col_mask.set(index);	//indicate in the column mask that it's been used
 
 }
@@ -206,11 +206,11 @@ void BlifLut::set_inport (int index, const char* name){
 //============================================================================================
 //============================================================================================
 
-void BlifLut::set_outport (const char* name){
+void BlifLut::set_out_port (const char* name){
 
 	//NOTE: Ports are printed as ".names [5] [4] [3] [2] [1] [0] out"
 	VTR_ASSERT(strlen(name) > 0);
-	outport = name;
+	out_port = name;
 
 }
 
@@ -219,27 +219,27 @@ void BlifLut::set_outport (const char* name){
 
 void BlifLut::reset_ports(){
 	for (int i = 0; i < 6; i++ ){
-		inports[i].clear();	//empty all the inport names
+		in_ports[i].clear();	//empty all the in-port names
 	}
-	outport.clear();	//empty the outport name
+	out_port.clear();	//empty the outport name
 	col_mask.reset();	//set the column mask to "000000"
 }
 
 //============================================================================================
 //============================================================================================
 
-string BlifLut::get_inport (int index){
-	if (inports[index].length() > 0)
-		return inports[index];
+string BlifLut::get_in_port (int index){
+	if (in_ports[index].length() > 0)
+		return in_ports[index];
 	return "";
 }
 
 //============================================================================================
 //============================================================================================
 
-string BlifLut::get_outport (){
-	if (outport.length() > 0)
-		return outport;
+string BlifLut::get_out_port (){
+	if (out_port.length() > 0)
+		return out_port;
 	return "";
 }
 
@@ -275,8 +275,8 @@ void BlifLut::print (lp_mode print_mode, ostream& out_file, t_boolean eblif_form
     for (int i = 5; i >= 0; i--){
         //only print used ports
         if (col_mask.test(i)){
-            if (!inports[i].empty()){
-                out_file << inports[i] << " ";
+            if (!in_ports[i].empty()){
+                out_file << in_ports[i] << " ";
             } else {
                 cout << "ERROR: LUT Input used and not named." << endl;
                 exit(1);
@@ -285,8 +285,8 @@ void BlifLut::print (lp_mode print_mode, ostream& out_file, t_boolean eblif_form
     }
 
     //Every LUT must have an output!
-    VTR_ASSERT(!outport.empty());
-    out_file << outport << endl;
+    VTR_ASSERT(!out_port.empty());
+    out_file << out_port << endl;
 
     //Print the truth table
     for(tt_vec::iterator it = truth_table.begin(); it != truth_table.end(); it++){

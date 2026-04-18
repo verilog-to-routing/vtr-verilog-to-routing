@@ -2,7 +2,7 @@
 
 These are the VTR captures of the Zero ASIC architectures.
 
-The orginal Zero ASIC architectures can be found in logiklib here:
+The original Zero ASIC architectures can be found in logiklib here:
 https://github.com/siliconcompiler/logiklib
 
 These architectures have been slightly modified to work with VTR's CAD flow

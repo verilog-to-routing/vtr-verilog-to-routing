@@ -1,0 +1,3 @@
+%include "pass_requirements_fixed_chan_width.txt"
+
+%include "common/pass_requirements.vpr_strict_rr_graph_check.txt"

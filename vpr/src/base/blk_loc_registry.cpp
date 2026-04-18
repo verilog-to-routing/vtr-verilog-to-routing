@@ -154,27 +154,21 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
 
     bool clear_all_block_types = false;
 
-    /* check if all types should be cleared
-     * logical_block_types contain empty type, needs to be ignored.
-     * Not having any type in unplaced_blk_types_index means that it is the first iteration, hence all grids needs to be cleared
-     */
+    // check if all types should be cleared
+    // logical_block_types contain empty type, needs to be ignored.
+    // Not having any type in unplaced_blk_types_index means that it is the first iteration, hence all grids needs to be cleared
     if (unplaced_blk_types_index.size() == device_ctx.logical_block_types.size() - 1) {
         clear_all_block_types = true;
     }
 
-    /* We'll use the grid to record where everything goes. Initialize to the grid has no
-     * blocks placed anywhere.
-     */
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer_num});
-                int itype = type->index;
-                if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
-                    for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                        grid_blocks_.set_block_at_location({i, j, k, layer_num}, ClusterBlockId::INVALID());
-                    }
-                }
+    // We'll use the grid to record where everything goes. Initialize to the grid has no
+    // blocks placed anywhere.
+    for (const t_physical_tile_loc loc : device_ctx.grid.all_locations()) {
+        const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(loc);
+        int itype = type->index;
+        if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
+            for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
+                grid_blocks_.set_block_at_location({loc, k}, ClusterBlockId::INVALID());
             }
         }
     }

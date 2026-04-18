@@ -18,7 +18,7 @@
 #SBATCH --error=error_%j.log                            # Determine the error log file
 #SBATCH --time=10:00:00                                 # The job time limit in hh:mm:ss
 
-#You can also overwrite the values of some of these paramters using environment variables
+#You can also overwrite the values of some of these parameters using environment variables
 #========================================================================================
 # - SBATCH_JOB_NAME instead of --job-name
 # - SBATCH_TIMELIMIT instead of --time

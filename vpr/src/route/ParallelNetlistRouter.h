@@ -34,7 +34,8 @@ class ParallelNetlistRouter : public NetlistRouter {
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
         const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
-        bool is_flat)
+        bool is_flat,
+        int route_verbosity)
         : _routers_th(_make_router(router_lookahead, is_flat))
         , _net_list(net_list)
         , _router_opts(router_opts)
@@ -46,7 +47,8 @@ class ParallelNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat) {}
+        , _is_flat(is_flat)
+        , _route_verbosity(route_verbosity) {}
     ~ParallelNetlistRouter() {}
 
     /** Run a single iteration of netlist routing for this->_net_list. This usually means calling
@@ -74,7 +76,8 @@ class ParallelNetlistRouter : public NetlistRouter {
             device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),
             route_ctx.rr_node_route_inf,
-            is_flat);
+            is_flat,
+            _route_verbosity);
     }
 
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
@@ -93,6 +96,7 @@ class ParallelNetlistRouter : public NetlistRouter {
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
     bool _is_flat;
+    int _route_verbosity;
 
     /** Cached routing parameters for current iteration (inputs to \see route_netlist()) */
     int _itry;

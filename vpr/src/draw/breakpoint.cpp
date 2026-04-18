@@ -61,15 +61,15 @@ bool check_for_breakpoints(bool in_placer) {
     //goes through the breakpoints vector
     t_draw_state* draw_state = get_draw_state_vars();
     for (size_t i = 0; i < draw_state->list_of_breakpoints.size(); i++) {
-        if (draw_state->list_of_breakpoints[i].type == BT_MOVE_NUM && draw_state->list_of_breakpoints[i].active)
+        if (draw_state->list_of_breakpoints[i].type == BT_MOVE_NUM && draw_state->list_of_breakpoints[i].active && in_placer)
             return check_for_moves_breakpoints(draw_state->list_of_breakpoints[i].bt_moves);
-        else if (draw_state->list_of_breakpoints[i].type == BT_FROM_BLOCK && draw_state->list_of_breakpoints[i].active)
+        else if (draw_state->list_of_breakpoints[i].type == BT_FROM_BLOCK && draw_state->list_of_breakpoints[i].active && in_placer)
             return check_for_block_breakpoints(draw_state->list_of_breakpoints[i].bt_from_block);
-        else if (draw_state->list_of_breakpoints[i].type == BT_TEMP_NUM && draw_state->list_of_breakpoints[i].active)
+        else if (draw_state->list_of_breakpoints[i].type == BT_TEMP_NUM && draw_state->list_of_breakpoints[i].active && in_placer)
             return check_for_temperature_breakpoints(draw_state->list_of_breakpoints[i].bt_temps);
-        else if (draw_state->list_of_breakpoints[i].type == BT_ROUTER_ITER && draw_state->list_of_breakpoints[i].active)
+        else if (draw_state->list_of_breakpoints[i].type == BT_ROUTER_ITER && draw_state->list_of_breakpoints[i].active && !in_placer)
             return check_for_router_iter_breakpoints(draw_state->list_of_breakpoints[i].bt_router_iter);
-        else if (draw_state->list_of_breakpoints[i].type == BT_ROUTE_NET_ID && draw_state->list_of_breakpoints[i].active)
+        else if (draw_state->list_of_breakpoints[i].type == BT_ROUTE_NET_ID && draw_state->list_of_breakpoints[i].active && !in_placer)
             return check_for_route_net_id_iter_breakpoints(draw_state->list_of_breakpoints[i].bt_route_net_id);
         else if (draw_state->list_of_breakpoints[i].type == BT_EXPRESSION && draw_state->list_of_breakpoints[i].active)
             return check_for_expression_breakpoints(draw_state->list_of_breakpoints[i].bt_expression, in_placer);

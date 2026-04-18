@@ -1,0 +1,39 @@
+#pragma once
+
+#include <ostream>
+#include <string>
+#include <vector>
+
+#include "vpr_types.h"
+
+struct t_logical_block_type;
+struct t_vpr_setup;
+
+struct ClusteredNetlistStats {
+  private:
+    void write_human_(std::ostream& output) const;
+    void write_json_(std::ostream& output) const;
+    void write_xml_(std::ostream& output) const;
+
+  public:
+    ClusteredNetlistStats();
+
+    enum class e_clustered_netlist_output_format {
+        HUMAN_READABLE,
+        JSON,
+        XML
+    };
+
+    int num_nets;
+    int num_blocks;
+    int L_num_p_inputs;
+    int L_num_p_outputs;
+    std::vector<int> num_blocks_type;
+    std::vector<t_logical_block_type> logical_block_types;
+
+    void write(e_clustered_netlist_output_format fmt, std::ostream& output) const;
+};
+
+void show_setup(const t_vpr_setup& vpr_setup);
+
+void write_clustered_netlist_stats(const std::string& block_usage_filename);

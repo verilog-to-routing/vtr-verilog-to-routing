@@ -13,7 +13,7 @@ Configurable multipliers are found in today's commercial FPGAs for two primary r
 #. Implementing multipliers in soft logic is very area expensive.
 
 Thus it is important for modern FPGA architects be able to describe the specific properties of the configurable multiplier that they want to investigate.
-The following is an example on how to use the VPR architecture description langauge to describe a common type of configurable multiplier called a fracturable multiplier shown in :numref:`fig_fracturable_multiplier`.
+The following is an example on how to use the VPR architecture description language to describe a common type of configurable multiplier called a fracturable multiplier shown in :numref:`fig_fracturable_multiplier`.
 We first give a step-by-step description on how to construct the multiplier block followed by a complete example.
 
 .. _fig_fracturable_multiplier:
@@ -22,8 +22,8 @@ We first give a step-by-step description on how to construct the multiplier bloc
 
     Model of a fracturable multiplier block
 
-The large ``block_mult`` can implement one 36x36 multiplier cluster called a ``mult_36x36_slice`` or it can implement two divisble 18x18 multipliers.
-A divisible 18x18 multiplier can implement a 18x18 multiplier cluster called a ``mult_18x18_slice`` or it can be fractured into two 9x9 mulitplier clusters called ``mult_9x9_slice``.
+The large ``block_mult`` can implement one 36x36 multiplier cluster called a ``mult_36x36_slice`` or it can implement two divisible 18x18 multipliers.
+A divisible 18x18 multiplier can implement a 18x18 multiplier cluster called a ``mult_18x18_slice`` or it can be fractured into two 9x9 multiplier clusters called ``mult_9x9_slice``.
 :numref:`fig_fracturable_multiplier_slice` shows a multiplier slice.
 Pins belonging to the same input or output port of a multiplier slice must be either all registered or none registered.
 Pins belonging to different ports or different slices may have different register configurations.
@@ -132,7 +132,7 @@ After the mode containing the 36x36 multiplier slice is described, the mode cont
           <input name="OUT" num_pins="36"/>
           <clock name="clk"/>
 
-This mode has two additional modes which are the actual 18x18 multiply block or two 9x9 mulitplier blocks.
+This mode has two additional modes which are the actual 18x18 multiply block or two 9x9 multiplier blocks.
 Both follow a similar description as the ``mult_36x36_slice`` with just the number of pins halved so the details are not repeated.
 
 .. code-block:: xml
@@ -185,7 +185,7 @@ Fracturable Multiplier Bus-Based Complete Example
 
 .. code-block:: xml
 
-    <!-- Example of a fracturable mutliplier whose inputs and outputs may be optionally registered
+    <!-- Example of a fracturable multiplier whose inputs and outputs may be optionally registered
          The multiplier hard logic block can implement one 36x36, two 18x18, or four 9x9 multiplies
      -->
     <pb_type name="block_mult">

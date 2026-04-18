@@ -23,4 +23,6 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* file_name,
                     bool echo_enabled,
                     const char* echo_file_name,
-                    bool is_flat);
+                    const int route_verbosity,
+                    bool is_flat,
+                    bool device_model_warnings);

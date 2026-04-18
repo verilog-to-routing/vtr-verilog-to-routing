@@ -12,6 +12,16 @@ add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
+
+add_subdirectory(yaml-cpp)
+# Treat yaml-cpp headers as system headers to suppress warnings
+if(TARGET yaml-cpp)
+    get_target_property(YAML_INCLUDE_DIRS yaml-cpp INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(yaml-cpp PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${YAML_INCLUDE_DIRS}"
+    )
+endif()
+
 #add_subdirectory(parmys)
 
 #Proc numbers
@@ -102,11 +112,6 @@ if (${WITH_PARMYS})
             yosys-slang
             SOURCE_DIR ${SLANG_SRC_DIR}
             BINARY_DIR ${SLANG_BUILD_DIR}
-
-            #Disabling UndrivenPass in slang_frontend.cc
-            PATCH_COMMAND
-                ${CMAKE_COMMAND} -E echo "Patching slang_frontend.cc to disable UndrivenPass" &&
-                ${CMAKE_COMMAND} -DIN=${SLANG_FE} -P ${CMAKE_CURRENT_SOURCE_DIR}/patch_slang.cmake
                 
             CONFIGURE_COMMAND ""
             

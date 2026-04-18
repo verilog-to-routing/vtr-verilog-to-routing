@@ -12,8 +12,8 @@
 
 void draw_noc(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& noc_ctx = g_vpr_ctx.noc();
-    auto& device_ctx = g_vpr_ctx.device();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // vector of routers in the NoC
     const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
@@ -36,7 +36,7 @@ void draw_noc(ezgl::renderer* g) {
         return;
     }
 
-    // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anything as the NoC tile won't be drawn
+    // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we can't draw anything as the NoC tile won't be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capacity of a noc router tile
      */
     const auto& type = device_ctx.grid.get_physical_type({router_list.begin()->get_router_grid_position_x(),
@@ -54,7 +54,7 @@ void draw_noc(ezgl::renderer* g) {
     // Now construct the coordinates for the markers that represent the connections between links (relative to the noc router tile position)
     ezgl::rectangle noc_connection_marker_bbox = get_noc_connection_marker_bbox(noc_router_logical_type);
 
-    // only draw the noc useage if the user selected the option
+    // only draw the noc usage if the user selected the option
     if (draw_state->draw_noc == DRAW_NOC_LINK_USAGE) {
         draw_noc_usage(noc_link_colors);
 
@@ -76,7 +76,7 @@ void draw_noc(ezgl::renderer* g) {
  */
 void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& noc_ctx = g_vpr_ctx.noc();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
     const auto& noc_link_bandwidth_usages = draw_state->get_noc_link_bandwidth_usages_ref();
 
     // check to see if a color map was already created previously
@@ -210,7 +210,7 @@ void draw_noc_links(ezgl::renderer* g,
                     ezgl::rectangle noc_connection_marker_bbox,
                     const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& noc_ctx = g_vpr_ctx.noc();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
 
     // vector of routers in the NoC
     const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
@@ -296,7 +296,7 @@ void draw_noc_links(ezgl::renderer* g,
 }
 
 void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
-    auto& noc_ctx = g_vpr_ctx.noc();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
 
     int number_of_links = list_of_noc_link_shift_directions.size();
 

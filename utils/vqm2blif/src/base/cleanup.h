@@ -44,7 +44,7 @@ void remove_node ( t_node* node, t_node** nodes, int original_num_nodes );
 *	this function fills in those gaps so that the array is continuous.
 *
 *	Parameters:
-*		module - the module that contains a node list with elemets within it deleted 
+*		module - the module that contains a node list with elements within it deleted 
 *		
 */
 void reorganize_module_node_list(t_module* module);

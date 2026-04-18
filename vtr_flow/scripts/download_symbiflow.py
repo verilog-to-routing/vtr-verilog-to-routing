@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-    Script to download the SymbiFlow Series-7 architectures
+Script to download the SymbiFlow Series-7 architectures
 """
 
 import sys
@@ -34,15 +34,13 @@ def parse_args():
     Parses and returns script's arguments
     """
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
             Download and extract a symbiflow benchmark release into a
             VTR-style directory structure.
 
             If a previous matching symbiflow release tar.gz file is found
             does nothing (unless --force is specified).
-        """
-    )
+        """)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
     )
@@ -58,7 +56,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
 
     parser.add_argument("--mirror", default="google", choices=["google"], help="Download mirror")
@@ -112,7 +110,8 @@ def download_url(filename, url):
     """
     Downloads the symbiflow release
     """
-    latest_package_url = request.urlopen(url).read().decode("utf-8")
+    with request.urlopen(url) as response:
+        latest_package_url = response.read().decode("utf-8")
     print("Downloading latest package:\n{}".format(latest_package_url))
     request.urlretrieve(latest_package_url, filename, reporthook=download_progress_callback)
 

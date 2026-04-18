@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-    Module to verify VTR test suites run by the GitHub CI.
+Module to verify VTR test suites run by the GitHub CI.
 
-    Test suites in VTR are verified by ensuring that all tasks in the test suite
-    appear in the task list and that there are no tasks in the task list which
-    are not in the test suite.
+Test suites in VTR are verified by ensuring that all tasks in the test suite
+appear in the task list and that there are no tasks in the task list which
+are not in the test suite.
 
-    A JSON file is used to tell this module which test suites to verify.
+A JSON file is used to tell this module which test suites to verify.
 
-    This module is designed to be used within the CI of VTR to ensure that tasks
-    within test suites are running all the tasks they are intended to.
+This module is designed to be used within the CI of VTR to ensure that tasks
+within test suites are running all the tasks they are intended to.
 """
+
 import os
 import argparse
 import json
@@ -50,7 +51,7 @@ def parse_test_suite_info(test_suite_info_file: str) -> List[TestSuite]:
         }
     ]}
     """
-    with open(test_suite_info_file, "r") as file:
+    with open(test_suite_info_file, "r", encoding="utf-8") as file:
         data = json.load(file)
 
     assert isinstance(data, dict), "Test suite info should be a dictionary"
@@ -78,7 +79,7 @@ def parse_task_list(task_list_file: str) -> Set[str]:
     the task list.
     """
     tasks = set()
-    with open(task_list_file, "r") as file:
+    with open(task_list_file, "r", encoding="utf-8") as file:
         for line in file:
             # Strip the whitespace from the line.
             line.strip()
@@ -228,7 +229,7 @@ def verify_test_suites():
 
     # If any failures were found in any suite, return exit code 1.
     if num_failures != 0:
-        print(f"Failure: Test suite verifcation failed with {num_failures} failures")
+        print(f"Failure: Test suite verification failed with {num_failures} failures")
         print(f"Please fix the failing test suites found in {args.vtr_regression_tests_dir}")
         print(f"If necessary, update the test suites info found here: {args.test_suite_info}")
         sys.exit(1)

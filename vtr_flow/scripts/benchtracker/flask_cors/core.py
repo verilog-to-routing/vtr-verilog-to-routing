@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-    flask_cors
-    ~~~~
-    Flask-CORS is a simple extension to Flask allowing you to support cross
-    origin resource sharing (CORS) using a simple decorator.
+flask_cors
+~~~~
+Flask-CORS is a simple extension to Flask allowing you to support cross
+origin resource sharing (CORS) using a simple decorator.
 
-    :copyright: (c) 2014 by Cory Dolphin.
-    :license: MIT, see LICENSE for more details.
+:copyright: (c) 2014 by Cory Dolphin.
+:license: MIT, see LICENSE for more details.
 """
+
 import re
 import logging
 import collections
@@ -197,7 +198,6 @@ def get_cors_headers(options, request_headers, request_method, response_headers)
         # If there is no Access-Control-Request-Method header or if parsing
         # failed, do not set any additional headers
         if acl_request_method and acl_request_method in options.get("methods"):
-
             # If method is not a case-sensitive match for any of the values in
             # list of methods do not set any additional headers and terminate
             # this set of steps.

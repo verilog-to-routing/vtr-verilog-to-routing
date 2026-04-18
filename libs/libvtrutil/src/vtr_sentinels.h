@@ -2,12 +2,12 @@
 
 /**
  * @file
- * @brief This header defines different sentinal value classes
+ * @brief This header defines different sentinel value classes
  */
 namespace vtr {
 
 /**
- * @brief The Default sentinal value class
+ * @brief The Default sentinel value class
  *
  * Some specialized containers like vtr::linear_map and
  * vtr::vector_map require sentinel values to mark invalid/uninitialized

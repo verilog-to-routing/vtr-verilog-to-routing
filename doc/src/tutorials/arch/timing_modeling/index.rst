@@ -12,7 +12,7 @@ This involves two key steps:
 
  #. Specifying the physical delay values
 
-These two steps separate the logical timing characteristics of a primitive, from the physically dependant delays.
+These two steps separate the logical timing characteristics of a primitive, from the physically dependent delays.
 This enables a single logical netlist primitive type (e.g. Flip-Flop) to be mapped into different physical locations with different timing characteristics.
 
 The :ref:`FPGA architecture description <fpga_architecture_description>` describes the logical timing characteristics in the :ref:`models section <arch_models>`, while the physical timing information is specified on ``pb_types`` within :ref:`complex block <arch_complex_blocks>`.
@@ -31,7 +31,7 @@ A typical combinational block is a full adder,
 
 where ``a``, ``b`` and ``cin`` are combinational inputs, and ``sum`` and ``cout`` are combinational outputs.
 
-We can model these timing dependencies on the model with the ``combinational_sink_ports``, which specifies the output ports which are dependant on an input port:
+We can model these timing dependencies on the model with the ``combinational_sink_ports``, which specifies the output ports which are dependent on an input port:
 
 .. code-block:: xml
 
@@ -86,7 +86,7 @@ DFFs have no internal timing paths between their input and output ports.
     DFF
 
 Sequential model ports are specified by providing the ``clock="<name>"`` attribute, where ``<name>`` is the name of the associated clock ports.
-The assoicated clock port must have ``is_clock="1"`` specified to indicate it is a clock.
+The associated clock port must have ``is_clock="1"`` specified to indicate it is a clock.
 
 .. code-block:: xml
 
@@ -455,8 +455,8 @@ It is also possible to specify in SDC that there is a phase shift between the tw
 
 Clock Buffers & Muxes
 ~~~~~~~~~~~~~~~~~~~~~
-Some architectures contain special primitives for buffering or controling clocks.
-VTR supports modelling these using the ``is_clock`` attritube on the model to differentiate between 'data' and 'clock' signals, allowing users to control how clocks are traced through these primitives.
+Some architectures contain special primitives for buffering or controlling clocks.
+VTR supports modelling these using the ``is_clock`` attribute on the model to differentiate between 'data' and 'clock' signals, allowing users to control how clocks are traced through these primitives.
 
 When VPR traces through the netlist it will propagate clocks from clock inputs to the downstream combinationally connected pins.
 
@@ -562,7 +562,7 @@ For the clock mux example above, if the user specified the following :ref:`SDC t
 VPR would propagate both ``clka`` and ``clkb`` through the clock mux.
 Therefore the logic connected to ``clk_downstream`` would be analyzed for both the ``clka`` and ``clkb`` constraints.
 
-Most likely (unless ``clka`` and ``clkb`` are used elswhere) the user should additionally specify:
+Most likely (unless ``clka`` and ``clkb`` are used elsewhere) the user should additionally specify:
 
 .. code-block:: tcl
    

@@ -200,7 +200,7 @@ class PlaceMacros {
     /**
      * @brief This array allow us to quickly find pins that could be in a direct connection.
      * @details Values stored is the index of the possible direct connection as specified in the arch file,
-     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * UNDEFINED (-1) is stored for pins that could not be part of a direct chain connection.
      * [0...device_ctx.num_block_types-1][0...num_pins-1]
      */
     std::vector<std::vector<int>> idirect_from_blk_pin_;
@@ -208,14 +208,14 @@ class PlaceMacros {
     /**
      * @brief This array stores the value DRIVER if the pin is the from_pin,
      * RECEIVER if the pin is the to_pin in the direct connection as specified in the arch file,
-     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * UNDEFINED (-1) is stored for pins that could not be part of a direct chain connection.
      * [0...device_ctx.num_block_types-1][0...num_pins-1]
      */
     std::vector<std::vector<e_pin_type>> direct_type_from_blk_pin_;
 
     /**
      * @brief Maps a blk_num to the corresponding macro index.
-     * @details If the block is not part of a macro, the value OPEN (-1) is stored.
+     * @details If the block is not part of a macro, the value UNDEFINED (-1) is stored.
      * [0...cluster_ctx.clb_nlist.blocks().size()-1]
      */
     vtr::vector_map<ClusterBlockId, int> imacro_from_iblk_;
@@ -237,10 +237,19 @@ class PlaceMacros {
     void write_place_macros_(std::string filename,
                              const std::vector<t_pl_macro>& macros,
                              const std::vector<t_physical_tile_type>& physical_tile_types,
-                             const ClusteredNetlist& clb_nlist);
+                             const ClusteredNetlist& clb_nlist) const;
 
-    bool net_is_driven_by_direct_(ClusterNetId clb_net,
-                                  const ClusteredNetlist& clb_nlist);
+    /** 
+     * @brief Checks if a net is a direct connection, both driver and receiver should match the direclist specified in the architecture file
+     * 
+     *  @param clb_net The clustered net to check if it is a direct connection.
+     *  @param idirect The index of the direct connection to match with the driver and receiver of the net.
+     *  @param clb_nlist The clustered netlist.
+     * 
+     * 
+     * @return True if the net is a direct connection, false otherwise.
+     */
+    bool is_net_direct_connection(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist);
 
     /**
      * @brief Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.

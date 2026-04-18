@@ -11,7 +11,7 @@ namespace vtr {
  *
  * StrongId's are described in vtr_strong_id.h.  In some cases, StrongId's be considered
  * like random access iterators, but not all StrongId's have this property.
- * In addition, there is utility in refering to a range of id's, and being able
+ * In addition, there is utility in referring to a range of id's, and being able
  * to iterator over that range.
  */
 
@@ -151,7 +151,7 @@ inline StrongIdIterator<IdType> operator-(
 /**
  * @brief StrongIdRange class
  *
- * StrongIdRange allows a pair of StrongId's to defines a continguous range of
+ * StrongIdRange allows a pair of StrongId's to defines a contiguous range of
  * ids.  The "end" StrongId is excluded from this range.
  */
 template<typename StrongId>
@@ -175,7 +175,7 @@ class StrongIdRange {
 
     ///@brief Returns true if the range is empty
     bool empty() { return begin_ == end_; }
-    ///@brief Reurns the size of the range
+    ///@brief Returns the size of the range
     size_t size() {
         return std::distance(begin(), end());
     }

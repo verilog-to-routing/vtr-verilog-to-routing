@@ -1,5 +1,5 @@
 """
-    Module to run the VTR flow. This module calls other modules that then access the tools like VPR.
+Module to run the VTR flow. This module calls other modules that then access the tools like VPR.
 """
 
 import shutil
@@ -215,6 +215,7 @@ def run(
     # RTL Elaboration & Synthesis (PARMYS)
     #
     elif should_run_stage(VtrStage.PARMYS, start_stage, end_stage):
+        synthesis_params = parmys_args.pop("synthesis_params", "") if parmys_args else ""
         vtr.parmys.run(
             architecture_copy,
             next_stage_netlist,
@@ -226,6 +227,7 @@ def run(
             yosys_script=yosys_script,
             min_hard_mult_size=min_hard_mult_size,
             min_hard_adder_size=min_hard_adder_size,
+            synthesis_params=synthesis_params,
         )
 
         next_stage_netlist = post_yosys_netlist

@@ -88,7 +88,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
         cube_bb = true;
     } else {
         // The user has specifically asked for PER_LAYER_BB
-        VTR_ASSERT_SAFE(place_bb_mode == e_place_bounding_box_mode::PER_LAYER_BB);
+        VTR_ASSERT(place_bb_mode == e_place_bounding_box_mode::PER_LAYER_BB);
         cube_bb = false;
     }
 

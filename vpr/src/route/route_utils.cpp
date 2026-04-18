@@ -457,10 +457,15 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                 continue;
             } else {
                 // get the ptc_number of the sinks in the group
-                std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
+                std::ranges::for_each(sink_grp, [&rr_graph](int& sink_rr_num) {
                     sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
                 });
-                auto physical_type = device_ctx.grid.get_physical_type({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
+
+                t_physical_tile_loc grid_loc;
+                grid_loc.x = blk_loc.loc.x;
+                grid_loc.y = blk_loc.loc.y;
+                grid_loc.layer_num = blk_loc.loc.layer;
+                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(grid_loc);
                 // Get the choke points of the sink corresponds to pin_count given the sink group
                 auto sink_choking_spots = get_sink_choking_points(physical_type,
                                                                   rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
@@ -471,9 +476,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                     int num_reachable_sinks = choking_spot.second;
                     auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
                                                              physical_type,
-                                                             blk_loc.loc.layer,
-                                                             blk_loc.loc.x,
-                                                             blk_loc.loc.y,
+                                                             grid_loc,
                                                              pin_physical_num);
                     if (pin_rr_node_id != RRNodeId::INVALID()) {
                         choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
@@ -490,9 +493,10 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,
+               const t_crr_opts& crr_opts,
                t_det_routing_arch& det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
-               t_chan_width_dist chan_width_dist,
+               const std::vector<t_segment_inf>& segment_inf,
+               const t_chan_width_dist& chan_width_dist,
                const std::vector<t_direct_inf>& directs,
                bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -522,6 +526,7 @@ void try_graph(int width_fac,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
+                    crr_opts,
                     directs,
                     &warning_count,
                     is_flat);
@@ -611,10 +616,10 @@ t_bb calc_current_bb(const RouteTree& tree) {
         //and xlow/ylow for xmax/ymax calculations
         bb.xmin = std::min<int>(bb.xmin, rr_graph.node_xhigh(rt_node.inode));
         bb.ymin = std::min<int>(bb.ymin, rr_graph.node_yhigh(rt_node.inode));
-        bb.layer_min = std::min<int>(bb.layer_min, rr_graph.node_layer(rt_node.inode));
+        bb.layer_min = std::min<int>(bb.layer_min, rr_graph.node_layer_high(rt_node.inode));
         bb.xmax = std::max<int>(bb.xmax, rr_graph.node_xlow(rt_node.inode));
         bb.ymax = std::max<int>(bb.ymax, rr_graph.node_ylow(rt_node.inode));
-        bb.layer_max = std::max<int>(bb.layer_max, rr_graph.node_layer(rt_node.inode));
+        bb.layer_max = std::max<int>(bb.layer_max, rr_graph.node_layer_low(rt_node.inode));
     }
 
     VTR_ASSERT(bb.xmin <= bb.xmax);
@@ -669,17 +674,27 @@ void update_draw_pres_fac(const float /*new_pres_fac*/) {
 
 #ifndef NO_GRAPHICS
 void update_router_info_and_check_bp(bp_router_type type, int net_id) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    if (!draw_state->list_of_breakpoints.empty()) {
-        if (type == BP_ROUTE_ITER)
-            get_bp_state_globals()->get_glob_breakpoint_state()->router_iter++;
-        else if (type == BP_NET_ID)
-            get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id = net_id;
-        f_router_debug = check_for_breakpoints(false);
-        if (f_router_debug) {
-            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), false);
-            update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
+    bool hit_bp = false;
+    if (type == BP_ROUTE_ITER) {
+        get_bp_state_globals()->get_glob_breakpoint_state()->router_iter++;
+        hit_bp = check_for_breakpoints(false);
+    } else if (type == BP_NET_ID) {
+        // Between net id iters, check only net id and expression breakpoints
+        get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id = net_id;
+        t_draw_state* draw_state = get_draw_state_vars();
+        for (const Breakpoint& breakpoint : draw_state->list_of_breakpoints) {
+            if (breakpoint.type == BT_ROUTE_NET_ID && breakpoint.active) {
+                hit_bp = check_for_route_net_id_iter_breakpoints(breakpoint.bt_route_net_id);
+                break;
+            } else if (breakpoint.type == BT_EXPRESSION && breakpoint.active) {
+                hit_bp = check_for_expression_breakpoints(breakpoint.bt_expression, false);
+                break;
+            }
         }
+    }
+    if (hit_bp) {
+        breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), false);
+        update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", e_pic_type::ROUTING, nullptr);
     }
 }
 #endif

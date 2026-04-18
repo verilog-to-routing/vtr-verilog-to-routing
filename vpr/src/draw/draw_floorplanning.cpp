@@ -56,7 +56,7 @@ static std::vector<int> highlight_alpha;
 
 //Helper function to highlight a partition
 static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -116,7 +116,7 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
 
 //Iterates through all partitions and draws each region of each partition
 void highlight_all_regions(ezgl::renderer* g) {
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     const auto& constraints = floorplanning_ctx.constraints;
     auto num_partitions = constraints.get_num_partitions();
 
@@ -135,11 +135,11 @@ void highlight_all_regions(ezgl::renderer* g) {
 
 // Draws atoms that are constrained to a partition in the colour of their respective partition.
 void draw_constrained_atoms(ezgl::renderer* g) {
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     const auto& constraints = floorplanning_ctx.constraints;
     int num_partitions = constraints.get_num_partitions();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
@@ -237,7 +237,7 @@ enum {
 
 //Highlights partition clicked on in the legend.
 void highlight_selected_partition(GtkWidget* widget) {
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
     auto num_partitions = constraints.get_num_partitions();
 
@@ -282,8 +282,8 @@ void highlight_selected_partition(GtkWidget* widget) {
 
 //Fills in the legend
 static GtkTreeModel* create_and_fill_model() {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
     const auto& constraints = floorplanning_ctx.constraints;
     int num_partitions = constraints.get_num_partitions();
 

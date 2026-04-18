@@ -21,7 +21,7 @@
 - `-g <number of random vector>`
 - `-t <input vector file>`
   
-Simulation always produces the folowing files:
+Simulation always produces the following files:
 
 - input\_vectors
 - output\_vectors
@@ -34,11 +34,11 @@ Simulation always produces the folowing files:
 |  `-T` |  output vector file|The output vectors is verified against the supplied predefined output vector file              |
 |  `-E` |                    |Output after both edges of the clock. (Default is to output only after the falling edge.)      |
 |  `-R` |                    |Output after rising edge of the clock only. (Default is to output only after the falling edge.)|
-|  `-p` |comma seperated list|Comma-separated list of additional pins/nodes to monitor during simulation. (view NOTES)       |
+|  `-p` |comma separated list|Comma-separated list of additional pins/nodes to monitor during simulation. (view NOTES)       |
 |  `-U0` |                                   |initial register value to 0      |
 |  `-U1` |                                   |initial resigster value to 1 |
 |  `-UX` |                                   |initial resigster value to X (unknown) (DEFAULT) |
-|  `-L`  |  Comma seperated list|Comma-separated list of primary inputs to hold high at cycle 0, and low for all subsequent cycles.|
+|  `-L`  |  Comma separated list|Comma-separated list of primary inputs to hold high at cycle 0, and low for all subsequent cycles.|
 |  `-3`  |   |Generate three valued logic. (Default is binary.) |
 
 ## Examples
@@ -161,7 +161,7 @@ To do this the command line should be:
 ./odin_ii -v <Path/to/verilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
 ```
 
-An error will arrise if the output vector files do not match.
+An error will arise if the output vector files do not match.
 
 Without an expected vector output file the command line would be:
 

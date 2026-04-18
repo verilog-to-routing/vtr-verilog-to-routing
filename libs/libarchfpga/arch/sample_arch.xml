@@ -51,7 +51,7 @@
   & delay of the Stratix IV crossbar as a good approximation of our crossbar.
 
   For LUTs, we include LUT 
-  delays measured from Stratix IV which is dependant on the input used (ie. some 
+  delays measured from Stratix IV which is dependent on the input used (ie. some 
   LUT inputs are faster than others).  The CAD tools at the time of VTR 7 does 
   not consider differences in LUT input delays.
 
@@ -256,7 +256,7 @@
 	       Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
 	       This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
     <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
-    <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+    <!--switch ipin_cblock resistance set to yield for 4x minimum drive strength buffer-->
     <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
   </switchlist>
   <segmentlist>

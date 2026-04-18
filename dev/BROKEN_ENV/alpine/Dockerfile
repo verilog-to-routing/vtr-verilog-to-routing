@@ -34,7 +34,7 @@ RUN git clone https://github.com/c9/core.git /cloud9
 RUN curl -s -L https://raw.githubusercontent.com/c9/install/master/link.sh | bash
 RUN /cloud9/scripts/install-sdk.sh
 
-# Tweak standlone.js conf
+# Tweak standalone.js conf
 RUN sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
 
 RUN touch /etc/supervisor.conf

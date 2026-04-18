@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <vector>
 #include "flat_placement_types.h"
+#include "logical_ram_infer.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "greedy_clusterer.h"
@@ -119,6 +120,14 @@ struct ClusterGainStats {
     ///        of the seed.
     bool is_memory = false;
 
+    /// @brief The logical RAM group ID of this cluster's seed atom.
+    ///        Set to INVALID for non-memory clusters.
+    LogicalRamGroupId logical_ram_id;
+
+    /// @brief The physical RAM group ID of this cluster's seed atom.
+    ///        Set to INVALID for non-memory clusters.
+    PhysicalRamGroupId physical_ram_id;
+
     /// @brief List of feasible block and its gain pairs.
     ///        The list is maintained in heap structure with the highest gain block
     ///        at the front.
@@ -127,10 +136,10 @@ struct ClusterGainStats {
     /// @brief Indicator for the initial search for feasible blocks.
     bool initial_search_for_feasible_blocks;
 
-    /// @brief Limit for the number of candiate proposed at each stage.
+    /// @brief Limit for the number of candidates proposed at each stage.
     unsigned candidates_propose_limit;
 
-    /// @brief Counter for the number of candiate proposed at each stage.
+    /// @brief Counter for the number of candidates proposed at each stage.
     unsigned num_candidates_proposed;
 
     /// @brief Check if the current stage candidates proposed limit is reached.
@@ -232,7 +241,7 @@ class GreedyCandidateSelector {
      *  @param is_global
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
-     *              relavent to locality / attraction.
+     *              relevant to locality / attraction.
      *  @param net_output_feeds_driving_block_input
      *              The set of nets whose output feeds the block that drives
      *              itself. This may cause double-counting in the gain
@@ -249,6 +258,7 @@ class GreedyCandidateSelector {
      */
     GreedyCandidateSelector(const AtomNetlist& atom_netlist,
                             const Prepacker& prepacker,
+                            const RamMapper& ram_mapper,
                             const t_packer_opts& packer_opts,
                             bool allow_unrelated_clustering,
                             const t_molecule_stats& max_molecule_stats,
@@ -456,6 +466,34 @@ class GreedyCandidateSelector {
     // ===================================================================== //
 
     /**
+     * @brief Populate the feasible blocks list for the given cluster using
+     *        net-traversal based candidate search. Candidates are found
+     *        progressively by connectivity and timing, transitive connections,
+     *        high-fanout nets, and attraction groups.
+     */
+    void add_general_cluster_molecule_candidates(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
+
+    /**
+     * @brief Populate the feasible blocks list for a RAM cluster by offering
+     *        all unclustered atoms from the same physical RAM group as the
+     *        cluster seed.
+     *        TODO: Although this function adds all unclustered atoms in the
+     *        physical RAM group to feasible blocks list, the caller (get_next_candidate_for_cluster)
+     *        still uses candidate propose limit. We can hoist the RAM clustering
+     *        path and create their clusters in a similar way to "flat-recon" without
+     *        any propose limit as we are trying to legalize physical RAM groups here.
+     */
+    void add_ram_cluster_molecule_candidates(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
+
+    /**
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
      */
@@ -550,6 +588,13 @@ class GreedyCandidateSelector {
     /// @brief The prepacker used to pack atoms into molecule pack patterns.
     const Prepacker& prepacker_;
 
+    /// @brief Used to look up the logical RAM group of an atom for memory cluster filtering.
+    const RamMapper& ram_mapper_;
+
+    /// @brief True if the RAM mapper has at least one logical RAM group.
+    ///        Used to guard RAM-specific candidate filtering.
+    bool has_ram_groups_ = false;
+
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;
 
@@ -596,14 +641,14 @@ class GreedyCandidateSelector {
     /// @brief Data pre-computed to help select unrelated molecules when APPack
     ///        is being used. This is the same data as unrelated_clustering_data_,
     ///        but it is spatially distributed over the device.
-    /// For each grid location on the device (x, y), this provides a list of
+    /// For each grid location on the device (layer, x, y), this provides a list of
     /// molecules sorted by their gain, where the first dimension is the number
     /// of external outputs of the molecule.
     /// When APPack is not used, this will be uninitialized.
-    ///     [0..flat_grid_width][0..flat_grid_height][0..max_num_used_ext_pins]
+    ///     [0..flat_grid_num_layers][0..flat_grid_width][0..flat_grid_height][0..max_num_used_ext_pins]
     /// Here, flat_grid width/height is the maximum x and y positions given in
     /// the flat placement.
-    vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 2> appack_unrelated_clustering_data_;
+    vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 3> appack_unrelated_clustering_data_;
 
     /// @brief The APPack state which contains the options used to configure
     ///        APPack and the flat placement.

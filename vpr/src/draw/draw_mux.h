@@ -7,11 +7,6 @@
 
 #ifndef NO_GRAPHICS
 
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
 #include "physical_types.h"

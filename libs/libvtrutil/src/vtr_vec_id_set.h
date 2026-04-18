@@ -14,7 +14,7 @@ namespace vtr {
  *  - membership test
  * all in constant time.
  *
- * It assumes the element type (T) is convertable to size_t.
+ * It assumes the element type (T) is convertible to size_t.
  * Usually, elements are vtr::StrongIds.
  *
  * Iteration through the elements is not strictly ordered, usually

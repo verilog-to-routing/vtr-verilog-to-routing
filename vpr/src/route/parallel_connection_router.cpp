@@ -17,7 +17,7 @@ static inline bool post_target_prune_node(float new_total_cost,
     // This is a correction factor to the forward cost to make the total
     // cost an under-estimate.
     // TODO: Should investigate creating a heuristic function that is
-    //       gaurenteed to be an under-estimate.
+    //       guaranteed to be an under-estimate.
     // NOTE: Found experimentally that using the original heuristic to order
     //       the nodes in the queue and then post-target pruning based on the
     //       under-estimating heuristic has better runtime.
@@ -33,7 +33,9 @@ static inline bool post_target_prune_node(float new_total_cost,
     // Max function to prevent the heuristic from going negative
     new_expected_cost = std::max(0.f, new_expected_cost);
     new_expected_cost *= params.post_target_prune_fac;
-    if ((new_back_cost + new_expected_cost) > best_back_cost_to_target)
+
+    // NOTE: in the check below, the multiplication factor is used to account for floating point errors.
+    if ((new_back_cost + new_expected_cost) * 0.999f > best_back_cost_to_target)
         return true;
     // NOTE: we do NOT check for equality here. Equality does not matter for
     //       determinism when draining the queues (may just lead to a bit more work).
@@ -78,7 +80,7 @@ static inline bool prune_node(RRNodeId inode,
     if (new_back_cost == best_back_cost) {
 #ifndef NON_DETERMINISTIC_PRUNING
         // With deterministic pruning, cannot always prune on ties.
-        // In the case of a true tie, just prune, no need to explore neightbors
+        // In the case of a true tie, just prune, no need to explore neighbours
         RREdgeId best_prev_edge = route_inf->prev_edge;
         if (new_prev_edge == best_prev_edge)
             return true;
@@ -93,7 +95,7 @@ static inline bool prune_node(RRNodeId inode,
             return false;
         // Finally, if this node is not coming from a preferred edge, prune
         // Deterministic version prefers a given EdgeID, so a unique path is returned since,
-        // in the case of a tie, a determinstic path wins.
+        // in the case of a tie, a deterministic path wins.
         // Is first preferred over second?
         auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
             return first < second;
@@ -132,10 +134,10 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
                                                 const t_conn_cost_params& params) {
 #ifndef NON_DETERMINISTIC_PRUNING
     // For deterministic pruning, cannot enforce anything on the total cost since
-    // traversal order is not gaurenteed. However, since total cost is used as a
+    // traversal order is not guaranteed. However, since total cost is used as a
     // "key" to signify that this node is the last node that was pushed, we can
     // just check for equality. There is a chance this may cause some duplicates
-    // for the deterministic case, but thats ok they will be handled.
+    // for the deterministic case, but that's ok they will be handled.
     // TODO: Maybe consider having the non-deterministic version do this too.
     if (new_total_cost != rr_node_route_inf_[inode].path_cost)
         return true;
@@ -330,7 +332,7 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
             // IPIN's of the target block should be contained within it's bounding box
             int to_xlow = this->rr_graph_->node_xlow(to_node);
             int to_ylow = this->rr_graph_->node_ylow(to_node);
-            int to_layer = this->rr_graph_->node_layer(to_node);
+            int to_layer = this->rr_graph_->node_layer_low(to_node);
             int to_xhigh = this->rr_graph_->node_xhigh(to_node);
             int to_yhigh = this->rr_graph_->node_yhigh(to_node);
             if (to_xlow < target_bb.xmin
@@ -453,6 +455,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                                                                            const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
                                                                            vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
                                                                            bool is_flat,
+                                                                           int route_verbosity,
                                                                            int multi_queue_num_threads,
                                                                            int multi_queue_num_queues,
                                                                            bool multi_queue_direct_draining) {
@@ -467,6 +470,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                 rr_switch_inf,
                 rr_node_route_inf,
                 is_flat,
+                route_verbosity,
                 multi_queue_num_threads,
                 multi_queue_num_queues,
                 multi_queue_direct_draining);
@@ -480,6 +484,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                 rr_switch_inf,
                 rr_node_route_inf,
                 is_flat,
+                route_verbosity,
                 multi_queue_num_threads,
                 multi_queue_num_queues,
                 multi_queue_direct_draining);

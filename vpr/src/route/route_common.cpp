@@ -6,10 +6,16 @@
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
 #include "logic_types.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"
+#include "rr_graph_fwd.h"
+#include "rr_switch.h"
 #include "vpr_utils.h"
 #include "route_utilization.h"
+#include "vtr_vector.h"
+
+#include <ranges>
 
 #if defined(VPR_USE_TBB)
 #include <tbb/parallel_for_each.h>
@@ -80,15 +86,12 @@ static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num,
  * @param route_opts Contains channel utilization threshold and weighting factor
  *                   used to increase initial 'acc_cost' for nodes going through
  *                   congested channels.
- * @param chanx_util Post-placement estimate of CHANX routing utilization per (layer, x, y) location.
- * @param chany_util Post-placement estimate of CHANY routing utilization per (layer, x, y) location.
+ * @param chan_util Post-placement estimate of routing channel utilization per (layer, x, y) location.
  * @return Initial `acc_cost` for the given RR node.
  */
-
 static float comp_initial_acc_cost(RRNodeId node_id,
                                    const t_router_opts& route_opts,
-                                   const vtr::NdMatrix<double, 3>& chanx_util,
-                                   const vtr::NdMatrix<double, 3>& chany_util);
+                                   const ChannelMetric<vtr::NdMatrix<double, 3>>& chan_util);
 
 /************************** Subroutine definitions ***************************/
 
@@ -105,7 +108,7 @@ void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routi
 
 /* Empties route_ctx.route_trees and copies over best_routing onto it.
  * Also restores the locally used opin data. */
-void restore_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+void restore_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
                      t_clb_opins_used& clb_opins_used_locally,
                      const t_clb_opins_used& saved_clb_opins_used_locally) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -280,7 +283,7 @@ void init_route_structs(const Netlist<>& net_list,
 
     // Allocate and clear a new route_trees
     route_ctx.route_trees.resize(net_list.nets().size());
-    std::fill(route_ctx.route_trees.begin(), route_ctx.route_trees.end(), vtr::nullopt);
+    std::ranges::fill(route_ctx.route_trees, vtr::nullopt);
 
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
@@ -390,14 +393,14 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
                 if (port_eq == PortEquivalence::INSTANCE) {
                     //The pin is part of an instance equivalent class, hence we need to reserve a pin
 
-                    VTR_ASSERT(get_pin_type_from_pin_physical_num(type, clb_pin) == DRIVER);
+                    VTR_ASSERT(get_pin_type_from_pin_physical_num(type, clb_pin) == e_pin_type::DRIVER);
 
                     /* Check to make sure class is in same range as that assigned to block */
                     VTR_ASSERT(iclass >= class_range.low && iclass <= class_range.high);
 
-                    //We push back OPEN to reserve space to store the exact pin which
+                    //We push back UNDEFINED to reserve space to store the exact pin which
                     //will be reserved (determined later)
-                    clb_opins_used_locally[blk_id][iclass].emplace_back(OPEN);
+                    clb_opins_used_locally[blk_id][iclass].emplace_back(UNDEFINED);
                 }
             }
         }
@@ -411,7 +414,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 void free_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.route_bb.size() != 0) {
+    if (!route_ctx.route_bb.empty()) {
         route_ctx.route_bb.clear();
         route_ctx.route_bb.shrink_to_fit();
     }
@@ -429,15 +432,14 @@ void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
 
     reset_rr_node_route_structs(router_opts);
 
-    for (auto i : device_ctx.rr_node_to_non_config_node_set) {
-        route_ctx.non_configurable_bitset.set(i.first, true);
+    for (const RRNodeId node_id : device_ctx.rr_node_to_non_config_node_set | std::views::keys) {
+        route_ctx.non_configurable_bitset.set(node_id, true);
     }
 }
 
 static float comp_initial_acc_cost(RRNodeId node_id,
                                    const t_router_opts& route_opts,
-                                   const vtr::NdMatrix<double, 3>& chanx_util,
-                                   const vtr::NdMatrix<double, 3>& chany_util) {
+                                   const ChannelMetric<vtr::NdMatrix<double, 3>>& chan_util) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     // The default acc_cost is 1 for all rr_nodes. For routing wires, if they pass through a channel
@@ -455,17 +457,17 @@ static float comp_initial_acc_cost(RRNodeId node_id,
 
         if (rr_type == e_rr_type::CHANX) {
             int y = rr_graph.node_ylow(node_id);
-            int layer = rr_graph.node_layer(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                max_util = std::max(max_util, chanx_util[layer][x][y]);
+                max_util = std::max(max_util, chan_util.x[layer][x][y]);
             }
 
         } else {
             VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANY);
             int x = rr_graph.node_xlow(node_id);
-            int layer = rr_graph.node_layer(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                max_util = std::max(max_util, chany_util[layer][x][y]);
+                max_util = std::max(max_util, chan_util.y[layer][x][y]);
             }
         }
 
@@ -481,18 +483,18 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
 
-    RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry, cube_bb);
-    const auto [chanx_util, chany_util] = routing_chan_util_estimator.estimate_routing_chan_util();
+    // RoutingChanUtilEstimator assumes cube bounding box
+    RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry);
+    const ChannelMetric<vtr::NdMatrix<double, 3>> chan_util = routing_chan_util_estimator.estimate_routing_chan_util();
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         t_rr_node_route_inf& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
         node_inf.prev_edge = RREdgeId::INVALID();
-        node_inf.acc_cost = comp_initial_acc_cost(rr_id, route_opts, chanx_util, chany_util);
+        node_inf.acc_cost = comp_initial_acc_cost(rr_id, route_opts, chan_util);
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);
@@ -517,8 +519,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
         for (auto pin_id : net_list.net_pins(net_id)) {
             auto block_id = net_list.pin_block(pin_id);
 
-            t_block_loc blk_loc;
-            blk_loc = get_block_loc(block_id, is_flat);
+            t_block_loc blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
             RRNodeId inode;
             if (pin_count == 0) { /* First pin is driver */
@@ -639,13 +640,12 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
         rr_blk_source[blk_id].resize(num_tile_class);
         for (int iclass = 0; iclass < num_tile_class; iclass++) {
             if (iclass >= class_range.low && iclass <= class_range.high) {
-                t_block_loc blk_loc;
-                blk_loc = get_block_loc(blk_id, is_flat);
+                t_block_loc blk_loc = get_block_loc(blk_id, is_flat);
                 auto class_type = get_class_type_from_class_physical_num(type, iclass);
-                if (class_type == DRIVER) {
+                if (class_type == e_pin_type::DRIVER) {
                     rr_type = e_rr_type::SOURCE;
                 } else {
-                    VTR_ASSERT(class_type == RECEIVER);
+                    VTR_ASSERT(class_type == e_pin_type::RECEIVER);
                     rr_type = e_rr_type::SINK;
                 }
 
@@ -676,10 +676,10 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
         std::size_t net_id_num = std::size_t(net_id);
         if (is_flat) {
             AtomNetId atom_net_id = AtomNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.find(atom_net_id) != clock_nets.end();
+            is_clock_net[net_id] = clock_nets.contains(atom_net_id);
         } else {
             ClusterNetId cluster_net_id = ClusterNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup().atom_net(cluster_net_id)) != clock_nets.end();
+            is_clock_net[net_id] = clock_nets.contains(atom_ctx.lookup().atom_net(cluster_net_id));
         }
     }
 
@@ -776,8 +776,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     int ymin = rr_graph.node_ylow(driver_rr);
     int xmax = rr_graph.node_xhigh(driver_rr);
     int ymax = rr_graph.node_yhigh(driver_rr);
-    int layer_min = rr_graph.node_layer(driver_rr);
-    int layer_max = rr_graph.node_layer(driver_rr);
+    int layer_min = rr_graph.node_layer_low(driver_rr);
+    int layer_max = rr_graph.node_layer_high(driver_rr);
 
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
@@ -787,27 +787,26 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
-        VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
-        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
+        VTR_ASSERT(rr_graph.node_layer_low(sink_rr) >= 0);
+        VTR_ASSERT(rr_graph.node_layer_low(sink_rr) <= (int)device_ctx.grid.get_num_layers() - 1);
 
         vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
                                                               rr_graph.node_ylow(sink_rr),
-                                                              rr_graph.node_layer(sink_rr)});
+                                                              rr_graph.node_layer_low(sink_rr)});
 
         xmin = std::min<int>(xmin, tile_bb.xmin());
         xmax = std::max<int>(xmax, tile_bb.xmax());
         ymin = std::min<int>(ymin, tile_bb.ymin());
         ymax = std::max<int>(ymax, tile_bb.ymax());
-        layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
-        layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
+        layer_min = std::min<int>(layer_min, rr_graph.node_layer_low(sink_rr));
+        layer_max = std::max<int>(layer_max, rr_graph.node_layer_high(sink_rr));
     }
 
-    /* Want the channels on all 4 sides to be usable, even if bb_factor = 0. */
+    // Want the channels on all 4 sides to be usable, even if bb_factor = 0.
     xmin -= 1;
     ymin -= 1;
 
-    /* Expand the net bounding box by bb_factor, then clip to the physical *
-     * chip area.                                                          */
+    // Expand the net bounding box by bb_factor, then clip to the physical chip area.
 
     t_bb bb;
 
@@ -837,7 +836,7 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 // so long as it is from the appropriate SRC).
 //
 // This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is too
-// optimistic for 'instance' equivalence (which typcially models the pin equivalence possible by swapping sub-block
+// optimistic for 'instance' equivalence (which typically models the pin equivalence possible by swapping sub-block
 // instances like BLEs). In particular, for the 'instance' equivalence case, some of the 'equivalent' block outputs
 // may be used by internal signals which are routed entirely *within* the block (i.e. the signals which never leave
 // the block). These signals effectively 'use-up' an output pin which should now be unavailable to the router.
@@ -846,9 +845,8 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
 void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat) {
     VTR_ASSERT(is_flat == false);
-    int num_local_opin, iconn, num_edges;
+    int num_local_opin;
     int iclass, ipin;
-    float cost;
     HeapNode heap_head_node;
     t_physical_tile_type_ptr type;
 
@@ -869,7 +867,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 auto port_eq = get_port_equivalency_from_class_physical_num(type, iclass);
                 VTR_ASSERT(port_eq == PortEquivalence::INSTANCE);
 
-                /* Always 0 for pads and for RECEIVER (IPIN) classes */
+                // Always 0 for pads and for RECEIVER (IPIN) classes
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
                     RRNodeId inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
                     VTR_ASSERT(inode && size_t(inode) < rr_graph.num_nodes());
@@ -899,14 +897,14 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
             RRNodeId from_node = route_ctx.rr_blk_source[(const ParentBlockId&)blk_id][iclass];
-            num_edges = rr_graph.num_edges(RRNodeId(from_node));
-            for (iconn = 0; iconn < num_edges; iconn++) {
+            int num_edges = rr_graph.num_edges(RRNodeId(from_node));
+            for (int iconn = 0; iconn < num_edges; iconn++) {
                 RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iconn);
 
                 VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == e_rr_type::OPIN);
 
                 //Add the OPIN to the heap according to it's congestion cost
-                cost = get_rr_cong_cost(to_node, pres_fac);
+                float cost = get_rr_cong_cost(to_node, pres_fac);
                 if (cost < route_ctx.rr_node_route_inf[to_node].path_cost) {
                     heap->add_to_heap({cost, to_node});
                 }
@@ -968,9 +966,8 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
     }
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        int node_x, node_y;
-        node_x = rr_graph.node_xlow(inode);
-        node_y = rr_graph.node_ylow(inode);
+        int node_x = rr_graph.node_xlow(inode);
+        int node_y = rr_graph.node_ylow(inode);
 
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(inode);
@@ -982,9 +979,8 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
                 auto net_id = itr->second;
                 VTR_LOG("    Used by net %s (%zu)\n", net_list.net_name(net_id).c_str(), size_t(net_id));
                 for (auto pin : net_list.net_pins(net_id)) {
-                    t_block_loc blk_loc;
                     auto blk = net_list.pin_block(pin);
-                    blk_loc = get_block_loc(blk, is_flat);
+                    t_block_loc blk_loc = get_block_loc(blk, is_flat);
                     if (blk_loc.loc.x == node_x && blk_loc.loc.y == node_y) {
                         VTR_LOG("      Is in the same cluster: %s \n", describe_rr_node(rr_graph, device_ctx.grid,
                                                                                         device_ctx.rr_indexed_data, itr->first, is_flat)
@@ -1078,4 +1074,25 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const t_conn_cost_params& cost_params,
                               bool /*is_flat*/) {
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
+}
+
+float get_rr_node_delay_cost(RRNodeId to_node, RREdgeId connecting_edge) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf = rr_graph.rr_switch();
+
+    // Info for the switch connecting from_node to_node (i.e., to->index)
+    RRSwitchId iswitch = (RRSwitchId)rr_graph.edge_switch(connecting_edge);
+    float switch_R = rr_switch_inf[iswitch].R;
+    float switch_Tdel = rr_switch_inf[iswitch].Tdel;
+
+    // To node info
+    float node_C = rr_graph.node_C(to_node);
+    float node_R = rr_graph.node_R(to_node);
+
+    float R_upstream = switch_R + node_R;
+
+    // Calculate delay
+    float Rdel = R_upstream - 0.5 * node_R; // Only consider half node's resistance for delay
+    float Tdel = switch_Tdel + Rdel * node_C;
+    return Tdel;
 }

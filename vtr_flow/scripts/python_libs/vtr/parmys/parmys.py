@@ -1,5 +1,5 @@
 """
-    Module to run Parmys with its various arguments
+Module to run Parmys with its various arguments
 """
 
 import os
@@ -54,13 +54,14 @@ def init_script_file(
     output_netlist,
     architecture_file_path,
     odin_config_full_path,
+    synthesis_params="",
 ):
     """initializing the raw yosys script file"""
     # specify the input files type
     for circuit in circuit_list:
         file_extension = os.path.splitext(circuit)[-1]
         if file_extension not in FILE_TYPES:
-            raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
+            raise vtr.VtrError("Invalid input file type '{}'".format(file_extension))
 
     # Update the config file
     vtr.file_replace(
@@ -68,6 +69,7 @@ def init_script_file(
         {
             "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
             # "TTT": str(vtr.paths.yosys_tcl_path),
+            "YYY": synthesis_params,
             "CCC": odin_config_full_path,
             "ZZZ": output_netlist,
             "QQQ": architecture_file_path,
@@ -136,6 +138,7 @@ def run(
     yosys_script=None,
     min_hard_mult_size=3,
     min_hard_adder_size=1,
+    synthesis_params="",
 ):
     """
     Runs Yosys on the specified architecture file and circuit
@@ -239,6 +242,7 @@ def run(
         output_netlist.name,
         architecture_file_path,
         odin_config_full_path,
+        synthesis_params=synthesis_params,
     )
 
     # Set the slang exe script path in the environment variable
@@ -251,6 +255,7 @@ def run(
     # set the parser
     if parmys_args["parser"] in YOSYS_PARSERS:
         os.environ["PARSER"] = parmys_args["parser"]
+        os.environ["PRIMITIVES"] = str(vtr.paths.vtr_primitives_path)
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(

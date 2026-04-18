@@ -11,7 +11,8 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const VibDeviceGrid& vib_grid,
                     const t_chan_width& chan_width,
                     const e_graph_type graph_type,
-                    bool is_flat);
+                    bool is_flat,
+                    bool device_model_warnings);
 
 /**
  * @brief Validates the internal consistency of a single RR node in the routing resource graph.
@@ -39,6 +40,6 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const DeviceGrid& grid,
                    const VibDeviceGrid& vib_grid,
                    const t_chan_width& chan_width,
-                   const enum e_route_type route_type,
+                   const e_route_type route_type,
                    const int inode,
                    bool is_flat);

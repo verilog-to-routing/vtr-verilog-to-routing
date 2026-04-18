@@ -27,7 +27,7 @@ enum class LogicValue {
     FALSE = 0,
     TRUE = 1,
     DONT_CARE = 2,
-    UNKOWN = 3,
+    UNKNOWN = 3,
     NUM_LOGIC_VALUE_TYPES = 4
 };
 

@@ -139,7 +139,7 @@ struct PartialPlacement {
      * NOTE: This gets the HPWL of the netlist and partial placement as it
      *       currently appears. The user should be aware that fractional
      *       positions of blocks are not realistic and the netlist is ignoring
-     *       some nets to make the analytical placment problem easier.
+     *       some nets to make the analytical placement problem easier.
      *       The user should use an atom or cluster level HPWL for an accurate
      *       result. This is used for the Global Placer.
      */

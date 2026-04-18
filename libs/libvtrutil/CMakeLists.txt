@@ -54,7 +54,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 include(GetGitRevisionDescription)
 
 # Get the VCS revision.
-git_describe_working_tree(VTR_VCS_REVISION --tags --always --long)
+git_describe_working_tree(VTR_VCS_REVISION --always --long)
 string(FIND ${VTR_VCS_REVISION} "NOTFOUND" GIT_DESCRIBE_VTR_REVISION_NOTFOUND)
 if (NOT ${GIT_DESCRIBE_VTR_REVISION_NOTFOUND} EQUAL -1)
     # Git describe failed, usually this means we
@@ -64,7 +64,7 @@ if (NOT ${GIT_DESCRIBE_VTR_REVISION_NOTFOUND} EQUAL -1)
 endif()
 
 # Get the short VCS revision
-git_describe_working_tree(VTR_VCS_REVISION_SHORT --tags --always --long --exclude '*')
+git_describe_working_tree(VTR_VCS_REVISION_SHORT --always --long --exclude '*')
 string(FIND "${VTR_VCS_REVISION_SHORT}" "NOTFOUND" GIT_DESCRIBE_VTR_REVISION_SHORT_NOTFOUND)
 if (NOT ${GIT_DESCRIBE_VTR_REVISION_SHORT_NOTFOUND} EQUAL -1)
     # Git describe failed, usually this means we

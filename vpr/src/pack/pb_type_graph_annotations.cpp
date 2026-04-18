@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <set>
 
 #include "arch_util.h"
@@ -14,27 +13,33 @@
 #include "vtr_token.h"
 
 #include "vpr_error.h"
+#include "vpr_types.h"
 
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
 
-static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const std::string& value);
+static void load_pack_pattern_annotations(const int line_num,
+                                          t_pb_graph_node* pb_graph_node,
+                                          const int mode,
+                                          std::string_view annot_in_pins,
+                                          std::string_view annot_out_pins,
+                                          std::string_view value);
 
 static void load_delay_annotations(const int line_num,
                                    t_pb_graph_node* pb_graph_node,
                                    const int mode,
-                                   const enum e_pin_to_pin_annotation_format input_format,
-                                   const enum e_pin_to_pin_delay_annotations delay_type,
-                                   const char* annot_in_pins,
-                                   const char* annot_out_pins,
-                                   const char* clock,
-                                   const char* value);
+                                   const e_pin_to_pin_annotation_format input_format,
+                                   const e_pin_to_pin_delay_annotations delay_type,
+                                   std::string_view annot_in_pins,
+                                   std::string_view annot_out_pins,
+                                   std::string_view clock,
+                                   std::string_view value);
 
 static void inferr_unspecified_pb_graph_node_delays(t_pb_graph_node* pb_graph_node);
 static void inferr_unspecified_pb_graph_pin_delays(t_pb_graph_pin* pb_graph_pin);
 static void inferr_unspecified_pb_graph_edge_delays(t_pb_graph_edge* pb_graph_pin);
 
-static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock, int line_num);
+static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, std::string_view clock, int line_num);
 
 void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     const t_pb_type* pb_type = pb_graph_node->pb_type;
@@ -50,12 +55,12 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
-                        load_delay_annotations(annotation.line_num, pb_graph_node, OPEN,
-                                               annotation.format, (enum e_pin_to_pin_delay_annotations)key,
+                        load_delay_annotations(annotation.line_num, pb_graph_node, UNDEFINED,
+                                               annotation.format, (e_pin_to_pin_delay_annotations)key,
                                                annotation.input_pins,
                                                annotation.output_pins,
                                                annotation.clock,
-                                               val.c_str());
+                                               val);
                     } else {
                         VTR_ASSERT(false);
                     }
@@ -77,11 +82,11 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                                 || key == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
                                 load_delay_annotations(annotation.line_num, pb_graph_node, i,
                                                        annotation.format,
-                                                       (enum e_pin_to_pin_delay_annotations)key,
+                                                       (e_pin_to_pin_delay_annotations)key,
                                                        annotation.input_pins,
                                                        annotation.output_pins,
                                                        annotation.clock,
-                                                       val.c_str());
+                                                       val);
                             } else {
                                 VTR_ASSERT(false);
                             }
@@ -117,23 +122,27 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
 /*
  * Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
  */
-static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const std::string& value) {
-    int i, j, m, n, iedge;
-    t_pb_graph_pin ***in_port, ***out_port;
+static void load_pack_pattern_annotations(const int line_num,
+                                          t_pb_graph_node* pb_graph_node,
+                                          const int mode,
+                                          std::string_view annot_in_pins,
+                                          std::string_view annot_out_pins,
+                                          std::string_view value) {
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
     t_pb_graph_node** children = nullptr;
 
     children = pb_graph_node->child_pb_graph_nodes[mode];
-    in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
-                                                       annot_in_pins, &num_in_ptrs, &num_in_sets, false, false);
-    out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
-                                                        annot_out_pins, &num_out_ptrs, &num_out_sets, false, false);
+    t_pb_graph_pin*** in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
+                                                                         annot_in_pins, &num_in_ptrs, &num_in_sets, false, false);
+    t_pb_graph_pin*** out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
+                                                                          annot_out_pins, &num_out_ptrs, &num_out_sets, false, false);
 
     /* Discover edge then annotate edge with name of pack pattern */
-    for (i = 0; i < num_in_sets; i++) {
-        for (j = 0; j < num_in_ptrs[i]; j++) {
-            for (m = 0; m < num_out_sets; m++) {
-                for (n = 0; n < num_out_ptrs[m]; n++) {
+    for (int i = 0; i < num_in_sets; i++) {
+        for (int j = 0; j < num_in_ptrs[i]; j++) {
+            for (int m = 0; m < num_out_sets; m++) {
+                for (int n = 0; n < num_out_ptrs[m]; n++) {
+                    int iedge;
                     for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
                         if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
                             break;
@@ -144,7 +153,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
                     if (iedge != in_port[i][j]->num_output_edges) {
                         in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
                         in_port[i][j]->output_edges[iedge]->pack_pattern_names.resize(in_port[i][j]->output_edges[iedge]->num_pack_patterns);
-                        in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value.c_str(); // TODO: convert to std::string
+                        in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value.data(); // TODO: convert to std::string
                     }
                 }
             }
@@ -152,14 +161,14 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
     }
 
     if (in_port != nullptr) {
-        for (i = 0; i < num_in_sets; i++) {
+        for (int i = 0; i < num_in_sets; i++) {
             delete[] in_port[i];
         }
         delete[] in_port;
         delete[] num_in_ptrs;
     }
     if (out_port != nullptr) {
-        for (i = 0; i < num_out_sets; i++) {
+        for (int i = 0; i < num_out_sets; i++) {
             delete[] out_port[i];
         }
         delete[] out_port;
@@ -170,13 +179,13 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
 static void load_delay_annotations(const int line_num,
                                    t_pb_graph_node* pb_graph_node,
                                    const int mode,
-                                   const enum e_pin_to_pin_annotation_format input_format,
-                                   const enum e_pin_to_pin_delay_annotations delay_type,
-                                   const char* annot_in_pins,
-                                   const char* annot_out_pins,
-                                   const char* clock,
-                                   const char* value) {
-    int i, j, k, m, n, p, iedge;
+                                   const e_pin_to_pin_annotation_format input_format,
+                                   const e_pin_to_pin_delay_annotations delay_type,
+                                   std::string_view annot_in_pins,
+                                   std::string_view annot_out_pins,
+                                   std::string_view clock,
+                                   std::string_view value) {
+    int i, j, k;
     t_pb_graph_pin ***in_port, ***out_port;
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
     float** delay_matrix;
@@ -207,7 +216,7 @@ static void load_delay_annotations(const int line_num,
 
     /* Determine what pins to read based on delay type */
     num_inputs = num_outputs = 0;
-    if (mode == OPEN) {
+    if (mode == UNDEFINED) {
         children = nullptr;
     } else {
         children = pb_graph_node->child_pb_graph_nodes[mode];
@@ -299,8 +308,8 @@ static void load_delay_annotations(const int line_num,
 
             //Fast look-up for out pin membership
             std::set<t_pb_graph_pin*> out_pins;
-            for (m = 0; m < num_out_sets; m++) {
-                for (n = 0; n < num_out_ptrs[m]; n++) {
+            for (int m = 0; m < num_out_sets; m++) {
+                for (int n = 0; n < num_out_ptrs[m]; n++) {
                     out_pins.insert(out_port[m][n]);
                 }
             }
@@ -312,10 +321,10 @@ static void load_delay_annotations(const int line_num,
             k = 0;
             for (i = 0; i < num_in_sets; i++) {
                 for (j = 0; j < num_in_ptrs[i]; j++) {
-                    p = 0;
-                    for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
+                    int p = 0;
+                    for (int iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
                         t_pb_graph_edge* pb_edge = in_port[i][j]->output_edges[iedge];
-                        if (out_pins.count(pb_edge->output_pins[0])) {
+                        if (out_pins.contains(pb_edge->output_pins[0])) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
                                 if (pb_edge->delay_max != 0) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
@@ -346,7 +355,7 @@ static void load_delay_annotations(const int line_num,
                     for (k = 0; k < src_pin->num_pin_timing; ++k) {
                         t_pb_graph_pin* sink_pin = src_pin->pin_timing[k];
                         auto edge_pair = std::make_pair(src_pin, sink_pin);
-                        VTR_ASSERT_MSG(!existing_edges.count(edge_pair), "No duplicates");
+                        VTR_ASSERT_MSG(!existing_edges.contains(edge_pair), "No duplicates");
                         existing_edges.emplace(src_pin, sink_pin);
                     }
                 }
@@ -357,11 +366,11 @@ static void load_delay_annotations(const int line_num,
             for (i = 0; i < num_in_sets; i++) {
                 for (j = 0; j < num_in_ptrs[i]; j++) {
                     t_pb_graph_pin* src_pin = in_port[i][j];
-                    for (m = 0; m < num_out_sets; m++) {
-                        for (n = 0; n < num_out_ptrs[m]; n++) {
+                    for (int m = 0; m < num_out_sets; m++) {
+                        for (int n = 0; n < num_out_ptrs[m]; n++) {
                             t_pb_graph_pin* sink_pin = out_port[m][n];
                             auto edge = std::make_pair(src_pin, sink_pin);
-                            if (!existing_edges.count(edge)) {
+                            if (!existing_edges.contains(edge)) {
                                 new_edges.insert(edge);
                             }
                         }
@@ -395,9 +404,9 @@ static void load_delay_annotations(const int line_num,
                     }
 
                     //Apply the timing annotation (now that all pin_timing for it exist)
-                    p = 0;
-                    for (m = 0; m < num_out_sets; m++) {
-                        for (n = 0; n < num_out_ptrs[m]; n++) {
+                    int p = 0;
+                    for (int m = 0; m < num_out_sets; m++) {
+                        for (int n = 0; n < num_out_ptrs[m]; n++) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
                                 if (src_pin->num_pin_timing_del_max_annotated >= src_pin->num_pin_timing) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
@@ -545,14 +554,13 @@ static void inferr_unspecified_pb_graph_edge_delays(t_pb_graph_edge* pb_graph_ed
     }
 }
 
-static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock, int line_num) {
+static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, std::string_view clock, int line_num) {
     t_pb_graph_pin* clock_pin = nullptr;
     for (int iport = 0; iport < gnode->num_clock_ports; ++iport) {
         VTR_ASSERT(gnode->num_clock_pins[iport] == 1);
 
-        if (strcmp(clock, gnode->clock_pins[iport][0].port->name) == 0) {
-            VTR_ASSERT(!clock_pin);
-            if (clock_pin) {
+        if (clock == gnode->clock_pins[iport][0].port->name) {
+            if (clock_pin != nullptr) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "Found duplicate clock-pin match");
             }
@@ -560,7 +568,7 @@ static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock,
         }
     }
 
-    if (!clock_pin) {
+    if (clock_pin == nullptr) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                   "Failed to find associated clock pin");
     }

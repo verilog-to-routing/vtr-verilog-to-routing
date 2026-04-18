@@ -82,7 +82,6 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
 #ifndef NO_GRAPHICS
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g);
-void draw_selected_pb_flylines(ezgl::renderer* g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g);
 #endif /* NO_GRAPHICS */
 
@@ -90,7 +89,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 
 void draw_internal_alloc_blk() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     t_pb_graph_node* pb_graph_head;
 
     /* Create a vector holding coordinate information for each type of physical logic
@@ -120,7 +119,7 @@ void draw_internal_init_blk() {
 
     t_pb_graph_node* pb_graph_head_node;
 
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     for (const auto& type : device_ctx.logical_block_types) {
         /* Empty block has no sub_blocks */
         if (is_empty_type(&type)) {
@@ -149,7 +148,7 @@ void draw_internal_init_blk() {
         // and that consequently we have *one* model for each type.
         bot_left = {0, 0};
         if (size_t(width) > device_ctx.grid.width() || size_t(height) > device_ctx.grid.height()) {
-            // in this case, the clb certainly wont't fit, but this prevents
+            // in this case, the clb certainly won't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
             top_right = ezgl::point2d(
@@ -181,8 +180,8 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     if (!draw_state->show_blk_internal) {
         return;
     }
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
@@ -222,9 +221,6 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
             }
         }
     }
-    //Draw the atom-level net flylines for the selected pb
-    //(inputs: blue, outputs: red, internal: orange)
-    draw_selected_pb_flylines(g);
 }
 #endif /* NO_GRAPHICS */
 
@@ -469,7 +465,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         }
 
     } else {
-        // else (ie. has chilren, and isn't at the lowest displayed level)
+        // else (ie. has children, and isn't at the lowest displayed level)
         // just label its type, and put it up at the top so we can see it
         if (draw_state->draw_block_text) {
             g->draw_text(
@@ -526,6 +522,12 @@ void draw_selected_pb_flylines(ezgl::renderer* g) {
 }
 
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g) {
+
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (!draw_state->highlight_fan_in_fan_out || !draw_state->show_nets) {
+        return;
+    }
+
     std::set<AtomBlockId> atoms_set(atoms.begin(), atoms.end());
 
     auto& atom_nl = g_vpr_ctx.atom().netlist();
@@ -583,7 +585,7 @@ std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb) {
 }
 
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     if (pb->is_primitive()) {
         //Base case
@@ -607,14 +609,11 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
 void draw_logical_connections(ezgl::renderer* g) {
     const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
-
-    //constexpr float NET_ALPHA = 0.0275;
-    float NET_ALPHA = draw_state->net_alpha;
-    int transparency_factor;
+    g->set_line_width(1);
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.netlist().nets()) {
@@ -649,19 +648,36 @@ void draw_logical_connections(ezgl::renderer* g) {
                 continue; /* Don't Draw */
             }
 
-            transparency_factor = element_visibility.alpha;
+            int transparency;
+            ezgl::color color;
 
-            //color selection
             //transparency factor is the most transparent of the 2 options that the user selects from the UI
+            transparency = std::min(element_visibility.alpha, draw_state->net_alpha);
+
+            // color selection
+            // TODO: Figure out what this code does. We can select sources and sinks?!? This code might be a bit outdated.
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor, DRIVES_IT_COLOR.alpha * NET_ALPHA));
+                color = DRIVES_IT_COLOR;
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
-            } else if (draw_state->show_nets == DRAW_PRIMITIVE_NETS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                g->set_color(ezgl::BLACK, fmin(transparency_factor, ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
+                color = DRIVEN_BY_IT_COLOR;
+            } else if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
+                color = ezgl::BLACK;
+
+                // Turn on and off intra-cluster/inter-cluster flyline drawing based on user options
+
+                if (src_clb == sink_clb && !draw_state->draw_intra_cluster_nets) {
+                    continue;
+                }
+
+                if (src_clb != sink_clb && !draw_state->draw_inter_cluster_nets) {
+                    continue;
+                }
+
             } else {
-                continue; // not showing all, and not the specified block, so skip
+                continue;
             }
+
+            g->set_color(color, transparency);
 
             draw_one_logical_connection(driver_pin_id, sink_pin_id, g);
         }
@@ -682,7 +698,7 @@ void draw_logical_connections(ezgl::renderer* g) {
  * inputs (if true) or outputs (if false).
  */
 void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk_id, int* pin_index, int* total_pins) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     AtomPortId port_id = atom_ctx.netlist().pin_port(pin_id);
@@ -731,7 +747,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
     // draw a link connecting the pins.
     g->draw_line(src_point, sink_point);
 
-    const auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     if (atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(src_pin)) == atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(sink_pin))) {
         // if they are in the same clb, put one arrow in the center
         float center_x = (src_point.x + sink_point.x) / 2;
@@ -858,7 +874,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
     sources.clear();
     in_selected_subtree.clear();
 
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     if (has_selection()) {
         add_all_children(selected_pb, containing_block_index, in_selected_subtree);
@@ -866,7 +882,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
         for (auto blk_id : atom_ctx.netlist().blocks()) {
             const ClusterBlockId clb = atom_ctx.lookup().atom_clb(blk_id);
             const t_pb_graph_node* pb_graph_node = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(blk_id);
-            // find the atom block that corrisponds to this pb.
+            // find the atom block that corresponds to this pb.
             if (is_in_selected_subtree(pb_graph_node, clb)) {
                 //Collect the sources of all nets driving this node
                 for (auto pin_id : atom_ctx.netlist().block_input_pins(blk_id)) {
@@ -938,7 +954,7 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(ClusterBlockId clb_index
 }
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     clb_index = atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(atom_pin));
     pb_gnode = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(atom_ctx.netlist().pin_block(atom_pin));
 }

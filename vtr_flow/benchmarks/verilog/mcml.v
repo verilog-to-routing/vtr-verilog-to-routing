@@ -489,7 +489,7 @@ PhotonCalculator u_calc (
 	);
 
 // Mux to read the absorbtion array
-always @(r_state or done or r_absorb_read_counter or r_absorb_write_counter or absorb_wraddress or absorb_data or absorb_rdaddress or absorb_data or absorb_wren )
+always @(*)
 begin
 	if(r_state == RESET_MEM_ST)
 	begin
@@ -518,112 +518,7 @@ end
 //  1.  Read constants
 //  2.  Wait for completion
 //  3.  Write data back
-always @(r_state or r_absorb_read_counter or r_absorb_write_counter or result or r_toggle or r_counter or read_constants or constants or done
-			or inc_result or mem_cost or mem_sint or absorb_q
-			or r_const__103
-			or r_const__102
-			or r_const__101
-			or r_const__100
-			or r_const__99
-			or r_const__98
-			or r_const__97
-			or r_const__96
-			or r_const__95
-			or r_const__94
-			or r_const__93
-			or r_const__92
-			or r_const__91
-			or r_const__90
-			or r_const__89
-			or r_const__88
-			or r_const__87
-			or r_const__86
-			or r_const__85
-			or r_const__84
-			or r_const__83
-			or r_const__82
-			or r_const__81
-			or r_const__80
-			or r_const__79
-			or r_const__78
-			or r_const__77
-			or r_const__76
-			or r_const__75
-			or r_const__74
-			or r_const__73
-			or r_const__72
-			or r_const__71
-			or r_const__70
-			or r_const__69
-			or r_const__68
-			or r_const__67
-			or r_const__66
-			or r_const__65
-			or r_const__64
-			or r_const__63
-			or r_const__62
-			or r_const__61
-			or r_const__60
-			or r_const__59
-			or r_const__58
-			or r_const__57
-			or r_const__56
-			or r_const__55
-			or r_const__54
-			or r_const__53
-			or r_const__52
-			or r_const__51
-			or r_const__50
-			or r_const__49
-			or r_const__48
-			or r_const__47
-			or r_const__46
-			or r_const__45
-			or r_const__44
-			or r_const__43
-			or r_const__42
-			or r_const__41
-			or r_const__40
-			or r_const__39
-			or r_const__38
-			or r_const__37
-			or r_const__36
-			or r_const__35
-			or r_const__34
-			or r_const__33
-			or r_const__32
-			or r_const__31
-			or r_const__30
-			or r_const__29
-			or r_const__28
-			or r_const__27
-			or r_const__26
-			or r_const__25
-			or r_const__24
-			or r_const__23
-			or r_const__22
-			or r_const__21
-			or r_const__20
-			or r_const__19
-			or r_const__18
-			or r_const__17
-			or r_const__16
-			or r_const__15
-			or r_const__14
-			or r_const__13
-			or r_const__12
-			or r_const__11
-			or r_const__10
-			or r_const__9
-			or r_const__8
-			or r_const__7
-			or r_const__6
-			or r_const__5
-			or r_const__4
-			or r_const__3
-			or r_const__2
-			or r_const__1
-			or r_const__0) begin
+always @(*) begin
 		// Initialize data
 		//for(i = 0; i < 104; i = i + 1) begin
 		//	c_const[i] = r_const[i];
@@ -1778,9 +1673,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;	
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1815,9 +1710,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1852,9 +1747,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1889,9 +1784,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1925,9 +1820,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 36'b000000000000000000000000000000000000;
 // assign dont_care_out = 36'b000000000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 16;
-defparam dpram1.DATA_WIDTH = 36;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(16), .DATA_WIDTH(36))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1961,9 +1856,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 18'b000000000000000000;
 // assign dont_care_out = 18'b000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 16;
-defparam dpram1.DATA_WIDTH = 18;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(16), .DATA_WIDTH(18))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1997,9 +1892,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 8'b00000000;
 // assign dont_care_out = 8'b00000000;
 	
-defparam dpram1.ADDR_WIDTH = 16;
-defparam dpram1.DATA_WIDTH = 8;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(16), .DATA_WIDTH(8))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -2429,7 +2324,7 @@ DropSpinWrapper dropSpin (
 	);
 	
 // Determine how many photons left
-always @(r_num_photons_left or dead_Roulette or r_done or r_counter)
+always @(*)
 begin
 	//c_num_photons_left = r_num_photons_left;
 	//c_counter = 0;
@@ -2455,7 +2350,7 @@ begin
 end
 
 // Only state info is done
-always @(r_done or r_counter)
+always @(*)
 begin
 	//c_done = r_done;
 	if(r_counter > `PIPELINE_DEPTH_UPPER_LIMIT)
@@ -2467,9 +2362,7 @@ begin
 end
 
 // Create mux to mover
-always @(dead_Roulette or initialWeight or r_num_photons_left or x_Roulette or y_Roulette or z_Roulette or 
-			ux_Roulette or uy_Roulette or uz_Roulette or sz_Roulette or sr_Roulette or sleftz_Roulette or 
-			sleftr_Roulette or layer_Roulette or weight_Roulette or dead_Roulette)
+always @(*)
 begin
 	if(dead_Roulette)
 	begin
@@ -2674,12 +2567,7 @@ wire reset_new;
 assign reset_new = reset & bigOr;
 
 // multiplex constants
-always @(layer_moverMux or OneOver_MutMaxrad_0 or OneOver_MutMaxdep_0 or OneOver_Mut_0 or
-						OneOver_MutMaxrad_1 or OneOver_MutMaxdep_1 or OneOver_Mut_1 or
-						OneOver_MutMaxrad_2 or OneOver_MutMaxdep_2 or OneOver_Mut_2 or
-						OneOver_MutMaxrad_3 or OneOver_MutMaxdep_3 or OneOver_Mut_3 or
-						OneOver_MutMaxrad_4 or OneOver_MutMaxdep_4 or OneOver_Mut_4 or
-						OneOver_MutMaxrad_5 or OneOver_MutMaxdep_5 or OneOver_Mut_5)
+always @(*)
 begin
 case(layer_moverMux)
 	3'b000:
@@ -2728,8 +2616,7 @@ endcase
 end
 
 // Determine move value
-always @(sleftz_moverMux or log_rand_num or OneOver_MutMaxrad or OneOver_MutMaxdep or sleftr_moverMux or
-		OneOver_Mut)
+always @(*)
 begin
 	// Resource sharing for multipliers
 	if(sleftz_moverMux == 32'b0)
@@ -2749,7 +2636,7 @@ begin
 end
 
 // Determine move value
-always @(sleftz_moverMux or c_r_op0 or c_r_op1 or c_z_op0 or c_z_op1 or sleftr_moverMux)
+always @(*)
 begin
 	c_sr_big = c_r_op0 * c_r_op1;
 	c_sz_big = c_z_op0 * c_z_op1;
@@ -5538,12 +5425,7 @@ mult_signed_32_bc mult_u3(
 	.result(sr_big));
 
 // multiplexor to find z1 and z0
-always @(c_layer__0 or z1_0 or z0_0 or mut_0 or
-					z1_1 or z0_1 or mut_1 or
-					z1_2 or z0_2 or mut_2 or
-					z1_3 or z0_3 or mut_3 or
-					z1_4 or z0_4 or mut_4 or
-					z1_5 or z0_5 or mut_5)
+always @(*)
 begin
 	case(c_layer__0)
 		3'b000:
@@ -5593,7 +5475,7 @@ end
 
 // May have to change block staments on this one for odin
 // set numerator
-always @(c_uz__0 or c_z1__0 or c_z__0 or c_z0__0)
+always @(*)
 begin
 	//c_numer__0 = 63'b0;
 	if(c_uz__0[31] == 1'b0)
@@ -5613,10 +5495,7 @@ begin
 end
 
 // initialize uninitialized data in pipeline
-always @(x_mover or y_mover or z_mover or 
-		ux_mover or uy_mover or uz_mover or
-		sz_mover or sr_mover or sleftz_mover or sleftr_mover or
-		weight_mover or layer_mover or dead_mover)
+always @(*)
 begin
 	c_x__0 = x_mover;
 	c_y__0 = y_mover;
@@ -5637,187 +5516,7 @@ begin
 end
 
 // Determine new (x,y,z) coordinates
-always @(r_x__0 or r_y__0 or r_z__0 or r_ux__0 or r_uy__0 or r_uz__0 or r_sz__0 or r_sr__0 or r_sleftz__0 or r_sleftr__0 or
-		r_weight__0 or r_layer__0 or r_dead__0 or r_hit__0 or r_diff__0 or r_dl_b__0 or r_numer__0 or r_z1__0 or r_z0__0 or r_mut__0 or
-
-		r_x__1 or r_y__1 or r_z__1 or r_ux__1 or r_uy__1 or r_uz__1 or r_sz__1 or r_sr__1 or r_sleftz__1 or r_sleftr__1 or
-		r_weight__1 or r_layer__1 or r_dead__1 or r_hit__1 or r_diff__1 or r_dl_b__1 or r_numer__1 or r_z1__1 or r_z0__1 or r_mut__1 or
-
-		r_x__2 or r_y__2 or r_z__2 or r_ux__2 or r_uy__2 or r_uz__2 or r_sz__2 or r_sr__2 or r_sleftz__2 or r_sleftr__2 or
-		r_weight__2 or r_layer__2 or r_dead__2 or r_hit__2 or r_diff__2 or r_dl_b__2 or r_numer__2 or r_z1__2 or r_z0__2 or r_mut__2 or
-
-		r_x__3 or r_y__3 or r_z__3 or r_ux__3 or r_uy__3 or r_uz__3 or r_sz__3 or r_sr__3 or r_sleftz__3 or r_sleftr__3 or
-		r_weight__3 or r_layer__3 or r_dead__3 or r_hit__3 or r_diff__3 or r_dl_b__3 or r_numer__3 or r_z1__3 or r_z0__3 or r_mut__3 or
-
-		r_x__4 or r_y__4 or r_z__4 or r_ux__4 or r_uy__4 or r_uz__4 or r_sz__4 or r_sr__4 or r_sleftz__4 or r_sleftr__4 or
-		r_weight__4 or r_layer__4 or r_dead__4 or r_hit__4 or r_diff__4 or r_dl_b__4 or r_numer__4 or r_z1__4 or r_z0__4 or r_mut__4 or
-
-		r_x__5 or r_y__5 or r_z__5 or r_ux__5 or r_uy__5 or r_uz__5 or r_sz__5 or r_sr__5 or r_sleftz__5 or r_sleftr__5 or
-		r_weight__5 or r_layer__5 or r_dead__5 or r_hit__5 or r_diff__5 or r_dl_b__5 or r_numer__5 or r_z1__5 or r_z0__5 or r_mut__5 or
-
-		r_x__6 or r_y__6 or r_z__6 or r_ux__6 or r_uy__6 or r_uz__6 or r_sz__6 or r_sr__6 or r_sleftz__6 or r_sleftr__6 or
-		r_weight__6 or r_layer__6 or r_dead__6 or r_hit__6 or r_diff__6 or r_dl_b__6 or r_numer__6 or r_z1__6 or r_z0__6 or r_mut__6 or
-
-		r_x__7 or r_y__7 or r_z__7 or r_ux__7 or r_uy__7 or r_uz__7 or r_sz__7 or r_sr__7 or r_sleftz__7 or r_sleftr__7 or
-		r_weight__7 or r_layer__7 or r_dead__7 or r_hit__7 or r_diff__7 or r_dl_b__7 or r_numer__7 or r_z1__7 or r_z0__7 or r_mut__7 or
-
-		r_x__8 or r_y__8 or r_z__8 or r_ux__8 or r_uy__8 or r_uz__8 or r_sz__8 or r_sr__8 or r_sleftz__8 or r_sleftr__8 or
-		r_weight__8 or r_layer__8 or r_dead__8 or r_hit__8 or r_diff__8 or r_dl_b__8 or r_numer__8 or r_z1__8 or r_z0__8 or r_mut__8 or
-
-		r_x__9 or r_y__9 or r_z__9 or r_ux__9 or r_uy__9 or r_uz__9 or r_sz__9 or r_sr__9 or r_sleftz__9 or r_sleftr__9 or
-		r_weight__9 or r_layer__9 or r_dead__9 or r_hit__9 or r_diff__9 or r_dl_b__9 or r_numer__9 or r_z1__9 or r_z0__9 or r_mut__9 or
-
-		r_x__10 or r_y__10 or r_z__10 or r_ux__10 or r_uy__10 or r_uz__10 or r_sz__10 or r_sr__10 or r_sleftz__10 or r_sleftr__10 or
-		r_weight__10 or r_layer__10 or r_dead__10 or r_hit__10 or r_diff__10 or r_dl_b__10 or r_numer__10 or r_z1__10 or r_z0__10 or r_mut__10 or
-
-		r_x__11 or r_y__11 or r_z__11 or r_ux__11 or r_uy__11 or r_uz__11 or r_sz__11 or r_sr__11 or r_sleftz__11 or r_sleftr__11 or
-		r_weight__11 or r_layer__11 or r_dead__11 or r_hit__11 or r_diff__11 or r_dl_b__11 or r_numer__11 or r_z1__11 or r_z0__11 or r_mut__11 or
-
-		r_x__12 or r_y__12 or r_z__12 or r_ux__12 or r_uy__12 or r_uz__12 or r_sz__12 or r_sr__12 or r_sleftz__12 or r_sleftr__12 or
-		r_weight__12 or r_layer__12 or r_dead__12 or r_hit__12 or r_diff__12 or r_dl_b__12 or r_numer__12 or r_z1__12 or r_z0__12 or r_mut__12 or
-
-		r_x__13 or r_y__13 or r_z__13 or r_ux__13 or r_uy__13 or r_uz__13 or r_sz__13 or r_sr__13 or r_sleftz__13 or r_sleftr__13 or
-		r_weight__13 or r_layer__13 or r_dead__13 or r_hit__13 or r_diff__13 or r_dl_b__13 or r_numer__13 or r_z1__13 or r_z0__13 or r_mut__13 or
-
-		r_x__14 or r_y__14 or r_z__14 or r_ux__14 or r_uy__14 or r_uz__14 or r_sz__14 or r_sr__14 or r_sleftz__14 or r_sleftr__14 or
-		r_weight__14 or r_layer__14 or r_dead__14 or r_hit__14 or r_diff__14 or r_dl_b__14 or r_numer__14 or r_z1__14 or r_z0__14 or r_mut__14 or
-
-		r_x__15 or r_y__15 or r_z__15 or r_ux__15 or r_uy__15 or r_uz__15 or r_sz__15 or r_sr__15 or r_sleftz__15 or r_sleftr__15 or
-		r_weight__15 or r_layer__15 or r_dead__15 or r_hit__15 or r_diff__15 or r_dl_b__15 or r_numer__15 or r_z1__15 or r_z0__15 or r_mut__15 or
-
-		r_x__16 or r_y__16 or r_z__16 or r_ux__16 or r_uy__16 or r_uz__16 or r_sz__16 or r_sr__16 or r_sleftz__16 or r_sleftr__16 or
-		r_weight__16 or r_layer__16 or r_dead__16 or r_hit__16 or r_diff__16 or r_dl_b__16 or r_numer__16 or r_z1__16 or r_z0__16 or r_mut__16 or
-
-		r_x__17 or r_y__17 or r_z__17 or r_ux__17 or r_uy__17 or r_uz__17 or r_sz__17 or r_sr__17 or r_sleftz__17 or r_sleftr__17 or
-		r_weight__17 or r_layer__17 or r_dead__17 or r_hit__17 or r_diff__17 or r_dl_b__17 or r_numer__17 or r_z1__17 or r_z0__17 or r_mut__17 or
-
-		r_x__18 or r_y__18 or r_z__18 or r_ux__18 or r_uy__18 or r_uz__18 or r_sz__18 or r_sr__18 or r_sleftz__18 or r_sleftr__18 or
-		r_weight__18 or r_layer__18 or r_dead__18 or r_hit__18 or r_diff__18 or r_dl_b__18 or r_numer__18 or r_z1__18 or r_z0__18 or r_mut__18 or
-
-		r_x__19 or r_y__19 or r_z__19 or r_ux__19 or r_uy__19 or r_uz__19 or r_sz__19 or r_sr__19 or r_sleftz__19 or r_sleftr__19 or
-		r_weight__19 or r_layer__19 or r_dead__19 or r_hit__19 or r_diff__19 or r_dl_b__19 or r_numer__19 or r_z1__19 or r_z0__19 or r_mut__19 or
-
-		r_x__20 or r_y__20 or r_z__20 or r_ux__20 or r_uy__20 or r_uz__20 or r_sz__20 or r_sr__20 or r_sleftz__20 or r_sleftr__20 or
-		r_weight__20 or r_layer__20 or r_dead__20 or r_hit__20 or r_diff__20 or r_dl_b__20 or r_numer__20 or r_z1__20 or r_z0__20 or r_mut__20 or
-
-		r_x__21 or r_y__21 or r_z__21 or r_ux__21 or r_uy__21 or r_uz__21 or r_sz__21 or r_sr__21 or r_sleftz__21 or r_sleftr__21 or
-		r_weight__21 or r_layer__21 or r_dead__21 or r_hit__21 or r_diff__21 or r_dl_b__21 or r_numer__21 or r_z1__21 or r_z0__21 or r_mut__21 or
-
-		r_x__22 or r_y__22 or r_z__22 or r_ux__22 or r_uy__22 or r_uz__22 or r_sz__22 or r_sr__22 or r_sleftz__22 or r_sleftr__22 or
-		r_weight__22 or r_layer__22 or r_dead__22 or r_hit__22 or r_diff__22 or r_dl_b__22 or r_numer__22 or r_z1__22 or r_z0__22 or r_mut__22 or
-
-		r_x__23 or r_y__23 or r_z__23 or r_ux__23 or r_uy__23 or r_uz__23 or r_sz__23 or r_sr__23 or r_sleftz__23 or r_sleftr__23 or
-		r_weight__23 or r_layer__23 or r_dead__23 or r_hit__23 or r_diff__23 or r_dl_b__23 or r_numer__23 or r_z1__23 or r_z0__23 or r_mut__23 or
-
-		r_x__24 or r_y__24 or r_z__24 or r_ux__24 or r_uy__24 or r_uz__24 or r_sz__24 or r_sr__24 or r_sleftz__24 or r_sleftr__24 or
-		r_weight__24 or r_layer__24 or r_dead__24 or r_hit__24 or r_diff__24 or r_dl_b__24 or r_numer__24 or r_z1__24 or r_z0__24 or r_mut__24 or
-
-		r_x__25 or r_y__25 or r_z__25 or r_ux__25 or r_uy__25 or r_uz__25 or r_sz__25 or r_sr__25 or r_sleftz__25 or r_sleftr__25 or
-		r_weight__25 or r_layer__25 or r_dead__25 or r_hit__25 or r_diff__25 or r_dl_b__25 or r_numer__25 or r_z1__25 or r_z0__25 or r_mut__25 or
-
-		r_x__26 or r_y__26 or r_z__26 or r_ux__26 or r_uy__26 or r_uz__26 or r_sz__26 or r_sr__26 or r_sleftz__26 or r_sleftr__26 or
-		r_weight__26 or r_layer__26 or r_dead__26 or r_hit__26 or r_diff__26 or r_dl_b__26 or r_numer__26 or r_z1__26 or r_z0__26 or r_mut__26 or
-
-		r_x__27 or r_y__27 or r_z__27 or r_ux__27 or r_uy__27 or r_uz__27 or r_sz__27 or r_sr__27 or r_sleftz__27 or r_sleftr__27 or
-		r_weight__27 or r_layer__27 or r_dead__27 or r_hit__27 or r_diff__27 or r_dl_b__27 or r_numer__27 or r_z1__27 or r_z0__27 or r_mut__27 or
-
-		r_x__28 or r_y__28 or r_z__28 or r_ux__28 or r_uy__28 or r_uz__28 or r_sz__28 or r_sr__28 or r_sleftz__28 or r_sleftr__28 or
-		r_weight__28 or r_layer__28 or r_dead__28 or r_hit__28 or r_diff__28 or r_dl_b__28 or r_numer__28 or r_z1__28 or r_z0__28 or r_mut__28 or
-
-		r_x__29 or r_y__29 or r_z__29 or r_ux__29 or r_uy__29 or r_uz__29 or r_sz__29 or r_sr__29 or r_sleftz__29 or r_sleftr__29 or
-		r_weight__29 or r_layer__29 or r_dead__29 or r_hit__29 or r_diff__29 or r_dl_b__29 or r_numer__29 or r_z1__29 or r_z0__29 or r_mut__29 or
-
-		r_x__30 or r_y__30 or r_z__30 or r_ux__30 or r_uy__30 or r_uz__30 or r_sz__30 or r_sr__30 or r_sleftz__30 or r_sleftr__30 or
-		r_weight__30 or r_layer__30 or r_dead__30 or r_hit__30 or r_diff__30 or r_dl_b__30 or r_numer__30 or r_z1__30 or r_z0__30 or r_mut__30 or
-
-		r_x__31 or r_y__31 or r_z__31 or r_ux__31 or r_uy__31 or r_uz__31 or r_sz__31 or r_sr__31 or r_sleftz__31 or r_sleftr__31 or
-		r_weight__31 or r_layer__31 or r_dead__31 or r_hit__31 or r_diff__31 or r_dl_b__31 or r_numer__31 or r_z1__31 or r_z0__31 or r_mut__31 or
-
-		r_x__32 or r_y__32 or r_z__32 or r_ux__32 or r_uy__32 or r_uz__32 or r_sz__32 or r_sr__32 or r_sleftz__32 or r_sleftr__32 or
-		r_weight__32 or r_layer__32 or r_dead__32 or r_hit__32 or r_diff__32 or r_dl_b__32 or r_numer__32 or r_z1__32 or r_z0__32 or r_mut__32 or
-
-		r_x__33 or r_y__33 or r_z__33 or r_ux__33 or r_uy__33 or r_uz__33 or r_sz__33 or r_sr__33 or r_sleftz__33 or r_sleftr__33 or
-		r_weight__33 or r_layer__33 or r_dead__33 or r_hit__33 or r_diff__33 or r_dl_b__33 or r_numer__33 or r_z1__33 or r_z0__33 or r_mut__33 or
-
-		r_x__34 or r_y__34 or r_z__34 or r_ux__34 or r_uy__34 or r_uz__34 or r_sz__34 or r_sr__34 or r_sleftz__34 or r_sleftr__34 or
-		r_weight__34 or r_layer__34 or r_dead__34 or r_hit__34 or r_diff__34 or r_dl_b__34 or r_numer__34 or r_z1__34 or r_z0__34 or r_mut__34 or
-
-		r_x__35 or r_y__35 or r_z__35 or r_ux__35 or r_uy__35 or r_uz__35 or r_sz__35 or r_sr__35 or r_sleftz__35 or r_sleftr__35 or
-		r_weight__35 or r_layer__35 or r_dead__35 or r_hit__35 or r_diff__35 or r_dl_b__35 or r_numer__35 or r_z1__35 or r_z0__35 or r_mut__35 or
-
-		r_x__36 or r_y__36 or r_z__36 or r_ux__36 or r_uy__36 or r_uz__36 or r_sz__36 or r_sr__36 or r_sleftz__36 or r_sleftr__36 or
-		r_weight__36 or r_layer__36 or r_dead__36 or r_hit__36 or r_diff__36 or r_dl_b__36 or r_numer__36 or r_z1__36 or r_z0__36 or r_mut__36 or
-
-		r_x__37 or r_y__37 or r_z__37 or r_ux__37 or r_uy__37 or r_uz__37 or r_sz__37 or r_sr__37 or r_sleftz__37 or r_sleftr__37 or
-		r_weight__37 or r_layer__37 or r_dead__37 or r_hit__37 or r_diff__37 or r_dl_b__37 or r_numer__37 or r_z1__37 or r_z0__37 or r_mut__37 or
-
-		r_x__38 or r_y__38 or r_z__38 or r_ux__38 or r_uy__38 or r_uz__38 or r_sz__38 or r_sr__38 or r_sleftz__38 or r_sleftr__38 or
-		r_weight__38 or r_layer__38 or r_dead__38 or r_hit__38 or r_diff__38 or r_dl_b__38 or r_numer__38 or r_z1__38 or r_z0__38 or r_mut__38 or
-
-		r_x__39 or r_y__39 or r_z__39 or r_ux__39 or r_uy__39 or r_uz__39 or r_sz__39 or r_sr__39 or r_sleftz__39 or r_sleftr__39 or
-		r_weight__39 or r_layer__39 or r_dead__39 or r_hit__39 or r_diff__39 or r_dl_b__39 or r_numer__39 or r_z1__39 or r_z0__39 or r_mut__39 or
-
-		r_x__40 or r_y__40 or r_z__40 or r_ux__40 or r_uy__40 or r_uz__40 or r_sz__40 or r_sr__40 or r_sleftz__40 or r_sleftr__40 or
-		r_weight__40 or r_layer__40 or r_dead__40 or r_hit__40 or r_diff__40 or r_dl_b__40 or r_numer__40 or r_z1__40 or r_z0__40 or r_mut__40 or
-
-		r_x__41 or r_y__41 or r_z__41 or r_ux__41 or r_uy__41 or r_uz__41 or r_sz__41 or r_sr__41 or r_sleftz__41 or r_sleftr__41 or
-		r_weight__41 or r_layer__41 or r_dead__41 or r_hit__41 or r_diff__41 or r_dl_b__41 or r_numer__41 or r_z1__41 or r_z0__41 or r_mut__41 or
-
-		r_x__42 or r_y__42 or r_z__42 or r_ux__42 or r_uy__42 or r_uz__42 or r_sz__42 or r_sr__42 or r_sleftz__42 or r_sleftr__42 or
-		r_weight__42 or r_layer__42 or r_dead__42 or r_hit__42 or r_diff__42 or r_dl_b__42 or r_numer__42 or r_z1__42 or r_z0__42 or r_mut__42 or
-
-		r_x__43 or r_y__43 or r_z__43 or r_ux__43 or r_uy__43 or r_uz__43 or r_sz__43 or r_sr__43 or r_sleftz__43 or r_sleftr__43 or
-		r_weight__43 or r_layer__43 or r_dead__43 or r_hit__43 or r_diff__43 or r_dl_b__43 or r_numer__43 or r_z1__43 or r_z0__43 or r_mut__43 or
-
-		r_x__44 or r_y__44 or r_z__44 or r_ux__44 or r_uy__44 or r_uz__44 or r_sz__44 or r_sr__44 or r_sleftz__44 or r_sleftr__44 or
-		r_weight__44 or r_layer__44 or r_dead__44 or r_hit__44 or r_diff__44 or r_dl_b__44 or r_numer__44 or r_z1__44 or r_z0__44 or r_mut__44 or
-
-		r_x__45 or r_y__45 or r_z__45 or r_ux__45 or r_uy__45 or r_uz__45 or r_sz__45 or r_sr__45 or r_sleftz__45 or r_sleftr__45 or
-		r_weight__45 or r_layer__45 or r_dead__45 or r_hit__45 or r_diff__45 or r_dl_b__45 or r_numer__45 or r_z1__45 or r_z0__45 or r_mut__45 or
-
-		r_x__46 or r_y__46 or r_z__46 or r_ux__46 or r_uy__46 or r_uz__46 or r_sz__46 or r_sr__46 or r_sleftz__46 or r_sleftr__46 or
-		r_weight__46 or r_layer__46 or r_dead__46 or r_hit__46 or r_diff__46 or r_dl_b__46 or r_numer__46 or r_z1__46 or r_z0__46 or r_mut__46 or
-
-		r_x__47 or r_y__47 or r_z__47 or r_ux__47 or r_uy__47 or r_uz__47 or r_sz__47 or r_sr__47 or r_sleftz__47 or r_sleftr__47 or
-		r_weight__47 or r_layer__47 or r_dead__47 or r_hit__47 or r_diff__47 or r_dl_b__47 or r_numer__47 or r_z1__47 or r_z0__47 or r_mut__47 or
-
-		r_x__48 or r_y__48 or r_z__48 or r_ux__48 or r_uy__48 or r_uz__48 or r_sz__48 or r_sr__48 or r_sleftz__48 or r_sleftr__48 or
-		r_weight__48 or r_layer__48 or r_dead__48 or r_hit__48 or r_diff__48 or r_dl_b__48 or r_numer__48 or r_z1__48 or r_z0__48 or r_mut__48 or
-
-		r_x__49 or r_y__49 or r_z__49 or r_ux__49 or r_uy__49 or r_uz__49 or r_sz__49 or r_sr__49 or r_sleftz__49 or r_sleftr__49 or
-		r_weight__49 or r_layer__49 or r_dead__49 or r_hit__49 or r_diff__49 or r_dl_b__49 or r_numer__49 or r_z1__49 or r_z0__49 or r_mut__49 or
-
-		r_x__50 or r_y__50 or r_z__50 or r_ux__50 or r_uy__50 or r_uz__50 or r_sz__50 or r_sr__50 or r_sleftz__50 or r_sleftr__50 or
-		r_weight__50 or r_layer__50 or r_dead__50 or r_hit__50 or r_diff__50 or r_dl_b__50 or r_numer__50 or r_z1__50 or r_z0__50 or r_mut__50 or
-
-		r_x__51 or r_y__51 or r_z__51 or r_ux__51 or r_uy__51 or r_uz__51 or r_sz__51 or r_sr__51 or r_sleftz__51 or r_sleftr__51 or
-		r_weight__51 or r_layer__51 or r_dead__51 or r_hit__51 or r_diff__51 or r_dl_b__51 or r_numer__51 or r_z1__51 or r_z0__51 or r_mut__51 or
-
-		r_x__52 or r_y__52 or r_z__52 or r_ux__52 or r_uy__52 or r_uz__52 or r_sz__52 or r_sr__52 or r_sleftz__52 or r_sleftr__52 or
-		r_weight__52 or r_layer__52 or r_dead__52 or r_hit__52 or r_diff__52 or r_dl_b__52 or r_numer__52 or r_z1__52 or r_z0__52 or r_mut__52 or
-
-		r_x__53 or r_y__53 or r_z__53 or r_ux__53 or r_uy__53 or r_uz__53 or r_sz__53 or r_sr__53 or r_sleftz__53 or r_sleftr__53 or
-		r_weight__53 or r_layer__53 or r_dead__53 or r_hit__53 or r_diff__53 or r_dl_b__53 or r_numer__53 or r_z1__53 or r_z0__53 or r_mut__53 or
-
-		r_x__54 or r_y__54 or r_z__54 or r_ux__54 or r_uy__54 or r_uz__54 or r_sz__54 or r_sr__54 or r_sleftz__54 or r_sleftr__54 or
-		r_weight__54 or r_layer__54 or r_dead__54 or r_hit__54 or r_diff__54 or r_dl_b__54 or r_numer__54 or r_z1__54 or r_z0__54 or r_mut__54 or
-
-		r_x__55 or r_y__55 or r_z__55 or r_ux__55 or r_uy__55 or r_uz__55 or r_sz__55 or r_sr__55 or r_sleftz__55 or r_sleftr__55 or
-		r_weight__55 or r_layer__55 or r_dead__55 or r_hit__55 or r_diff__55 or r_dl_b__55 or r_numer__55 or r_z1__55 or r_z0__55 or r_mut__55 or
-
-		r_x__56 or r_y__56 or r_z__56 or r_ux__56 or r_uy__56 or r_uz__56 or r_sz__56 or r_sr__56 or r_sleftz__56 or r_sleftr__56 or
-		r_weight__56 or r_layer__56 or r_dead__56 or r_hit__56 or r_diff__56 or r_dl_b__56 or r_numer__56 or r_z1__56 or r_z0__56 or r_mut__56 or
-
-		r_x__57 or r_y__57 or r_z__57 or r_ux__57 or r_uy__57 or r_uz__57 or r_sz__57 or r_sr__57 or r_sleftz__57 or r_sleftr__57 or
-		r_weight__57 or r_layer__57 or r_dead__57 or r_hit__57 or r_diff__57 or r_dl_b__57 or r_numer__57 or r_z1__57 or r_z0__57 or r_mut__57 or
-
-		r_x__58 or r_y__58 or r_z__58 or r_ux__58 or r_uy__58 or r_uz__58 or r_sz__58 or r_sr__58 or r_sleftz__58 or r_sleftr__58 or
-		r_weight__58 or r_layer__58 or r_dead__58 or r_hit__58 or r_diff__58 or r_dl_b__58 or r_numer__58 or r_z1__58 or r_z0__58 or r_mut__58 or
-
-		r_x__59 or r_y__59 or r_z__59 or r_ux__59 or r_uy__59 or r_uz__59 or r_sz__59 or r_sr__59 or r_sleftz__59 or r_sleftr__59 or
-		r_weight__59 or r_layer__59 or r_dead__59 or r_hit__59 or r_diff__59 or r_dl_b__59 or r_numer__59 or r_z1__59 or r_z0__59 or r_mut__59 or 
-		
-		sr_big or sleftz_big or sleftr_big or quotient_div1)
+always @(*)
 
 	// default
 	// setup standard pipeline
@@ -10019,12 +9718,7 @@ mult_signed_32 u2(sr_boundaryChecker, uy_boundaryChecker, c_ymult_big);
 mult_signed_32 u3(sz_boundaryChecker, uz_boundaryChecker, c_zmult_big);
 
 // Determine new (x,y,z) coordinates
-always @(c_dead or 
-		c_x_big or c_y_big or c_z_big or 
-		c_x or c_y or c_z or
-		x_boundaryChecker or y_boundaryChecker or z_boundaryChecker or
-		c_xmult_big or c_ymult_big or c_zmult_big 
-		or hit_boundaryChecker or dead_boundaryChecker)
+always @(*)
 begin
 		
 	c_x_big = x_boundaryChecker + c_xmult_big[2*`BIT_WIDTH-2:31];
@@ -10169,7 +9863,7 @@ module mult_signed_32(a, b, c);
 	reg [63:0]c_tmp;
 
 
-always@(a or b or is_neg_a or is_neg_b or a_tmp or b_tmp or c)
+always@(*)
 begin
 
 	if(a[31] == 1) begin
@@ -10198,7 +9892,7 @@ begin
 	end
 end
 
-always@(c_tmp)
+always@(*)
 begin
 	c = c_tmp;
 end
@@ -10285,7 +9979,7 @@ reg [`LAYER_WIDTH-1:0]layer_Roulette;
 reg [`BIT_WIDTH-1:0] weight_Roulette;
 reg dead_Roulette;
    
-always @ (reset or enable or weight_absorber or randBits or randnumber or dead_RouletteMux) begin 
+always @ (*) begin 
   	//Default case moved inside else statements for odin
 	//randBits = randnumber;   //Reading from external random num generator
 	//weight_roulette=weight_absorber;	//Avoid inferring a latch
@@ -10393,7 +10087,7 @@ reg [31:0] r_s1, r_s2, r_s3;
 
 assign number_o = r_s1 ^ r_s2 ^ r_s3;
 
-always @(loadseed_i or seed_i or r_s1 or r_s2 or r_s3)
+always @(*)
 begin
 	if(loadseed_i)
 	begin
@@ -10468,9 +10162,10 @@ reg [`BIT_WIDTH - 1:0] log_x;
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
 
-defparam sram_replace0.ADDR_WIDTH = `MANTISSA_PRECISION;
-defparam sram_replace0.DATA_WIDTH = 32;
-single_port_ram sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
+
+single_port_ram 
+  # (.ADDR_WIDTH(`MANTISSA_PRECISION), .DATA_WIDTH(32))
+sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
 
 // priority encoder
 //integer i;
@@ -10485,7 +10180,7 @@ single_port_ram sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank),
 //end
 
 // Priority encoder, loop expanded
-always @(in_x)
+always @(*)
 begin
 	if (in_x[31]) begin
 	c_indexFirstOne = 6'b011111;
@@ -10594,7 +10289,7 @@ end
 wire [5:0]shifted;
 assign shifted = c_indexFirstOne - `MANTISSA_PRECISION + 1;
 
-always@(c_indexFirstOne or in_x or shifted)
+always@(*)
 begin
 //	c_temp_shift_x = in_x >> (c_indexFirstOne - `MANTISSA_PRECISION + 1);
 	if(c_indexFirstOne >= `MANTISSA_PRECISION)
@@ -10678,7 +10373,7 @@ begin
 end
 
 // calculate log
-always@(r_indexFirstOne or mantissa)
+always@(*)
 begin
 	if(r_indexFirstOne >= `MANTISSA_PRECISION)
 	begin
@@ -13105,8 +12800,7 @@ ScattererReflectorWrapper scattererReflector(
 ////    or the reflector should be used in any clock cycle        ////
 //////////////////////////////////////////////////////////////////////
 
-always @ (hit__37 or ux_scatterer or uy_scatterer or uz_scatterer or layer__37 or dead__37 or
-			ux_reflector or uy_reflector or uz_reflector or layer_reflector or dead_reflector) begin
+always @ (*) begin
    case (hit__37)   
    0: begin
        o_ux = ux_scatterer;
@@ -14839,7 +14533,7 @@ PhotonBlock1 photon1q(
 //////////////////////////////////////////////////////////////////////////////
 
 ///////////////STAGE 2 - square of x and y/////////////////////////
-always @(reset or x_pipe or y_pipe) begin
+always @(*) begin
 	if (reset)	begin      
 		x2_temp=0;      
 		y2_temp=0;
@@ -14851,7 +14545,7 @@ always @(reset or x_pipe or y_pipe) begin
 end
 
 ///////////////STAGE 3 - square of r/////////////////////////
-always @(reset or x2_P or y2_P) begin
+always @(*) begin
 	if (reset)
 		r2_temp=0; 
 	else 
@@ -14860,7 +14554,7 @@ end
 
 ///////////////STAGE 4 - Find r and dwa/////////////////////////
 //Create MUX
-always@(layer_pipe or muaFraction1 or muaFraction2 or muaFraction3 or muaFraction4 or muaFraction5)  
+always@(*)  
    case(layer_pipe) 
        1: fractionScaled=muaFraction1; 
        2: fractionScaled=muaFraction2; 
@@ -14871,7 +14565,7 @@ always@(layer_pipe or muaFraction1 or muaFraction2 or muaFraction3 or muaFractio
    endcase
 
 
-always @(reset or weight__4 or r_P_wire or weight_P4 or fractionScaled or product64bit or dead__4 or hit__4) begin
+always @(*) begin
 	if (reset) begin
 	   weight_P4=0; 
 		r_P=0;  
@@ -14902,7 +14596,7 @@ Sqrt_64b	squareRoot (
 			);
 			
 ///////////////STAGE 14 - Find ir and iz/////////////////////////
-always @(reset or r_P or z_pipe or dead__14 or hit__14 or iz_temp or ir_temp) begin
+always @(*) begin
 	if (reset) begin
 		ir_temp=0; 
 		iz_temp=0;
@@ -14950,7 +14644,7 @@ always @(reset or r_P or z_pipe or dead__14 or hit__14 or iz_temp or ir_temp) be
 end
 
 ///////////////STAGE 15 - Compute MEM address/////////////////////////
-always @(reset or ir__15 or iz__15 or ir_P or iz_P or ir_scaled) begin
+always @(*) begin
 	if (reset) begin
 	   ir_P=0; 
 	   iz_P=0; 
@@ -14966,7 +14660,7 @@ always @(reset or ir__15 or iz__15 or ir_P or iz_P or ir_scaled) begin
 end
 
 ///////////////STAGE 16 - MEM read/////////////////////////
-always @(reset or ir__16 or ir__17 or iz__16 or iz__17 or ir__18 or iz__18 or newAbs_P or q or newAbs_temp) begin
+always @(*) begin
 	if (reset) begin
 		oldAbs_MEM=0; 
 	end else begin
@@ -14984,7 +14678,7 @@ end
 
 ///////////////STAGE 17 - Update Weight/////////////////////////
 //TO BE TESTED!!!
-always @(reset or dwa__17 or weight__17 or weight_P or dwa_P or oldAbs_P) begin
+always @(*) begin
 	if(reset) begin
 	   dwa_P=0;   //How to specify Base 10??? 
 		weight_P=0; 
@@ -15628,7 +15322,7 @@ assign reset_new = reset & bigOr;
 
 
 //MUX for sending in indices for memory.
-always @ (i_layer31_pipeWrapper) begin
+always @ (*) begin
 	case (i_layer31_pipeWrapper)
 		3'b001: layerMinusOne = 0;
 		3'b010: layerMinusOne = 1;
@@ -17923,11 +17617,7 @@ end
 //are placed on the appropriate wires for placement in the pipeline.
 
 //-------------MUXES for SYNCHRONOUS LOGIC--------
-always @ (i_layer36 or downCritAngle_0 or upCritAngle_0 or
-						downCritAngle_1 or upCritAngle_1 or
-						downCritAngle_2 or upCritAngle_2 or
-						downCritAngle_3 or upCritAngle_3 or
-						downCritAngle_4 or upCritAngle_4) begin
+always @ (*) begin
 	case (i_layer36)
 	1:begin
 		downCritAngle		=	downCritAngle_0;
@@ -17957,7 +17647,7 @@ always @ (i_layer36 or downCritAngle_0 or upCritAngle_0 or
 	endcase
 end
 
-always @ (i_uz35 or i_layer35) begin
+always @ (*) begin
 	negUz = -i_uz35;
 	case (i_uz35[31])
 	0: begin
@@ -18008,11 +17698,7 @@ assign	op1_2_2						=	i_uz1;
 //SUBTRACTION, see math results
 
 //CC 4
-always @ (i_uz3 or i_layer3 or down_niOverNt_2_1 or up_niOverNt_2_1 or
-								down_niOverNt_2_2 or up_niOverNt_2_2 or
-								down_niOverNt_2_3 or up_niOverNt_2_3 or
-								down_niOverNt_2_4 or up_niOverNt_2_4 or
-								down_niOverNt_2_5 or up_niOverNt_2_5) begin
+always @ (*) begin
 	case (i_uz3[31])
 	//uz >= 0
 	0:begin
@@ -18050,11 +17736,7 @@ assign	sqrtOperand1_6					=	uz2_2__5;
 //CC `SQRT+`DIV+6 -- Line up with Scatterer.
 assign	op1_36_1					=	i_ux35;
 
-always @ (i_uz35 or i_layer35 or down_niOverNt_1 or up_niOverNt_1 or
-								down_niOverNt_2 or up_niOverNt_2 or
-								down_niOverNt_3 or up_niOverNt_3 or
-								down_niOverNt_4 or up_niOverNt_4 or
-								down_niOverNt_5 or up_niOverNt_5) begin
+always @ (*) begin
 	case (i_uz35[31])
 	0: begin//uz >= 0
 		case (i_layer35)
@@ -18198,8 +17880,7 @@ assign overflow2_36 = ~prod2_36[63] & toAnd2_36_1;
 //and U9(negOverflow2_36, prod2_36[63], toAnd2_36_2);
 assign negOverflow2_36 = prod2_36[63] & toAnd2_36_2;
 
-always @ (overflow1_36 or negOverflow1_36 or prod1_36 or
-		  overflow2_36 or negOverflow2_36 or prod2_36) begin
+always @ (*) begin
 	case ({overflow1_36, negOverflow1_36})
 	0:	new_ux_transmitted = {prod1_36[63:63], prod1_36[59:29]};
 	1:	new_ux_transmitted = `INTMIN;
@@ -18234,9 +17915,7 @@ end
 //
 //
 //
-always @ (i_uz36 or downCritAngle or upCritAngle or down_rFresnel or i_ux36 or
-			i_uy36 or i_layer36 or i_dead36 or rnd or up_rFresnel or ux_transmitted__37 or 
-			uy_transmitted__37 or uz2__37) begin
+always @ (*) begin
 	//REFLECTED -- Due to total internal reflection while moving down
 	if (~i_uz36[31] && i_uz36 <= downCritAngle) begin
 		new_ux		= i_ux36;
@@ -18323,13 +18002,14 @@ output	[31:0]			cosp;
 //Instantiate a single port ram for odin
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
-defparam sinp_replace.ADDR_WIDTH = 10;
-defparam sinp_replace.DATA_WIDTH = 32;
-single_port_ram sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
 
-defparam cosp_replace.ADDR_WIDTH = 10;
-defparam cosp_replace.DATA_WIDTH = 32;
-single_port_ram cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
+single_port_ram  
+# (.ADDR_WIDTH(10), .DATA_WIDTH(32))
+sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
+
+single_port_ram 
+# (.ADDR_WIDTH(10), .DATA_WIDTH(32))
+cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
 
 			
 endmodule
@@ -22930,7 +22610,7 @@ add_32b		uyNumer_add(
 assign new_sqrtOneMinusUz2_inv			=  (div_overflow) ? `INTMAX		:	{quot1_16[63:63], quot1_16[46:16]};
 
 //CC `SQRT+`DIV+6
-always @ (overflow1_36 or negOverflow1_36 or prod1_36 or overflow2_36 or negOverflow2_36 or prod2_36) begin
+always @ (*) begin
 	case ({overflow1_36, negOverflow1_36})
 	0:	new_uxQuotient = {prod1_36[63:63], prod1_36[45:15]};
 	1:	new_uxQuotient = `INTMIN;
@@ -22983,7 +22663,7 @@ assign new_uzCost					= prod6_36;
 //Determine whether or not the photon calculation was done on a photon that
 //was normal (orthogonal) to the plane of interest.  This is to avoid divide
 //by zero errors
-always @ (i_uz36) begin
+always @ (*) begin
 	//If uz >= `INTMAX-3 || uz <= -`INTMAX+3, normal incident
 	if(i_uz36 == 32'h7FFFFFFF || i_uz36 == 32'h7FFFFFFE || i_uz36 == 32'h7FFFFFFD || i_uz36 == 32'h7FFFFFFC || i_uz36 == 32'h80000000 || i_uz36 == 32'h80000001 || i_uz36 == 32'h80000002 || i_uz36 == 32'h80000003 || i_uz36 == 32'h80000004) begin
 		normalIncident = 1'b1;
@@ -23104,7 +22784,7 @@ module Mult_32b (dataa, datab, result); //now signed version!
 	reg [63:0]mult_tmp;
 	reg [63:0]c_tmp;
 
-always@(a or b or is_neg_a or is_neg_b or a_tmp or b_tmp or c)
+always@(*)
 begin
 	if(a[31] == 1) begin
 		a_tmp = -a;
@@ -23134,7 +22814,7 @@ begin
 	end
 end
 
-always@(c_tmp)
+always@(*)
 begin
 	c = c_tmp;
 end
@@ -23156,7 +22836,7 @@ module Div_64b (clock, denom, numer, quotient, remain);
 	wire [31:0]remain_temp;
 	Div_64b_unsigned div_temp(.clock(clock), .denom_(denom), .numer_(numer), .quotient(quotient_temp), .remain(remain_temp));
 	
-	always @ (numer or denom or quotient_temp or remain_temp) begin
+	always @ (*) begin
 		if ( numer[63]^denom[31] ) begin // only one is negative
 			quotient = -quotient_temp;
 			remain = -remain_temp;
@@ -23324,7 +23004,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 	reg [31:0]denom19;
 	
 	
-	always @(numer or denom0) begin
+	always @(*) begin
 		numer_temp_63 = {31'b0, numer};
 		
 		//quo0[63]
@@ -23361,7 +23041,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom1 <= denom0;
 	end
 		
-	always @(numer_temp_60_q or denom1 or quo0_q) begin
+	always @(*) begin
 		quo1_d[63:61] = quo0_q[63:61];
 	
 		//quo1_d[60]
@@ -23397,7 +23077,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom2 <= denom1;
 	end
 		
-	always @ (numer_temp_57_q or denom2 or quo1_q) begin
+	always @ (*) begin
 		quo2_d[63:58] = quo1_q[63:58];
 	
 		//quo2_d[57]
@@ -23434,7 +23114,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom3 <= denom2;
 	end
 	
-	always @ (numer_temp_54_q or denom3 or quo2_q) begin
+	always @ (*) begin
 		quo3_d[63:55] = quo2_q[63:55];
 	
 		//quo3_d[54]
@@ -23470,7 +23150,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom4 <= denom3;
 	end
 		
-	always @ (numer_temp_51_q or denom4 or quo3_q) begin
+	always @ (*) begin
 		quo4_d[63:52] = quo3_q[63:52];
 	
 		//quo4[51]
@@ -23506,7 +23186,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom5 <= denom4;
 	end
 		
-	always @ (numer_temp_48_q or denom5 or quo4_q) begin
+	always @ (*) begin
 		quo5_d[63:49] = quo4_q[63:49];
 
 	//quo5_d[48]
@@ -23542,7 +23222,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom6 <= denom5;
 	end
 		
-	always @ (numer_temp_45_q or denom6 or quo5_q) begin
+	always @ (*) begin
 		quo6_d[63:46] = quo5_q[63:46];
 	
 		//quo6_d[45]
@@ -23578,7 +23258,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom7 <= denom6;
 	end
 	
-	always @ (numer_temp_42_q or denom7 or quo6_q) begin
+	always @ (*) begin
 		quo7_d[63:43] = quo6_q[63:43];
 	
 		//quo7_d[42]
@@ -23614,7 +23294,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom8 <= denom7;
 	end
 		
-	always @ (numer_temp_39_q or denom8 or quo7_q) begin
+	always @ (*) begin
 		quo8_d[63:40] = quo7_q[63:40];
 	
 		//quo8[39]
@@ -23650,7 +23330,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom9 <= denom8;
 	end
 		
-	always @ (numer_temp_36_q or denom9 or quo8_q) begin
+	always @ (*) begin
 		quo9_d[63:37] = quo8_q[63:37];
 	
 		//quo9[36]
@@ -23686,7 +23366,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom10 <= denom9;
 	end
 		
-	always @ (numer_temp_33_q or denom10 or quo9_q) begin
+	always @ (*) begin
 		quo10_d[63:34] = quo9_q[63:34];
 	
 		//quo10_d[33]
@@ -23722,7 +23402,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom11 <= denom10;
 	end
 		
-	always @ (numer_temp_30_q or denom11 or quo10_q) begin 
+	always @ (*) begin 
 		quo11_d[63:31] = quo10_q[63:31];
 	
 		//quo11[30]
@@ -23758,7 +23438,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom12 <= denom11;
 	end
 	
-	always @ (numer_temp_27_q or denom12 or quo11_q) begin
+	always @ (*) begin
 		quo12_d[63:28] = quo11_q[63:28];
 	
 		//quo12[27]
@@ -23802,7 +23482,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom13 <= denom12;
 	end
 	
-	always @ (numer_temp_23_q or denom13 or quo12_q) begin
+	always @ (*) begin
 		quo13_d[63:24] = quo12_q[63:24];
 	
 		//quo13_d[23]
@@ -23846,7 +23526,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom14 <= denom13;
 	end
 		
-	always @ (numer_temp_19_q or denom14 or quo13_q) begin
+	always @ (*) begin
 		quo14_d[63:20] = quo13_q[63:20];
 	
 		//quo14_d[19]
@@ -23890,7 +23570,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom15 <= denom14;
 	end
 		
-	always @ (numer_temp_15_q or denom15 or quo14_q) begin
+	always @ (*) begin
 		quo15_d[63:16] = quo14_q[63:16];
 	
 		//quo15_d[15]
@@ -23934,7 +23614,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom16 <= denom15;
 	end
 		
-	always @ (numer_temp_11_q or denom16 or quo15_q) begin
+	always @ (*) begin
 		quo16_d[63:12] = quo15_q[63:12];
 	
 		//quo16_d[11]
@@ -23978,7 +23658,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom17 <= denom16;
 	end
 		
-	always @ (numer_temp_7_q or denom17 or quo16_q) begin
+	always @ (*) begin
 		quo17_d[63:8] = quo16_q[63:8];
 	
 		//quo17_d[7]
@@ -24022,7 +23702,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom18 <= denom17;
 	end
 		
-	always @ (numer_temp_3_q or denom18 or quo17_q) begin
+	always @ (*) begin
 		quo18_d[63:4] = quo17_q[63:4];
 		
 		//quo18_d[3]
@@ -24050,7 +23730,7 @@ module Div_64b_unsigned (clock, denom_, numer_, quotient, remain);
 		denom19 <= denom18;
 	end
 		
-	always @ (numer_temp_1_q or denom19 or quo18_q) begin
+	always @ (*) begin
 		quo19_d[63:2] = quo18_q[63:2];
 		//quo19_d[1]
 		if (numer_temp_1_q[94:1] >= denom19 ) begin
@@ -24211,7 +23891,7 @@ module Sqrt_64b (clk, num_, res);
 	reg [63:0]one; //This is the one that is selected in first expanded loop
 	reg [31:0]one_tmp;
 	
-	always @ (num) begin
+	always @ (*) begin
 		
 		//The first for-loop:
 		//all of these will be zero no matter how 'one' is selected.
@@ -24352,7 +24032,7 @@ module Sqrt_64b (clk, num_, res);
 	assign res__0 = 64'b0;
 	assign one__0 = one;
 	
-	always @ (res__0 or op__0 or one__0) begin
+	always @ (*) begin
 
        //i = 0
        if (op__0 >= res__0 + one__0) begin
@@ -24391,7 +24071,7 @@ module Sqrt_64b (clk, num_, res);
 		one__3_q <= one__3_d;
 	end
 	
-	always @ (op__3_q or res__3_q or one__3_q) begin
+	always @ (*) begin
        //i = 3
        if (op__3_q >= res__3_q + one__3_q) begin
            op__4 = op__3_q - res__3_q - one__3_q;
@@ -24439,7 +24119,7 @@ module Sqrt_64b (clk, num_, res);
 		res__7_q <= res__7_d;
 	end
 	
-	always @ (op__7_q or res__7_q or one__7_q) begin
+	always @ (*) begin
        //i = 7
        if (op__7_q >= res__7_q + one__7_q) begin
            op__8 = op__7_q - res__7_q - one__7_q;
@@ -24487,7 +24167,7 @@ module Sqrt_64b (clk, num_, res);
 		res__11_q <= res__11_d;
 	end
 	
-	always @ (op__11_q or res__11_q or one__11_q) begin	 
+	always @ (*) begin	 
        //i = 11
        if (op__11_q >= res__11_q + one__11_q) begin
            op__12 = op__11_q - res__11_q - one__11_q;
@@ -24535,7 +24215,7 @@ module Sqrt_64b (clk, num_, res);
 		res__15_q <= res__15_d;
 	end
 	
-	always @ (op__15_q or res__15_q or one__15_q) begin
+	always @ (*) begin
        //i = 15
        if (op__15_q >= res__15_q + one__15_q) begin
            op__16 = op__15_q - res__15_q - one__15_q;
@@ -24573,7 +24253,7 @@ module Sqrt_64b (clk, num_, res);
 		res__18_q <= res__18_d;
 	end
 	
-	always @ (op__18_q or res__18_q or one__18_q) begin
+	always @ (*) begin
        //i = 18
        if (op__18_q >= res__18_q + one__18_q) begin
            op__19 = op__18_q - res__18_q - one__18_q;
@@ -24611,7 +24291,7 @@ module Sqrt_64b (clk, num_, res);
 		res__21_q <= res__21_d;
 	end
 		 
-	always @ (op__21_q or res__21_q or one__21_q) begin 
+	always @ (*) begin 
        //i = 21
        if (op__21_q >= res__21_q + one__21_q) begin
            op__22 = op__21_q - res__21_q - one__21_q;
@@ -24649,7 +24329,7 @@ module Sqrt_64b (clk, num_, res);
 		res__24_q <= res__24_d;
 	end
 		  
-	always @ (op__24_q or res__24_q or one__24_q) begin
+	always @ (*) begin
        //i = 24
        if (op__24_q >= res__24_q + one__24_q) begin
            op__25 = op__24_q - res__24_q - one__24_q;
@@ -24687,7 +24367,7 @@ module Sqrt_64b (clk, num_, res);
 		res__27_q <= res__27_d;
 	end
 	
-	always @ (op__27_q or res__27_q or one__27_q) begin
+	always @ (*) begin
        //i = 27
        if (op__27_q >= res__27_q + one__27_q) begin
            op__28 = op__27_q - res__27_q - one__27_q;

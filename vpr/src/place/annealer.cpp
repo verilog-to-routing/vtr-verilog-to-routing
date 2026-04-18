@@ -3,9 +3,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "globals.h"
 #include "place_macro.h"
+#include "vpr_context.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
 #include "place_util.h"
 #include "placer_state.h"
@@ -73,9 +76,9 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
         proposed_setup_slacks.push_back(setup_slacks->setup_slack(net_id, ipin));
     }
 
-    //Sort in ascending order, from the worse slack value to the best
-    std::stable_sort(original_setup_slacks.begin(), original_setup_slacks.end());
-    std::stable_sort(proposed_setup_slacks.begin(), proposed_setup_slacks.end());
+    // Sort in ascending order, from the worse slack value to the best
+    std::ranges::stable_sort(original_setup_slacks);
+    std::ranges::stable_sort(proposed_setup_slacks);
 
     //Check the first pair of slack values that are different
     //If found, return their difference
@@ -118,6 +121,7 @@ t_annealing_state::t_annealing_state(float first_t,
 }
 
 bool t_annealing_state::outer_loop_update(float success_rate,
+                                          bool congestion_modeling_enabled,
                                           const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts) {
 #ifndef NO_GRAPHICS
@@ -139,8 +143,11 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     }
 
     // Automatically determine exit temperature.
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
+    if (congestion_modeling_enabled) {
+        t_exit *= (1. + placer_opts.congestion_factor);
+    }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
@@ -228,7 +235,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
-    , quench_started_(false) {
+    , quench_started_(false)
+    , congestion_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     float first_crit_exponent;
@@ -291,11 +299,147 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
 }
 
 float PlacementAnnealer::estimate_starting_temperature_() {
+
     if (placer_opts_.anneal_sched.type == e_sched_type::USER_SCHED) {
         return placer_opts_.anneal_sched.init_t;
     }
 
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    switch (placer_opts_.anneal_init_t_estimator) {
+        case e_anneal_init_t_estimator::COST_VARIANCE:
+            return estimate_starting_temp_using_cost_variance_();
+        case e_anneal_init_t_estimator::EQUILIBRIUM:
+            return estimate_equilibrium_temp_();
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                            "Unrecognized initial temperature estimator type");
+    };
+}
+
+float PlacementAnnealer::estimate_equilibrium_temp_() {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Determines the block swap loop count.
+    // TODO: Revisit this. We may be able to get away with doing fewer trial
+    //       swaps. That or we may be able to get a more accurate initial
+    //       temperature by doing more moves.
+    int move_lim = std::min(annealing_state_.move_lim_max, (int)cluster_ctx.clb_nlist.blocks().size());
+
+    // Perform N trial swaps and collect the change in cost for each of these
+    // swaps. Accepted swaps are swaps which resulted in a negative change in
+    // cost, rejected swaps are swaps which resulted in a positive change in
+    // cost.
+    std::vector<double> accepted_swaps;
+    std::vector<double> rejected_swaps;
+    accepted_swaps.reserve(move_lim);
+    rejected_swaps.reserve(move_lim);
+    for (int i = 0; i < move_lim; i++) {
+        t_swap_result swap_result = try_swap_(*move_generator_1_,
+                                              placer_opts_.place_algorithm,
+                                              false /*manual_move_enabled*/);
+
+        if (swap_result.move_result == e_move_result::ACCEPTED) {
+            accepted_swaps.push_back(swap_result.delta_c);
+            // TODO: Look into not actually accepting these.
+            swap_stats_.num_swap_accepted++;
+        } else if (swap_result.move_result == e_move_result::ABORTED) {
+            // Note: We do not keep track of the change in cost due to aborted
+            //       swaps. These are not interesting for this approach.
+            swap_stats_.num_swap_aborted++;
+        } else {
+            rejected_swaps.push_back(swap_result.delta_c);
+            swap_stats_.num_swap_rejected++;
+        }
+    }
+
+    // Computed the total change in cost due to accepted swaps.
+    double total_accepted_cost = 0.0;
+    for (double accepted_cost : accepted_swaps) {
+        total_accepted_cost += accepted_cost;
+    }
+
+    // Find the magnitude of the largest reject swap cost. This is useful for
+    // picking a worst-case initial temperature.
+    double max_rejected_swap_cost = 0.0;
+    for (double rejected_cost : rejected_swaps) {
+        max_rejected_swap_cost = std::max(max_rejected_swap_cost,
+                                          std::abs(rejected_cost));
+    }
+
+    // Perform a binary search to try and find the equilibrium temperature for
+    // this placement. This is the temperature that we expect would lead to no
+    // overall change in temperature. We do this by computing the expected
+    // change in cost given a trial temperature and try larger / smaller
+    // temperatures until one is found that causes the change cost is close to
+    // 0. Since the expected change in cost is monotonically increasing for
+    // all positive temperatures, this method will return a unique result if it
+    // exists within this range.
+    //      Initialize the lower bound temperature to 0. The temperature cannot
+    //      be less than 0.
+    double lower_bound_temp = 0.0;
+    //      Initialize the upper bound temperature. It is possible for
+    //      the equilibrium temperature to be infinite if the initial placement
+    //      is so bad that no swaps are accepted. In that case this value will
+    //      be returned instead of infinity.
+    //      At this temperature, the probability of accepting this worst rejected
+    //      swap would be 71.655% (e^(-1/3)).
+    //      TODO: Investigate if this is a good initial temperature for these
+    //            cases.
+    double upper_bound_temp = 3.0 * max_rejected_swap_cost;
+    //      The max search iterations should never be hit, but it is here as an
+    //      exit condition to prevent infinite loops.
+    constexpr unsigned max_search_iters = 100;
+    for (unsigned binary_search_iter = 0; binary_search_iter < max_search_iters; binary_search_iter++) {
+        // Exit condition for binary search. Could be hit if the lower and upper
+        // bounds are arbitrarily close.
+        if (lower_bound_temp >= upper_bound_temp)
+            break;
+
+        // Try the temperature in the middle of the lower and upper bounds.
+        double trial_temp = (lower_bound_temp + upper_bound_temp) / 2.0;
+
+        // Return the trial temperature if it is within 6 decimal-points of precision.
+        // NOTE: This is arbitrary.
+        // TODO: We could stop this early and then use Newton's Method to quickly
+        //       touch it up to a more accurate value.
+        if (std::abs(upper_bound_temp - lower_bound_temp) / trial_temp < 1e-6)
+            return trial_temp;
+
+        // Calculate the expected change in cost at this temperature (which we
+        // call the residual here).
+        double expected_total_post_rejected_cost = 0.0;
+        for (double rejected_cost : rejected_swaps) {
+            // Expected change in cost after a rejected swap is the change in
+            // cost multiplied by the probability that this swap is accepted at
+            // this temperature.
+            double acceptance_prob = std::exp((-1.0 * rejected_cost) / trial_temp);
+            expected_total_post_rejected_cost += rejected_cost * acceptance_prob;
+        }
+        double residual = expected_total_post_rejected_cost + total_accepted_cost;
+
+        if (residual < 0) {
+            // Since the function is monotonically increasing, if the residual
+            // is negative, then the lower bound should be raised to the trial
+            // temperature.
+            lower_bound_temp = trial_temp;
+        } else if (residual > 0) {
+            // Similarly, if the residual is positive, then the upper bound should
+            // be lowered to the trial temperature.
+            upper_bound_temp = trial_temp;
+        } else {
+            // If we happened to exactly hit the risidual, then this is the
+            // exact temperature we should use.
+            return trial_temp;
+        }
+    }
+
+    // If we get down here, it means that the upper loop did not reach a solution;
+    // however, we know that the answer should be somewhere between lower and upper
+    // bound. Therefore, return the average of the two.
+    return (lower_bound_temp + upper_bound_temp) / 2.0;
+}
+
+float PlacementAnnealer::estimate_starting_temp_using_cost_variance_() {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     // Use to calculate the average of cost when swap is accepted.
     int num_accepted = 0;
@@ -318,14 +462,14 @@ float PlacementAnnealer::estimate_starting_temperature_() {
 #endif /*NO_GRAPHICS*/
 
         // Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
-        e_move_result swap_result = try_swap_(*move_generator_1_, placer_opts_.place_algorithm, manual_move_enabled);
+        t_swap_result swap_result = try_swap_(*move_generator_1_, placer_opts_.place_algorithm, manual_move_enabled);
 
-        if (swap_result == e_move_result::ACCEPTED) {
+        if (swap_result.move_result == e_move_result::ACCEPTED) {
             num_accepted++;
             av += costs_.cost;
             sum_of_squares += costs_.cost * costs_.cost;
             swap_stats_.num_swap_accepted++;
-        } else if (swap_result == e_move_result::ABORTED) {
+        } else if (swap_result.move_result == e_move_result::ABORTED) {
             swap_stats_.num_swap_aborted++;
         } else {
             swap_stats_.num_swap_rejected++;
@@ -338,12 +482,6 @@ float PlacementAnnealer::estimate_starting_temperature_() {
     // Get the standard deviation.
     double std_dev = get_std_dev(num_accepted, sum_of_squares, av);
 
-    // Print warning if not all swaps are accepted.
-    if (num_accepted != move_lim) {
-        VTR_LOG_WARN("Starting t: %d of %d configurations accepted.\n",
-                     num_accepted, move_lim);
-    }
-
     // Improved initial placement uses a fast SA for NoC routers and centroid placement
     // for other blocks. The temperature is reduced to prevent SA from destroying the initial placement
     float init_temp = std_dev / 64;
@@ -351,7 +489,7 @@ float PlacementAnnealer::estimate_starting_temperature_() {
     return init_temp;
 }
 
-e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
+t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                                            const t_place_algorithm& place_algorithm,
                                            bool manual_move_enabled) {
     /* Picks some block and moves it to another spot.  If this spot is
@@ -373,14 +511,13 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    /* I'm using negative values of proposed_net_cost as a flag,
-     * so DO NOT use cost functions that can go negative. */
-    double delta_c = 0;        //Change in cost due to this swap.
-    double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
-    double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
+    double delta_c = 0.;            // Change in cost due to this swap.
+    double bb_delta_c = 0.;         // Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0.;     // Change in the timing cost (delay * criticality).
+    double congestion_delta_c = 0.; // Change in the congestion cost
 
-    /* Allow some fraction of moves to not be restricted by rlim,
-     * in the hopes of better escaping local minima. */
+    // Allow some fraction of moves to not be restricted by rlim,
+    // in the hopes of better escaping local minima.
     float rlim;
     if (placer_opts_.rlim_escape_fraction > 0. && rng_.frand() < placer_opts_.rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
@@ -396,19 +533,19 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         router_block_move = check_for_router_swap(noc_opts_.noc_swap_percentage, rng_);
     }
 
-    //When manual move toggle button is active, the manual move window asks the user for input.
+    // When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator_, blocks_affected_,
                                                               proposed_action.move_type, rlim,
                                                               placer_opts_, criticalities_);
-#endif //NO_GRAPHICS
+#endif // NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
         create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, place_macros_, rng_);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
-        //Generate a new move (perturbation) used to explore the space of possible placements
+        // Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, placer_opts_, criticalities_);
     }
 
@@ -455,7 +592,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
          * delays and timing costs and store them in proposed_* data structures.
          */
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
-                                                              bb_delta_c, timing_delta_c);
+                                                              bb_delta_c, timing_delta_c, congestion_delta_c);
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -472,7 +609,8 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            timing_delta_c,
                            costs_.timing_cost_norm);
             delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
-                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm;
+                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
+                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -539,6 +677,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         if (move_outcome == e_move_result::ACCEPTED) {
             costs_.cost += delta_c;
             costs_.bb_cost += bb_delta_c;
+            costs_.congestion_cost += congestion_delta_c;
 
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
@@ -634,11 +773,11 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     }
     move_outcome_stats.outcome = move_outcome;
 
-    // If we force a router block move then it was not proposed by the
-    // move generator, so we should not calculate the reward and update
+    // If we force a router block move or manual move then it was not proposed
+    // by the move generator, so we should not calculate the reward and update
     // the move generators status since this outcome is not a direct
-    // consequence of the move generator
-    if (!router_block_move) {
+    // consequence of the move generator.
+    if (!router_block_move && !manual_move_enabled) {
         move_generator.calculate_reward_and_process_outcome(move_outcome_stats, delta_c, REWARD_BB_TIMING_RELATIVE_WEIGHT);
     }
 
@@ -652,7 +791,11 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "\t\tAfter move Place cost %e, bb_cost %e, timing cost %e\n",
                    costs_.cost, costs_.bb_cost, costs_.timing_cost);
-    return move_outcome;
+
+    t_swap_result swap_result;
+    swap_result.move_result = move_outcome;
+    swap_result.delta_c = delta_c;
+    return swap_result;
 }
 
 void PlacementAnnealer::outer_loop_update_timing_info() {
@@ -671,6 +814,26 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
             outer_crit_iter_count_ = 0;
         }
         outer_crit_iter_count_++;
+    }
+
+    // Congestion modeling is enabled when the ratio of the current range limit to the initial range limit
+    // drops below a user-specified threshold, and the congestion cost weighting factor is non-zero.
+    // Once enabled, congestion modeling continues even if the range limit increases and the ratio
+    // rises above the threshold.
+    //
+    // This logic is motivated by the observation that enabling congestion modeling too early in the
+    // anneal increases computational overhead and introduces noise into the placement cost function,
+    // as early placements are typically highly congested and unstable. So, we delay congestion modeling
+    // until the placement is more settled and wirelength has been reasonably optimized.
+    if ((annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio
+         && placer_opts_.congestion_factor != 0.)
+        || congestion_modeling_started_) {
+        costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
+
+        if (!congestion_modeling_started_) {
+            VTR_LOG("Congestion modeling started.\n");
+            congestion_modeling_started_ = true;
+        }
     }
 
     // Update the cost normalization factors
@@ -693,13 +856,21 @@ void PlacementAnnealer::placement_inner_loop() {
 
     // Inner loop begins
     for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < annealing_state_.move_lim; inner_iter++) {
-        e_move_result swap_result = try_swap_(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
+#ifndef NO_GRAPHICS
+        // Checks manual move flag for manual move feature
+        t_draw_state* draw_state = get_draw_state_vars();
+        if (draw_state->show_graphics) {
+            manual_move_enabled = manual_move_is_selected();
+        }
+#endif /*NO_GRAPHICS*/
 
-        if (swap_result == e_move_result::ACCEPTED) {
+        t_swap_result swap_result = try_swap_(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
+
+        if (swap_result.move_result == e_move_result::ACCEPTED) {
             // Move was accepted.  Update statistics that are useful for the annealing schedule.
             placer_stats_.single_swap_update(costs_);
             swap_stats_.num_swap_accepted++;
-        } else if (swap_result == e_move_result::ABORTED) {
+        } else if (swap_result.move_result == e_move_result::ABORTED) {
             swap_stats_.num_swap_aborted++;
         } else { // swap_result == REJECTED
             swap_stats_.num_swap_rejected++;
@@ -753,6 +924,11 @@ void PlacementAnnealer::placement_inner_loop() {
         }
     }
 
+#ifdef VPR_USE_SIGACTION
+    // Save the block locations after each inner loop for checkpointing.
+    g_vpr_ctx.mutable_placement().mutable_block_locs() = placer_state_.block_locs();
+#endif
+
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
 
@@ -783,7 +959,7 @@ const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
 }
 
 bool PlacementAnnealer::outer_loop_update_state() {
-    return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
+    return annealing_state_.outer_loop_update(placer_stats_.success_rate, congestion_modeling_started_, costs_, placer_opts_);
 }
 
 void PlacementAnnealer::start_quench() {

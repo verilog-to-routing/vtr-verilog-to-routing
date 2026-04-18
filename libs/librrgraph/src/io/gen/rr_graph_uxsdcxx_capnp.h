@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 5d51b89242fe6e463629ac43a72e4606
+ * Cmdline: uxsdcxx/uxsdcap.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 45774433f1b54981c349fecadf578b11
  */
 
 #include <functional>
@@ -230,6 +230,8 @@ inline enum_node_type conv_enum_node_type(ucap::NodeType e, const std::function<
 		return enum_node_type::OPIN;
 	case ucap::NodeType::IPIN:
 		return enum_node_type::IPIN;
+	case ucap::NodeType::MUX:
+		return enum_node_type::MUX;
 	default:
 		(*report_error)("Unknown enum_node_type");
 		throw std::runtime_error("Unreachable!");
@@ -254,6 +256,8 @@ inline ucap::NodeType conv_to_enum_node_type(enum_node_type e) {
 		return ucap::NodeType::OPIN;
 	case enum_node_type::IPIN:
 		return ucap::NodeType::IPIN;
+	case enum_node_type::MUX:
+		return ucap::NodeType::MUX;
 	default:
 		throw std::runtime_error("Unknown enum_node_type");
 	}
@@ -412,7 +416,7 @@ inline void load_rr_graph_capnp(T &out, kj::ArrayPtr<const ::capnp::word> data, 
 	std::function<void(const char *)> report_error = [filename, &out, &stack](const char *message){
 		std::stringstream msg;
 		msg << message << std::endl;
-		msg << "Error occured at ";
+		msg << "Error occurred at ";
 		for(size_t i = 0; i < stack.size(); ++i) {
 			msg << stack[i].first << "[" << stack[i].second << "]";
 			if(i+1 < stack.size()) {
@@ -430,6 +434,8 @@ inline void load_rr_graph_capnp(T &out, kj::ArrayPtr<const ::capnp::word> data, 
 template <class T, typename Context>
 inline void write_rr_graph_capnp(T &in, Context &context, ucap::RrGraph::Builder &root) {
 	in.start_write();
+	if((bool)in.get_rr_graph_schema_file_id(context))
+		root.setSchemaFileId(in.get_rr_graph_schema_file_id(context));
 	if((bool)in.get_rr_graph_tool_comment(context))
 		root.setToolComment(in.get_rr_graph_tool_comment(context));
 	if((bool)in.get_rr_graph_tool_name(context))
@@ -548,6 +554,7 @@ inline void load_switch_capnp_type(const ucap::Switch::Reader &root, T &out, Con
 	(void)stack;
 
 	out.set_switch_name(root.getName().cStr(), context);
+	out.set_switch_template_id(root.getTemplateId().cStr(), context);
 	out.set_switch_type(conv_enum_switch_type(root.getType(), report_error), context);
 	stack->push_back(std::make_pair("getTiming", 0));
 	if (root.hasTiming()) {
@@ -765,7 +772,8 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
-	out.set_node_loc_layer(root.getLayer(), context);
+	out.set_node_loc_layer_high(root.getLayerHigh(), context);
+	out.set_node_loc_layer_low(root.getLayerLow(), context);
 	out.set_node_loc_ptc(root.getPtc().cStr(), context);
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
 }
@@ -941,6 +949,7 @@ inline void load_rr_graph_capnp_type(const ucap::RrGraph::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_rr_graph_schema_file_id(root.getSchemaFileId(), context);
 	out.set_rr_graph_tool_comment(root.getToolComment().cStr(), context);
 	out.set_rr_graph_tool_name(root.getToolName().cStr(), context);
 	out.set_rr_graph_tool_version(root.getToolVersion().cStr(), context);
@@ -1078,6 +1087,8 @@ inline void write_switches_capnp_type(T &in, ucap::Switches::Builder &root, Cont
 		auto child_context = in.get_switches_switch(i, context);
 		switches_switch.setId(in.get_switch_id(child_context));
 		switches_switch.setName(in.get_switch_name(child_context));
+		if((bool)in.get_switch_template_id(child_context))
+			switches_switch.setTemplateId(in.get_switch_template_id(child_context));
 		if((bool)in.get_switch_type(child_context))
 			switches_switch.setType(conv_to_enum_switch_type(in.get_switch_type(child_context)));
 		write_switch_capnp_type(in, switches_switch, child_context);
@@ -1223,7 +1234,8 @@ inline void write_node_capnp_type(T &in, ucap::Node::Builder &root, Context &con
 	{
 		auto child_context = in.get_node_loc(context);
 		auto node_loc = root.initLoc();
-		node_loc.setLayer(in.get_node_loc_layer(child_context));
+		node_loc.setLayerHigh(in.get_node_loc_layer_high(child_context));
+		node_loc.setLayerLow(in.get_node_loc_layer_low(child_context));
 		node_loc.setPtc(in.get_node_loc_ptc(child_context));
 		if((bool)in.get_node_loc_side(child_context))
 			node_loc.setSide(conv_to_enum_loc_side(in.get_node_loc_side(child_context)));

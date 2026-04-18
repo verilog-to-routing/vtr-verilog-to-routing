@@ -31,3 +31,4 @@ total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
 
+num_pre_packed_blocks;vpr.out;\s+total blocks:\s*(\d+),.*

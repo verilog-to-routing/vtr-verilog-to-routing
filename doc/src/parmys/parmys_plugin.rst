@@ -35,9 +35,5 @@ Available parameters
 
 .. option:: -vtr_prim
 
-    No additional passes will be executed.
-
-.. option:: -vtr_prim
-
     loads vtr primitives as modules, if the design uses vtr primitives then this flag is mandatory for first run
 

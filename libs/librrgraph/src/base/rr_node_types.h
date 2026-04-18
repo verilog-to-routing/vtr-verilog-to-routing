@@ -8,6 +8,7 @@
 #include <map>
 #include <cstdint>
 
+#include "vpr_error.h"
 #include "vtr_range.h"
 #include "vtr_array.h"
 #include "vtr_ndmatrix.h"
@@ -29,10 +30,10 @@ enum class e_rr_type : unsigned char {
     OPIN,       ///<Output pin of a block
     CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
-    MUX,        ///<a routing multiplexer that does not traverse a significant distance before feeding
-                /// other rr-nodes. E.g. the first node in a 2-stage mux in a switch block.
     CHANZ,      ///<z-directed routing wire used to connect two different layers.
                 ///< For CHANZ nodes, xlow == xhigh and yhigh == ylow
+    MUX,        ///<a routing multiplexer that does not traverse a significant distance before feeding
+                /// other rr-nodes. E.g. the first node in a 2-stage mux in a switch block.
     NUM_RR_TYPES
 };
 
@@ -55,6 +56,29 @@ constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr
                                                                                                "IPIN", "OPIN",
                                                                                                "CHANX", "CHANY", "CHANZ",
                                                                                                "MUX"};
+
+inline e_rr_type get_rr_type(const std::string& type_name) {
+    if (type_name == "SOURCE") {
+        return e_rr_type::SOURCE;
+    } else if (type_name == "SINK") {
+        return e_rr_type::SINK;
+    } else if (type_name == "IPIN") {
+        return e_rr_type::IPIN;
+    } else if (type_name == "OPIN") {
+        return e_rr_type::OPIN;
+    } else if (type_name == "CHANX") {
+        return e_rr_type::CHANX;
+    } else if (type_name == "CHANY") {
+        return e_rr_type::CHANY;
+    } else if (type_name == "CHANZ") {
+        return e_rr_type::CHANZ;
+    } else if (type_name == "MUX") {
+        return e_rr_type::MUX;
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid RR type name: %s\n", type_name.c_str());
+        return e_rr_type::NUM_RR_TYPES;
+    }
+}
 
 /**
  * @enum Direction
@@ -119,7 +143,7 @@ class edge_idx_iterator {
 
 typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
+typedef std::vector<std::map<int, RRSwitchId>> t_arch_switch_fanin;
 
 /**
  * @brief Resistance/Capacitance data for an RR Node.

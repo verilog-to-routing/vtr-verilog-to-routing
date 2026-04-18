@@ -157,7 +157,7 @@ map<t_node*, size_t> carry_chain_lengths(t_module* module, vector<t_node*> start
     map<t_node*, size_t> chain_lengths;
 
     //Build a net to node map for the cin port
-    //  This is required to avoid slow reverse look-ups from cout net to assoicated cin nodes
+    //  This is required to avoid slow reverse look-ups from cout net to associated cin nodes
     map<t_pin_def*, t_node*> net_to_node_map;
     for(int i = 0; i < module->number_of_nodes; i++) {
         t_node* temp_node = module->array_of_nodes[i];

@@ -142,7 +142,7 @@ class Rect {
     ///@brief xmax coordinate
     T xmax() const;
 
-    ///@brief ymin coodrinate
+    ///@brief ymin coordinate
     T ymin() const;
 
     ///@brief ymax coordinate
@@ -275,7 +275,7 @@ class Line {
     typedef vtr::Range<point_iter> point_range;
 
   public: //Constructors
-    ///@brief contructor
+    ///@brief constructor
     Line(std::vector<Point<T>> line_points);
 
   public: //Accessors

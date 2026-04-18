@@ -7,7 +7,7 @@
  * what groups of wires a pin connects to (groups being defined by wire start points).
  * And a second class which is related to the quality of the switch pattern that the pins
  * make into the channel in general (specifically, how much the switches of the pins overlap
- * with eachother). Again, these two classes of metrics are fairly orthogonal, so it is
+ * with each other). Again, these two classes of metrics are fairly orthogonal, so it is
  * possible to adjust one while keeping the other relatively constant.
  *
  * The code below currently works for the input/output connection blocks of bidirectional
@@ -28,6 +28,7 @@
 #include <map>
 #include <iterator>
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vtr_random.h"
 #include "vtr_log.h"
@@ -152,9 +153,9 @@ void adjust_cb_metric(const e_metric metric, const float target, const float tar
 
     /* get the number of block pins that are of pin_type */
     int num_pin_type_pins = 0;
-    if (DRIVER == pin_type) {
+    if (e_pin_type::DRIVER == pin_type) {
         num_pin_type_pins = block_type->num_drivers;
-    } else if (RECEIVER == pin_type) {
+    } else if (e_pin_type::RECEIVER == pin_type) {
         num_pin_type_pins = block_type->num_receivers;
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Found unexpected pin type when adjusting CB wire metric: %d\n", pin_type);
@@ -196,9 +197,9 @@ void get_conn_block_metrics(const t_physical_tile_type_ptr block_type, int***** 
 
     /* get the number of block pins that are of pin_type */
     int num_pin_type_pins = UNDEFINED;
-    if (DRIVER == pin_type) {
+    if (e_pin_type::DRIVER == pin_type) {
         num_pin_type_pins = block_type->num_drivers;
-    } else if (RECEIVER == pin_type) {
+    } else if (e_pin_type::RECEIVER == pin_type) {
         num_pin_type_pins = block_type->num_receivers;
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Found unexpected pin type when adjusting CB wire metric: %d\n", pin_type);
@@ -211,7 +212,7 @@ void get_conn_block_metrics(const t_physical_tile_type_ptr block_type, int***** 
     /* check based on block type whether we should account for pins on both sides of a channel when computing the relevant CB metrics
      * (i.e. from a block on the left and from a block on the right for a vertical channel, for instance) */
     bool both_sides = false;
-    if (block_type->name == "clb" && DRIVER == pin_type) {
+    if (block_type->name == "clb" && e_pin_type::DRIVER == pin_type) {
         /* many CLBs are adjacent to each other, so connections from one CLB
          *  will share the channel segment with its neighbor. We'd like to take this into
          *  account for the applicable metrics. */
@@ -234,7 +235,7 @@ void get_conn_block_metrics(const t_physical_tile_type_ptr block_type, int***** 
 /* initializes the fields of the cb_metrics class */
 static void init_cb_structs(const t_physical_tile_type_ptr block_type, int***** tracks_connected_to_pin, const int num_segments, const t_segment_inf* segment_inf, const e_pin_type pin_type, const int num_pin_type_pins, const int nodes_per_chan, const int Fc, Conn_Block_Metrics* cb_metrics) {
     /* can not calculate CB metrics for open pins */
-    if (OPEN == pin_type) {
+    if (e_pin_type::OPEN == pin_type) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Can not initialize CB metric structures for pins of OPEN type\n");
     }
 
@@ -329,7 +330,7 @@ int get_num_wire_types(const int num_segments, const t_segment_inf* segment_inf)
         /* There are as many wire start points as the value of L */
         num_wire_types = segment_inf[0].length;
     } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Currently, the connection block metrics code can only deal with channel segments that carry wires of only one lenght.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Currently, the connection block metrics code can only deal with channel segments that carry wires of only one length.\n");
     }
 
     return num_wire_types;
@@ -698,7 +699,7 @@ static double try_move(const e_metric metric,
     /* for the CLB block types it is appropriate to account for pins on both sides of a channel segment when
      * calculating a CB metric (because CLBs are often found side by side) */
     bool both_sides = false;
-    if (block_type->name == "clb" && DRIVER == pin_type) {
+    if (block_type->name == "clb" && e_pin_type::DRIVER == pin_type) {
         /* many CLBs are adjacent to each other, so connections from one CLB
          *  will share the channel segment with its neighbor. We'd like to take this into
          *  account for the applicable metrics. */
@@ -1215,7 +1216,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
      * 1) the total number of possible switch configurations in which 'wires_used' wires are occupied by a signal
      * 2) in general, we have some number of 'wire groups' as defined above. each wire group is used a certain number of times in some
      * specific configuration of switches. we want to determine, for each wire group, the number of switch configurations
-     * that leads to y wires of this group being used, for every feasable y.
+     * that leads to y wires of this group being used, for every feasible y.
      *
      * These two things should allow us to calculate the expectation of how many wires of each group are used on average.
      * And this in turn allows us to set the probabilities of each wire in the xbar matrix being available/unavailable
@@ -1225,7 +1226,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
      * this vector is created here, but is updated inside the count_switch_configurations function */
     std::vector<int> config(count_map.size(), 0); // Prefill with zeroes
 
-    /* the nuber of wires that are used */
+    /* the number of wires that are used */
     int wires_used = vtr::nint(fraction_wires_used * (float)capacity);
 
     long double total_configurations = count_switch_configurations(0, wires_used, capacity, &config, &count_map);
@@ -1349,13 +1350,13 @@ void analyze_conn_blocks(const int***** opin_cb, const int***** ipin_cb, const t
     int nodes_per_chan = chan_width_inf->x_min;
 
     /* get Fc */
-    int Fc_out = get_max_Fc(Fc_array_out, block_type, DRIVER);
-    int Fc_in = get_max_Fc(Fc_array_in, block_type, RECEIVER);
+    int Fc_out = get_max_Fc(Fc_array_out, block_type, e_pin_type::DRIVER);
+    int Fc_in = get_max_Fc(Fc_array_in, block_type, e_pin_type::RECEIVER);
 
     /* get the basic input and output conn block crossbars */
     t_xbar_matrix output_xbar, input_xbar;
-    get_xbar_matrix(opin_cb, block_type, DRIVER, 0, true, nodes_per_chan, Fc_out, &output_xbar);
-    get_xbar_matrix(ipin_cb, block_type, RECEIVER, 0, false, nodes_per_chan, Fc_in, &input_xbar);
+    get_xbar_matrix(opin_cb, block_type, e_pin_type::DRIVER, 0, true, nodes_per_chan, Fc_out, &output_xbar);
+    get_xbar_matrix(ipin_cb, block_type, e_pin_type::RECEIVER, 0, false, nodes_per_chan, Fc_in, &input_xbar);
     input_xbar = transpose_xbar(&input_xbar);
 
     /* 'normalize' the output_xbar such that each entry which was formerly equal to '1' will now

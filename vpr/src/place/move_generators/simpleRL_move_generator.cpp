@@ -227,9 +227,34 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
     if (rng_.frand() < epsilon_) {
         /* Explore
          * With probability epsilon, choose randomly amongst all move types */
+
+        // Cumulative epsilon action probability stores a CDF for all available
+        // actions where each action has an equal probability to occur. Pick
+        // a random number between 0 and 1 and select the action in the CDF equal
+        // to or just less than the random number.
+        // For example, for four actions:
+        //        A     B    C     D
+        //      [0.25, 0.5, 0.75, 1.0]
+        //   Here, if the random number is 0.2, action A would be chosen.
+        //         if the random number is 0.5, action B would be chosen.
+        //         if the random number is 0.6, action C would be chosen.
+        //         if the random number is 1.0, action D would be chosen.
         float p = rng_.frand();
         auto itr = std::lower_bound(cumm_epsilon_action_prob_.begin(), cumm_epsilon_action_prob_.end(), p);
-        auto action_type_q_pos = itr - cumm_epsilon_action_prob_.begin();
+        size_t action_type_q_pos;
+        if (itr != cumm_epsilon_action_prob_.end()) {
+            action_type_q_pos = itr - cumm_epsilon_action_prob_.begin();
+        } else {
+            // Due to numerical precision (and dumb luck) its possible that the
+            // CDF does not fully add up to 1.0 (for example 0.9999) and the
+            // random number chosen is 1.0. In this case, no action will be
+            // chosen. In this case, just choose the last action.
+            // For example, for three actions:
+            //      [0.33, 0.66, 0.99]
+            //   Notice that the last action does not perfectly add up to 1.0. To
+            //   get around this, we just pretend that it rounded up to 1.0.
+            action_type_q_pos = num_available_actions_ - 1;
+        }
         //Mark the q_table location that agent used to update its value after processing the move outcome
         last_action_ = action_type_q_pos;
 

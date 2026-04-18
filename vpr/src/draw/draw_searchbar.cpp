@@ -1,4 +1,5 @@
 /*draw_searchbar.cpp contains all functions related to searchbar actions.*/
+#include "physical_types.h"
 #ifndef NO_GRAPHICS
 
 #include <cstdio>
@@ -32,33 +33,23 @@
  * TODO: Fix this for global routing, currently for detailed only.
  */
 ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
-    double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
+    double left = 0, right = 0, top = 0, bottom = 0;
     switch (rr_graph.node_type(inode)) {
         case e_rr_type::CHANX:
             left = draw_coords->tile_x[rr_graph.node_xlow(inode)];
-            right = draw_coords->tile_x[rr_graph.node_xhigh(inode)]
-                    + draw_coords->get_tile_width();
-            bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)]
-                     + draw_coords->get_tile_width()
-                     + (1. + rr_graph.node_track_num(inode));
-            top = draw_coords->tile_y[rr_graph.node_ylow(inode)]
-                  + draw_coords->get_tile_width()
-                  + (1. + rr_graph.node_track_num(inode));
+            right = draw_coords->tile_x[rr_graph.node_xhigh(inode)] + draw_coords->get_tile_width();
+            bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)] + draw_coords->get_tile_width() + (1. + rr_graph.node_track_num(inode));
+            top = bottom;
             break;
         case e_rr_type::CHANY:
-            left = draw_coords->tile_x[rr_graph.node_xlow(inode)]
-                   + draw_coords->get_tile_width()
-                   + (1. + rr_graph.node_track_num(inode));
-            right = draw_coords->tile_x[rr_graph.node_xlow(inode)]
-                    + draw_coords->get_tile_width()
-                    + (1. + rr_graph.node_track_num(inode));
+            left = draw_coords->tile_x[rr_graph.node_xlow(inode)] + draw_coords->get_tile_width() + (1. + rr_graph.node_track_num(inode));
+            right = left;
             bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)];
-            top = draw_coords->tile_y[rr_graph.node_yhigh(inode)]
-                  + draw_coords->get_tile_width();
+            top = draw_coords->tile_y[rr_graph.node_yhigh(inode)] + draw_coords->get_tile_width();
             break;
         default:
             // a problem. leave at default value (ie. zeros)
@@ -72,14 +63,21 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
 void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomLookup& atom_lookup = g_vpr_ctx.atom().lookup();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     for (int k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
-        ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
+        ClusterNetId cluster_net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
-        if (net_id == ClusterNetId::INVALID()) {
+        if (cluster_net_id == ClusterNetId::INVALID()) {
             continue;
+        }
+
+        // Convert to atom net id if flat routing is enabled
+        ParentNetId net_id = cluster_net_id;
+        if (draw_state->is_flat) {
+            net_id = atom_lookup.atom_net(cluster_net_id);
         }
 
         t_pl_loc block_loc = block_locs[blk_id].loc;
@@ -88,18 +86,18 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 
         auto class_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
-        if (class_type == DRIVER) { /* Fanout */
+        if (class_type == e_pin_type::DRIVER) { /* Fanout */
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
-                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(cluster_net_id)) {
                     ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_reset_blk_color(fanblk);
                 }
             } else {
                 /* Highlight the fanout */
                 draw_state->net_color[net_id] = DRIVES_IT_COLOR;
-                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(cluster_net_id)) {
                     ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_state->set_block_color(fanblk, DRIVES_IT_COLOR);
                 }
@@ -108,12 +106,12 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
-                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(cluster_net_id); /* DRIVER to net */
                 draw_reset_blk_color(fanblk);
             } else {
                 /* Highlight the fanin */
                 draw_state->net_color[net_id] = DRIVEN_BY_IT_COLOR;
-                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(cluster_net_id); /* DRIVER to net */
                 draw_state->set_block_color(fanblk, DRIVEN_BY_IT_COLOR);
             }
         }
@@ -132,9 +130,9 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
 void highlight_nets(char* message, RRNodeId hit_node) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& route_ctx = g_vpr_ctx.routing();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     // Don't crash if there's no routing
     if (route_ctx.route_trees.empty())
@@ -163,7 +161,7 @@ std::string draw_get_net_name(ParentNetId parent_id) {
 }
 
 void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId hit_node) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (!route_ctx.route_trees[parent_net_id])
@@ -194,8 +192,8 @@ void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId
  */
 void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes) {
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     for (auto node : nodes) {
         /* Highlight the fanout nodes in red. */
@@ -250,9 +248,9 @@ void deselect_all() {
     // as well as clearing the highlighted sub-block
 
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     /* Create some colour highlighting */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -272,6 +270,8 @@ void deselect_all() {
         draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         draw_state->draw_rr_node[inode].node_highlighted = false;
     }
+    draw_state->hit_nodes.clear();
+
     get_selected_sub_block_info().clear();
 }
 

@@ -56,7 +56,7 @@ void print_channel_stats(bool is_flat) {
     }
 
     //Makes more sense from high to low, so reverse
-    std::reverse(histogram.begin(), histogram.end());
+    std::ranges::reverse(histogram);
 
     VTR_LOG("\n");
     VTR_LOG("Routing channel utilization histogram:\n");

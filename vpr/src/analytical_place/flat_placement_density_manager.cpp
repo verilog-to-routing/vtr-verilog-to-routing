@@ -6,6 +6,7 @@
  */
 
 #include "flat_placement_density_manager.h"
+#include <cmath>
 #include <tuple>
 #include <unordered_map>
 #include "ap_argparse_utils.h"
@@ -162,7 +163,8 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                 vtr::Rect<double> new_bin_region(vtr::Point<double>(x, y),
                                                  vtr::Point<double>(x + tw,
                                                                     y + th));
-                FlatPlacementBinId new_bin_id = bins_.create_bin(new_bin_region);
+                FlatPlacementBinId new_bin_id = bins_.create_bin(new_bin_region,
+                                                                 layer);
 
                 // Add the bin to the spatial lookup
                 bin_spatial_lookup_[layer][x][y] = new_bin_id;
@@ -266,9 +268,17 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
     // TODO: Maybe import the fixed block locations in the constructor and then
     //       only import the moveable block locations.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
+        // Layers will be a floating point number between the minimum layer (usually 0),
+        // and the maximum layer (num_layers - 1). For an architecture with two layers,
+        // this means that the layer will be a number between 0 and 1. If we always
+        // round this down, everything will be placed on the bottom layer. This is
+        // unique to layers, since for x and y dimensions we allow blocks to be placed
+        // one tile off grid. To prevent this behavior for layers, we round to the
+        // nearest layer.
+        double layer = std::round(p_placement.block_layer_nums[blk_id]);
         FlatPlacementBinId bin_id = get_bin(p_placement.block_x_locs[blk_id],
                                             p_placement.block_y_locs[blk_id],
-                                            p_placement.block_layer_nums[blk_id]);
+                                            layer);
         insert_block_into_bin(blk_id, bin_id);
     }
 }
@@ -307,8 +317,10 @@ void FlatPlacementDensityManager::export_placement_from_bins(PartialPlacement& p
                                                                    p_placement);
         p_placement.block_x_locs[blk_id] = new_blk_pos.x();
         p_placement.block_y_locs[blk_id] = new_blk_pos.y();
-        // NOTE: This code currently does not support 3D FPGAs.
-        VTR_ASSERT(std::floor(p_placement.block_layer_nums[blk_id]) == 0.0);
+        // TODO: For layers this forces the block to either whole number layer.
+        //       It may be interesting to investigate using the clamping functions
+        //       above on the layers. For now this should be ok.
+        p_placement.block_layer_nums[blk_id] = bins_.bin_layer(blk_bin_id);
     }
 }
 
@@ -391,15 +403,19 @@ bool FlatPlacementDensityManager::verify() const {
 }
 
 void FlatPlacementDensityManager::print_bin_grid() const {
+    size_t num_layers = bin_spatial_lookup_.dim_size(0);
     size_t width = bin_spatial_lookup_.dim_size(1);
     size_t height = bin_spatial_lookup_.dim_size(2);
-    for (size_t y = 0; y < height; y++) {
-        for (size_t x = 0; x < width; x++) {
-            FlatPlacementBinId bin_id = get_bin(x, y, 0.0);
-            VTR_LOG("%3zu ",
-                    bins_.bin_contained_blocks(bin_id).size());
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        VTR_LOG("Layer %zu:\n", layer);
+        for (size_t y = 0; y < height; y++) {
+            for (size_t x = 0; x < width; x++) {
+                FlatPlacementBinId bin_id = get_bin(x, y, layer);
+                VTR_LOG("%3zu ",
+                        bins_.bin_contained_blocks(bin_id).size());
+            }
+            VTR_LOG("\n");
         }
-        VTR_LOG("\n");
     }
     VTR_LOG("\n");
 }

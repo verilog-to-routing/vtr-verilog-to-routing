@@ -218,7 +218,7 @@ t_pl_loc CentroidMoveGenerator::calculate_centroid_loc_(ClusterBlockId b_from,
     float weight = 1;
 
     int from_block_layer_num = block_locs[b_from].loc.layer;
-    VTR_ASSERT(from_block_layer_num != OPEN);
+    VTR_ASSERT(from_block_layer_num != UNDEFINED);
 
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {

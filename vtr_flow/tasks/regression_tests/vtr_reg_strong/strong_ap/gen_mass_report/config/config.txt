@@ -24,5 +24,5 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_ap.txt
 
 # Script parameters
-script_params_common=-track_memory_usage --analytical_place --route --ap_generate_mass_report on
+script_params_common=-track_memory_usage --analytical_place --route --ap_generate_mass_report on --device unnamed_device
 

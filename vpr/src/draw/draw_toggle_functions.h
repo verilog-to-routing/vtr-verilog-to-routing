@@ -20,9 +20,29 @@
 
 #include "ezgl/application.hpp"
 
-/* Callback function for main.ui created toggle_nets button in ui_setup.cpp. Controls whether or not nets are visualized.
- * Toggles value of draw_state->show_nets.*/
-void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app);
+/**
+ * @brief Generalized callback function for checkboxes.
+ * Toggles the state of a boolean variable based on the checkbox state.
+ * @param self ptr to gtkToggleButton
+ * @param data ptr to t_checkbox_data struct containing the ezgl::application and the boolean to toggle
+ */
+void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data);
+
+/**
+ * @brief Callback function for toggle_nets button in main.ui.
+ * Toggles whether or not nets are visualized.
+ * @param app ezgl::application
+ */
+void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app);
+
+/**
+ * @brief Callback function for toggle_net_type button in main.ui.
+ * Toggles value of draw_state->draw_nets.
+ * 
+ * @param self ptr to gtkComboBox
+ * @param app ezgl::application
+ */
+void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app);
 
 /* Callback function for main.ui created netMaxFanout widget in ui_setup.cpp.
  * Sets draw_state->draw_net_max_fanout to its corresponding value in the UI. */
@@ -50,7 +70,7 @@ void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_rr button in ui_setup.cpp. Draws different groups of RRs depending on
  * user input. Changes value of draw_state->draw_rr_toggle. */
-void toggle_rr_cbk(GtkComboBoxText* self, ezgl::application* app);
+void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_congestion button in ui_setup.cpp. Controls if congestion should be visualized.
  * Changes value of draw_state->show_congestion. */
@@ -72,9 +92,11 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app);
  * Draws different types of routing utils based on user input: . Changes value of draw_state->show_routing_util. */
 void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app);
 
-/* Callback function for main.ui created toggle_crit_path button in ui_setup.cpp.
- * Draws different types of critical path based on user input. Changes value of draw_state->show_crit_path. */
-void toggle_crit_path_cbk(GtkComboBoxText* self, ezgl::application* app);
+/** 
+ * @brief Master switch callback function for showing critical paths. 
+ * Changes value of draw_state->show_crit_path. 
+ */
+void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_router_expansion_costs in ui_setup.cpp.
  * Draws different router expansion costs based on user input. Changes value of draw_state->show_router_expansion_cost. */

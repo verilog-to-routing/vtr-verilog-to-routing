@@ -1,5 +1,5 @@
 #pragma once
-// This file provides the inline proxy implemenation for t_rr_node.
+// This file provides the inline proxy implementation for t_rr_node.
 // See the t_rr_node class comment for additional details.
 
 #include <cstddef>

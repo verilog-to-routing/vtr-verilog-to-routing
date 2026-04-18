@@ -24,6 +24,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "logical_ram_infer.h"
 #include "timing_info.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
@@ -86,6 +87,7 @@ static t_flat_pl_loc get_molecule_pos(PackMoleculeId molecule_id,
 GreedyCandidateSelector::GreedyCandidateSelector(
     const AtomNetlist& atom_netlist,
     const Prepacker& prepacker,
+    const RamMapper& ram_mapper,
     const t_packer_opts& packer_opts,
     bool allow_unrelated_clustering,
     const t_molecule_stats& max_molecule_stats,
@@ -100,6 +102,8 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     int log_verbosity)
     : atom_netlist_(atom_netlist)
     , prepacker_(prepacker)
+    , ram_mapper_(ram_mapper)
+    , has_ram_groups_(ram_mapper.num_groups() > 0)
     , packer_opts_(packer_opts)
     , allow_unrelated_clustering_(allow_unrelated_clustering)
     , log_verbosity_(log_verbosity)
@@ -153,23 +157,23 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
             max_loc.layer = std::max(max_loc.layer, mol_pos.layer);
         }
 
-        VTR_ASSERT_MSG(max_loc.layer == 0,
-                       "APPack unrelated clustering does not support 3D "
-                       "FPGAs yet");
-
         // Initialize the data structure with empty arrays with enough space
         // for each molecule.
+        size_t flat_grid_num_layers = max_loc.layer + 1;
         size_t flat_grid_width = max_loc.x + 1;
         size_t flat_grid_height = max_loc.y + 1;
         appack_unrelated_clustering_data_ =
-            vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 2>({flat_grid_width,
+            vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 3>({flat_grid_num_layers,
+                                                                        flat_grid_width,
                                                                         flat_grid_height});
-        for (size_t x = 0; x < flat_grid_width; x++) {
-            for (size_t y = 0; y < flat_grid_height; y++) {
-                // Resize to the maximum number of used external pins. This is
-                // to ensure that every molecule below can be inserted into a
-                // valid list based on their number of external pins.
-                appack_unrelated_clustering_data_[x][y].resize(max_molecule_stats.num_used_ext_pins + 1);
+        for (size_t layer_num = 0; layer_num < flat_grid_num_layers; layer_num++) {
+            for (size_t x = 0; x < flat_grid_width; x++) {
+                for (size_t y = 0; y < flat_grid_height; y++) {
+                    // Resize to the maximum number of used external pins. This is
+                    // to ensure that every molecule below can be inserted into a
+                    // valid list based on their number of external pins.
+                    appack_unrelated_clustering_data_[layer_num][x][y].resize(max_molecule_stats.num_used_ext_pins + 1);
+                }
             }
         }
 
@@ -185,7 +189,7 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
             int ext_inps = molecule_stats.num_used_ext_inputs;
 
             //Insert the molecule into the unclustered lists by number of external inputs
-            auto& tile_uc_data = appack_unrelated_clustering_data_[mol_pos.x][mol_pos.y];
+            auto& tile_uc_data = appack_unrelated_clustering_data_[mol_pos.layer][mol_pos.x][mol_pos.y];
             tile_uc_data[ext_inps].push_back(mol_id);
         }
     } else {
@@ -257,6 +261,13 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
 
+    if (cluster_gain_stats.is_memory) {
+        cluster_gain_stats.logical_ram_id = ram_mapper_.group_id_of(seed_atom);
+        cluster_gain_stats.physical_ram_id = ram_mapper_.physical_group_id_of(seed_atom);
+        VTR_LOGV(log_verbosity_ > 2, "Cluster of seed atom %zu is a memory cluster in logical RAM group %zu, physical RAM group %zu.\n",
+                 size_t(seed_atom), size_t(cluster_gain_stats.logical_ram_id), size_t(cluster_gain_stats.physical_ram_id));
+    }
+
     // Return the cluster gain stats.
     return cluster_gain_stats;
 }
@@ -271,7 +282,7 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
     // TODO: If this threshold lookup gets expensive, move outside.
     int high_fanout_net_threshold = high_fanout_thresholds_.get_threshold(cluster_legalizer.get_cluster_type(cluster_id)->name);
 
-    // Mark and update the gain stats for each block in the succesfully
+    // Mark and update the gain stats for each block in the successfully
     // clustered molecule.
     // Makes calls to update cluster stats such as the gain map for atoms, used
     // pins, and clock structures, in order to reflect the new content of the
@@ -666,70 +677,19 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
      * If there are no feasible blocks it returns a nullptr.
      */
 
-    /*
-     * @brief Get candidate molecule to pack into currently open cluster
-     *
-     * Molecule selection priority:
-     * 1. Find unpacked molecules based on criticality and strong connectedness
-     *    (connected by low fanout nets) with current cluster.
-     * 2. Find unpacked molecules based on transitive connections (eg. 2 hops away)
-     *    with current cluster.
-     * 3. Find unpacked molecules based on weak connectedness (connected by high
-     *    fanout nets) with current cluster.
-     * 4. Find unpacked molecules based on attraction group of the current cluster
-     *    (if the cluster has an attraction group).
-     */
-
-    // 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
-    if (cluster_gain_stats.initial_search_for_feasible_blocks) {
-        cluster_gain_stats.initial_search_for_feasible_blocks = false;
-        add_cluster_molecule_candidates_by_connectivity_and_timing(cluster_gain_stats,
-                                                                   cluster_id,
-                                                                   cluster_legalizer,
-                                                                   attraction_groups);
-        cluster_gain_stats.has_done_connectivity_and_timing = true;
-    }
-
-    if (packer_opts_.prioritize_transitive_connectivity) {
-        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
-            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-
-        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
-            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-    } else { //Reverse order
-        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
-            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-
-        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
-        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
-            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
-                                                                       cluster_id,
-                                                                       cluster_legalizer,
-                                                                       attraction_groups);
-        }
-    }
-
-    // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
-    if (cluster_gain_stats.feasible_blocks.empty()) {
-        add_cluster_molecule_candidates_by_attraction_group(cluster_gain_stats,
-                                                            cluster_id,
-                                                            cluster_legalizer,
-                                                            attraction_groups);
+    // RAM clusters offer only atoms from the same physical RAM group. All other
+    // clusters use net-traversal based candidate search (connectivity and timing,
+    // transitive, high-fanout, and attraction groups).
+    if (cluster_gain_stats.is_memory && has_ram_groups_) {
+        add_ram_cluster_molecule_candidates(cluster_gain_stats,
+                                            cluster_id,
+                                            cluster_legalizer,
+                                            attraction_groups);
+    } else {
+        add_general_cluster_molecule_candidates(cluster_gain_stats,
+                                                cluster_id,
+                                                cluster_legalizer,
+                                                attraction_groups);
     }
 
     /* Grab highest gain molecule */
@@ -758,7 +718,7 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
         const t_appack_options& appack_options = appack_ctx_.appack_options;
         if (appack_options.use_appack) {
             t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
-            int cluster_max_attempts = appack_options.max_unrelated_clustering_attempts[cluster_type->index];
+            int cluster_max_attempts = appack_ctx_.unrelated_clustering_manager.get_max_unrelated_clustering_attempts(*cluster_type);
             if (num_unrelated_clustering_attempts_ < cluster_max_attempts) {
                 best_molecule = get_unrelated_candidate_for_cluster_appack(cluster_gain_stats,
                                                                            cluster_id,
@@ -780,6 +740,104 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
     }
 
     return best_molecule;
+}
+
+void GreedyCandidateSelector::add_general_cluster_molecule_candidates(
+    ClusterGainStats& cluster_gain_stats,
+    LegalizationClusterId legalization_cluster_id,
+    const ClusterLegalizer& cluster_legalizer,
+    AttractionInfo& attraction_groups) {
+
+    /*
+     * @brief Get candidate molecule to pack into currently open cluster
+     *
+     * Molecule selection priority:
+     * 1. Find unpacked molecules based on criticality and strong connectedness
+     *    (connected by low fanout nets) with current cluster.
+     * 2. Find unpacked molecules based on transitive connections (eg. 2 hops away)
+     *    with current cluster.
+     * 3. Find unpacked molecules based on weak connectedness (connected by high
+     *    fanout nets) with current cluster.
+     * 4. Find unpacked molecules based on attraction group of the current cluster
+     *    (if the cluster has an attraction group).
+     */
+
+    // 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
+    if (cluster_gain_stats.initial_search_for_feasible_blocks) {
+        cluster_gain_stats.initial_search_for_feasible_blocks = false;
+        add_cluster_molecule_candidates_by_connectivity_and_timing(cluster_gain_stats,
+                                                                   legalization_cluster_id,
+                                                                   cluster_legalizer,
+                                                                   attraction_groups);
+        cluster_gain_stats.has_done_connectivity_and_timing = true;
+    }
+
+    if (packer_opts_.prioritize_transitive_connectivity) {
+        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
+            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+
+        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+    } else { //Reverse order
+        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.tie_break_high_fanout_net) {
+            add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+
+        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
+        if (cluster_gain_stats.feasible_blocks.empty() && cluster_gain_stats.explore_transitive_fanout) {
+            add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+        }
+    }
+
+    // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
+    if (cluster_gain_stats.feasible_blocks.empty()) {
+        add_cluster_molecule_candidates_by_attraction_group(cluster_gain_stats,
+                                                            legalization_cluster_id,
+                                                            cluster_legalizer,
+                                                            attraction_groups);
+    }
+}
+
+void GreedyCandidateSelector::add_ram_cluster_molecule_candidates(
+    ClusterGainStats& cluster_gain_stats,
+    LegalizationClusterId legalization_cluster_id,
+    const ClusterLegalizer& cluster_legalizer,
+    AttractionInfo& attraction_groups) {
+    if (!cluster_gain_stats.initial_search_for_feasible_blocks)
+        return;
+    cluster_gain_stats.initial_search_for_feasible_blocks = false;
+    const PhysicalRamGroup& phys_group = ram_mapper_.physical_ram_group(cluster_gain_stats.physical_ram_id);
+    for (AtomBlockId atom_id : phys_group.atoms) {
+        if (cluster_legalizer.is_atom_clustered(atom_id))
+            continue;
+        PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
+        if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+            add_molecule_to_pb_stats_candidates(molecule_id,
+                                                cluster_gain_stats,
+                                                cluster_legalizer.get_cluster_type(legalization_cluster_id),
+                                                attraction_groups,
+                                                prepacker_,
+                                                atom_netlist_,
+                                                appack_ctx_);
+        }
+    }
 }
 
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_and_timing(
@@ -856,7 +914,6 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         }
 
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
-
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
@@ -1258,37 +1315,54 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
     // to the max number of inputs a molecule could have.
     size_t inputs_avail = cluster_legalizer.get_num_cluster_inputs_available(cluster_id);
     VTR_ASSERT_SAFE(!appack_unrelated_clustering_data_.empty());
-    size_t max_molecule_inputs_avail = appack_unrelated_clustering_data_[0][0].size() - 1;
+    size_t max_molecule_inputs_avail = appack_unrelated_clustering_data_[0][0][0].size() - 1;
+    size_t flat_grid_num_layers = appack_unrelated_clustering_data_.dim_size(0);
+    size_t flat_grid_width = appack_unrelated_clustering_data_.dim_size(1);
+    size_t flat_grid_height = appack_unrelated_clustering_data_.dim_size(2);
     if (inputs_avail >= max_molecule_inputs_avail) {
         inputs_avail = max_molecule_inputs_avail;
     }
 
     // Create a queue of locations to search and a map of visited grid locations.
     std::queue<t_physical_tile_loc> search_queue;
-    vtr::NdMatrix<bool, 2> visited({appack_unrelated_clustering_data_.dim_size(0),
-                                    appack_unrelated_clustering_data_.dim_size(1)},
+    vtr::NdMatrix<bool, 3> visited({flat_grid_num_layers,
+                                    flat_grid_width,
+                                    flat_grid_height},
                                    false);
-    // Push the position of the cluster to the queue.
+
     t_physical_tile_loc cluster_tile_loc(cluster_gain_stats.flat_cluster_position.x,
                                          cluster_gain_stats.flat_cluster_position.y,
                                          cluster_gain_stats.flat_cluster_position.layer);
-    search_queue.push(cluster_tile_loc);
+
+    // Push the position of the cluster to the queue. We push this position on
+    // each layer such that each layer is searched independently.
+    for (size_t layer_num = 0; layer_num < flat_grid_num_layers; layer_num++) {
+        t_physical_tile_loc tile_loc(cluster_tile_loc.x,
+                                     cluster_tile_loc.y,
+                                     layer_num);
+        search_queue.push(tile_loc);
+    }
 
     // Get the max unrelated tile distance for the block type of this cluster.
     t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
-    float max_dist = appack_ctx_.appack_options.max_unrelated_tile_distance[cluster_type->index];
+    float max_dist = appack_ctx_.unrelated_clustering_manager.get_max_unrelated_tile_dist(*cluster_type);
+
+    // Do not let the max unrelated distance exceed the max distance threshold.
+    float max_candidate_dist = appack_ctx_.max_distance_threshold_manager.get_max_dist_threshold(*cluster_type);
 
     // Keep track of the closest compatible molecule and its distance.
-    float best_distance = std::numeric_limits<float>::max();
+    float best_distance = max_candidate_dist + 0.0001;
     PackMoleculeId closest_compatible_molecule = PackMoleculeId::INVALID();
 
     while (!search_queue.empty()) {
         // Pop a position to search from the queue.
         const t_physical_tile_loc& node_loc = search_queue.front();
-        VTR_ASSERT_SAFE(node_loc.layer_num == 0);
 
         // Get the distance from the cluster to the current tile in tiles.
-        float dist = std::abs(node_loc.x - cluster_tile_loc.x) + std::abs(node_loc.y - cluster_tile_loc.y);
+        float node_dx = std::abs(node_loc.x - cluster_tile_loc.x);
+        float node_dy = std::abs(node_loc.y - cluster_tile_loc.y);
+        float node_dlayer = std::abs(node_loc.layer_num - cluster_tile_loc.layer_num);
+        float dist = node_dx + node_dy + node_dlayer;
 
         // If this position is too far from the source, skip it.
         if (dist > max_dist) {
@@ -1306,18 +1380,18 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         }
 
         // If this position has been visited, skip it.
-        if (visited[node_loc.x][node_loc.y]) {
+        if (visited[node_loc.layer_num][node_loc.x][node_loc.y]) {
             search_queue.pop();
             continue;
         }
-        visited[node_loc.x][node_loc.y] = true;
+        visited[node_loc.layer_num][node_loc.x][node_loc.y] = true;
 
         // Explore this position from highest number of inputs available to lowest.
         // Here, we are trying to find the closest compatible molecule, where we
         // break ties based on whoever has more external inputs.
         PackMoleculeId best_candidate = PackMoleculeId::INVALID();
         float best_candidate_distance = std::numeric_limits<float>::max();
-        const auto& uc_data = appack_unrelated_clustering_data_[node_loc.x][node_loc.y];
+        const auto& uc_data = appack_unrelated_clustering_data_[node_loc.layer_num][node_loc.x][node_loc.y];
         VTR_ASSERT_SAFE(inputs_avail < uc_data.size());
         for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
             // Get the molecule by the number of external inputs.

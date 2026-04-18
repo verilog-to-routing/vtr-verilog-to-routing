@@ -12,7 +12,7 @@
  * Common acryonyms:
  * rr - routing resource
  * lb - logic block
- * pb - phsyical block (the top level physical block is the logic block, a leaf physical block is a primitive)
+ * pb - physical block (the top level physical block is the logic block, a leaf physical block is a primitive)
  *
  * Author: Jason Luu
  * Date: July 22, 2013
@@ -114,7 +114,7 @@ int get_lb_type_rr_graph_ext_sink_index(t_logical_block_type_ptr lb_type) {
     return lb_type->pb_graph_head->total_pb_pins + 1;
 }
 
-int get_lb_type_rr_graph_edge_mode(std::vector<t_lb_type_rr_node>& lb_type_rr_graph, int src_index, int dst_index) {
+int get_lb_type_rr_graph_edge_mode(const std::vector<t_lb_type_rr_node>& lb_type_rr_graph, int src_index, int dst_index) {
     auto& src = lb_type_rr_graph[src_index];
     for (int imode = 0; imode < src.num_modes; imode++) {
         for (int iedge = 0; iedge < src.num_fanout[imode]; iedge++) {
@@ -302,7 +302,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
         /* alloc and load input pins that connect to sinks */
         for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
             PortEquivalence port_equivalent = PortEquivalence::NONE;
-            int sink_index = OPEN;
+            int sink_index = UNDEFINED;
             for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
                 /* load intermediate indices */
                 pb_pin = &pb_graph_node->input_pins[iport][ipin];
@@ -322,7 +322,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                 lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
                 lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-                if (port_equivalent == PortEquivalence::NONE || sink_index == OPEN) {
+                if (port_equivalent == PortEquivalence::NONE || sink_index == UNDEFINED) {
                     /* Create new sink for input to primitive */
                     t_lb_type_rr_node new_sink;
                     if (port_equivalent != PortEquivalence::NONE) {
@@ -394,7 +394,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
         /* alloc and load clock pins that connect to sinks */
         for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
             PortEquivalence port_equivalent = PortEquivalence::NONE;
-            int sink_index = OPEN;
+            int sink_index = UNDEFINED;
             for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
                 /* load intermediate indices */
                 pb_pin = &pb_graph_node->clock_pins[iport][ipin];
@@ -412,7 +412,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                 lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
                 lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-                if (port_equivalent == PortEquivalence::NONE || sink_index == OPEN) {
+                if (port_equivalent == PortEquivalence::NONE || sink_index == UNDEFINED) {
                     /* Create new sink for clock to primitive */
                     t_lb_type_rr_node new_sink;
                     if (port_equivalent != PortEquivalence::NONE) {

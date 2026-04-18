@@ -637,7 +637,7 @@ module sv_chip3_hierarchy_no_mem (tm3_clk_v0, tm3_clk_v2, tm3_vidin_llc, tm3_vid
          endcase 
    end 
 
-   always @(reg_prog_state or iic_stop)
+   always @(*)
    begin
       case (reg_prog_state)
          reg_prog1 :
@@ -1016,6 +1016,13 @@ module sv_chip3_hierarchy_no_mem (tm3_clk_v0, tm3_clk_v2, tm3_vidin_llc, tm3_vid
                      iic_start = 1'b0 ; 
                      reg_prog_nextstate = reg_prog_end ; 
                   end
+        default:
+          begin
+             iicaddr = 8'b00000000 ; 
+             iicdata = 8'b00000000 ; 
+             iic_start = 1'b0 ;
+             reg_prog_nextstate = reg_prog_state;
+          end
       endcase 
    end 
 

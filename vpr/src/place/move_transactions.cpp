@@ -46,7 +46,7 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
 }
 
 //Examines the currently proposed move and determine any empty locations
-std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move() {
+std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move() const {
     std::set<t_pl_loc> moved_from_set;
     std::set<t_pl_loc> moved_to_set;
 

@@ -44,7 +44,7 @@ flat_map2<K, V> make_flat_map2(std::vector<std::pair<K, V>>&& vec) {
  * This container is typically useful in the following scenarios:
  *    - Reduced memory usage if key/value are small (std::map needs to store pointers to
  *      other BST nodes which can add substantial overhead for small keys/values)
- *    - Faster search/iteration by exploiting data locality (all elments are in continguous
+ *    - Faster search/iteration by exploiting data locality (all elements are in contiguous
  *      memory enabling better spatial locality)
  *
  * The container deviates from the behaviour of std::map in the following important ways:
@@ -53,7 +53,7 @@ flat_map2<K, V> make_flat_map2(std::vector<std::pair<K, V>>&& vec) {
  *
  * The slow insertion/erase performance makes this container poorly suited to maps that
  * frequently add/remove new keys. If this is required you likely want std::map or
- * std::unordered_map. However if the map is constructed once and then repeatedly quieried,
+ * std::unordered_map. However if the map is constructed once and then repeatedly queried,
  * consider using the range or vector-based constructors which initializes the flat_map in
  * O(NlogN) time.
  */
@@ -343,7 +343,7 @@ class flat_map {
         return end();
     }
 
-    ///@brief Return the count of occurances of a key
+    ///@brief Return the count of occurrences of a key
     size_type count(const key_type& key) const {
         return (find(key) == end()) ? 0 : 1;
     }
@@ -404,9 +404,9 @@ class flat_map {
 
     iterator convert_to_iterator(const_iterator const_iter) {
         /*
-         * A work around as there is no conversion betweena const_iterator and iterator.
+         * A work around as there is no conversion between const_iterator and iterator.
          *
-         * We intiailize i to the start of the container and then advance it by
+         * We initialize i to the start of the container and then advance it by
          * the distance to const_iter. The resulting i points to the same element
          * as const_iter
          * 

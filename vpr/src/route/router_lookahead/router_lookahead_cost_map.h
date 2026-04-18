@@ -16,7 +16,7 @@
  *
  * Originally, the first dimension was used to differentiate the lookahead between CHANX and CHANY nodes. It turns out
  * that this distinction leads to worse results when using the extended map lookahead, therefore, this dimension of the cost map
- * has been collapsed, therefore this first dimention is virtually unused, but is kept to have the extended map lookahead as close
+ * has been collapsed, therefore this first dimension is virtually unused, but is kept to have the extended map lookahead as close
  * as possible to the original extended map.
  */
 class CostMap {
@@ -52,7 +52,7 @@ class CostMap {
      * @param delay_costs delay costs calculated with the dijkstra expansions
      * @param base_costs congestion costs calculated with the dijkstra expansions
      */
-    void set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs);
+    void set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs, bool device_model_warnings);
 
     /**
      * @brief Gets the cost of an entry that is close to a hole in the cost map
@@ -116,5 +116,5 @@ class CostMap {
      * @param bounding_box_height height of the segment type cost map bounding box
      * @param delay_penalty penalty corresponding to the current segment cost map
      */
-    void fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty);
+    void fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty, bool device_model_warnings);
 };

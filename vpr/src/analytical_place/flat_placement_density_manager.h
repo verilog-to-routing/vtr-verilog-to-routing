@@ -44,7 +44,7 @@ struct t_physical_tile_type;
  * capacity of each bin is the capacity of the tile it represents (as computed
  * by the flat placement mass calculator). When AP blocks are added / removed
  * from bins, this class will maintain the current utilization of the bin. Since
- * these masses / capacities are repesented by M-dimensional quantities (where
+ * these masses / capacities are represented by M-dimensional quantities (where
  * M is the number of models in the architecture), the overfill and underfill of
  * each bin is given as an M-dimensional vector. For example, in an architecture
  * of only LUTs and FFs, an overfill of <3, 1> means that a bin has 3 too many

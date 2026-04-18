@@ -1,0 +1,94 @@
+#pragma once
+
+#include <optional>
+#include <string>
+#include "switchblock_types.h"
+#include "arch_types.h"
+
+/**
+ * @brief Enumeration for the type field of an <sg_pattern> tag. With UNIDIR the gather pattern makes a mux which is connected by a node
+ * to the scatter pattern of edges. With BIDIR, the structure is made symmetric with a gather mux and a scatter edge pattern on each end
+ * of the node linking them.
+ */
+enum class e_scatter_gather_type {
+    UNIDIR, ///< Unidirectional connection
+    BIDIR   ///< Bidirectional connection
+};
+
+/**
+ * @brief Struct containing information of an <sg_location> tag.
+ * An <sg_location> tag instantiates the scatter-gather pattern in some switchblock locations within the device.
+ * `region` is only valid if type == e_sb_location::E_XY_SPECIFIED.
+ */
+struct t_sg_location {
+    e_sb_location type;       ///< Type of locations that the pattern is instantiated at.
+    t_specified_loc region;   ///< Specification of the region where gather is applied
+    std::string num;          ///< Formula (variable W = channel width) for number of scatter-gather pattern instantiations per location.
+    std::string sg_link_name; ///< Name of scatter-gather link to be used.
+};
+
+/**
+ * @brief Struct containing information of a <sg_link> tag.
+ * This tag describes how and where the scatter (fanout) happens relative to the gather (fanin).
+ */
+struct t_sg_link {
+    /// Name of the sg_link.
+    std::string name;
+    /// If set, index into the architecture switch list (`t_arch_switch_inf`) for the
+    /// gather mux (resolved from the `mux` attribute on `<sg_link>`). Unset when `mux` is empty.
+    std::optional<int> mux_index;
+    /// Segment/wire used to move through the device to the scatter location.
+    std::string seg_type;
+    /// X offset of where the scatter happens relative to the gather. If set, the Y and Z offsets must be zero.
+    int x_offset;
+    /// Y offset of where the scatter happens relative to the gather. If set, the X and Z offsets must be zero.
+    int y_offset;
+    /// Z offset of where the scatter happens relative to the gather. If set, the X and Y offsets must be zero.
+    int z_offset;
+};
+
+/**
+ * @brief Struct containing information of a <sg_pattern> tag. When instantiated in the device using sg_locations,
+ * a scatter-gather pattern defined by this struct gathers connections according to gather_pattern, moves through
+ * the device using one of the sg_links and fans out or scatters the connections according to scatter_pattern.
+ */
+struct t_scatter_gather_pattern {
+    std::string name;
+    e_scatter_gather_type type;
+    t_wireconn_inf gather_pattern;
+    t_wireconn_inf scatter_pattern;
+    std::vector<t_sg_link> sg_links;
+    std::vector<t_sg_location> sg_locations;
+};
+
+/// Defines how OPINs connect to CHANZ wires via switch blocks.
+enum class e_3d_opin_connectivity_type {
+    /// Default for 2D devices or 3D architectures without this type of connection.
+    UNDEFINED,
+
+    /**
+     * @brief Each side's OPINs connect to the two Switch Blocks at the corners of that side.
+     * * @code
+     *   (SB) Top-Left  <--- (Top OPINs)    ---> (SB) Top-Right
+     *         ^                                       ^
+     *         |                                       |
+     *   (Left OPINs)         [ CLB ]            (Right OPINs)
+     *         |                                       |
+     *         v                                       v
+     *   (SB) Bot-Left  <--- (Bottom OPINs) ---> (SB) Bot-Right
+     * @endcode
+     */
+    PER_SIDE,
+
+    /**
+     * @brief All OPINs from all four sides connect exclusively to the Top-Right Switch Block.
+     * This creates a high-congestion "exit point" for all signals in the tile.
+     * @code
+     *                                    (SB) Top-Right
+     *                                          ^
+     *                                          |
+     *  [ CLB ] <----- (All OPINs route here) --/
+     * @endcode
+     */
+    PER_BLOCK
+};

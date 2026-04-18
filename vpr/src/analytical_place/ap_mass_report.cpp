@@ -243,7 +243,7 @@ void print_physical_tiles(std::ofstream& os,
  * @brief Prints all of the non-zero dimensions of the given primitive vector.
  *
  *  @param os
- *      The output file stream to print the primtive vector to.
+ *      The output file stream to print the primitive vector to.
  *  @param primitive_vec
  *      The primitive vector to print.
  *  @param dim_manager
@@ -466,7 +466,7 @@ void print_expected_device_utilization(std::ofstream& os,
     }
 
     // Print the expected number of logical blocks and the expected block utilization.
-    // Note: These may be innacurate if a model appears in multiple different
+    // Note: These may be inaccurate if a model appears in multiple different
     //       logical blocks.
     // TODO: Investigate resolving this issue.
     os << "Expected number of logical blocks:\n";

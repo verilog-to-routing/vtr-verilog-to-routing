@@ -3,6 +3,8 @@
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
 #include "vtr_expr_eval.h"
+#include "switchblock_types.h"
+#include "physical_types.h"
 
 /**
  * @brief Loads permutation functions from an XML node into a switchblock structure.
@@ -41,6 +43,25 @@ void read_sb_wireconns(const std::vector<t_arch_switch_inf>& switches,
                        pugi::xml_node node,
                        t_switchblock_inf& sb,
                        const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Parses a wireconn node and returns a `t_wireconn_inf` structure.
+ *
+ * Determines whether the wireconn is in inline or multi-node format and dispatches
+ * to the appropriate parsing subroutine.
+ *
+ * @param node             XML node representing the wireconn.
+ * @param loc_data         Location data for error reporting.
+ * @param switches         List of architecture switch definitions (used for switch overrides).
+ * @param can_skip_from_or_to Determines if the from or to attributes are optional or mandatory.
+ * <wireconn> tags for switch blocks require both from and to attributes while those for
+ * scatter-gather use one or the other.
+ * @return                 A `t_wireconn_inf` structure populated with parsed data.
+ */
+t_wireconn_inf parse_wireconn(pugi::xml_node node,
+                              const pugiutil::loc_data& loc_data,
+                              const std::vector<t_arch_switch_inf>& switches,
+                              bool can_skip_from_or_to = false);
 
 /* checks for correctness of switch block read-in from the XML architecture file */
 void check_switchblock(const t_switchblock_inf& sb, const t_arch* arch);

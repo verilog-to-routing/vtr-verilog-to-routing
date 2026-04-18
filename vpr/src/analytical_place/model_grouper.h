@@ -38,7 +38,7 @@ typedef vtr::StrongId<struct model_group_id_tag, size_t> ModelGroupId;
  * group and must be legalized together.
  *
  * This class also manages what models each group contains and the group of each
- * model, where the user can use IDs to get relavent information.
+ * model, where the user can use IDs to get relevant information.
  */
 class ModelGrouper {
   public:

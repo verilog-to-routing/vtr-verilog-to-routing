@@ -4,7 +4,7 @@
 
 namespace vtr {
 /**
- * @brief Iterator which derefernces the 'first' element of a std::pair iterator
+ * @brief Iterator which dereferences the 'first' element of a std::pair iterator
  */
 template<typename PairIter>
 class pair_first_iter {
@@ -48,7 +48,7 @@ class pair_first_iter {
 };
 
 /**
- *Iterator which derefernces the 'second' element of a std::pair iterator
+ *Iterator which dereferences the 'second' element of a std::pair iterator
  */
 template<typename PairIter>
 class pair_second_iter {

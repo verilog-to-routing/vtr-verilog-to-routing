@@ -93,14 +93,14 @@ bool validate_route_tree_spatial_lookup(const RouteTreeNode& rt_node, const Spat
     bool valid = true;
 
     auto& low_bin_rt_nodes = spatial_lookup[bin_xlow][bin_ylow];
-    if (std::find(low_bin_rt_nodes.begin(), low_bin_rt_nodes.end(), rt_node) == low_bin_rt_nodes.end()) {
+    if (std::ranges::find(low_bin_rt_nodes, rt_node) == low_bin_rt_nodes.end()) {
         valid = false;
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (low coord %d,%d) in spatial lookup [bin %d,%d]",
                         rt_node.inode, rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), bin_xlow, bin_ylow);
     }
 
     auto& high_bin_rt_nodes = spatial_lookup[bin_xhigh][bin_yhigh];
-    if (std::find(high_bin_rt_nodes.begin(), high_bin_rt_nodes.end(), rt_node) == high_bin_rt_nodes.end()) {
+    if (std::ranges::find(high_bin_rt_nodes, rt_node) == high_bin_rt_nodes.end()) {
         valid = false;
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (high coord %d,%d) in spatial lookup [bin %d,%d]",
                         rt_node.inode, rr_graph.node_xhigh(rr_node), rr_graph.node_yhigh(rr_node), bin_xhigh, bin_yhigh);

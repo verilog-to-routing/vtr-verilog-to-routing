@@ -1,6 +1,7 @@
 #pragma once
 
 #include "physical_types.h"
+#include "librrgraph_types.h"
 #include "rr_graph_fwd.h"
 
 struct t_rr_edge_info {
@@ -12,7 +13,7 @@ struct t_rr_edge_info {
 
     RRNodeId from_node = RRNodeId::INVALID();
     RRNodeId to_node = RRNodeId::INVALID();
-    short switch_type = OPEN;
+    short switch_type = LIBRRGRAPH_UNDEFINED_VAL;
     bool remapped = false;
 
     friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
@@ -27,3 +28,9 @@ struct t_rr_edge_info {
 };
 
 typedef std::vector<t_rr_edge_info> t_rr_edge_info_set;
+
+/// @brief Sorts and removes duplicate RR edges in-place.
+inline void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
+    std::stable_sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
+    rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
+}

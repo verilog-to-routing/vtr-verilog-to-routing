@@ -6,6 +6,9 @@
 #include <vector>
 #include "router_stats.h"
 #include "globals.h"
+#include "rr_graph_fwd.h"
+#include "rr_graph_view.h"
+#include "vtr_assert.h"
 
 /**
  * @brief Extra information about each rr_node needed only during routing
@@ -67,11 +70,11 @@ inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
     if (dir == Direction::DEC) {
         x = rr_graph.node_xhigh(inode);
         y = rr_graph.node_yhigh(inode);
-        z = rr_graph.node_layer(inode);
+        z = rr_graph.node_layer_high(inode);
     } else {
         x = rr_graph.node_xlow(inode);
         y = rr_graph.node_ylow(inode);
-        z = rr_graph.node_layer(inode);
+        z = rr_graph.node_layer_low(inode);
     }
 
     return x >= bb.xmin && x <= bb.xmax && y >= bb.ymin && y <= bb.ymax && z >= bb.layer_min && z <= bb.layer_max;
@@ -152,6 +155,12 @@ inline float get_single_rr_cong_cost(RRNodeId inode, float pres_fac) {
 
     return cost;
 }
+
+/**
+ * @brief Calculate delay of a single RR Node using 'connecting_edge' as it's driver/switch
+ * This function ignores all upstream and downstream effects on the delay values.
+ */
+float get_rr_node_delay_cost(RRNodeId to_node, RREdgeId connecting_edge);
 
 void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf);
 

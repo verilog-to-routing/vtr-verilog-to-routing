@@ -12,7 +12,7 @@ class PlaceMacros;
  * of positions that minimize the HPWL. 
  *
  * To calculate the median region, we iterate over all the moving block pins calculating the bounding box of each of this nets.
- * Then, we push the corrdinates of these bb into two vectors and calculate its median.
+ * Then, we push the coordinates of these bb into two vectors and calculate its median.
  *
  * To get the exact location, we calculate the center of median region and find a random location in a range
  * around it

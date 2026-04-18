@@ -369,6 +369,14 @@ add_custom_target(get_zeroasic_rr_graphs
     COMMENT "Downloading (~2MB) and extracting Zero ASIC RR graphs (~0.1GB) into VTR source tree.")
 
 #
+# Flat Placement Files
+#
+add_custom_target(get_flat_placements
+    COMMAND ./vtr_flow/scripts/get_flat_placement_files.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~5MB) and extracting Flat Placement Files (~0.1GB) into VTR source tree.")
+
+#
 # Unit Testing
 #
 enable_testing()

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-    Module to run the VTR Flow
+Module to run the VTR Flow
 """
+
 import sys
 from pathlib import Path
 import argparse
@@ -53,17 +54,14 @@ def vtr_command_argparser(prog=None):
     The VTR command arg parser
     """
     usage = "%(prog)s circuit_file architecture_file [options]"
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
                     Runs a single architecture and circuit through the VTR CAD flow - mapping
                     the circuit onto the target archietcture.
 
                     Any unrecognzied arguments are passed to VPR.
-                    """
-    )
+                    """)
 
-    epilog = textwrap.dedent(
-        """
+    epilog = textwrap.dedent("""
                 Examples
                 --------
 
@@ -95,8 +93,7 @@ def vtr_command_argparser(prog=None):
 
                         %(prog)s arch.xml circuit.blif -start vpr -end vpr
 
-                """
-    )
+                """)
 
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -372,6 +369,15 @@ def vtr_command_argparser(prog=None):
         + "system-verilog]. The script used the Yosys conventional Verilog"
         + " parser if this argument is not specified.",
     )
+    parmys.add_argument(
+        "-synthesis_params",
+        default=None,
+        dest="synthesis_params",
+        help="Specify additional synthesis parameters"
+        + " directly appended to the parmys command in the default flow"
+        + " (e.g., -mults_ratio 0.5), or used to substitute the 'YYY' placeholder"
+        + " in a custom Yosys script.",
+    )
     #
     # VPR arguments
     #
@@ -506,7 +512,7 @@ def get_max_memory_usage(temp_dir):
 
 def get_memory_usage(logfile):
     """Extracts the memory usage from the *.out log files"""
-    with open(logfile, "r") as fpmem:
+    with open(logfile, "r", encoding="utf-8") as fpmem:
         for line in fpmem.readlines():
             if "Maximum resident set size" in line:
                 return int(line.split()[-1])
@@ -518,7 +524,7 @@ def get_memory_usage(logfile):
 
 def vtr_command_main(arg_list, prog=None):
     """
-    Running VTR with the specified arguemnts.
+    Running VTR with the specified arguments.
     """
     start = datetime.now()
     # Load the arguments
@@ -593,7 +599,7 @@ def vtr_command_main(arg_list, prog=None):
             error, args.expect_fail, args.verbose
         )
 
-    except KeyboardInterrupt as error:
+    except KeyboardInterrupt:
         print("{} received keyboard interrupt".format(prog))
         exit_status = 4
         return_status = exit_status
@@ -736,6 +742,7 @@ def process_parmys_args(args):
     """
     parmys_args = OrderedDict()
     parmys_args["parser"] = args.parser
+    parmys_args["synthesis_params"] = args.synthesis_params or ""
 
     return parmys_args
 
@@ -797,6 +804,7 @@ def except_vtr_error(error, expect_fail, verbose):
     error_status = None
     actual_error = None
     exit_status = None
+    return_status = None
     if isinstance(error, vtr.CommandError):
         # An external command failed
         return_status = 1

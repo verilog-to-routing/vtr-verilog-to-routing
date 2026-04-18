@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 5d51b89242fe6e463629ac43a72e4606
+# Cmdline: uxsdcxx/uxsdcap.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: 45774433f1b54981c349fecadf578b11
 
-@0x8fe58c48975cfaf0;
+@0xe2c2faca29085645;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -41,6 +41,7 @@ enum NodeType {
 	sink @5;
 	opin @6;
 	ipin @7;
+	mux @8;
 }
 
 enum NodeDirection {
@@ -115,9 +116,10 @@ struct Sizing {
 struct Switch {
 	id @0 :Int32;
 	name @1 :Text;
-	type @2 :SwitchType;
-	timing @3 :Timing;
-	sizing @4 :Sizing;
+	templateId @2 :Text;
+	type @3 :SwitchType;
+	timing @4 :Timing;
+	sizing @5 :Sizing;
 }
 
 struct Switches {
@@ -177,13 +179,14 @@ struct GridLocs {
 }
 
 struct NodeLoc {
-	layer @0 :Int32 = 0;
-	ptc @1 :Text;
-	side @2 :LocSide;
-	xhigh @3 :Int32;
-	xlow @4 :Int32;
-	yhigh @5 :Int32;
-	ylow @6 :Int32;
+	layerHigh @0 :Int32 = 0;
+	layerLow @1 :Int32 = 0;
+	ptc @2 :Text;
+	side @3 :LocSide;
+	xhigh @4 :Int32;
+	xlow @5 :Int32;
+	yhigh @6 :Int32;
+	ylow @7 :Int32;
 }
 
 struct NodeTiming {
@@ -233,14 +236,15 @@ struct RrEdges {
 }
 
 struct RrGraph {
-	toolComment @0 :Text;
-	toolName @1 :Text;
-	toolVersion @2 :Text;
-	channels @3 :Channels;
-	switches @4 :Switches;
-	segments @5 :Segments;
-	blockTypes @6 :BlockTypes;
-	grid @7 :GridLocs;
-	rrNodes @8 :RrNodes;
-	rrEdges @9 :RrEdges;
+	schemaFileId @0 :UInt64;
+	toolComment @1 :Text;
+	toolName @2 :Text;
+	toolVersion @3 :Text;
+	channels @4 :Channels;
+	switches @5 :Switches;
+	segments @6 :Segments;
+	blockTypes @7 :BlockTypes;
+	grid @8 :GridLocs;
+	rrNodes @9 :RrNodes;
+	rrEdges @10 :RrEdges;
 }

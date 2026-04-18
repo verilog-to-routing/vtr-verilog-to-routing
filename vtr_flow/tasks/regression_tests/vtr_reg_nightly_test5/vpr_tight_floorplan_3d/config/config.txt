@@ -6,7 +6,7 @@
 circuits_dir=benchmarks/titan_blif/titan23/stratixiv
 
 # Path to directory of architectures to use
-archs_dir=arch/titan
+archs_dir=arch/multi_die/stratixiv_3d
 
 # Add circuits to list to sweep
 circuit_list_add=neuron_stratixiv_arch_timing.blif

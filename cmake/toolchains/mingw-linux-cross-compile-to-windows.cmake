@@ -1,17 +1,17 @@
 # the name of the target operating system
 SET(CMAKE_SYSTEM_NAME Windows)
 
-option(STATIC_LIBGCC_LIBSTDCPP "Link to libgcc and libstdc++ statically. If not set, requires libgcc and libstdc++ DLLs to be installed on the target machines. Note that static linking libgcc means exceptions will not propagate accross shared library boundaries." OFF) 
+option(STATIC_LIBGCC_LIBSTDCPP "Link to libgcc and libstdc++ statically. If not set, requires libgcc and libstdc++ DLLs to be installed on the target machines. Note that static linking libgcc means exceptions will not propagate across shared library boundaries." OFF) 
 
 #Note that if libgcc and libstdcpp are NOT statically linked the appropriate
 #DLL's should be installed on the target Windows machine, or distributed with
-#the generated executables (e.g. in the same directory as the exectuable). 
+#the generated executables (e.g. in the same directory as the executable). 
 #
 #They are usually installed under:
 #   /usr/lib/gcc/${COMPILER_PEFIX}/*-win32/libgcc*.dll
 #   /usr/lib/gcc/${COMPILER_PEFIX}/*-win32/libstdc++*.dll
 #
-#For example targetting x86_64 with MingW based on gcc 5.3
+#For example targeting x86_64 with MingW based on gcc 5.3
 #   /usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libstdc++*.dll
 #   /usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libgcc*.dll
 
@@ -52,7 +52,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 add_definitions(-DHAVE_STRUCT_TIMESPEC=1)
 
 #This forces ABC to use the stdint types (e.g. ptrdiff_t) instead of its platform
-#dependant type look-up. This avoids 'unkown platform' compilation errors.
+#dependent type look-up. This avoids 'unkown platform' compilation errors.
 add_definitions(-DABC_USE_STDINT_H=1)
 
 if (STATIC_LIBGCC_LIBSTDCPP)

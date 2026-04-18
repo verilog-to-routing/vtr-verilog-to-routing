@@ -239,7 +239,7 @@ static std::string read_place_body(std::ifstream& placement_file,
             //Load the block location
             //
             // If the place file corresponds to a 3D architecture, it should contain 5 tokens of actual data, with an optional 6th (commented) token indicating VPR's internal block number.
-            // If it belongs to 2D architecture file, supported for backward compatability, We should have 4 tokens of actual data, with an optional 5th (commented) token indicating VPR's
+            // If it belongs to 2D architecture file, supported for backward compatibility, We should have 4 tokens of actual data, with an optional 5th (commented) token indicating VPR's
             //internal block number
             int block_name_index = 0;
             int block_x_index = 1;

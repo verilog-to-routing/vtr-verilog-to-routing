@@ -1,20 +1,25 @@
 #include "move_utils.h"
 
+#include "device_grid.h"
 #include "move_transactions.h"
 #include "globals.h"
 
 #include "physical_types_util.h"
 #include "place_macro.h"
+#include "vpr_types.h"
+#include "vtr_assert.h"
 #include "vtr_random.h"
 
 #include "place_constraints.h"
 #include "placer_state.h"
 #include "PlacerCriticalities.h"
 
-//f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
+#include <algorithm>
+
+// f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
-//Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
-bool f_placer_breakpoint_reached = false;
+// Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
+static bool f_placer_breakpoint_reached = false;
 
 /**
  * @brief Adjust the search range based on how many blocks are in the column.
@@ -26,7 +31,6 @@ bool f_placer_breakpoint_reached = false;
  * @param to_layer_num The layer that the block is moving to
  * @param is_range_fixed Whether the search range is fixed (e.g., in case of placement constraints)
  * @param search_range The search range to adjust
- * 
  */
 static void adjust_search_range(t_logical_block_type_ptr block_type,
                                 const int compressed_column_num,
@@ -34,7 +38,7 @@ static void adjust_search_range(t_logical_block_type_ptr block_type,
                                 const bool is_range_fixed,
                                 t_bb& search_range);
 
-//Accessor for f_placer_breakpoint_reached
+// Accessor for f_placer_breakpoint_reached
 bool placer_breakpoint_reached() {
     return f_placer_breakpoint_reached;
 }
@@ -120,7 +124,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
             outcome = e_block_move_result::INVERT;
         } else {
             // This is not a macro - I could use the from and to info from before
-            outcome = record_single_block_swap(blocks_affected, b_from, to, blk_loc_registry);
+            outcome = record_single_block_swap(blocks_affected, b_from, to, blk_loc_registry, place_macros);
         }
 
     } // Finish handling cases for blocks in macro and otherwise
@@ -131,7 +135,8 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                              ClusterBlockId b_from,
                                              t_pl_loc to,
-                                             const BlkLocRegistry& blk_loc_registry) {
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& place_macros) {
     /* Find all the blocks affected when b_from is swapped with b_to.
      * Returns abort_swap.                  */
     VTR_ASSERT_SAFE(b_from);
@@ -157,7 +162,7 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
     } else {
         // Check whether block to is compatible with from location
-        if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry)) || block_locs[b_to].is_fixed) {
+        if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry, place_macros)) || block_locs[b_to].is_fixed) {
             return e_block_move_result::ABORT;
         }
 
@@ -206,7 +211,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
         //
         //Note that we need to explicitly check that the types match, since the device floorplan is not
         //(necessarily) translationally invariant for an arbitrary macro
-        if (!is_legal_swap_to_location(curr_b_from, curr_to, blk_loc_registry)) {
+        if (!is_legal_swap_to_location(curr_b_from, curr_to, blk_loc_registry, place_macros)) {
             blocks_affected.move_abortion_logger.log_move_abort("macro_from swap to location illegal");
             outcome = e_block_move_result::ABORT;
         } else {
@@ -229,10 +234,11 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                 }
             } else {
                 //To block is not a macro
-                outcome = record_single_block_swap(blocks_affected, curr_b_from, curr_to, blk_loc_registry);
+                outcome = record_single_block_swap(blocks_affected, curr_b_from, curr_to, blk_loc_registry, place_macros);
             }
         }
     } // Finish going through all the blocks in the macro
+
     return outcome;
 }
 
@@ -252,7 +258,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //
     //This function is only called when both the main swap's from/to blocks are placement macros.
     //The position in the from macro ('imacro_from') is specified by 'imember_from', and the relevant
-    //macro fro the to block is 'imacro_to'.
+    //macro for the to block is 'imacro_to'.
 
     const auto& block_locs = blk_loc_registry.block_locs();
 
@@ -273,7 +279,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         return outcome;
     }
 
-    //From/To blocks should be exactly the swap offset appart
+    //From/To blocks should be exactly the swap offset apart
     ClusterBlockId blk_from = pl_macros[imacro_from].members[imember_from].blk_index;
     VTR_ASSERT_SAFE(block_locs[blk_from].loc + swap_offset == block_locs[blk_to].loc);
 
@@ -311,17 +317,17 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
 
         // Check whether block to is compatible with from location
         if (b_to != ClusterBlockId::INVALID()) {
-            if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry))) {
+            if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry, pl_macros))) {
                 return e_block_move_result::ABORT;
             }
         }
 
-        if (!is_legal_swap_to_location(b_from, curr_to, blk_loc_registry)) {
+        if (!is_legal_swap_to_location(b_from, curr_to, blk_loc_registry, pl_macros)) {
             blocks_affected.move_abortion_logger.log_move_abort("macro_from swap to location illegal");
             return e_block_move_result::ABORT;
         }
 
-        auto outcome = record_single_block_swap(blocks_affected, b_from, curr_to, blk_loc_registry);
+        auto outcome = record_single_block_swap(blocks_affected, b_from, curr_to, blk_loc_registry, pl_macros);
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
@@ -358,7 +364,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 
         t_pl_loc to = from + swap_offset;
 
-        if (!is_legal_swap_to_location(member.blk_index, to, blk_loc_registry)) {
+        if (!is_legal_swap_to_location(member.blk_index, to, blk_loc_registry, place_macros)) {
             blocks_affected.move_abortion_logger.log_move_abort("macro move to location illegal");
             return e_block_move_result::ABORT;
         }
@@ -395,7 +401,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
         t_pl_loc from = block_locs[blk].loc;
         t_pl_loc to = from + swap_offset;
 
-        if (!is_legal_swap_to_location(blk, to, blk_loc_registry)) {
+        if (!is_legal_swap_to_location(blk, to, blk_loc_registry, place_macros)) {
             move_abortion_logger.log_move_abort("macro move to location illegal");
             return e_block_move_result::ABORT;
         }
@@ -405,7 +411,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
         int imacro_to = place_macros.get_imacro_from_iblk(blk_to);
 
         if (imacro_to != -1) {
-            auto itr = std::find(macros.begin(), macros.end(), imacro_to);
+            auto itr = std::ranges::find(macros, imacro_to);
             if (itr == macros.end()) {
                 macros.push_back(imacro_to);
                 outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry, place_macros, move_abortion_logger);
@@ -432,7 +438,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     }
 
     //Remove any duplicate macros
-    affected_macros.resize(std::distance(affected_macros.begin(), std::unique(affected_macros.begin(), affected_macros.end())));
+    affected_macros.resize(std::distance(affected_macros.begin(), std::ranges::unique(affected_macros).begin()));
 
     std::vector<ClusterBlockId> displaced_blocks;
 
@@ -448,14 +454,14 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     auto is_non_macro_block = [&](ClusterBlockId blk) {
         int imacro_blk = place_macros.get_imacro_from_iblk(blk);
 
-        if (std::find(affected_macros.begin(), affected_macros.end(), imacro_blk) != affected_macros.end()) {
+        if (std::ranges::find(affected_macros, imacro_blk) != affected_macros.end()) {
             return false;
         }
         return true;
     };
 
     std::vector<ClusterBlockId> non_macro_displaced_blocks;
-    std::copy_if(displaced_blocks.begin(), displaced_blocks.end(), std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
+    std::ranges::copy_if(displaced_blocks, std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
 
     //Based on the currently queued block moves, find the empty 'holes' left behind
     auto empty_locs = blocks_affected.determine_locations_emptied_by_move();
@@ -474,11 +480,13 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
 bool is_legal_swap_to_location(ClusterBlockId blk,
                                t_pl_loc to,
-                               const BlkLocRegistry& blk_loc_registry) {
+                               const BlkLocRegistry& blk_loc_registry,
+                               const PlaceMacros& place_macros) {
     //Make sure that the swap_to location is valid
     //It must be:
-    // * on chip, and
+    // * on chip
     // * match the correct block type
+    // * if blk is part of a macro, the entirety of the macro should reside in a single die (for 2.5D and 3D architectures)
     //
     //Note that we need to explicitly check that the types match, since the device floorplan is not
     //(necessarily) translationally invariant for an arbitrary macro
@@ -506,6 +514,38 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     if (b_to) {
         if (block_locs[b_to].is_fixed) {
             return false;
+        }
+    }
+
+    // Check if block is part of a macro and check its legality
+    // This check only has to be done for 2.5D architectures to make sure macros don't cross interposer wires
+    int macro_id = place_macros.get_imacro_from_iblk(blk);
+    if (macro_id != UNDEFINED && device_ctx.grid.has_interposer_cuts()) {
+        const t_pl_macro& macro = place_macros.macros()[macro_id];
+
+        auto blk_in_macro = std::ranges::find(macro.members, blk,
+                                              [](const t_pl_macro_member& pl_mem) noexcept { return pl_mem.blk_index; });
+        VTR_ASSERT_SAFE(blk_in_macro != macro.members.end());
+        t_pl_loc head_to_pos = to - blk_in_macro->offset;
+
+        for (const t_pl_macro_member& macro_member : macro.members) {
+            t_pl_loc member_to_pos = head_to_pos + macro_member.offset;
+
+            // Sometimes macro members could be placed outside of device bounds. We need to check for that here to avoid segfaults
+            // when we're calling device_ctx.grid.are_locs_on_same_die later
+            if (member_to_pos.x < 0 || member_to_pos.x >= int(device_ctx.grid.width())
+                || member_to_pos.y < 0 || member_to_pos.y >= int(device_ctx.grid.height())
+                || member_to_pos.layer < 0
+                || member_to_pos.layer >= int(device_ctx.grid.get_num_layers())) {
+                return false;
+            }
+
+            bool same_die = device_ctx.grid.are_locs_on_same_die({head_to_pos.x, head_to_pos.y, head_to_pos.layer},
+                                                                 {member_to_pos.x, member_to_pos.y, member_to_pos.layer});
+
+            if (!same_die) {
+                return false;
+            }
         }
     }
 
@@ -662,7 +702,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
     //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'
     //blocks (e.g. DSPs/RAMs) which are physically far apart but logically adjacent will be swappable even
-    //at an rlim fo 1.
+    //at an rlim of 1.
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the
     //case with a physical distance rlim)
@@ -671,7 +711,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     const t_compressed_block_grid& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int to_layer_num = get_random_layer(type, rng);
-    VTR_ASSERT(to_layer_num != OPEN);
+    VTR_ASSERT(to_layer_num != UNDEFINED);
 
     //Determine the coordinates in the compressed grid space of the current block
     std::vector<t_physical_tile_loc> compressed_locs = get_compressed_loc(compressed_block_grid,
@@ -744,7 +784,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         vtr::RngContainer& rng) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int to_layer_num = to_loc.layer;
-    VTR_ASSERT(to_layer_num != OPEN);
+    VTR_ASSERT(to_layer_num != UNDEFINED);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
     //Determine the coordinates in the compressed grid space of the current block
@@ -852,23 +892,32 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                                                          centroid,
                                                                                          num_layers);
 
+    // If no compressed location can be found on this layer, return false.
+    // TODO: Maybe search in the layers above or below.
+    const t_physical_tile_loc& compressed_loc_on_layer = centroid_compressed_loc[to_layer_num];
+    if (compressed_loc_on_layer.x == UNDEFINED || compressed_loc_on_layer.y == UNDEFINED) {
+        VTR_ASSERT_MSG(compressed_loc_on_layer.x == UNDEFINED && compressed_loc_on_layer.y == UNDEFINED,
+                       "When searching for a compressed location, and a location cannot be found "
+                       "both x and y should be OPEN.");
+        return false;
+    }
+
     //Determine the valid compressed grid location ranges
-    int delta_cx;
     t_bb search_range;
 
     // If we are early in the anneal and the range limit still big enough --> search around the center location that the move proposed
     // If not --> search around the current location of the block but in the direction of the center location that the move proposed
     if (range_limiters.original_rlim > 0.15 * range_limiters.first_rlim) {
         search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                               centroid_compressed_loc[to_layer_num],
+                                                               compressed_loc_on_layer,
                                                                std::min<float>(range_limiters.original_rlim, range_limiters.dm_rlim));
     } else {
         search_range = get_compressed_grid_bounded_search_range(compressed_block_grid,
                                                                 from_compressed_loc[to_layer_num],
-                                                                centroid_compressed_loc[to_layer_num],
+                                                                compressed_loc_on_layer,
                                                                 std::min<float>(range_limiters.original_rlim, range_limiters.dm_rlim));
     }
-    delta_cx = search_range.xmax - search_range.xmin;
+    int delta_cx = search_range.xmax - search_range.xmin;
 
     bool block_constrained = is_cluster_constrained(b_from);
 
@@ -1110,7 +1159,7 @@ t_bb get_compressed_grid_target_search_range(const t_compressed_block_grid& comp
                                              float rlim) {
     t_bb search_ranges;
     int layer_num = compressed_loc.layer_num;
-    VTR_ASSERT(compressed_loc.x != OPEN && compressed_loc.y != OPEN && compressed_loc.layer_num != OPEN);
+    VTR_ASSERT(compressed_loc.x != UNDEFINED && compressed_loc.y != UNDEFINED && compressed_loc.layer_num != UNDEFINED);
 
     int rlim_x_max_range = std::min<int>((int)compressed_block_grid.get_num_columns(layer_num), rlim);
     int rlim_y_max_range = std::min<int>((int)compressed_block_grid.get_num_rows(layer_num), rlim); /* for aspect_ratio != 1 case. */
@@ -1131,13 +1180,12 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
                                               const t_physical_tile_loc& from_compressed_loc,
                                               const t_physical_tile_loc& target_compressed_loc,
                                               float rlim) {
-    t_bb search_range;
 
     int min_cx, max_cx, min_cy, max_cy;
 
     //TODO: This if condition is added because blocks are only moved in the same layer. After the update, this condition should be replaced with an assertion
-    VTR_ASSERT(from_compressed_loc.x != OPEN && from_compressed_loc.y != OPEN && from_compressed_loc.layer_num != OPEN);
-    VTR_ASSERT(target_compressed_loc.x != OPEN && target_compressed_loc.y != OPEN && target_compressed_loc.layer_num != OPEN);
+    VTR_ASSERT(from_compressed_loc.x != UNDEFINED && from_compressed_loc.y != UNDEFINED && from_compressed_loc.layer_num != UNDEFINED);
+    VTR_ASSERT(target_compressed_loc.x != UNDEFINED && target_compressed_loc.y != UNDEFINED && target_compressed_loc.layer_num != UNDEFINED);
 
     int layer_num = target_compressed_loc.layer_num;
     int rlim_x_max_range = std::min<int>(compressed_block_grid.get_num_columns(layer_num), rlim);
@@ -1164,7 +1212,7 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
         max_cy = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, cy_from + rlim_y_max_range);
     }
 
-    search_range = t_bb(min_cx, max_cx, min_cy, max_cy, layer_num, layer_num);
+    t_bb search_range = t_bb(min_cx, max_cx, min_cy, max_cy, layer_num, layer_num);
 
     return search_range;
 }
@@ -1263,7 +1311,7 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
 
     // TODO: Compatible layer vector should be shuffled first, and then iterated through
     int free_layer = loc.layer;
-    VTR_ASSERT(loc.layer != OPEN);
+    VTR_ASSERT(loc.layer != UNDEFINED);
     if (device_ctx.grid.get_num_layers() > 1) {
         const auto& compatible_layers = compressed_grids[logical_block->index].get_layer_nums();
         if (compatible_layers.size() > 1) {
@@ -1286,7 +1334,7 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng) {
     const auto& compatible_layers = g_vpr_ctx.placement().compressed_block_grids[logical_block->index].get_layer_nums();
     VTR_ASSERT(!compatible_layers.empty());
-    int layer_num = OPEN;
+    int layer_num = UNDEFINED;
     if (compatible_layers.size() == 1) {
         layer_num = compatible_layers[0];
     } else {

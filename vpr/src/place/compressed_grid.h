@@ -5,6 +5,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_flat_map.h"
+#include "vpr_types.h"
 
 struct t_compressed_block_grid {
     // The compressed grid of a block type stores only the coordinates that are occupied by that particular block type.
@@ -40,15 +41,15 @@ struct t_compressed_block_grid {
     }
 
     inline t_physical_tile_loc grid_loc_to_compressed_loc(t_physical_tile_loc grid_loc) const {
-        int cx = OPEN;
-        int cy = OPEN;
+        int cx = UNDEFINED;
+        int cy = UNDEFINED;
         int layer_num = grid_loc.layer_num;
 
-        auto itr_x = std::lower_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
+        auto itr_x = std::ranges::lower_bound(compressed_to_grid_x[layer_num], grid_loc.x);
         VTR_ASSERT(*itr_x == grid_loc.x);
         cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
 
-        auto itr_y = std::lower_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
+        auto itr_y = std::ranges::lower_bound(compressed_to_grid_y[layer_num], grid_loc.y);
         VTR_ASSERT(*itr_y == grid_loc.y);
         cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
 
@@ -68,7 +69,7 @@ struct t_compressed_block_grid {
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_up(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
             // Get the first element that is not less than the value
-            auto itr = std::lower_bound(compressed.begin(), compressed.end(), value);
+            auto itr = std::ranges::lower_bound(compressed, value);
             if (itr == compressed.end()) {
                 // If all the compressed locations are less than the grid location, return the last compressed location
                 return compressed.size() - 1;
@@ -98,7 +99,7 @@ struct t_compressed_block_grid {
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_down(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
             // Get the first element that is strictly bigger than the value
-            auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
+            auto itr = std::ranges::upper_bound(compressed, value);
             if (itr == compressed.begin()) {
                 // If all the compressed locations are bigger than the grid location, return the first compressed location
                 return 0;
@@ -121,14 +122,20 @@ struct t_compressed_block_grid {
      * Useful when the point is of a different block type from coords.
      *
      *   @param grid_loc non-compressed physical tile location in the grid
-     *   @return Nearest x and y compressed locations in the grid (in the same layer)
+     *   @return Nearest x and y compressed locations in the grid (in the same layer),
+     *           or OPEN if a location does not exist.
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
         auto find_closest_compressed_point = [](int loc, const std::vector<int>& compressed_grid_dim) -> int {
-            VTR_ASSERT_DEBUG(compressed_grid_dim.size() > 0);
+            // If the compressed grid dim's size is 0, this means that there are
+            // no compatible locations for a block of the given type. Returns OPEN
+            // in that case.
+            if (compressed_grid_dim.size() == 0) {
+                return UNDEFINED;
+            }
 
             // Find the first element not less than loc
-            auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
+            auto itr = std::ranges::lower_bound(compressed_grid_dim, loc);
 
             if (itr == compressed_grid_dim.begin()) {
                 // If all the compressed locations are bigger that or equal to loc, return the first compressed location
@@ -162,6 +169,8 @@ struct t_compressed_block_grid {
     }
 
     inline const vtr::flat_map2<int, t_physical_tile_loc>& get_column_block_map(int cx, int layer_num) const {
+        VTR_ASSERT_SAFE(layer_num < (int)grid.size());
+        VTR_ASSERT_SAFE(cx < (int)grid[layer_num].size());
         return grid[layer_num][cx];
     }
 

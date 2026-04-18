@@ -82,7 +82,6 @@ def retrieve_data(x_param, y_param, filters, tasks, dbname="results.db"):
             if t == 0:
                 filter_command = "WHERE "
                 for f in range(len(filters)):
-
                     filter_command += str(filters[f])
                     sql_val_args.extend(filters[f].args)
 
@@ -149,7 +148,7 @@ def describe_param(param, mode, tasks, dbname="results.db"):
     db = connect_db(dbname)
     cursor = db.cursor()
 
-    (param_name, param_type) = param.split()
+    param_name, param_type = param.split()
     if param_type == "TEXT":
         mode = "categorical"
     elif mode not in {"categorical", "range"}:

@@ -93,16 +93,12 @@ void draw_manual_moves_window(const std::string& block_id) {
 
 void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     int block_id = -1;
-    int x_location = -1;
-    int y_location = -1;
-    int layer_location = -1;
-    int subtile_location = -1;
     bool valid_input = true;
 
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Loading the context/data structures needed.
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     //Getting entry values
     GtkWidget* block_entry = gtk_grid_get_child_at((GtkGrid*)grid, 0, 1);
@@ -119,10 +115,10 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     GtkWidget* layer_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 3);
     GtkWidget* subtile_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 4);
 
-    x_location = std::atoi(gtk_entry_get_text((GtkEntry*)x_position_entry));
-    y_location = std::atoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
-    layer_location = std::atoi(gtk_entry_get_text((GtkEntry*)layer_position_entry));
-    subtile_location = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
+    int x_location = std::atoi(gtk_entry_get_text((GtkEntry*)x_position_entry));
+    int y_location = std::atoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
+    int layer_location = std::atoi(gtk_entry_get_text((GtkEntry*)layer_position_entry));
+    int subtile_location = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
 
     if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)layer_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
         invalid_breakpoint_entry_window("Not all fields are complete");
@@ -157,8 +153,8 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 }
 
 bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
@@ -283,7 +279,7 @@ void manual_move_cost_summary_dialog() {
 
 void manual_move_highlight_new_block_location() {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     //Unselects all blocks first
     deselect_all();
     //Highlighting the block
@@ -324,7 +320,7 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
                                               const t_placer_opts& placer_opts,
                                               const PlacerCriticalities* criticalities) {
     draw_manual_moves_window("");
-    update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+    update_screen(ScreenUpdatePriority::MAJOR, " ", e_pic_type::PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;
     t_propose_action proposed_action{move_type, -1}; //no need to specify block type in manual move "propose_move" function
     return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);

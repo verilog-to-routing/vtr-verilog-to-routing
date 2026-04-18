@@ -8,9 +8,24 @@
 #include <unordered_map>
 #include "physical_types.h"
 #include "prepack.h"
+#include "lazy_pop_unique_priority_queue.h"
 
 // Forward declarations
 class AtomBlockId;
+
+/**
+ * Keeps track of locations that a primitive can go to during packing
+ * Linked list for easy insertion/deletion
+ */
+struct t_cluster_placement_primitive {
+    t_cluster_placement_primitive() {
+        pb_graph_node = nullptr;
+    }
+    t_pb_graph_node* pb_graph_node;
+    bool valid;
+    float base_cost;        /* cost independent of current status of packing */
+    float incremental_cost; /* cost dependent on current status of packing */
+};
 
 /**
  * @brief Stats keeper for placement within the cluster during packing
@@ -141,29 +156,87 @@ t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logica
 void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats);
 
 /**
- * get next list of primitives for list of atom blocks
+ * @brief Builds a priority queue of feasible primitive root candidates for a molecule.
  *
- * primitives is the list of ptrs to primitives that matches with the list of atom block, assumes memory is preallocated
- *   - if this is a new block, requeue tried primitives and return a in-flight primitive list to try
- *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
+ * A primitive root candidate is a candidate primitive location in the cluster where
+ * the molecule's root atom could be placed.
  *
- * return true if can find next primitive, false otherwise
+ * The returned priority queue orders candidates in decreasing desirability:
+ *   1) lower molecule placement cost first,
+ *   2) higher total primitive count to break ties,
+ *   3) earlier encountered primitives to break remaining ties.
+ * TODO: Explore other cost schemes including weighted sum of these metrics.
  *
- * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
- * molecule - molecule to pack into open complex block
- * primitives_list - a list of primitives indexed to match atom_block_ids of molecule.
- *                   Expects an allocated array of primitives ptrs as inputs.
- *                   This function loads the array with the lowest cost primitives that implement molecule
- * force_site - optional user-specified primitive site on which to place the molecule; if a force_site
+ * The function does not commit any placement. It only prepares candidate
+ * primitive roots for later selection by the caller (e.g., try_pack_molecule()).
+ *
+ * @param cluster_placement_stats
+ *              Placement statistics and primitive state information for the current cluster.
+ *              This structure maintains valid, tried, and in-flight primitive sets.
+ * @param molecule_id
+ *              Identifier of the molecule to be evaluated for placement.
+ * @param primitives_list
+ *              Output vector populated with the selected primitive locations for each atom in the
+ *              molecule. Must be pre-sized to the number of atoms in the molecule. Entries corresponding
+ *              to unused atoms remain nullptr. The contents are valid only for the currently evaluated
+ *              candidate root location and must be recomputed when committing a placement.
+ * @param prepacker
+ *              The prepacker object that provides access to the molecule
+ *              corresponding to given molecule id.
+ * @param force_site
+ *              Optional user-specified primitive site on which to place the molecule; if a force_site
  *              argument is provided, the function either selects the specified site or reports failure.
  *              If the force_site argument is set to its default value (-1), vpr selects an available site.
+ *
+ * @return A LazyPopUniquePriorityQueue containing feasible primitive root
+ *         candidates ordered by placement priority. The queue may be empty
+ *         if no feasible placement exists.
  */
-bool get_next_primitive_list(
-    t_intra_cluster_placement_stats* cluster_placement_stats,
-    PackMoleculeId molecule_id,
-    std::vector<t_pb_graph_node*>& primitives_list,
-    const Prepacker& prepacker,
-    int force_site = -1);
+LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                                                                                          PackMoleculeId molecule_id,
+                                                                                                          std::vector<t_pb_graph_node*>& primitives_list,
+                                                                                                          const Prepacker& prepacker,
+                                                                                                          int force_site = -1);
+
+/**
+ * @brief Move a candidate root primitive from the valid set to the in-flight set.
+ *
+ * @param cluster_placement_stats
+ *        Placement statistics for the current cluster (contains valid/in-flight containers).
+ * @param target_root
+ *        The pb_graph_node to move to the in-flight set.
+ * @return True if target_root was found in valid_primitives and moved to in-flight;
+ *         false otherwise.
+ */
+bool move_root_node_to_inflight(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                t_pb_graph_node* target_root);
+
+/**
+ * @brief Attempts to activate and initialize placement for a candidate root primitive by:
+ *   - Verifying the primitive is valid.
+ *   - Moving the primitive from the valid set to the in-flight set.
+ *   - Calling try_place_molecule() to populate primitives_list.
+ *
+ * @param cluster_placement_stats
+ *              Placement statistics for the current cluster (contains valid/in-flight containers).
+ * @param molecule_id
+ *              The id of the molecule being packed.
+ * @param root
+ *              The candidate primitive root node selected for placement.
+ * @param primitives_list
+ *              Output vector populated by try_place_molecule() with the
+ *              primitive locations corresponding to the molecule atoms.
+ * @param prepacker
+ *              The prepacker object used to retrieve molecule information.
+ *
+ * @return True if the root was valid, successfully moved to in-flight,
+ *         and try_place_molecule() produced a valid placement.
+ */
+bool try_start_root_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
+                              PackMoleculeId molecule_id,
+                              t_pb_graph_node* root,
+                              std::vector<t_pb_graph_node*>& primitives_list,
+                              const Prepacker& prepacker);
 
 /**
  * @brief Commit primitive, invalidate primitives blocked by mode assignment and update costs for primitives in same cluster as current

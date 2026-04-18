@@ -618,10 +618,10 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
             class_inf.equivalence = port->equivalent;
 
             if (port->type == IN_PORT) {
-                class_inf.type = RECEIVER;
+                class_inf.type = e_pin_type::RECEIVER;
             } else {
                 VTR_ASSERT(port->type == OUT_PORT);
-                class_inf.type = DRIVER;
+                class_inf.type = e_pin_type::DRIVER;
             }
 
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
@@ -639,10 +639,10 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
                 class_inf.equivalence = port->equivalent;
 
                 if (port->type == IN_PORT) {
-                    class_inf.type = RECEIVER;
+                    class_inf.type = e_pin_type::RECEIVER;
                 } else {
                     VTR_ASSERT(port->type == OUT_PORT);
-                    class_inf.type = DRIVER;
+                    class_inf.type = e_pin_type::DRIVER;
                 }
 
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
@@ -823,7 +823,7 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
     int *num_input_pb_graph_node_pins, *num_output_pb_graph_node_pins; /* number of pins in a set [0..num_sets-1] */
     int num_input_pb_graph_node_sets, num_output_pb_graph_node_sets;
     /* Points to pins specified in the port string, later used to insert edges */
-    t_pb_graph_pin ***input_pb_graph_node_pins, ***output_pb_graph_node_pins; /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
+    /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
 
     if (load_power_structures) {
         VTR_ASSERT(pb_graph_parent_node->interconnect_pins[mode->index] == nullptr);
@@ -836,15 +836,15 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
 
     for (i = 0; i < mode->num_interconnect; i++) {
         /* determine the interconnect input and output pins */
-        input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
-                                                                            pb_graph_children_nodes, mode->interconnect[i].input_string,
-                                                                            &num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
-                                                                            true, true);
+        t_pb_graph_pin*** input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
+                                                                                              pb_graph_children_nodes, mode->interconnect[i].input_string,
+                                                                                              &num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
+                                                                                              true, true);
 
-        output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
-                                                                             pb_graph_children_nodes, mode->interconnect[i].output_string,
-                                                                             &num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
-                                                                             false, true);
+        t_pb_graph_pin*** output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
+                                                                                               pb_graph_children_nodes, mode->interconnect[i].output_string,
+                                                                                               &num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
+                                                                                               false, true);
 
         if (load_power_structures) {
             alloc_and_load_interconnect_pins(&pb_graph_parent_node->interconnect_pins[mode->index][i],
@@ -886,8 +886,8 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), mode->interconnect[i].line_num,
                           "Unknown interconnect %d for mode %s in pb_type %s, input %s, output %s\n",
                           mode->interconnect[i].type, mode->name,
-                          pb_graph_parent_node->pb_type->name, mode->interconnect[i].input_string,
-                          mode->interconnect[i].output_string);
+                          pb_graph_parent_node->pb_type->name, mode->interconnect[i].input_string.c_str(),
+                          mode->interconnect[i].output_string.c_str());
         }
         for (j = 0; j < num_input_pb_graph_node_sets; j++) {
             delete[] input_pb_graph_node_pins[j];
@@ -952,7 +952,7 @@ static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
 t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            const t_pb_graph_node* pb_graph_parent_node,
                                                            t_pb_graph_node** pb_graph_children_nodes,
-                                                           const char* port_string,
+                                                           std::string_view port_string,
                                                            int** num_ptrs,
                                                            int* num_sets,
                                                            const bool is_input_to_interc,
@@ -967,13 +967,13 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "{ inside { in port %s\n", port_string);
+                          "{ inside { in port %s\n", port_string.data());
             }
             in_squig_bracket = true;
         } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No matching '{' for '}' in port %s\n", port_string);
+                          "No matching '{' for '}' in port %s\n", port_string.data());
             }
             (*num_sets)++;
             in_squig_bracket = false;
@@ -987,7 +987,7 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
     if (in_squig_bracket) {
         (*num_sets)++;
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                  "No matching '{' for '}' in port %s\n", port_string);
+                  "No matching '{' for '}' in port %s\n", port_string.data());
     }
 
     t_pb_graph_pin*** pb_graph_pins = new t_pb_graph_pin**[*num_sets];
@@ -1003,17 +1003,17 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "{ inside { in port %s\n", port_string);
+                          "{ inside { in port %s\n", port_string.data());
             }
             in_squig_bracket = true;
         } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if ((*num_ptrs)[curr_set] == 0) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No data contained in {} in port %s\n", port_string);
+                          "No data contained in {} in port %s\n", port_string.data());
             }
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No matching '{' for '}' in port %s\n", port_string);
+                          "No matching '{' for '}' in port %s\n", port_string.data());
             }
             curr_set++;
             in_squig_bracket = false;
@@ -1026,7 +1026,7 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                                     &((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
             } catch (VprError& e) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Syntax error processing port string '%s' (%s)\n", port_string, e.what());
+                          "Syntax error processing port string '%s' (%s)\n", port_string.data(), e.what());
             }
             VTR_ASSERT(success);
 
@@ -1222,19 +1222,30 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int num_output_sets,
                                             const int* num_output_ptrs) {
     int i_inset, i_inpin, i_outpin;
-    t_pb_graph_edge* edges;
     vtr::t_linked_vptr* cur;
 
     VTR_ASSERT(interconnect->infer_annotations == false);
 
-    /* Allocate memory for edges, and reallocate more memory for pins connecting to those edges */
     if (num_output_sets != 1) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
                   "Mux must have one output\n");
     }
 
-    edges = new t_pb_graph_edge[num_input_sets];
-    for (int i = 0; i < (num_input_sets); i++)
+    /* Validate that every input set has the same width as the output */
+    for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
+        if (num_output_ptrs[0] != num_input_ptrs[i_inset]) {
+            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
+                      "# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
+        }
+    }
+
+    /* One edge per (input_set, pin) pair so every edge remains single-pin.
+     * For a 1-bit mux this is identical to the original behaviour. */
+    const int pins_per_set = num_output_ptrs[0];
+    const int total_edges = num_input_sets * pins_per_set;
+
+    t_pb_graph_edge* edges = new t_pb_graph_edge[total_edges];
+    for (int i = 0; i < total_edges; i++)
         edges[i] = t_pb_graph_edge();
     cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
@@ -1243,52 +1254,43 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
     cur = new vtr::t_linked_vptr;
     cur->next = num_edges_head;
     num_edges_head = cur;
-    cur->data_vptr = (void*)((intptr_t)num_input_sets);
+    cur->data_vptr = (void*)((intptr_t)total_edges);
 
+    /* Pre-size all pin edge arrays to their exact final count before wiring.
+     * Each input pin gains exactly 1 new output edge (appears in one set only).
+     * Each output pin gains exactly num_input_sets new input edges. */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-            input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges.resize(input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges + 1);
+        for (i_inpin = 0; i_inpin < pins_per_set; i_inpin++) {
+            auto in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
+            in_pin->output_edges.resize(in_pin->num_output_edges + 1);
         }
     }
-
-    for (i_outpin = 0; i_outpin < num_output_ptrs[0]; i_outpin++) {
-        output_pb_graph_node_pin_ptrs[0][i_outpin]->input_edges.resize(output_pb_graph_node_pin_ptrs[0][i_outpin]->num_input_edges
-                                                                       + num_input_sets);
+    for (i_outpin = 0; i_outpin < pins_per_set; i_outpin++) {
+        auto out_pin = output_pb_graph_node_pin_ptrs[0][i_outpin];
+        out_pin->input_edges.resize(out_pin->num_input_edges + num_input_sets);
     }
 
-    /* Load connections between pins and record these updates in the edges */
+    /* Create one single-pin edge per (input_set, pin) pair */
     for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
-        if (num_output_ptrs[0] != num_input_ptrs[i_inset]) {
-            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
-                      "# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
-        }
-        edges[i_inset].input_pins = new t_pb_graph_pin*[num_output_ptrs[0]];
-        edges[i_inset].output_pins = new t_pb_graph_pin*[num_output_ptrs[0]];
-        for (int i = 0; i < num_output_ptrs[0]; i++) {
-            edges[i_inset].input_pins[i] = nullptr;
-            edges[i_inset].output_pins[i] = nullptr;
-        }
-
-        edges[i_inset].num_input_pins = num_output_ptrs[0];
-        edges[i_inset].num_output_pins = num_output_ptrs[0];
-        for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
+        for (i_inpin = 0; i_inpin < pins_per_set; i_inpin++) {
+            const int edge_idx = i_inset * pins_per_set + i_inpin;
             auto in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
             auto out_pin = output_pb_graph_node_pin_ptrs[0][i_inpin];
-            in_pin->output_edges[in_pin->num_output_edges] = &edges[i_inset];
+
+            edges[edge_idx].input_pins = new t_pb_graph_pin*[1];
+            edges[edge_idx].output_pins = new t_pb_graph_pin*[1];
+            edges[edge_idx].input_pins[0] = in_pin;
+            edges[edge_idx].output_pins[0] = out_pin;
+            edges[edge_idx].num_input_pins = 1;
+            edges[edge_idx].num_output_pins = 1;
+            edges[edge_idx].interconnect = interconnect;
+            edges[edge_idx].driver_set = i_inset;
+            edges[edge_idx].driver_pin = i_inpin;
+
+            in_pin->output_edges[in_pin->num_output_edges] = &edges[edge_idx];
             in_pin->num_output_edges++;
-            out_pin->input_edges[out_pin->num_input_edges] = &edges[i_inset];
+            out_pin->input_edges[out_pin->num_input_edges] = &edges[edge_idx];
             out_pin->num_input_edges++;
-
-            edges[i_inset].input_pins[i_inpin] = in_pin;
-            edges[i_inset].output_pins[i_inpin] = out_pin;
-
-            if (i_inpin != 0) {
-                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
-                          "Bus-based mux not yet supported, will consider for future work\n");
-            }
-            edges[i_inset].interconnect = interconnect;
-            edges[i_inset].driver_set = i_inset;
-            edges[i_inset].driver_pin = i_inpin;
         }
     }
 }
@@ -1323,8 +1325,8 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
     }
 
-    pb_msb = pb_lsb = OPEN;
-    pin_msb = pin_lsb = OPEN;
+    pb_msb = pb_lsb = UNDEFINED;
+    pin_msb = pin_lsb = UNDEFINED;
 
     // parse pb
     bool found = false;
@@ -1928,7 +1930,7 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
  * Purpose: This subroutine computes the index of a pb graph node at its
  *          level of the pb hierarchy; it is computed by the parent and
  *          passed to each child of each child pb type. When the child is
- *          a primitive, the computed indes is its flat site index.
+ *          a primitive, the computed index is its flat site index.
  *          For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
  *          then the ALM at index N, when calling this function for
  *          its FF child at index M, would compute the child's index as:

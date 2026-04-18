@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-""" This module is a wrapper around the scripts/python_libs/vtr,
-allowing the user to run one or more VTR tasks. """
+"""This module is a wrapper around the scripts/python_libs/vtr,
+allowing the user to run one or more VTR tasks."""
 
 import argparse
 import os
@@ -49,13 +49,10 @@ from vtr.error import VtrError, InspectError, CommandError
 def vtr_command_argparser(prog=None):
     """Argument parse for run_vtr_task"""
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
             Runs one or more VTR tasks.
-        """
-    )
-    epilog = textwrap.dedent(
-        """
+        """)
+    epilog = textwrap.dedent("""
         Examples
         --------
 
@@ -74,8 +71,7 @@ def vtr_command_argparser(prog=None):
         Exit Code
         ---------
             The exit code equals the number failures (i.e. exit code 0 indicates no failures).
-        """
-    )
+        """)
 
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -103,7 +99,7 @@ def vtr_command_argparser(prog=None):
         default=None,
         metavar="TEMP_DIR",
         dest="alt_tasks_dir",
-        help="Alternate directory to run the tasks in (will be created if non-existant)",
+        help="Alternate directory to run the tasks in (will be created if non-existent)",
     )
 
     parser.add_argument(
@@ -325,7 +321,7 @@ def run_tasks(args, configs) -> int:
             print("\nParsing test results...")
             if len(args.list_file) > 0:
                 print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
-            parse_tasks(configs, jobs, args.alt_tasks_dir)
+            parse_tasks(configs, jobs, args.alt_tasks_dir, args.j)
             print("Elapsed time: {}".format(format_elapsed_time(datetime.now() - start)))
 
         if args.create_golden:
@@ -405,10 +401,10 @@ def create_run_script(job, work_dir):
     Path(work_dir).mkdir(parents=True)
     run_script_file = Path(work_dir) / "vtr_flow.sh"
     template = str(paths.flow_template_path)
-    with open(template, "r") as in_file:
+    with open(template, "r", encoding="utf-8") as in_file:
         template_string = in_file.readlines()
         template_string = "".join(template_string)
-        with open(run_script_file, "w+") as out_file:
+        with open(run_script_file, "w+", encoding="utf-8") as out_file:
             print(
                 template_string.format(
                     estimated_time=runtime_estimate,
@@ -427,7 +423,7 @@ def create_run_script(job, work_dir):
 
 
 def ret_expected_runtime(job, work_dir):
-    """Returns the expected run-time (in seconds) of the specified run, or -1 if unkown"""
+    """Returns the expected run-time (in seconds) of the specified run, or -1 if unknown"""
     seconds = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
@@ -443,7 +439,7 @@ def ret_expected_runtime(job, work_dir):
 
 
 def ret_expected_memory(job, work_dir):
-    """Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown"""
+    """Returns the expected memory usage (in bytes) of the specified run, or -1 if unknown"""
     memory_kib = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
@@ -486,7 +482,7 @@ def run_vtr_flow_process(queue, run_dirs, job, script) -> None:
     out = None
     vtr_flow_out = str(PurePath(work_dir) / "vtr_flow.out")
 
-    with open(vtr_flow_out, "w+") as out_file:
+    with open(vtr_flow_out, "w+", encoding="utf-8") as out_file:
         with redirect_stdout(out_file):
             if script == "run_vtr_flow.py":
                 out = run_vtr_flow(job.run_command(), str(paths.run_vtr_flow_path))
@@ -497,7 +493,7 @@ def run_vtr_flow_process(queue, run_dirs, job, script) -> None:
                     stdout=out_file,
                 )
 
-    with open(vtr_flow_out, "r") as out_file:
+    with open(vtr_flow_out, "r", encoding="utf-8") as out_file:
         for line in out_file.readlines():
             print(line, end="")
 

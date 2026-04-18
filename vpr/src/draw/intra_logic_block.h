@@ -118,10 +118,16 @@ int highlight_sub_block(const ezgl::point2d& point_in_clb, const ClusterBlockId 
  */
 t_selected_sub_block_info& get_selected_sub_block_info();
 
+/**
+ * Draw the atom-level net flylines for the selected pb 
+ * (inputs: blue, outputs: red, internal: orange)
+ */
+void draw_selected_pb_flylines(ezgl::renderer* g);
+
 /*
  * Draws lines from the proper logical sources, to the proper logical sinks.
  * If the draw state says to show all logical connections, it will,
- * and if there is a selected sub-block, it will highlight it's conections
+ * and if there is a selected sub-block, it will highlight it's connections
  */
 
 void draw_logical_connections(ezgl::renderer* g);

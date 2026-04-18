@@ -1,0 +1,25 @@
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/wiremap6
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_40nm.xml
+
+# Add circuits to list to sweep
+circuit_list_add=alu4.pre-vpr.blif
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+script_params_common=-starting_stage vpr --pack --place
+script_params_list_add=--anneal_auto_init_t_estimator cost_variance
+script_params_list_add=--anneal_auto_init_t_estimator equilibrium
+

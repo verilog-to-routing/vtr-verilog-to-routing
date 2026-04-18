@@ -1,9 +1,4 @@
 #pragma once
-
-#include "vtr_vector.h"
-#include "partition.h"
-#include "partition_region.h"
-
 /**
  * 
  * @brief This file defines the UserPlaceConstraints class used to store and read out data related to user-specified
@@ -32,6 +27,14 @@
  *
  *
  */
+
+#include <unordered_map>
+#include <unordered_set>
+
+#include "vtr_vector.h"
+#include "partition.h"
+#include "partition_region.h"
+#include "pack.h"
 
 class UserPlaceConstraints {
   public:
@@ -98,7 +101,40 @@ class UserPlaceConstraints {
      */
     PartitionRegion& get_mutable_partition_pr(PartitionId part_id);
 
+    /**
+     * @brief Constrain the atoms in the given partition to be within blocks of a specific type
+     *
+     *   @param part_id   The id of the partition being constrained
+     *   @param lb_type   The logical block type (i.e. cluster type) the partition is constrained to
+     */
+    void constrain_part_lb_type(PartitionId part_id, t_logical_block_type_ptr lb_type);
+
+    /**
+     * @brief Check if a partition has logical block type constraints
+     *
+     *   @param part_id The id of the partition to check
+     *
+     *   @return True if the partition has logical block type constraints, false otherwise
+     */
+    bool is_part_constrained_to_lb_types(PartitionId part_id) const;
+
+    /**
+     * @brief Return the set of logical block types a partition is constrained to
+     *
+     *   @param part_id The id of the partition whose type constraints are needed
+     * 
+     *   @return The set of logical block types. If the part is not constrained, it will return an empty set.
+     *           Use is_part_constrained_to_lb_types function before calling this function to check if a part
+     *           is constrained or not.
+     */
+    const std::unordered_set<t_logical_block_type_ptr>& get_part_lb_type_constraints(PartitionId part_id) const;
+
   private:
+    /**
+     * Store logical block type constraints for each partition
+     */
+    std::unordered_map<PartitionId, std::unordered_set<t_logical_block_type_ptr>> constrained_part_lb_types_;
+
     /**
      * Store all constrained atoms
      */
@@ -108,6 +144,14 @@ class UserPlaceConstraints {
      * Store all partitions
      */
     vtr::vector<PartitionId, Partition> partitions;
+
+    /**
+     * This is an empty set that is returned as a reference by the get_part_lb_type_constraints
+     * function if a partition does not have a constraint on the logical block types into which
+     * its primitives can be packed into. This is to allow that function to return all results
+     * by reference.
+     */
+    std::unordered_set<t_logical_block_type_ptr> EMPTY_SET_;
 };
 
 ///@brief used to print floorplanning constraints data from a VprConstraints object

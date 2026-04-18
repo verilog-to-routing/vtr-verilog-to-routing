@@ -91,7 +91,6 @@ def is_output(cell_type):
 
 
 def parse_args():
-
     parser = argparse.ArgumentParser(
         "Script to convert ISPD FPGA Bookshelf format benchmarks into VTR compatible formats"
     )
@@ -125,7 +124,6 @@ def main():
 
 
 def parse_aux(aux_filepath):
-
     dirname = os.path.dirname(aux_filepath)
 
     aux_info = AuxInfo()
@@ -227,7 +225,6 @@ def bookshelf2blif(aux_info, out_filepath, merge_ports=False):
 
             pins = sorted(node_pins[node_name], key=lambda x: x.pin_name)
             for i, node_pin in enumerate(pins):
-
                 print >> f, "    {}={}".format(node_pin.pin_name, node_pin.net_name),
 
                 if i != len(node_pins[node_name]) - 1:
@@ -282,7 +279,6 @@ def parse_lib(aux_info, merge_ports=False):
                 cell = Cell()
                 cell.name = cell_name.strip("\n")
             elif line.startswith("  PIN"):
-
                 pin = CellPin()
                 tokens = line.split()
                 assert len(tokens) >= 3
@@ -415,7 +411,6 @@ def parse_scl(aux_info):
 
     with open(aux_info.scl_filepath) as f:
         for line in f:
-
             # SITEMAP
             if line.startswith("SITEMAP"):
                 sitemap_token, width, height = line.split()
@@ -529,7 +524,6 @@ def add_arch_block(root, site, resources, cells):
 
 
 def create_resource(resource, cells):
-
     pb_type = ET.Element("pb_type")
     pb_type.set("name", resource.name)
 

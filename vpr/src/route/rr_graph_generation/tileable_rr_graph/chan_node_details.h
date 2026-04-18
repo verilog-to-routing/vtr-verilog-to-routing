@@ -14,7 +14,7 @@
  *  1. segment information: length, frequency etc.
  *  2. starting point of segment
  *  3. ending point of segment
- *  4. potentail track_id(ptc_num) of each segment
+ *  4. potential track_id(ptc_num) of each segment
  ***********************************************************************/
 
 /************************************************************************
@@ -29,7 +29,7 @@
 class ChanNodeDetails {
   public:                                    /* Constructor */
     ChanNodeDetails(const ChanNodeDetails&); /* Duplication */
-    ChanNodeDetails();                       /* Initilization */
+    ChanNodeDetails();                       /* Initialization */
   public:                                    /* Accessors */
     size_t get_chan_width() const;
     size_t get_track_node_id(const size_t& track_id) const;

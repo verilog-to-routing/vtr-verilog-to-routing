@@ -41,10 +41,14 @@ inline float get_manhattan_distance_to_tile(const t_flat_pl_loc& src_flat_loc,
     // the src_flat_loc. To do this, we project the point in L1 space.
     float proj_x = std::clamp(src_flat_loc.x, tile_xmin, tile_xmax);
     float proj_y = std::clamp(src_flat_loc.y, tile_ymin, tile_ymax);
+    // Note: We assume that tiles do not cross layers, so the projected layer
+    //       is just the layer that contains the tile.
+    float proj_layer = tile_loc.layer_num;
 
     // Then compute the L1 distance from the src_flat_loc to the projected
     // position. This will be the minimum distance this point needs to move.
     float dx = std::abs(proj_x - src_flat_loc.x);
     float dy = std::abs(proj_y - src_flat_loc.y);
-    return dx + dy;
+    float dlayer = std::abs(proj_layer - src_flat_loc.layer);
+    return dx + dy + dlayer;
 }

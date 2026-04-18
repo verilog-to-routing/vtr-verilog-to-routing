@@ -94,13 +94,13 @@ int get_simple_switch_block_track(const enum e_side from_side,
 
     int to_track = -1; // Can check to see if it's not set later.
 
-    if (switch_block_type == SUBSET) { /* NB:  Global routing uses SUBSET too */
+    if (switch_block_type == e_switch_block_type::SUBSET) { /* NB:  Global routing uses SUBSET too */
         to_track = from_track;
     }
 
     /* See S. Wilton Phd thesis, U of T, 1996 p. 103 for details on following. */
 
-    else if (switch_block_type == WILTON) {
+    else if (switch_block_type == e_switch_block_type::WILTON) {
         if (from_side == LEFT) {
             if (to_side == RIGHT) { /* CHANX to CHANX */
                 to_track = from_track;
@@ -147,7 +147,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
         }
     }
     /* End switch_block_type == WILTON case. */
-    else if (switch_block_type == UNIVERSAL) {
+    else if (switch_block_type == e_switch_block_type::UNIVERSAL) {
         if (from_side == LEFT) {
             if (to_side == RIGHT) { /* CHANX to CHANX */
                 to_track = from_track;
@@ -191,7 +191,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
 
     /* End switch_block_type == UNIVERSAL case. */
     /* UDSD Modification by WMF Begin */
-    if (switch_block_type == FULL) { /* Just a placeholder. No meaning in reality */
+    if (switch_block_type == e_switch_block_type::FULL) { /* Just a placeholder. No meaning in reality */
         to_track = from_track;
     }
     /* UDSD Modification by WMF End */

@@ -36,10 +36,10 @@ struct PartialPlacement;
 /**
  * @brief The Partial Legalizer base class
  *
- * This provied functionality that all Partial Legalizers will use.
+ * This provides functionality that all Partial Legalizers will use.
  *
  * It provides a standard interface that all Partial Legalizers must implement
- * so thet can be used interchangably. This makes it very easy to test and
+ * so they can be used interchangeably. This makes it very easy to test and
  * compare different solvers.
  */
 class PartialLegalizer {
@@ -49,7 +49,7 @@ class PartialLegalizer {
     /**
      * @brief Constructor of the base PartialLegalizer class
      *
-     * Currently just copies the parameters into the class as member varaibles.
+     * Currently just copies the parameters into the class as member variables.
      */
     PartialLegalizer(const APNetlist& netlist, int log_verbosity)
         : netlist_(netlist)
@@ -74,7 +74,7 @@ class PartialLegalizer {
      * @brief Print statistics on the Partial Legalizer.
      *
      * This is expected to be called at the end of Global Placement to provide
-     * cummulative information on how much work the partial legalizer performed.
+     * cumulative information on how much work the partial legalizer performed.
      */
     virtual void print_statistics() = 0;
 
@@ -99,6 +99,26 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
                                                          int log_verbosity);
+
+/**
+ * @brief A partial legalizer which does not legalize anything. This solver acts
+ *        like an identity matrix where it just passes the given solution along.
+ *        This partial legalizer should only be used for testing.
+ */
+class IdentityPartialLegalizer : public PartialLegalizer {
+  public:
+    IdentityPartialLegalizer(const APNetlist& netlist, int log_verbosity)
+        : PartialLegalizer(netlist, log_verbosity) {}
+
+    void legalize(PartialPlacement& p_placement) final {
+        (void)p_placement;
+        // Do nothing.
+    }
+
+    void print_statistics() final {
+        // Do nothing.
+    }
+};
 
 /**
  * @brief A multi-commodity flow-based spreading partial legalizer.
@@ -260,15 +280,16 @@ typedef typename std::vector<FlatPlacementBinId> FlatPlacementBinCluster;
  * @brief Enum for the direction of a partition.
  */
 enum class e_partition_dir {
-    VERTICAL,
-    HORIZONTAL
+    HORIZONTAL, ///< Horizontal cut along the x-axis.
+    VERTICAL,   ///< Vertical cut along the y-axis.
+    PLANAR,     ///< Planar cut along the z-axis.
 };
 
 /**
  * @brief Spatial window used to spread the blocks contained within.
  *
  * This window's region is identified and grown until it has enough space to
- * accomodate the blocks stored within. This window is then successivly
+ * accommodate the blocks stored within. This window is then successivly
  * partitioned until it is small enough (blocks are not too dense).
  */
 struct SpreadingWindow {
@@ -277,6 +298,50 @@ struct SpreadingWindow {
 
     /// @brief The 2D region of space that this window covers.
     vtr::Rect<double> region;
+
+    /// @brief The range of layers that this window covers. Along with the region,
+    ///        this describes a 3D rectangular prism for the spreading window.
+    ///        For 2D architectures, layer_low = layer_high = 0.
+    size_t layer_low;
+    size_t layer_high;
+
+    /**
+     * @brief Returns true if this window strictly overlaps with another window.
+     *
+     * This is used to decide if two windows should be merged or not.
+     */
+    inline bool overlaps(const SpreadingWindow& other_window) const {
+        // If the regions do not overlap, return false.
+        if (!region.strictly_overlaps(other_window.region))
+            return false;
+
+        // If the layers do not overlap return false.
+        if (layer_low > other_window.layer_high)
+            return false;
+        if (layer_high < other_window.layer_low)
+            return false;
+
+        return true;
+    }
+
+    /**
+     * @brief Get the volume of the 3D rectangular prism that this window covers.
+     */
+    inline double window_area() const {
+        return region.width() * region.height() * (double)(layer_high - layer_low + 1);
+    }
+
+    /**
+     * @brief Merge the given window into this window such that they occupy the
+     *        same volume.
+     *
+     * NOTE: This does NOT merge the blocks in the window.
+     */
+    inline void merge_window_area(const SpreadingWindow& other_window) {
+        region = vtr::bounding_box(region, other_window.region);
+        layer_low = std::min(layer_low, other_window.layer_low);
+        layer_high = std::max(layer_high, other_window.layer_high);
+    }
 };
 
 /**
@@ -327,28 +392,31 @@ class PerPrimitiveDimPrefixSum2D {
      * Uses the density manager to get the size of the placeable region.
      *
      * The lookup is a lambda used to populate the prefix sum. It provides
-     * the model index, x, and y to be populated.
+     * the model index, layer, x, and y to be populated.
      */
     PerPrimitiveDimPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                               std::function<float(PrimitiveVectorDim, size_t, size_t)> lookup);
+                               std::function<float(PrimitiveVectorDim, size_t, size_t, size_t)> lookup);
 
     /**
      * @brief Get the sum for a given dim over the given region.
      */
     float get_dim_sum(PrimitiveVectorDim dim,
-                      const vtr::Rect<double>& region) const;
+                      const vtr::Rect<double>& region,
+                      size_t layer) const;
 
     /**
      * @brief Get the multi-dimensional sum over the given dims over
      *        the given region.
      */
     PrimitiveVector get_sum(const std::vector<PrimitiveVectorDim>& dims,
-                            const vtr::Rect<double>& region) const;
+                            const vtr::Rect<double>& region,
+                            size_t layer) const;
 
   private:
-    /// @brief Per-Dim Prefix Sums. These are stored as fixed-point numbers to
-    ///        prevent error accumulations due to numerical imprecisions.
-    vtr::vector<PrimitiveVectorDim, vtr::PrefixSum2D<uint64_t>> dim_prefix_sum_;
+    /// @brief Per-layer, Per-Dim Prefix Sums. These are stored as fixed-point
+    ///        numbers to prevent error accumulations due to numerical imprecisions.
+    ///         [layer][vector_dim] -> 2d_prefix_sum
+    std::vector<vtr::vector<PrimitiveVectorDim, vtr::PrefixSum2D<uint64_t>>> layer_dim_prefix_sum_;
 };
 
 /// @brief A unique ID of a group of primitive dims created by the PrimitiveDimGrouper class.
@@ -506,14 +574,14 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      * This process is split into 4 stages:
      *      1) Overfilled bins are identified and clustered.
      *      2) Grow windows around the overfilled bin clusters. These windows
-     *         will grow until there is just enough space to accomodate the blocks
+     *         will grow until there is just enough space to accommodate the blocks
      *         within the window (capacity of the window is larger than the utilization).
      *      3) Merge overlapping windows.
      *      4) Move the blocks within these window regions from their bins into
      *         their windows. This updates the current utilization of bins, making
      *         spreading easier.
      *
-     * We identify non-overlapping windows for different model groups independtly
+     * We identify non-overlapping windows for different model groups independently
      * for a few reasons:
      *  - Each model group, by design, can be spread independent of each other.
      *    This reduces the problem size by the number of groups.

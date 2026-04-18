@@ -165,9 +165,6 @@ void route_budgets::allocate_slack_using_weights(NetPinsMatrix<float>& net_delay
     std::shared_ptr<SetupHoldTimingInfo> timing_info_min = nullptr;
     std::shared_ptr<SetupHoldTimingInfo> original_timing_info = nullptr;
 
-    unsigned iteration;
-    float max_budget_change;
-
     /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets.
      * Not necessary unless budgets are really hard to meet*/
     // process_negative_slack_using_minimax();
@@ -175,8 +172,8 @@ void route_budgets::allocate_slack_using_weights(NetPinsMatrix<float>& net_delay
         process_negative_slack_using_minimax(net_delay, netlist_pin_lookup);
     }
 
-    iteration = 0;
-    max_budget_change = 900e-12;
+    unsigned iteration = 0;
+    float max_budget_change = 900e-12;
 
     // Cutoff threshold so slack allocator can detect if budgets aren't changing, and stop loop early
     // An experimentally derived constant that allows for a balance between budget calculation time, and quality
@@ -249,13 +246,11 @@ void route_budgets::process_negative_slack_using_minimax(NetPinsMatrix<float>& n
      * This ensures that the short path slacks are also taken into account for the maximum budgets.
      * Ensures that maximum budgets will always be above minimum budgets.
      * Can be unnecessary for not so strict budgets*/
-    unsigned iteration;
-    float max_budget_change;
     std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
     std::shared_ptr<SetupHoldTimingInfo> original_timing_info = nullptr;
 
-    iteration = 0;
-    max_budget_change = 900e-12;
+    unsigned iteration = 0;
+    float max_budget_change = 900e-12;
     float second_max_budget_change = 900e-12;
     original_timing_info = perform_sta(net_delay);
 
@@ -338,7 +333,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
                                   bool keep_in_bounds,
                                   slack_allocated_type slack_type) {
     /*This function uses weights to calculate how much slack to allocate to a connection.
-     * The weights are deteremined by how much delay of the whole path is present in this connection*/
+     * The weights are determined by how much delay of the whole path is present in this connection*/
 
     std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer = orig_timing_info->setup_hold_analyzer();
     float total_path_delay = 0;
@@ -576,10 +571,9 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(NetPinsMatrix<
      * the maximum delay budget = delay through this connection / pin criticality.
      * The minimum delay budget is set to 0 to promote finding the fastest path*/
 
-    float pin_criticality;
     for (auto net_id : net_list_.nets()) {
         for (auto pin_id : net_list_.net_sinks(net_id)) {
-            pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
+            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
 
             /* Pin criticality is between 0 and 1.
              * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
@@ -742,7 +736,7 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                             delay_max_budget[net_id][ipin] += 2 * delay_increment;
                         }
 
-                        // Increase short path criticality as well, this encourages the router to meet the lower delay budgets more aggresively
+                        // Increase short path criticality as well, this encourages the router to meet the lower delay budgets more aggressively
                         if (short_path_crit[net_id][ipin] < MAX_SHORT_PATH_CRIT) short_path_crit[net_id][ipin] *= 2;
                     }
                 }
@@ -768,8 +762,6 @@ void route_budgets::increase_short_crit(ParentNetId net_id, float delay_decs) {
         // VTR_LOG("Increasing short path crit for net %d\n", net_id);
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
-            // if (!once) VTR_LOG("Net %d crit %f scrit %f \n", net_id, pin_criticality[pin_id], budgeting_inf.get_crit_short_path(net_id, ipin));
-            // once = true;
             short_path_crit[net_id][ipin] *= delay_decs;
         }
         num_times_congested[net_id] = 0;
@@ -778,8 +770,6 @@ void route_budgets::increase_short_crit(ParentNetId net_id, float delay_decs) {
     // if (num_times_congested[net_id] >= 9) {
     //     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
     //         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-    //         // if (!once) VTR_LOG("Net %d crit %f scrit %f \n", net_id, pin_criticality[pin_id], budgeting_inf.get_crit_short_path(net_id, ipin));
-    //         // once = true;
     //         delay_min_budget[net_id][ipin] *= 1.5;
     //         keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
     //     }
@@ -894,7 +884,7 @@ void route_budgets::print_route_budget(std::string filename, NetPinsMatrix<float
     fp.close();
 }
 
-void route_budgets::print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_budgets) {
+void route_budgets::print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_budgets) const {
     /*Used for debugging. Print one specific budget to an external file called
      * temporary_budgets.txt. This can be used to see how the budgets change between
      * each minimax PERT iteration*/

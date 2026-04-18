@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx.py ../vpr_repos/vpr/src/base/vpr_constraints.xsd
- * Input file: /home/soheil/vpr_repos/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: ea99cd05d67036ef541872d9d77a83c5
+ * Cmdline: ../uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Input file: /home/smahmoudi/Desktop/vtr_fp/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * md5sum of input file: 6936fbaffca2fb14f99f745efdf87df0
  */
 
 #include <functional>
@@ -45,6 +45,8 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
 template<class T, typename Context>
 inline void load_add_region(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 inline void load_add_region_required_attributes(const pugi::xml_node& root, int* x_high, int* x_low, int* y_high, int* y_low, const std::function<void(const char*)>* report_error);
+template<class T, typename Context>
+inline void load_add_logical_block(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
 inline void load_partition(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
@@ -129,8 +131,9 @@ static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.")
 
 /* Tokens for attribute and node names. */
 
-enum class atok_t_add_atom { NAME_PATTERN };
-constexpr const char* atok_lookup_t_add_atom[] = {"name_pattern"};
+enum class atok_t_add_atom { IS_REGEX,
+                             NAME_PATTERN };
+constexpr const char* atok_lookup_t_add_atom[] = {"is_regex", "name_pattern"};
 
 enum class atok_t_add_region { LAYER_HIGH,
                                LAYER_LOW,
@@ -141,9 +144,14 @@ enum class atok_t_add_region { LAYER_HIGH,
                                Y_LOW };
 constexpr const char* atok_lookup_t_add_region[] = {"layer_high", "layer_low", "subtile", "x_high", "x_low", "y_high", "y_low"};
 
+enum class atok_t_add_logical_block { IS_REGEX,
+                                      NAME_PATTERN };
+constexpr const char* atok_lookup_t_add_logical_block[] = {"is_regex", "name_pattern"};
+
 enum class gtok_t_partition { ADD_ATOM,
-                              ADD_REGION };
-constexpr const char* gtok_lookup_t_partition[] = {"add_atom", "add_region"};
+                              ADD_REGION,
+                              ADD_LOGICAL_BLOCK };
+constexpr const char* gtok_lookup_t_partition[] = {"add_atom", "add_region", "add_logical_block"};
 enum class atok_t_partition { NAME };
 constexpr const char* atok_lookup_t_partition[] = {"name"};
 
@@ -167,6 +175,15 @@ constexpr const char* atok_lookup_t_vpr_constraints[] = {"tool_name"};
 inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
+        case 8:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('i', 0, 64) | onechar('s', 8, 64) | onechar('_', 16, 64) | onechar('r', 24, 64) | onechar('e', 32, 64) | onechar('g', 40, 64) | onechar('e', 48, 64) | onechar('x', 56, 64):
+                    return atok_t_add_atom::IS_REGEX;
+                    break;
+                default:
+                    break;
+            }
+            break;
         case 12:
             switch (*((triehash_uu64*)&in[0])) {
                 case onechar('n', 0, 64) | onechar('a', 8, 64) | onechar('m', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):
@@ -320,6 +337,39 @@ inline atok_t_add_region lex_attr_t_add_region(const char* in, const std::functi
     noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <add_region>.").c_str());
 }
 
+inline atok_t_add_logical_block lex_attr_t_add_logical_block(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 8:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('i', 0, 64) | onechar('s', 8, 64) | onechar('_', 16, 64) | onechar('r', 24, 64) | onechar('e', 32, 64) | onechar('g', 40, 64) | onechar('e', 48, 64) | onechar('x', 56, 64):
+                    return atok_t_add_logical_block::IS_REGEX;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 12:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('n', 0, 64) | onechar('a', 8, 64) | onechar('m', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('t', 0, 32) | onechar('e', 8, 32) | onechar('r', 16, 32) | onechar('n', 24, 32):
+                            return atok_t_add_logical_block::NAME_PATTERN;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <add_logical_block>.").c_str());
+}
+
 inline gtok_t_partition lex_node_t_partition(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
@@ -340,6 +390,27 @@ inline gtok_t_partition lex_node_t_partition(const char* in, const std::function
                             switch (in[9]) {
                                 case onechar('n', 0, 8):
                                     return gtok_t_partition::ADD_REGION;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 17:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('a', 0, 64) | onechar('d', 8, 64) | onechar('d', 16, 64) | onechar('_', 24, 64) | onechar('l', 32, 64) | onechar('o', 40, 64) | onechar('g', 48, 64) | onechar('i', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('c', 0, 64) | onechar('a', 8, 64) | onechar('l', 16, 64) | onechar('_', 24, 64) | onechar('b', 32, 64) | onechar('l', 40, 64) | onechar('o', 48, 64) | onechar('c', 56, 64):
+                            switch (in[16]) {
+                                case onechar('k', 0, 8):
+                                    return gtok_t_partition::ADD_LOGICAL_BLOCK;
                                     break;
                                 default:
                                     break;
@@ -730,6 +801,9 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);
         switch (in) {
+            case atok_t_add_atom::IS_REGEX:
+                out.set_add_atom_is_regex(attr.value(), context);
+                break;
             case atok_t_add_atom::NAME_PATTERN:
                 out.set_add_atom_name_pattern(attr.value(), context);
                 break;
@@ -784,11 +858,38 @@ inline void load_add_region(const pugi::xml_node& root, T& out, Context& context
         noreturn_report(report_error, "Unexpected child element in <add_region>.");
 }
 
+template<class T, typename Context>
+inline void load_add_logical_block(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
+
+    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
+        atok_t_add_logical_block in = lex_attr_t_add_logical_block(attr.name(), report_error);
+        switch (in) {
+            case atok_t_add_logical_block::IS_REGEX:
+                out.set_add_logical_block_is_regex(attr.value(), context);
+                break;
+            case atok_t_add_logical_block::NAME_PATTERN:
+                out.set_add_logical_block_name_pattern(attr.value(), context);
+                break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+
+    if (root.first_child().type() == pugi::node_element)
+        noreturn_report(report_error, "Unexpected child element in <add_logical_block>.");
+}
+
 constexpr int NUM_T_PARTITION_STATES = 2;
-constexpr const int NUM_T_PARTITION_INPUTS = 2;
+constexpr const int NUM_T_PARTITION_INPUTS = 3;
 constexpr int gstate_t_partition[NUM_T_PARTITION_STATES][NUM_T_PARTITION_INPUTS] = {
-    {0, 0},
-    {0, 0},
+    {0, 0, 0},
+    {0, 0, 0},
 };
 template<class T, typename Context>
 inline void load_partition(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
@@ -813,6 +914,7 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
     // Preallocate arrays by counting child nodes (if any)
     size_t add_atom_count = 0;
     size_t add_region_count = 0;
+    size_t add_logical_block_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
@@ -820,7 +922,7 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
             gtok_t_partition in = lex_node_t_partition(node.name(), report_error);
             next = gstate_t_partition[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+                dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 3, report_error);
             state = next;
             switch (in) {
                 case gtok_t_partition::ADD_ATOM:
@@ -829,6 +931,9 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
                 case gtok_t_partition::ADD_REGION:
                     add_region_count += 1;
                     break;
+                case gtok_t_partition::ADD_LOGICAL_BLOCK:
+                    add_logical_block_count += 1;
+                    break;
                 default:
                     break; /* Not possible. */
             }
@@ -836,6 +941,7 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
 
         out.preallocate_partition_add_atom(context, add_atom_count);
         out.preallocate_partition_add_region(context, add_region_count);
+        out.preallocate_partition_add_logical_block(context, add_logical_block_count);
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
@@ -843,7 +949,7 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
         gtok_t_partition in = lex_node_t_partition(node.name(), report_error);
         next = gstate_t_partition[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+            dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 3, report_error);
         state = next;
         switch (in) {
             case gtok_t_partition::ADD_ATOM: {
@@ -865,11 +971,16 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
                 load_add_region(node, out, child_context, report_error, offset_debug);
                 out.finish_partition_add_region(child_context);
             } break;
+            case gtok_t_partition::ADD_LOGICAL_BLOCK: {
+                auto child_context = out.add_partition_add_logical_block(context);
+                load_add_logical_block(node, out, child_context, report_error, offset_debug);
+                out.finish_partition_add_logical_block(child_context);
+            } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+    if (state != 0) dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 3, report_error);
 }
 
 constexpr int NUM_T_PARTITION_LIST_STATES = 2;
@@ -1084,6 +1195,7 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
         for (size_t i = 0, n = in.num_partition_add_atom(context); i < n; i++) {
             auto child_context = in.get_partition_add_atom(i, context);
             os << "<add_atom";
+            os << " is_regex=\"" << in.get_add_atom_is_regex(child_context) << "\"";
             os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
             os << "/>\n";
         }
@@ -1102,6 +1214,15 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
             os << " x_low=\"" << in.get_add_region_x_low(child_context) << "\"";
             os << " y_high=\"" << in.get_add_region_y_high(child_context) << "\"";
             os << " y_low=\"" << in.get_add_region_y_low(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+    {
+        for (size_t i = 0, n = in.num_partition_add_logical_block(context); i < n; i++) {
+            auto child_context = in.get_partition_add_logical_block(i, context);
+            os << "<add_logical_block";
+            os << " is_regex=\"" << in.get_add_logical_block_is_regex(child_context) << "\"";
+            os << " name_pattern=\"" << in.get_add_logical_block_name_pattern(child_context) << "\"";
             os << "/>\n";
         }
     }

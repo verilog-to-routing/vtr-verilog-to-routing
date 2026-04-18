@@ -131,9 +131,7 @@ def update_db(params, db):
                 if len(result_params_val) > len(result_params):
                     print(
                         "There are {} values for only {} parameters in run {}; \
-                        skipping run".format(
-                            len(result_params_val), len(result_params), run_number
-                        )
+                        skipping run".format(len(result_params_val), len(result_params), run_number)
                     )
                     # skip this run
                     params.last_run -= 1
@@ -252,16 +250,14 @@ def parse_args(ns=None):
     """parse arguments from command line and return as namespace object"""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(
-            """\
+        description=textwrap.dedent("""\
             populates a central database with benchmark information
             
         Generated database:
             Each task will become its own table, identified by its absolute path.
             Each table will have as many columns as the result file the first time
             the table is generated. The columns of the result file should not change
-            after the table is generated."""
-        ),
+            after the table is generated."""),
         usage="%(prog)s <task_dir> [OPTIONS]",
     )
 
@@ -361,7 +357,6 @@ def load_next_task(params):
 
 # walk operations; all take params and run as arguments
 def check_result_exists(params, run):
-
     run_number = get_trailing_num(run)
     if not os.path.isfile(get_result_file(params, params.run_prefix, run_number)):
         parsed_call = params.parse_script.format(

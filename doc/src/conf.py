@@ -9,7 +9,6 @@ import shlex
 import shutil
 import subprocess
 
-
 sys.path.append(".")
 sys.path.insert(0, os.path.abspath("../../vtr_flow/scripts/python_libs"))
 from markdown_code_symlinks import LinkParser, MarkdownSymlinksDomain

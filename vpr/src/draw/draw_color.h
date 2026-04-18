@@ -165,7 +165,7 @@ static constexpr ezgl::color blk_ALICEBLUE(0xF0, 0xF8, 0xFF);
 //The colours used to draw block types
 const std::vector<ezgl::color> block_colors{
     //This first set of colours is somewhat curated to yield
-    //a nice colour pallette
+    //a nice colour palette
     blk_BISQUE, //EMPTY type is usually the type with index 0, so this colour
                 //usually unused
     blk_LIGHTGREY,

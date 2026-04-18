@@ -39,8 +39,9 @@ static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legali
     }
 
     for (auto& cluster_atom : cluster_atoms) {
-        const std::string& cluster_name = cluster_legalizer.get_cluster_pb(cluster_atom.first)->name;
-        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(cluster_atom.first));
+        fprintf(fp, "Cluster %s Id: %zu \n",
+                cluster_legalizer.get_cluster_name(cluster_atom.first).c_str(),
+                size_t(cluster_atom.first));
         fprintf(fp, "\tAtoms in cluster: \n");
 
         int num_atoms = cluster_atom.second.size();

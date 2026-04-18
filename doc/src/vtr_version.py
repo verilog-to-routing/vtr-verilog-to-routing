@@ -12,14 +12,14 @@ class VersionInfo:
         self.prerelease = prerelease
 
     def version_str(self):
-        version_str = "<unkown vtr version>"
+        version_str = "<unknown vtr version>"
         if self.major != None and self.minor != None:
             version_str = "{}.{}".format(self.major, self.minor)
 
         return version_str
 
     def release_str(self):
-        release_str = "<unkown vtr release>"
+        release_str = "<unknown vtr release>"
 
         if self.major != None and self.minor != None and self.patch != None:
             release_str = "{}.{}.{}".format(self.major, self.minor, self.patch)
@@ -49,7 +49,6 @@ def get_vtr_version_info():
     patch = None
     prerelease = None
     try:
-
         major_regex = re.compile(r".*VTR_VERSION_MAJOR (?P<major>\d+)")
         minor_regex = re.compile(r".*VTR_VERSION_MINOR (?P<minor>\d+)")
         patch_regex = re.compile(r".*VTR_VERSION_PATCH (?P<patch>\d+)")
@@ -57,7 +56,6 @@ def get_vtr_version_info():
 
         with open(root_cmakelists) as f:
             for line in f:
-
                 match = major_regex.match(line)
                 if match:
                     major = match.group("major")

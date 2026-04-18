@@ -15,7 +15,7 @@ namespace vtr {
  * The main use of this container is to behave like a std::vector which is indexed by
  * vtr::StrongId.
  * 
- * Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
+ * Requires that K be convertible to size_t with the size_t operator (i.e. size_t()), and
  * that the conversion results in a linearly increasing index into the underlying vector.
  * 
  * This results in a container that is somewhat similar to a std::map (i.e. converts from one

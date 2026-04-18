@@ -30,7 +30,7 @@ class NdMatrixProxy {
      * @brief Construct a matrix proxy object
      *
      *    @param dim_sizes: Array of dimension sizes
-     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
      *    @param offset: The offset from the start that this sub-matrix starts at.
      *    @param start: Pointer to the start of the base NDMatrix of this proxy
      */
@@ -88,7 +88,7 @@ class NdMatrixProxy<T, 1> {
      * @brief Construct a 1-d matrix proxy object
      *
      *    @param dim_sizes: Array of dimension sizes
-     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
      *    @param offset: The offset from the start that this sub-matrix starts at.
      *    @param start: Pointer to the start of the base NDMatrix of this proxy
      */
@@ -116,7 +116,7 @@ class NdMatrixProxy<T, 1> {
     }
 
     /**
-     * @brief  Backward compitability
+     * @brief  Backward compitibility
      *
      * For legacy compatibility (i.e. code expecting a pointer) we allow this base dimension
      * case to retrieve a raw pointer to the last dimension elements.
@@ -169,7 +169,7 @@ class NdMatrixProxy<T, 1> {
  * This should improve memory usage (no extra pointers to store for each dimension),
  * and cache locality (less indirection via pointers, predictable strides).
  *
- * The indicies are calculated based on the dimensions to access the appropriate elements.
+ * The indices are calculated based on the dimensions to access the appropriate elements.
  * Since the indexing calculations are visible to the compiler at compile time they can be
  * optimized to be efficient.
  */
@@ -322,7 +322,7 @@ class NdMatrixBase {
 
     ///@brief Returns the size of the matrix (number of elements) calculated from the current dimensions
     size_t calc_size() const {
-        ///@brief Size is the product of all dimension sizes
+        // Size is the product of all dimension sizes
         size_t cnt = dim_size(0);
         for (size_t idim = 1; idim < ndims(); ++idim) {
             cnt *= dim_size(idim);

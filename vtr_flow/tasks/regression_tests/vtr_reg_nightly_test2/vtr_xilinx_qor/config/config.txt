@@ -12,6 +12,7 @@ circuits_dir=benchmarks/verilog
 arch_list_add=7series_BRAM_DSP_carry.xml
 
 # Add circuits to list to sweep
+circuit_list_add=mcml.v
 circuit_list_add=LU32PEEng.v
 circuit_list_add=LU8PEEng.v
 circuit_list_add=bgm.v

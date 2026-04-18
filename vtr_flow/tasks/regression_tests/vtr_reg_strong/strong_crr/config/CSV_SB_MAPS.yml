@@ -1,0 +1,4 @@
+SB_MAPS:
+  SB_[6:19:8]__\*_: sb_template_2.csv
+  SB_[2:19:8]__\*_: sb_template_3.csv
+  SB_\*__\*_: sb_template_1.csv

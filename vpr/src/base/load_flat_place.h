@@ -59,7 +59,7 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
 /**
  * @brief A function that loads and legalizes a flat placement file
  */
-bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
+bool load_flat_placement(const t_vpr_setup& vpr_setup, const t_arch& arch);
 
 /**
  * @brief Logs information on the quality of the clustering and placement

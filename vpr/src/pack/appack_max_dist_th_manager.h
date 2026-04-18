@@ -39,13 +39,13 @@ class APPackMaxDistThManager {
 
     // This is the default scale and offset. Logical blocks that we do not
     // recognize as being of the special categories will have this threshold.
-    static constexpr float default_max_dist_th_scale_ = 0.1f;
+    static constexpr float default_max_dist_th_scale_ = 0.15f;
     static constexpr float default_max_dist_th_offset_ = 10.0f;
 
     // Logic blocks (such as CLBs and LABs) tend to have more resources on the
     // device, thus they have tighter thresholds. This was found to work well.
-    static constexpr float logic_block_max_dist_th_scale_ = 0.06f;
-    static constexpr float logic_block_max_dist_th_offset_ = 15.0f;
+    static constexpr float logic_block_max_dist_th_scale_ = 0.02f;
+    static constexpr float logic_block_max_dist_th_offset_ = 10.0f;
 
     // Memory blocks (i.e. blocks that contain pb_types of the memory class)
     // seem to have very touchy packing; thus these do not have the max
@@ -59,15 +59,19 @@ class APPackMaxDistThManager {
     static constexpr float io_max_dist_th_offset_ = 15.0f;
 
   public:
+    // When packing fails, it may try to increase the max distance threshold to
+    // resolve the failure. This scales the max distance threshold of the failing
+    // logical block type. Increasing this value will reduce the number of fallbacks
+    // but may yield worse quality. This is expected to be a number larger than 0.
+    static constexpr float max_dist_th_fail_increase_scale = 10.0f;
+
+  public:
     APPackMaxDistThManager() = default;
 
     /**
      * @brief Initializer for the manager class. The thresholds for each logical
      *        block type is selected here.
      *
-     *  @param should_initialize
-     *      Whether to compute the thresholds for each logical block or not. This
-     *      is to allow the class to be passed around without AP being enabled.
      *  @param max_dist_ths
      *      An array of strings representing the user-defined max distance
      *      thresholds. This is passed from the command line.
@@ -132,7 +136,7 @@ class APPackMaxDistThManager {
     void set_max_distance_thresholds_from_strings(const std::vector<std::string>& max_dist_ths,
                                                   const std::vector<t_logical_block_type>& logical_block_types);
 
-    /// @brief A flag which shows if the thesholds have been computed or not.
+    /// @brief A flag which shows if the thresholds have been computed or not.
     bool is_initialized_ = false;
 
     /// @brief The max distance thresholds of all logical blocks in the architecture.

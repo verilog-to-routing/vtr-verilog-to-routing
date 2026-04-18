@@ -111,11 +111,11 @@ static t_compressed_block_grid create_compressed_block_grid(const std::vector<st
             }
 
             //Uniquify x/y locations
-            std::stable_sort(layer_x_locs.begin(), layer_x_locs.end());
-            layer_x_locs.erase(unique(layer_x_locs.begin(), layer_x_locs.end()), layer_x_locs.end());
+            std::ranges::stable_sort(layer_x_locs);
+            layer_x_locs.erase(std::ranges::unique(layer_x_locs).begin(), layer_x_locs.end());
 
-            std::stable_sort(layer_y_locs.begin(), layer_y_locs.end());
-            layer_y_locs.erase(unique(layer_y_locs.begin(), layer_y_locs.end()), layer_y_locs.end());
+            std::ranges::stable_sort(layer_y_locs);
+            layer_y_locs.erase(std::ranges::unique(layer_y_locs).begin(), layer_y_locs.end());
 
             //The index of an x-position in x_locs corresponds to it's compressed
             //x-coordinate (similarly for y)
@@ -150,10 +150,10 @@ static t_compressed_block_grid create_compressed_block_grid(const std::vector<st
         //it efficient to find the non-empty blocks in the y dimension
         for (auto point : locations[layer_num]) {
             //Determine the compressed indices in the x & y dimensions
-            auto x_itr = std::lower_bound(layer_compressed_x_locs.begin(), layer_compressed_x_locs.end(), point.x());
+            auto x_itr = std::ranges::lower_bound(layer_compressed_x_locs, point.x());
             int cx = std::distance(layer_compressed_x_locs.begin(), x_itr);
 
-            auto y_itr = std::lower_bound(layer_compressed_y_locs.begin(), layer_compressed_y_locs.end(), point.y());
+            auto y_itr = std::ranges::lower_bound(layer_compressed_y_locs, point.y());
             int cy = std::distance(layer_compressed_y_locs.begin(), y_itr);
 
             VTR_ASSERT(cx >= 0 && cx < (int)layer_compressed_x_locs.size());
@@ -173,8 +173,7 @@ static t_compressed_block_grid create_compressed_block_grid(const std::vector<st
 
 /*Print the contents of the compressed grids to an echo file*/
 void echo_compressed_grids(const char* filename, const std::vector<t_compressed_block_grid>& comp_grids) {
-    FILE* fp;
-    fp = vtr::fopen(filename, "w");
+    FILE* fp = vtr::fopen(filename, "w");
 
     auto& device_ctx = g_vpr_ctx.device();
     int num_layers = device_ctx.grid.get_num_layers();

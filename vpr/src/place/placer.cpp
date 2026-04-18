@@ -68,6 +68,12 @@ Placer::Placer(const Netlist<>& net_list,
     if (init_place.has_value()) {
         // If an initial placement has been provided, use that.
         blk_loc_registry = *init_place;
+
+        // If an initial placement has been provided, re-compute the NoC cost
+        // handler for this given placement.
+        if (noc_opts.noc) {
+            noc_cost_handler_.value().initial_noc_routing({});
+        }
     } else {
         // If an initial placement has not been provided, run the initial placer.
         initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
@@ -117,7 +123,7 @@ Placer::Placer(const Netlist<>& net_list,
     }
 
     // Gets initial cost and loads bounding boxes.
-    costs_.bb_cost = net_cost_handler_.comp_bb_cost(e_cost_methods::NORMAL).first;
+    std::tie(costs_.bb_cost, std::ignore, costs_.congestion_cost) = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
@@ -254,9 +260,8 @@ void Placer::check_place_() {
 
 int Placer::check_placement_costs_() {
     int error = 0;
-    double timing_cost_check;
 
-    const auto [bb_cost_check, expected_wirelength] = net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
+    const auto [bb_cost_check, expected_wirelength, _] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
 
     if (fabs(bb_cost_check - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
         VTR_LOG_ERROR(
@@ -266,6 +271,7 @@ int Placer::check_placement_costs_() {
     }
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
+        double timing_cost_check;
         comp_td_costs(place_delay_model_.get(), *placer_criticalities_, placer_state_, &timing_cost_check);
         if (fabs(timing_cost_check - costs_.timing_cost) > costs_.timing_cost * PL_INCREMENTAL_COST_TOLERANCE) {
             VTR_LOG_ERROR(

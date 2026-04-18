@@ -201,10 +201,11 @@ class ParallelConnectionRouter : public ConnectionRouter<MultiQueueDAryHeap<Heap
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
         bool is_flat,
+        int route_verbosity,
         int multi_queue_num_threads,
         int multi_queue_num_queues,
         bool multi_queue_direct_draining)
-        : ConnectionRouter<MultiQueueDAryHeap<HeapImplementation::arg_D>>(grid, router_lookahead, rr_nodes, rr_graph, rr_rc_data, rr_switch_inf, rr_node_route_inf, is_flat)
+        : ConnectionRouter<MultiQueueDAryHeap<HeapImplementation::arg_D>>(grid, router_lookahead, rr_nodes, rr_graph, rr_rc_data, rr_switch_inf, rr_node_route_inf, is_flat, route_verbosity)
         , modified_rr_node_inf_(multi_queue_num_threads)
         , thread_barrier_(multi_queue_num_threads)
         , is_router_destroying_(false)
@@ -489,6 +490,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
     bool is_flat,
+    int route_verbosity,
     int multi_queue_num_threads,
     int multi_queue_num_queues,
     bool multi_queue_direct_draining);

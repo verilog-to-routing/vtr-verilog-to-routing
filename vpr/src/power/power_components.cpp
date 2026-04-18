@@ -31,7 +31,7 @@
 #include "power_components.h"
 #include "power_lowlevel.h"
 #include "power_util.h"
-#include "power_callibrate.h"
+#include "power_calibrate.h"
 #include "globals.h"
 
 /************************* STRUCTS **********************************/
@@ -110,7 +110,7 @@ void power_usage_ff(t_power_usage* power_usage, float size, float D_prob, float 
     t_power_usage sub_power_usage;
     float mux_in_dens[2];
     float mux_in_prob[2];
-    PowerSpicedComponent* callibration;
+    PowerSpicedComponent* calibration;
     float scale_factor;
 
     power_zero_usage(power_usage);
@@ -153,11 +153,11 @@ void power_usage_ff(t_power_usage* power_usage, float size, float D_prob, float 
     power_usage_inverter(&sub_power_usage, Q_dens, Q_prob, size, period);
     power_add_usage(power_usage, &sub_power_usage);
 
-    /* Callibration */
+    /* Calibration */
     auto& power_ctx = g_vpr_ctx.power();
-    callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF];
-    if (callibration->is_done_callibration()) {
-        scale_factor = callibration->scale_factor(1, size);
+    calibration = power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_FF];
+    if (calibration->is_done_calibration()) {
+        scale_factor = calibration->scale_factor(1, size);
         power_scale_usage(power_usage, scale_factor);
     }
 
@@ -209,7 +209,7 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
     float** internal_v;
     int i;
     int level_idx;
-    PowerSpicedComponent* callibration;
+    PowerSpicedComponent* calibration;
     float scale_factor;
 
     int num_SRAM_bits;
@@ -383,10 +383,10 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
     delete[] internal_dens;
     delete[] internal_v;
 
-    /* Callibration */
-    callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT];
-    if (callibration->is_done_callibration()) {
-        scale_factor = callibration->scale_factor(lut_size, transistor_size);
+    /* Calibration */
+    calibration = power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_LUT];
+    if (calibration->is_done_calibration()) {
+        scale_factor = calibration->scale_factor(lut_size, transistor_size);
         power_scale_usage(power_usage, scale_factor);
     }
 
@@ -397,7 +397,7 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
  * This function calculates power of a local interconnect structure
  * - power_usage: (Return value) Power usage of the structure
  * - pb: The physical block to which this interconnect belongs
- * - interc_pins: The interconnect input/ouput pin information
+ * - interc_pins: The interconnect input/output pin information
  * - interc_length: The physical length spanned by the interconnect (meters)
  */
 void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interconnect_pins* interc_pins, ClusterBlockId iblk) {
@@ -453,7 +453,7 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                 for (pin_idx = 0;
                      pin_idx < interc->interconnect_power->num_pins_per_port;
                      pin_idx++) {
-                    int selected_input = OPEN;
+                    int selected_input = UNDEFINED;
 
                     /* Clear input densities */
                     for (in_port_idx = 0;
@@ -490,7 +490,7 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                             }
 
                             /* Check that the input pin was found with a matching net to the output pin */
-                            VTR_ASSERT(selected_input != OPEN);
+                            VTR_ASSERT(selected_input != UNDEFINED);
                         }
                     } else {
                         selected_input = 0;
@@ -538,7 +538,7 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
     float output_prob;
     float V_out;
     bool found;
-    PowerSpicedComponent* callibration;
+    PowerSpicedComponent* calibration;
     float scale_factor;
     int* selector_values = new int[mux_arch->levels];
     for (auto i = 0; i < mux_arch->levels; i++)
@@ -546,7 +546,7 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
 
     auto& power_ctx = g_vpr_ctx.power();
 
-    VTR_ASSERT(selected_input != OPEN);
+    VTR_ASSERT(selected_input != UNDEFINED);
 
     power_zero_usage(power_usage);
 
@@ -563,10 +563,10 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
 
     delete[] selector_values;
 
-    callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX];
-    if (callibration->is_done_callibration()) {
-        scale_factor = callibration->scale_factor(mux_arch->num_inputs,
-                                                  mux_arch->transistor_size);
+    calibration = power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_MUX];
+    if (calibration->is_done_calibration()) {
+        scale_factor = calibration->scale_factor(mux_arch->num_inputs,
+                                                 mux_arch->transistor_size);
         power_scale_usage(power_usage, scale_factor);
     }
 }
@@ -649,7 +649,7 @@ void power_usage_buffer(t_power_usage* power_usage, float size, float in_prob, f
     float stage_in_prob;
     float input_dyn_power;
     float scale_factor;
-    PowerSpicedComponent* callibration;
+    PowerSpicedComponent* calibration;
 
     power_zero_usage(power_usage);
 
@@ -685,15 +685,15 @@ void power_usage_buffer(t_power_usage* power_usage, float size, float in_prob, f
         stage_in_prob = 1 - stage_in_prob;
     }
 
-    /* Callibration */
+    /* Calibration */
     if (level_restorer) {
-        callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR];
+        calibration = power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_BUFFER_WITH_LEVR];
     } else {
-        callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER];
+        calibration = power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_BUFFER];
     }
 
-    if (callibration->is_done_callibration()) {
-        scale_factor = callibration->scale_factor(1, size);
+    if (calibration->is_done_calibration()) {
+        scale_factor = calibration->scale_factor(1, size);
         power_scale_usage(power_usage, scale_factor);
     }
 
