@@ -1598,6 +1598,7 @@ struct t_vpr_setup {
     int GraphPause;                      ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
+    std::string RendererType;            ///<rendering backend: "immediate", "deferred", or "rhi"
     t_power_opts PowerOpts;
     std::string device_layout;
     e_constant_net_method constant_net_method; ///<How constant nets should be handled

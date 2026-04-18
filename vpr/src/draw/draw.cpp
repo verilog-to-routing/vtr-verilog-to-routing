@@ -58,6 +58,7 @@
 #include "draw_floorplanning.h"
 
 #include "ui_setup.h"
+#include "ezgl/qt/render_backend.hpp"
 
 #include <QCheckBox>
 #include <QDialog>
@@ -162,6 +163,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
+                         std::string renderer_type,
                          bool is_flat) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
@@ -176,6 +178,7 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
+    draw_state->renderer_type = renderer_type;
     draw_state->is_flat = is_flat;
 
     // Create the application object here (not at file scope) so that the
@@ -192,6 +195,7 @@ void init_graphics_state(bool show_graphics_val,
     (void)route_type;
     (void)save_graphics;
     (void)graphics_commands;
+    (void)renderer_type;
     (void)is_flat;
 #endif // NO_GRAPHICS
 }
@@ -348,7 +352,15 @@ void update_screen(ScreenUpdatePriority priority,
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
             // Only add the canvas the first time we open graphics
-            application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+            if (canvas != nullptr) {
+                ezgl::renderer_type rt = ezgl::renderer_type::rhi;
+                if (draw_state->renderer_type == "immediate")
+                    rt = ezgl::renderer_type::immediate;
+                else if (draw_state->renderer_type == "deferred")
+                    rt = ezgl::renderer_type::deferred;
+                canvas->set_renderer_type(rt);
+            }
         } else {
             // TODO: will this ever be null?
             auto canvas = application->get_canvas(application->get_main_canvas_id());

@@ -7,6 +7,7 @@ project("VTR")
 
 set(QT_MIGRATION_FAST_BUILD OFF CACHE BOOL "Enable fast build for Qt migration")
 set(FORCE_SLANG_SYSTEMVERILOG_DISABLE OFF CACHE BOOL "FORCE_SLANG_SYSTEMVERILOG_DISABLE")
+#set(CMAKE_BUILD_TYPE Debug) 
 
 #
 # macOS / Homebrew configuration
