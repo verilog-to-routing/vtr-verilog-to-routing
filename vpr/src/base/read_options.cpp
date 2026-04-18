@@ -1599,6 +1599,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Save all graphical contents to PDF files")
         .default_value("off");
 
+    gfx_grp.add_argument(args.graphics_renderer, "--renderer")
+        .help("Select the rendering backend used by the graphics window")
+        .default_value("rhi")
+        .choices({"immediate", "deferred", "rhi"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
             "A set of semi-colon separated graphics commands. \n"
