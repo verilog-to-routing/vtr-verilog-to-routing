@@ -1,6 +1,7 @@
 #include "fasm.h"
 
 #include <algorithm>
+#include <bit>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -17,16 +18,6 @@
 #include "atom_netlist_utils.h"
 
 #include "fasm_utils.h"
-
-#ifdef _MSC_VER // MSVC
-// MSVC does not provide GCC-style __builtin_popcount.
-// Map it to the equivalent MSVC intrinsic __popcnt from <intrin.h>.
-#include <intrin.h>
-
-inline int __builtin_popcount(unsigned int x) {
-    return __popcnt(x);
-}
-#endif
 
 namespace fasm {
 
@@ -553,7 +544,7 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
         VTR_ASSERT(value != nullptr);
         std::string fasm_lut_str = value->as_string().get(strings_);
         auto lut_parts = split_fasm_entry(fasm_lut_str, "\n", "\t ");
-        if(__builtin_popcount(lut_parts.size()) != 1) {
+        if(std::popcount(lut_parts.size()) != 1) {
           vpr_throw(VPR_ERROR_OTHER,
                     __FILE__, __LINE__,
                     "Number of lut splits must be power of two, found %d parts",

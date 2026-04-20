@@ -1,20 +1,11 @@
 #include "lut.h"
 
+#include <bit>
 #include <sstream>
 
 #include "vtr_assert.h"
 #include "vpr_error.h"
 #include "vtr_util.h"
-
-#ifdef _MSC_VER // MSVC
-// MSVC does not provide GCC builtins like __builtin_popcount and __builtin_ctz.
-// Map them to equivalent MSVC intrinsics from <intrin.h>.
-#include <intrin.h>
-
-#define __builtin_popcount(x) __popcnt(x)
-// _tzcnt_u32 counts trailing zeros (equivalent to __builtin_ctz for 32-bit values)
-#define __builtin_ctz(x) _tzcnt_u32(x)
-#endif
 
 namespace fasm {
 
@@ -107,7 +98,7 @@ LutOutputDefinition::LutOutputDefinition(std::string definition) {
   int width = end_bit - start_bit + 1;
 
   // If an exact power of two, only 1 bit will be set in width.
-  if(width < 0 || __builtin_popcount(width) != 1) {
+  if (width < 0 || std::popcount(static_cast<unsigned>(width)) != 1) {
     vpr_throw(
         VPR_ERROR_OTHER, __FILE__, __LINE__,
         "Invalid LUT start_bit %d and end_bit %d, not a power of 2 width.",
@@ -115,7 +106,7 @@ LutOutputDefinition::LutOutputDefinition(std::string definition) {
   }
 
   // For exact power's of 2, ctz (count trailing zeros) is log2(width).
-  num_inputs = __builtin_ctz(width);
+  num_inputs = std::countr_zero(static_cast<unsigned>(width));
 }
 
 std::string LutOutputDefinition::CreateWire(int input) const {
