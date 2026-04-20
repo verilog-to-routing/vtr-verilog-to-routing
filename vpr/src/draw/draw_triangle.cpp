@@ -110,8 +110,7 @@ void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x
     g->fill_triangle(
         {xend + xunit * switch_rad, yend + yunit * switch_rad},
         {xbaseline + yunit * switch_rad, ybaseline - xunit * switch_rad},
-        {xbaseline - yunit * switch_rad, ybaseline + xunit * switch_rad}
-    );
+        {xbaseline - yunit * switch_rad, ybaseline + xunit * switch_rad});
 }
 
 #endif
