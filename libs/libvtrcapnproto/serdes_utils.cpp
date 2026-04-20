@@ -2,15 +2,6 @@
 
 #include "capnp/serialize.h"
 #include <fcntl.h>
-
-#ifdef _WIN32 // Windows
-// Windows does not provide POSIX unistd.h; use io.h instead for low-level I/O.
-#include <io.h>
-#else
-// POSIX systems provide unistd.h for low-level file operations.
-#include <unistd.h>
-#endif
-
 #include "vtr_error.h"
 #include "kj/filesystem.h"
 

@@ -1,21 +1,6 @@
 #include "mmap_file.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
-
-#include <fcntl.h>
-#include <sys/stat.h>
-
-#ifdef _WIN32 // Windows
-// Windows does not provide POSIX mmap() or unistd.h.
-// Use Windows-specific headers instead. Note that actual file mapping is
-// handled via the KJ filesystem abstraction.
-#include <io.h>
-#else
-// POSIX systems provide mmap() and unistd.h for file access and mapping.
-#include <sys/mman.h>
-#include <unistd.h>
-#endif
-
 #include "kj/filesystem.h"
 
 MmapFile::MmapFile(const std::string& file)
