@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /*
  * Prepacking: Group together technology-mapped netlist blocks before packing.
  * This gives hints to the packer on what groups of blocks to keep together
@@ -387,6 +387,7 @@ class Prepacker {
     ///        molecules keep pointers to this vector, so this needs to remain
     ///        for the lifetime of the molecules.
     std::vector<t_pack_patterns> list_of_pack_patterns;
+
 
     /**
      * @brief Lookup between each chain ID and the information associated with

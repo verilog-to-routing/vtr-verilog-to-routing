@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Prepacking: Group together technology-mapped netlist blocks before packing.
  * This gives hints to the packer on what groups of blocks to keep together during packing.
  * Primary purpose:
@@ -27,6 +27,7 @@
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "globals.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_time.h"
@@ -135,6 +136,24 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
 static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern);
 
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
+
+struct t_logical_block_location_fields {
+    std::string mode_or_pattern_name;
+    std::string primitive_name;
+    std::vector<std::string> hierarchy_tokens;
+};
+
+static t_logical_block_location_fields parse_logical_block_location(const std::string& logical_block_location);
+static int resolve_pack_pattern_index_from_logical_block_location(const std::string& logical_block_location,
+                                                                  AtomBlockId blk_id,
+                                                                  const AtomNetlist& atom_nlist,
+                                                                  const std::vector<t_pack_patterns>& list_of_pack_patterns);
+static AtomBlockId infer_pattern_root_atom_from_constrained_atom(const t_pack_patterns& pattern,
+                                                                 AtomBlockId constrained_blk_id,
+                                                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
+                                                                 const AtomNetlist& atom_nlist);
+static bool forced_pack_molecule_has_multifanout_edge(const t_pack_molecule& molecule,
+                                                      const AtomNetlist& atom_nlist);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -825,6 +844,235 @@ t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(co
     return best;
 }
 
+static t_logical_block_location_fields parse_logical_block_location(const std::string& logical_block_location) {
+    t_logical_block_location_fields fields;
+
+    auto lbrace = logical_block_location.find('{');
+    if (lbrace != std::string::npos) {
+        auto rbrace = logical_block_location.find('}', lbrace + 1);
+        if (rbrace != std::string::npos && rbrace > lbrace + 1) {
+            fields.mode_or_pattern_name = logical_block_location.substr(lbrace + 1, rbrace - lbrace - 1);
+        }
+    }
+
+    std::string location_no_braces = logical_block_location;
+    if (lbrace != std::string::npos) {
+        auto rbrace = location_no_braces.find('}', lbrace + 1);
+        if (rbrace != std::string::npos) {
+            location_no_braces.erase(lbrace, rbrace - lbrace + 1);
+        }
+    }
+
+    size_t token_start = 0;
+    while (token_start <= location_no_braces.size()) {
+        size_t token_end = location_no_braces.find('.', token_start);
+        std::string token = (token_end == std::string::npos)
+                                ? location_no_braces.substr(token_start)
+                                : location_no_braces.substr(token_start, token_end - token_start);
+        size_t bracket = token.find('[');
+        if (bracket != std::string::npos) {
+            token = token.substr(0, bracket);
+        }
+        if (!token.empty()) {
+            fields.hierarchy_tokens.push_back(token);
+        }
+        if (token_end == std::string::npos) {
+            break;
+        }
+        token_start = token_end + 1;
+    }
+
+    if (!fields.hierarchy_tokens.empty()) {
+        fields.primitive_name = fields.hierarchy_tokens.back();
+    }
+
+    return fields;
+}
+
+static int resolve_pack_pattern_index_from_logical_block_location(const std::string& logical_block_location,
+                                                                  AtomBlockId blk_id,
+                                                                  const AtomNetlist& atom_nlist,
+                                                                  const std::vector<t_pack_patterns>& list_of_pack_patterns) {
+    auto fields = parse_logical_block_location(logical_block_location);
+    if (fields.primitive_name.empty()) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Invalid logical_block_location '%s': failed to extract primitive token.",
+                        logical_block_location.c_str());
+    }
+
+    std::vector<int> named_candidates;
+    if (!fields.mode_or_pattern_name.empty()) {
+        for (size_t i = 0; i < list_of_pack_patterns.size(); ++i) {
+            if (fields.mode_or_pattern_name == list_of_pack_patterns[i].name) {
+                named_candidates.push_back(static_cast<int>(i));
+            }
+        }
+    }
+
+    std::vector<int> candidate_patterns;
+    if (!named_candidates.empty()) {
+        candidate_patterns = named_candidates;
+    } else {
+        candidate_patterns.reserve(list_of_pack_patterns.size());
+        for (size_t i = 0; i < list_of_pack_patterns.size(); ++i) {
+            candidate_patterns.push_back(static_cast<int>(i));
+        }
+    }
+
+    auto pattern_score = [&](int pattern_idx) -> int {
+        const auto& pattern = list_of_pack_patterns[pattern_idx];
+        auto pattern_blocks = get_pattern_blocks(pattern);
+
+        std::unordered_set<std::string> pattern_block_names;
+        bool matches_atom = false;
+        for (auto* pb_type : pattern_blocks) {
+            if (primitive_type_feasible(blk_id, pb_type)) {
+                matches_atom = true;
+            }
+            pattern_block_names.insert(pb_type->name);
+        }
+
+        if (!matches_atom) {
+            return -1;
+        }
+        if (!pattern_block_names.contains(fields.primitive_name)) {
+            return -1;
+        }
+
+        int score = 1000; // base score for feasible + primitive match
+        if (!fields.mode_or_pattern_name.empty() && fields.mode_or_pattern_name == pattern.name) {
+            score += 100;
+        }
+
+        bool mode_name_hit = false;
+        for (const auto& token : fields.hierarchy_tokens) {
+            if (pattern_block_names.contains(token)) {
+                score += 10;
+            }
+        }
+
+        if (!fields.mode_or_pattern_name.empty()) {
+            for (auto* pb_type : pattern_blocks) {
+                for (const t_mode* mode = pb_type->parent_mode; mode != nullptr; mode = mode->parent_pb_type ? mode->parent_pb_type->parent_mode : nullptr) {
+                    if (fields.mode_or_pattern_name == mode->name) {
+                        mode_name_hit = true;
+                        break;
+                    }
+                }
+                if (mode_name_hit) {
+                    break;
+                }
+            }
+        }
+        if (mode_name_hit) {
+            score += 80;
+        }
+
+        return score;
+    };
+
+    int matched_pattern = -1;
+    int best_score = -1;
+    for (int pattern_idx : candidate_patterns) {
+        int score = pattern_score(pattern_idx);
+        if (score < 0) {
+            continue;
+        }
+
+        if (score == best_score && matched_pattern != -1) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Ambiguous logical_block_location '%s': multiple matching t_pack_patterns for atom '%s'.",
+                            logical_block_location.c_str(),
+                            atom_nlist.block_name(blk_id).c_str());
+        }
+        if (score > best_score) {
+            best_score = score;
+            matched_pattern = pattern_idx;
+        }
+    }
+
+    return matched_pattern;
+}
+
+static AtomBlockId infer_pattern_root_atom_from_constrained_atom(const t_pack_patterns& pattern,
+                                                                 AtomBlockId constrained_blk_id,
+                                                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
+                                                                 const AtomNetlist& atom_nlist) {
+    auto pattern_blocks = get_pattern_blocks(pattern);
+    std::vector<t_pack_pattern_block*> candidate_start_blocks;
+    candidate_start_blocks.reserve(pattern.num_blocks);
+
+    std::queue<t_pack_pattern_block*> block_queue;
+    std::unordered_set<t_pack_pattern_block*> visited_blocks;
+    block_queue.push(pattern.root_block);
+    visited_blocks.insert(pattern.root_block);
+    while (!block_queue.empty()) {
+        t_pack_pattern_block* current = block_queue.front();
+        block_queue.pop();
+        candidate_start_blocks.push_back(current);
+
+        for (auto conn = current->connections; conn != nullptr; conn = conn->next) {
+            t_pack_pattern_block* next = (conn->from_block == current) ? conn->to_block : conn->from_block;
+            if (!visited_blocks.contains(next)) {
+                visited_blocks.insert(next);
+                block_queue.push(next);
+            }
+        }
+    }
+
+    for (auto* start_block : candidate_start_blocks) {
+        if (!primitive_type_feasible(constrained_blk_id, start_block->pb_type)) {
+            continue;
+        }
+
+        std::vector<AtomBlockId> mapped_atoms(pattern.num_blocks, AtomBlockId::INVALID());
+        std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> q;
+        q.push({start_block, constrained_blk_id});
+
+        bool failed = false;
+        while (!q.empty() && !failed) {
+            auto [pat_block, atom_blk] = q.front();
+            q.pop();
+
+            auto existing = mapped_atoms[pat_block->block_id];
+            if (existing && existing == atom_blk) {
+                continue;
+            }
+
+            if (!atom_blk
+                || !primitive_type_feasible(atom_blk, pat_block->pb_type)
+                || (existing && existing != atom_blk)
+                || atom_molecules.find(atom_blk) != atom_molecules.end()) {
+                if (!pattern.is_block_optional[pat_block->block_id]) {
+                    failed = true;
+                }
+                continue;
+            }
+
+            mapped_atoms[pat_block->block_id] = atom_blk;
+
+            for (auto conn = pat_block->connections; conn != nullptr; conn = conn->next) {
+                if (conn->from_block == pat_block) {
+                    q.push({conn->to_block, get_sink_block(atom_blk, *conn, atom_nlist)});
+                } else if (conn->to_block == pat_block) {
+                    q.push({conn->from_block, get_driving_block(atom_blk, *conn, atom_nlist)});
+                }
+            }
+        }
+
+        if (failed) {
+            continue;
+        }
+
+        AtomBlockId root_atom = mapped_atoms[pattern.root_block->block_id];
+        if (root_atom) {
+            return root_atom;
+        }
+    }
+
+    return AtomBlockId::INVALID();
+}
+
 /**
  * Pre-pack atoms in netlist to molecules
  * 1.  Single atoms are by definition a molecule.
@@ -837,6 +1085,168 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
                                               const LogicalModels& models,
                                               const std::vector<t_logical_block_type>& logical_block_types) {
     std::vector<bool> is_used(list_of_pack_patterns.size(), false);
+    const auto& place_constraints = g_vpr_ctx.floorplanning().constraints;
+    std::unordered_set<AtomBlockId> downgrade_constrained_atoms;
+
+    // Resolve logical_block_location into concrete t_pack_patterns and apply first.
+    for (auto blk_id : atom_nlist.blocks()) {
+        const std::string* constrained_location = place_constraints.get_atom_logical_block_location(blk_id);
+        if (constrained_location == nullptr) {
+            continue;
+        }
+        if (atom_molecules_multimap.count(blk_id) > 0) {
+            // This atom is already captured by a previously created constrained molecule.
+            continue;
+        }
+
+        AtomBlockId effective_constrained_blk = blk_id;
+        int constrained_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(*constrained_location,
+                                                                                              effective_constrained_blk,
+                                                                                              atom_nlist,
+                                                                                              list_of_pack_patterns);
+        if (constrained_pattern_idx < 0) {
+            std::vector<AtomBlockId> neighbor_blocks;
+            for (AtomPinId pin : atom_nlist.block_input_pins(blk_id)) {
+                AtomNetId net = atom_nlist.pin_net(pin);
+                if (!net) {
+                    continue;
+                }
+                AtomBlockId driver = atom_nlist.net_driver_block(net);
+                if (driver && driver != blk_id) {
+                    neighbor_blocks.push_back(driver);
+                }
+            }
+            for (AtomPinId pin : atom_nlist.block_output_pins(blk_id)) {
+                AtomNetId net = atom_nlist.pin_net(pin);
+                if (!net) {
+                    continue;
+                }
+                for (AtomPinId sink_pin : atom_nlist.net_sinks(net)) {
+                    AtomBlockId sink = atom_nlist.pin_block(sink_pin);
+                    if (sink && sink != blk_id) {
+                        neighbor_blocks.push_back(sink);
+                    }
+                }
+            }
+
+            for (AtomBlockId neighbor_blk : neighbor_blocks) {
+                int neighbor_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(*constrained_location,
+                                                                                                   neighbor_blk,
+                                                                                                   atom_nlist,
+                                                                                                   list_of_pack_patterns);
+                if (neighbor_pattern_idx >= 0) {
+                    effective_constrained_blk = neighbor_blk;
+                    constrained_pattern_idx = neighbor_pattern_idx;
+                    break;
+                }
+            }
+        }
+        if (constrained_pattern_idx < 0) {
+            VTR_LOG_WARN("No matching pack pattern for logical_block_location '%s' on atom '%s'. "
+                         "Falling back to primitive placement constraint only.\n",
+                         constrained_location->c_str(),
+                         atom_nlist.block_name(blk_id).c_str());
+            downgrade_constrained_atoms.insert(blk_id);
+            continue;
+        }
+
+        const t_pack_patterns& constrained_pattern = list_of_pack_patterns[constrained_pattern_idx];
+        AtomBlockId molecule_seed_blk = effective_constrained_blk;
+        if (!primitive_type_feasible(molecule_seed_blk, constrained_pattern.root_block->pb_type)) {
+            molecule_seed_blk = infer_pattern_root_atom_from_constrained_atom(constrained_pattern,
+                                                                              effective_constrained_blk,
+                                                                              atom_molecules_multimap,
+                                                                              atom_nlist);
+            if (!molecule_seed_blk) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Failed to infer root atom for constrained atom '%s' under logical_block_location '%s' (pattern '%s').",
+                                atom_nlist.block_name(blk_id).c_str(),
+                                constrained_location->c_str(),
+                                constrained_pattern.name);
+            }
+        }
+
+        t_pack_molecule trial_molecule;
+        trial_molecule.base_gain = 0.f;
+        trial_molecule.type = e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK;
+        trial_molecule.pack_pattern = const_cast<t_pack_patterns*>(&constrained_pattern);
+        trial_molecule.atom_block_ids = std::vector<AtomBlockId>(constrained_pattern.num_blocks);
+        trial_molecule.root = constrained_pattern.root_block->block_id;
+        trial_molecule.chain_id = MoleculeChainId::INVALID();
+        if (!try_expand_molecule(trial_molecule, molecule_seed_blk, atom_molecules_multimap, atom_nlist)) {
+            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
+                         "failed to create forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
+                         atom_nlist.block_name(blk_id).c_str(),
+                         constrained_location->c_str(),
+                         atom_nlist.block_name(molecule_seed_blk).c_str(),
+                         constrained_pattern.name);
+            downgrade_constrained_atoms.insert(blk_id);
+            continue;
+        }
+
+        bool constrained_atom_in_trial_molecule = false;
+        for (auto mol_atom : trial_molecule.atom_block_ids) {
+            if (mol_atom == blk_id) {
+                constrained_atom_in_trial_molecule = true;
+                break;
+            }
+        }
+        if (!constrained_atom_in_trial_molecule) {
+            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
+                         "constructed molecule does not include constrained atom. Falling back to best-effort packing.\n",
+                         atom_nlist.block_name(blk_id).c_str(),
+                         constrained_location->c_str());
+            downgrade_constrained_atoms.insert(blk_id);
+            continue;
+        }
+
+        // Compatibility mode: if a constrained forced-pack molecule contains
+        // multi-fanout forced edges, downgrade it to best-effort so clustering
+        // can continue while preserving placement constraints.
+        if (forced_pack_molecule_has_multifanout_edge(trial_molecule, atom_nlist)) {
+            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
+                         "forced edge has fanout > 1. Falling back to best-effort packing.\n",
+                         atom_nlist.block_name(blk_id).c_str(),
+                         constrained_location->c_str());
+            for (AtomBlockId mol_atom : trial_molecule.atom_block_ids) {
+                if (mol_atom) {
+                    downgrade_constrained_atoms.insert(mol_atom);
+                }
+            }
+            continue;
+        }
+
+        PackMoleculeId constrained_molecule_id = try_create_molecule(constrained_pattern_idx,
+                                                                     molecule_seed_blk,
+                                                                     atom_molecules_multimap,
+                                                                     atom_nlist);
+        if (!constrained_molecule_id.is_valid()) {
+            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
+                         "failed to commit forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
+                         atom_nlist.block_name(blk_id).c_str(),
+                         constrained_location->c_str(),
+                         atom_nlist.block_name(molecule_seed_blk).c_str(),
+                         constrained_pattern.name);
+            downgrade_constrained_atoms.insert(blk_id);
+            continue;
+        }
+
+        t_pack_molecule& constrained_molecule = pack_molecules_[constrained_molecule_id];
+
+        constrained_molecule.base_gain = constrained_molecule.atom_block_ids.size() - (constrained_molecule.pack_pattern->base_cost / 100);
+
+        VTR_LOG("Constrained molecule created for atom '%s': pattern '%s', seed '%s'\n",
+                atom_nlist.block_name(blk_id).c_str(),
+                constrained_pattern.name,
+                atom_nlist.block_name(molecule_seed_blk).c_str());
+        for (auto mol_atom : constrained_molecule.atom_block_ids) {
+            if (!mol_atom) continue;
+            LogicalModelId model_id = atom_nlist.block_model(mol_atom);
+            VTR_LOG("  - molecule atom '%s' model '%s'\n",
+                    atom_nlist.block_name(mol_atom).c_str(),
+                    g_vpr_ctx.device().arch->models.get_model(model_id).name);
+        }
+    }
 
     /* Find forced pack patterns
      * Simplifying assumptions: Each atom can map to at most one molecule,
@@ -867,6 +1277,9 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         auto blocks = atom_nlist.blocks();
         for (auto blk_iter = blocks.begin(); blk_iter != blocks.end(); ++blk_iter) {
             auto blk_id = *blk_iter;
+            if (downgrade_constrained_atoms.count(blk_id) && !list_of_pack_patterns[best_pattern].is_chain) {
+                continue;
+            }
 
             PackMoleculeId cur_molecule_id = try_create_molecule(best_pattern,
                                                                  blk_id,
@@ -945,6 +1358,71 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
                              atom_nlist);
     }
 }
+
+static bool forced_pack_molecule_has_multifanout_edge(const t_pack_molecule& molecule,
+                                                      const AtomNetlist& atom_nlist) {
+    if (molecule.type != e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK || molecule.pack_pattern == nullptr) {
+        return false;
+    }
+
+    for (int i = 0; i < molecule.pack_pattern->num_blocks; ++i) {
+        AtomBlockId from_atom = molecule.atom_block_ids[i];
+        if (!from_atom) {
+            continue;
+        }
+
+        t_pack_pattern_block* from_block = nullptr;
+        std::queue<t_pack_pattern_block*> q;
+        std::unordered_set<t_pack_pattern_block*> visited;
+        q.push(molecule.pack_pattern->root_block);
+        visited.insert(molecule.pack_pattern->root_block);
+        while (!q.empty()) {
+            auto* cur = q.front();
+            q.pop();
+            if (cur->block_id == i) {
+                from_block = cur;
+                break;
+            }
+            for (auto conn = cur->connections; conn != nullptr; conn = conn->next) {
+                auto* nxt = (conn->from_block == cur) ? conn->to_block : conn->from_block;
+                if (!visited.contains(nxt)) {
+                    visited.insert(nxt);
+                    q.push(nxt);
+                }
+            }
+        }
+        if (from_block == nullptr) {
+            continue;
+        }
+
+        for (auto conn = from_block->connections; conn != nullptr; conn = conn->next) {
+            if (conn->from_block != from_block) {
+                continue;
+            }
+
+            AtomBlockId to_atom = molecule.atom_block_ids[conn->to_block->block_id];
+            if (!to_atom) {
+                continue;
+            }
+
+            const t_model_ports* from_port_model = conn->from_pin->port->model_port;
+            auto from_port_id = atom_nlist.find_atom_port(from_atom, from_port_model);
+            if (!from_port_id.is_valid()) {
+                continue;
+            }
+            AtomNetId net_id = atom_nlist.port_net(from_port_id, conn->from_pin->pin_number);
+            if (!net_id.is_valid()) {
+                continue;
+            }
+
+            if (atom_nlist.net_sinks(net_id).size() > 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
     t_pack_pattern_connections *connection, *next;
@@ -1158,15 +1636,9 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     const auto& net_sinks = atom_nlist.net_sinks(net_id);
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
-    bool connected_to_latch = false;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-        // If the sink block has a clock, it is considered stateful (e.g., a latch or flip-flop).
-        // Mark this so we can later decide whether to drop the block based on the net’s fanout.
-        if (!atom_nlist.block_is_combinational(sink_block_id)) {
-            connected_to_latch = true;
-        }
         if (primitive_type_feasible(sink_block_id, to_pb_type)) {
             auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
             auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
@@ -1174,14 +1646,6 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
                 pattern_sink_block_id = sink_block_id;
             }
         }
-    }
-    // If the number of sinks is greater than 1, and one of the connected blocks is a latch,
-    // then we drop the block to avoid a situation where only registers or unregistered output
-    // of the block can use the output pin.
-    // TODO: This is a conservative assumption, and ideally we need to do analysis of the architecture
-    // before to determine which pattern is supported by the architecture.
-    if (connected_to_latch && net_sinks.size() > 1) {
-        pattern_sink_block_id = AtomBlockId::INVALID();
     }
     return pattern_sink_block_id;
 }
@@ -1205,7 +1669,7 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     }
 
     auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
-    if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+    if (net_id) {
         auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
         if (to_port_model->is_clock) {
@@ -1261,8 +1725,9 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
             visited_from_pins.insert(current_connenction->from_pin);
             visited_to_pins.insert(current_connenction->to_pin);
 
-            /* The from_pin block belongs to the pattern block */
+            /* Both endpoints belong to the pattern block graph */
             pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
+            pattern_blocks.insert(current_connenction->to_pin->port->parent_pb_type);
             pack_pattern_blocks.push(current_connenction->to_block);
             current_connenction = current_connenction->next;
         }

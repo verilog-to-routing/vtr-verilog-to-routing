@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file
  * @author  Alex Singer
  * @date    September 2024
@@ -229,7 +229,9 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const t_ap_opts& ap_opts = vpr_setup.APOpts;
 
     // Run the prepacker
-    const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_nlist,
+                              device_ctx.arch->models,
+                              device_ctx.logical_block_types);
 
     // Pre-compute the pre-clustering timing delays. This object will be passed
     // into the global placer and the full legalizer to make them timing driven.

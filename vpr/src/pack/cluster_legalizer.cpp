@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file
  * @author  Alex Singer
  * @date    September 2024
@@ -12,6 +12,7 @@
 
 #include "cluster_legalizer.h"
 #include <algorithm>
+#include <cctype>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -38,7 +39,157 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "lazy_pop_unique_priority_queue.h"
-#include "cluster_placement.h"
+
+struct t_logical_location_token {
+    std::string name;
+    std::optional<int> index;
+    std::optional<std::string> mode;
+};
+
+static std::optional<int> try_parse_int(const std::string& value) {
+    if (value.empty()) {
+        return std::nullopt;
+    }
+    for (char ch : value) {
+        if (!std::isdigit(static_cast<unsigned char>(ch))) {
+            return std::nullopt;
+        }
+    }
+    return std::stoi(value);
+}
+
+static std::vector<t_logical_location_token> parse_logical_block_location_tokens(const std::string& location) {
+    std::vector<t_logical_location_token> tokens;
+    size_t start = 0;
+    while (start < location.size()) {
+        size_t end = location.find('.', start);
+        std::string token = location.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        if (!token.empty()) {
+            t_logical_location_token parsed;
+            size_t lbr = token.find('[');
+            if (lbr == std::string::npos) {
+                parsed.name = token;
+            } else {
+                parsed.name = token.substr(0, lbr);
+                size_t rbr = token.find(']', lbr + 1);
+                if (rbr != std::string::npos) {
+                    parsed.index = try_parse_int(token.substr(lbr + 1, rbr - lbr - 1));
+                }
+                size_t lbm = token.find('{', rbr == std::string::npos ? lbr + 1 : rbr + 1);
+                if (lbm != std::string::npos) {
+                    size_t rbm = token.find('}', lbm + 1);
+                    if (rbm != std::string::npos && rbm > lbm + 1) {
+                        parsed.mode = token.substr(lbm + 1, rbm - lbm - 1);
+                    }
+                }
+            }
+            if (!parsed.name.empty()) {
+                tokens.push_back(std::move(parsed));
+            }
+        }
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+    return tokens;
+}
+
+static std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const std::string& hierarchical_type) {
+    std::vector<t_logical_location_token> tokens;
+    size_t start = 0;
+    while (start < hierarchical_type.size()) {
+        size_t end = hierarchical_type.find('/', start);
+        std::string token = hierarchical_type.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        if (!token.empty()) {
+            t_logical_location_token parsed;
+            size_t lbr = token.find('[');
+            if (lbr == std::string::npos) {
+                parsed.name = token;
+            } else {
+                parsed.name = token.substr(0, lbr);
+                size_t rbr = token.find(']', lbr + 1);
+                if (rbr != std::string::npos) {
+                    std::string first_bracket = token.substr(lbr + 1, rbr - lbr - 1);
+                    auto idx = try_parse_int(first_bracket);
+                    if (idx) {
+                        parsed.index = idx;
+                    } else if (!first_bracket.empty()) {
+                        parsed.mode = first_bracket;
+                    }
+                    size_t lbr2 = token.find('[', rbr + 1);
+                    if (lbr2 != std::string::npos) {
+                        size_t rbr2 = token.find(']', lbr2 + 1);
+                        if (rbr2 != std::string::npos && rbr2 > lbr2 + 1) {
+                            parsed.mode = token.substr(lbr2 + 1, rbr2 - lbr2 - 1);
+                        }
+                    }
+                }
+            }
+            if (!parsed.name.empty()) {
+                tokens.push_back(std::move(parsed));
+            }
+        }
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+    return tokens;
+}
+
+static bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got) {
+    if (want.name != got.name) {
+        return false;
+    }
+    if (want.index && (!got.index || *want.index != *got.index)) {
+        return false;
+    }
+    if (want.mode && (!got.mode || *want.mode != *got.mode)) {
+        return false;
+    }
+    return true;
+}
+
+static bool logical_block_location_matches_pb(const std::string& logical_block_location, const t_pb* pb) {
+    auto want_tokens = parse_logical_block_location_tokens(logical_block_location);
+    auto got_tokens = parse_hierarchical_type_tokens(pb->hierarchical_type_name());
+    if (want_tokens.empty() || got_tokens.empty() || want_tokens.size() > got_tokens.size()) {
+        return false;
+    }
+
+    for (size_t start = 0; start + want_tokens.size() <= got_tokens.size(); ++start) {
+        bool all_match = true;
+        for (size_t i = 0; i < want_tokens.size(); ++i) {
+            if (!token_matches(want_tokens[i], got_tokens[start + i])) {
+                all_match = false;
+                break;
+            }
+        }
+        if (all_match) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool check_logical_block_location_constraint(const AtomBlockId blk_id, const t_pb* pb, int verbosity) {
+    const auto& constraints = g_vpr_ctx.floorplanning().constraints;
+    const std::string* logical_block_location = constraints.get_atom_logical_block_location(blk_id);
+    if (logical_block_location == nullptr || logical_block_location->empty()) {
+        return true;
+    }
+    if (logical_block_location_matches_pb(*logical_block_location, pb)) {
+        return true;
+    }
+
+    VTR_LOGV(verbosity > 3,
+             "\t\t\tFAILED logical_block_location constraint: atom '%s' expected '%s' but candidate '%s'\n",
+             g_vpr_ctx.atom().netlist().block_name(blk_id).c_str(),
+             logical_block_location->c_str(),
+             pb->hierarchical_type_name().c_str());
+    return false;
+}
 
 /*
  * @brief Allocates the stats stored within the pb of a cluster.
@@ -554,6 +705,10 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         cluster_router.add_atom_as_target(blk_id, atom_to_pb);
         if (!primitive_feasible(blk_id, pb, atom_to_pb)) {
             /* failed location feasibility check, revert pack */
+            block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
+        }
+        if (block_pack_status == e_block_pack_status::BLK_PASSED
+            && !check_logical_block_location_constraint(blk_id, pb, verbosity)) {
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
         }
 
@@ -1161,6 +1316,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     // Get the molecule object.
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
+    std::string failure_reason = "unknown";
 
     if (log_verbosity_ > 3) {
         AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
@@ -1181,6 +1337,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // macros that limit placement flexibility.
     if (cluster.placement_stats->has_long_chain && molecule.is_chain() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
         VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
+        VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: long_chain_conflict\n");
         return e_block_pack_status::BLK_FAILED_FEASIBLE;
     }
 
@@ -1203,6 +1360,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                                        log_verbosity_,
                                                                        cluster_pr_needs_update);
         if (!block_pack_floorplan_status) {
+            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: floorplanning_conflict (atom '%s')\n",
+                     atom_ctx.netlist().block_name(atom_blk_id).c_str());
             return e_block_pack_status::BLK_FAILED_FLOORPLANNING;
         }
 
@@ -1223,6 +1382,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                                  atom_noc_grp_id_,
                                                                  log_verbosity_);
         if (!block_pack_noc_grp_status) {
+            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: noc_group_conflict (atom '%s')\n",
+                     atom_ctx.netlist().block_name(atom_blk_id).c_str());
             return e_block_pack_status::BLK_FAILED_NOC_GROUP;
         }
     }
@@ -1237,6 +1398,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
+            failure_reason = "no_candidate_primitives";
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
@@ -1270,6 +1432,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          prepacker_,
                                                          clustering_chain_info_,
                                                          mutable_atom_pb_lookup());
+            if (block_pack_status != e_block_pack_status::BLK_PASSED) {
+                failure_reason = "place_atom_block_failed@" + std::to_string(i_mol) + ":" + atom_ctx.netlist().block_name(atom_blk_id);
+            }
         }
 
         if (enable_pin_feasibility_filter_ && block_pack_status == e_block_pack_status::BLK_PASSED) {
@@ -1278,6 +1443,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             try_update_lookahead_pins_used(cluster.pb, atom_cluster_, atom_pb_lookup());
             if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
                 VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
+                failure_reason = "pin_feasibility_filter_failed";
                 block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             } else {
                 VTR_LOGV(log_verbosity_ > 3, "\t\t\tPin Feasibility: Passed pin feasibility filter\n");
@@ -1382,6 +1548,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             if (do_detailed_routing_stage && legality == e_ecn_legality::ILLEGAL) {
                 /* Cannot pack */
                 VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Detailed Routing Legality\n");
+                failure_reason = "intra_lb_routing_illegal";
                 block_pack_status = e_block_pack_status::BLK_FAILED_ROUTE;
             } else {
                 /* Pack successful, commit
@@ -1486,6 +1653,10 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // Reset the cluster placement stats after packing a molecule.
     // TODO: Not sure if this has to go here, but it makes sense to do it.
     reset_tried_but_unused_cluster_placements(cluster.placement_stats);
+
+    if (block_pack_status != e_block_pack_status::BLK_PASSED) {
+        VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule final reason: %s\n", failure_reason.c_str());
+    }
 
     return block_pack_status;
 }
