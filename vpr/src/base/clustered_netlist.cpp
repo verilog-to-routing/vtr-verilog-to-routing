@@ -55,7 +55,7 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
 
 ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int logical_pin_index) const {
     VTR_ASSERT_SAFE(valid_block_id(blk));
-    VTR_ASSERT_SAFE_MSG(logical_pin_index >= 0 && logical_pin_index < static_cast<ssize_t>(block_logical_pins_[blk].size()), "Logical pin index must be in range");
+    VTR_ASSERT_SAFE_MSG(logical_pin_index >= 0 && logical_pin_index < static_cast<ptrdiff_t>(block_logical_pins_[blk].size()), "Logical pin index must be in range");
 
     return block_logical_pins_[blk][logical_pin_index];
 }
