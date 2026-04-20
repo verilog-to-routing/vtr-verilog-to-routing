@@ -1,4 +1,4 @@
-#include "read_options.h"
+﻿#include "read_options.h"
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "vpr_error.h"

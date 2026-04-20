@@ -1,4 +1,4 @@
-#include "user_place_constraints.h"
+﻿#include "user_place_constraints.h"
 #include <unordered_set>
 #include "physical_types.h"
 #include "vtr_assert.h"
@@ -91,6 +91,18 @@ const std::unordered_set<t_logical_block_type_ptr>& UserPlaceConstraints::get_pa
     }
 
     return it->second;
+}
+
+void UserPlaceConstraints::set_atom_logical_block_location(AtomBlockId blk_id, const std::string& logical_block_location) {
+    atom_logical_block_locations_[blk_id] = logical_block_location;
+}
+
+const std::string* UserPlaceConstraints::get_atom_logical_block_location(AtomBlockId blk_id) const {
+    auto it = atom_logical_block_locations_.find(blk_id);
+    if (it == atom_logical_block_locations_.end()) {
+        return nullptr;
+    }
+    return &it->second;
 }
 
 void print_placement_constraints(FILE* fp, const UserPlaceConstraints& constraints) {

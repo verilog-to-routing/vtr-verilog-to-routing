@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /**
  * @file
  * @brief This is a core file that defines the major data types used by VPR
