@@ -149,10 +149,15 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     //
     // When additional cost terms are enabled (e.g. congestion, interposer costs),
     // the total cost magnitude increases, so we scale t_exit to keep a comparable
-    // effective annealing temperature scale.
+    // effective annealing temperature scale; interposer-related factors are only
+    // included if the device has an interposer.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-    t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor + placer_opts.interposer_cong_factor);
+    if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+        t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor + placer_opts.interposer_cong_factor);
+    } else {
+        t_exit *= (1. + placer_opts.congestion_factor);
+    }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
@@ -846,6 +851,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
 
     // Similar to congestion modeling: trigger interposer congestion estimation once rlim shrinks enough (or once started, keep updating).
     if ((placer_opts_.interposer_cong_factor > 0.
+         && g_vpr_ctx.device().grid.has_interposer_cuts()
          && annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio)
         || interposer_cong_modeling_started_) {
         costs_.interposer_cong_cost = net_cost_handler_.compute_interposer_est_cong_(/*compute_congestion_cost=*/true);
