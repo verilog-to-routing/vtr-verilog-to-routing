@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <cmath>
 
 #include "crr_common.h"
 namespace crrgenerator {
@@ -42,15 +43,21 @@ struct Cell {
     }
 
     bool is_number() const {
-        return is_integer();
+        if (is_integer()) return true;
+        if (auto p = std::get_if<std::string>(&value)) {
+            const char* start = p->c_str();
+            char* end = nullptr;
+            double d = std::strtod(start, &end);
+            return end == start + p->size() && std::isfinite(d) && std::floor(d) == d;
+        }
+        return false;
     }
 
     int64_t as_int() const {
-        if (auto p = std::get_if<int64_t>(&value)) {
-            return *p;
-        }
-        if (auto p = std::get_if<std::string>(&value)) {
-            return std::stoll(*p);
+        if (auto p = std::get_if<int64_t>(&value)) return *p;
+        if (is_number()) {
+            if (auto p = std::get_if<std::string>(&value))
+                return static_cast<int64_t>(std::strtod(p->c_str(), nullptr));
         }
         return 0;
     }
