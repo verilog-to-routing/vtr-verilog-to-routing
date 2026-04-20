@@ -17,11 +17,9 @@
 #include "read_place.h"
 #include "read_route.h"
 
-#include <unistd.h>
-
 #include "string.h"
-#include <cstdio>   // for fwrite, stderr
-#include <cstring>  // strlen
+#include <cstdio>  // for fwrite, stderr
+#include <cstring> // strlen
 
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
