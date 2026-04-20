@@ -279,6 +279,23 @@ int Placer::check_placement_costs_() {
         error++;
     }
 
+    // Ignore tiny congestion costs due to floating-point round-off.
+    // For very small congestion costs. Floating point round-off error
+    // may result in tiny numerical differences (e.g. 0 vs. -1e-15) between
+    // the incrementally maintained cost and the cost recomputed from scratch
+    // We treat both values as equivalent whenthey are below this threshold.
+    // We only apply this to congestion cost and interposer congestion cost because
+    // other cost terms are never zero.
+    constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
+    if (!(fabs(cost_terms_check.cong_cost) < MIN_EXPECTED_CONG_COST && fabs(costs_.congestion_cost) < MIN_EXPECTED_CONG_COST)) {
+        if (fabs(cost_terms_check.cong_cost - costs_.congestion_cost) > fabs(costs_.congestion_cost) * PL_INCREMENTAL_COST_TOLERANCE) {
+            VTR_LOG_ERROR(
+                "cong_cost_check: %g and congestion_cost: %g differ in check_place.\n",
+                cost_terms_check.cong_cost, costs_.congestion_cost);
+            error++;
+        }
+    }
+
     if (fabs(cost_terms_check.interposer_cost - costs_.interposer_cost) > costs_.interposer_cost * PL_INCREMENTAL_COST_TOLERANCE) {
         VTR_LOG_ERROR(
             "interposer_cost_check: %g and interposer_cost: %g differ in check_place.\n",
@@ -286,11 +303,7 @@ int Placer::check_placement_costs_() {
         error++;
     }
 
-    // For very small interposer congestion costs. Floating point round-off error
-    // may result in tiny numerical differences (e.g. 0 vs. -1e-15) between
-    // the incrementally maintained cost and the cost recomputed from scratch
-    // We treat both values as equivalent whenthey are below this threshold.
-    constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
+    // Similar logic to congestion cost.
     if (!(fabs(cost_terms_check.interposer_cong_cost) < MIN_EXPECTED_CONG_COST && fabs(costs_.interposer_cong_cost) < MIN_EXPECTED_CONG_COST)) {
         if (fabs(cost_terms_check.interposer_cong_cost - costs_.interposer_cong_cost) > costs_.interposer_cong_cost * PL_INCREMENTAL_COST_TOLERANCE) {
             VTR_LOG_ERROR(

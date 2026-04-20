@@ -1417,8 +1417,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
-    // Estimate whether/where this net is likely to cross interposer cut-lines by looking at
-    // its (cube) bounding box. Any cut-line inside the BB implies one interposer crossing.
+    // Select the trial (tentative) vs the committed bounding box.
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
@@ -1427,6 +1426,8 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
     int num_horizontal_crossings = 0;
     int num_vertical_crossings = 0;
 
+    // Count how many times this net crosses interposer cut-lines.
+    // We count a cut as a crossing if the cut-line passes through the interior of the net's bounding box.
     for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
         // Count vertical cut-lines that pass through the interior of the BB on this layer.
         const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
@@ -1791,6 +1792,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
     check_and_print_cost(new_cost_terms.bb_cost, costs.bb_cost, "bb_cost");
     costs.bb_cost = new_cost_terms.bb_cost;
 
+    // Ignore tiny congestion costs due to floating-point round-off.
     constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
     if (congestion_modeling_started_ && new_cost_terms.cong_cost > MIN_EXPECTED_CONG_COST) {
         check_and_print_cost(new_cost_terms.cong_cost, costs.congestion_cost, "cong_cost");
