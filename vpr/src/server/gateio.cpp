@@ -166,11 +166,6 @@ static void handle_activity_status(ActivityStatus status, std::unique_ptr<Client
 
 GateIO::GateIO() {
     m_is_running.store(false);
-    m_updateTimer.setInterval(SERVER_UPDATE_INTERVAL_MS);
-    QObject::connect(&m_updateTimer, &QTimer::timeout, &m_updateTimer, []() {
-        server::update(application);
-    });
-    m_updateTimer.start();
 }
 
 GateIO::~GateIO() {
@@ -183,6 +178,15 @@ void GateIO::start(int port_num) {
         VTR_LOG("starting server");
         m_is_running.store(true);
         m_thread = std::thread(&GateIO::start_listening, this);
+        // QApplication is guaranteed to exist by the time start() is called
+        // (vpr_init_graphics runs before vpr_init_server). Starting the timer
+        // here avoids the "Timers can only be used with threads started with
+        // QThread" warning that firing it in the constructor would cause.
+        m_updateTimer.setInterval(SERVER_UPDATE_INTERVAL_MS);
+        QObject::connect(&m_updateTimer, &QTimer::timeout, &m_updateTimer, []() {
+            server::update(application);
+        });
+        m_updateTimer.start();
     }
 }
 
