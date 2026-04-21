@@ -244,9 +244,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         lb_type_name_pattern_ = name_pattern;
     }
-    virtual inline void set_add_logical_block_logical_block_location(const char* logical_block_location, void*& /*ctx*/) final {
-        lb_type_logical_block_location_ = logical_block_location;
-    }
     virtual inline void set_add_logical_block_is_regex(const char* is_regex, void*& /*ctx*/) final {
         std::string val = is_regex;
         std::transform(val.begin(), val.end(), val.begin(),
@@ -384,7 +381,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void* add_partition_add_logical_block(void*& /*ctx*/) final {
         //clear out the temporary data for this logical block name
         lb_type_name_pattern_.clear();
-        lb_type_logical_block_location_.clear();
         lb_type_is_regex_ = false;
         return nullptr;
     }
@@ -654,5 +650,4 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     // Used when reading in regex LB type constraints for a partition.
     bool lb_type_is_regex_;
     std::string lb_type_name_pattern_;
-    std::string lb_type_logical_block_location_;
 };
