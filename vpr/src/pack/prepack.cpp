@@ -152,8 +152,6 @@ static AtomBlockId infer_pattern_root_atom_from_constrained_atom(const t_pack_pa
                                                                  AtomBlockId constrained_blk_id,
                                                                  const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
                                                                  const AtomNetlist& atom_nlist);
-static bool forced_pack_molecule_has_multifanout_edge(const t_pack_molecule& molecule,
-                                                      const AtomNetlist& atom_nlist);
 
 /*****************************************/
 /*Function Definitions					 */
@@ -1200,22 +1198,6 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             continue;
         }
 
-        // Compatibility mode: if a constrained forced-pack molecule contains
-        // multi-fanout forced edges, downgrade it to best-effort so clustering
-        // can continue while preserving placement constraints.
-        if (forced_pack_molecule_has_multifanout_edge(trial_molecule, atom_nlist)) {
-            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
-                         "forced edge has fanout > 1. Falling back to best-effort packing.\n",
-                         atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location.c_str());
-            for (AtomBlockId mol_atom : trial_molecule.atom_block_ids) {
-                if (mol_atom) {
-                    downgrade_constrained_atoms.insert(mol_atom);
-                }
-            }
-            continue;
-        }
-
         PackMoleculeId constrained_molecule_id = try_create_molecule(constrained_pattern_idx,
                                                                      molecule_seed_blk,
                                                                      atom_molecules_multimap,
@@ -1357,70 +1339,6 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
                              pack_molecules_,
                              atom_nlist);
     }
-}
-
-static bool forced_pack_molecule_has_multifanout_edge(const t_pack_molecule& molecule,
-                                                      const AtomNetlist& atom_nlist) {
-    if (molecule.type != e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK || molecule.pack_pattern == nullptr) {
-        return false;
-    }
-
-    for (int i = 0; i < molecule.pack_pattern->num_blocks; ++i) {
-        AtomBlockId from_atom = molecule.atom_block_ids[i];
-        if (!from_atom) {
-            continue;
-        }
-
-        t_pack_pattern_block* from_block = nullptr;
-        std::queue<t_pack_pattern_block*> q;
-        std::unordered_set<t_pack_pattern_block*> visited;
-        q.push(molecule.pack_pattern->root_block);
-        visited.insert(molecule.pack_pattern->root_block);
-        while (!q.empty()) {
-            auto* cur = q.front();
-            q.pop();
-            if (cur->block_id == i) {
-                from_block = cur;
-                break;
-            }
-            for (auto conn = cur->connections; conn != nullptr; conn = conn->next) {
-                auto* nxt = (conn->from_block == cur) ? conn->to_block : conn->from_block;
-                if (!visited.contains(nxt)) {
-                    visited.insert(nxt);
-                    q.push(nxt);
-                }
-            }
-        }
-        if (from_block == nullptr) {
-            continue;
-        }
-
-        for (auto conn = from_block->connections; conn != nullptr; conn = conn->next) {
-            if (conn->from_block != from_block) {
-                continue;
-            }
-
-            AtomBlockId to_atom = molecule.atom_block_ids[conn->to_block->block_id];
-            if (!to_atom) {
-                continue;
-            }
-
-            const t_model_ports* from_port_model = conn->from_pin->port->model_port;
-            auto from_port_id = atom_nlist.find_atom_port(from_atom, from_port_model);
-            if (!from_port_id.is_valid()) {
-                continue;
-            }
-            AtomNetId net_id = atom_nlist.port_net(from_port_id, conn->from_pin->pin_number);
-            if (!net_id.is_valid()) {
-                continue;
-            }
-
-            if (atom_nlist.net_sinks(net_id).size() > 1) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
