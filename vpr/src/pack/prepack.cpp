@@ -1035,148 +1035,151 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
     std::vector<bool> is_used(list_of_pack_patterns.size(), false);
     const auto& place_constraints = g_vpr_ctx.floorplanning().constraints;
     std::unordered_set<AtomBlockId> downgrade_constrained_atoms;
+    const bool enable_logical_block_location_constraints = place_constraints.has_atom_logical_block_location_constraints();
 
-    // Resolve logical_block_location into concrete t_pack_patterns and apply first.
-    for (auto blk_id : atom_nlist.blocks()) {
-        const std::string constrained_location = place_constraints.get_atom_logical_block_location(blk_id);
-        if (constrained_location.empty()) {
-            continue;
-        }
-        if (atom_molecules_multimap.count(blk_id) > 0) {
-            // This atom is already captured by a previously created constrained molecule.
-            continue;
-        }
-
-        AtomBlockId effective_constrained_blk = blk_id;
-        int constrained_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(constrained_location,
-                                                                                             effective_constrained_blk,
-                                                                                             atom_nlist,
-                                                                                             list_of_pack_patterns);
-        if (constrained_pattern_idx < 0) {
-            std::vector<AtomBlockId> neighbor_blocks;
-            for (AtomPinId pin : atom_nlist.block_input_pins(blk_id)) {
-                AtomNetId net = atom_nlist.pin_net(pin);
-                if (!net) {
-                    continue;
-                }
-                AtomBlockId driver = atom_nlist.net_driver_block(net);
-                if (driver && driver != blk_id) {
-                    neighbor_blocks.push_back(driver);
-                }
+    if (enable_logical_block_location_constraints) {
+        // Resolve logical_block_location into concrete t_pack_patterns and apply first.
+        for (auto blk_id : atom_nlist.blocks()) {
+            const std::string constrained_location = place_constraints.get_atom_logical_block_location(blk_id);
+            if (constrained_location.empty()) {
+                continue;
             }
-            for (AtomPinId pin : atom_nlist.block_output_pins(blk_id)) {
-                AtomNetId net = atom_nlist.pin_net(pin);
-                if (!net) {
-                    continue;
+            if (atom_molecules_multimap.count(blk_id) > 0) {
+                // This atom is already captured by a previously created constrained molecule.
+                continue;
+            }
+
+            AtomBlockId effective_constrained_blk = blk_id;
+            int constrained_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(constrained_location,
+                                                                                                 effective_constrained_blk,
+                                                                                                 atom_nlist,
+                                                                                                 list_of_pack_patterns);
+            if (constrained_pattern_idx < 0) {
+                std::vector<AtomBlockId> neighbor_blocks;
+                for (AtomPinId pin : atom_nlist.block_input_pins(blk_id)) {
+                    AtomNetId net = atom_nlist.pin_net(pin);
+                    if (!net) {
+                        continue;
+                    }
+                    AtomBlockId driver = atom_nlist.net_driver_block(net);
+                    if (driver && driver != blk_id) {
+                        neighbor_blocks.push_back(driver);
+                    }
                 }
-                for (AtomPinId sink_pin : atom_nlist.net_sinks(net)) {
-                    AtomBlockId sink = atom_nlist.pin_block(sink_pin);
-                    if (sink && sink != blk_id) {
-                        neighbor_blocks.push_back(sink);
+                for (AtomPinId pin : atom_nlist.block_output_pins(blk_id)) {
+                    AtomNetId net = atom_nlist.pin_net(pin);
+                    if (!net) {
+                        continue;
+                    }
+                    for (AtomPinId sink_pin : atom_nlist.net_sinks(net)) {
+                        AtomBlockId sink = atom_nlist.pin_block(sink_pin);
+                        if (sink && sink != blk_id) {
+                            neighbor_blocks.push_back(sink);
+                        }
+                    }
+                }
+
+                for (AtomBlockId neighbor_blk : neighbor_blocks) {
+                    int neighbor_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(constrained_location,
+                                                                                                      neighbor_blk,
+                                                                                                      atom_nlist,
+                                                                                                      list_of_pack_patterns);
+                    if (neighbor_pattern_idx >= 0) {
+                        effective_constrained_blk = neighbor_blk;
+                        constrained_pattern_idx = neighbor_pattern_idx;
+                        break;
                     }
                 }
             }
+            if (constrained_pattern_idx < 0) {
+                VTR_LOG_WARN("No matching pack pattern for logical_block_location '%s' on atom '%s'. "
+                             "Falling back to primitive placement constraint only.\n",
+                             constrained_location.c_str(),
+                             atom_nlist.block_name(blk_id).c_str());
+                downgrade_constrained_atoms.insert(blk_id);
+                continue;
+            }
 
-            for (AtomBlockId neighbor_blk : neighbor_blocks) {
-                int neighbor_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(constrained_location,
-                                                                                                  neighbor_blk,
-                                                                                                  atom_nlist,
-                                                                                                  list_of_pack_patterns);
-                if (neighbor_pattern_idx >= 0) {
-                    effective_constrained_blk = neighbor_blk;
-                    constrained_pattern_idx = neighbor_pattern_idx;
+            const t_pack_patterns& constrained_pattern = list_of_pack_patterns[constrained_pattern_idx];
+            AtomBlockId molecule_seed_blk = effective_constrained_blk;
+            if (!primitive_type_feasible(molecule_seed_blk, constrained_pattern.root_block->pb_type)) {
+                molecule_seed_blk = infer_pattern_root_atom_from_constrained_atom(constrained_pattern,
+                                                                                  effective_constrained_blk,
+                                                                                  atom_molecules_multimap,
+                                                                                  atom_nlist);
+                if (!molecule_seed_blk) {
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                    "Failed to infer root atom for constrained atom '%s' under logical_block_location '%s' (pattern '%s').",
+                                    atom_nlist.block_name(blk_id).c_str(),
+                                    constrained_location.c_str(),
+                                    constrained_pattern.name);
+                }
+            }
+
+            t_pack_molecule trial_molecule;
+            trial_molecule.base_gain = 0.f;
+            trial_molecule.type = e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK;
+            trial_molecule.pack_pattern = const_cast<t_pack_patterns*>(&constrained_pattern);
+            trial_molecule.atom_block_ids = std::vector<AtomBlockId>(constrained_pattern.num_blocks);
+            trial_molecule.root = constrained_pattern.root_block->block_id;
+            trial_molecule.chain_id = MoleculeChainId::INVALID();
+            if (!try_expand_molecule(trial_molecule, molecule_seed_blk, atom_molecules_multimap, atom_nlist)) {
+                VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
+                             "failed to create forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
+                             atom_nlist.block_name(blk_id).c_str(),
+                             constrained_location.c_str(),
+                             atom_nlist.block_name(molecule_seed_blk).c_str(),
+                             constrained_pattern.name);
+                downgrade_constrained_atoms.insert(blk_id);
+                continue;
+            }
+
+            bool constrained_atom_in_trial_molecule = false;
+            for (auto mol_atom : trial_molecule.atom_block_ids) {
+                if (mol_atom == blk_id) {
+                    constrained_atom_in_trial_molecule = true;
                     break;
                 }
             }
-        }
-        if (constrained_pattern_idx < 0) {
-            VTR_LOG_WARN("No matching pack pattern for logical_block_location '%s' on atom '%s'. "
-                         "Falling back to primitive placement constraint only.\n",
-                         constrained_location.c_str(),
-                         atom_nlist.block_name(blk_id).c_str());
-            downgrade_constrained_atoms.insert(blk_id);
-            continue;
-        }
-
-        const t_pack_patterns& constrained_pattern = list_of_pack_patterns[constrained_pattern_idx];
-        AtomBlockId molecule_seed_blk = effective_constrained_blk;
-        if (!primitive_type_feasible(molecule_seed_blk, constrained_pattern.root_block->pb_type)) {
-            molecule_seed_blk = infer_pattern_root_atom_from_constrained_atom(constrained_pattern,
-                                                                              effective_constrained_blk,
-                                                                              atom_molecules_multimap,
-                                                                              atom_nlist);
-            if (!molecule_seed_blk) {
-                VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                                "Failed to infer root atom for constrained atom '%s' under logical_block_location '%s' (pattern '%s').",
-                                atom_nlist.block_name(blk_id).c_str(),
-                                constrained_location.c_str(),
-                                constrained_pattern.name);
+            if (!constrained_atom_in_trial_molecule) {
+                VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
+                             "constructed molecule does not include constrained atom. Falling back to best-effort packing.\n",
+                             atom_nlist.block_name(blk_id).c_str(),
+                             constrained_location.c_str());
+                downgrade_constrained_atoms.insert(blk_id);
+                continue;
             }
-        }
 
-        t_pack_molecule trial_molecule;
-        trial_molecule.base_gain = 0.f;
-        trial_molecule.type = e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK;
-        trial_molecule.pack_pattern = const_cast<t_pack_patterns*>(&constrained_pattern);
-        trial_molecule.atom_block_ids = std::vector<AtomBlockId>(constrained_pattern.num_blocks);
-        trial_molecule.root = constrained_pattern.root_block->block_id;
-        trial_molecule.chain_id = MoleculeChainId::INVALID();
-        if (!try_expand_molecule(trial_molecule, molecule_seed_blk, atom_molecules_multimap, atom_nlist)) {
-            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
-                         "failed to create forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
-                         atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location.c_str(),
-                         atom_nlist.block_name(molecule_seed_blk).c_str(),
-                         constrained_pattern.name);
-            downgrade_constrained_atoms.insert(blk_id);
-            continue;
-        }
-
-        bool constrained_atom_in_trial_molecule = false;
-        for (auto mol_atom : trial_molecule.atom_block_ids) {
-            if (mol_atom == blk_id) {
-                constrained_atom_in_trial_molecule = true;
-                break;
+            PackMoleculeId constrained_molecule_id = try_create_molecule(constrained_pattern_idx,
+                                                                         molecule_seed_blk,
+                                                                         atom_molecules_multimap,
+                                                                         atom_nlist);
+            if (!constrained_molecule_id.is_valid()) {
+                VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
+                             "failed to commit forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
+                             atom_nlist.block_name(blk_id).c_str(),
+                             constrained_location.c_str(),
+                             atom_nlist.block_name(molecule_seed_blk).c_str(),
+                             constrained_pattern.name);
+                downgrade_constrained_atoms.insert(blk_id);
+                continue;
             }
-        }
-        if (!constrained_atom_in_trial_molecule) {
-            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
-                         "constructed molecule does not include constrained atom. Falling back to best-effort packing.\n",
-                         atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location.c_str());
-            downgrade_constrained_atoms.insert(blk_id);
-            continue;
-        }
 
-        PackMoleculeId constrained_molecule_id = try_create_molecule(constrained_pattern_idx,
-                                                                     molecule_seed_blk,
-                                                                     atom_molecules_multimap,
-                                                                     atom_nlist);
-        if (!constrained_molecule_id.is_valid()) {
-            VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
-                         "failed to commit forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
-                         atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location.c_str(),
-                         atom_nlist.block_name(molecule_seed_blk).c_str(),
-                         constrained_pattern.name);
-            downgrade_constrained_atoms.insert(blk_id);
-            continue;
-        }
+            t_pack_molecule& constrained_molecule = pack_molecules_[constrained_molecule_id];
 
-        t_pack_molecule& constrained_molecule = pack_molecules_[constrained_molecule_id];
+            constrained_molecule.base_gain = constrained_molecule.atom_block_ids.size() - (constrained_molecule.pack_pattern->base_cost / 100);
 
-        constrained_molecule.base_gain = constrained_molecule.atom_block_ids.size() - (constrained_molecule.pack_pattern->base_cost / 100);
-
-        VTR_LOG("Constrained molecule created for atom '%s': pattern '%s', seed '%s'\n",
-                atom_nlist.block_name(blk_id).c_str(),
-                constrained_pattern.name,
-                atom_nlist.block_name(molecule_seed_blk).c_str());
-        for (auto mol_atom : constrained_molecule.atom_block_ids) {
-            if (!mol_atom) continue;
-            LogicalModelId model_id = atom_nlist.block_model(mol_atom);
-            VTR_LOG("  - molecule atom '%s' model '%s'\n",
-                    atom_nlist.block_name(mol_atom).c_str(),
-                    g_vpr_ctx.device().arch->models.get_model(model_id).name);
+            VTR_LOG("Constrained molecule created for atom '%s': pattern '%s', seed '%s'\n",
+                    atom_nlist.block_name(blk_id).c_str(),
+                    constrained_pattern.name,
+                    atom_nlist.block_name(molecule_seed_blk).c_str());
+            for (auto mol_atom : constrained_molecule.atom_block_ids) {
+                if (!mol_atom) continue;
+                LogicalModelId model_id = atom_nlist.block_model(mol_atom);
+                VTR_LOG("  - molecule atom '%s' model '%s'\n",
+                        atom_nlist.block_name(mol_atom).c_str(),
+                        g_vpr_ctx.device().arch->models.get_model(model_id).name);
+            }
         }
     }
 

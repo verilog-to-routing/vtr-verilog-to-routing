@@ -145,6 +145,11 @@ class UserPlaceConstraints {
      */
     const std::string get_atom_logical_block_location(AtomBlockId blk_id) const;
 
+    /**
+     * @brief Returns true if any atom has a logical_block_location constraint.
+     */
+    bool has_atom_logical_block_location_constraints() const;
+
   private:
     /**
      * Store logical block type constraints for each partition

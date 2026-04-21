@@ -105,6 +105,10 @@ const std::string UserPlaceConstraints::get_atom_logical_block_location(AtomBloc
     return it->second;
 }
 
+bool UserPlaceConstraints::has_atom_logical_block_location_constraints() const {
+    return !atom_logical_block_locations_.empty();
+}
+
 void print_placement_constraints(FILE* fp, const UserPlaceConstraints& constraints) {
     std::vector<AtomBlockId> atoms;
 
