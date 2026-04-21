@@ -175,18 +175,18 @@ static bool logical_block_location_matches_pb(const std::string& logical_block_l
 
 static bool check_logical_block_location_constraint(const AtomBlockId blk_id, const t_pb* pb, int verbosity) {
     const auto& constraints = g_vpr_ctx.floorplanning().constraints;
-    const std::string* logical_block_location = constraints.get_atom_logical_block_location(blk_id);
-    if (logical_block_location == nullptr || logical_block_location->empty()) {
+    const std::string logical_block_location = constraints.get_atom_logical_block_location(blk_id);
+    if (logical_block_location.empty()) {
         return true;
     }
-    if (logical_block_location_matches_pb(*logical_block_location, pb)) {
+    if (logical_block_location_matches_pb(logical_block_location, pb)) {
         return true;
     }
 
     VTR_LOGV(verbosity > 3,
              "\t\t\tFAILED logical_block_location constraint: atom '%s' expected '%s' but candidate '%s'\n",
              g_vpr_ctx.atom().netlist().block_name(blk_id).c_str(),
-             logical_block_location->c_str(),
+             logical_block_location.c_str(),
              pb->hierarchical_type_name().c_str());
     return false;
 }

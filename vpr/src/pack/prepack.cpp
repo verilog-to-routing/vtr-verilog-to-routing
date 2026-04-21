@@ -1090,8 +1090,8 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
 
     // Resolve logical_block_location into concrete t_pack_patterns and apply first.
     for (auto blk_id : atom_nlist.blocks()) {
-        const std::string* constrained_location = place_constraints.get_atom_logical_block_location(blk_id);
-        if (constrained_location == nullptr) {
+        const std::string constrained_location = place_constraints.get_atom_logical_block_location(blk_id);
+        if (constrained_location.empty()) {
             continue;
         }
         if (atom_molecules_multimap.count(blk_id) > 0) {
@@ -1100,7 +1100,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         }
 
         AtomBlockId effective_constrained_blk = blk_id;
-        int constrained_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(*constrained_location,
+        int constrained_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(constrained_location,
                                                                                              effective_constrained_blk,
                                                                                              atom_nlist,
                                                                                              list_of_pack_patterns);
@@ -1130,7 +1130,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             }
 
             for (AtomBlockId neighbor_blk : neighbor_blocks) {
-                int neighbor_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(*constrained_location,
+                int neighbor_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(constrained_location,
                                                                                                   neighbor_blk,
                                                                                                   atom_nlist,
                                                                                                   list_of_pack_patterns);
@@ -1144,7 +1144,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         if (constrained_pattern_idx < 0) {
             VTR_LOG_WARN("No matching pack pattern for logical_block_location '%s' on atom '%s'. "
                          "Falling back to primitive placement constraint only.\n",
-                         constrained_location->c_str(),
+                         constrained_location.c_str(),
                          atom_nlist.block_name(blk_id).c_str());
             downgrade_constrained_atoms.insert(blk_id);
             continue;
@@ -1161,7 +1161,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
                                 "Failed to infer root atom for constrained atom '%s' under logical_block_location '%s' (pattern '%s').",
                                 atom_nlist.block_name(blk_id).c_str(),
-                                constrained_location->c_str(),
+                                constrained_location.c_str(),
                                 constrained_pattern.name);
             }
         }
@@ -1177,7 +1177,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
                          "failed to create forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
                          atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location->c_str(),
+                         constrained_location.c_str(),
                          atom_nlist.block_name(molecule_seed_blk).c_str(),
                          constrained_pattern.name);
             downgrade_constrained_atoms.insert(blk_id);
@@ -1195,7 +1195,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
                          "constructed molecule does not include constrained atom. Falling back to best-effort packing.\n",
                          atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location->c_str());
+                         constrained_location.c_str());
             downgrade_constrained_atoms.insert(blk_id);
             continue;
         }
@@ -1207,7 +1207,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
                          "forced edge has fanout > 1. Falling back to best-effort packing.\n",
                          atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location->c_str());
+                         constrained_location.c_str());
             for (AtomBlockId mol_atom : trial_molecule.atom_block_ids) {
                 if (mol_atom) {
                     downgrade_constrained_atoms.insert(mol_atom);
@@ -1224,7 +1224,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             VTR_LOG_WARN("Downgraded constrained forced-pack for atom '%s' at logical_block_location '%s': "
                          "failed to commit forced molecule (seed '%s', pattern '%s'). Falling back to best-effort packing.\n",
                          atom_nlist.block_name(blk_id).c_str(),
-                         constrained_location->c_str(),
+                         constrained_location.c_str(),
                          atom_nlist.block_name(molecule_seed_blk).c_str(),
                          constrained_pattern.name);
             downgrade_constrained_atoms.insert(blk_id);

@@ -100,7 +100,7 @@ void UserPlaceConstraints::set_atom_logical_block_location(AtomBlockId blk_id, c
 const std::string UserPlaceConstraints::get_atom_logical_block_location(AtomBlockId blk_id) const {
     auto it = atom_logical_block_locations_.find(blk_id);
     if (it == atom_logical_block_locations_.end()) {
-        return nullptr;
+        return std::string();
     }
     return it->second;
 }
