@@ -1325,6 +1325,7 @@ struct t_router_opts {
     e_router_lookahead lookahead_type;
     double initial_acc_cost_chan_congestion_threshold;
     double initial_acc_cost_chan_congestion_weight;
+    float router_lookahead_interposer_base_cut_multiplier; ///< Multiplier to apply for base cost of interposer wires in the router lookahead
     int max_convergence_count;
     int route_verbosity;
     float reconvergence_cpd_threshold;

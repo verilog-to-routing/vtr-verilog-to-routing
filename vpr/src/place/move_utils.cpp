@@ -531,6 +531,15 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
         for (const t_pl_macro_member& macro_member : macro.members) {
             t_pl_loc member_to_pos = head_to_pos + macro_member.offset;
 
+            // Sometimes macro members could be placed outside of device bounds. We need to check for that here to avoid segfaults
+            // when we're calling device_ctx.grid.are_locs_on_same_die later
+            if (member_to_pos.x < 0 || member_to_pos.x >= int(device_ctx.grid.width())
+                || member_to_pos.y < 0 || member_to_pos.y >= int(device_ctx.grid.height())
+                || member_to_pos.layer < 0
+                || member_to_pos.layer >= int(device_ctx.grid.get_num_layers())) {
+                return false;
+            }
+
             bool same_die = device_ctx.grid.are_locs_on_same_die({head_to_pos.x, head_to_pos.y, head_to_pos.layer},
                                                                  {member_to_pos.x, member_to_pos.y, member_to_pos.layer});
 

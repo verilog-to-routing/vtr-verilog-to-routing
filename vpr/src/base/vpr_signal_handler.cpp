@@ -17,10 +17,7 @@
 #include "read_place.h"
 #include "read_route.h"
 
-// Currently safe_write uses the POSIX write system call. This could be extended to other platforms in the future.
-#if defined(__unix__)
-#include "unistd.h"
-#endif
+#include <unistd.h>
 
 #include "string.h"
 

@@ -62,6 +62,8 @@
  * \endinternal
  */
 
+#include <vector>
+
 #include "metadata_storage.h"
 #include "rr_graph_fwd.h"
 #include "rr_node.h"
@@ -238,7 +240,7 @@ class RRGraphView {
     inline char node_layer_low(RRNodeId node) const {
         return node_storage_.node_layer_low(node);
     }
-    
+
     /** 
      * @brief Return the bend start of a specified node.
      * @param node The node id
@@ -602,7 +604,6 @@ class RRGraphView {
     inline vtr::StrongIdRange<RREdgeId> all_edges() const {
         return node_storage_.all_edges();
     }
-
 
     /**
      * @brief Return ID range for outgoing edges.
