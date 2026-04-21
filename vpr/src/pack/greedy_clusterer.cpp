@@ -74,13 +74,20 @@ struct t_cluster_progress_stats {
 
 const char* pack_status_to_cstr(e_block_pack_status status) {
     switch (status) {
-        case e_block_pack_status::BLK_PASSED: return "passed";
-        case e_block_pack_status::BLK_FAILED_FEASIBLE: return "failed_feasible";
-        case e_block_pack_status::BLK_FAILED_ROUTE: return "failed_route";
-        case e_block_pack_status::BLK_FAILED_FLOORPLANNING: return "failed_floorplanning";
-        case e_block_pack_status::BLK_FAILED_NOC_GROUP: return "failed_noc_group";
-        case e_block_pack_status::BLK_STATUS_UNDEFINED: return "undefined";
-        default: return "unknown";
+        case e_block_pack_status::BLK_PASSED:
+            return "passed";
+        case e_block_pack_status::BLK_FAILED_FEASIBLE:
+            return "failed_feasible";
+        case e_block_pack_status::BLK_FAILED_ROUTE:
+            return "failed_route";
+        case e_block_pack_status::BLK_FAILED_FLOORPLANNING:
+            return "failed_floorplanning";
+        case e_block_pack_status::BLK_FAILED_NOC_GROUP:
+            return "failed_noc_group";
+        case e_block_pack_status::BLK_STATUS_UNDEFINED:
+            return "undefined";
+        default:
+            return "unknown";
     }
 }
 

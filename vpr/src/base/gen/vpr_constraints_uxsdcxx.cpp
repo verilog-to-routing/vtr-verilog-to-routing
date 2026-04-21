@@ -12,5 +12,4 @@
 /* All uxsdcxx functions and structs live in this namespace. */
 namespace uxsd {
 
-
 } /* namespace uxsd */

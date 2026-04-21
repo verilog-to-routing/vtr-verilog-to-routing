@@ -1101,9 +1101,9 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
 
         AtomBlockId effective_constrained_blk = blk_id;
         int constrained_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(*constrained_location,
-                                                                                              effective_constrained_blk,
-                                                                                              atom_nlist,
-                                                                                              list_of_pack_patterns);
+                                                                                             effective_constrained_blk,
+                                                                                             atom_nlist,
+                                                                                             list_of_pack_patterns);
         if (constrained_pattern_idx < 0) {
             std::vector<AtomBlockId> neighbor_blocks;
             for (AtomPinId pin : atom_nlist.block_input_pins(blk_id)) {
@@ -1131,9 +1131,9 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
 
             for (AtomBlockId neighbor_blk : neighbor_blocks) {
                 int neighbor_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(*constrained_location,
-                                                                                                   neighbor_blk,
-                                                                                                   atom_nlist,
-                                                                                                   list_of_pack_patterns);
+                                                                                                  neighbor_blk,
+                                                                                                  atom_nlist,
+                                                                                                  list_of_pack_patterns);
                 if (neighbor_pattern_idx >= 0) {
                     effective_constrained_blk = neighbor_blk;
                     constrained_pattern_idx = neighbor_pattern_idx;
@@ -1422,7 +1422,6 @@ static bool forced_pack_molecule_has_multifanout_edge(const t_pack_molecule& mol
     }
     return false;
 }
-
 
 static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
     t_pack_pattern_connections *connection, *next;

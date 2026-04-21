@@ -388,7 +388,6 @@ class Prepacker {
     ///        for the lifetime of the molecules.
     std::vector<t_pack_patterns> list_of_pack_patterns;
 
-
     /**
      * @brief Lookup between each chain ID and the information associated with
      *        that chain.
