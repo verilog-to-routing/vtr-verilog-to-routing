@@ -234,10 +234,9 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
     std::stable_sort(seed_mols_.begin(), seed_mols_.end(), by_descending_gain);
 
     // If there are RAM groups, move RAM seeds to the front so that RAM clusters
-    // are formed before non-RAM clusters. This ensures that the dedicated RAM
-    // candidate path (which offers only atoms from the same physical RAM group)
-    // has full freedom to pack RAM atoms together without non-RAM clusters
-    // having already claimed some of them.
+    // are formed first. Since the RAM mapper has full information about which
+    // atoms belong together, packing RAM clusters early gives non-RAM clusters
+    // transitive connectivity information and makes ordering more intuitive.
     if (ram_mapper.num_groups() > 0) {
         std::stable_partition(seed_mols_.begin(), seed_mols_.end(),
                               [&](PackMoleculeId mol_id) {
