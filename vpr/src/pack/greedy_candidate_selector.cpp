@@ -261,7 +261,7 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
 
-    if (cluster_gain_stats.is_memory) {
+    if (has_ram_groups_ && cluster_gain_stats.is_memory) {
         cluster_gain_stats.logical_ram_id = ram_mapper_.group_id_of(seed_atom);
         cluster_gain_stats.physical_ram_id = ram_mapper_.physical_group_id_of(seed_atom);
 
