@@ -1212,7 +1212,9 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         auto blocks = atom_nlist.blocks();
         for (auto blk_iter = blocks.begin(); blk_iter != blocks.end(); ++blk_iter) {
             auto blk_id = *blk_iter;
-            if (downgrade_constrained_atoms.count(blk_id) && !list_of_pack_patterns[best_pattern].is_chain) {
+            if (enable_logical_block_location_constraints
+                && downgrade_constrained_atoms.count(blk_id)
+                && !list_of_pack_patterns[best_pattern].is_chain) {
                 continue;
             }
 
@@ -1486,6 +1488,8 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
                                   const AtomNetlist& atom_nlist) {
+    const bool enable_logical_block_location_constraints =
+        g_vpr_ctx.floorplanning().constraints.has_atom_logical_block_location_constraints();
     const t_model_ports* from_port_model = connections.from_pin->port->model_port;
     const int from_pin_number = connections.from_pin->pin_number;
     auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
@@ -1506,9 +1510,14 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     const auto& net_sinks = atom_nlist.net_sinks(net_id);
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
+    bool connected_to_latch = false;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+        if (!enable_logical_block_location_constraints
+            && !atom_nlist.block_is_combinational(sink_block_id)) {
+            connected_to_latch = true;
+        }
         if (primitive_type_feasible(sink_block_id, to_pb_type)) {
             auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
             auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
@@ -1516,6 +1525,11 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
                 pattern_sink_block_id = sink_block_id;
             }
         }
+    }
+    if (!enable_logical_block_location_constraints
+        && connected_to_latch
+        && net_sinks.size() > 1) {
+        pattern_sink_block_id = AtomBlockId::INVALID();
     }
     return pattern_sink_block_id;
 }
@@ -1530,6 +1544,8 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist) {
+    const bool enable_logical_block_location_constraints =
+        g_vpr_ctx.floorplanning().constraints.has_atom_logical_block_location_constraints();
     auto to_port_model = connections.to_pin->port->model_port;
     auto to_pin_number = connections.to_pin->pin_number;
     auto to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
@@ -1539,7 +1555,9 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     }
 
     auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
-    if (net_id) {
+    if (net_id
+        && (enable_logical_block_location_constraints
+            || atom_nlist.net_sinks(net_id).size() == 1)) {
         auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
         if (to_port_model->is_clock) {
@@ -1560,6 +1578,8 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
 }
 
 static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern) {
+    const bool enable_logical_block_location_constraints =
+        g_vpr_ctx.floorplanning().constraints.has_atom_logical_block_location_constraints();
     std::unordered_set<t_pb_type*> pattern_blocks;
 
     t_pack_pattern_connections* connections = pack_pattern.root_block->connections;
@@ -1595,9 +1615,11 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
             visited_from_pins.insert(current_connenction->from_pin);
             visited_to_pins.insert(current_connenction->to_pin);
 
-            /* Both endpoints belong to the pattern block graph */
+            /* Always include from-pin endpoint; to-pin endpoint only for logical_block_location flow */
             pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
-            pattern_blocks.insert(current_connenction->to_pin->port->parent_pb_type);
+            if (enable_logical_block_location_constraints) {
+                pattern_blocks.insert(current_connenction->to_pin->port->parent_pb_type);
+            }
             pack_pattern_blocks.push(current_connenction->to_block);
             current_connenction = current_connenction->next;
         }
