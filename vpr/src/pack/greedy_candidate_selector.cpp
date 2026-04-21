@@ -268,7 +268,8 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
         // Set the candidate propose limit to number of atoms in the physical RAM group.
         cluster_gain_stats.candidates_propose_limit = ram_mapper_.physical_ram_group(cluster_gain_stats.physical_ram_id).atoms.size();
         VTR_LOGV(log_verbosity_ > 2, "Cluster of seed atom %zu is a memory cluster in logical RAM group %zu, physical RAM group %zu.\n"
-                 "\tCandidate propose limit set to physical RAM group atom count: %u.\n", size_t(seed_atom), size_t(cluster_gain_stats.logical_ram_id),
+                                     "\tCandidate propose limit set to physical RAM group atom count: %u.\n",
+                 size_t(seed_atom), size_t(cluster_gain_stats.logical_ram_id),
                  size_t(cluster_gain_stats.physical_ram_id), cluster_gain_stats.candidates_propose_limit);
     }
 
