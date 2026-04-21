@@ -3143,6 +3143,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<float>(args.router_lookahead_interposer_base_cut_multiplier, "--router_lookahead_interposer_base_cut_multiplier")
+        .help("Multiplier applied to base cost of interposer wires for the router lookahead.")
+        .default_value("2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
         .help(
             "Controls how many times the router is allowed to converge to a legal routing before halting."

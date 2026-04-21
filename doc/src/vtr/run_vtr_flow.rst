@@ -249,6 +249,13 @@ Detailed Command-line Options
     
     **Default:** default
 
+.. option:: -synthesis_params <SYNTHESIS_PARAMS>
+
+    Specify additional synthesis parameters that are directly appended to the ``parmys`` command in the **default** synthesis flow. (e.g., ``-mults_ratio 0.5``, ``-exact_mults 0``).
+    For users using a **custom** Yosys script with ``-yosys_script``, this option acts as a dynamic substitute for the ``YYY`` placeholder (if present).
+
+    **Default:** "" (empty string)
+
 .. note::
 
     Yosys-Slang is a Yosys plugin that is built on top of the slang library to provide comprehensive SystemVerilog support.

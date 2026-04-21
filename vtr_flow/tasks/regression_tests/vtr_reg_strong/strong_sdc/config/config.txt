@@ -31,3 +31,5 @@ script_params_list_add = -sdc_file sdc/samples/C.sdc
 script_params_list_add = -sdc_file sdc/samples/D.sdc
 script_params_list_add = -sdc_file sdc/samples/E.sdc
 script_params_list_add = -sdc_file sdc/samples/F.sdc
+script_params_list_add = -sdc_file sdc/samples/create_clock/sink_pin_targets.sdc
+script_params_list_add = -sdc_file sdc/samples/create_clock/sink_pin_targets_2.sdc

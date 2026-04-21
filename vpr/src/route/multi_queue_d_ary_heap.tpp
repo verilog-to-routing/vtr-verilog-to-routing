@@ -107,7 +107,16 @@ class MultiQueueIO {
         // std::uniform_real_distribution<> distribution(min,max);
         // return distribution(generator);
         static uint64_t modMask = NUM_QUEUES - 1;
+        // On macOS, pthread_t is an opaque pointer type (not an integer), so it cannot
+        // be directly assigned to uint64_t. Use pthread_mach_thread_np() to obtain a
+        // numeric (Mach) thread ID instead.
+        // __APPLE__ checks for any Mac OS, __MACH__ checks it is unix-based (modern).
+#if defined(__APPLE__) && defined(__MACH__)
+        static thread_local pthread_t self_thread = pthread_self();
+        static thread_local uint64_t x = (uint64_t)pthread_mach_thread_np(self_thread);
+#else
         static thread_local uint64_t x = pthread_self();
+#endif
         uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
         z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
         z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
@@ -408,7 +417,7 @@ inline void stat() const {
 // Note: this is only called at the end of algorithm as a
 // sanity check, therefore it is not lock protected.
 inline bool empty() const {
-    for (uint i = 0; i < NUM_QUEUES; i++) {
+    for (uint64_t i = 0; i < NUM_QUEUES; i++) {
         if (!queues[i].pq.empty()) {
             return false;
         }
