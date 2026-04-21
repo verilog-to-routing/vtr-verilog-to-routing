@@ -105,6 +105,7 @@ class CRRConnectionBuilder {
         std::string seg_type;
         int seg_index;
         int tap;
+        std::string pin_name;
 
         SegmentInfo()
             : side(e_sw_template_dir::NUM_SIDES)
@@ -127,6 +128,10 @@ class CRRConnectionBuilder {
                                     int y,
                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
+
+    int resolve_pin_ptc(const SegmentInfo& info,
+                        int x,
+                        int y) const;
 
     RRNodeId process_channel_node(const SegmentInfo& info,
                                   int x,
