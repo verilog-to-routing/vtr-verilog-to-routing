@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+﻿<?xml version="1.0"?>
 <!--
 
   XML 1.0 Schema for vpr constraints structure
@@ -27,7 +27,7 @@
   <xs:complexType name="add_atom">
     <xs:attribute name="name_pattern" type="xs:string" use="required"/>
     <xs:attribute name="is_regex" type="xs:string" default="false"/>
-    <xs:attribute name="logical_block_location" type="xs:string" use="required"/>
+    <xs:attribute name="logical_block_location" type="xs:string" use="optional"/>
   </xs:complexType>
 
   <xs:complexType name="add_region">

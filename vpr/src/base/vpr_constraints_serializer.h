@@ -129,7 +129,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * <xs:complexType name="add_atom">
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      *   <xs:attribute name="is_regex" type="xs:boolean" default="false" />
-     *   <xs:attribute name="logical_block_location" type="xs:string" use="required" />
+     *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
      * </xs:complexType>
      */
     virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
@@ -149,7 +149,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline const char* get_add_atom_logical_block_location(AtomBlockId& /*blk_id*/) final {
         // Only used when writing constraints XML; atom netlist does not store this string.
-        return "";
+        return logical_block_location_.c_str();
     }
 
     virtual inline void set_add_atom_logical_block_location(const char* logical_block_location, void*& /*ctx*/) final {
