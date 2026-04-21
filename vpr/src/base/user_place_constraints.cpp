@@ -97,12 +97,12 @@ void UserPlaceConstraints::set_atom_logical_block_location(AtomBlockId blk_id, c
     atom_logical_block_locations_[blk_id] = logical_block_location;
 }
 
-const std::string* UserPlaceConstraints::get_atom_logical_block_location(AtomBlockId blk_id) const {
+const std::string UserPlaceConstraints::get_atom_logical_block_location(AtomBlockId blk_id) const {
     auto it = atom_logical_block_locations_.find(blk_id);
     if (it == atom_logical_block_locations_.end()) {
         return nullptr;
     }
-    return &it->second;
+    return it->second;
 }
 
 void print_placement_constraints(FILE* fp, const UserPlaceConstraints& constraints) {
