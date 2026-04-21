@@ -72,25 +72,6 @@ struct t_cluster_progress_stats {
     int mols_since_last_print = 0;
 };
 
-const char* pack_status_to_cstr(e_block_pack_status status) {
-    switch (status) {
-        case e_block_pack_status::BLK_PASSED:
-            return "passed";
-        case e_block_pack_status::BLK_FAILED_FEASIBLE:
-            return "failed_feasible";
-        case e_block_pack_status::BLK_FAILED_ROUTE:
-            return "failed_route";
-        case e_block_pack_status::BLK_FAILED_FLOORPLANNING:
-            return "failed_floorplanning";
-        case e_block_pack_status::BLK_FAILED_NOC_GROUP:
-            return "failed_noc_group";
-        case e_block_pack_status::BLK_STATUS_UNDEFINED:
-            return "undefined";
-        default:
-            return "unknown";
-    }
-}
-
 } // namespace
 
 GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
@@ -477,15 +458,11 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     bool success = false;
     t_logical_block_type_ptr block_type;
     LegalizationClusterId new_cluster_id;
-    std::vector<std::string> failure_diagnostics;
     for (auto type : candidate_types) {
         //Try packing into each mode
         e_block_pack_status pack_result = e_block_pack_status::BLK_STATUS_UNDEFINED;
-        std::stringstream type_diag;
-        type_diag << "type '" << type->name << "':";
         for (int j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
             std::tie(pack_result, new_cluster_id) = cluster_legalizer.start_new_cluster(seed_mol_id, type, j);
-            type_diag << " mode[" << j << "]=" << pack_status_to_cstr(pack_result);
             success = (pack_result == e_block_pack_status::BLK_PASSED);
         }
 
@@ -496,7 +473,6 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             break;
         } else {
             VTR_LOGV(log_verbosity_ > 2, "\tFAILED_SEED: Block Type %s\n", type->name.c_str());
-            failure_diagnostics.push_back(type_diag.str());
         }
     }
 
@@ -508,34 +484,22 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             }
             candidate_types_str << candidate_types[i]->name;
         }
-        std::stringstream failure_reason_str;
-        for (size_t i = 0; i < failure_diagnostics.size(); ++i) {
-            if (i > 0) {
-                failure_reason_str << "; ";
-            }
-            failure_reason_str << failure_diagnostics[i];
-        }
-
         //Explored all candidates
         if (seed_mol.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
                             "\tPattern %s %s\n"
-                            "\tCandidate logical block types: %s\n"
-                            "\tPer-type mode legalization results: %s\n",
+                            "\tCandidate logical block types: %s\n",
                             seed_mol.pack_pattern->name,
                             root_atom_name.c_str(),
-                            candidate_types_str.str().c_str(),
-                            failure_reason_str.str().c_str());
+                            candidate_types_str.str().c_str());
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
                             "\tAtom %s (%s)\n"
-                            "\tCandidate logical block types: %s\n"
-                            "\tPer-type mode legalization results: %s\n",
+                            "\tCandidate logical block types: %s\n",
                             root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str(),
-                            candidate_types_str.str().c_str(),
-                            failure_reason_str.str().c_str());
+                            candidate_types_str.str().c_str());
         }
     }
 
