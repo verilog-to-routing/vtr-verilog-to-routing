@@ -1316,7 +1316,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     // Get the molecule object.
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
-    std::string failure_reason = "unknown";
 
     if (log_verbosity_ > 3) {
         AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
@@ -1398,7 +1397,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
-            failure_reason = "no_candidate_primitives";
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
@@ -1432,9 +1430,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          prepacker_,
                                                          clustering_chain_info_,
                                                          mutable_atom_pb_lookup());
-            if (block_pack_status != e_block_pack_status::BLK_PASSED) {
-                failure_reason = "place_atom_block_failed@" + std::to_string(i_mol) + ":" + atom_ctx.netlist().block_name(atom_blk_id);
-            }
         }
 
         if (enable_pin_feasibility_filter_ && block_pack_status == e_block_pack_status::BLK_PASSED) {
@@ -1443,7 +1438,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             try_update_lookahead_pins_used(cluster.pb, atom_cluster_, atom_pb_lookup());
             if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
                 VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
-                failure_reason = "pin_feasibility_filter_failed";
                 block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             } else {
                 VTR_LOGV(log_verbosity_ > 3, "\t\t\tPin Feasibility: Passed pin feasibility filter\n");
@@ -1548,7 +1542,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             if (do_detailed_routing_stage && legality == e_ecn_legality::ILLEGAL) {
                 /* Cannot pack */
                 VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Detailed Routing Legality\n");
-                failure_reason = "intra_lb_routing_illegal";
                 block_pack_status = e_block_pack_status::BLK_FAILED_ROUTE;
             } else {
                 /* Pack successful, commit
@@ -1653,10 +1646,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // Reset the cluster placement stats after packing a molecule.
     // TODO: Not sure if this has to go here, but it makes sense to do it.
     reset_tried_but_unused_cluster_placements(cluster.placement_stats);
-
-    if (block_pack_status != e_block_pack_status::BLK_PASSED) {
-        VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule final reason: %s\n", failure_reason.c_str());
-    }
 
     return block_pack_status;
 }
