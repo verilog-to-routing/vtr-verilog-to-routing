@@ -39,7 +39,6 @@
 #include "greedy_clusterer.h"
 #include <cstdio>
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 #include "appack_context.h"
@@ -477,29 +476,18 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     }
 
     if (!success) {
-        std::stringstream candidate_types_str;
-        for (size_t i = 0; i < candidate_types.size(); ++i) {
-            if (i > 0) {
-                candidate_types_str << ", ";
-            }
-            candidate_types_str << candidate_types[i]->name;
-        }
         //Explored all candidates
         if (seed_mol.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tPattern %s %s\n"
-                            "\tCandidate logical block types: %s\n",
+                            "\tPattern %s %s\n",
                             seed_mol.pack_pattern->name,
-                            root_atom_name.c_str(),
-                            candidate_types_str.str().c_str());
+                            root_atom_name.c_str());
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
-                            "\tAtom %s (%s)\n"
-                            "\tCandidate logical block types: %s\n",
-                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str(),
-                            candidate_types_str.str().c_str());
+                            "\tAtom %s (%s)\n",
+                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str());
         }
     }
 
