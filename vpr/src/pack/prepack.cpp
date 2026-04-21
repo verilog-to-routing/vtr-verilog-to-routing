@@ -28,6 +28,7 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
+#include "logic_block_location_util.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_time.h"
@@ -137,13 +138,6 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
 
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
 
-struct t_logical_block_location_fields {
-    std::string mode_or_pattern_name;
-    std::string primitive_name;
-    std::vector<std::string> hierarchy_tokens;
-};
-
-static t_logical_block_location_fields parse_logical_block_location(const std::string& logical_block_location);
 static int resolve_pack_pattern_index_from_logical_block_location(const std::string& logical_block_location,
                                                                   AtomBlockId blk_id,
                                                                   const AtomNetlist& atom_nlist,
@@ -842,61 +836,17 @@ t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(co
     return best;
 }
 
-static t_logical_block_location_fields parse_logical_block_location(const std::string& logical_block_location) {
-    t_logical_block_location_fields fields;
-
-    auto lbrace = logical_block_location.find('{');
-    if (lbrace != std::string::npos) {
-        auto rbrace = logical_block_location.find('}', lbrace + 1);
-        if (rbrace != std::string::npos && rbrace > lbrace + 1) {
-            fields.mode_or_pattern_name = logical_block_location.substr(lbrace + 1, rbrace - lbrace - 1);
-        }
-    }
-
-    std::string location_no_braces = logical_block_location;
-    if (lbrace != std::string::npos) {
-        auto rbrace = location_no_braces.find('}', lbrace + 1);
-        if (rbrace != std::string::npos) {
-            location_no_braces.erase(lbrace, rbrace - lbrace + 1);
-        }
-    }
-
-    size_t token_start = 0;
-    while (token_start <= location_no_braces.size()) {
-        size_t token_end = location_no_braces.find('.', token_start);
-        std::string token = (token_end == std::string::npos)
-                                ? location_no_braces.substr(token_start)
-                                : location_no_braces.substr(token_start, token_end - token_start);
-        size_t bracket = token.find('[');
-        if (bracket != std::string::npos) {
-            token = token.substr(0, bracket);
-        }
-        if (!token.empty()) {
-            fields.hierarchy_tokens.push_back(token);
-        }
-        if (token_end == std::string::npos) {
-            break;
-        }
-        token_start = token_end + 1;
-    }
-
-    if (!fields.hierarchy_tokens.empty()) {
-        fields.primitive_name = fields.hierarchy_tokens.back();
-    }
-
-    return fields;
-}
-
 static int resolve_pack_pattern_index_from_logical_block_location(const std::string& logical_block_location,
                                                                   AtomBlockId blk_id,
                                                                   const AtomNetlist& atom_nlist,
                                                                   const std::vector<t_pack_patterns>& list_of_pack_patterns) {
-    auto fields = parse_logical_block_location(logical_block_location);
-    if (fields.primitive_name.empty()) {
+    auto fields = parse_logical_block_location_fields(logical_block_location);
+    if (fields.hierarchy_tokens.empty() || fields.hierarchy_tokens.back().name.empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK,
                         "Invalid logical_block_location '%s': failed to extract primitive token.",
                         logical_block_location.c_str());
     }
+    const std::string& primitive_name = fields.hierarchy_tokens.back().name;
 
     std::vector<int> named_candidates;
     if (!fields.mode_or_pattern_name.empty()) {
@@ -933,7 +883,7 @@ static int resolve_pack_pattern_index_from_logical_block_location(const std::str
         if (!matches_atom) {
             return -1;
         }
-        if (!pattern_block_names.contains(fields.primitive_name)) {
+        if (!pattern_block_names.contains(primitive_name)) {
             return -1;
         }
 
@@ -944,7 +894,7 @@ static int resolve_pack_pattern_index_from_logical_block_location(const std::str
 
         bool mode_name_hit = false;
         for (const auto& token : fields.hierarchy_tokens) {
-            if (pattern_block_names.contains(token)) {
+            if (pattern_block_names.contains(token.name)) {
                 score += 10;
             }
         }
