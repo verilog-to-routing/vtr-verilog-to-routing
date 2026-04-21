@@ -106,26 +106,7 @@ t_logical_block_location_fields parse_logical_block_location_fields(const std::s
         }
     }
 
-    size_t token_start = 0;
-    while (token_start <= location_no_braces.size()) {
-        size_t token_end = location_no_braces.find('.', token_start);
-        std::string token = (token_end == std::string::npos)
-                                ? location_no_braces.substr(token_start)
-                                : location_no_braces.substr(token_start, token_end - token_start);
-        size_t bracket = token.find('[');
-        if (bracket != std::string::npos) {
-            token = token.substr(0, bracket);
-        }
-        if (!token.empty()) {
-            t_logical_location_token parsed;
-            parsed.name = token;
-            fields.hierarchy_tokens.push_back(std::move(parsed));
-        }
-        if (token_end == std::string::npos) {
-            break;
-        }
-        token_start = token_end + 1;
-    }
+    fields.hierarchy_tokens = parse_segmented_tokens(location_no_braces, '.', e_token_format::LOGICAL_LOCATION);
 
     return fields;
 }
