@@ -130,7 +130,7 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
 
 /**
  * @brief Get an unordered set of all pb_types in the given pack pattern
- * 
+ *
  * @param pack_pattern Pack pattern to get pb_types from
  * @return std::unordered_set<t_pb_type*> Set of pb_types in the pack pattern
  */
@@ -836,98 +836,39 @@ t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(co
     return best;
 }
 
+/**
+ * Resolve a logical_block_location string to the best matching pack pattern index.
+ *
+ * Matching is token-based (via logic_block_location_util) instead of plain string equality:
+ *  - the constrained atom must be feasible for at least one block in the pattern
+ *  - the location string must match at least one pattern block hierarchical type
+ *  - optional hints (pattern/mode name and additional hierarchy tokens) are scored
+ * If two candidates tie at the best score, this is treated as ambiguous and fatal.
+ */
 static int resolve_pack_pattern_index_from_logical_block_location(const std::string& logical_block_location,
                                                                   AtomBlockId blk_id,
                                                                   const AtomNetlist& atom_nlist,
                                                                   const std::vector<t_pack_patterns>& list_of_pack_patterns) {
-    auto fields = parse_logical_block_location_fields(logical_block_location);
-    if (fields.hierarchy_tokens.empty() || fields.hierarchy_tokens.back().name.empty()) {
+    auto location_tokens = parse_logical_block_location_tokens(logical_block_location);
+    if (location_tokens.empty() || location_tokens.back().name.empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK,
                         "Invalid logical_block_location '%s': failed to extract primitive token.",
                         logical_block_location.c_str());
     }
-    const std::string& primitive_name = fields.hierarchy_tokens.back().name;
-
-    std::vector<int> named_candidates;
-    if (!fields.mode_or_pattern_name.empty()) {
-        for (size_t i = 0; i < list_of_pack_patterns.size(); ++i) {
-            if (fields.mode_or_pattern_name == list_of_pack_patterns[i].name) {
-                named_candidates.push_back(static_cast<int>(i));
-            }
-        }
-    }
-
-    std::vector<int> candidate_patterns;
-    if (!named_candidates.empty()) {
-        candidate_patterns = named_candidates;
-    } else {
-        candidate_patterns.reserve(list_of_pack_patterns.size());
-        for (size_t i = 0; i < list_of_pack_patterns.size(); ++i) {
-            candidate_patterns.push_back(static_cast<int>(i));
-        }
-    }
-
-    auto pattern_score = [&](int pattern_idx) -> int {
-        const auto& pattern = list_of_pack_patterns[pattern_idx];
-        auto pattern_blocks = get_pattern_blocks(pattern);
-
-        std::unordered_set<std::string> pattern_block_names;
-        bool matches_atom = false;
-        for (auto* pb_type : pattern_blocks) {
-            if (primitive_type_feasible(blk_id, pb_type)) {
-                matches_atom = true;
-            }
-            pattern_block_names.insert(pb_type->name);
-        }
-
-        if (!matches_atom) {
-            return -1;
-        }
-        if (!pattern_block_names.contains(primitive_name)) {
-            return -1;
-        }
-
-        int score = 1000; // base score for feasible + primitive match
-        if (!fields.mode_or_pattern_name.empty() && fields.mode_or_pattern_name == pattern.name) {
-            score += 100;
-        }
-
-        bool mode_name_hit = false;
-        for (const auto& token : fields.hierarchy_tokens) {
-            if (pattern_block_names.contains(token.name)) {
-                score += 10;
-            }
-        }
-
-        if (!fields.mode_or_pattern_name.empty()) {
-            for (auto* pb_type : pattern_blocks) {
-                for (const t_mode* mode = pb_type->parent_mode; mode != nullptr; mode = mode->parent_pb_type ? mode->parent_pb_type->parent_mode : nullptr) {
-                    if (fields.mode_or_pattern_name == mode->name) {
-                        mode_name_hit = true;
-                        break;
-                    }
-                }
-                if (mode_name_hit) {
-                    break;
-                }
-            }
-        }
-        if (mode_name_hit) {
-            score += 80;
-        }
-
-        return score;
-    };
-
+    
     int matched_pattern = -1;
     int best_score = -1;
-    for (int pattern_idx : candidate_patterns) {
-        int score = pattern_score(pattern_idx);
+    for (size_t pattern_idx = 0; pattern_idx < list_of_pack_patterns.size(); ++pattern_idx) {
+        const auto& pattern = list_of_pack_patterns[pattern_idx];
+        int score = score_logical_block_location_pattern_match(location_tokens,
+                                                               blk_id,
+                                                               pattern);
         if (score < 0) {
             continue;
         }
 
         if (score == best_score && matched_pattern != -1) {
+            // Equal best score means we cannot deterministically choose one pattern.
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Ambiguous logical_block_location '%s': multiple matching t_pack_patterns for atom '%s'.",
                             logical_block_location.c_str(),
@@ -935,13 +876,23 @@ static int resolve_pack_pattern_index_from_logical_block_location(const std::str
         }
         if (score > best_score) {
             best_score = score;
-            matched_pattern = pattern_idx;
+            matched_pattern = static_cast<int>(pattern_idx);
         }
     }
 
     return matched_pattern;
 }
 
+/**
+ * Infer the molecule seed atom (pattern root atom) from a constrained atom.
+ *
+ * The constrained atom may correspond to any block in the pattern (not necessarily
+ * the pattern root). This routine tries each reachable pattern block as an anchor,
+ * propagates across pattern connections using netlist connectivity, and returns the
+ * mapped atom for pattern.root_block once a consistent mapping is found.
+ *
+ * Returns AtomBlockId::INVALID() if no consistent mapping exists.
+ */
 static AtomBlockId infer_pattern_root_atom_from_constrained_atom(const t_pack_patterns& pattern,
                                                                  AtomBlockId constrained_blk_id,
                                                                  const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
@@ -957,6 +908,7 @@ static AtomBlockId infer_pattern_root_atom_from_constrained_atom(const t_pack_pa
     while (!block_queue.empty()) {
         t_pack_pattern_block* current = block_queue.front();
         block_queue.pop();
+        // Try every reachable block as a potential anchor for constrained_blk_id.
         candidate_start_blocks.push_back(current);
 
         for (auto conn = current->connections; conn != nullptr; conn = conn->next) {
@@ -973,6 +925,7 @@ static AtomBlockId infer_pattern_root_atom_from_constrained_atom(const t_pack_pa
             continue;
         }
 
+        // mapped_atoms[pattern_block_id] = atom block chosen for that pattern position.
         std::vector<AtomBlockId> mapped_atoms(pattern.num_blocks, AtomBlockId::INVALID());
         std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> q;
         q.push({start_block, constrained_blk_id});
@@ -991,6 +944,7 @@ static AtomBlockId infer_pattern_root_atom_from_constrained_atom(const t_pack_pa
                 || !primitive_type_feasible(atom_blk, pat_block->pb_type)
                 || (existing && existing != atom_blk)
                 || atom_molecules.find(atom_blk) != atom_molecules.end()) {
+                // Optional pattern positions may be dropped, required ones invalidate this anchor.
                 if (!pattern.is_block_optional[pat_block->block_id]) {
                     failed = true;
                 }
@@ -1055,49 +1009,11 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
                                                                                                  atom_nlist,
                                                                                                  list_of_pack_patterns);
             if (constrained_pattern_idx < 0) {
-                std::vector<AtomBlockId> neighbor_blocks;
-                for (AtomPinId pin : atom_nlist.block_input_pins(blk_id)) {
-                    AtomNetId net = atom_nlist.pin_net(pin);
-                    if (!net) {
-                        continue;
-                    }
-                    AtomBlockId driver = atom_nlist.net_driver_block(net);
-                    if (driver && driver != blk_id) {
-                        neighbor_blocks.push_back(driver);
-                    }
-                }
-                for (AtomPinId pin : atom_nlist.block_output_pins(blk_id)) {
-                    AtomNetId net = atom_nlist.pin_net(pin);
-                    if (!net) {
-                        continue;
-                    }
-                    for (AtomPinId sink_pin : atom_nlist.net_sinks(net)) {
-                        AtomBlockId sink = atom_nlist.pin_block(sink_pin);
-                        if (sink && sink != blk_id) {
-                            neighbor_blocks.push_back(sink);
-                        }
-                    }
-                }
-
-                for (AtomBlockId neighbor_blk : neighbor_blocks) {
-                    int neighbor_pattern_idx = resolve_pack_pattern_index_from_logical_block_location(constrained_location,
-                                                                                                      neighbor_blk,
-                                                                                                      atom_nlist,
-                                                                                                      list_of_pack_patterns);
-                    if (neighbor_pattern_idx >= 0) {
-                        effective_constrained_blk = neighbor_blk;
-                        constrained_pattern_idx = neighbor_pattern_idx;
-                        break;
-                    }
-                }
-            }
-            if (constrained_pattern_idx < 0) {
-                VTR_LOG_WARN("No matching pack pattern for logical_block_location '%s' on atom '%s'. "
+                VTR_LOG_ERROR("No matching pack pattern for logical_block_location '%s' on atom '%s'. "
                              "Falling back to primitive placement constraint only.\n",
                              constrained_location.c_str(),
                              atom_nlist.block_name(blk_id).c_str());
                 downgrade_constrained_atoms.insert(blk_id);
-                continue;
             }
 
             const t_pack_patterns& constrained_pattern = list_of_pack_patterns[constrained_pattern_idx];
