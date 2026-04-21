@@ -3,7 +3,7 @@
 
 #ifndef NO_GRAPHICS
 
-#include "vpr_qtcompat.h"
+#include <QWidget>
 
 #include "ezgl/graphics.hpp"
 
@@ -14,9 +14,9 @@ void highlight_all_regions(ezgl::renderer* g);
 void draw_constrained_atoms(ezgl::renderer* g);
 
 ///@brief Sets up and fills in the floorplanning legend
-GtkWidget* setup_floorplanning_legend(GtkWidget* content_tree);
+QWidget* setup_floorplanning_legend(QWidget* content_tree);
 
 ///@brief Highlights partitions clicked on in the legend
-void highlight_selected_partition(GtkWidget* widget);
+void highlight_selected_partition(QWidget* widget);
 
 #endif /*NO_GRAPHICS*/

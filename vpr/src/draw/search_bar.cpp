@@ -35,7 +35,8 @@
 #include "physical_types.h"
 #include "place_macro.h"
 
-#include "vpr_qtcompat.h"
+#include <QLineEdit>
+#include <QComboBox>
 #include <QMessageBox>
 
 //To process key presses we need the X11 keysym definitions,
@@ -46,15 +47,14 @@
 
 extern std::string rr_highlight_message;
 
-void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
+void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // get ID from search bar
-    GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
-    const char* text = gtk_entry_get_text(text_entry);
-    std::string user_input = text;
+    QLineEdit* text_entry = app->find_line_edit("TextInput");
+    std::string user_input = text_entry->text().toStdString();
     std::stringstream ss(user_input);
 
     auto search_type = get_search_type(app);
@@ -211,9 +211,9 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     char message[250] = "";
 
     if (!hit_node) {
-        application.update_message(draw_state->default_message);
+        application->update_message(draw_state->default_message);
         rr_highlight_message = "";
-        application.refresh_drawing();
+        application->refresh_drawing();
         return false;
     }
 
@@ -253,8 +253,8 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         draw_highlight_fan_in_fan_out(nodes);
     }
 
-    application.update_message(message);
-    application.refresh_drawing();
+    application->update_message(message);
+    application->refresh_drawing();
 
     return true;
 }
@@ -301,7 +301,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
     // zoom to the node
     ezgl::point2d offset = {rr_node.width() * 1.5, rr_node.height() * 1.5};
     ezgl::rectangle zoom_view = {rr_node.m_first - offset, rr_node.m_second + offset};
-    (application.get_canvas(application.get_main_canvas_id()))->get_camera().set_world(zoom_view);
+    (application->get_canvas(application->get_main_canvas_id()))->get_camera().set_world(zoom_view);
 }
 
 /**
@@ -335,9 +335,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
                 block_locs[clb_index].loc.x, block_locs[clb_index].loc.y);
     }
 
-    application.update_message(msg);
+    application->update_message(msg);
 
-    application.refresh_drawing();
+    application->refresh_drawing();
 }
 
 /**
@@ -381,7 +381,7 @@ void highlight_nets(ClusterNetId net_id) {
 }
 
 void warning_dialog_box(const char* message) {
-    QWidget* main_window = application.get_widget(application.get_main_window_id().c_str());
+    QWidget* main_window = application->find_widget(application->get_main_window_id().c_str());
     QMessageBox* box = new QMessageBox(QMessageBox::Warning,
                                        "Error",
                                        message,
@@ -398,15 +398,15 @@ void warning_dialog_box(const char* message) {
  * from gtkComboBox SearchType. Currently only sets a completion model for Block Name options,
  * sets null for anything else. brh
  *
- * @param self GtkComboBox that holds current Search Setting
+ * @param self QComboBox that holds current Search Setting
  * @param app ezgl app used to access other objects
  */
-void search_type_changed(GtkComboBox* self, ezgl::application* app) {
+void search_type_changed(QComboBox* self, ezgl::application* app) {
     if (!self) return;
     const QString searchType = self->currentText();
     if (searchType.isEmpty()) return;
 
-    QLineEdit* searchBar = qobject_cast<QLineEdit*>(app->get_object("TextInput"));
+    QLineEdit* searchBar = app->find_line_edit("TextInput");
     if (!searchBar) return;
 
     if (searchType == "Block Name") {
@@ -429,7 +429,6 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
  * @return true | if the string pointed to by iter contains key (case-insensitive)
  * @return false | if the string pointed to does not contain key
  */
-
 
 /**
  * @brief Turns on autocomplete
@@ -462,7 +461,7 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
  * @param app ezgl app
  */
 void enable_autocomplete(ezgl::application* app) {
-    QLineEdit* searchBar = qobject_cast<QLineEdit*>(app->get_object("TextInput"));
+    QLineEdit* searchBar = app->find_line_edit("TextInput");
     if (!searchBar) return;
 
     const std::string searchType = get_search_type(app);
@@ -491,16 +490,15 @@ void enable_autocomplete(ezgl::application* app) {
 
 //Returns current search type. Returns empty string if fails
 std::string get_search_type(ezgl::application* app) {
-    GObject* combo_box = (GObject*)app->get_object("SearchType");
-    gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
+    QComboBox* combo_box = app->find_combo_box("SearchType");
+    QString type = combo_box->currentText();
     //Checking that a type is selected
-    if (!type || (type && type[0] == '\0')) {
+    if (type.isEmpty() || (!type.isEmpty() && type[0] == '\0')) {
         warning_dialog_box("Please select a search type");
         app->refresh_drawing();
         return "";
     }
-    std::string searchType(type);
-    return searchType;
+    return type.toStdString();
 }
 
 #endif /* NO_GRAPHICS */

@@ -36,7 +36,7 @@
 #include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
-extern ezgl::application application;
+extern ezgl::application* application;
 
 #endif /* NO_GRAPHICS */
 
@@ -77,6 +77,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
+                         std::string renderer_type,
                          bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
@@ -156,7 +157,7 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 /* Lightens a color's luminance [0, 1] by an absolute 'amount' */
 ezgl::color lighten_color(ezgl::color color, float amount);
 
-void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+void toggle_window_mode(QWidget* /*widget*/, ezgl::application* /*app*/);
 
 size_t get_max_fanout();
 

@@ -97,8 +97,6 @@ void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x
     float xunit, yunit;
     float xbaseline, ybaseline;
 
-    std::vector<ezgl::point2d> poly;
-
     xdelta = x2 - x1;
     ydelta = y2 - y1;
     magnitude = sqrt(xdelta * xdelta + ydelta * ydelta);
@@ -106,13 +104,13 @@ void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x
     xunit = xdelta / magnitude;
     yunit = ydelta / magnitude;
 
-    poly.push_back({xend + xunit * switch_rad, yend + yunit * switch_rad});
     xbaseline = xend - xunit * switch_rad;
     ybaseline = yend - yunit * switch_rad;
-    poly.push_back({xbaseline + yunit * switch_rad, ybaseline - xunit * switch_rad});
-    poly.push_back({xbaseline - yunit * switch_rad, ybaseline + xunit * switch_rad});
 
-    g->fill_poly(poly);
+    g->fill_triangle(
+        {xend + xunit * switch_rad, yend + yunit * switch_rad},
+        {xbaseline + yunit * switch_rad, ybaseline - xunit * switch_rad},
+        {xbaseline - yunit * switch_rad, ybaseline + xunit * switch_rad});
 }
 
 #endif

@@ -311,6 +311,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
              &vpr_setup->GraphicsCommands,
+             &vpr_setup->RendererType,
              &vpr_setup->PowerOpts,
              vpr_setup);
 
@@ -1252,7 +1253,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, is_flat);
+                        vpr_setup.GraphicsCommands, vpr_setup.RendererType, is_flat);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
@@ -1264,7 +1265,6 @@ void vpr_init_server(const t_vpr_setup& vpr_setup) {
         server::GateIO& gate_io = g_vpr_ctx.mutable_server().gate_io;
         if (!gate_io.is_running()) {
             gate_io.start(vpr_setup.ServerOpts.port_num);
-            // timer is implemented inside server::GateIO via QTimer
         }
     }
 #else
@@ -1402,6 +1402,7 @@ void vpr_setup_vpr(t_options* Options,
                    int* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
+                   std::string* RendererType,
                    t_power_opts* PowerOpts,
                    t_vpr_setup* vpr_setup) {
     SetupVPR(Options,
@@ -1426,6 +1427,7 @@ void vpr_setup_vpr(t_options* Options,
              GraphPause,
              SaveGraphics,
              GraphicsCommands,
+             RendererType,
              PowerOpts,
              vpr_setup);
 }

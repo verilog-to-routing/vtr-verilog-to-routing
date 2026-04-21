@@ -149,7 +149,7 @@ void highlight_nets(char* message, RRNodeId hit_node) {
         }
     }
 
-    application.update_message(message);
+    application->update_message(message);
 }
 
 std::string draw_get_net_name(ParentNetId parent_id) {

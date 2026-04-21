@@ -6,10 +6,17 @@
 #include "save_graphics.h"
 #include "search_bar.h"
 
+#include <ezgl/qt/qtutils.hpp>
+
+#include <QLineEdit>
+#include <QLabel>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QVBoxLayout>
+
 extern ezgl::rectangle initial_world;
 
-void save_graphics_from_button(GtkWidget* /*widget*/, [[maybe_unused]] gint response_id, gpointer data) {
-    QDialog* dialog = Q_DIALOG(static_cast<QObject*>(data));
+void save_graphics_from_button(QDialog* dialog) {
     QLineEdit* text_entry = dialog->findChild<QLineEdit*>("file_name_text_entry");
     QComboBox* combo_box = dialog->findChild<QComboBox*>("file_name_combo_box");
     if (text_entry && combo_box) {
@@ -25,7 +32,7 @@ void save_graphics(std::string extension, std::string file_name) {
         extension = std::string(extension.begin() + 1, extension.end());
     }
 
-    auto canvas = application.get_canvas(application.get_main_canvas_id());
+    auto canvas = application->get_canvas(application->get_main_canvas_id());
 
     bool result = true;
 
@@ -45,58 +52,47 @@ void save_graphics(std::string extension, std::string file_name) {
     VTR_ASSERT_MSG(result == true, "Failed to save graphics");
 }
 
-void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
-    GObject* main_window;
-    GtkWidget* content_area;
-    GtkWidget* text_entry;
-    GtkWidget* name_label;
-    GtkWidget* type_label;
-    GtkWidget* dialog;
-    GtkWidget* combo_box;
-
-    // get a pointer to the main window
-    main_window = application.get_object(application.get_main_window_id().c_str());
-    dialog = new QDialog(Q_WIDGET(main_window));
+void save_graphics_dialog_box(QWidget* /*widget*/, ezgl::application* /*app*/) {
+    QWidget* main_window = application->find_widget(application->get_main_window_id().c_str());
+    QDialog* dialog = new QDialog(main_window);
     dialog->setWindowTitle("Save Graphics Contents");
     dialog->setAttribute(Qt::WA_DeleteOnClose);
 
+    auto* layout = new QVBoxLayout(dialog);
+
     // create elements
-    name_label = gtk_label_new("File name:");
-    text_entry = gtk_entry_new();
-    type_label = gtk_label_new("File format:");
-    combo_box = gtk_combo_box_text_new();
+    auto* name_label = new QLabel("File name:");
+    auto* text_entry = new QLineEdit;
+    auto* type_label = new QLabel("File format:");
+    auto* combo_box = new QComboBox;
 
     // set name for text entry and combo box for later data extraction
-    gtk_widget_set_name(text_entry, "file_name_text_entry");
-    gtk_widget_set_name(combo_box, "file_name_combo_box");
+    text_entry->setObjectName("file_name_text_entry");
+    combo_box->setObjectName("file_name_combo_box");
 
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "pdf"); // index 0
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "png"); // index 1
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_box), "svg"); // index 2
+    combo_box->addItem("pdf"); // index 0
+    combo_box->addItem("png"); // index 1
+    combo_box->addItem("svg"); // index 2
 
     // set default values
-    gtk_combo_box_set_active((GtkComboBox*)combo_box, 0);      // default set to pdf which has an index 0
-    gtk_entry_set_text((GtkEntry*)text_entry, "vpr_graphics"); // default text set to vpr_graphics
+    combo_box->setCurrentIndex(0);
+    text_entry->setText("vpr_graphics");
 
-    // attach elements to the content area of the dialog
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    gtk_container_add(GTK_CONTAINER(content_area), name_label);
-    gtk_container_add(GTK_CONTAINER(content_area), text_entry);
-    gtk_container_add(GTK_CONTAINER(content_area), type_label);
-    gtk_container_add(GTK_CONTAINER(content_area), combo_box);
-
-    // show the label & child widget of the dialog
-    gtk_widget_show_all(dialog);
+    layout->addWidget(name_label);
+    layout->addWidget(text_entry);
+    layout->addWidget(type_label);
+    layout->addWidget(combo_box);
 
     auto* buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Save | QDialogButtonBox::Cancel, dialog);
-    gtk_container_add(dialog, buttonBox);
+    layout->addWidget(buttonBox);
     QObject::connect(buttonBox, &QDialogButtonBox::accepted, dialog, [dialog]() {
-        save_graphics_from_button(dialog, 0, dialog);
-        Q_DIALOG(dialog)->accept();
+        save_graphics_from_button(dialog);
+        dialog->accept();
     });
-    QObject::connect(buttonBox, &QDialogButtonBox::rejected, Q_DIALOG(dialog), &QDialog::reject);
-    return;
+    QObject::connect(buttonBox, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+
+    dialog->show();
 }
 
 #endif /* NO_GRAPHICS */

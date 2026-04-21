@@ -299,6 +299,9 @@ struct t_draw_state {
 
     std::string graphics_commands;
 
+    ///@brief Rendering backend: "immediate", "deferred", or "rhi"
+    std::string renderer_type = "rhi";
+
     ///@brief If we should pause for user interaction (requested by user)
     bool forced_pause = false;
 

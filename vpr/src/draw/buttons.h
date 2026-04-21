@@ -2,11 +2,9 @@
 
 #ifndef NO_GRAPHICS
 
-#include "vpr_qtcompat.h"
+#include <QWidget>
 
-[[deprecated("todo: move to ezgl")]]
-void delete_button(const char* button_name);
-[[deprecated("todo: move to ezgl")]]
-GtkWidget* find_button(const char* button_name);
+void delete_button(const std::string& button_name);
+QWidget* find_button(const std::string& button_name);
 
 #endif /* NO_GRAPHICS */

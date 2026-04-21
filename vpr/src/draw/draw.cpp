@@ -58,11 +58,15 @@
 #include "draw_floorplanning.h"
 
 #include "ui_setup.h"
+#include "ezgl/qt/render_backend.hpp"
 
-#include "vpr_qtcompat.h"
+#include <QCheckBox>
+#include <QDialog>
+#include <QPushButton>
 #include <QLineEdit>
 #include <QTreeWidget>
 #include <QVBoxLayout>
+#include <QMouseEvent>
 #include <QDialogButtonBox>
 
 //To process key presses we need the X11 keysym definitions,
@@ -98,11 +102,11 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void set_force_pause(QWidget* /*widget*/, int /*response_id*/, void* /*data*/);
+static void set_block_outline(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
+static void set_block_text(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
+static void set_draw_partitions(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
+static void clip_routing_util(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
 static void run_graphics_commands(const std::string& commands);
 
 /************************** File Scope Variables ****************************/
@@ -141,8 +145,8 @@ ezgl::application::settings settings(":/ezgl/main.ui", "MainWindow", "MainCanvas
 // provide fake argc and argv required for QApplication initialization
 int argc = 1;
 char appName[] = "vpr";
-char* argv[] = { appName, nullptr };
-ezgl::application application(settings, argc, argv);
+char* argv[] = {appName, nullptr};
+ezgl::application* application = nullptr;
 
 bool window_mode = false;
 bool window_point_1_collected = false;
@@ -159,6 +163,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
+                         std::string renderer_type,
                          bool is_flat) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
@@ -173,7 +178,15 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
+    draw_state->renderer_type = renderer_type;
     draw_state->is_flat = is_flat;
+
+    // Create the application object here (not at file scope) so that the
+    // QApplication lifetime is bounded by init/close_graphics, not by
+    // static-object construction/destruction order.
+    if (application == nullptr) {
+        application = new ezgl::application(settings, argc, argv);
+    }
 
 #else
     //Suppress unused parameter warnings
@@ -182,6 +195,7 @@ void init_graphics_state(bool show_graphics_val,
     (void)route_type;
     (void)save_graphics;
     (void)graphics_commands;
+    (void)renderer_type;
     (void)is_flat;
 #endif // NO_GRAPHICS
 }
@@ -262,7 +276,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
         //Avoid trying to repeatedly exit (which would cause errors in GTK)
         draw_state->auto_proceed = false;
 
-        application.quit(); //Ensure we leave the event loop
+        application->quit(); //Ensure we leave the event loop
     }
 }
 
@@ -281,12 +295,12 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
-        hide_widget("RoutingMenuButton", app);
+        app->hide_widget("RoutingMenuButton");
 
         draw_state->save_graphics_file_base = "vpr_placement";
 
     } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
-        show_widget("RoutingMenuButton", app);
+        app->show_widget("RoutingMenuButton");
 
         draw_state->save_graphics_file_base = "vpr_routing";
     }
@@ -338,10 +352,18 @@ void update_screen(ScreenUpdatePriority priority,
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
             // Only add the canvas the first time we open graphics
-            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+            if (canvas != nullptr) {
+                ezgl::renderer_type rt = ezgl::renderer_type::rhi;
+                if (draw_state->renderer_type == "immediate")
+                    rt = ezgl::renderer_type::immediate;
+                else if (draw_state->renderer_type == "deferred")
+                    rt = ezgl::renderer_type::deferred;
+                canvas->set_renderer_type(rt);
+            }
         } else {
             // TODO: will this ever be null?
-            auto canvas = application.get_canvas(application.get_main_canvas_id());
+            auto canvas = application->get_canvas(application->get_main_canvas_id());
             if (canvas != nullptr) {
                 canvas->get_camera().set_world(initial_world);
             }
@@ -369,8 +391,8 @@ void update_screen(ScreenUpdatePriority priority,
             draw_state->forced_pause = false; //Reset pause flag
         }
 
-        application.run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
-                        act_on_key_press);
+        application->run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
+                         act_on_key_press);
 
         if (!draw_state->graphics_commands.empty()) {
             run_graphics_commands(draw_state->graphics_commands);
@@ -378,9 +400,9 @@ void update_screen(ScreenUpdatePriority priority,
     }
 
     if (draw_state->show_graphics) {
-        application.update_message(msg);
-        application.refresh_drawing();
-        application.flush_drawing();
+        application->update_message(msg);
+        application->refresh_drawing();
+        application->flush_drawing();
     }
 
     if (draw_state->save_graphics) {
@@ -397,7 +419,7 @@ void update_screen(ScreenUpdatePriority priority,
 }
 
 #ifndef NO_GRAPHICS
-void toggle_window_mode(GtkWidget* /*widget*/,
+void toggle_window_mode(QWidget* /*widget*/,
                         ezgl::application* app) {
     window_mode = true;
     app->update_message("Zoom to Selection: Click on two points to define a rectangle to zoom into.");
@@ -462,6 +484,9 @@ void free_draw_structs() {
         vtr::release_memory(draw_coords->tile_x);
         vtr::release_memory(draw_coords->tile_y);
     }
+
+    delete application;
+    application = nullptr;
 
 #else
     ;
@@ -650,10 +675,9 @@ bool draw_if_net_highlighted(ParentNetId inet) {
  * At the moment, only does something if user is currently typing in searchBar and
  * hits enter, at which point it runs autocomplete
  */
-void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* key_name)
-{
+void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* key_name) {
     std::string key(key_name);
-    QLineEdit* searchBar = qobject_cast<QLineEdit*>(app->get_object("TextInput"));
+    QLineEdit* searchBar = app->find_line_edit("TextInput");
     if (!searchBar) {
         return;
     }
@@ -929,18 +953,18 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
             == DRAW_ROUTER_EXPANSION_COST_TOTAL
         || draw_state->show_router_expansion_cost
                == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
-        application.update_message(
+        application->update_message(
             "Routing Expected Total Cost (known + estimate)");
     } else if (draw_state->show_router_expansion_cost
                    == DRAW_ROUTER_EXPANSION_COST_KNOWN
                || draw_state->show_router_expansion_cost
                       == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
-        application.update_message("Routing Known Cost (from source to node)");
+        application->update_message("Routing Known Cost (from source to node)");
     } else if (draw_state->show_router_expansion_cost
                    == DRAW_ROUTER_EXPANSION_COST_EXPECTED
                || draw_state->show_router_expansion_cost
                       == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
-        application.update_message(
+        application->update_message(
             "Routing Expected Cost (from node to target)");
     } else {
         VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
@@ -999,8 +1023,8 @@ static void highlight_blocks(double x, double y) {
         }
     }
 
-    application.update_message(msg);
-    application.refresh_drawing();
+    application->update_message(msg);
+    application->refresh_drawing();
 }
 
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
@@ -1053,123 +1077,96 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
 
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
-    QAbstractButton* proceed_button = app->get_abstract_button("ProceedButton");
-    QObject::connect(proceed_button, &QAbstractButton::clicked, [app](){
-        press_proceed(/*unused*/nullptr, app);
+    QPushButton* proceed_button = app->find_push_button("ProceedButton");
+    QObject::connect(proceed_button, &QPushButton::clicked, [app]() {
+        press_proceed(/*unused*/ nullptr, app);
     });
 
     // Connect press_zoom_fit function to the Zoom-fit button
-    QAbstractButton* zoom_fit_button = app->get_abstract_button("ZoomFitButton");
-    QObject::connect(zoom_fit_button, &QAbstractButton::clicked, [app](){
-        press_zoom_fit(/*unused*/nullptr, app);
+    QPushButton* zoom_fit_button = app->find_push_button("ZoomFitButton");
+    QObject::connect(zoom_fit_button, &QPushButton::clicked, [app]() {
+        press_zoom_fit(/*unused*/ nullptr, app);
     });
 
     // Connect Pause button
-    QAbstractButton* pause_button = app->get_abstract_button("PauseButton");
-    QObject::connect(pause_button, &QAbstractButton::clicked, [app](){
-        set_force_pause(/*unused*/nullptr, /*unused*/-1, app);
+    QPushButton* pause_button = app->find_push_button("PauseButton");
+    QObject::connect(pause_button, &QPushButton::clicked, [app]() {
+        set_force_pause(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Block Outline checkbox
-    QAbstractButton* block_outline = app->get_abstract_button("blockOutline");
-    QObject::connect(block_outline, &QAbstractButton::toggled, [app](){
-        set_block_outline(/*unused*/nullptr, /*unused*/-1, app);
+    QCheckBox* block_outline = app->find_check_box("blockOutline");
+    QObject::connect(block_outline, &QCheckBox::toggled, [app]() {
+        set_block_outline(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Block Text checkbox
-    QAbstractButton* block_text = app->get_abstract_button("blockText");
-    QObject::connect(block_text, &QAbstractButton::toggled, [app](){
-        set_block_text(/*unused*/nullptr, /*unused*/-1, app);
+    QCheckBox* block_text = app->find_check_box("blockText");
+    QObject::connect(block_text, &QCheckBox::toggled, [app]() {
+        set_block_text(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Clip Routing Util checkbox
-    QAbstractButton* clip_routing = app->get_abstract_button("clipRoutingUtil");
-    QObject::connect(clip_routing, &QAbstractButton::toggled, [app](){
-        clip_routing_util(/*unused*/nullptr, /*unused*/-1, app);
+    QCheckBox* clip_routing = app->find_check_box("clipRoutingUtil");
+    QObject::connect(clip_routing, &QCheckBox::toggled, [app]() {
+        clip_routing_util(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 
     // Connect Debug Button
-    QAbstractButton* debugger = app->get_abstract_button("debugButton");
-    QObject::connect(debugger, &QAbstractButton::clicked, [app](){
+    QPushButton* debugger = app->find_push_button("debugButton");
+    QObject::connect(debugger, &QPushButton::clicked, [app]() {
         draw_debug_window();
     });
 
     // Connect Draw Partitions Checkbox
-    QAbstractButton* draw_partitions = app->get_abstract_button("drawPartitions");
-    QObject::connect(draw_partitions, &QAbstractButton::toggled, [app](){
-        set_draw_partitions(/*unused*/nullptr, /*unused*/-1, app);
+    QCheckBox* draw_partitions = app->find_check_box("drawPartitions");
+    QObject::connect(draw_partitions, &QCheckBox::toggled, [app]() {
+        set_draw_partitions(/*unused*/ nullptr, /*unused*/ -1, app);
     });
 }
 
 // Callback function for Block Outline checkbox
-static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_outline(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_outlines
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
-        draw_state->draw_block_outlines = true;
-    else
-        draw_state->draw_block_outlines = false;
+    draw_state->draw_block_outlines = checkbox->isChecked();
+
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
 // Callback function for Block Text checkbox
-static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_text(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_text
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
-        draw_state->draw_block_text = true;
-    else
-        draw_state->draw_block_text = false;
+    draw_state->draw_block_text = checkbox->isChecked();
 
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
 // Callback function for Clip Routing Util checkbox
-static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void clip_routing_util(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->clip_routing_util
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
-        draw_state->clip_routing_util = true;
-    else
-        draw_state->clip_routing_util = false;
+    draw_state->clip_routing_util = checkbox->isChecked();
 
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
-}
-
-static void on_dialog_response(GtkDialog* dialog, gint response_id, gpointer /* user_data*/) {
-    switch (response_id) {
-        case GTK_RESPONSE_ACCEPT:
-            std::cout << "GTK_RESPONSE_ACCEPT ";
-            break;
-        case GTK_RESPONSE_DELETE_EVENT:
-            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ’X’ button) ";
-            break;
-        case GTK_RESPONSE_REJECT:
-            std::cout << "GTK_RESPONSE_REJECT ";
-            break;
-        default:
-            std::cout << "UNKNOWN ";
-            break;
-    }
-
-    gtk_widget_destroy(GTK_WIDGET(dialog));
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
 // Callback function for Draw Partitions checkbox
-static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_draw_partitions(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
-        QWidget* window = application.get_widget(application.get_main_window_id().c_str());
+    if (checkbox->isChecked()) {
+        QWidget* window = application->find_widget(application->get_main_window_id().c_str());
 
         QDialog* dialog = new QDialog(window);
         dialog->setWindowTitle("Floorplanning Legend");
@@ -1196,11 +1193,11 @@ static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointe
         draw_state->draw_partitions = false;
     }
 
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
-static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+static void set_force_pause(QWidget* /*widget*/, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->forced_pause = true;

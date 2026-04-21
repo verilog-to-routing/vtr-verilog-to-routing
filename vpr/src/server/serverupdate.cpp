@@ -8,7 +8,7 @@
 
 namespace server {
 
-gboolean update(gpointer data) {
+bool update(void* data) {
     const bool is_running = g_vpr_ctx.server().gate_io.is_running();
     if (is_running) {
         // shortcuts

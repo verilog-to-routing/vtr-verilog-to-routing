@@ -321,7 +321,7 @@ void draw_congestion(ezgl::renderer* g) {
         VTR_ASSERT(draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS);
         sprintf(msg, "RR Node Overuse ratio range (%.2f, %.2f] (and congested nets)", min_congestion_ratio, max_congestion_ratio);
     }
-    application.update_message(msg);
+    application->update_message(msg);
 
     std::shared_ptr<vtr::ColorMap> cmap = std::make_shared<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
 
@@ -490,7 +490,7 @@ void draw_routing_costs(ezgl::renderer* g) {
     } else {
         sprintf(msg, "Cost Range [%g, %g]", min_cost, max_cost);
     }
-    application.update_message(msg);
+    application->update_message(msg);
 
     draw_rr_costs(g, rr_node_costs, true);
 }
@@ -553,7 +553,7 @@ void draw_routing_bb(ezgl::renderer* g) {
     msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(convert_to_cluster_net_id(net_id))
            + "'";
     msg += " (#" + std::to_string(size_t(net_id)) + ")";
-    application.update_message(msg.c_str());
+    application->update_message(msg.c_str());
 }
 
 /* Draws an X centered at (x,y). The width and height of the X are each 2 * size. */
@@ -1268,11 +1268,11 @@ void draw_color_map_legend(const vtr::ColorMap& cmap,
 
     g->set_coordinate_system(ezgl::SCREEN);
 
-    float screen_width = application.get_canvas(
-                                        application.get_main_canvas_id())
+    float screen_width = application->get_canvas(
+                                        application->get_main_canvas_id())
                              ->width();
-    float screen_height = application.get_canvas(
-                                         application.get_main_canvas_id())
+    float screen_height = application->get_canvas(
+                                         application->get_main_canvas_id())
                               ->height();
     float vert_offset = screen_height * LEGEND_VERT_OFFSET_FAC;
     float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
@@ -1365,12 +1365,12 @@ void draw_block_pin_util() {
     draw_state->color_map = std::move(cmap);
 
     if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
-        application.update_message("Block Total Pin Utilization");
+        application->update_message("Block Total Pin Utilization");
     } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_INPUTS) {
-        application.update_message("Block Input Pin Utilization");
+        application->update_message("Block Input Pin Utilization");
 
     } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
-        application.update_message("Block Output Pin Utilization");
+        application->update_message("Block Output Pin Utilization");
     } else {
         VTR_ASSERT(false);
     }

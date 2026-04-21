@@ -141,8 +141,9 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libvtrutil)
 #
 # Unit Tests
 #
-set(ENABLE_VPR_TESTS OFF) # QT_MIGRATION_TMP
-if (ENABLE_VPR_TESTS)    # QT_MIGRATION_TMP
+if(QT_MIGRATION_FAST_BUILD)
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip vtrutils tests build")
+else()
     file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
     add_executable(test_vtrutil ${TEST_SOURCES})
     target_link_libraries(test_vtrutil 
@@ -153,4 +154,4 @@ if (ENABLE_VPR_TESTS)    # QT_MIGRATION_TMP
         COMMAND test_vtrutil
         --colour-mode ansi
         )
-endif(ENABLE_VPR_TESTS) # QT_MIGRATION_TMP
+endif()

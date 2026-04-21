@@ -266,8 +266,9 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libvpr)
 #
 # Unit Tests
 #
-set(ENABLE_VPR_TESTS OFF) # QT_MIGRATION_TMP
-if (ENABLE_VPR_TESTS)     # QT_MIGRATION_TMP
+if (QT_MIGRATION_FAST_BUILD)
+    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip VPR tests build")
+else()
     file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
     add_executable(test_vpr ${TEST_SOURCES})
     target_link_libraries(test_vpr
@@ -278,5 +279,5 @@ if (ENABLE_VPR_TESTS)     # QT_MIGRATION_TMP
         COMMAND test_vpr --colour-mode ansi
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
         )
-endif(ENABLE_VPR_TESTS) # QT_MIGRATION_TMP
+endif()
 
