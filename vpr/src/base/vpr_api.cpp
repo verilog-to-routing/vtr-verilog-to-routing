@@ -759,7 +759,8 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                     vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
-                    g_vpr_ctx.atom().flat_placement_info());
+                    g_vpr_ctx.atom().flat_placement_info(),
+                    ram_mapper);
 }
 
 void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
