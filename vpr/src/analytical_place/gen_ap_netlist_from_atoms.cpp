@@ -127,6 +127,11 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                 PartitionId part_id = constraints.get_atom_partition(mol_atom_blk_id);
                 if (!part_id.is_valid())
                     continue;
+                // We should not fix a block twice. This would imply that a molecule
+                // contains two fixed blocks. This would only make sense if the blocks
+                // were fixed to the same location. I am not sure if that is even
+                // possible.
+                VTR_ASSERT(ap_netlist.block_mobility(ap_blk_id) == APBlockMobility::MOVEABLE);
                 // Get the partition region.
                 const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
                 if (!is_single_point_pr(partition_pr)) {
@@ -161,28 +166,7 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                     blk_sub_tile = region.get_sub_tile();
                 // Set the fixed block location.
                 APFixedBlockLoc loc = {blk_x_loc, blk_y_loc, blk_layer_num, blk_sub_tile};
-                APBlockMobility mobility = ap_netlist.block_mobility(ap_blk_id);
-                if (mobility == APBlockMobility::MOVEABLE) {
-                    ap_netlist.set_block_loc(ap_blk_id, loc);
-                } else if (mobility == APBlockMobility::FIXED) {
-                    // Multiple atoms in one AP block may be constrained. This is legal
-                    // if they all fix the block to the same location.
-                    const APFixedBlockLoc& existing_loc = ap_netlist.block_loc(ap_blk_id);
-                    bool same_loc = (existing_loc.x == loc.x)
-                                    && (existing_loc.y == loc.y)
-                                    && (existing_loc.layer_num == loc.layer_num)
-                                    && (existing_loc.sub_tile == loc.sub_tile);
-                    if (!same_loc) {
-                        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                        "Conflicting fixed locations for AP block '%s' while processing atom '%s'.",
-                                        ap_netlist.block_name(ap_blk_id).c_str(),
-                                        atom_netlist.block_name(mol_atom_blk_id).c_str());
-                    }
-                } else {
-                    VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                    "Unexpected AP block mobility state for block '%s'.",
-                                    ap_netlist.block_name(ap_blk_id).c_str());
-                }
+                ap_netlist.set_block_loc(ap_blk_id, loc);
             }
         }
     }
