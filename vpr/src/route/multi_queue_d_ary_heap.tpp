@@ -44,14 +44,14 @@
 // GCC/Clang use __attribute__((...)), while MSVC uses __declspec(...).
 // These macros provide a single, portable interface.
 #if defined(_MSC_VER)
-#  define MQ_NOINLINE __declspec(noinline)
-#  define MQ_ALIGNAS(N) __declspec(align(N))
+#define MQ_NOINLINE __declspec(noinline)
+#define MQ_ALIGNAS(N) __declspec(align(N))
 #elif defined(__GNUC__) || defined(__clang__)
-#  define MQ_NOINLINE __attribute__((noinline))
-#  define MQ_ALIGNAS(N) __attribute__((aligned(N)))
+#define MQ_NOINLINE __attribute__((noinline))
+#define MQ_ALIGNAS(N) __attribute__((aligned(N)))
 #else
-#  define MQ_NOINLINE
-#  define MQ_ALIGNAS(N)
+#define MQ_NOINLINE
+#define MQ_ALIGNAS(N)
 #endif
 
 #define CACHELINE 64
@@ -86,7 +86,6 @@ class MultiQueueIO {
         }
         bool try_lock() { return queueLock.test_and_set(std::memory_order_acquire); }
         void unlock() { queueLock.clear(std::memory_order_release); }
-
     };
 
     std::vector<
