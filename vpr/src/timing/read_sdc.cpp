@@ -304,9 +304,11 @@ class SdcParseCallback : public sdcparse::Callback {
         double source_clock_period = source_clock_cmd.period;
         double generated_clock_period = sdcparse::UNINITIALIZED_FLOAT;
         if (cmd.divide_by != sdcparse::UNINITIALIZED_INT) {
+            // Dividing the frequency means multiplying the period.
             generated_clock_period = source_clock_period * static_cast<double>(cmd.divide_by);
         } else {
             VTR_ASSERT(cmd.multiply_by != sdcparse::UNINITIALIZED_INT);
+            // Similarly, multiplying the frequency means dividing the period.
             generated_clock_period = source_clock_period / static_cast<double>(cmd.multiply_by);
         }
 
@@ -362,7 +364,7 @@ class SdcParseCallback : public sdcparse::Callback {
             AtomPinId clock_pin = p.first;
             const std::string& object_name = p.second;
 
-            // Get the name of the clock. If no name is provided, the name of the object is used.
+            // Get the name of the clock. If no name is provided, the name of the object (clock pin, port, or net) is used.
             std::string clock_name;
             if (cmd.name.empty()) {
                 clock_name = object_name;
@@ -375,7 +377,7 @@ class SdcParseCallback : public sdcparse::Callback {
             tatum::NodeId clock_source = get_clock_source(clock_pin);
             VTR_ASSERT(clock_source.is_valid());
 
-            // Create an equivalent create_clock commands for this generated clock.
+            // Create equivalent create_clock commands for this generated clock.
             // NOTE: This is a bit of a hack, but the command is used throughout
             //       this code to quickly lookup information on the clock.
             // TODO: Consider using a better storage for this information instead

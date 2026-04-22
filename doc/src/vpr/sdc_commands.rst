@@ -70,6 +70,8 @@ Defines a derived clock based on an existing source clock.
 
 Generated clocks are used to describe clock signals created by internal design logic (such as clock dividers or multipliers). The frequency of the generated clock is defined by scaling the frequency of a master clock.
 
+A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architecture may contain PLL primitives which take in a source clock and produce a generated clock at a different frequency. The :sdc:command:`create_generated_clock` command informs the timing analyzer of the relationship between the PLL's output clock and its source clock.
+
 *Example Usage:*
 
 .. code-block:: tcl
