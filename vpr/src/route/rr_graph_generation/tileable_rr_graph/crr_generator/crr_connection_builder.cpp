@@ -315,14 +315,14 @@ int CRRConnectionBuilder::resolve_pin_ptc(const SegmentInfo& info,
                                           int x,
                                           int y) const {
     if (info.pin_name.empty()) {
-        VTR_LOG_ERROR("No pin name is specified for segment index %d at (%d,%d)\n", info.seg_index, x, y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No pin name is specified for segment index %d at (%d,%d)\n", info.seg_index, x, y);
     }
 
     // CRR Currently only supports 2D architectures. So, layer number 0 is assigned here
     auto tile_type = g_vpr_ctx.device().grid.get_physical_type({x, y, 0});
     if (tile_type == nullptr) {
-        VTR_LOG_ERROR("No tile type found while resolving pin '%s' at (%d,%d)\n",
-                      info.pin_name.c_str(), x, y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No tile type found while resolving pin '%s' at (%d,%d)\n",
+                        info.pin_name.c_str(), x, y);
     }
 
     for (int pin_ptc = 0; pin_ptc < tile_type->num_pins; ++pin_ptc) {
