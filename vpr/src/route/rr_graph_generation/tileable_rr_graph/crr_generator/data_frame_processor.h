@@ -14,6 +14,7 @@
 #include <cmath>
 
 #include "crr_common.h"
+#include "vtr_assert.h"
 namespace crrgenerator {
 
 /**
@@ -48,6 +49,10 @@ struct Cell {
             const char* start = p->c_str();
             char* end = nullptr;
             double d = std::strtod(start, &end);
+            // strtod sets `end` to the first character it couldn't parse.
+            // The three conditions together check: the entire string was consumed
+            // (no trailing garbage), the value is not inf/nan, and it has no
+            // fractional part (i.e. "3.0" qualifies but "3.5" does not).
             return end == start + p->size() && std::isfinite(d) && std::floor(d) == d;
         }
         return false;
@@ -59,7 +64,8 @@ struct Cell {
             if (auto p = std::get_if<std::string>(&value))
                 return static_cast<int64_t>(std::strtod(p->c_str(), nullptr));
         }
-        return 0;
+        VTR_ASSERT_MSG(false, "as_int() called on a non-numeric Cell");
+        return 0; // unreachable
     }
 
     std::string as_string() const {

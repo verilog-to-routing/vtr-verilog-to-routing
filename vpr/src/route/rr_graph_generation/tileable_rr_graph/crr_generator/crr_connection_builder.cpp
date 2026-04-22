@@ -326,6 +326,8 @@ int CRRConnectionBuilder::resolve_pin_ptc(const SegmentInfo& info,
     }
 
     for (int pin_ptc = 0; pin_ptc < tile_type->num_pins; ++pin_ptc) {
+        // is_flat is false: CRR only specifies connections between general routing resources
+        // and does not touch intra-cluster connections.
         if (block_type_pin_index_to_name(tile_type, pin_ptc, false) == info.pin_name) {
             return pin_ptc;
         }
