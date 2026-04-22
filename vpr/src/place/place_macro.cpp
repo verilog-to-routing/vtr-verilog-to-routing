@@ -224,7 +224,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                     //
                     // The output SOURCE (from_pin) of a true head macro will:
                     //  * drive another block with the same direct connection
-                    if (from_src_or_sink == e_pin_type::DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
+                    if (from_src_or_sink == e_pin_type::DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID() && is_net_direct_connection(from_net_id, to_idirect, clb_nlist)) {
                         // Mark down that this is the first block in the macro
                         pl_macro_member_blk_num_of_this_blk[0] = blk_id;
                         pl_macro_idirect[num_macro] = to_idirect;
