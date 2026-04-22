@@ -1,6 +1,15 @@
 # Hecate 2.5D and 3D FPGA Architecture Family
 
 This directory contains architectures exploring 2.5D and 3D FPGA integration within the Verilog-to-Routing (VTR) flow.
+Some architectures are already in the folders, but due to the large number of total architectures we auto-generate the
+majority of them.
+
+## How to generate the Hecate architectures
+Run the following command to generate the 2.5D Hecate architectures:
+
+```bash
+python generate_25d_arch.py
+```
 
 ## 1. FPGA Fabric
 
