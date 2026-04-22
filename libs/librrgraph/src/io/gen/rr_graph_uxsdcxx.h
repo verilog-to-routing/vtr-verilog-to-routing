@@ -203,10 +203,18 @@ inline void write_rr_graph_xml(T &in, Context &context, std::ostream &os){
 }
 
 
+#ifdef _MSC_VER
+typedef __declspec(align(1)) const uint32_t triehash_uu32;
+typedef __declspec(align(1)) const uint64_t triehash_uu64;
+#else
 typedef const uint32_t __attribute__((aligned(1))) triehash_uu32;
 typedef const uint64_t __attribute__((aligned(1))) triehash_uu64;
+#endif
+
+#ifndef _MSC_VER
 static_assert(alignof(triehash_uu32) == 1, "Unaligned 32-bit access not found.");
 static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.");
+#endif
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define onechar(c, s, l) (((uint64_t)(c)) << (s))
 #else
