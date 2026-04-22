@@ -31,10 +31,27 @@
 
 #ifdef _WIN32 // Windows
 // Windows thread identification uses Win32 APIs from <windows.h>.
-// POSIX platforms use pthread APIs from <pthread.h>.
 #include <windows.h>
 #else
+// POSIX platforms use pthread APIs from <pthread.h>.
 #include <pthread.h>
+#endif
+
+// We use compiler-specific attributes for performance and correctness:
+// - MQ_NOINLINE: prevent inlining of selected functions (PERF builds)
+// - MQ_ALIGNAS(N): enforce alignment (e.g., cacheline alignment to avoid false sharing)
+//
+// GCC/Clang use __attribute__((...)), while MSVC uses __declspec(...).
+// These macros provide a single, portable interface.
+#if defined(_MSC_VER)
+#  define MQ_NOINLINE __declspec(noinline)
+#  define MQ_ALIGNAS(N) __declspec(align(N))
+#elif defined(__GNUC__) || defined(__clang__)
+#  define MQ_NOINLINE __attribute__((noinline))
+#  define MQ_ALIGNAS(N) __attribute__((aligned(N)))
+#else
+#  define MQ_NOINLINE
+#  define MQ_ALIGNAS(N)
 #endif
 
 #define CACHELINE 64
@@ -56,7 +73,7 @@ class MultiQueueIO {
     // while using the MQ.
     static constexpr PrioType EMPTY_PRIO = std::numeric_limits<PrioType>::max();
 
-    struct PQContainer {
+    struct MQ_ALIGNAS(CACHELINE) PQContainer {
         uint64_t pushes = 0;
         uint64_t pops = 0;
         PQ pq;
@@ -70,7 +87,7 @@ class MultiQueueIO {
         bool try_lock() { return queueLock.test_and_set(std::memory_order_acquire); }
         void unlock() { queueLock.clear(std::memory_order_release); }
 
-    } __attribute__((aligned(CACHELINE)));
+    };
 
     std::vector<
         PQContainer
@@ -107,7 +124,7 @@ class MultiQueueIO {
     }
 
 #ifdef PERF
-    uint64_t __attribute__((noinline)) ThreadLocalRandom() {
+    MQ_NOINLINE uint64_t ThreadLocalRandom() {
 #else
     uint64_t ThreadLocalRandom() {
 #endif
@@ -133,13 +150,13 @@ class MultiQueueIO {
     }
 
 #ifdef PERF
-    void __attribute__((noinline)) pushInt(uint64_t queue, PQElement item) {
+    MQ_NOINLINE void pushInt(uint64_t queue, PQElement item) {
         queues[queue].pq.push(item);
     }
 #endif
 
 #ifdef PERF
-    void __attribute__((noinline)) push(PQElement item) {
+    MQ_NOINLINE void push(PQElement item) {
 #else
     inline void push(PQElement item) {
 #endif
@@ -166,7 +183,7 @@ class MultiQueueIO {
     }
 
 #ifdef PERF
-    void __attribute__((noinline)) pushBatch(uint64_t size, PQElement* items) {
+    MQ_NOINLINE void pushBatch(uint64_t size, PQElement* items) {
 #else
     inline void pushBatch(uint64_t size, PQElement* items) {
 #endif
@@ -198,7 +215,7 @@ class MultiQueueIO {
     // Repeatedly try popping and stop when numIdle >= threadNum,
     // That is, stop when all threads agree that there are no more work
 #ifdef PERF
-    boost::optional<PQElement> __attribute__((noinline)) tryPop() {
+    MQ_NOINLINE boost::optional<PQElement> tryPop() {
 #else
     inline std::optional<PQElement> tryPop() {
 #endif
@@ -229,7 +246,7 @@ class MultiQueueIO {
 #endif
 
 #ifdef PERF
-    boost::optional<PQElement> __attribute__((noinline)) pop() {
+    MQ_NOINLINE boost::optional<PQElement> pop() {
 #else
     inline std::optional<PQElement> pop() {
 #endif
@@ -294,7 +311,7 @@ class MultiQueueIO {
     }
 
 #ifdef PERF
-    boost::optional<uint64_t> __attribute__((noinline)) tryPopBatch(PQElement* ret) {
+    MQ_NOINLINE boost::optional<uint64_t> tryPopBatch(PQElement* ret) {
 #else
     inline std::optional<uint64_t> tryPopBatch(PQElement* ret) {
 #endif
@@ -317,7 +334,7 @@ class MultiQueueIO {
     }
 
 #ifdef PERF
-    void __attribute__((noinline)) popInt(uint64_t queue, PQElement* ret) {
+    MQ_NOINLINE void popInt(uint64_t queue, PQElement* ret) {
         auto& q = queues[queue];
         *ret = q.pq.top();
         q.pq.pop();
@@ -325,7 +342,7 @@ class MultiQueueIO {
 #endif
 
 #ifdef PERF
-    boost::optional<uint64_t> __attribute__((noinline)) popBatch(PQElement* ret){
+    MQ_NOINLINE boost::optional<uint64_t> popBatch(PQElement* ret){
 #else
     inline std::optional<uint64_t> popBatch(PQElement* ret) {
 #endif
