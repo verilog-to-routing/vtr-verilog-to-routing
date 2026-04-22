@@ -70,6 +70,10 @@ vtr_flow/arch/symbiflow/*.xml
 vtr_flow/benchmarks/symbiflow/*.eblif
 vtr_flow/benchmarks/symbiflow/sdc/*.sdc
 
+# Hecate 2.5D and 3D architecture family
+# These are auto generated from a few baseline architectures
+vtr_flow/arch/multi_die/hecate/interposer/hecate_25D
+
 #
 # Cloud9 Directory
 #
