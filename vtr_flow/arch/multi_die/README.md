@@ -1,6 +1,6 @@
 # 3D FPGA Architectures
 
-This directory contains architecture files for 3D FPGAs. The architectures are divided into three sub-directories:
+This directory contains architecture files for 3D and 2.5D FPGAs. The architectures are divided into multiple sub-directories:
 
 1. **koios_3d:**
 - Contains architecture files based on the [k6FracN10LB_mem20K_complexDSP_customSB_22nm](../COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.clustered.xml) architecture, utilized in Koios benchmarks.
@@ -39,3 +39,8 @@ This directory contains architecture files for 3D FPGAs. The architectures are d
    - The inter-die delay of architectures in this file is considered to be zero.
    - Contains two dice and both have the simple fabric.
    - All pins can cross die.
+
+4. **hecate:**
+   - Contains architecture files for the Hecate architecture family.
+   - Based on a 7nm FPGA fabric, Hecate is a family of 2.5D and 3D architectures that use various die stacking technologies and inter-die routing architectures.
+   - See the readme file `hecate/README.md` for more information.
