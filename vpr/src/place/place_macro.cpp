@@ -679,6 +679,11 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, co
     ClusterPinId net_sink = clb_nlist.net_pin(clb_net, 1);
     ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
 
+    if (sink_block_id == block_id) {
+        //net is connected back to the same block, should not be counted as a direct connection
+        return false;
+    }
+
     int sink_pin_index = clb_nlist.net_pin_logical_index(clb_net, 1);
 
     auto sink_logical_block = clb_nlist.block_type(sink_block_id);
