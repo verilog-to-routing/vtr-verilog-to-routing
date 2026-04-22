@@ -2,9 +2,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <functional>
-#include <queue>
-#include <unordered_set>
 #include <utility>
 
 #include "pack_patterns.h"
@@ -106,47 +103,11 @@ std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const std::
     return parse_segmented_tokens(hierarchical_type, '/', e_token_format::HIERARCHICAL_TYPE);
 }
 
-std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const t_pb_type& pb_type) {
-    std::vector<t_logical_location_token> tokens;
-
-    std::vector<const t_pb_type*> chain_leaf_to_root;
-    for (const t_pb_type* curr = &pb_type; curr != nullptr;) {
-        chain_leaf_to_root.push_back(curr);
-        curr = (curr->parent_mode) ? curr->parent_mode->parent_pb_type : nullptr;
-    }
-
-    for (auto it = chain_leaf_to_root.rbegin(); it != chain_leaf_to_root.rend(); ++it) {
-        t_logical_location_token token;
-        token.name = (*it)->name ? (*it)->name : "";
-        tokens.push_back(std::move(token));
-    }
-
-    // Recover parent mode selection from each child pb_type's parent_mode.
-    for (size_t i = 0; i + 1 < tokens.size(); ++i) {
-        const t_pb_type* child_pb_type = *(chain_leaf_to_root.rbegin() + i + 1);
-        if (child_pb_type->parent_mode && child_pb_type->parent_mode->name) {
-            tokens[i].mode = std::string(child_pb_type->parent_mode->name);
-        }
-    }
-
-    return tokens;
-}
-
 bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got) {
     if (want.name != got.name) {
         return false;
     }
     if (want.index >= 0 && got.index != want.index) {
-        return false;
-    }
-    if (!want.mode.empty() && got.mode != want.mode) {
-        return false;
-    }
-    return true;
-}
-
-bool token_matches_name_and_mode(const t_logical_location_token& want, const t_logical_location_token& got) {
-    if (want.name != got.name) {
         return false;
     }
     if (!want.mode.empty() && got.mode != want.mode) {
@@ -176,86 +137,4 @@ bool logical_block_location_matches_hierarchical_type(const std::string& logical
         }
     }
     return false;
-}
-
-static std::unordered_set<const t_pb_type*> collect_pattern_pb_types(const t_pack_patterns& pattern) {
-    std::unordered_set<const t_pb_type*> pattern_blocks;
-    if (!pattern.root_block) {
-        return pattern_blocks;
-    }
-
-    std::queue<const t_pack_pattern_block*> block_queue;
-    std::unordered_set<const t_pack_pattern_block*> visited_blocks;
-    std::unordered_set<const t_pb_type*> seen_pb_types;
-    block_queue.push(pattern.root_block);
-    visited_blocks.insert(pattern.root_block);
-
-    while (!block_queue.empty()) {
-        const t_pack_pattern_block* block = block_queue.front();
-        block_queue.pop();
-
-        if (block->pb_type && seen_pb_types.insert(block->pb_type).second) {
-            pattern_blocks.insert(block->pb_type);
-        }
-
-        for (auto conn = block->connections; conn != nullptr; conn = conn->next) {
-            const t_pack_pattern_block* next = (conn->from_block == block) ? conn->to_block : conn->from_block;
-            if (next && !visited_blocks.contains(next)) {
-                visited_blocks.insert(next);
-                block_queue.push(next);
-            }
-        }
-    }
-
-    return pattern_blocks;
-}
-
-int score_logical_block_location_pattern_match(const std::vector<t_logical_location_token>& location_tokens,
-                                               AtomBlockId blk_id,
-                                               const t_pack_patterns& pattern) {
-    auto pattern_blocks = collect_pattern_pb_types(pattern);
-    if (pattern_blocks.empty()) {
-        return -1;
-    }
-
-    int best_score = -1;
-    for (const t_pb_type* pb_type : pattern_blocks) {
-        if (!primitive_type_feasible(blk_id, pb_type)) {
-            continue;
-        }
-
-        auto pb_tokens = parse_hierarchical_type_tokens(*pb_type);
-        if (pb_tokens.empty()) {
-            continue;
-        }
-
-        if (location_tokens.size() > pb_tokens.size()) {
-            continue;
-        }
-
-        // Token-by-token from the front, now matching name + optional index + optional mode.
-        bool all_match = true;
-        int score = 0;
-        for (size_t i = 0; i < location_tokens.size(); ++i) {
-            if (!token_matches(location_tokens[i], pb_tokens[i])) {
-                all_match = false;
-                break;
-            }
-
-            // Name is mandatory; explicit index/mode constraints increase specificity.
-            score += 1; // name match
-            if (location_tokens[i].index >= 0) {
-                score += 1; // explicit index match
-            }
-            if (!location_tokens[i].mode.empty()) {
-                score += 1; // explicit mode match
-            }
-        }
-
-        if (all_match && score > best_score) {
-            best_score = score;
-        }
-    }
-
-    return best_score;
 }
