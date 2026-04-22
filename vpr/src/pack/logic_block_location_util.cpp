@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <functional>
 #include <queue>
 #include <unordered_set>
 #include <utility>
@@ -15,13 +16,13 @@ enum class e_token_format {
     HIERARCHICAL_TYPE,
 };
 
-static std::optional<int> try_parse_int(const std::string& value) {
+static int try_parse_int(const std::string& value) {
     if (value.empty()) {
-        return std::nullopt;
+        return -1;
     }
     for (char ch : value) {
         if (!std::isdigit(static_cast<unsigned char>(ch))) {
-            return std::nullopt;
+            return -1;
         }
     }
     return std::stoi(value);
@@ -42,7 +43,10 @@ static t_logical_location_token parse_single_token(const std::string& token, e_t
     }
 
     if (format == e_token_format::LOGICAL_LOCATION) {
-        parsed.index = try_parse_int(token.substr(lbr + 1, rbr - lbr - 1));
+        int idx = try_parse_int(token.substr(lbr + 1, rbr - lbr - 1));
+        if (idx >= 0) {
+            parsed.index = idx;
+        }
 
         size_t lbm = token.find('{', rbr + 1);
         if (lbm != std::string::npos) {
@@ -53,8 +57,8 @@ static t_logical_location_token parse_single_token(const std::string& token, e_t
         }
     } else {
         std::string first_bracket = token.substr(lbr + 1, rbr - lbr - 1);
-        auto idx = try_parse_int(first_bracket);
-        if (idx) {
+        int idx = try_parse_int(first_bracket);
+        if (idx >= 0) {
             parsed.index = idx;
         } else if (!first_bracket.empty()) {
             parsed.mode = first_bracket;
@@ -94,7 +98,6 @@ static std::vector<t_logical_location_token> parse_segmented_tokens(const std::s
     return tokens;
 }
 
-
 std::vector<t_logical_location_token> parse_logical_block_location_tokens(const std::string& location) {
     return parse_segmented_tokens(location, '.', e_token_format::LOGICAL_LOCATION);
 }
@@ -103,14 +106,50 @@ std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const std::
     return parse_segmented_tokens(hierarchical_type, '/', e_token_format::HIERARCHICAL_TYPE);
 }
 
+std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const t_pb_type& pb_type) {
+    std::vector<t_logical_location_token> tokens;
+
+    std::vector<const t_pb_type*> chain_leaf_to_root;
+    for (const t_pb_type* curr = &pb_type; curr != nullptr;) {
+        chain_leaf_to_root.push_back(curr);
+        curr = (curr->parent_mode) ? curr->parent_mode->parent_pb_type : nullptr;
+    }
+
+    for (auto it = chain_leaf_to_root.rbegin(); it != chain_leaf_to_root.rend(); ++it) {
+        t_logical_location_token token;
+        token.name = (*it)->name ? (*it)->name : "";
+        tokens.push_back(std::move(token));
+    }
+
+    // Recover parent mode selection from each child pb_type's parent_mode.
+    for (size_t i = 0; i + 1 < tokens.size(); ++i) {
+        const t_pb_type* child_pb_type = *(chain_leaf_to_root.rbegin() + i + 1);
+        if (child_pb_type->parent_mode && child_pb_type->parent_mode->name) {
+            tokens[i].mode = std::string(child_pb_type->parent_mode->name);
+        }
+    }
+
+    return tokens;
+}
+
 bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got) {
     if (want.name != got.name) {
         return false;
     }
-    if (want.index && (!got.index || *want.index != *got.index)) {
+    if (want.index >= 0 && got.index != want.index) {
         return false;
     }
-    if (want.mode && (!got.mode || *want.mode != *got.mode)) {
+    if (!want.mode.empty() && got.mode != want.mode) {
+        return false;
+    }
+    return true;
+}
+
+bool token_matches_name_and_mode(const t_logical_location_token& want, const t_logical_location_token& got) {
+    if (want.name != got.name) {
+        return false;
+    }
+    if (!want.mode.empty() && got.mode != want.mode) {
         return false;
     }
     return true;
@@ -139,27 +178,28 @@ bool logical_block_location_matches_hierarchical_type(const std::string& logical
     return false;
 }
 
-static std::unordered_set<t_pb_type*> collect_pattern_pb_types(const t_pack_patterns& pattern) {
-    std::unordered_set<t_pb_type*> pattern_blocks;
+static std::unordered_set<const t_pb_type*> collect_pattern_pb_types(const t_pack_patterns& pattern) {
+    std::unordered_set<const t_pb_type*> pattern_blocks;
     if (!pattern.root_block) {
         return pattern_blocks;
     }
 
-    std::queue<t_pack_pattern_block*> block_queue;
-    std::unordered_set<t_pack_pattern_block*> visited_blocks;
+    std::queue<const t_pack_pattern_block*> block_queue;
+    std::unordered_set<const t_pack_pattern_block*> visited_blocks;
+    std::unordered_set<const t_pb_type*> seen_pb_types;
     block_queue.push(pattern.root_block);
     visited_blocks.insert(pattern.root_block);
 
     while (!block_queue.empty()) {
-        t_pack_pattern_block* block = block_queue.front();
+        const t_pack_pattern_block* block = block_queue.front();
         block_queue.pop();
 
-        if (block->pb_type) {
-            pattern_blocks.insert(const_cast<t_pb_type*>(block->pb_type));
+        if (block->pb_type && seen_pb_types.insert(block->pb_type).second) {
+            pattern_blocks.insert(block->pb_type);
         }
 
         for (auto conn = block->connections; conn != nullptr; conn = conn->next) {
-            t_pack_pattern_block* next = (conn->from_block == block) ? conn->to_block : conn->from_block;
+            const t_pack_pattern_block* next = (conn->from_block == block) ? conn->to_block : conn->from_block;
             if (next && !visited_blocks.contains(next)) {
                 visited_blocks.insert(next);
                 block_queue.push(next);
@@ -169,87 +209,53 @@ static std::unordered_set<t_pb_type*> collect_pattern_pb_types(const t_pack_patt
 
     return pattern_blocks;
 }
-static bool leaf_token_matches_relaxed(const t_logical_location_token& leaf_token,
-                                       const t_logical_location_token& pb_token) {
-    if (leaf_token.name != pb_token.name) {
-        return false;
-    }
-    // Pattern tokens from pb_type names often omit index/mode. Treat those as wildcards.
-    if (pb_token.index && leaf_token.index && *pb_token.index != *leaf_token.index) {
-        return false;
-    }
-    if (pb_token.mode && leaf_token.mode && *pb_token.mode != *leaf_token.mode) {
-        return false;
-    }
-    return true;
-}
-
-static bool pb_type_matches_location_mode_hint(const t_pb_type* pb_type,
-                                               const std::vector<t_logical_location_token>& location_tokens) {
-    if (!pb_type) {
-        return false;
-    }
-    for (const auto& token : location_tokens) {
-        if (!token.mode || token.mode->empty()) {
-            continue;
-        }
-        for (const t_mode* mode = pb_type->parent_mode; mode != nullptr; mode = mode->parent_pb_type ? mode->parent_pb_type->parent_mode : nullptr) {
-            if (*token.mode == mode->name) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
 
 int score_logical_block_location_pattern_match(const std::vector<t_logical_location_token>& location_tokens,
                                                AtomBlockId blk_id,
                                                const t_pack_patterns& pattern) {
-    if (location_tokens.empty()) {
-        return -1;
-    }
-
     auto pattern_blocks = collect_pattern_pb_types(pattern);
     if (pattern_blocks.empty()) {
         return -1;
     }
 
-    const auto& leaf_token = location_tokens.back();
-    bool matches_atom = false;
-    bool leaf_token_match = false;
-    int best_leaf_specificity = 0;
-
-    for (auto* pb_type : pattern_blocks) {
-        if (primitive_type_feasible(blk_id, pb_type)) {
-            matches_atom = true;
+    int best_score = -1;
+    for (const t_pb_type* pb_type : pattern_blocks) {
+        if (!primitive_type_feasible(blk_id, pb_type)) {
+            continue;
         }
 
-        auto pb_tokens = parse_hierarchical_type_tokens(pb_type->name);
+        auto pb_tokens = parse_hierarchical_type_tokens(*pb_type);
         if (pb_tokens.empty()) {
-            t_logical_location_token name_only_token;
-            name_only_token.name = pb_type->name;
-            pb_tokens.push_back(std::move(name_only_token));
+            continue;
         }
 
-        for (const auto& pb_token : pb_tokens) {
-            if (leaf_token_matches_relaxed(leaf_token, pb_token)) {
-                leaf_token_match = true;
-                int specificity = 0;
-                if (pb_token.index && leaf_token.index && *pb_token.index == *leaf_token.index) {
-                    specificity += 1;
-                }
-                if (pb_type_matches_location_mode_hint(pb_type, location_tokens)) {
-                    specificity += 1;
-                }
-                best_leaf_specificity = best_leaf_specificity + specificity;
+        if (location_tokens.size() > pb_tokens.size()) {
+            continue;
+        }
+
+        // Token-by-token from the front, now matching name + optional index + optional mode.
+        bool all_match = true;
+        int score = 0;
+        for (size_t i = 0; i < location_tokens.size(); ++i) {
+            if (!token_matches(location_tokens[i], pb_tokens[i])) {
+                all_match = false;
+                break;
+            }
+
+            // Name is mandatory; explicit index/mode constraints increase specificity.
+            score += 1; // name match
+            if (location_tokens[i].index >= 0) {
+                score += 1; // explicit index match
+            }
+            if (!location_tokens[i].mode.empty()) {
+                score += 1; // explicit mode match
             }
         }
+
+        if (all_match && score > best_score) {
+            best_score = score;
+        }
     }
 
-    // Require both architectural feasibility and a leaf primitive match.
-    if (!matches_atom && !leaf_token_match) {
-        return -1;
-    }
-    
-    return best_leaf_specificity; // Keep minimal tie-break information.
+    return best_score;
 }

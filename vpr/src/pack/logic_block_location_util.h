@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -12,13 +11,15 @@ struct t_pack_patterns;
 
 struct t_logical_location_token {
     std::string name;
-    std::optional<int> index;
-    std::optional<std::string> mode;
+    int index = -1;
+    std::string mode;
 };
 
 std::vector<t_logical_location_token> parse_logical_block_location_tokens(const std::string& location);
 std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const std::string& hierarchical_type);
+std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const t_pb_type& pb_type);
 
+bool token_matches_name_and_mode(const t_logical_location_token& want, const t_logical_location_token& got);
 bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got);
 bool logical_block_location_matches_hierarchical_type(const std::string& logical_block_location,
                                                       const std::string& hierarchical_type_name);
