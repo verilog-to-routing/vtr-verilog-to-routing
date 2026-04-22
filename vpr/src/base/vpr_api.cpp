@@ -76,6 +76,7 @@
 #include "timing_fail_error.h"
 #include "analytical_placement_flow.h"
 #include "verify_clustering.h"
+#include "device_size_estimate.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -740,6 +741,18 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                        vpr_setup.RoutingArch,
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
+
+    // Estimate the device size before packing and build the RR graph if necessary.
+    DeviceSizeEstimator device_size_estimator(vpr_setup, arch, prepacker);
+
+    // Infer logical RAMs and assign to physical types to prioritize during packing.
+    // For the auto-device flow, reuse the groups already computed by the estimator.
+    RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
+                         prepacker,
+                         pre_cluster_timing_manager,
+                         device_size_estimator.ram_groups(),
+                         vpr_setup.PackerOpts.pack_verbosity,
+                         vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,
