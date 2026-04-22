@@ -1,5 +1,175 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
+<!--
+    This is the architecture file for the Hecate 2.5D architecture. The blocks (logic, RAM, DSP)
+    are Agilex-like [8] and the intra-die routing architecture is similar to Stratix IV [7].
+    The inter-die routing architecture is routing-based and similar the Xilinx 7-Series.  The FPGA
+    fabric is based on a 7nm fabric defined in [1], [2]. The architectures feature 10um microbump
+    and 5um hybrid-bonding pitches.
+
+    Delay models have been extracted using SPICE simulations (ASAP-7 7nm node for the active die
+    and 45nm for the interposer based on the ITRS 2005 interconnect report).
+
+    ##############################
+    Parameters
+    ##############################
+    Parameter | Value | Definition
+    __________|_______|______________________________
+    N         |    10 | Number of BLEs per cluster
+    W         |   300 | Channel width
+    L         |  4,16 | Wire segment length
+    I         |    60 | Number of cluster inputs
+    O         |    40 | Number of cluster outputs
+    K         |     6 | LUT size
+    Fs        |     3 | Switch block flexibility
+    Fcin      |  0.15 | Cluster input flexibility
+    Fcout     |   0.1 | Cluster output flexibility
+    Fclocal   |   0.5 | Local input crossbar population
+
+    ##############################
+    Logic Cluster
+    ##############################
+    This architecture has 10 ALMs (or FLEs: Fracturable Logic Elements) per Logic Cluster
+    (or LAB or CLB), where each ALM is a 6-LUT fracturable into
+    two 5-LUTs. The ALM has 8 inputs and 4 optionally registered outputs.The two 5-LUTs should
+    share at least two inputs. Each two ALM outputs are logically equivalent, which means any
+    output signal that can reach ALM.out[0] can reach ALM.out[1] and the same thing for
+    ALM.out[2] and ALM.out[3]. The ALMs in this architecture have an arithmetic mode
+    where each 5-LUT is fractured into two 4-LUTs, resulting in a total of four 4-LUTs and two
+    bits of addition per ALM. This architecture has a single carry chain that spans the 10 ALMs
+    in the LAB.
+
+    The LAB (or Logic Cluster or CLB) has 60 inputs and 40 outputs. Two outputs of each ALM are fed 
+    to the right and left LAB using direct links and are also fed back to the LAB as feedback connections 
+    sharing the 60 input ports with the signals coming from the routing channels.
+
+    The LAB has a 50% sparsely populated input crossbar.
+    
+    ##############################
+    DSP Slice
+    ##############################
+    This architecture has a DSP block that supports the following modes:
+
+    Fixed point modes:
+    _________________
+    1. 27x27 fixed point multiplier (multiply)
+    2. 27x27 fixed point mac (mac_int_27x27)
+    3. Two 18x19 fixed point multipliers (multiply)
+    4. Two 18x19 fixed point macs (mac_int_18x19)
+    5. Four 9x9 fixed point multipliers (multiply)
+    6. Four 9x9 fixed point macs (mac_int_9x9)
+    7. 27x27 plus 64 mode (mult_add_mode_27_27_64/mult_add_int_27x27). 27 * 27 + 64 -> 64. result = ax * ay + bx + chainin. chainout = result 
+    8. 18x19 sum-of-2 mode (sop_2_mode/int_sop_2) result = (bx * by) + (ax * ay) + chainin. chainout = result    
+    9. 18x19 plus 36 mode (mult_add_mode_18_19_36/mult_add_int_18x19). 18 * 19 + 36 -> 64. result = ax * ay + bx + chainin. chainout = result 
+    10. 9x9 sum-of-4 mode (sop_4_mode/int_sop_4) result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin. chainout = result 
+    11. 9x9 sum-of-4 accum mode (sop_4_accum_mode/int_sop_accum_4) result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin + accumulator. chainout = result 
+
+    Floating point modes:
+    ____________________
+
+    IMPORTANT:
+    The precisions supported are IEEE floating point 32-bit, IEEE floating point 16-bit and
+    Brain floating point (BF16). In the 16-bit mode descriptions, wherever "fp16" is used, it
+    refers to either IEEE floating point 16-bit or BF16. There are mode bits on the DSP slice
+    that can be used to differentiate between them. Doing this saves the effort of explicitly
+    specifying all the 16-bit modes twice in this file. 
+    Since the goal is architectural exploration and not functional simulation, the mode bits 
+    can be specified to any random value while instantiating the DSP slice in a Verilog benchmark.
+
+    1A. One fp32 multiplier (mult_fp_32)
+    1B. One fp32 multiplier, clocked (mult_fp_clk_32)
+    2A. One fp32 adder/subtractor (addition_fp_32)
+    2B. One fp32 adder/subtractor, clocked (addition_fp_clk_32)
+    3. One fp32 mac (mac_fp_32)
+    4A. Two fp16 multipliers (mult_fp_16)
+    4B. Two fp16 multipliers, clocked (mult_fp_clk_16)
+    5A. Two fp16 adders/subtractors (addition_fp_16)
+    5B. Two fp16 adders/subtractors, clocked (addition_fp_clk_16)
+    6. Two fp16 macs (mac_fp_16)
+    7. floating point fp16 sum-of-products mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. chainout = third_inp or result) (fp16_sum_of_products_mode/fp16_mult_add)
+    8. floating point fp16 sum-of-2 mult mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b + fp32 chainin or third inp. chainout = third_inp or result) (fp16_sum_of_products_2_mult_mode/fp16_sop2_mult)
+    9. floating point fp16 sum-of-2 accum mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b + accumulator. chainout = result) (fp16_sum_of_products_2_accum_mode/fp16_sop2_accum)
+    10. floating point fp16 mult, fp32 add mode (chainout = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. result = chainin + third_inp) (fp16_mult_fp32_add/fp16_mult_fp32_add)
+    11. floating point fp16 mult, fp32 accum mode (chainout = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. result = third_inp + accumulator) (fp16_mult_fp32_accum/fp16_mult_fp32_accum)
+    12. floating point fp32 mult_then_add mode (result = fp32_mult_a * fp32_mult_b + chainin. chainout = third_inp or result) (fp32_mult_then_add/fp32_mult_then_add)
+    13. floating point fp32 mult_add mode (chainout = fp32_mult_a * fp32_mult_b. chainout = third_inp + chainin) (fp32_mult_add/fp32_mult_add)
+
+    The DSP block was designed in Verilog and COFFE's [5] hybrid flow was used to generate
+    area and delay results. The standard cell library used was Cadence GPDK 45nm (gsclib045_svt_v4.4)
+    and area/delay scaling equations from [6] were used.
+
+    A 50% sparsely populated input crossbar was added to the DSP block but is commented out.
+    It was leading to a failure in in VPR. See the discussion on this commit: 
+    https://github.com/verilog-to-routing/vtr-verilog-to-routing/commit/ea7acf1582ece35e892c26b756aa302d2e12ddb2
+
+    Once this is fixed, the input crossbar code can be enabled.
+
+    ##############################
+    Memory Blocks
+    ##############################
+    The architecture also has a 20Kb memory blocks (or M20k or BRAM) that has true and simple dual port modes. 
+    In simple dual port mode the memory can be configured in the following modes: 512x40, 1024x20 and 2048x10,
+    while in true dual port mode it can be configured as: 1024x20 and 2048x10.
+
+    The BRAM has registered inputs and outputs. See details on how the delays for this block were 
+    obtained, in the comments before the specification of the BRAM primitive, towards the end of this file.
+
+    The BRAM doesn't have an input crossbar. Adding an input crossbar was leading to a 
+    seg fault in VPR, likely because of https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1475
+
+    Once this is fixed, an input crossbar can be added. The input crossbar delay from COFFE was: 29.47ps
+
+    ##############################
+    Routing/Interconnect
+    ##############################
+    The routing channel width is 300. Note that the channel width isn't specified directly in this arch file. 
+    Switch pattern calculations assume that value. During experiments, channel width can be specified using 
+    the command line switch `route_chan_width`.
+    The architecture uses unidirectional routing with wire segments of length 4 (260 out of 300 wires) and 
+    length 16 (40 out of 300 wires). The length 16 wires do not directly connect to block pins and are only 
+    accessible from the length 4 wires. Switches appear after every 4 blocks on the length 16 wires. 
+    The switch blocks use a custom switching pattern based on the Stratix-IV-like architecture used in the 
+    Titan flow [7]. 
+
+    ##############################
+    I/Os
+    ##############################
+    I/O pads are arranged along the perimeter of the FPGA. No area values provided for the I/Os.
+
+    ##############################
+    Comments on similarities and differences with Intel FPGA architecture.
+    ##############################
+    The main parameters of the logic blocks, DSPs and RAMs are similar to Intel FPGAs. But here are
+    some important points:
+    1. The DSP slice supports lower precision modes - int8 (actually 9x9) and 16-bit floating point
+       (IEEE half-precision and bfloat16). These modes are present in Intel Agilex FPGA DSPs.
+    2. DSPs are chained in vertical direction (chainin-chainout connections for output cascading
+       and scanin-scanout connections for input cascading). This is a common feature
+       in modern FPGAs.
+    3. There are no registers on the interconnect/routing wires in this architecture. That is a main
+       feature in the Stratix10 and Agilex families of Intel FPGA (it's called HyperFlex by Intel).
+    4. The architecture doesn't have sectors. All blocks are laid out in columns on the entire chip.
+       Most modern Intel FPGAs have sector based layout.
+    5. The IOs are on the perimeter, instead of being arranged in columns. Modern FPGAs arrange I/Os in
+       columns.
+    6. The routing architecture is similar to Stratix IV. There are wire segments of L=4 
+       and L=16. And a custom switch pattern (not a standard wilton switch) is used. 
+
+    [1] A. Arora et al., "Koios 2.0: Open-Source Deep Learning Benchmarks for FPGA Architecture and CAD Research," TCAD 2023
+    [2] A. Boutros, F. Mahmoudi, A. Mohaghegh, S. More and V. Betz, "Into the Third Dimension: Architecture Exploration Tools for 3D Reconfigurable Acceleration Devices," FPT 2023
+    [3] M. Eldafrawy, A. Boutros, S. Yazdanshenas, and V. Betz, "FPGA Logic Block Architectures for
+        Efficient Deep Learning Inference" in ACM TRETS, 2020
+    [4] PTM High Performance 22nm Metal Gate / High-K / Strained-Si 22NM_BULK_HP, from http://ptm.asu.edu/
+        See: https://github.com/vaughnbetz/COFFE/blob/master/spice_models/ptm_22nm_bulk_hp.l
+    [5] S. Yazdanshenas, and V. Betz, "COFFE 2: Automatic Modelling and Optimization of
+        Complex and Heterogeneous FPGA Architectures" in ACM TRETS, 2019. 
+    [6] A. Stillmaker and B. Baas, "Scaling equations for the accurate prediction of CMOS device 
+        performance from 180 nm to 7 nm" in Integration, the VLSI Journal (2017)
+    [7] K. E. Murray et al., “Timing-Driven Titan: Enabling Large Benchmarks and Exploring the Gap between 
+        Academic and Commercial CAD,” TRETS 2015.
+    [8] A. Arora et al., "Tensor Slices to the Rescue: Supercharging ML Acceleration on FPGAs", ISFPGA 2020.
+-->
+
 <architecture>
   <models>
     <model name="single_port_ram">
@@ -230,6 +400,9 @@
         <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
         <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
 
+        <!-- One horizontal interposer cut in the middle of the die. Each cut instantiates [INT_WIRE_LENGTH - 1]*[num] interposer
+             segments using the scatter-gather syntax. [num] depends on the die stacking technology pitch. 10um pitch means num = 3 while
+             5um pitch mean num = 12 -->
         <interposer_cut y="H / 2 - 1">
           <interdie_wire sg_name="interposer_sg_upward" sg_link="sg_UP" offset_start="-16" offset_end="-1" offset_increment="1" num="3"/>
           <interdie_wire sg_name="interposer_sg_downward" sg_link="sg_DOWN" offset_start="1" offset_end="16" offset_increment="1" num="3"/>
@@ -254,6 +427,7 @@
     <switch type="mux" name="ipin_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="5.636e-11" mux_trans_size="2.008" buf_size="9.624436045683868"/>
     <switch type="mux" name="ipin_inter_layer_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="130e-12" mux_trans_size="1.508" buf_size="11.71"/>
 
+    <!-- Interposer wire segment drivers. Delay values are extracted from SPICE simulations -->
     <switch type="mux" name="L5_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
       <Tdel num_inputs="48" delay="132.52e-12"/>
       <Tdel num_inputs="24" delay="111.03e-12"/>
@@ -382,10 +556,11 @@
     </switch>
   </switchlist>
   <segmentlist>
-    <segment name="int_wire" freq="0" length="17" type="unidir" Rmetal="0.0" Cmetal="0.0"> <!-- CHANGE length -->
-      <mux name="L17_int_driver_10um_bump"/> <!-- CHANGE name -->
-      <sb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</sb> <!-- CHANGE pattern = length + 1 zeroes -->
-      <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb> <!-- CHANGE pattern = length + 1 zeroes -->
+  <!-- Interposer wire segment definition. Interposer segment length and die stacking technology must match the driver. -->
+    <segment name="int_wire" freq="0" length="17" type="unidir" Rmetal="0.0" Cmetal="0.0">
+      <mux name="L17_int_driver_10um_bump"/>
+      <sb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</sb>
+      <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb>
     </segment>
   
     <segment name="L4" freq="280" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0">
@@ -1677,36 +1852,43 @@
     <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
 
+  <!-- Scatter-gather patterns used for inter-die connections. Two patterns are defined:
+       one for downward inter-die connections and one for upward inter-die connections. 
+       Each pattern gathers [num_conns] connections from L4 wires in 3 sides
+       (right, left, and top for downward, and right, left, and bottom for upward).
+       Then, it scatters these connections to [num_conns] L4 wires on all sides after travelling
+       the length of the interposer wire.
+  -->
   <scatter_gather_list>
       <sg_pattern name="interposer_sg_downward" type="unidir">
         <gather>
-          <wireconn num_conns="12" side="rlt"> <!-- CHANGE num_conns -->
+          <wireconn num_conns="12" side="rlt">
             <from type="L4" switchpoint="0, 1, 2, 3"/>
           </wireconn>
         </gather>
 
         <scatter>
-          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/> <!-- CHANGE num_conns -->
+          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/>
         </scatter>
 
         <sg_link_list>
-          <sg_link name="sg_DOWN" y_offset="-17" mux="interposer_sw" seg_type="int_wire"/> <!-- CHANGE y_offset -->
+          <sg_link name="sg_DOWN" y_offset="-17" mux="interposer_sw" seg_type="int_wire"/>
         </sg_link_list>
       </sg_pattern>
 
       <sg_pattern name="interposer_sg_upward" type="unidir">
         <gather>
-          <wireconn num_conns="12" side="rlb"> <!-- CHANGE num_conns -->
+          <wireconn num_conns="12" side="rlb">
             <from type="L4" switchpoint="0, 1, 2, 3"/>
           </wireconn>
         </gather>
 
         <scatter>
-          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/> <!-- CHANGE num_conns -->
+          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/>
         </scatter>
 
         <sg_link_list>
-          <sg_link name="sg_UP" y_offset="17" mux="interposer_sw" seg_type="int_wire"/> <!-- CHANGE y_offset -->
+          <sg_link name="sg_UP" y_offset="17" mux="interposer_sw" seg_type="int_wire"/>
         </sg_link_list>
 
       </sg_pattern>
