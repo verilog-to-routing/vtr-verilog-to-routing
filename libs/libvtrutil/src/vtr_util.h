@@ -7,15 +7,6 @@
 #include <cstdarg>
 #include <array>
 
-#ifdef _MSC_VER // MSVC
-// MSVC does not support GCC __attribute__ or __builtin_prefetch.
-// Without this guard, GCC-specific constructs can cause syntax errors
-// (e.g., in multi_queue_d_ary_heap.tpp). Since prefetch is only a
-// performance hint, it is safe to make it a no-op and ignore attributes.
-#define __attribute__(x)
-#define __builtin_prefetch(...) ((void)0)
-#endif
-
 namespace vtr {
 
 ///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'

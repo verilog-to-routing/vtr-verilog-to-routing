@@ -23,14 +23,6 @@
 #include <string>
 #include <vector>
 
-#ifdef _MSC_VER // MSVC
-// MSVC does not support GCC __builtin_prefetch.
-// Without this guard, GCC-specific constructs can cause syntax errors
-// (e.g., in multi_queue_d_ary_heap.tpp). Since prefetch is only a
-// performance hint, it is safe to make it a no-op and ignore attributes.
-#define __builtin_prefetch(...) ((void)0)
-#endif
-
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *
