@@ -248,12 +248,15 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
 
     // Infer logical RAMs and assign to physical types to prioritize during packing.
     // For the auto-device flow, reuse the groups already computed by the estimator.
-    RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
-                         prepacker,
-                         pre_cluster_timing_manager,
-                         device_size_estimator.ram_groups(),
-                         ap_opts.log_verbosity,
-                         vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+    RamMapper ram_mapper;
+    if (vpr_setup.PackerOpts.use_ram_mapper) {
+        ram_mapper = RamMapper(g_vpr_ctx.atom().netlist(),
+                               prepacker,
+                               pre_cluster_timing_manager,
+                               device_size_estimator.ram_groups(),
+                               ap_opts.log_verbosity,
+                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+    }
 
     // Create the ap netlist from the atom netlist using the result from the
     // prepacker and ram mapper.

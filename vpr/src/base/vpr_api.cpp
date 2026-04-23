@@ -747,12 +747,15 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // Infer logical RAMs and assign to physical types to prioritize during packing.
     // For the auto-device flow, reuse the groups already computed by the estimator.
-    RamMapper ram_mapper(g_vpr_ctx.atom().netlist(),
-                         prepacker,
-                         pre_cluster_timing_manager,
-                         device_size_estimator.ram_groups(),
-                         vpr_setup.PackerOpts.pack_verbosity,
-                         vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+    RamMapper ram_mapper;
+    if (vpr_setup.PackerOpts.use_ram_mapper) {
+        ram_mapper = RamMapper(g_vpr_ctx.atom().netlist(),
+                               prepacker,
+                               pre_cluster_timing_manager,
+                               device_size_estimator.ram_groups(),
+                               vpr_setup.PackerOpts.pack_verbosity,
+                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+    }
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,

@@ -785,6 +785,13 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``2``
 
+.. option:: --use_ram_mapper {on | off}
+
+    Controls whether the RAM mapper is used to infer logical and physical RAMs and use physical RAM groups to guide RAM packing and prioritize RAMs in the packing order.
+    In the analytical placement flow, global placement treats physical RAM groups as single moveable units.
+
+    **Default:** ``on``
+
 .. option:: --write_block_usage <file>
 
     Writes out to the file under path <file> cluster-level block usage summary in machine
