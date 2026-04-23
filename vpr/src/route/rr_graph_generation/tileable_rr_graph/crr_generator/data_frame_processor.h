@@ -14,7 +14,7 @@
 #include <cmath>
 
 #include "crr_common.h"
-#include "vtr_assert.h"
+#include "vpr_error.h"
 namespace crrgenerator {
 
 /**
@@ -64,8 +64,7 @@ struct Cell {
             if (auto p = std::get_if<std::string>(&value))
                 return static_cast<int64_t>(std::strtod(p->c_str(), nullptr));
         }
-        VTR_ASSERT_MSG(false, "as_int() called on a non-numeric Cell");
-        return 0; // unreachable
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "as_int() called on a non-numeric Cell");
     }
 
     std::string as_string() const {
