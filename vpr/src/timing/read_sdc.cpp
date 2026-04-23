@@ -190,38 +190,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
         // Collect all of the target pins and their names. The names of the objects
         // are used for the names of the clocks when no name is provided.
-        std::map<AtomPinId, std::string> target_pins;
-        for (sdcparse::ObjectId object_id : cmd.targets) {
-            sdcparse::ObjectType object_type = obj_database.get_object_type(object_id);
-            AtomPinId clock_pin;
-            if (object_type == sdcparse::ObjectType::Port || object_type == sdcparse::ObjectType::Pin) {
-                // When the target of the create_clock command is a pin, we implicitly are targeting
-                // the driver of the net that this pin is a part of (i.e. the whole clock net).
-                AtomPinId target_pin = get_port_or_pin(object_id);
-                VTR_ASSERT(target_pin.is_valid());
-                AtomNetId target_net = netlist_.pin_net(target_pin);
-                clock_pin = netlist_.net_driver(target_net);
-            } else {
-                VTR_ASSERT(object_type == sdcparse::ObjectType::Net);
-                // When the target of the create_clock command is a net, we implicitly are targeting
-                // the driver of that net.
-                AtomNetId target_net = get_net(object_id);
-                VTR_ASSERT(target_net.is_valid());
-                clock_pin = netlist_.net_driver(target_net);
-                if (!clock_pin.is_valid()) {
-                    std::string net_name = netlist_.net_name(target_net);
-                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                              "Net '%s' has no driver and cannot be used as a clock target",
-                              net_name.c_str());
-                }
-            }
-            VTR_ASSERT(clock_pin.is_valid());
-
-            if (!target_pins.contains(clock_pin)) {
-                std::string object_name = obj_database.get_object_name(sdcparse::ObjectId(object_id));
-                target_pins.insert(std::make_pair(clock_pin, object_name));
-            }
-        }
+        std::map<AtomPinId, std::string> target_pins = get_clock_target_pins(cmd.targets);
 
         // Check that if the clock is named, there is only one unique clock driver.
         if (target_pins.size() > 1 && !cmd.name.empty()) {
@@ -259,9 +228,173 @@ class SdcParseCallback : public sdcparse::Callback {
         }
     }
 
-    void create_generated_clock(const sdcparse::CreateGeneratedClock& /*cmd*/) override {
+    void create_generated_clock(const sdcparse::CreateGeneratedClock& cmd) override {
         num_commands_++;
-        vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "create_generated_clock currently unsupported");
+
+        // Check that the arguments to the command are valid.
+        if (cmd.add) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-add option not supported for create_generated_clock");
+        }
+
+        if (cmd.sources.empty()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-source is required for create_generated_clock");
+        }
+
+        if (cmd.divide_by == sdcparse::UNINITIALIZED_INT && cmd.multiply_by == sdcparse::UNINITIALIZED_INT) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "Either -divide_by or -multiply_by is required for create_generated_clock");
+        }
+        if ((cmd.divide_by != sdcparse::UNINITIALIZED_INT && cmd.divide_by <= 0) || (cmd.multiply_by != sdcparse::UNINITIALIZED_INT && cmd.multiply_by <= 0)) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-divide_by and -multiply_by must be strictly positive for create_generated_clock");
+        }
+
+        // If no targets are provided, the generated clock is virtual.
+        bool is_virtual = cmd.targets.empty();
+        if (is_virtual) {
+            // Virtual clocks must be named.
+            if (cmd.name.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "clocks with no targets (i.e. virtual clocks) must have a name");
+            }
+        } else {
+            // Check that all of the objects are valid types.
+            bool targets_valid = check_objects(cmd.targets, {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin, sdcparse::ObjectType::Net});
+            if (!targets_valid) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "create_generated_clock command only supports ports, pins, and nets");
+            }
+        }
+
+        // Get the source clock.
+        //  Get the clock pins referred to by the source argument.
+        std::map<AtomPinId, std::string> source_clock_pins = get_clock_target_pins(cmd.sources);
+        if (source_clock_pins.size() > 1) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "create_generated_clock can only have 1 source clock, multiple found.");
+        }
+        if (source_clock_pins.empty()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "Cannot find source pin for create_generated_clock");
+        }
+        //  Get the clock domain for the found pins.
+        AtomPinId source_clock_pin = source_clock_pins.begin()->first;
+        tatum::NodeId source_clock_tnode = get_clock_source(source_clock_pin);
+        tatum::DomainId source_domain_id;
+        for (tatum::DomainId domain_id : tc_.clock_domains()) {
+            if (tc_.clock_domain_source_node(domain_id) == source_clock_tnode) {
+                if (source_domain_id.is_valid()) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "create_generated_clock source pin matches multiple clocks.");
+                }
+                source_domain_id = domain_id;
+            }
+        }
+        if (!source_domain_id.is_valid()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "Cannot find source clock for create_generated_clock. Make sure that the source clock has been created using create_clock.");
+        }
+        //  Find the command that created this clock.
+        VTR_ASSERT(sdc_clocks_.contains(source_domain_id));
+        const sdcparse::CreateClock& source_clock_cmd = sdc_clocks_[source_domain_id];
+
+        // Get the generated clock period.
+        double source_clock_period = source_clock_cmd.period;
+        double generated_clock_period = sdcparse::UNINITIALIZED_FLOAT;
+        if (cmd.divide_by != sdcparse::UNINITIALIZED_INT) {
+            // Dividing the frequency means multiplying the period.
+            generated_clock_period = source_clock_period * static_cast<double>(cmd.divide_by);
+        } else {
+            VTR_ASSERT(cmd.multiply_by != sdcparse::UNINITIALIZED_INT);
+            // Similarly, multiplying the frequency means dividing the period.
+            generated_clock_period = source_clock_period / static_cast<double>(cmd.multiply_by);
+        }
+
+        // Get the rise and fall edge.
+        // Since we can only multiply and divide the clock, the generated clock
+        // can only have a 50% duty cycle.
+        // TODO: Need to add -edges support so other duty cycles can be expressed.
+        if (source_clock_cmd.rise_edge != 0.0) {
+            // Note: This is not supported because it shifts where the rise time
+            //       of the generated clock should be. It is not clear how this
+            //       shift should be performed.
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "Creating a generated clock on a source with a non-zero rising edge is currently unsupported in VPR.");
+        }
+        double generated_rise_edge = 0.0;
+        double generated_fall_edge = generated_clock_period / 2.0;
+
+        if (is_virtual) {
+            // Create a virtual clock.
+            // See the note below, this cmd is only used to lookup information
+            // on the clocks.
+            // TODO: Make this interface better.
+            sdcparse::CreateClock new_create_clock_cmd;
+            new_create_clock_cmd.add = false;
+            new_create_clock_cmd.is_virtual = true;
+            new_create_clock_cmd.name = cmd.name;
+            new_create_clock_cmd.targets = cmd.targets;
+            new_create_clock_cmd.period = generated_clock_period;
+            new_create_clock_cmd.rise_edge = generated_rise_edge;
+            new_create_clock_cmd.fall_edge = generated_fall_edge;
+
+            create_clock_object(cmd.name, tatum::NodeId::INVALID(), new_create_clock_cmd);
+        }
+
+        // Get the targets pins.
+        std::map<AtomPinId, std::string> target_pins = get_clock_target_pins(cmd.targets);
+
+        // Check that if the clock is named, there is only one unique clock driver.
+        if (target_pins.size() > 1 && !cmd.name.empty()) {
+            for (const auto& p : target_pins) {
+                VTR_LOG("Name: %s\n", p.second.c_str());
+            }
+            // NOTE: The reason this is not supported is because we currently
+            //       create unique clock domains for each target. This may not
+            //       be standard and they cannot all be named the same thing.
+            //       This is the same issue in create_clock.
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "named clocks with more than 1 unique target are not supported for create_generated_clock");
+        }
+
+        // Create a netlist clock for every target pin.
+        for (const auto& p : target_pins) {
+            AtomPinId clock_pin = p.first;
+            const std::string& object_name = p.second;
+
+            // Get the name of the clock. If no name is provided, the name of the object (clock pin, port, or net) is used.
+            std::string clock_name;
+            if (cmd.name.empty()) {
+                clock_name = object_name;
+            } else {
+                VTR_ASSERT(target_pins.size() == 1);
+                clock_name = cmd.name;
+            }
+
+            // Get the clock source associated with this pin.
+            tatum::NodeId clock_source = get_clock_source(clock_pin);
+            VTR_ASSERT(clock_source.is_valid());
+
+            // Create equivalent create_clock commands for this generated clock.
+            // NOTE: This is a bit of a hack, but the command is used throughout
+            //       this code to quickly lookup information on the clock.
+            // TODO: Consider using a better storage for this information instead
+            //       of the command.
+            sdcparse::CreateClock new_create_clock_cmd;
+            new_create_clock_cmd.add = false;
+            new_create_clock_cmd.is_virtual = false;
+            new_create_clock_cmd.name = clock_name;
+            new_create_clock_cmd.targets = cmd.targets;
+            new_create_clock_cmd.period = generated_clock_period;
+            new_create_clock_cmd.rise_edge = generated_rise_edge;
+            new_create_clock_cmd.fall_edge = generated_fall_edge;
+
+            // Create the netlist clock (a clock net which ultimately drives a
+            // clock pin on some block in the design netlist).
+            create_clock_object(clock_name, clock_source, new_create_clock_cmd);
+        }
     }
 
     void set_io_delay(const sdcparse::SetIoDelay& cmd) override {
@@ -1117,6 +1250,60 @@ class SdcParseCallback : public sdcparse::Callback {
         VTR_ASSERT(clock_source);
 
         return clock_source;
+    }
+
+    /**
+     * @brief Get the clock target pins referred to by the given objects.
+     *
+     * This is used by the clock creating SDC commands to get the driver pins of the
+     * netlist clocks. This allows us to unify the code such that the target objects
+     * can be pins, ports, and/or nets and naturally dedupe them.
+     *
+     * NOTE: This method returns a pair of pins and their names. The reason is that the
+     *       object contains the name information. Once the objects are parsed into pins,
+     *       this information gets lost, but it is still needed. In the case of dupes, the
+     *       first object found is chosen as the name (which matches other SDC
+     *       implementations).
+     *
+     *  @param target_objects   List of objects to get the clock target pins of.
+     *
+     *  @return A map containing the set of clock target pins and their names.
+     */
+    std::map<AtomPinId, std::string> get_clock_target_pins(const std::vector<sdcparse::ObjectId>& target_objects) {
+        std::map<AtomPinId, std::string> target_pins;
+        for (sdcparse::ObjectId object_id : target_objects) {
+            sdcparse::ObjectType object_type = obj_database.get_object_type(object_id);
+            AtomPinId clock_pin;
+            if (object_type == sdcparse::ObjectType::Port || object_type == sdcparse::ObjectType::Pin) {
+                // When the target of the create_clock command is a pin, we implicitly are targeting
+                // the driver of the net that this pin is a part of (i.e. the whole clock net).
+                AtomPinId target_pin = get_port_or_pin(object_id);
+                VTR_ASSERT(target_pin.is_valid());
+                AtomNetId target_net = netlist_.pin_net(target_pin);
+                clock_pin = netlist_.net_driver(target_net);
+            } else {
+                VTR_ASSERT(object_type == sdcparse::ObjectType::Net);
+                // When the target of the create_clock command is a net, we implicitly are targeting
+                // the driver of that net.
+                AtomNetId target_net = get_net(object_id);
+                VTR_ASSERT(target_net.is_valid());
+                clock_pin = netlist_.net_driver(target_net);
+                if (!clock_pin.is_valid()) {
+                    std::string net_name = netlist_.net_name(target_net);
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "Net '%s' has no driver and cannot be used as a clock target",
+                              net_name.c_str());
+                }
+            }
+            VTR_ASSERT(clock_pin.is_valid());
+
+            if (!target_pins.contains(clock_pin)) {
+                std::string object_name = obj_database.get_object_name(sdcparse::ObjectId(object_id));
+                target_pins.insert(std::make_pair(clock_pin, object_name));
+            }
+        }
+
+        return target_pins;
     }
 
     std::set<AtomPinId> get_ports(const std::vector<sdcparse::ObjectId>& port_group) {
