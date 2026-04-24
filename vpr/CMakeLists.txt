@@ -281,3 +281,10 @@ else()
         )
 endif()
 
+#
+# GUI Tests — Qt-based GUI flow verification (separate from legacy tests)
+#
+if (VPR_USE_EZGL STREQUAL "on")
+    add_subdirectory(test/gui)
+endif()
+
