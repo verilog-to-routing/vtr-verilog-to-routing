@@ -681,6 +681,9 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, co
 
     if (sink_block_id == block_id) {
         //net is connected back to the same block, should not be counted as a direct connection
+        VTR_LOG_WARN(
+            "Block '%s'have a direct connection to itself, this connection will not be counted as a direct connection to form a macro.\n",
+            clb_nlist.block_name(block_id).c_str());
         return false;
     }
 
