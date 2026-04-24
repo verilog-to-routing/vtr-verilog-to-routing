@@ -43,10 +43,6 @@ add_library(libvqm STATIC
              ${LIB_SOURCES}
              ${FLEX_VqmLexer_OUTPUTS} 
              ${BISON_VqmParser_OUTPUT_SOURCE})
-if(WIN32)
-    target_compile_definitions(libvqm PRIVATE YY_NO_UNISTD_H)
-    target_compile_definitions(libvqm PRIVATE isatty=_isatty)
-endif()
 target_include_directories(libvqm PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(libvqm PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
