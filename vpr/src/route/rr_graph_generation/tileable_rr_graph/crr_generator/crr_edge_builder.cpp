@@ -84,6 +84,10 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
                          std::unordered_map<std::string, int>& template_id_cache,
                          const int verbosity) {
+    if (g_vpr_ctx.device().grid.get_num_layers() != 1) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CRR only supports 2D architectures (num_layers must be 1)\n");
+    }
+
     size_t gsb_x = rr_gsb.get_sb_x();
     size_t gsb_y = rr_gsb.get_sb_y();
 
