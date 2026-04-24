@@ -788,6 +788,7 @@ For people not working on CAD, you can probably leave all the options to their d
 .. option:: --use_ram_mapper {on | off}
 
     Controls whether the RAM mapper is used to infer logical and physical RAMs and use physical RAM groups to guide RAM packing and prioritize RAMs in the packing order.
+    When multiple memory block types are available, it also selects the best physical type for each RAM group based on area and timing.
     In the analytical placement flow, global placement treats physical RAM groups as single moveable units.
 
     **Default:** ``on``

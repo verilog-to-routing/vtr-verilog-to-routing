@@ -2311,7 +2311,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool, ParseOnOff>(args.use_ram_mapper, "--use_ram_mapper")
-        .help("Controls whether the RAM mapper is used to infer logical and physical RAMs and use physical RAM groups to guide RAM packing and prioritize RAMs in the packing order. In the analytical placement flow, global placement treats physical RAM groups as single moveable units.")
+        .help("Controls whether the RAM mapper is used to infer logical and physical RAMs and use physical RAM groups to guide RAM packing and prioritize RAMs in the packing order. When multiple memory block types are available, it also selects the best physical type for each RAM group based on area and timing. In the analytical placement flow, global placement treats physical RAM groups as single moveable units.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
