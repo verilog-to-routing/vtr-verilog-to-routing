@@ -61,3 +61,17 @@ fi
 sudo apt-get update
 sudo apt-get install -y "${packages_to_install[@]}"
 
+# Install Qt 6.9.3 via aqtinstall into /opt/qt6.
+# 6.9.3 is the minimum required version: earlier Qt6 releases have internal
+# bugs in the QRhi subsystem that cause rendering failures on our targets.
+# Trailing "# shell" hides these lines from the Dockerfile's sed-based package extractor.
+pip install aqtinstall # shell
+aqt install-qt linux desktop 6.9.3 linux_gcc_64 --outputdir /opt/qt6 # shell
+
+# Export CMAKE_PREFIX_PATH so find_package(Qt6) resolves without extra -D flags.
+# In GitHub Actions, persist it across subsequent steps via GITHUB_ENV.
+QT6_PREFIX=/opt/qt6/6.9.3/linux_gcc_64 # shell
+export CMAKE_PREFIX_PATH="$QT6_PREFIX" # shell
+if [ -n "${GITHUB_ENV:-}" ]; then # shell
+    echo "CMAKE_PREFIX_PATH=$QT6_PREFIX" >> "$GITHUB_ENV" # shell
+fi # shell
