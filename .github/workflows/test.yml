@@ -279,7 +279,7 @@ jobs:
     env:
       # For the CI, we want all build variations to be warning clean.
       # NOTE: Need to turn IPO off due to false warnings being produced.
-      COMMON_CMAKE_PARAMS: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off'
+      COMMON_CMAKE_PARAMS: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DCMAKE_PREFIX_PATH=/opt/qt6/6.9.3/linux_gcc_64'
     steps:
 
     - uses: actions/setup-python@v6
