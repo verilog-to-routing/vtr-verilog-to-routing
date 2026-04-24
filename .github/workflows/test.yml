@@ -65,7 +65,7 @@ jobs:
 
     - name: Build
       env:
-        CMAKE_PARAMS: "-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3"
+        CMAKE_PARAMS: "-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DCMAKE_PREFIX_PATH=/opt/qt6/6.9.3/linux_gcc_64"
         BUILD_TYPE: release
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
@@ -122,7 +122,7 @@ jobs:
 
     - name: Build
       env:
-        CMAKE_PARAMS: "-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on"
+        CMAKE_PARAMS: "-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DCMAKE_PREFIX_PATH=/opt/qt6/6.9.3/linux_gcc_64 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on"
         BUILD_TYPE: release
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
