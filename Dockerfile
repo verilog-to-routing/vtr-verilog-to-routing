@@ -25,6 +25,16 @@ RUN apt-get update -qq \
 # Cleanup
     && apt-get autoclean && apt-get clean && apt-get -y autoremove \
     && rm -rf /var/lib/apt/lists/*
+# Install aqtinstall (no root needed for pip, but in Docker we're building the image)
+RUN pip install aqtinstall
+
+# Install Qt 6.9.3 into /opt/qt6 — isolated from system Qt5.
+# 6.9.3 is the minimum required version: earlier Qt6 releases have internal bugs
+# in the QRhi subsystem that cause rendering failures on our target platforms.
+RUN aqt install-qt linux desktop 6.9.3 linux_gcc_64 \
+      --outputdir /opt/qt6
+# Point CMake to the aqt-installed Qt so find_package(Qt6) resolves without extra -D flags.
+ENV CMAKE_PREFIX_PATH=/opt/qt6/6.9.3/linux_gcc_64
 # Build VTR
 RUN rm -rf build && make -j$(nproc) && make install
 # Container's default launch command

@@ -25,12 +25,6 @@ packages_to_install+=(
     swig
 )
 
-# Required for graphics
-packages_to_install+=(
-    libgtk-3-dev
-    libx11-dev
-)
-
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
 packages_to_install+=(
     build-essential
