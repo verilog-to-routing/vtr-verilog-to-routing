@@ -15,6 +15,9 @@
 #include "globals.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
+#include "router_lookahead.h"
+#include "rr_graph_fwd.h"
+#include "rr_node.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
@@ -1451,9 +1454,16 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
 
             if (!device_ctx.grid.are_locs_on_same_die(child_side_a, child_side_b)
                 && rr_graph.node_layer_high(child_node) == rr_graph.node_layer_low(child_node)) {
-                child_entry.delay = parent_entry.delay;
-                child_entry.cost = parent_entry.cost;
-                child_entry.congestion_upstream = parent_entry.congestion_upstream;
+                
+                int interposer_seg_length = rr_graph.node_length(child_entry.rr_node); // divide this by parent seg length
+                int num_parent_segs =  (interposer_seg_length + rr_graph.node_length(parent_entry.rr_node) - 1) / rr_graph.node_length(parent_entry.rr_node);
+
+                RRIndexedDataId parent_cost_index = rr_graph.node_cost_index(parent_entry.rr_node);
+                t_rr_indexed_data parent_costs = device_ctx.rr_indexed_data[parent_cost_index];
+
+                child_entry.delay = parent_entry.delay + parent_costs.T_linear * num_parent_segs;
+                child_entry.congestion_upstream = parent_entry.congestion_upstream + parent_costs.base_cost * num_parent_segs;
+                child_entry.cost = child_entry.delay;
             }
         }
         //VTR_ASSERT(child_entry.cost >= 0); //Assertion fails in practise. TODO: debug
