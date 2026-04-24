@@ -6,7 +6,7 @@
 circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/multie_die/misc_interposer
+archs_dir=arch/multi_die/misc_interposer
 
 # Add circuits to list to sweep
 circuit_list_add=ch_intrinsics.v
