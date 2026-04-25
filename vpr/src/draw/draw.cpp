@@ -102,11 +102,11 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause(QWidget* /*widget*/, int /*response_id*/, void* /*data*/);
-static void set_block_outline(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
-static void set_block_text(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
-static void set_draw_partitions(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
-static void clip_routing_util(QCheckBox* checkbox, int /*response_id*/, void* /*data*/);
+static void set_force_pause();
+static void set_block_outline(bool checked);
+static void set_block_text(bool checked);
+static void set_draw_partitions(bool checked);
+static void clip_routing_util(bool checked);
 static void run_graphics_commands(const std::string& commands);
 
 /************************** File Scope Variables ****************************/
@@ -1090,26 +1090,26 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
 
     // Connect Pause button
     QPushButton* pause_button = app->find_push_button("PauseButton");
-    QObject::connect(pause_button, &QPushButton::clicked, [app]() {
-        set_force_pause(/*unused*/ nullptr, /*unused*/ -1, app);
+    QObject::connect(pause_button, &QPushButton::clicked, []() {
+        set_force_pause();
     });
 
     // Connect Block Outline checkbox
     QCheckBox* block_outline = app->find_check_box("blockOutline");
-    QObject::connect(block_outline, &QCheckBox::toggled, [app]() {
-        set_block_outline(/*unused*/ nullptr, /*unused*/ -1, app);
+    QObject::connect(block_outline, &QCheckBox::toggled, [](bool checked) {
+        set_block_outline(checked);
     });
 
     // Connect Block Text checkbox
     QCheckBox* block_text = app->find_check_box("blockText");
-    QObject::connect(block_text, &QCheckBox::toggled, [app]() {
-        set_block_text(/*unused*/ nullptr, /*unused*/ -1, app);
+    QObject::connect(block_text, &QCheckBox::toggled, [](bool checked) {
+        set_block_text(checked);
     });
 
     // Connect Clip Routing Util checkbox
     QCheckBox* clip_routing = app->find_check_box("clipRoutingUtil");
-    QObject::connect(clip_routing, &QCheckBox::toggled, [app, clip_routing]() {
-        clip_routing_util(clip_routing, /*unused*/ -1, app);
+    QObject::connect(clip_routing, &QCheckBox::toggled, [](bool checked) {
+        clip_routing_util(checked);
     });
 
     // Connect Debug Button
@@ -1120,17 +1120,16 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
 
     // Connect Draw Partitions Checkbox
     QCheckBox* draw_partitions = app->find_check_box("drawPartitions");
-    QObject::connect(draw_partitions, &QCheckBox::toggled, [app, draw_partitions]() {
-        set_draw_partitions(draw_partitions, /*unused*/ -1, app);
+    QObject::connect(draw_partitions, &QCheckBox::toggled, [](bool checked) {
+        set_draw_partitions(checked);
     });
 }
 
 // Callback function for Block Outline checkbox
-static void set_block_outline(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
+static void set_block_outline(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // assign corresponding bool value to draw_state->draw_block_outlines
-    draw_state->draw_block_outlines = checkbox->isChecked();
+    draw_state->draw_block_outlines = checked;
 
     //redraw
     application->update_message(draw_state->default_message);
@@ -1138,11 +1137,10 @@ static void set_block_outline(QCheckBox* checkbox, int /*response_id*/, void* /*
 }
 
 // Callback function for Block Text checkbox
-static void set_block_text(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
+static void set_block_text(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // assign corresponding bool value to draw_state->draw_block_text
-    draw_state->draw_block_text = checkbox->isChecked();
+    draw_state->draw_block_text = checked;
 
     //redraw
     application->update_message(draw_state->default_message);
@@ -1150,11 +1148,10 @@ static void set_block_text(QCheckBox* checkbox, int /*response_id*/, void* /*dat
 }
 
 // Callback function for Clip Routing Util checkbox
-static void clip_routing_util(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
+static void clip_routing_util(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // assign corresponding bool value to draw_state->clip_routing_util
-    draw_state->clip_routing_util = checkbox->isChecked();
+    draw_state->clip_routing_util = checked;
 
     //redraw
     application->update_message(draw_state->default_message);
@@ -1162,10 +1159,10 @@ static void clip_routing_util(QCheckBox* checkbox, int /*response_id*/, void* /*
 }
 
 // Callback function for Draw Partitions checkbox
-static void set_draw_partitions(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
+static void set_draw_partitions(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (checkbox->isChecked()) {
+    if (checked) {
         QWidget* window = application->find_widget(application->get_main_window_id().c_str());
 
         QDialog* dialog = new QDialog(window);
@@ -1197,7 +1194,7 @@ static void set_draw_partitions(QCheckBox* checkbox, int /*response_id*/, void* 
     application->refresh_drawing();
 }
 
-static void set_force_pause(QWidget* /*widget*/, int /*response_id*/, void* /*data*/) {
+static void set_force_pause() {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->forced_pause = true;
