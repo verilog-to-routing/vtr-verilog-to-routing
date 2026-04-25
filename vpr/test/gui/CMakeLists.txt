@@ -24,14 +24,10 @@ target_link_libraries(test_vpr_gui PRIVATE
 )
 
 target_include_directories(test_vpr_gui PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../src/qt
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/draw
 )
 
-# Pass VPR main.ui path for QtGladeLoader tests
-target_compile_definitions(test_vpr_gui PRIVATE
-    VPR_MAIN_UI_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../../main.ui"
-)
+target_include_directories(test_vpr_gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 set_target_properties(test_vpr_gui PROPERTIES
     CXX_STANDARD 20

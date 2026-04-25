@@ -274,6 +274,7 @@ else()
     target_link_libraries(test_vpr
                             Catch2::Catch2WithMain
                             libvpr)
+    target_include_directories(test_vpr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/test/gui)
 
     add_test(NAME test_vpr
         COMMAND test_vpr --colour-mode ansi
