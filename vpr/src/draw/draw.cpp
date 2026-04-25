@@ -1108,8 +1108,8 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
 
     // Connect Clip Routing Util checkbox
     QCheckBox* clip_routing = app->find_check_box("clipRoutingUtil");
-    QObject::connect(clip_routing, &QCheckBox::toggled, [app]() {
-        clip_routing_util(/*unused*/ nullptr, /*unused*/ -1, app);
+    QObject::connect(clip_routing, &QCheckBox::toggled, [app, clip_routing]() {
+        clip_routing_util(clip_routing, /*unused*/ -1, app);
     });
 
     // Connect Debug Button
@@ -1120,8 +1120,8 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
 
     // Connect Draw Partitions Checkbox
     QCheckBox* draw_partitions = app->find_check_box("drawPartitions");
-    QObject::connect(draw_partitions, &QCheckBox::toggled, [app]() {
-        set_draw_partitions(/*unused*/ nullptr, /*unused*/ -1, app);
+    QObject::connect(draw_partitions, &QCheckBox::toggled, [app, draw_partitions]() {
+        set_draw_partitions(draw_partitions, /*unused*/ -1, app);
     });
 }
 
