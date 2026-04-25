@@ -19,9 +19,11 @@ packages_to_install+=(
     libeigen3-dev
 )
 
-# Required by Qt6GuiPrivate (XKB keyboard support)
+# Required by Qt6 GUI components
 packages_to_install+=(
     libxkbcommon-dev
+    libgl-dev
+    libegl-dev
 )
 
 # Required for parsing SDC files (see LibSDCParse)
