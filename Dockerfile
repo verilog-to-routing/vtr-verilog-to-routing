@@ -25,6 +25,10 @@ RUN apt-get update -qq \
 # Cleanup
     && apt-get autoclean && apt-get clean && apt-get -y autoremove \
     && rm -rf /var/lib/apt/lists/*
+# Install Qt 6.9.3 (no sudo needed in Docker; logic mirrors install_apt_packages.sh)
+RUN pip install aqtinstall \
+    && aqt install-qt linux desktop 6.9.3 linux_gcc_64 --outputdir /opt/qt6
+ENV CMAKE_PREFIX_PATH=/opt/qt6/6.9.3/gcc_64
 # Build VTR
 RUN rm -rf build && make -j$(nproc) && make install
 # Container's default launch command
