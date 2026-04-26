@@ -33,6 +33,9 @@ for candidate in \
     fi
 done
 
+# Required for test_vpr_gui (Catch2), which creates Qt directly without going
+# through VPR's --disp flag. VPR itself sets this automatically when --disp is
+# off, so scripts that only invoke VPR do not need it.
 export QT_QPA_PLATFORM=offscreen
 export QT_SCALE_FACTOR=1
 

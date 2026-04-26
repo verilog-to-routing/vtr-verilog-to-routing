@@ -20,7 +20,6 @@ readonly THRESHOLD="${5:-0.999}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
 readonly COMPARE="${SCRIPT_DIR}/compare_images.py"
 
-export QT_QPA_PLATFORM=offscreen
 export QT_SCALE_FACTOR=1
 
 TEST_TMPDIR=$(mktemp -d)

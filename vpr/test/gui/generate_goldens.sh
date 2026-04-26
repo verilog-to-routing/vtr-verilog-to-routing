@@ -18,7 +18,6 @@ readonly BENCH_DIR="$(cd "${3:?}" && pwd)"
 readonly GOLDEN_DIR="${4:-$(cd "$(dirname "$0")" && pwd)/golden}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
 
-export QT_QPA_PLATFORM=offscreen
 export QT_SCALE_FACTOR=1
 
 GEN_TMPDIR=$(mktemp -d)

@@ -17,7 +17,6 @@ readonly BENCH_DIR="$(cd "${3:?}" && pwd)"
 readonly WORK_DIR="${4:-$(mktemp -d)}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
 
-export QT_QPA_PLATFORM=offscreen
 export QT_SCALE_FACTOR=1
 
 PASS=0

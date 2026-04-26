@@ -13,6 +13,7 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <cmath>
 #include <vector>
@@ -180,6 +181,12 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->graphics_commands = graphics_commands;
     draw_state->renderer_type = renderer_type;
     draw_state->is_flat = is_flat;
+
+    // When --disp is off, force Qt into offscreen mode before QApplication is
+    // created so it doesn't try to connect to an X11/Wayland display.
+    if (!show_graphics_val && !getenv("QT_QPA_PLATFORM")) {
+        setenv("QT_QPA_PLATFORM", "offscreen", /*overwrite=*/1);
+    }
 
     // Create the application object here (not at file scope) so that the
     // QApplication lifetime is bounded by init/close_graphics, not by
