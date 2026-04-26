@@ -403,30 +403,30 @@ class SdcParseCallback : public sdcparse::Callback {
         if (cmd.associated_clocks.empty()) {
             // TODO: This should be relaxed.
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                        "set_io_delay currently requires the clock to be specified");
+                      "set_io_delay currently requires the clock to be specified");
         }
 
         bool clocks_valid = check_objects(cmd.associated_clocks,
-                                            {sdcparse::ObjectType::Clock});
+                                          {sdcparse::ObjectType::Clock});
         if (!clocks_valid) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                        "set_io_delay command only supports clock objects for -clock");
+                      "set_io_delay command only supports clock objects for -clock");
         }
 
         //Error checks
         std::set<tatum::DomainId> domains = get_clocks(cmd.associated_clocks);
         if (domains.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                        "Failed to find clock domain for I/O constraint");
+                      "Failed to find clock domain for I/O constraint");
         }
 
         // Verify that the targets are the correct type.
         // TODO: We may be able to support pins as well. Need to verify.
         bool targets_valid = check_objects(cmd.target_ports,
-                                            {sdcparse::ObjectType::Port});
+                                           {sdcparse::ObjectType::Port});
         if (!targets_valid) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                        "set_io_delay command only supports ports currently");
+                      "set_io_delay command only supports ports currently");
         }
 
         // Get the target ports
@@ -435,8 +435,8 @@ class SdcParseCallback : public sdcparse::Callback {
         if (io_pins.empty()) {
             //We treat this as a warning, since the primary I/Os in the target may have been swept away
             VTR_LOGF_WARN(fname_.c_str(), lineno_,
-                            "Found no matching primary inputs or primary outputs for %s\n",
-                            (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
+                          "Found no matching primary inputs or primary outputs for %s\n",
+                          (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
         }
 
         bool is_max = cmd.is_max;
