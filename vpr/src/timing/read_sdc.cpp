@@ -400,48 +400,33 @@ class SdcParseCallback : public sdcparse::Callback {
     void set_io_delay(const sdcparse::SetIoDelay& cmd) override {
         num_commands_++;
 
-        if (cmd.clock_name.empty()) {
+        if (cmd.associated_clocks.empty()) {
             // TODO: This should be relaxed.
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "set_io_delay currently requires the clock name to be specified");
+                        "set_io_delay currently requires the clock to be specified");
         }
 
-        tatum::DomainId domain;
-
-        // TODO: This should be handled by the parser.
-        if (cmd.clock_name == "*") {
-            if (netlist_clock_drivers_.size() == 1) {
-                //Support non-standard wildcard clock name for set_input_delay/set_output_delay
-                //commands, provided it is unambiguous (i.e. there is only one netlist clock)
-
-                AtomNetId clock_net = netlist_.pin_net(*netlist_clock_drivers_.begin());
-                std::string clock_name = netlist_.net_name(clock_net);
-
-                domain = tc_.find_clock_domain(clock_name);
-            } else {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                          "Wildcard clock domain '%s' is ambiguous in multi-clock circuits, explicitly specify the target clock",
-                          cmd.clock_name.c_str());
-            }
-        } else {
-            //Regular look-up
-            domain = tc_.find_clock_domain(cmd.clock_name);
+        bool clocks_valid = check_objects(cmd.associated_clocks,
+                                            {sdcparse::ObjectType::Clock});
+        if (!clocks_valid) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                        "set_io_delay command only supports clock objects for -clock");
         }
 
         //Error checks
-        if (!domain) {
+        std::set<tatum::DomainId> domains = get_clocks(cmd.associated_clocks);
+        if (domains.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "Failed to find clock domain '%s' for I/O constraint",
-                      cmd.clock_name.c_str());
+                        "Failed to find clock domain for I/O constraint");
         }
 
         // Verify that the targets are the correct type.
         // TODO: We may be able to support pins as well. Need to verify.
         bool targets_valid = check_objects(cmd.target_ports,
-                                           {sdcparse::ObjectType::Port});
+                                            {sdcparse::ObjectType::Port});
         if (!targets_valid) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "set_io_delay command only supports ports currently");
+                        "set_io_delay command only supports ports currently");
         }
 
         // Get the target ports
@@ -450,8 +435,8 @@ class SdcParseCallback : public sdcparse::Callback {
         if (io_pins.empty()) {
             //We treat this as a warning, since the primary I/Os in the target may have been swept away
             VTR_LOGF_WARN(fname_.c_str(), lineno_,
-                          "Found no matching primary inputs or primary outputs for %s\n",
-                          (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
+                            "Found no matching primary inputs or primary outputs for %s\n",
+                            (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
         }
 
         bool is_max = cmd.is_max;
@@ -471,11 +456,13 @@ class SdcParseCallback : public sdcparse::Callback {
             //Set i/o constraint
             if (cmd.type == sdcparse::IoDelayType::INPUT) {
                 if (netlist_.pin_type(pin) == PinType::DRIVER) {
-                    if (is_max) {
-                        tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
-                    }
-                    if (is_min) {
-                        tc_.set_input_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                    for (tatum::DomainId domain : domains) {
+                        if (is_max) {
+                            tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                        }
+                        if (is_min) {
+                            tc_.set_input_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                        }
                     }
                 } else {
                     VTR_ASSERT(netlist_.pin_type(pin) == PinType::SINK);
@@ -491,13 +478,14 @@ class SdcParseCallback : public sdcparse::Callback {
                 VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
 
                 if (netlist_.pin_type(pin) == PinType::SINK) {
-                    if (is_max) {
-                        tc_.set_output_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                    for (tatum::DomainId domain : domains) {
+                        if (is_max) {
+                            tc_.set_output_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                        }
+                        if (is_min) {
+                            tc_.set_output_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                        }
                     }
-                    if (is_min) {
-                        tc_.set_output_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
-                    }
-
                 } else {
                     VTR_ASSERT(netlist_.pin_type(pin) == PinType::DRIVER);
                     AtomBlockId blk = netlist_.pin_block(pin);
