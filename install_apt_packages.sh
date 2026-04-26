@@ -71,5 +71,5 @@ sudo apt-get install -y "${packages_to_install[@]}"
 # Install Qt 6.9.3 via aqtinstall into /opt/qt6.
 # 6.9.3 is the minimum required version: earlier Qt6 releases have internal
 # bugs in the QRhi subsystem that cause rendering failures on our targets.
-sudo pip install aqtinstall
+sudo pip3 install aqtinstall
 sudo aqt install-qt linux desktop 6.9.3 linux_gcc_64 --outputdir /opt/qt6
