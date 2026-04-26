@@ -10,7 +10,10 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
-#include "test_config.hpp"
+
+#ifndef VPR_MAIN_UI_PATH
+#define VPR_MAIN_UI_PATH ":/ezgl/main.ui"
+#endif
 
 #include <QMainWindow>
 #include <QPushButton>

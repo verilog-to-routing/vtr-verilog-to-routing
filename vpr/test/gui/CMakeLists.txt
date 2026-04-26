@@ -27,7 +27,6 @@ target_include_directories(test_vpr_gui PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../src/draw
 )
 
-target_include_directories(test_vpr_gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 set_target_properties(test_vpr_gui PROPERTIES
     CXX_STANDARD 20
