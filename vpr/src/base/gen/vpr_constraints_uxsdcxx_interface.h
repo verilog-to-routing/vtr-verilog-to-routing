@@ -59,7 +59,7 @@ class VprConstraintsBase {
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      *   <xs:attribute name="is_regex" type="xs:string" default="false" />
      * </xs:complexType>
-    */
+     */
     virtual inline const char* get_add_atom_is_regex(typename ContextTypes::AddAtomReadContext& ctx) = 0;
     virtual inline void set_add_atom_is_regex(const char* is_regex, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
     virtual inline const char* get_add_atom_name_pattern(typename ContextTypes::AddAtomReadContext& ctx) = 0;
@@ -75,7 +75,7 @@ class VprConstraintsBase {
      *   <xs:attribute name="layer_high" type="xs:int" />
      *   <xs:attribute name="subtile" type="xs:int" />
      * </xs:complexType>
-    */
+     */
     virtual inline int get_add_region_layer_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline void set_add_region_layer_high(int layer_high, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_layer_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
@@ -92,7 +92,7 @@ class VprConstraintsBase {
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      *   <xs:attribute name="is_regex" type="xs:string" default="false" />
      * </xs:complexType>
-    */
+     */
     virtual inline const char* get_add_logical_block_is_regex(typename ContextTypes::AddLogicalBlockReadContext& ctx) = 0;
     virtual inline void set_add_logical_block_is_regex(const char* is_regex, typename ContextTypes::AddLogicalBlockWriteContext& ctx) = 0;
     virtual inline const char* get_add_logical_block_name_pattern(typename ContextTypes::AddLogicalBlockReadContext& ctx) = 0;
@@ -109,7 +109,7 @@ class VprConstraintsBase {
      *   </xs:sequence>
      *   <xs:attribute name="name" type="xs:string" use="required" />
      * </xs:complexType>
-    */
+     */
     virtual inline const char* get_partition_name(typename ContextTypes::PartitionReadContext& ctx) = 0;
     virtual inline void set_partition_name(const char* name, typename ContextTypes::PartitionWriteContext& ctx) = 0;
     virtual inline void preallocate_partition_add_atom(typename ContextTypes::PartitionWriteContext& ctx, size_t size) = 0;
@@ -134,7 +134,7 @@ class VprConstraintsBase {
      *     <xs:element name="partition" type="partition" maxOccurs="unbounded" />
      *   </xs:sequence>
      * </xs:complexType>
-    */
+     */
     virtual inline void preallocate_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::PartitionWriteContext add_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
     virtual inline void finish_partition_list_partition(typename ContextTypes::PartitionWriteContext& ctx) = 0;
@@ -147,7 +147,7 @@ class VprConstraintsBase {
      *   <xs:attribute name="route_model" type="route_model_type" use="required" />
      *   <xs:attribute name="network_name" type="xs:string" />
      * </xs:complexType>
-    */
+     */
     virtual inline const char* get_set_global_signal_name(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
     virtual inline void set_set_global_signal_name(const char* name, typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
     virtual inline const char* get_set_global_signal_network_name(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
@@ -160,7 +160,7 @@ class VprConstraintsBase {
      *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
      *   </xs:sequence>
      * </xs:complexType>
-    */
+     */
     virtual inline void preallocate_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::SetGlobalSignalWriteContext add_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, enum_route_model_type route_model) = 0;
     virtual inline void finish_global_route_constraints_set_global_signal(typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
@@ -175,7 +175,7 @@ class VprConstraintsBase {
      *     </xs:all>
      *     <xs:attribute name="tool_name" type="xs:string" />
      *   </xs:complexType>
-    */
+     */
     virtual inline const char* get_vpr_constraints_tool_name(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline void set_vpr_constraints_tool_name(const char* tool_name, typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionListWriteContext init_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
