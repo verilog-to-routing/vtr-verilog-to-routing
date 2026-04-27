@@ -355,12 +355,12 @@ void update_screen(ScreenUpdatePriority priority,
 
         state_change = true;
 
-        if (draw_state->show_graphics) {
-            if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
-                set_initial_world_ap();
-            } else {
-                set_initial_world();
-            }
+        // Always compute initial_world so save_graphics can derive correct
+        // image dimensions even in headless mode (show_graphics = false).
+        if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
+            set_initial_world_ap();
+        } else {
+            set_initial_world();
         }
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
