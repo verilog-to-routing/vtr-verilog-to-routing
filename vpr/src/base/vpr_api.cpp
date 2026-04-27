@@ -1,15 +1,15 @@
 ﻿/**
- * @file
- * @author Jason Luu
- * @date June 21, 2012
- *
- * @brief General API for VPR
- *
- * Other software tools should generally call just the functions defined here
- * For advanced/power users, you can call functions defined elsewhere in VPR or
- * modify the data structures directly at your discretion but be aware
- * that doing so can break the correctness of VPR
- */
+  * @file
+  * @author Jason Luu
+  * @date June 21, 2012
+  *
+  * @brief General API for VPR
+  *
+  * Other software tools should generally call just the functions defined here
+  * For advanced/power users, you can call functions defined elsewhere in VPR or
+  * modify the data structures directly at your discretion but be aware
+  * that doing so can break the correctness of VPR
+  */
 
 #include <cstdio>
 #include <cstring>

@@ -1,14 +1,14 @@
 ﻿/**
- * @file
- * @author  Alex Singer
- * @date    September 2024
- * @brief   The implementation of the Cluster Legalizer class.
- *
- * Most of the code in this file was originally part of cluster_util.cpp and was
- * highly integrated with the clusterer in VPR. All code that was used for
- * legalizing the clusters was moved into this file and all the functionality
- * was moved into the ClusterLegalizer class.
- */
+  * @file
+  * @author  Alex Singer
+  * @date    September 2024
+  * @brief   The implementation of the Cluster Legalizer class.
+  *
+  * Most of the code in this file was originally part of cluster_util.cpp and was
+  * highly integrated with the clusterer in VPR. All code that was used for
+  * legalizing the clusters was moved into this file and all the functionality
+  * was moved into the ClusterLegalizer class.
+  */
 
 #include "cluster_legalizer.h"
 #include <algorithm>

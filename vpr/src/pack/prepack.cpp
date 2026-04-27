@@ -1,14 +1,14 @@
 ﻿/*
- * Prepacking: Group together technology-mapped netlist blocks before packing.
- * This gives hints to the packer on what groups of blocks to keep together during packing.
- * Primary purpose:
- *    1) "Forced" packs (eg LUT+FF pair)
- *    2) Carry-chains
- * Duties: Find pack patterns in architecture, find pack patterns in netlist.
- *
- * Author: Jason Luu
- * March 12, 2012
- */
+  * Prepacking: Group together technology-mapped netlist blocks before packing.
+  * This gives hints to the packer on what groups of blocks to keep together during packing.
+  * Primary purpose:
+  *    1) "Forced" packs (eg LUT+FF pair)
+  *    2) Carry-chains
+  * Duties: Find pack patterns in architecture, find pack patterns in netlist.
+  *
+  * Author: Jason Luu
+  * March 12, 2012
+  */
 
 #include "prepack.h"
 
