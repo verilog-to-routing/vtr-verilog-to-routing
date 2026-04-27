@@ -270,6 +270,9 @@ if (QT_MIGRATION_FAST_BUILD)
     message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip VPR tests build")
 else()
     file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+    # Exclude GUI tests — they require Qt and are built separately via
+    # add_subdirectory(test/gui) only when VPR_USE_EZGL is "on".
+    list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/test/gui/.*")
     add_executable(test_vpr ${TEST_SOURCES})
     target_link_libraries(test_vpr
                             Catch2::Catch2WithMain
