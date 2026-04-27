@@ -333,6 +333,12 @@ void update_screen(ScreenUpdatePriority priority,
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
 
+    // The application object is created lazily in vpr_init_graphics(), which is
+    // called after the AP flow.  If we are called before that (e.g. from the
+    // global placer's draw callbacks), bail out — there is nothing to draw.
+    if (application == nullptr)
+        return;
+
     strcpy(draw_state->default_message, msg);
 
     if (!draw_state->show_graphics) {
