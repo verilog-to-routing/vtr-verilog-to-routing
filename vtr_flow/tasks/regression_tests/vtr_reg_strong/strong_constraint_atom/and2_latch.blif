@@ -1,4 +1,4 @@
-﻿.model and2_latch
+.model and2_latch
 .inputs a b clk
 .outputs c d
 .latch n1 d  re clk 0
