@@ -148,7 +148,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline const char* get_add_atom_logical_block_location(AtomBlockId& /*blk_id*/) final {
-        // Only used when writing constraints XML; atom netlist does not store this string.
         return logical_block_location_.c_str();
     }
 

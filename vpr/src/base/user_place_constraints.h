@@ -133,7 +133,7 @@ class UserPlaceConstraints {
     /**
      * @brief Associate an atom with its logical_block_location constraint.
      *
-     * The prepacker later resolves this location into concrete t_pack_patterns
+     * The cluster legalizer later resolves this location into concrete primitive
      * matches.
      */
     void set_atom_logical_block_location(AtomBlockId blk_id, const std::string& logical_block_location);
@@ -141,7 +141,7 @@ class UserPlaceConstraints {
     /**
      * @brief Return an atom's logical_block_location constraint, if one exists.
      *
-     * Returns nullptr when no location constraint was provided.
+     * Returns empty string when no location constraint was provided.
      */
     const std::string get_atom_logical_block_location(AtomBlockId blk_id) const;
 
