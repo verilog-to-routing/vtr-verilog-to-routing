@@ -21,6 +21,7 @@ target_link_libraries(test_vpr_gui PRIVATE
     ezgl
     Catch2::Catch2
     Qt6::Test
+    Qt6::Widgets
 )
 
 target_include_directories(test_vpr_gui PRIVATE
