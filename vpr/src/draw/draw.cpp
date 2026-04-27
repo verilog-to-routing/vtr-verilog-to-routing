@@ -357,10 +357,16 @@ void update_screen(ScreenUpdatePriority priority,
 
         // Always compute initial_world so save_graphics can derive correct
         // image dimensions even in headless mode (show_graphics = false).
-        if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
-            set_initial_world_ap();
-        } else {
-            set_initial_world();
+        // Guard against being called before the device grid is created
+        // (e.g. during packing): set_initial_world() accesses grid dimensions
+        // and crashes on an uninitialised grid.
+        const auto& device_ctx = g_vpr_ctx.device();
+        if (device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0) {
+            if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
+                set_initial_world_ap();
+            } else {
+                set_initial_world();
+            }
         }
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
