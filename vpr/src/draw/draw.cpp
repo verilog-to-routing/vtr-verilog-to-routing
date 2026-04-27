@@ -371,6 +371,18 @@ void update_screen(ScreenUpdatePriority priority,
                     rt = ezgl::renderer_type::immediate;
                 else if (draw_state->renderer_type == "deferred")
                     rt = ezgl::renderer_type::deferred;
+
+                // Headless mode (save_graphics / graphics_commands without --disp):
+                // use immediate (QPainter) so save_graphics works on the offscreen
+                // QPA without requiring a GPU or platform backing-store RHI.
+                // QRhiWidget cannot be used with the offscreen QPA: its internal
+                // QRhi is obtained from QPlatformBackingStore::rhi(), which the
+                // offscreen plugin returns as nullptr — causing the Qt warnings
+                // "QRhi is not supported on this platform" and
+                // "Failed to create dedicated QRhi for grabbing".
+                if (!draw_state->show_graphics)
+                    rt = ezgl::renderer_type::immediate;
+
                 canvas->set_renderer_type(rt);
             }
         } else {
