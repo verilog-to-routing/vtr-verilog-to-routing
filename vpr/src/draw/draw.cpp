@@ -363,11 +363,7 @@ void update_screen(ScreenUpdatePriority priority,
             }
         }
 
-        if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE
-            && draw_state->show_graphics) {
-            // Only create the display widget for interactive use. Headless paths
-            // (save_graphics, graphics_commands) go through render_to_image()
-            // which creates its own backend with a null widget on demand.
+        if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
             auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
             if (canvas != nullptr) {
                 ezgl::renderer_type rt = ezgl::renderer_type::rhi;
