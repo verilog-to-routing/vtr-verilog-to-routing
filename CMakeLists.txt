@@ -85,6 +85,11 @@ message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 #
 add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
 
+if(WIN32)
+    # On Windows, <windows.h> defines min/max macros which conflict with std::min/std::max.
+    add_compile_definitions(NOMINMAX)
+endif()
+
 #Compiler flag configuration checks
 include(CheckCXXCompilerFlag)
 
