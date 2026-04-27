@@ -24,6 +24,7 @@ packages_to_install+=(
     libxkbcommon-dev
     libgl-dev
     libegl-dev
+    libopengl0
 )
 
 # Required for parsing SDC files (see LibSDCParse)
