@@ -25,6 +25,8 @@ packages_to_install+=(
     libgl-dev
     libegl-dev
     libopengl0
+    libegl-mesa0
+    libgl1-mesa-dri
 )
 
 # Required for parsing SDC files (see LibSDCParse)
