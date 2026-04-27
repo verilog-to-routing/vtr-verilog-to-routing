@@ -2310,8 +2310,25 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool, ParseOnOff>(args.use_ram_mapper, "--use_ram_mapper")
-        .help("Controls whether the RAM mapper is used to infer logical and physical RAMs and use physical RAM groups to guide RAM packing and prioritize RAMs in the packing order. When multiple memory block types are available, it also selects the best physical type for each RAM group based on area and timing. In the analytical placement flow, global placement treats physical RAM groups as single moveable units.")
+    pack_grp.add_argument<bool, ParseOnOff>(args.use_ram_mapper, "--use_ram_premapper")
+        .help("Controls whether a separate RAM pre-mapping algorithm is invoked\n"
+              "before the main packing stage.\n"
+              "\n"
+              "When enabled, this algorithm decides which RAM slices are grouped\n"
+              "together to form a physical RAM (based on shared address and control\n"
+              "signals) and which physical RAM type in the architecture implements\n"
+              "each group. The type selection runs in two passes: an initial pass\n"
+              "that maps each group to minimize area, followed by a second pass\n"
+              "that remaps the most timing-critical groups to smaller, faster RAM\n"
+              "types when resources allow. The resulting groups guide RAM packing\n"
+              "and prioritize RAMs in the packing order, and in the analytical\n"
+              "placement flow global placement treats each physical RAM group as a\n"
+              "single moveable unit.\n"
+              "\n"
+              "When disabled, these mapping decisions are instead made by the\n"
+              "general heuristics within the main packing algorithm, and in the\n"
+              "analytical placement flow each RAM slice is treated as a single\n"
+              "moveable unit rather than being grouped.\n")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

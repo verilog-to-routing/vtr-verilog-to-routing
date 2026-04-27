@@ -743,6 +743,10 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                        vpr_setup.AnalysisOpts);
 
     // Estimate the device size before packing and build the RR graph if necessary.
+    // When auto-sizing is used, this sets the device grid to the estimated size so
+    // that downstream stages (e.g. RAM mapper) can query realistic device
+    // dimensions before packing. The packer may later grow or shrink the device
+    // size to match the actual resource requirements after packing completes.
     DeviceSizeEstimator device_size_estimator(vpr_setup, arch, prepacker);
 
     // Infer logical RAMs and assign to physical types to prioritize during packing.

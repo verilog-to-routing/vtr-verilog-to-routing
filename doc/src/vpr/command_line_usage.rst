@@ -785,11 +785,19 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``2``
 
-.. option:: --use_ram_mapper {on | off}
+.. option:: --use_ram_premapper {on | off}
 
-    Controls whether the RAM mapper is used to infer logical and physical RAMs and use physical RAM groups to guide RAM packing and prioritize RAMs in the packing order.
-    When multiple memory block types are available, it also selects the best physical type for each RAM group based on area and timing.
-    In the analytical placement flow, global placement treats physical RAM groups as single moveable units.
+    Controls whether a separate RAM pre-mapping algorithm is invoked before the main packing stage.
+
+    When enabled, this algorithm decides which RAM slices are grouped together to form a physical RAM (based on shared
+    address and control signals) and which physical RAM type in the architecture implements each group. The type
+    selection runs in two passes: an initial pass that maps each group to minimize area, followed by a second pass that
+    remaps the most timing-critical groups to smaller, faster RAM types when resources allow. The resulting groups guide RAM
+    packing and prioritize RAMs in the packing order, and in the analytical placement flow global placement treats each
+    physical RAM group as a single moveable unit.
+
+    When disabled, these mapping decisions are instead made by the general heuristics within the main packing algorithm,
+    and in the analytical placement flow each RAM slice is treated as a single moveable unit rather than being grouped.
 
     **Default:** ``on``
 
