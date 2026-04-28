@@ -84,8 +84,8 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
     }
 
     VTR_LOGV_DEBUG(annotated_rr_graph, "Switch delay range across templates: min=%d ps, max=%d ps\n",
-        switch_delay_min_ps_,
-        switch_delay_max_ps_);
+                   switch_delay_min_ps_,
+                   switch_delay_max_ps_);
 
     // Map patterns to loaded DataFrames
     for (const auto& [pattern, full_path] : switch_block_to_file_) {
