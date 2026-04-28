@@ -19,6 +19,7 @@ static std::string get_switch_block_name(size_t x, size_t y) {
 
 SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
                                        const std::string& sb_templates_dir,
+                                       const bool annotated_rr_graph,
                                        const int log_verbosity)
     : log_verbosity_(log_verbosity) {
     VTR_LOG("Initializing SwitchBlockManager with maps file: %s\n", sb_maps_file.c_str());
@@ -71,10 +72,20 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
             VTR_LOGV(log_verbosity_ > 1, "Processed %zu connections in %s file\n",
                      file_cache_[full_path].connections,
                      std::filesystem::path(full_path).filename().string().c_str());
+
+            if (annotated_rr_graph) {
+                processor_.update_switch_delays(file_cache_[full_path],
+                                                switch_delay_max_ps_,
+                                                switch_delay_min_ps_);
+            }
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Required switch template file not found: %s\n", full_path.c_str());
         }
     }
+
+    VTR_LOGV_DEBUG(annotated_rr_graph, "Switch delay range across templates: min=%d ps, max=%d ps\n",
+        switch_delay_min_ps_,
+        switch_delay_max_ps_);
 
     // Map patterns to loaded DataFrames
     for (const auto& [pattern, full_path] : switch_block_to_file_) {

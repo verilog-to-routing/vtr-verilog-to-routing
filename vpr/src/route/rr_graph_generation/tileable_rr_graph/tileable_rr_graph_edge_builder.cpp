@@ -335,6 +335,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     if (build_crr_edges) {
         sb_manager = std::make_unique<crrgenerator::SwitchBlockManager>(crr_opts.sb_maps,
                                                                         crr_opts.sb_templates,
+                                                                        crr_opts.annotated_rr_graph,
                                                                         route_verbosity);
         node_lookup = std::make_unique<crrgenerator::NodeLookupManager>(rr_graph,
                                                                         grids.width(),

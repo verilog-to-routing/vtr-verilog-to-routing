@@ -8,6 +8,7 @@
  * containing switch block data, and managing switch block patterns.
  */
 
+#include <climits>
 #include <unordered_map>
 #include <vector>
 
@@ -27,12 +28,15 @@ class SwitchBlockManager {
   public:
     /**
      * @brief Constructor
-     * @param log_verbosity Verbosity level for logging messages
      * @param sb_maps_file Path to the YAML configuration file
      * @param sb_templates_dir Directory containing switch template files
+     * @param annotated_rr_graph When true, scan all loaded template files to
+     *                           record the min/max switch delay (in ps).
+     * @param log_verbosity Verbosity level for logging messages
      */
     SwitchBlockManager(const std::string& sb_maps_file,
                        const std::string& sb_templates_dir,
+                       const bool annotated_rr_graph,
                        const int log_verbosity);
 
     /**
@@ -79,6 +83,20 @@ class SwitchBlockManager {
      */
     size_t get_total_connections() const;
 
+    /**
+     * @brief Get the minimum switch delay (ps) observed across all loaded
+     *        template files. Only valid when the manager was constructed
+     *        with annotated_rr_graph = true.
+     */
+    int get_switch_delay_min_ps() const { return switch_delay_min_ps_; }
+
+    /**
+     * @brief Get the maximum switch delay (ps) observed across all loaded
+     *        template files. Only valid when the manager was constructed
+     *        with annotated_rr_graph = true.
+     */
+    int get_switch_delay_max_ps() const { return switch_delay_max_ps_; }
+
   private:
     /**
      * @brief Ordered list of switch block patterns
@@ -113,6 +131,15 @@ class SwitchBlockManager {
      * @brief Verbosity level for logging messages
      */
     int log_verbosity_;
+
+    /**
+     * @brief Min/max switch delay (ps) accumulated across every loaded
+     *        template file when annotated_rr_graph is enabled.
+     *        Initialized to INT_MAX/INT_MIN so the first observed value
+     *        always wins.
+     */
+    int switch_delay_min_ps_ = INT_MAX;
+    int switch_delay_max_ps_ = INT_MIN;
 
     // Validation
     void validate_yaml_structure(const YAML::Node& root);
