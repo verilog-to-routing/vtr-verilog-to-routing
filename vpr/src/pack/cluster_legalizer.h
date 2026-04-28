@@ -26,6 +26,7 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "atom_pb_bimap.h"
+#include "cluster_reachability_cache.h"
 #include "vpr_utils.h"
 #include "packing_signature_tree.h"
 
@@ -233,13 +234,10 @@ class ClusterLegalizer {
      *  @param molecule                 The molecule to insert into the cluster.
      *  @param cluster                  The cluster to try to insert the molecule into.
      *  @param cluster_id               The ID of the cluster.
-     *  @param max_external_pin_util    The max external pin utilization for a
-     *                                  cluster of this type.
      */
     e_block_pack_status try_pack_molecule(PackMoleculeId molecule_id,
                                           LegalizationCluster& cluster,
-                                          LegalizationClusterId cluster_id,
-                                          const t_ext_pin_util& max_external_pin_util);
+                                          LegalizationClusterId cluster_id);
 
     /**
      * @brief This function takes a chain molecule, and the pb_graph_node that is
@@ -395,6 +393,19 @@ class ClusterLegalizer {
      *  @return                 True if the cluster is legal, false otherwise.
      */
     bool check_cluster_legality(LegalizationClusterId cluster_id);
+
+    /*
+     * @brief Check that the given cluster is pin legal.
+     *
+     * Runs the cluster pin-feasibility check using the current contents of the
+     * cluster and the configured external pin utilization target for the
+     * cluster type.
+     *
+     *  @param cluster          The cluster to check.
+     *
+     *  @return                 True if the cluster is pin legal, false otherwise.
+     */
+    bool check_cluster_pin_legality(const LegalizationCluster& cluster);
 
     /*
      * @brief Ensure that the cluster has a legal final routing.
@@ -655,6 +666,9 @@ class ClusterLegalizer {
 
     /// @brief A lookup table for the pin mapping of the intra-lb pb pins.
     IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
+
+    /// @brief Cache of cluster pin-to-pin reachability, owned by the legalizer.
+    ClusterReachabilityCache cluster_reachability_cache_;
 
     /// @brief A structure for tracking and identifying cluster packing
     ///        patterns that have been previously tested for routing

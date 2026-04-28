@@ -1138,8 +1138,7 @@ static bool cleanup_pb(t_pb* pb) {
 
 e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_id,
                                                         LegalizationCluster& cluster,
-                                                        LegalizationClusterId cluster_id,
-                                                        const t_ext_pin_util& max_external_pin_util) {
+                                                        LegalizationClusterId cluster_id) {
     // Try to pack the molecule into a cluster with this pb type.
 
     // Safety debugs.
@@ -1274,9 +1273,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
         if (enable_pin_feasibility_filter_ && block_pack_status == e_block_pack_status::BLK_PASSED) {
             // Check if pin usage is feasible for the current packing assignment
-            reset_lookahead_pins_used(cluster.pb);
-            try_update_lookahead_pins_used(cluster.pb, atom_cluster_, atom_pb_lookup());
-            if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
+            if (!check_cluster_pin_legality(cluster)) {
                 VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                 block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             } else {
@@ -1518,12 +1515,10 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
     // (meaning all cluster pins are allowed to be used).
-    const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
     LegalizationClusterId new_cluster_id = LegalizationClusterId(legalization_cluster_ids_.size());
     e_block_pack_status pack_status = try_pack_molecule(molecule_id,
                                                         new_cluster,
-                                                        new_cluster_id,
-                                                        FULL_EXTERNAL_PIN_UTIL);
+                                                        new_cluster_id);
 
     if (pack_status == e_block_pack_status::BLK_PASSED) {
         // Give the new cluster pb a name. The current convention is to name the
@@ -1564,13 +1559,10 @@ e_block_pack_status ClusterLegalizer::add_mol_to_cluster(PackMoleculeId molecule
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
     VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
                && "Cannot add molecule to cleaned cluster!");
-    // Set the target_external_pin_util.
-    t_ext_pin_util target_ext_pin_util = target_external_pin_util_.get_pin_util(cluster.type->name);
     // Try to pack the molecule into the cluster.
     e_block_pack_status pack_status = try_pack_molecule(molecule_id,
                                                         cluster,
-                                                        cluster_id,
-                                                        target_ext_pin_util);
+                                                        cluster_id);
 
     // If the packing was successful, set the molecules' cluster to this one.
     if (pack_status == e_block_pack_status::BLK_PASSED)
@@ -1676,6 +1668,102 @@ bool ClusterLegalizer::check_cluster_legality(LegalizationClusterId cluster_id) 
         routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
     } while (mode_status.is_mode_issue());
     return routed;
+}
+
+bool ClusterLegalizer::check_cluster_pin_legality(const LegalizationCluster& cluster) {
+    const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
+
+    t_ext_pin_util target_ext_pin_util = target_external_pin_util_.get_pin_util(cluster.type->name);
+    size_t used_input_pins = 0;
+    size_t used_output_pins = 0;
+
+    auto atom_is_in_cluster = [&](AtomBlockId blk_id) {
+        const t_pb* atom_pb = atom_pb_lookup_.atom_pb(blk_id);
+        if (atom_pb == nullptr) {
+            return false;
+        }
+
+        const t_pb* root_pb = atom_pb;
+        while (root_pb->parent_pb != nullptr) {
+            root_pb = root_pb->parent_pb;
+        }
+
+        return root_pb == cluster.pb;
+    };
+
+    for (PackMoleculeId molecule_id : cluster.molecules) {
+        const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id) {
+                continue;
+            }
+
+            for (AtomPinId pin_id : atom_netlist.block_input_pins(blk_id)) {
+                AtomNetId net_id = atom_netlist.pin_net(pin_id);
+                if (!net_id) {
+                    continue;
+                }
+
+                AtomBlockId driver_blk_id = atom_netlist.net_driver_block(net_id);
+                if (!driver_blk_id || !atom_is_in_cluster(driver_blk_id)) {
+                    ++used_input_pins;
+                    continue;
+                }
+
+                const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_pb_lookup_, pin_id);
+                const t_pb_graph_pin* driver_pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_pb_lookup_, atom_netlist.net_driver(net_id));
+
+                VTR_ASSERT_SAFE(sink_pb_graph_pin != nullptr);
+                VTR_ASSERT_SAFE(driver_pb_graph_pin != nullptr);
+
+                if (!cluster_reachability_cache_.is_reachable(*driver_pb_graph_pin, *sink_pb_graph_pin)) {
+                    ++used_input_pins;
+                }
+            }
+
+            for (AtomPinId pin_id : atom_netlist.block_output_pins(blk_id)) {
+                AtomNetId net_id = atom_netlist.pin_net(pin_id);
+                if (!net_id) {
+                    continue;
+                }
+
+                bool count_output_pin = false;
+                for (AtomPinId sink_pin_id : atom_netlist.net_sinks(net_id)) {
+                    AtomBlockId sink_blk_id = atom_netlist.pin_block(sink_pin_id);
+                    if (!atom_is_in_cluster(sink_blk_id)) {
+                        count_output_pin = true;
+                        break;
+                    }
+                }
+
+                if (!count_output_pin) {
+                    const t_pb_graph_pin* driver_pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_pb_lookup_, pin_id);
+                    VTR_ASSERT_SAFE(driver_pb_graph_pin != nullptr);
+
+                    for (AtomPinId sink_pin_id : atom_netlist.net_sinks(net_id)) {
+                        const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_pb_lookup_, sink_pin_id);
+                        VTR_ASSERT_SAFE(sink_pb_graph_pin != nullptr);
+
+                        if (!cluster_reachability_cache_.is_reachable(*driver_pb_graph_pin, *sink_pb_graph_pin)) {
+                            count_output_pin = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (count_output_pin) {
+                    ++used_output_pins;
+                }
+            }
+        }
+    }
+
+    size_t max_used_input_pins = std::ceil(target_ext_pin_util.input_pin_util * cluster.type->pb_type->num_input_pins);
+    size_t max_used_output_pins = std::ceil(target_ext_pin_util.output_pin_util * cluster.type->pb_type->num_output_pins);
+
+    return used_input_pins <= max_used_input_pins
+           && used_output_pins <= max_used_output_pins;
 }
 
 bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_id) {
