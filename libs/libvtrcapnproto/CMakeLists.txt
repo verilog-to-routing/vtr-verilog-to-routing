@@ -40,12 +40,18 @@ if (VPR_ENABLE_INTERCHANGE)
 
     # Add Java schema
     set(JAVA_SCHEMA ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/java.capnp)
+
+    if(WIN32)
+        set(WGET_OUTPUT_OPTION -o)
+    else()
+        set(WGET_OUTPUT_OPTION -O)
+    endif()
     add_custom_command(
         OUTPUT ${JAVA_SCHEMA}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/
         COMMAND ${WGET}
             https://raw.githubusercontent.com/capnproto/capnproto-java/master/compiler/src/main/schema/capnp/java.capnp
-            -O ${JAVA_SCHEMA}
+            ${WGET_OUTPUT_OPTION} ${JAVA_SCHEMA}
     )
 
     add_custom_target(

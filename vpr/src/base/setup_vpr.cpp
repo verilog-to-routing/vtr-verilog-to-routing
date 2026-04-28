@@ -635,6 +635,7 @@ void setup_packer_opts(const t_options& Options,
     PackerOpts->timing_gain_weight = Options.timing_gain_weight;
     PackerOpts->connection_gain_weight = Options.connection_gain_weight;
     PackerOpts->pack_verbosity = Options.pack_verbosity;
+    PackerOpts->use_ram_mapper = Options.use_ram_mapper;
     PackerOpts->memoize_cluster_packings = Options.memoize_cluster_packings;
     PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
     PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
