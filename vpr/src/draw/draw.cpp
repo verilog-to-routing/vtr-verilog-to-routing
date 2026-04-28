@@ -406,6 +406,12 @@ void update_screen(ScreenUpdatePriority priority,
     //the user won't need to click manually.
     draw_state->auto_proceed = (state_change && !should_pause);
 
+    // Headless mode (save_graphics / graphics_commands without --disp): never
+    // block for user interaction — there is no user at the keyboard. Always
+    // auto-proceed so the event loop exits immediately after setup.
+    if (!draw_state->show_graphics)
+        draw_state->auto_proceed = true;
+
     if (state_change                   //Must update buttons
         || should_pause                //The priority means graphics should pause for user interaction
         || draw_state->forced_pause) { //The user asked to pause
@@ -607,6 +613,11 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 
     // Load coordinates of sub-blocks inside the clbs
     draw_internal_init_blk();
+
+    // Tile coordinates are now fully populated — set initial_world so that
+    // save_graphics / graphics_commands can compute valid image dimensions
+    // even in headless mode (show_graphics = false).
+    set_initial_world();
 
 #else
     (void)clb_width;

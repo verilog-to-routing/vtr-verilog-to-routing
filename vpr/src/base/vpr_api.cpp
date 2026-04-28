@@ -510,6 +510,17 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     vpr_init_graphics(vpr_setup, arch, is_flat);
 
+    // Re-run init_draw_coords() now that the graphics state (show_graphics,
+    // save_graphics, graphics_commands) is fully configured. The call inside
+    // vpr_create_device() fired before vpr_init_graphics() set those flags,
+    // so it always hit the early-return and left initial_world at zero. This
+    // second call populates tile_x/tile_y and sets initial_world correctly,
+    // which save_graphics needs to compute valid image dimensions.
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
+        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
+                         g_vpr_ctx.placement().blk_loc_registry());
+    }
+
     vpr_init_server(vpr_setup);
 
     { //Place
