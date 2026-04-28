@@ -409,11 +409,15 @@ class ClusterRouter {
      * @brief Explore the given node popped from the priority queue and explore
      *        its edges.
      *
-     *  @param exp_node     The node currently being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param exp_node                  The node currently being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True if the sink we are currently
+     *                                   routing toward lives inside this
+     *                                   cluster
      */
     void expand_node_(const t_expansion_node& exp_node,
-                      int net_fanout);
+                      int net_fanout,
+                      bool target_is_internal_sink);
 
     /**
      * @brief Explore the given node popped from the priority queue using all
@@ -422,25 +426,43 @@ class ClusterRouter {
      * This will explore every possible mode that the given node can be in and
      * explore their edges.
      *
-     *  @param exp_node     The node currently being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param exp_node                  The node currently being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True if the sink we are currently
+     *                                   routing toward lives inside this
+     *                                   cluster.
      */
     void expand_node_all_modes_(const t_expansion_node& exp_node,
-                                int net_fanout);
+                                int net_fanout,
+                                bool target_is_internal_sink);
 
     /**
      * @brief Explore all edges of an expansion node and insert connected nodes
      *        into the priority queue (i.e. connection routing).
      *
-     *  @param mode         The mode the node that is being explored is in.
-     *  @param cur_inode    The node that is being explored.
-     *  @param cur_cost     The cost of the node that is being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param mode                      The mode the node that is being explored is in.
+     *  @param cur_inode                 The node that is being explored.
+     *  @param cur_cost                  The cost of the node that is being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True iff the current target sink is
+     *                                   inside this cluster. When true, expansion is
+     *                                   forbidden through a top-level
+     *                                   output pin that is rejected by
+     *                                   `lb_type_->pb_graph_head->is_valid_feedback_pin(...)`,
+     *                                   i.e. a pin with Fc_out == 0. Such
+     *                                   a pin cannot reach inter-cluster
+     *                                   wires and so cannot carry a
+     *                                   feedback signal back to this
+     *                                   cluster's input pins. When false
+     *                                   (the connection is genuinely
+     *                                   leaving the cluster), no such
+     *                                   restriction is applied.
      */
     void expand_edges_(int mode,
                        int cur_inode,
                        float cur_cost,
-                       int net_fanout);
+                       int net_fanout,
+                       bool target_is_internal_sink);
 
     /**
      * @brief Determine if a completed route is valid.
