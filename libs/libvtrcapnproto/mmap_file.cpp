@@ -1,14 +1,6 @@
 #include "mmap_file.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
-
-#include <fcntl.h>
-#include <sys/stat.h>
-#ifndef _WIN32
-    #include <sys/mman.h>
-#endif
-#include <unistd.h>
-
 #include "kj/filesystem.h"
 
 MmapFile::MmapFile(const std::string& file)

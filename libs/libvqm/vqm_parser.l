@@ -31,6 +31,8 @@
 %option noyywrap
 %option yylineno
 %option nounput
+%option never-interactive
+%option nounistd
 
 /*********************************************************************/
 /**** PUT SYMBOL DEFINITIONS HERE ************************************/
