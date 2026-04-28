@@ -555,7 +555,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #endif
 
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS)
-    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+    for (int iseg = 0; iseg < (ptrdiff_t)num_segments; iseg++) {
         VTR_LOG("cost map for %s(%d)\n",
                 segment_inf[iseg].name.c_str(), iseg);
         cost_map_.print(iseg);

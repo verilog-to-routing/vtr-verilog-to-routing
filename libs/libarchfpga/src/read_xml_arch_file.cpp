@@ -1849,6 +1849,7 @@ static void process_interconnect(vtr::string_internment& strings,
 
         while (cur != nullptr) {
             expect_only_attributes(cur, {"name", "input", "output"}, loc_data);
+            expect_only_children(cur, {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern", "metadata"}, loc_data);
 
             if (0 == strcmp(cur.name(), "complete")) {
                 mode->interconnect[interconnect_idx].type = COMPLETE_INTERC;

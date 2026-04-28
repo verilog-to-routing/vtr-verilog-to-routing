@@ -2,11 +2,8 @@
 
 #include "vtr_util.h"
 
-//TODO: currently this file assumes unix-like
-//      in the future support windows
-#include <unistd.h>
-
 #include <sstream>
+#include <filesystem>
 
 namespace vtr {
 
@@ -62,25 +59,10 @@ std::string dirname(const std::string& path) {
 }
 
 std::string getcwd() {
-    constexpr size_t BUF_SIZE = 500;
-    char buf[BUF_SIZE];
-
-    if (::getcwd(buf, BUF_SIZE)) {
-        return std::string(buf);
-    }
-
-    //Check the global errno
-    int error = errno;
-
-    switch (error) {
-        case EACCES:
-            throw std::runtime_error("Access denied");
-
-        default: {
-            std::stringstream str;
-            str << "Unrecognised error" << error;
-            throw std::runtime_error(str.str());
-        }
+    try {
+        return std::filesystem::current_path().string();
+    } catch (const std::filesystem::filesystem_error& e) {
+        throw std::runtime_error(e.what());
     }
 }
 

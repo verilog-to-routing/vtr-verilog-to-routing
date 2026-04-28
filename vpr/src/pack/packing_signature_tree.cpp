@@ -75,7 +75,7 @@ void PackingSignatureTree::add_lcn(const t_pb_graph_node* primitive_pb_graph_nod
     // Determine whether a path with this new LCN already exists.
     // Similar clusters are likely to get packed close to each other in seed-based flows,
     // so iterate over the list in reverse to take better advantage of this locality.
-    for (ssize_t i = cursor_->child_lcn.size() - 1; i >= 0; i--) {
+    for (ptrdiff_t i = cursor_->child_lcn.size() - 1; i >= 0; i--) {
         LocationAndConnectivityNode* child_lcn = cursor_->child_lcn[i];
         if (*child_lcn == *new_lcn) {
             delete new_lcn;
@@ -207,7 +207,7 @@ void PackingSignatureTree::add_ecn(e_ecn_legality legality) {
 
     // Similar clusters are likely to get packed close to each other in seed-based flows,
     // so iterate over the list in reverse to take better advantage of this locality.
-    for (ssize_t i = cursor_->child_ecn.size() - 1; i >= 0; i--) {
+    for (ptrdiff_t i = cursor_->child_ecn.size() - 1; i >= 0; i--) {
         if (*cursor_->child_ecn[i] == *ecn) {
             delete ecn;
             return;
@@ -237,7 +237,7 @@ e_ecn_legality PackingSignatureTree::check_legality() {
 
     // Similar clusters are likely to get packed close to each other in seed-based flows,
     // so iterate over the list in reverse to take better advantage of this locality.
-    for (ssize_t i = cursor_->child_ecn.size() - 1; i >= 0; i--) {
+    for (ptrdiff_t i = cursor_->child_ecn.size() - 1; i >= 0; i--) {
         if (*cursor_->child_ecn[i] == ecn) {
             return cursor_->child_ecn[i]->legality;
         }
