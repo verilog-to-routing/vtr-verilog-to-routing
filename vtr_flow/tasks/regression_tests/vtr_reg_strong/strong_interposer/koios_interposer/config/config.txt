@@ -1,0 +1,65 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog/koios
+
+# Path to directory of architectures to use
+archs_dir=arch/multi_die/hecate/interposer
+
+# Add architectures to list to sweep
+arch_list_add=hecate_25d_L17_int_10um_bump_fanin_12.xml
+#arch_list_add=hecate_25d_L17_int_driver_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L21_int_driver_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L25_int_driver_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L29_int_driver_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L33_int_driver_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L37_int_driver_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L5_int_driver_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L9_int_driver_10um_bump_fanin_48.xml
+
+# Add circuits to list to sweep
+circuit_list_add=attention_layer.v
+circuit_list_add=bnn.v
+#circuit_list_add=bwave_like.fixed.small.v
+circuit_list_add=bwave_like.fixed.large.v
+circuit_list_add=clstm_like.large.v
+circuit_list_add=clstm_like.medium.v
+circuit_list_add=clstm_like.small.v
+#circuit_list_add=conv_layer.v
+circuit_list_add=conv_layer_hls.v
+circuit_list_add=dla_like.medium.v
+circuit_list_add=dla_like.small.v
+circuit_list_add=dnnweaver.v
+#circuit_list_add=eltwise_layer.v
+circuit_list_add=gemm_layer.v
+#circuit_list_add=lenet.v
+circuit_list_add=lstm.v
+#circuit_list_add=reduction_layer.v
+#circuit_list_add=robot_rl.v
+#circuit_list_add=softmax.v
+#circuit_list_add=spmv.v
+circuit_list_add=tdarknet_like.large.v
+circuit_list_add=tdarknet_like.small.v
+circuit_list_add=tpu_like.large.os.v
+circuit_list_add=tpu_like.large.ws.v
+#circuit_list_add=tpu_like.small.os.v
+#circuit_list_add=tpu_like.small.ws.v
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+#Script parameters
+script_params= -max_router_iterations 100 --route_chan_width 300
+
+#script_params_list_add=--seed 1
+#script_params_list_add=--seed 2
+#script_params_list_add=--seed 3
