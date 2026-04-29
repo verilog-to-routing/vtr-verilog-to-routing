@@ -380,8 +380,9 @@ void update_screen(ScreenUpdatePriority priority,
                 // offscreen plugin returns as nullptr — causing the Qt warnings
                 // "QRhi is not supported on this platform" and
                 // "Failed to create dedicated QRhi for grabbing".
-                if (!draw_state->show_graphics)
-                    rt = ezgl::renderer_type::immediate;
+                // Commented out to test RHI in headless mode:
+                // if (!draw_state->show_graphics)
+                //     rt = ezgl::renderer_type::immediate;
 
                 canvas->set_renderer_type(rt);
             }
