@@ -797,6 +797,7 @@ struct t_packer_opts {
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
     int pack_verbosity;
+    bool use_ram_mapper;
     bool memoize_cluster_packings;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
