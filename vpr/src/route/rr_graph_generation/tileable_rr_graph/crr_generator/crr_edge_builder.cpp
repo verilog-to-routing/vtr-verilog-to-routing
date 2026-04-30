@@ -22,10 +22,9 @@ static std::string get_crr_switch_name(const int delay_ps) {
 /**
  * @brief Create an architecture switch for CRR
  * @param delay_ps Delay in picoseconds
- * @param sw_template_id Template ID of the switch
  * @return CRR switch
  */
-static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string& sw_template_id) {
+static t_arch_switch_inf create_crr_switch(const int delay_ps) {
     std::string switch_name = get_crr_switch_name(delay_ps);
 
     t_arch_switch_inf arch_switch_inf;
@@ -40,41 +39,36 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string
     arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;
     arch_switch_inf.buf_size = 0.;
     arch_switch_inf.intra_tile = false;
-    arch_switch_inf.template_id = sw_template_id;
 
     return arch_switch_inf;
 }
 
-/**
- * @brief Find or create a CRR switch ID
- * @param delay_ps Delay in picoseconds
- * @param sw_template_id Template ID of the switch
- * @return CRR switch ID
- */
-static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
-                                               const std::string& sw_template_id,
-                                               const int verbosity) {
+std::unordered_map<int, RRSwitchId> pre_create_crr_switches(const int min_delay_ps,
+                                                            const int max_delay_ps,
+                                                            const int verbosity) {
     std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
+    std::unordered_map<int, RRSwitchId> delay_to_switch_id;
 
-    int found_sw_id = -1;
-
-    // Iterate over map entries (O(n), no accidental inserts)
-    for (const auto& [sw_id, sw_inf] : all_sw_inf) {
-        if (sw_inf.template_id == sw_template_id) {
-            found_sw_id = sw_id;
-            break;
-        }
+    if (min_delay_ps > max_delay_ps) {
+        return delay_to_switch_id;
     }
 
-    if (found_sw_id == -1) {
-        t_arch_switch_inf new_arch_switch_inf = create_crr_switch(delay_ps, sw_template_id);
+    delay_to_switch_id.reserve(static_cast<size_t>(max_delay_ps - min_delay_ps + 1));
+    for (int delay_ps = min_delay_ps; delay_ps <= max_delay_ps; ++delay_ps) {
+        int sw_id = static_cast<int>(all_sw_inf.size());
+        all_sw_inf.emplace(sw_id, create_crr_switch(delay_ps));
+        delay_to_switch_id.emplace(delay_ps, RRSwitchId(sw_id));
 
-        found_sw_id = static_cast<int>(all_sw_inf.size());
-        all_sw_inf.emplace(found_sw_id, std::move(new_arch_switch_inf));
-
-        VTR_LOGV(verbosity > 1, "Created new CRR switch: delay=%d ps, template id=%s\n", delay_ps, sw_template_id.c_str());
+        VTR_LOGV(verbosity > 1, "Created new CRR switch: delay=%d ps, sw_id=%d\n", delay_ps, sw_id);
     }
-    return RRSwitchId(found_sw_id);
+
+    VTR_LOGV(verbosity > 1,
+             "Pre-created %zu CRR switches for delay range [%d, %d] ps\n",
+             delay_to_switch_id.size(),
+             min_delay_ps,
+             max_delay_ps);
+
+    return delay_to_switch_id;
 }
 
 void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
@@ -82,8 +76,8 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                          const RRGSB& rr_gsb,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
-                         std::unordered_map<std::string, int>& template_id_cache,
-                         const int verbosity) {
+                         const std::unordered_map<int, RRSwitchId>& delay_to_switch_id,
+                         const int /*verbosity*/) {
     if (g_vpr_ctx.device().grid.get_num_layers() != 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CRR only supports 2D architectures (num_layers must be 1)\n");
     }
@@ -95,20 +89,15 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
     for (const auto& connection : gsb_connections) {
         RRSwitchId rr_switch_id;
         int delay_ps = connection.delay_ps();
-        // If the delay is -1, it means the switch type should be determined from the switches defined in the architecture file.
+        // delay_ps == -1 means the switch should be retrieved from the
+        // architecture-defined driver switch for the sink node.
         if (delay_ps == -1) {
             rr_switch_id = rr_node_driver_switches[connection.sink_node()];
         } else {
-            const std::string& sw_template_id = connection.sw_template_id();
-            auto cache_it = template_id_cache.find(sw_template_id);
-            if (cache_it != template_id_cache.end()) {
-                rr_switch_id = RRSwitchId(cache_it->second);
-            } else {
-                rr_switch_id = find_or_create_crr_switch_id(delay_ps,
-                                                            sw_template_id,
-                                                            verbosity);
-                template_id_cache[sw_template_id] = int(rr_switch_id);
-            }
+            auto it = delay_to_switch_id.find(delay_ps);
+            VTR_ASSERT_MSG(it != delay_to_switch_id.end(),
+                           "CRR connection delay was not pre-created in delay_to_switch_id map");
+            rr_switch_id = it->second;
         }
         VTR_ASSERT(rr_switch_id != RRSwitchId::INVALID());
         rr_graph_builder.create_edge_in_cache(connection.src_node(),
