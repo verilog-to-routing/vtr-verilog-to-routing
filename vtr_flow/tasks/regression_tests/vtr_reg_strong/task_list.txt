@@ -136,6 +136,7 @@ regression_tests/vtr_reg_strong/strong_direct_super_subtile_neg_z_offset
 regression_tests/vtr_reg_strong/strong_noc
 regression_tests/vtr_reg_strong/strong_flat_router
 regression_tests/vtr_reg_strong/strong_routing_constraints
+regression_tests/vtr_reg_strong/strong_constraint_atom
 regression_tests/vtr_reg_strong/strong_vib
 regression_tests/vtr_reg_strong/strong_3d/3d_cb
 regression_tests/vtr_reg_strong/strong_3d/3d_sb

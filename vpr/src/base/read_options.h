@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "arch_types.h"
 #include "read_circuit.h"

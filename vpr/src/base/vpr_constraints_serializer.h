@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /**
  * @file
  * @brief The reading of vpr constraints is now done via uxsdcxx and the 'vpr_constraints.xsd' file.
@@ -129,6 +129,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * <xs:complexType name="add_atom">
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      *   <xs:attribute name="is_regex" type="xs:boolean" default="false" />
+     *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
      * </xs:complexType>
      */
     virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
@@ -144,6 +145,14 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         name_pattern_ = name_pattern;
+    }
+
+    virtual inline const char* get_add_atom_logical_block_location(AtomBlockId& /*blk_id*/) final {
+        return logical_block_location_.c_str();
+    }
+
+    virtual inline void set_add_atom_logical_block_location(const char* logical_block_location, void*& /*ctx*/) final {
+        logical_block_location_ = logical_block_location;
     }
 
     virtual inline void set_add_atom_is_regex(const char* is_regex, void*& /*ctx*/) final {
@@ -234,7 +243,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         lb_type_name_pattern_ = name_pattern;
     }
-
     virtual inline void set_add_logical_block_is_regex(const char* is_regex, void*& /*ctx*/) final {
         std::string val = is_regex;
         std::transform(val.begin(), val.end(), val.begin(),
@@ -276,6 +284,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void* add_partition_add_atom(void*& /*ctx*/) final {
         //clear out the temporary data for this atom
         name_pattern_.clear();
+        logical_block_location_.clear();
         is_regex_ = false;
         return nullptr;
     }
@@ -290,6 +299,9 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             if (atom_id != AtomBlockId::INVALID()) {
                 found = true;
                 constraints_.mutable_place_constraints().add_constrained_atom(atom_id, part_id);
+                if (!logical_block_location_.empty()) {
+                    constraints_.mutable_place_constraints().set_atom_logical_block_location(atom_id, logical_block_location_);
+                }
             }
 
         } else { //the name pattern is a regex, look for all atoms matching the regex pattern
@@ -299,6 +311,9 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
                 if (std::regex_search(block_name, atom_name_regex)) {
                     constraints_.mutable_place_constraints().add_constrained_atom(block_id, part_id);
+                    if (!logical_block_location_.empty()) {
+                        constraints_.mutable_place_constraints().set_atom_logical_block_location(block_id, logical_block_location_);
+                    }
                     found = true;
                 }
             }
@@ -629,6 +644,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     //used when reading in atom names and regular expressions for atoms
     bool is_regex_;
     std::string name_pattern_;
+    std::string logical_block_location_;
 
     // Used when reading in regex LB type constraints for a partition.
     bool lb_type_is_regex_;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /*
  * Prepacking: Group together technology-mapped netlist blocks before packing.
  * This gives hints to the packer on what groups of blocks to keep together

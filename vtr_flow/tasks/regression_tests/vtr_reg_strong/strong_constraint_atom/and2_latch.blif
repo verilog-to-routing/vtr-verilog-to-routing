@@ -1,0 +1,8 @@
+.model and2_latch
+.inputs a b clk
+.outputs c d
+.latch n1 d  re clk 0
+.names a b c
+11 1
+.names c n1
+1 1
