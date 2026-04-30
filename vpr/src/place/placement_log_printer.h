@@ -9,6 +9,8 @@
  * the placement process for debugging, optimization, and analysis purposes.
  */
 
+#include <functional>
+#include <string>
 #include <vector>
 
 #include "timing_info_fwd.h"
@@ -22,6 +24,17 @@ struct NocCostTerms;
 struct t_swap_stats;
 class BlkLocRegistry;
 class Placer;
+
+/**
+ * @brief One placement status column: header formatting plus a callable
+ * that returns the value as a formatted string.
+ */
+struct PlaceStatusColumn {
+    std::string dash;
+    std::string header1;
+    std::string header2;
+    std::function<std::string(float elapsed_sec)> format_value;
+};
 
 /**
  * @class PlacementLogPrinter
@@ -63,6 +76,9 @@ class PlacementLogPrinter {
     bool quiet() const { return quiet_; }
 
   private:
+    /// Builds the list of columns to print in the placement status table (called once in ctor).
+    std::vector<PlaceStatusColumn> get_place_status_columns() const;
+
     /**
      * @brief A constant reference to the Placer object to access the placement status.
      * @details PlacementLogPrinter is a friend class for the Placer class, so it can
@@ -74,6 +90,8 @@ class PlacementLogPrinter {
     const bool quiet_;
     /// A string buffer to carry the message to shown in the graphical interface.
     mutable std::vector<char> msg_;
+    /// Cached column list for placement status; populated once in constructor.
+    std::vector<PlaceStatusColumn> place_status_columns_;
 };
 
 void generate_post_place_timing_reports(const t_placer_opts& placer_opts,

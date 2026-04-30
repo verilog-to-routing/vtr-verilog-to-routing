@@ -121,7 +121,6 @@ t_annealing_state::t_annealing_state(float first_t,
 }
 
 bool t_annealing_state::outer_loop_update(float success_rate,
-                                          bool congestion_modeling_enabled,
                                           const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts) {
 #ifndef NO_GRAPHICS
@@ -143,9 +142,20 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     }
 
     // Automatically determine exit temperature.
+    //
+    // This heuristic assumes the total placement cost mainly reflects the
+    // (normalized) bbox and timing terms, which typically makes costs.cost close to ~1.0
+    // after cost normalization and timing_tradeoff are applied.
+    //
+    // When additional cost terms are enabled (e.g. congestion, interposer costs),
+    // the total cost magnitude increases, so we scale t_exit to keep a comparable
+    // effective annealing temperature scale; interposer-related factors are only
+    // included if the device has an interposer.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-    if (congestion_modeling_enabled) {
+    if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+        t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor + placer_opts.interposer_cong_factor);
+    } else {
         t_exit *= (1. + placer_opts.congestion_factor);
     }
 
@@ -236,7 +246,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
     , quench_started_(false)
-    , congestion_modeling_started_(false) {
+    , congestion_modeling_started_(false)
+    , interposer_cong_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     float first_crit_exponent;
@@ -511,10 +522,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    double delta_c = 0.;            // Change in cost due to this swap.
-    double bb_delta_c = 0.;         // Change in the bounding box (wiring) cost.
-    double timing_delta_c = 0.;     // Change in the timing cost (delay * criticality).
-    double congestion_delta_c = 0.; // Change in the congestion cost
+    double delta_c = 0.;               // Change in cost due to this swap.
+    t_net_cost_terms cost_terms_delta; // Per-net cost term deltas due to this swap.
+    double timing_delta_c = 0.;        // Change in the timing cost (delay * criticality).
 
     // Allow some fraction of moves to not be restricted by rlim,
     // in the hopes of better escaping local minima.
@@ -586,13 +596,13 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         // Update the block positions
         blk_loc_registry.apply_move_blocks(blocks_affected_);
 
-        /* Find all the nets affected by this swap and update the wiring costs.
-         * This cost value doesn't depend on the timing info.
-         * Also find all the pins affected by the swap, and calculates new connection
-         * delays and timing costs and store them in proposed_* data structures.
-         */
+        // Find all the nets affected by this swap and update their wiring costs.
+        // This cost value doesn't depend on the timing info.
+        //
+        // Also find all the pins affected by the swap, and calculates new connection
+        // delays and timing costs.
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
-                                                              bb_delta_c, timing_delta_c, congestion_delta_c);
+                                                              cost_terms_delta, timing_delta_c);
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -603,14 +613,16 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\t\tMove bb_delta_c %e, bb_cost_norm %e, timing_tradeoff %f, "
                            "timing_delta_c %e, timing_cost_norm %e\n",
-                           bb_delta_c,
+                           cost_terms_delta.bb_cost,
                            costs_.bb_cost_norm,
                            placer_opts_.timing_tradeoff,
                            timing_delta_c,
                            costs_.timing_cost_norm);
-            delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
+            delta_c = (1 - placer_opts_.timing_tradeoff) * cost_terms_delta.bb_cost * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
-                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
+                      + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm
+                      + placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
+                      + placer_opts_.interposer_cong_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -649,9 +661,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\t\tMove bb_delta_c %e, bb_cost_norm %e\n",
-                           bb_delta_c,
+                           cost_terms_delta.bb_cost,
                            costs_.bb_cost_norm);
-            delta_c = bb_delta_c * costs_.bb_cost_norm;
+            delta_c = cost_terms_delta.bb_cost * costs_.bb_cost_norm;
         }
 
         NocCostTerms noc_delta_c; // change in NoC cost
@@ -670,15 +682,16 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
         if (manual_move_enabled) {
-            move_outcome = pl_do_manual_move(delta_c, timing_delta_c, bb_delta_c, move_outcome);
+            move_outcome = pl_do_manual_move(delta_c, timing_delta_c, cost_terms_delta.bb_cost, move_outcome);
         }
 #endif //NO_GRAPHICS
 
         if (move_outcome == e_move_result::ACCEPTED) {
             costs_.cost += delta_c;
-            costs_.bb_cost += bb_delta_c;
-            costs_.congestion_cost += congestion_delta_c;
-
+            costs_.bb_cost += cost_terms_delta.bb_cost;
+            costs_.congestion_cost += cost_terms_delta.cong_cost;
+            costs_.interposer_cost += cost_terms_delta.interposer_cost;
+            costs_.interposer_cong_cost += cost_terms_delta.interposer_cong_cost;
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
 
@@ -761,14 +774,14 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         move_type_stats_.incr_accept_reject(proposed_action, move_outcome);
 
         move_outcome_stats.delta_cost_norm = delta_c;
-        move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs_.bb_cost_norm;
+        move_outcome_stats.delta_bb_cost_norm = cost_terms_delta.bb_cost * costs_.bb_cost_norm;
         move_outcome_stats.delta_timing_cost_norm = timing_delta_c * costs_.timing_cost_norm;
 
-        move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
+        move_outcome_stats.delta_bb_cost_abs = cost_terms_delta.bb_cost;
         move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
 
         if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-            LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c, (move_outcome == e_move_result::ACCEPTED ? "ACCEPTED" : "REJECTED"), "");
+            LOG_MOVE_STATS_OUTCOME(delta_c, cost_terms_delta.bb_cost, timing_delta_c, (move_outcome == e_move_result::ACCEPTED ? "ACCEPTED" : "REJECTED"), "");
         }
     }
     move_outcome_stats.outcome = move_outcome;
@@ -782,7 +795,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     }
 
 #ifndef NO_GRAPHICS
-    stop_placement_and_check_breakpoints(blocks_affected_, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+    stop_placement_and_check_breakpoints(blocks_affected_, move_outcome, delta_c, cost_terms_delta.bb_cost, timing_delta_c);
 #endif
 
     // Clear the data structure containing block move info
@@ -826,13 +839,25 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     // as early placements are typically highly congested and unstable. So, we delay congestion modeling
     // until the placement is more settled and wirelength has been reasonably optimized.
     if ((annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio
-         && placer_opts_.congestion_factor != 0.)
+         && placer_opts_.congestion_factor > 0.)
         || congestion_modeling_started_) {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
 
         if (!congestion_modeling_started_) {
             VTR_LOG("Congestion modeling started.\n");
             congestion_modeling_started_ = true;
+        }
+    }
+
+    // Similar to congestion modeling: trigger interposer congestion estimation once rlim shrinks enough (or once started, keep updating).
+    if ((placer_opts_.interposer_cong_factor > 0.
+         && g_vpr_ctx.device().grid.has_interposer_cuts()
+         && annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio)
+        || interposer_cong_modeling_started_) {
+        costs_.interposer_cong_cost = net_cost_handler_.compute_interposer_est_cong_(/*compute_congestion_cost=*/true);
+        if (!interposer_cong_modeling_started_) {
+            VTR_LOG("Interposer congestion modeling started.\n");
+            interposer_cong_modeling_started_ = true;
         }
     }
 
@@ -959,7 +984,7 @@ const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
 }
 
 bool PlacementAnnealer::outer_loop_update_state() {
-    return annealing_state_.outer_loop_update(placer_stats_.success_rate, congestion_modeling_started_, costs_, placer_opts_);
+    return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
 }
 
 void PlacementAnnealer::start_quench() {

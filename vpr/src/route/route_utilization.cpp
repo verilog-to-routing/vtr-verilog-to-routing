@@ -8,10 +8,13 @@
 RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry) {
     placer_state_ = std::make_unique<PlacerState>(/*placement_is_timing_driven=*/false);
     placer_state_->mutable_blk_loc_registry() = blk_loc_registry;
-
-    placer_opts_.place_algorithm = e_place_algorithm::BOUNDING_BOX_PLACE;
-    /// RoutingChanUtilEstimator uses cube bounding box
-    net_cost_handler_ = std::make_unique<NetCostHandler>(placer_opts_, *placer_state_, /*cube_bb=*/true);
+    // RoutingChanUtilEstimator uses cube bounding box
+    net_cost_handler_ = std::make_unique<NetCostHandler>(*placer_state_,
+                                                         /*cube_bb=*/true,
+                                                         e_place_algorithm::BOUNDING_BOX_PLACE,
+                                                         /*interposer_cost_enabled=*/false,
+                                                         /*interposer_cong_threshold=*/0.,
+                                                         /*congestion_chan_util_threshold=*/0.);
 }
 
 ChannelMetric<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
