@@ -354,6 +354,16 @@ void SetupVPR(const t_options* options,
         add_intra_tile_switches();
     }
 
+    /* Populate, once per logical block type, the set of top-level cluster
+     * output pins that may be used as the "out" leg of a feedback path
+     * (driver and sink both inside the same cluster, signal goes out
+     * through a top-level output pin and re-enters through a top-level
+     * input pin). The intra-cluster router queries this set via
+     * pb_graph_head->is_valid_feedback_pin() during edge expansion. */
+    for (t_logical_block_type& lb_type : device_ctx.logical_block_types) {
+        populate_valid_feedback_pins(lb_type);
+    }
+
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
         ClockModeling::treat_clock_pins_as_non_globals();
     }
