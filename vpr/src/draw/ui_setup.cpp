@@ -19,6 +19,8 @@
 #include "search_bar.h"
 #include "ui_setup.h"
 
+#include "vtr_log.h"
+
 #include "ezgl/application.hpp"
 
 #include <QCheckBox>
@@ -231,9 +233,17 @@ void view_button_setup(ezgl::application* app) {
     } else {
         QWidget* box_widget = app->find_widget("LayerBox");
         QWidget* trans_box_widget = app->find_widget("TransparencyBox");
+        if (!box_widget || !trans_box_widget) {
+            VTR_LOG_WARN("view_button_setup: LayerBox/TransparencyBox widget not found; skipping per-layer controls.\n");
+            return;
+        }
 
         QBoxLayout* box = qobject_cast<QBoxLayout*>(box_widget->layout());
         QBoxLayout* trans_box = qobject_cast<QBoxLayout*>(trans_box_widget->layout());
+        if (!box || !trans_box) {
+            VTR_LOG_WARN("view_button_setup: LayerBox/TransparencyBox layout is not a QBoxLayout; skipping per-layer controls.\n");
+            return;
+        }
 
         // Create checkboxes and spin buttons for each layer
         for (int i = 0; i < num_layers; i++) {
