@@ -835,9 +835,9 @@ jobs:
           source myenv/bin/activate
           python3 -m pip install --upgrade pip
           #python3 -m pip install -r requirements.txt
-          echo "==== Checking python packages ===="
-          python -c "import yaml; print('Installed')"      
-          pip install numpy cython setuptools>=60.0.0
+          #echo "==== Checking python packages ===="
+          #python -c "import yaml; print('Installed')"      
+          #pip install numpy cython setuptools>=60.0.0
 
       - name: Dump tool versions
         run: |
