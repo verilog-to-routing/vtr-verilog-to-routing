@@ -797,7 +797,6 @@ jobs:
             cxx: g++
             os: MINGW64
             prefix: mingw64
-            cmake_flags: "-DWITH_ABC=OFF -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF"
     defaults:
       run:
         # This ensures all 'run' steps use the MSYS2 bash shell by default
@@ -866,6 +865,9 @@ jobs:
 
       - name: Build
         shell: msys2 {0}
+        env:
+          CMAKE_PARAMS: "-DWITH_ABC=OFF -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF"
+          BUILD_TYPE: release # Note: Found that release build caches way better than debug build for this test.
         run: |
-          make -j${{ steps.cpu-cores.outputs.count}} BUILD_TYPE=release CMAKE_FLAGS="${{ matrix.config.cmake_flags }}"
+          make -j${{ steps.cpu-cores.outputs.count}}
 
