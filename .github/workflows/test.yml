@@ -778,15 +778,13 @@ jobs:
   Msys2Compatibility:
     needs: [BuildVTR]
     name: ${{ matrix.config.name }}
-    runs-on: windows-latest
-    # Note: dependencies are installed in the container. See details about dependency list in docker/Dockerfile.master
-    # Comment the line out when base image is built again
-    #container: ghcr.io/${{ needs.change_detect.outputs.docker_repo }}/openfpga-build-${{ matrix.config.cc}}
+    runs-on: windows-2005
     # Branch on different OS and settings
     strategy:
       fail-fast: false
       matrix:
         config:
+# UCRT64 is another environment supported by Msys2. It has a different set of package names than the MINGW64 but the same as foundational libraries. If MINGW64 can pass, UCRT64 can pass mostly. It is commented out just to avoid CI runtime increase for now.
 #          - name: "Build Compatibility (GCC, Windows Msys2-UCRT64)"
 #            cc: gcc
 #            cxx: g++
@@ -828,15 +826,15 @@ jobs:
       # For python build from sources
       - name: Install dependencies
         run: |
-          ./.github/scripts/build_dependency_win-msys2-${{ matrix.config.os}}.sh
+          install_win_msys2_${{ matrix.config.os}}_packages.sh
           cp /usr/include/FlexLexer.h /${{ matrix.config.prefix}}/include/
           python3 -m venv myenv
           source myenv/bin/activate
           python3 -m pip install --upgrade pip
-          #python3 -m pip install -r requirements.txt
-          #echo "==== Checking python packages ===="
-          #python -c "import yaml; print('Installed')"      
-          #pip install numpy cython setuptools>=60.0.0
+          python3 -m pip install -r requirements.txt
+          echo "==== Checking python packages ===="
+          python -c "import yaml; print('Installed')"      
+          pip install setuptools>=60.0.0
 
       - name: Dump tool versions
         run: |
