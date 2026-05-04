@@ -25,6 +25,7 @@ fi
 #pacman -Syu --noconfirm
 
 pacman -S --noconfirm --needed \
+    --ignore mingw-w64-x86_64-gcc,mingw-w64-x86_64-gcc-ada,mingw-w64-x86_64-gcc-libs \
     autoconf \
     automake \
     libtool \
