@@ -184,8 +184,8 @@ void init_graphics_state(bool show_graphics_val,
 
     // When --disp is off, force Qt into offscreen mode before QApplication is
     // created so it doesn't try to connect to an X11/Wayland display.
-    if (!show_graphics_val && !getenv("QT_QPA_PLATFORM")) {
-        setenv("QT_QPA_PLATFORM", "offscreen", /*overwrite=*/1);
+    if (!show_graphics_val && !qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
     }
 
     // Create the application object here (not at file scope) so that the

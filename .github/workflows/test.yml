@@ -272,6 +272,69 @@ jobs:
         make test -j${{ steps.cpu-cores.outputs.count }}
 
 
+  GUITests:
+    name: 'T: GUI Tests (Layers 1+3+5)'
+    runs-on: ubuntu-24.04
+    needs: [BuildVTR]
+    steps:
+
+    - uses: actions/checkout@v6
+
+    - name: Fetch submodules
+      env:
+        EZGL_DEPLOY_KEY: ${{ secrets.EZGL_DEPLOY_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$EZGL_DEPLOY_KEY" > ~/.ssh/ezgl_deploy_key
+        chmod 600 ~/.ssh/ezgl_deploy_key
+        ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+        git config submodule.libs/EXTERNAL/libezgl.url "git@github.com:QL-Proprietary/ezgl-QL.git"
+        GIT_SSH_COMMAND="ssh -i ~/.ssh/ezgl_deploy_key -o StrictHostKeyChecking=no" git submodule update --init --recursive
+        rm -f ~/.ssh/ezgl_deploy_key
+
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.3
+
+    - name: Install dependencies
+      run: ./install_apt_packages.sh
+
+    - name: Install Python Requirements (Layer 5 SSIM)
+      run: |
+        pip install scikit-image Pillow numpy
+
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: build-release.tar.gz
+
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
+
+    # Run all three GUI test layers via the local CTest registry:
+    #   Layer 1 — test_vpr_gui_smoke   : headless P&R smoke (--disp off)
+    #   Layer 3 — test_vpr_gui         : Catch2 widget tree / Glade loader
+    #   Layer 5 — test_vpr_gui_visual  : SSIM compare PNGs vs vpr/test/gui/golden/
+    - name: Run GUI Test Layers 1 + 3 + 5
+      run: |
+        cd build/vpr/test/gui
+        ctest -R "test_vpr_gui$|test_vpr_gui_smoke|test_vpr_gui_visual" \
+              --output-on-failure --no-tests=error
+
+    - name: Upload failure logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: gui-tests-failure-logs
+        path: |
+          build/vpr/test/gui/Testing/Temporary/
+          /tmp/tmp.*
+        if-no-files-found: ignore
+        retention-days: 7
+
+
   # This test builds different variations of VTR (with different CMake Params)
   # and ensures that they can run the basic regression tests. This also ensures
   # that these build variations are warning clean.

@@ -38,16 +38,16 @@ TEST_CASE("QtGladeLoader: loadFile returns QMainWindow for valid file", "[layer3
     delete win;
 }
 
-TEST_CASE("QtGladeLoader: loadFile returns null for nonexistent file", "[layer3][vpr_gui][!shouldfail]") {
-    // KNOWN ISSUE: QtGladeLoader::loadFile() calls std::exit(1) on file-open
-    // failure instead of returning nullptr. This test documents the expected
-    // behavior once the loader is fixed. See defect log DEF-002.
-    SKIP("QtGladeLoader calls std::exit(1) on missing file — cannot test without process death");
+TEST_CASE("QtGladeLoader: loadFile returns null for nonexistent file", "[layer3][vpr_gui]") {
+    QtGladeLoader loader;
+    QMainWindow* win = loader.loadFile("/nonexistent/path/to/missing.ui");
+    CHECK(win == nullptr);
 }
 
-TEST_CASE("QtGladeLoader: loadFile returns null for empty path", "[layer3][vpr_gui][!shouldfail]") {
-    // Same issue as above — std::exit(1) on empty path.
-    SKIP("QtGladeLoader calls std::exit(1) on empty path — cannot test without process death");
+TEST_CASE("QtGladeLoader: loadFile returns null for empty path", "[layer3][vpr_gui]") {
+    QtGladeLoader loader;
+    QMainWindow* win = loader.loadFile(QString{});
+    CHECK(win == nullptr);
 }
 
 // ---------------------------------------------------------------------------

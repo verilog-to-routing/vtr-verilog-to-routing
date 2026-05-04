@@ -14,6 +14,7 @@ add_executable(test_vpr_gui
     test_gui_main.cpp
     test_qtgladeloader.cpp
     test_gui_flow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../vpr.qrc
 )
 
 target_link_libraries(test_vpr_gui PRIVATE

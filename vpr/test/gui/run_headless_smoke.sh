@@ -110,24 +110,22 @@ run_test "smoke_pack_only" "pack-only with --disp off" "no" \
     --disp off --pack --seed 1
 
 # ---- Test 7: offscreen graphics + save_graphics ----------------------------
-# XFAIL: DEF-004 — print_png fails in Qt offscreen mode (QPainter not active)
-run_test "smoke_save_png" "offscreen graphics init + PNG export" "xfail" \
+run_test "smoke_save_png" "offscreen graphics init + PNG export" "no" \
     "${VPR}" "${ARCH}" "${BENCH_DIR}/mult_4x4.blif" \
     --disp off --pack --place --seed 1 \
     --graphics_commands "save_graphics smoke_output.png; exit 0"
 
 echo "    Checking PNG output..."
-check_file "smoke_save_png_file" "${WORK_DIR}/smoke_save_png_run/smoke_output.png" "xfail"
+check_file "smoke_save_png_file" "${WORK_DIR}/smoke_save_png_run/smoke_output.png" "no"
 
 # ---- Test 8: placement + routing + save_graphics ---------------------------
-# XFAIL: DEF-004 — print_png fails in Qt offscreen mode (QPainter not active)
-run_test "smoke_route_save" "placement + routing + PNG export" "xfail" \
+run_test "smoke_route_save" "placement + routing + PNG export" "no" \
     "${VPR}" "${ARCH}" "${BENCH_DIR}/mult_4x4.blif" \
     --disp off --pack --place --route --seed 1 \
     --graphics_commands "save_graphics smoke_routing.png; exit 0"
 
 echo "    Checking PNG output..."
-check_file "smoke_route_save_file" "${WORK_DIR}/smoke_route_save_run/smoke_routing.png" "xfail"
+check_file "smoke_route_save_file" "${WORK_DIR}/smoke_route_save_run/smoke_routing.png" "no"
 
 # ---- Summary ---------------------------------------------------------------
 echo ""
