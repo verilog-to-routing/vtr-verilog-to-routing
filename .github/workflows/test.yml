@@ -778,7 +778,7 @@ jobs:
   Msys2Compatibility:
     needs: [BuildVTR]
     name: ${{ matrix.config.name }}
-    runs-on: windows-2005
+    runs-on: windows-2025
     # Branch on different OS and settings
     strategy:
       fail-fast: false
