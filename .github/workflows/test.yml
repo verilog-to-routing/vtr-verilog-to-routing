@@ -826,7 +826,7 @@ jobs:
       # For python build from sources
       - name: Install dependencies
         run: |
-          install_win_msys2_${{ matrix.config.prefix}}_packages.sh
+          ./install_win_msys2_${{ matrix.config.prefix}}_packages.sh
           cp /usr/include/FlexLexer.h /${{ matrix.config.prefix}}/include/
           python3 -m venv myenv
           source myenv/bin/activate
