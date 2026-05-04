@@ -1214,6 +1214,7 @@ static void set_draw_partitions(bool checked) {
         QDialog* dialog = new QDialog(window);
         dialog->setWindowTitle("Floorplanning Legend");
         dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setWindowFlag(Qt::Tool, true);  // float above the main window
         dialog->resize(400, 500);
 
         QVBoxLayout* layout = new QVBoxLayout(dialog);
@@ -1230,7 +1231,12 @@ static void set_draw_partitions(bool checked) {
             highlight_selected_partition(tree);
         });
 
+        // show() alone is not always enough: some window managers refuse to
+        // give a freshly-created top-level dialog focus, leaving it stacked
+        // behind the main window. raise() + activateWindow() force it on top.
         dialog->show();
+        dialog->raise();
+        dialog->activateWindow();
         draw_state->draw_partitions = true;
     } else {
         draw_state->draw_partitions = false;
