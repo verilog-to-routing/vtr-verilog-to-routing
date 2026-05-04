@@ -828,14 +828,6 @@ jobs:
         run: |
           ./install_win_msys2_${{ matrix.config.prefix}}_packages.sh
           cp /usr/include/FlexLexer.h /${{ matrix.config.prefix}}/include/
-          python3 -m venv myenv
-          source myenv/bin/activate
-          python3 -m pip install --upgrade pip
-# Comment out as current version requirements are too tight to fit the python3 of Msys2
-#          python3 -m pip install -r requirements.txt
-          echo "==== Checking python packages ===="
-          python -c "import yaml; print('Installed')"      
-          pip install setuptools>=60.0.0
 
       - name: Dump tool versions
         run: |
