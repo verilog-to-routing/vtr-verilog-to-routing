@@ -829,24 +829,22 @@ jobs:
           ./install_win_msys2_${{ matrix.config.prefix}}_packages.sh
           cp /usr/include/FlexLexer.h /${{ matrix.config.prefix}}/include/
 
-      # This step is failing on the CI when merged into master.
-      # Removing this line as a hotfix. This should be investigated.
-      # - name: Dump tool versions
-      #   run: |
-      #     which cmake
-      #     cmake --version
-      #     which ${CC}
-      #     ${CC} --version
-      #     which ${CXX}
-      #     ${CXX} --version
-      #     which ld
-      #     ld --version
-      #     which python3
-      #     python3 --version
-      #     echo "==== Checking yosys packages ===="
-      #     which yosys.exe
-      #     echo "==== Checking libgnat.a ===="
-      #     ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
+      - name: Dump tool versions
+        run: |
+          which cmake
+          cmake --version
+          which ${CC}
+          ${CC} --version
+          which ${CXX}
+          ${CXX} --version
+          which ld
+          ld --version
+          which python3
+          python3 --version
+          echo "==== Checking yosys packages ===="
+          which yosys.exe
+          echo "==== Checking libgnat.a ===="
+          ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
