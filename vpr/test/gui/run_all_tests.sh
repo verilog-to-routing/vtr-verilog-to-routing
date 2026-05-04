@@ -5,7 +5,13 @@
 # in sequence. Reports a unified pass/fail summary.
 #
 # Usage:
+#   ./run_all_tests.sh                                          # use defaults below
 #   ./run_all_tests.sh <vpr_binary> <arch_dir> <bench_dir>
+#
+# Defaults (resolved relative to the repo root containing this script):
+#   <vpr_binary> = build/vpr/vpr
+#   <arch_dir>   = vtr_flow/arch/timing
+#   <bench_dir>  = vtr_flow/benchmarks/microbenchmarks
 #
 # Or from the build directory:
 #   cd build/vpr/test/gui && ctest --output-on-failure
@@ -15,9 +21,15 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-readonly VPR="$(cd "$(dirname "${1:?Usage: $0 <vpr_binary> <arch_dir> <bench_dir>}")" && pwd)/$(basename "$1")"
-readonly ARCH_DIR="$(cd "${2:?}" && pwd)"
-readonly BENCH_DIR="$(cd "${3:?}" && pwd)"
+readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+
+VPR_ARG="${1:-${REPO_ROOT}/build/vpr/vpr}"
+ARCH_ARG="${2:-${REPO_ROOT}/vtr_flow/arch/timing}"
+BENCH_ARG="${3:-${REPO_ROOT}/vtr_flow/benchmarks/microbenchmarks}"
+
+readonly VPR="$(cd "$(dirname "${VPR_ARG}")" && pwd)/$(basename "${VPR_ARG}")"
+readonly ARCH_DIR="$(cd "${ARCH_ARG}" && pwd)"
+readonly BENCH_DIR="$(cd "${BENCH_ARG}" && pwd)"
 
 # Resolve test_vpr_gui binary — expect it next to vpr binary (../test/gui/)
 # or in the same build tree.
