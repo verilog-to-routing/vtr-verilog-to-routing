@@ -822,6 +822,13 @@ void act_on_mouse_move(ezgl::application* app, QMouseEvent* /* event */, double 
         // draw a grey, dashed-line box to indicate the zoom-in region
         app->refresh_drawing();
         ezgl::renderer* g = app->get_renderer();
+        // rhi_backend::create_animation_renderer() currently returns nullptr,
+        // so the live dashed-rectangle preview is unavailable when running
+        // with the RHI backend. The two-click zoom itself still works because
+        // act_on_mouse_press uses the camera directly, not the renderer.
+        // TODO: implement a proper animation renderer for rhi_backend so the
+        // preview reappears under RHI.
+        if (!g) return;
         g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
         g->set_color(blk_GREY);
         g->set_line_width(2);
