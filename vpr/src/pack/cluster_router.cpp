@@ -310,18 +310,14 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
                                       int verbosity) {
     bool is_impossible = false;
 
-    /* Classify the current sink: is it an in-cluster sink, or is it the
-     * special "cluster-external sink" placeholder that represents the signal
-     * leaving the cluster?
-     *
-     * The valid-cluster-exit-pin check that we apply during edge expansion
-     * is intended ONLY for connections whose sink lives inside the cluster
-     * but whose path goes "out and back in" through the inter-cluster
-     * routing (the feedback case). For a connection whose sink is genuinely
-     * external (i.e. terminals[itarget] == ext_sink_index), the signal is
-     * supposed to leave the cluster, so we do not impose the constraint --
-     * the caller above us is responsible for picking a sensible exit pin in
-     * that case. */
+    // Classify the current sink: is it an in-cluster sink, or the special
+    // "cluster-external sink" placeholder representing the signal leaving the cluster?
+    //
+    // The valid-cluster-exit-pin check during edge expansion applies ONLY for
+    // connections whose sink lives inside the cluster but whose path goes "out and
+    // back in" through inter-cluster routing (the feedback case). For a genuinely
+    // external sink (terminals[itarget] == ext_sink_inode), the signal is supposed
+    // to leave the cluster, so we do not impose the constraint.
     const int ext_sink_inode = get_lb_type_rr_graph_ext_sink_index(lb_type_);
     const bool target_is_internal_sink = (lb_net.terminals[itarget] != ext_sink_inode);
 
@@ -1014,12 +1010,10 @@ void ClusterRouter::expand_edges_(int mode,
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
     t_expansion_node enode;
 
-    /* Block feedback routing  through Fc_out == 0
-     * top-level output pins: such a pin cannot drive any inter-cluster
-     * wire, so the signal cannot physically loop back to an in-cluster
-     * sink through it. Only applied when the current target sink is
-     * inside this cluster; genuine external-sink targets are out of
-     * scope. */
+    // Block feedback routing through Fc_out == 0 top-level output pins: such a
+    // pin cannot drive any inter-cluster wire, so the signal cannot physically
+    // loop back to an in-cluster sink. Only applied when the target sink is
+    // inside this cluster; genuine external-sink targets are out of scope.
     if (target_is_internal_sink) {
         const t_pb_graph_pin* pb_pin = lb_type_graph[cur_inode].pb_graph_pin;
         const bool is_top_level_output_pin = (pb_pin != nullptr
@@ -1086,8 +1080,6 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node,
         mode = 0;
     }
 
-    /* target_is_internal_sink is forwarded so expand_edges_ knows whether to
-     * apply the "feedback through Fc=0 cluster output pin" prohibition. */
     expand_edges_(mode, cur_node, cur_cost, net_fanout, target_is_internal_sink);
 }
 
@@ -1124,7 +1116,6 @@ void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node,
             continue;
         }
 
-        /* Forward target_is_internal_sink for the same reason as expand_node_. */
         expand_edges_(mode, cur_inode, cur_cost, net_fanout, target_is_internal_sink);
     }
 }
