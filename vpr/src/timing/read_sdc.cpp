@@ -237,6 +237,26 @@ class SdcParseCallback : public sdcparse::Callback {
                       "-add option not supported for create_generated_clock");
         }
 
+        if (!cmd.edges.empty()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-edges option not supported for create_generated_clock");
+        }
+
+        if (!cmd.edge_shift.empty()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-edge_shift option not supported for create_generated_clock");
+        }
+
+        if (cmd.invert) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-invert not supported for create_generated_clock");
+        }
+
+        if (!std::isnan(cmd.duty_cycle)) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-duty_cycle option not supported for create_generated_clock");
+        }
+
         if (cmd.sources.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "-source is required for create_generated_clock");

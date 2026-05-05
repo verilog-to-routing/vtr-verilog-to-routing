@@ -43,7 +43,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -84,7 +84,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     # NOTE: BlifExplorer requires Qt5 to build. We do not currently actually
@@ -208,7 +208,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -251,7 +251,7 @@ jobs:
         submodules: 'true'
 
     - name: 'Get number of CPU cores'
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: 'Install dependencies'
@@ -385,7 +385,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -473,7 +473,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -552,7 +552,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -600,7 +600,7 @@ jobs:
           submodules: 'true'
 
       - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v2
+        uses: SimenB/github-actions-cpu-cores@v3
         id: cpu-cores
 
       - name: Install dependencies
@@ -640,7 +640,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -681,7 +681,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -726,7 +726,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install dependencies
@@ -757,7 +757,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - name: Install Dependencies
@@ -774,4 +774,91 @@ jobs:
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make -j${{ steps.cpu-cores.outputs.count}}
+
+  Msys2Compatibility:
+    needs: [BuildVTR]
+    name: ${{ matrix.config.name }}
+    runs-on: windows-2025
+    # Branch on different OS and settings
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+# UCRT64 is another environment supported by Msys2. It has a different set of package names than the MINGW64 but the same as foundational libraries. If MINGW64 can pass, UCRT64 can pass mostly. It is commented out just to avoid CI runtime increase for now.
+#          - name: "Build Compatibility (GCC, Windows Msys2-UCRT64)"
+#            cc: gcc
+#            cxx: g++
+#            os: UCRT64
+#            prefix: ucrt64
+          - name: "Build Compatibility (GCC, Windows Msys2-MINGW64)"
+            cc: gcc
+            cxx: g++
+            os: MINGW64
+            prefix: mingw64
+    defaults:
+      run:
+        # This ensures all 'run' steps use the MSYS2 bash shell by default
+        shell: msys2 {0}
+    # Define the steps to run the build job
+    env:
+      CC: ${{ matrix.config.cc }}
+      CXX: ${{ matrix.config.cxx }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v3
+        id: cpu-cores
+  
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.config.os }}
+          update: true
+          # Optional: Pre-install core tools needed to run your script
+          install: >-
+            wget
+            git
+
+      #In MSYS2, the flex package is an MSYS-native tool, meaning it installs its headers to /usr/include/FlexLexer.h. However, if you are using a MinGW-w64 environment (e.g., UCRT64, MINGW64), the compiler only looks for headers in /mingw64/include or similar toolchain-specific paths. The most common workaround is to copy or link the header from the MSYS directory to your active MinGW-w64 include directory. 
+      # For python build from sources
+      - name: Install dependencies
+        run: |
+          ./install_win_msys2_${{ matrix.config.prefix}}_packages.sh
+          cp /usr/include/FlexLexer.h /${{ matrix.config.prefix}}/include/
+
+      - name: Dump tool versions
+        run: |
+          which cmake
+          cmake --version
+          which ${CC}
+          ${CC} --version
+          which ${CXX}
+          ${CXX} --version
+          which ld
+          ld --version
+          which python3
+          python3 --version
+          echo "==== Checking yosys packages ===="
+          which yosys.exe
+          echo "==== Checking libgnat.a ===="
+          ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-msys2-${{ github.job }}-${{ hashFiles('**/CMakeLists.txt', '**/Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-msys2-${{ github.job }}-
+            ${{ runner.os }}-msys2-
+
+      - name: Build
+        shell: msys2 {0}
+        env:
+          CMAKE_PARAMS: "-DWITH_ABC=OFF -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF"
+          BUILD_TYPE: release # Note: Found that release build caches way better than debug build for this test.
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count}}
 
