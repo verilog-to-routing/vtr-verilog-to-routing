@@ -855,9 +855,8 @@ static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
             VTR_ASSERT_SAFE(primitive_pb != nullptr);
             VTR_ASSERT_SAFE(primitive_pb->pb_graph_node->pb_type->is_primitive());
 
-            if (primitive_pb->pb_graph_node->pb_type->blif_model != nullptr) {
-                compute_and_mark_lookahead_pins_used(blk_id, atom_cluster, atom_to_pb);
-            }
+            VTR_ASSERT(primitive_pb->pb_graph_node->pb_type->blif_model != nullptr);
+            compute_and_mark_lookahead_pins_used(blk_id, atom_cluster, atom_to_pb);
         }
     }
 }
