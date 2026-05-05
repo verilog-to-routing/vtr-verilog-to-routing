@@ -6,6 +6,7 @@
  */
 
 #include <algorithm>
+#include <ranges>
 
 #include "atom_netlist.h"
 #include "cluster_legalizer.h"
@@ -75,8 +76,7 @@ void PackingSignatureTree::add_lcn(const t_pb_graph_node* primitive_pb_graph_nod
     // Determine whether a path with this new LCN already exists.
     // Similar clusters are likely to get packed close to each other in seed-based flows,
     // so iterate over the list in reverse to take better advantage of this locality.
-    for (ptrdiff_t i = cursor_->child_lcn.size() - 1; i >= 0; i--) {
-        LocationAndConnectivityNode* child_lcn = cursor_->child_lcn[i];
+    for (LocationAndConnectivityNode* child_lcn : std::ranges::views::reverse(cursor_->child_lcn)) {
         if (*child_lcn == *new_lcn) {
             delete new_lcn;
             cursor_ = child_lcn;
@@ -207,8 +207,8 @@ void PackingSignatureTree::add_ecn(e_ecn_legality legality) {
 
     // Similar clusters are likely to get packed close to each other in seed-based flows,
     // so iterate over the list in reverse to take better advantage of this locality.
-    for (ptrdiff_t i = cursor_->child_ecn.size() - 1; i >= 0; i--) {
-        if (*cursor_->child_ecn[i] == *ecn) {
+    for (ExternalConnectivityNode* child_ecn : std::ranges::views::reverse(cursor_->child_ecn)) {
+        if (*child_ecn == *ecn) {
             delete ecn;
             return;
         }
@@ -237,9 +237,9 @@ e_ecn_legality PackingSignatureTree::check_legality() {
 
     // Similar clusters are likely to get packed close to each other in seed-based flows,
     // so iterate over the list in reverse to take better advantage of this locality.
-    for (ptrdiff_t i = cursor_->child_ecn.size() - 1; i >= 0; i--) {
-        if (*cursor_->child_ecn[i] == ecn) {
-            return cursor_->child_ecn[i]->legality;
+    for (ExternalConnectivityNode* child_ecn : std::ranges::views::reverse(cursor_->child_ecn)) {
+        if (*child_ecn == ecn) {
+            return child_ecn->legality;
         }
     }
 
