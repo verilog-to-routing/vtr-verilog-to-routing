@@ -106,7 +106,7 @@
  * run-time overhead.
  *
  * Also note the use of std::make_tuple to ensure all arguments in VA_ARGS
- * are used. Note how we don't do sizeof(line) can directly cas line to void.
+ * are used. Note how we don't do sizeof(line) and directly cast 'line' to void.
  * This is because the compiler issues a warning if it sees sizeof([integer value]).
  */
 #define VTR_LOGVF_NOP(expr, file, line, ...)                     \
