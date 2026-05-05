@@ -8,7 +8,7 @@
  * containing switch block data, and managing switch block patterns.
  */
 
-#include <climits>
+#include <limits>
 #include <unordered_map>
 #include <vector>
 
@@ -138,8 +138,8 @@ class SwitchBlockManager {
      *        Initialized to INT_MAX/INT_MIN so the first observed value
      *        always wins.
      */
-    int switch_delay_min_ps_ = INT_MAX;
-    int switch_delay_max_ps_ = INT_MIN;
+    int switch_delay_min_ps_ = std::numeric_limits<int>::max();
+    int switch_delay_max_ps_ = std::numeric_limits<int>::min();
 
     // Validation
     void validate_yaml_structure(const YAML::Node& root);
