@@ -404,7 +404,6 @@ static float get_lemieux_cost_func(const int exponent, const bool both_sides, co
 
         float lcf_pins = 0;
         /* for each pin... */
-        int pin_comparisons = 0;
         for (int ipin = 0; ipin < num_pins; ipin++) {
             int pin_ind = ipin;
             int pin_side = iside;
@@ -425,7 +424,6 @@ static float get_lemieux_cost_func(const int exponent, const bool both_sides, co
                         comp_pin_ind = comp_pin_ind % pin_locations->at(iside).size();
                     }
                 }
-                pin_comparisons++;
                 /* get the hamming proximity between the tracks of the two pins being compared */
                 float pin_to_pin_lcf = (float)hamming_proximity_of_two_sets(&pin_to_tracks->at(pin_side).at(pin_ind), &pin_to_tracks->at(comp_side).at(comp_pin_ind));
                 pin_to_pin_lcf = 2 * ((int)pin_to_tracks->at(pin_side).at(pin_ind).size() - pin_to_pin_lcf);
@@ -471,7 +469,6 @@ static float get_hamming_proximity(const int Fc, const int num_pin_type_pins, co
 
         float hp_pins = 0;
         /* for each pin... */
-        int pin_comparisons = 0;
         for (int ipin = 0; ipin < num_pins; ipin++) {
             int pin_ind = ipin;
             int pin_side = iside;
@@ -492,7 +489,6 @@ static float get_hamming_proximity(const int Fc, const int num_pin_type_pins, co
                         comp_pin_ind = comp_pin_ind % pin_locations->at(iside).size();
                     }
                 }
-                pin_comparisons++;
                 /* get the hamming proximity between the tracks of the two pins being compared */
                 float pin_to_pin_hp = (float)hamming_proximity_of_two_sets(&pin_to_tracks->at(pin_side).at(pin_ind), &pin_to_tracks->at(comp_side).at(comp_pin_ind));
                 pin_to_pin_hp = pow(pin_to_pin_hp, exponent);

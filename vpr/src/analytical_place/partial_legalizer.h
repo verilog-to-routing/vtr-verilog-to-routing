@@ -15,6 +15,8 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <cstdint>
+
 #include "ap_netlist_fwd.h"
 #include "ap_flow_enums.h"
 #include "flat_placement_bins.h"
