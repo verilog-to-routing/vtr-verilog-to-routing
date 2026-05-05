@@ -201,6 +201,7 @@ void advanced_button_callback() {
 
         // GtkExpander equivalent: QGroupBox
         auto* expander = new QGroupBox("Variables");
+        new QVBoxLayout(expander);
         QWidget* varGrid = ezgl::grid_new();
         QLabel* pLabel = new QLabel;
         pLabel->setTextFormat(Qt::RichText);
