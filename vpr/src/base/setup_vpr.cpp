@@ -354,7 +354,6 @@ void SetupVPR(const t_options* options,
         add_intra_tile_switches();
     }
 
-
     if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
         ClockModeling::treat_clock_pins_as_non_globals();
     }
