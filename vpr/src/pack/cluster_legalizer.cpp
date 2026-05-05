@@ -1539,8 +1539,10 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
     // Create the new cluster
+    VTR_ASSERT_MSG(cluster_type->index < (int)valid_feedback_pins_by_type_.size(),
+                   ("Logical block type not found in feedback pin map: " + std::string(cluster_type->name)).c_str());
     LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_,
-                                    valid_feedback_pins_by_type_.at(cluster_type));
+                                    valid_feedback_pins_by_type_[cluster_type->index]);
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
@@ -1771,8 +1773,10 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
 }
 
 void ClusterLegalizer::init_feedback_pin_sets() {
-    for (const t_logical_block_type& lb_type : g_vpr_ctx.device().logical_block_types) {
-        auto& valid_set = valid_feedback_pins_by_type_[&lb_type];
+    const auto& lb_types = g_vpr_ctx.device().logical_block_types;
+    valid_feedback_pins_by_type_.resize(lb_types.size());
+    for (const t_logical_block_type& lb_type : lb_types) {
+        auto& valid_set = valid_feedback_pins_by_type_[lb_type.index];
         if (lb_type.pb_graph_head == nullptr || lb_type.equivalent_tiles.empty()) {
             continue; // empty set: router rejects all feedback pins (safe default)
         }

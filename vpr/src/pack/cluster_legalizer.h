@@ -633,8 +633,8 @@ class ClusterLegalizer {
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
 
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
-    ///        Built once at packing start; each ClusterRouter holds a pointer into this map.
-    std::unordered_map<const t_logical_block_type*, std::unordered_set<int>> valid_feedback_pins_by_type_;
+    ///        Indexed by t_logical_block_type::index. Built once by init_feedback_pin_sets().
+    std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
