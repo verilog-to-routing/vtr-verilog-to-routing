@@ -1140,8 +1140,6 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         }
 
         //TODO: draw the delays nicer
-        //   * rotate to match edge
-        //   * offset from line
         //   * track visible in window
         ezgl::rectangle text_bbox({min_x, min_y}, {max_x, max_y});
 
@@ -1154,30 +1152,30 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
-        // Get the screen coordinates for text drawing
-        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
-        g->set_text_rotation(text_angle);
+        // Draw the text in WORLD coordinates so it pans/zooms with the
+        // camera. (The previous SCREEN-coord path used an 8-pixel offset
+        // perpendicular to the line, but left the labels at fixed screen
+        // positions decoupled from the underlying critical-path geometry.)
+        //
+        // To avoid the line bisecting the text, offset the label center
+        // perpendicular to the line. The offset is a small fraction of the
+        // tile width so it scales naturally with device geometry — at any
+        // zoom level the label sits just off the edge, not on it.
+        const float offset_dist = tile_width * 0.075f;
+        const float angle_rad   = text_angle * (std::numbers::pi / 180.0f);
+        const ezgl::point2d text_center{
+            text_bbox.center().x - offset_dist * std::sin(angle_rad),
+            text_bbox.center().y + offset_dist * std::cos(angle_rad)};
 
-        // Set the text colour to black to differentiate it from the line
+        g->set_text_rotation(text_angle);
         g->set_font_size(16);
         g->set_color(ezgl::color(0, 0, 0));
 
-        g->set_coordinate_system(ezgl::SCREEN);
-
-        // Find an offset so it is sitting on top/below of the line
-        float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (std::numbers::pi / 180));
-        float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (std::numbers::pi / 180));
-
-        ezgl::point2d offset_text_bbox(x_offset, y_offset);
-        g->draw_text(offset_text_bbox, incr_delay_str,
+        g->draw_text(text_center, incr_delay_str,
                      text_bbox.width(), text_bbox.height());
 
         g->set_font_size(14);
-
         g->set_text_rotation(0);
-        g->set_coordinate_system(ezgl::WORLD);
     }
 }
 
