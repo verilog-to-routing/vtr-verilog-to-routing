@@ -1768,13 +1768,13 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     packing_signature_tree_ = (memoize_cluster_packings)
                                   ? std::optional<PackingSignatureTree>(PackingSignatureTree())
                                   : std::nullopt;
+}
 
-    // Build per-type feedback-pin sets once at packing start.
-    // Each ClusterRouter will hold a pointer into this map for its lifetime.
+void ClusterLegalizer::init_feedback_pin_sets() {
     for (const t_logical_block_type& lb_type : g_vpr_ctx.device().logical_block_types) {
         auto& valid_set = valid_feedback_pins_by_type_[&lb_type];
         if (lb_type.pb_graph_head == nullptr || lb_type.equivalent_tiles.empty()) {
-            continue;
+            continue; // empty set: router rejects all feedback pins (safe default)
         }
         // Collect physical-tile pin indices with Fc_out > 0 on any equivalent tile.
         std::unordered_set<int> non_zero_fc_pins;

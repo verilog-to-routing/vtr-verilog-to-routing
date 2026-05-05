@@ -460,6 +460,11 @@ class ClusterLegalizer {
      */
     void reset();
 
+    /**
+     * @brief Build the per-type feedback-pin sets used by the intra-cluster router.
+     */
+    void init_feedback_pin_sets();
+
     /*
      * @brief Checks if the given molecule is compatible with the given cluster.
      *
