@@ -82,7 +82,7 @@ target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 # Find if Eigen is installed. Eigen is used within the Analytical Solver of the
 # Analytical Placement flow. If Eigen is not installed, certain solvers cannot
 # be used.
-find_package(Eigen3 3.3 NO_MODULE)
+find_package(Eigen3 NO_MODULE)
 if (TARGET Eigen3::Eigen)
     target_link_libraries (libvpr Eigen3::Eigen)
     target_compile_definitions(libvpr PUBLIC -DEIGEN_INSTALLED)

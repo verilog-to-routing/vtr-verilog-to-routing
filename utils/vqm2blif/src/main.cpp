@@ -1805,12 +1805,10 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 	string pin_name;
     string indent = "    ";
 
-	int ports_dumped = 1;
-
     std::vector<std::string> port_strings;
 
 	while(temp_port){
-		for (int i = 0; i < temp_port->size; i++, ports_dumped++){
+		for (int i = 0; i < temp_port->size; i++){
 			//loop through a port's size
 			if (temp_port->size > 1){
 				//rename the port "name[i]"
@@ -1964,10 +1962,9 @@ void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, std::string in
  *	flag to indicate whether to print in DEBUG or BLIF format.
  */	
 	string temp_name;
-	int ports_dumped = 1;
 
 	while (port){	
-		for (int i = 0; i < port->size; i++, ports_dumped++){
+		for (int i = 0; i < port->size; i++){
 			temp_name = (string)port->name;
 
 			if (port->size > 1){	//append the index if necessary using the established convention

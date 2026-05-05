@@ -1,5 +1,6 @@
 #include "router_lookahead_extended_map.h"
 
+#include <cstddef>
 #include <vector>
 #include <queue>
 
@@ -555,7 +556,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #endif
 
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS)
-    for (int iseg = 0; iseg < (ptrdiff_t)num_segments; iseg++) {
+    for (size_t iseg = 0; iseg < num_segments; iseg++) {
         VTR_LOG("cost map for %s(%d)\n",
                 segment_inf[iseg].name.c_str(), iseg);
         cost_map_.print(iseg);

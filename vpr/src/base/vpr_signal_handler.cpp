@@ -21,6 +21,10 @@
 #include <cstdio>  // for fwrite, stderr
 #include <cstring> // strlen
 
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#include "unistd.h" // Needed for STDERR_FILENO
+#endif
+
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
 #endif
