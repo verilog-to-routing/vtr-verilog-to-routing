@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QLayout>
+#include <QVBoxLayout>
 #include <QScrollArea>
 
 //keeps track of open windows to avoid reopenning windows that are already open
@@ -51,6 +52,7 @@ void draw_debug_window() {
         QWidget* window = new QWidget;
         window->setAttribute(Qt::WA_DeleteOnClose);
         window->setWindowTitle("Debugger");
+        new QVBoxLayout(window);
         ezgl::center_window(window);
 
         QWidget* mainGrid = ezgl::grid_new();
@@ -184,6 +186,7 @@ void advanced_button_callback() {
 
         QWidget* window = new QWidget;
         window->setAttribute(Qt::WA_DeleteOnClose);
+        new QVBoxLayout(window);
         ezgl::center_window(window);
         window->setWindowTitle("Advanced Debugger Options");
 
@@ -423,6 +426,7 @@ void set_expression_button_callback(QWidget* /*widget*/, QWidget* grid) {
 void invalid_breakpoint_entry_window(std::string error) {
     QWidget* window = new QWidget;
     window->setAttribute(Qt::WA_DeleteOnClose);
+    new QVBoxLayout(window);
     ezgl::center_window(window);
     window->setWindowTitle("ERROR");
     window->setWindowModality(Qt::ApplicationModal);
@@ -453,6 +457,7 @@ void invalid_breakpoint_entry_window(std::string error) {
 void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state, bool in_placer) {
     QWidget* window = new QWidget;
     window->setAttribute(Qt::WA_DeleteOnClose);
+    new QVBoxLayout(window);
     ezgl::center_window(window);
     window->setWindowTitle("Breakpoint");
 
