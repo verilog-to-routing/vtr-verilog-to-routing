@@ -1152,26 +1152,27 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
-        // Draw the text in WORLD coordinates so it pans/zooms with the
-        // camera. (The previous SCREEN-coord path used an 8-pixel offset
-        // perpendicular to the line, but left the labels at fixed screen
-        // positions decoupled from the underlying critical-path geometry.)
-        //
-        // To avoid the line bisecting the text, offset the label center
-        // perpendicular to the line. The offset is a small fraction of the
-        // tile width so it scales naturally with device geometry — at any
-        // zoom level the label sits just off the edge, not on it.
-        const float offset_dist = tile_width * 0.075f;
-        const float angle_rad   = text_angle * (std::numbers::pi / 180.0f);
-        const ezgl::point2d text_center{
-            text_bbox.center().x - offset_dist * std::sin(angle_rad),
-            text_bbox.center().y + offset_dist * std::cos(angle_rad)};
+        // Offset the label perpendicular to the line by a fixed SCREEN-
+        // pixel amount via set_text_screen_offset. The offset is applied
+        // at paint time AFTER world→screen transform, so its visible size
+        // is always exactly kOffsetPx regardless of zoom — and crucially
+        // it's preserved through the camera-only redraw path (zoom/pan
+        // operations that replay cached overlay commands without re-running
+        // this code). The angle is in screen space: +X right, +Y down (Qt
+        // convention), which is why cos is negated here vs. world-Y-up.
+        constexpr float kFontPx   = 16.0f;
+        constexpr float kOffsetPx = 12.0f;
+        const float angle_rad = text_angle * (std::numbers::pi / 180.0f);
+        const ezgl::point2d screen_offset{
+            -kOffsetPx * std::sin(angle_rad),
+            -kOffsetPx * std::cos(angle_rad)};
 
         g->set_text_rotation(text_angle);
-        g->set_font_size(16);
+        g->set_font_size(kFontPx);
         g->set_color(ezgl::color(0, 0, 0));
+        g->set_text_screen_offset(screen_offset);
 
-        g->draw_text(text_center, incr_delay_str,
+        g->draw_text(text_bbox.center(), incr_delay_str,
                      text_bbox.width(), text_bbox.height());
 
         g->set_font_size(14);
