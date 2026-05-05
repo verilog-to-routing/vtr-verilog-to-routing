@@ -13,6 +13,7 @@
 #include <QLayout>
 #include <QVBoxLayout>
 #include <QScrollArea>
+#include <QToolButton>
 
 //keeps track of open windows to avoid reopenning windows that are already open
 struct open_windows {
@@ -199,10 +200,28 @@ void advanced_button_callback() {
         instructions->setMaximumWidth(instructions->fontMetrics().horizontalAdvance(QString(40, 'x')));
         QLabel* expression_here = new QLabel("Write expression below:");
 
-        // GtkExpander equivalent: QGroupBox
-        auto* expander = new QGroupBox("Variables");
-        new QVBoxLayout(expander);
+        // GtkExpander equivalent: a QToolButton acting as the disclosure
+        // header (arrow + label) over a content widget whose visibility is
+        // toggled by the button. Collapsed by default.
+        auto* expander = new QWidget;
+        auto* expanderLayout = new QVBoxLayout(expander);
+        expanderLayout->setContentsMargins(0, 0, 0, 0);
+        expanderLayout->setSpacing(0);
+        auto* expanderToggle = new QToolButton;
+        expanderToggle->setText("Variables");
+        expanderToggle->setCheckable(true);
+        expanderToggle->setChecked(false);
+        expanderToggle->setStyleSheet("QToolButton { border: none; }");
+        expanderToggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        expanderToggle->setArrowType(Qt::RightArrow);
+        expanderLayout->addWidget(expanderToggle);
         QWidget* varGrid = ezgl::grid_new();
+        varGrid->setVisible(false);
+        QObject::connect(expanderToggle, &QToolButton::toggled,
+                         [expanderToggle, varGrid](bool checked) {
+                             expanderToggle->setArrowType(checked ? Qt::DownArrow : Qt::RightArrow);
+                             varGrid->setVisible(checked);
+                         });
         QLabel* pLabel = new QLabel;
         pLabel->setTextFormat(Qt::RichText);
         pLabel->setText("<b>Placer Variables:</b>");
