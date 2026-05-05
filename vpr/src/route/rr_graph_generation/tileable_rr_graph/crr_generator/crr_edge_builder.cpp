@@ -49,6 +49,9 @@ std::unordered_map<int, RRSwitchId> pre_create_crr_switches(const int min_delay_
     std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
     std::unordered_map<int, RRSwitchId> delay_to_switch_id;
 
+    // If the delay range is invalid, it means delay is not specified
+    // in the switch pattern files, and we get the delay from the switch list
+    // in the architecture file.
     if (min_delay_ps > max_delay_ps) {
         return delay_to_switch_id;
     }
