@@ -60,18 +60,3 @@ pacman -S --noconfirm --needed \
     mingw-w64-x86_64-eigen3 \
     mingw-w64-x86_64-graphviz \
     mingw-w64-x86_64-openssl
-
-# Yosys is still based on this version of gcc
-# Install fixed GCC 15.0.1 tools from MSYS2 archive
-pacman -U --noconfirm \
-    https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-15.2.0-14-any.pkg.tar.zst \
-    https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-ada-15.2.0-14-any.pkg.tar.zst \
-    https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-libs-15.2.0-14-any.pkg.tar.zst
- 
-# Prevent pacman from upgrading GCC tools beyond 15.0.1
-# Add to /etc/pacman.conf IgnorePkg line if not already present
-if grep -q "^IgnorePkg" /etc/pacman.conf; then
-    sed -i 's/^IgnorePkg\s*=\s*/IgnorePkg = mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-ada mingw-w64-x86_64-gcc-libs /' /etc/pacman.conf
-else
-    echo "IgnorePkg = mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-ada mingw-w64-x86_64-gcc-libs" >> /etc/pacman.conf
-fi

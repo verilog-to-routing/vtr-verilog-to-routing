@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
 #include <cstring>
 #include <algorithm>
@@ -840,7 +841,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline int init_node_segment(int& inode, int segment_id) final {
         const auto& rr_graph = (*rr_graph_);
-        if (segment_id > (ptrdiff_t)segment_inf_.size()) {
+        if (static_cast<size_t>(segment_id) > segment_inf_.size()) {
             report_error(
                 "Specified segment %d is larger than number of known segments %zu",
                 segment_inf_.size());
@@ -1110,7 +1111,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) final {
         size_t cur = walker.advance(n);
-        if ((ptrdiff_t)cur != n) {
+        if (cur != static_cast<size_t>(n)) {
             report_error("Incorrect edge index %zu != %d", cur, n);
         }
         return &walker;
@@ -1160,7 +1161,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         rr_graph_builder_->mark_edges_as_rr_switch_ids();
         rr_graph_builder_->partition_edges();
 
-        for (int source_node = 0; source_node < (ptrdiff_t)rr_nodes_->size(); ++source_node) {
+        for (size_t source_node = 0; source_node < rr_nodes_->size(); ++source_node) {
             int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
             for (int iconn = 0; iconn < num_edges; ++iconn) {
                 size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
@@ -1439,7 +1440,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::tie(tile, class_inf, std::ignore) = context;
         auto class_idx = class_inf - &tile->class_inf[0];
 
-        if (class_inf->num_pins != (ptrdiff_t)size) {
+        if (static_cast<size_t>(class_inf->num_pins) != size) {
             report_error(
                 "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
                 size, class_inf->num_pins,
@@ -1567,7 +1568,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void preallocate_block_type_pin_class(std::pair<const t_physical_tile_type*, int>& context, size_t size) final {
         const t_physical_tile_type* tile = context.first;
-        if ((int)tile->class_inf.size() != (ptrdiff_t)size) {
+        if (tile->class_inf.size() != size) {
             report_error("Architecture file does not match block type");
         }
     }
