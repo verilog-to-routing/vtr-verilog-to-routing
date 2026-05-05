@@ -23,19 +23,6 @@ bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
 /**
- * @brief Populate `lb_type.pb_graph_head->valid_feedback_pin_indices`
- *        for the given logical block type.
- *
- * Walks the equivalent physical tiles' Fc specifications, marks every
- * physical tile pin number with Fc_out > 0, and then iterates the top-
- * level output pins of `lb_type.pb_graph_head`, admitting each pin whose
- * physical-tile pin number is in the marked set. The
- * result is stored on the pb_graph_head.
- *
- */
-void populate_valid_feedback_pins(t_logical_block_type& lb_type);
-
-/**
  * @brief Returns the indices of sub tiles in a given physical type which contain the specified port name. It will return all the sub tiles that contain the required port. Note that the sub tiles may be of different types
  *
  * @param type the pointer to the physical tile type descriptor

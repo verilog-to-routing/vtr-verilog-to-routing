@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "atom_pb_bimap.h"
@@ -253,6 +254,7 @@ class ClusterRouter {
      */
     ClusterRouter()
         : lb_type_graph_(nullptr)
+        , valid_feedback_pins_(nullptr)
         , explore_id_index_(0)
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
@@ -262,13 +264,15 @@ class ClusterRouter {
     /**
      * @brief Constructor for the ClusterRouter.
      *
-     * Sets up the ClusterRouter for the given logical block type.
-     *
-     *  @param lb_type_graph    The RR graph for the given lb type.
-     *  @param type             The logical block type to route to.
+     *  @param lb_type_graph        The RR graph for the given lb type.
+     *  @param type                 The logical block type to route to.
+     *  @param valid_feedback_pins  Pre-computed set of top-level output pin
+     *                              indices with Fc_out > 0; owned by the
+     *                              caller and must outlive this router.
      */
     ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
-                  t_logical_block_type_ptr type);
+                  t_logical_block_type_ptr type,
+                  const std::unordered_set<int>& valid_feedback_pins);
 
     /**
      * @brief Add pins of netlist atom to current routing drivers/targets.
@@ -444,19 +448,8 @@ class ClusterRouter {
      *  @param cur_inode                 The node that is being explored.
      *  @param cur_cost                  The cost of the node that is being explored.
      *  @param net_fanout                The fanout of the net being routed.
-     *  @param target_is_internal_sink   True iff the current target sink is
-     *                                   inside this cluster. When true, expansion is
-     *                                   forbidden through a top-level
-     *                                   output pin that is rejected by
-     *                                   `lb_type_->pb_graph_head->is_valid_feedback_pin(...)`,
-     *                                   i.e. a pin with Fc_out == 0. Such
-     *                                   a pin cannot reach inter-cluster
-     *                                   wires and so cannot carry a
-     *                                   feedback signal back to this
-     *                                   cluster's input pins. When false
-     *                                   (the connection is genuinely
-     *                                   leaving the cluster), no such
-     *                                   restriction is applied.
+     *  @param target_is_internal_sink   True iff the sink is inside this cluster;
+     *                                   gates feedback through Fc_out==0 output pins.
      */
     void expand_edges_(int mode,
                        int cur_inode,
@@ -506,6 +499,10 @@ class ClusterRouter {
 
     /// @brief Pointer to physical intra-logic cluster_ctx.blocks type rr graph.
     std::vector<t_lb_type_rr_node>* lb_type_graph_;
+
+    /// @brief Top-level output pins with Fc_out > 0 for this block type; pointer
+    ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
+    const std::unordered_set<int>* valid_feedback_pins_;
 
     // =========================================================================
     // Logical Netlist Info

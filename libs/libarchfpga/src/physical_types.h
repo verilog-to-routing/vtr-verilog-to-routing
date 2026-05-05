@@ -1336,35 +1336,11 @@ class t_pb_graph_node {
     t_pb_graph_node_power* pb_node_power;
     t_interconnect_pins** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
-    /**
-     * @brief Set of `pin_count_in_cluster` indices for top-level cluster
-     *        output pins that may be used as the "out" hop of an out-and-
-     *        back-in feedback path.
-     *
-     * A pin is added if the pin has Fc_out > 0 on at least one equivalent
-     * physical tile of the owning logical block type (i.e. it is wired up
-     * to general routing wires that can loop back to the cluster's input
-     * pins). Pins with Fc_out == 0 cannot drive any wire and so cannot
-     * physically carry a signal that exits this cluster and returns to it.
-     *
-     * Only meaningful on the pb_graph_head of a logical block type; for
-     * non-root pb_graph_nodes this set is left empty. Populated once per
-     * type by populate_valid_feedback_pins() (declared in vpr_utils.h)
-     * during architecture setup. Queried by the intra-cluster router via
-     * is_valid_feedback_pin().
-     */
-    std::unordered_set<int> valid_feedback_pin_indices;
-
     // Returns true if this pb_graph_node represents a primitive type (primitives have 0 modes)
     bool is_primitive() const { return this->pb_type->is_primitive(); }
 
     // Returns true if this pb_graph_node represents a root graph node (ex. clb)
     bool is_root() const { return this->parent_pb_graph_node == nullptr; }
-
-    //  @brief Returns ture if the index is stored in valid_feedback_pin_indices
-    bool is_valid_feedback_pin(int pin_count_in_cluster) const {
-        return valid_feedback_pin_indices.count(pin_count_in_cluster) != 0;
-    }
 
     //Returns the number of pins on this graph node
     //  Note this is the total for all ports on this node excluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)

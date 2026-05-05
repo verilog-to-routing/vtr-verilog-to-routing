@@ -103,9 +103,11 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t
  ******************************************************************************************/
 
 ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
-                             t_logical_block_type_ptr type) {
+                             t_logical_block_type_ptr type,
+                             const std::unordered_set<int>& valid_feedback_pins) {
     lb_type_graph_ = lb_type_graph;
     lb_type_ = type;
+    valid_feedback_pins_ = &valid_feedback_pins;
 
     size_t size = lb_type_graph->size();
     lb_rr_node_stats_.resize(size);
@@ -1025,7 +1027,7 @@ void ClusterRouter::expand_edges_(int mode,
                                               && pb_pin->port->type == OUT_PORT
                                               && pb_pin->parent_node == lb_type_->pb_graph_head);
         if (is_top_level_output_pin
-            && !lb_type_->pb_graph_head->is_valid_feedback_pin(cur_inode)) {
+            && valid_feedback_pins_->count(cur_inode) == 0) {
             return;
         }
     }

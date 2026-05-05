@@ -374,58 +374,6 @@ bool is_empty_type(t_logical_block_type_ptr type) {
     return type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE;
 }
 
-void populate_valid_feedback_pins(t_logical_block_type& lb_type) {
-    if (lb_type.pb_graph_head == nullptr) {
-        // No pb_graph (e.g. EMPTY_LOGICAL_BLOCK_TYPE) -- nothing to do.
-        return;
-    }
-
-    auto& valid_set = lb_type.pb_graph_head->valid_feedback_pin_indices;
-    valid_set.clear();
-
-    if (lb_type.equivalent_tiles.empty()) {
-        // No equivalent physical tile -- no Fc info to look up. Leave the
-        // set empty; every membership test will return false, which is the
-        // safe default (the router will refuse feedback through any pin).
-        return;
-    }
-
-    /* Step 1: collect physical-tile pin numbers with Fc_out > 0 on any
-     * equivalent tile. A pin only needs ONE non-zero Fc spec on ONE
-     * compatible tile to count as having general-routing connectivity. */
-    std::unordered_set<int> non_zero_fc_physical_pins;
-    for (const t_physical_tile_type* tile_type : lb_type.equivalent_tiles) {
-        for (const t_fc_specification& fc_spec : tile_type->fc_specs) {
-            if (fc_spec.fc_value > 0) {
-                non_zero_fc_physical_pins.insert(fc_spec.pins.begin(), fc_spec.pins.end());
-            }
-        }
-    }
-
-    /* Step 2: for each top-level output pin of the head pb_graph_node,
-     * resolve its physical-tile pin number via get_physical_pin() and
-     * admit it iff that number is in the Step 1 set.
-     *
-     * For top-level pins, `pin_count_in_cluster` is the same index that
-     * get_physical_pin() expects as its `pin` argument: pb_type_graph
-     * assigns pin_count_in_cluster sequentially starting at 0 for the
-     * head's top-level input/output/clock pins.
-     * We use the first equivalent tile as the translation reference; all
-     * equivalent tiles for a given logical block share the same per-block
-     * pin -> physical-tile pin mapping. */
-    const t_pb_graph_node* pb_graph_head = lb_type.pb_graph_head;
-    t_physical_tile_type_ptr tile_type = lb_type.equivalent_tiles[0];
-    for (int iport = 0; iport < pb_graph_head->num_output_ports; iport++) {
-        for (int ipin = 0; ipin < pb_graph_head->num_output_pins[iport]; ipin++) {
-            const t_pb_graph_pin* pb_pin = &pb_graph_head->output_pins[iport][ipin];
-            int physical_pin_num = get_physical_pin(tile_type, &lb_type, pb_pin->pin_count_in_cluster);
-            if (non_zero_fc_physical_pins.count(physical_pin_num)) {
-                valid_set.insert(pb_pin->pin_count_in_cluster);
-            }
-        }
-    }
-}
-
 t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc) {
     auto& device_ctx = g_vpr_ctx.device();
 

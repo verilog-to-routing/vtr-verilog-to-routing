@@ -29,6 +29,7 @@
 #include "partition.h"
 #include "partition_region.h"
 #include "physical_types.h"
+#include "physical_types_util.h"
 #include "prepack.h"
 #include "user_place_constraints.h"
 #include "vpr_context.h"
@@ -61,12 +62,13 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 
 LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
-                                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs)
+                                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                                         const std::unordered_set<int>& valid_feedback_pins)
     : pb(new t_pb)
     , type(cluster_type)
     , pr(PartitionRegion())
     , noc_grp_id(NocGroupId::INVALID())
-    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type)
+    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins)
     , placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
@@ -1513,7 +1515,8 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
     // Create the new cluster
-    LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_);
+    LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_,
+                                    valid_feedback_pins_by_type_.at(cluster_type));
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
@@ -1741,6 +1744,37 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     packing_signature_tree_ = (memoize_cluster_packings)
                                   ? std::optional<PackingSignatureTree>(PackingSignatureTree())
                                   : std::nullopt;
+
+    // Build per-type feedback-pin sets once at packing start.
+    // Each ClusterRouter will hold a pointer into this map for its lifetime.
+    for (const t_logical_block_type& lb_type : g_vpr_ctx.device().logical_block_types) {
+        auto& valid_set = valid_feedback_pins_by_type_[&lb_type];
+        if (lb_type.pb_graph_head == nullptr || lb_type.equivalent_tiles.empty()) {
+            continue;
+        }
+        // Collect physical-tile pin indices with Fc_out > 0 on any equivalent tile.
+        std::unordered_set<int> non_zero_fc_pins;
+        for (const t_physical_tile_type* tile : lb_type.equivalent_tiles) {
+            for (const t_fc_specification& fc_spec : tile->fc_specs) {
+                if (fc_spec.fc_value > 0) {
+                    non_zero_fc_pins.insert(fc_spec.pins.begin(), fc_spec.pins.end());
+                }
+            }
+        }
+        // All equivalent tiles share the same logical->physical pin mapping,
+        // so equivalent_tiles[0] is a valid translation reference.
+        const t_pb_graph_node* pb_head = lb_type.pb_graph_head;
+        t_physical_tile_type_ptr tile = lb_type.equivalent_tiles[0];
+        for (int iport = 0; iport < pb_head->num_output_ports; iport++) {
+            for (int ipin = 0; ipin < pb_head->num_output_pins[iport]; ipin++) {
+                const t_pb_graph_pin* pb_pin = &pb_head->output_pins[iport][ipin];
+                int phys_pin = get_physical_pin(tile, &lb_type, pb_pin->pin_count_in_cluster);
+                if (non_zero_fc_pins.count(phys_pin)) {
+                    valid_set.insert(pb_pin->pin_count_in_cluster);
+                }
+            }
+        }
+    }
 }
 
 void ClusterLegalizer::reset() {

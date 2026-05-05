@@ -105,10 +105,13 @@ struct LegalizationCluster {
      *  @param cluster_type         The type of this cluster.
      *  @param cluster_mode         The mode of this cluster.
      *  @param lb_type_rr_graphs    The RR-graphs for each cluster type.
+     *  @param valid_feedback_pins  Pre-computed feedback-pin set for this type;
+     *                              owned by ClusterLegalizer, must outlive this cluster.
      */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
-                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs);
+                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                        const std::unordered_set<int>& valid_feedback_pins);
 
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
@@ -623,6 +626,10 @@ class ClusterLegalizer {
     /// TODO: This really should not be a pointer to a vector... I think this is
     ///       meant to be a vector of vectors...
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
+
+    /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
+    ///        Built once at packing start; each ClusterRouter holds a pointer into this map.
+    std::unordered_map<const t_logical_block_type*, std::unordered_set<int>> valid_feedback_pins_by_type_;
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
