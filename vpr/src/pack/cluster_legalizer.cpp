@@ -832,11 +832,26 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
     }
 }
 
-/*
- * @brief Determine if speculatively packed cur_pb is pin feasible
+/**
+ * @brief Recompute speculative lookahead pin usage for every atom currently
+ *        assigned to the cluster.
  *
- * Runtime is actually not that bad for this.  It's worst case O(k^2) where k is the
- * number of pb_graph pins.  Can use hash tables or make incremental if becomes an issue.
+ * This routine walks all molecules recorded in @p cluster, finds each valid
+ * atom's primitive pb through @p atom_to_pb, and marks the input/output pin
+ * classes that would be consumed by the atom's nets. The caller is expected to
+ * clear the existing lookahead pin usage before calling this function. When
+ * checking a candidate molecule, the candidate must already be present in
+ * cluster.molecules so that its pins are included in the lookahead counts.
+ *
+ * @param cluster The cluster whose current speculative packing assignment is
+ *        being evaluated.
+ * @param prepacker Provides the molecules listed by @p cluster.
+ * @param atom_cluster Maps atom blocks to their assigned legalization clusters;
+ *        used to determine whether nets are internal to this cluster.
+ * @param atom_to_pb Maps atom blocks to the primitive pbs they currently occupy.
+ *
+ * Runtime is worst case O(k^2), where k is the number of pb graph pins. Hash
+ * tables or an incremental update could be used if this becomes a bottleneck.
  */
 static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
                                            const Prepacker& prepacker,
