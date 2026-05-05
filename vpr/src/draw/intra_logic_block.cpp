@@ -551,8 +551,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
             ezgl::point2d start = atom_pin_draw_coord(net_driver);
             ezgl::point2d end = atom_pin_draw_coord(ipin);
             g->draw_line(start, end);
-            draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-            draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
         }
 
         for (AtomPinId opin : atom_nl.block_output_pins(blk)) {
@@ -570,8 +570,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
                 ezgl::point2d start = atom_pin_draw_coord(opin);
                 ezgl::point2d end = atom_pin_draw_coord(net_sink);
                 g->draw_line(start, end);
-                draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-                draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
             }
         }
     }
@@ -754,9 +754,9 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
         float center_y = (src_point.y + sink_point.y) / 2;
 
         draw_triangle_along_line(g,
-                                 center_x, center_y,
-                                 src_point.x, sink_point.x,
-                                 src_point.y, sink_point.y);
+                                  center_x, center_y,
+                                  src_point.x, sink_point.x,
+                                  src_point.y, sink_point.y);
     } else {
         // if they are not, put 2 near each end
         draw_triangle_along_line(g, src_point, sink_point, 0.05);
