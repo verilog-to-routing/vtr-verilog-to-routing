@@ -48,7 +48,7 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
             continue;
 
         LogicalModelId root_model_id = atom_nlist.block_model(atom_blk_id);
-        std::vector<t_logical_block_type_ptr> candidate_types =
+        const std::vector<t_logical_block_type_ptr>& candidate_types =
             primitive_candidate_block_types[root_model_id];
 
         // Try to add this atom to an existing sibling-feasible group.

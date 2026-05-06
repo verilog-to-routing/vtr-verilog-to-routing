@@ -59,7 +59,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         //into the user object. This ensures we never have two copies
         //(consuming twice the memory).
         size_t main_netlist_idx = determine_main_netlist_index();
-        main_netlist_ = std::move(blif_models_[main_netlist_idx]);
+        main_netlist_ = blif_models_[main_netlist_idx];
     }
 
     void begin_model(std::string model_name) override {

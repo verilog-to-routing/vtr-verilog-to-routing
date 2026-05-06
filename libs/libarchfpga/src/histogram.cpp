@@ -90,7 +90,7 @@ std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram
 
     if (max_count == 0) return lines; //Nothing to do
 
-    int count_digits = ceil(log10(max_count));
+    int count_digits = std::ceil(std::log10(max_count));
 
     //Determine the maximum prefix length
     size_t bar_len = width

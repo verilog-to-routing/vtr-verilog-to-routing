@@ -197,7 +197,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
             std::cout << vtr::string_fmt("Differing modes for block.  Got %s mode, while previously was %s for interconnect %s.",
                                          mode->name, result.first->second->name,
                                          edge->interconnect->name)
-                      << std::endl;
+                      << "\n";
 
             // The illegal mode is added to the pb_graph_node as it resulted in a conflict during atom-to-atom routing. This mode cannot be used in the consequent cluster
             // generation try.

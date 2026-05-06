@@ -18,7 +18,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> tokens,
                                       const std::vector<t_segment_inf> segments,
                                       std::vector<t_from_or_to_inf>& from_infos) {
     for (int i_token = 0; i_token < (int)tokens.size(); i_token++) {
-        std::string curr_token = tokens[i_token];
+        const std::string& curr_token = tokens[i_token];
         const char* Token_char = curr_token.c_str();
         std::vector<std::string> splitted_tokens = vtr::StringToken(curr_token).split(".");
         if (splitted_tokens.size() == 1) {
@@ -27,7 +27,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> tokens,
             from_inf.from_type = e_multistage_mux_from_or_to_type::MUX;
             from_infos.push_back(from_inf);
         } else if (splitted_tokens.size() == 2) {
-            std::string from_type_name = splitted_tokens[0];
+            const std::string& from_type_name = splitted_tokens[0];
             e_multistage_mux_from_or_to_type from_type;
             for (int i_phy_type = 0; i_phy_type < (int)physical_tile_types.size(); i_phy_type++) {
                 if (from_type_name == physical_tile_types[i_phy_type].name) {

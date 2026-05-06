@@ -99,7 +99,7 @@ void update_rr_base_costs(int fanout) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     /* Other reasonable values for factor include fanout and 1 */
-    float factor = sqrt(fanout);
+    float factor = std::sqrt(fanout);
 
     for (size_t index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
         if (device_ctx.rr_indexed_data[RRIndexedDataId(index)].T_quadratic > 0.) { /* pass transistor */

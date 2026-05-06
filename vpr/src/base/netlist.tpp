@@ -2023,8 +2023,7 @@ typename Netlist<BlockId, PortId, PinId, NetId>::StringId Netlist<BlockId, PortI
         string_ids_.push_back(str_id);
 
         //Store the reverse look-up
-        auto key = str;
-        string_to_string_id_[key] = str_id;
+        string_to_string_id_[str] = str_id;
 
         //Initialize the data
         strings_.emplace_back(str);

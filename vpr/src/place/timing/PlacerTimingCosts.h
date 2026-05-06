@@ -157,7 +157,7 @@ class PlacerTimingCosts {
         net_start_indices_.clear();
     }
 
-    void swap(PlacerTimingCosts& other) {
+    void swap(PlacerTimingCosts& other) noexcept {
         std::swap(connection_costs_, other.connection_costs_);
         std::swap(net_start_indices_, other.net_start_indices_);
         std::swap(num_levels_, other.num_levels_);

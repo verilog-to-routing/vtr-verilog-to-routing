@@ -68,8 +68,8 @@ t_non_configurable_rr_sets EdgeGroups::output_sets() {
 
 // Set device context structures for non-configurable node sets.
 void EdgeGroups::set_device_context(DeviceContext& device_ctx) {
-    std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
-    for (const auto& item : rr_non_config_node_sets_) {
+    std::vector<std::vector<RRNodeId>> rr_non_config_node_sets(rr_non_config_node_sets_.size());
+for (auto& item : rr_non_config_node_sets_) {
         rr_non_config_node_sets.emplace_back(std::move(item));
     }
 

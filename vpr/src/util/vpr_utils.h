@@ -148,7 +148,7 @@ class IntraLbPbPinLookup {
     // pb pin index (index into block_pb().pb_route)
     const t_pb_graph_pin* pb_gpin(unsigned int itype, int ipin) const;
 
-    friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
+    friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) noexcept;
 
   private:
     std::vector<t_logical_block_type> block_types_;

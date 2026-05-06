@@ -966,7 +966,7 @@ void draw_crit_path(ezgl::renderer* g) {
     auto paths = path_collector.collect_worst_setup_timing_paths(
         *timing_ctx.graph,
         *(draw_state->setup_timing_info->setup_analyzer()), 1);
-    tatum::TimingPath path = paths[0];
+    const tatum::TimingPath& path = paths[0];
 
     //Walk through the timing path drawing each edge
     tatum::NodeId prev_node;

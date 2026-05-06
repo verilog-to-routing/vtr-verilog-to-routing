@@ -117,7 +117,7 @@ parse_key_val_arg(const std::string& arg, unsigned expected_num_vals_per_key) {
     VTR_ASSERT(expected_num_vals_per_key > 0);
     for (unsigned i = 0; i < expected_num_vals_per_key - 1; i++) {
         // Split the string before and after the comma.
-        auto comma_pos = acc_val_list_str.find(",");
+        auto comma_pos = acc_val_list_str.find(',');
         VTR_ASSERT(comma_pos != std::string::npos);
         std::string current_val_str = val_list_str.substr(0, comma_pos);
         // Send the string after the comma to the next iteration.
@@ -129,7 +129,7 @@ parse_key_val_arg(const std::string& arg, unsigned expected_num_vals_per_key) {
     }
 
     // Parse the last value in the list. This one should not have a comma in it.
-    VTR_ASSERT(acc_val_list_str.find(",") == std::string::npos);
+    VTR_ASSERT(acc_val_list_str.find(',') == std::string::npos);
     float last_val = str_to_float_or_error(acc_val_list_str);
     vals.push_back(last_val);
 

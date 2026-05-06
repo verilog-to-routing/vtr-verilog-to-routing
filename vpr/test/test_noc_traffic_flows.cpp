@@ -23,7 +23,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
     // set up the test data
 
     // create all the routers
-    std::vector<ClusterBlockId> golden_router_blocks_list;
+    std::vector<ClusterBlockId> golden_router_blocks_list(NUM_OF_ROUTERS);
     for (int router = 0; router < NUM_OF_ROUTERS; router++) {
         golden_router_blocks_list.push_back((ClusterBlockId)router);
     }

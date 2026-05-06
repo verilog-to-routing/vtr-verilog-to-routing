@@ -194,7 +194,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
             y);
 
         auto from_itter = from_rr_node_indices.begin();
-        size_t num_connections = ceil(from_rr_node_indices.size() * fc);
+        size_t num_connections = std::ceil(from_rr_node_indices.size() * fc);
 
         // Create a one to one connection from each chanx wire to the chany wire
         // or vice versa. If there are more chanx wire than chany wire or vice versa

@@ -218,13 +218,13 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
             std::vector<int> bend = segment_inf[iseg].bend;
             VTR_ASSERT(seg_len.size() == 2); // Only support one bend position for a segment.
 
-            std::vector<size_t> num_tracks_bend;
+            std::vector<size_t> num_tracks_bend(seg_len.size());
             /* Each bend part tracks number                                               *
              * For example, a length-5 segment with bend pattern: <- - U -> has 20 tracks. *
              * Its num_tracks_bend is [20 * 3/5, 20 * 2/5] = [12, 8]                       */
-            for (size_t i = 0; i < seg_len.size(); i++)
+            for (size_t i = 0; i < seg_len.size(); i++) {
                 num_tracks_bend.push_back(num_tracks[iseg] * seg_len[i] / segment_inf[iseg].length);
-
+            }
             VTR_ASSERT(num_tracks_bend[0] + num_tracks_bend[1] == num_tracks[iseg]);
 
             for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {

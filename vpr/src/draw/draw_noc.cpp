@@ -155,7 +155,7 @@ ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr no
     ezgl::point2d noc_router_bbox_center = noc_router_pb_bbox.center();
 
     double connection_marker_bbox_area = noc_router_bbox_area * SIZE_OF_NOC_MARKER;
-    double connection_marker_bbox_side_length = sqrt(connection_marker_bbox_area);
+    double connection_marker_bbox_side_length = std::sqrt(connection_marker_bbox_area);
 
     double half_of_connection_marker_bbox_side_length = connection_marker_bbox_side_length / 2;
 
@@ -366,7 +366,7 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
     // if we are here then the line that represents a link has a slope, so we use the dot product to determine the angle between the line and the horizontal line created above that connects to the link.
 
     // get the magnitude of the link
-    double link_magnitude = sqrt(pow(x_coord_end - x_coord_start, 2.0) + pow(y_coord_end - y_coord_start, 2.0));
+    double link_magnitude = std::sqrt(std::pow(x_coord_end - x_coord_start, 2.0) + std::pow(y_coord_end - y_coord_start, 2.0));
     // get the dot product of the two connecting line
     double dot_product_of_link_and_horizontal_line = (x_coord_end - x_coord_start) * (x_coord_horizontal_end - x_coord_horizontal_start) + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start);
     // calculate the angle

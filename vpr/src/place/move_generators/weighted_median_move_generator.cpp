@@ -91,12 +91,12 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         // We need to insert the calculated edges in the X,Y vectors multiple times based on the criticality of the pin that caused each of them.
         // As all the criticalities are [0,1], we map it to [0,CRIT_MULT_FOR_W_MEDIAN] inserts in the vectors for each edge
         // by multiplying each edge's criticality by CRIT_MULT_FOR_W_MEDIAN
-        X_coord.insert(X_coord.end(), ceil(coords.xmin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmin.edge);
-        X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
-        layer_coord.insert(layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
-        layer_coord.insert(layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
+        X_coord.insert(X_coord.end(), std::ceil(coords.xmin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmin.edge);
+        X_coord.insert(X_coord.end(), std::ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
+        Y_coord.insert(Y_coord.end(), std::ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
+        Y_coord.insert(Y_coord.end(), std::ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
+        layer_coord.insert(layer_coord.end(), std::ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
+        layer_coord.insert(layer_coord.end(), std::ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
     }
 
     if ((X_coord.empty()) || (Y_coord.empty()) || (layer_coord.empty())) {

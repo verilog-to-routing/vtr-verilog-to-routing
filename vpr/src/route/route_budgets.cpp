@@ -823,9 +823,9 @@ void route_budgets::print_route_budget(std::string filename, NetPinsMatrix<float
                         "could not open \"route_budget.txt\" for generating route budget file\n");
     }
 
-    fp << "Minimum Delay Budgets:" << std::endl;
+    fp << "Minimum Delay Budgets:" << "\n";
     for (auto net_id : net_list_.nets()) {
-        fp << std::endl
+        fp << "\n"
            << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
@@ -833,11 +833,11 @@ void route_budgets::print_route_budget(std::string filename, NetPinsMatrix<float
         }
     }
 
-    fp << std::endl
-       << std::endl
-       << "Maximum Delay Budgets:" << std::endl;
+    fp << "\n"
+       << "\n"
+       << "Maximum Delay Budgets:" << "\n";
     for (auto net_id : net_list_.nets()) {
-        fp << std::endl
+        fp << "\n"
            << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
@@ -845,12 +845,12 @@ void route_budgets::print_route_budget(std::string filename, NetPinsMatrix<float
         }
     }
 
-    fp << std::endl
-       << std::endl
-       << "Target Delay Budgets:" << std::endl;
+    fp << "\n"
+       << "\n"
+       << "Target Delay Budgets:" << "\n";
 
     for (auto net_id : net_list_.nets()) {
-        fp << std::endl
+        fp << "\n"
            << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
@@ -858,11 +858,11 @@ void route_budgets::print_route_budget(std::string filename, NetPinsMatrix<float
         }
     }
 
-    fp << std::endl
-       << std::endl
-       << "Net Delay:" << std::endl;
+    fp << "\n"
+       << "\n"
+       << "Net Delay:" << "\n";
     for (auto net_id : net_list_.nets()) {
-        fp << std::endl
+        fp << "\n"
            << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
@@ -870,11 +870,11 @@ void route_budgets::print_route_budget(std::string filename, NetPinsMatrix<float
         }
     }
 
-    fp << std::endl
-       << std::endl
-       << "Net Fanout:" << std::endl;
+    fp << "\n"
+       << "\n"
+       << "Net Fanout:" << "\n";
     for (auto net_id : net_list_.nets()) {
-        fp << std::endl
+        fp << "\n"
            << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             fp << net_list_.net_sinks(net_id).size() << " " << (size_t)pin_id;
@@ -892,9 +892,9 @@ void route_budgets::print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_b
     std::fstream fp;
     fp.open("temporary_budgets.txt", std::fstream::out | std::fstream::trunc);
 
-    fp << "Temporary Budgets:" << std::endl;
+    fp << "Temporary Budgets:" << "\n";
     for (auto net_id : net_list_.nets()) {
-        fp << std::endl
+        fp << "\n"
            << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);

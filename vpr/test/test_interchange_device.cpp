@@ -64,7 +64,7 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
         ret->second = true;
     }
 
-    for (auto type : tile_types) {
+    for (const auto& type : tile_types) {
         CHECK(type.second);
     }
 }
@@ -83,10 +83,10 @@ TEST_CASE("read_interchange_luts", "[vpr]") {
 
     REQUIRE(arch.lut_cells.size() == 4);
     for (auto lut_cell : arch.lut_cells) {
-        CHECK(std::find(lut_cells.begin(), lut_cells.end(), lut_cell.name) != lut_cells.end());
+        CHECK(lut_cells.find(lut_cell.name) != lut_cells.end());
         REQUIRE(lut_cell.init_param == std::string("INIT"));
-        for (auto lut_pin : lut_cell.inputs)
-            CHECK(std::find(lut_cell_pins.begin(), lut_cell_pins.end(), lut_pin) != lut_cell_pins.end());
+        for (const auto& lut_pin : lut_cell.inputs)
+            CHECK(lut_cell_pins.find(lut_pin) != lut_cell_pins.end());
     }
 
     for (const auto& it : arch.lut_elements) {
@@ -158,7 +158,7 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
         {"CLK", PORTS::IN_PORT}};
 
     // Check that there are exactly the expected models
-    for (auto ltype : logical_block_types) {
+    for (const auto& ltype : logical_block_types) {
         std::string name = ltype.name;
         REQUIRE(ltypes.find(name) != ltypes.end());
         ltypes.erase(name);

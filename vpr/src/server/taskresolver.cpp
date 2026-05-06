@@ -126,7 +126,7 @@ void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const
     if (!options.has_errors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
-        const std::map<std::size_t, std::set<std::size_t>> path_elements = options.get_map_of_sets(comm::OPTION_PATH_ELEMENTS);
+        std::map<std::size_t, std::set<std::size_t>> path_elements = options.get_map_of_sets(comm::OPTION_PATH_ELEMENTS);
         const std::string high_light_mode = options.get_string(comm::OPTION_HIGHLIGHT_MODE);
         const bool draw_path_contour = options.get_bool(comm::OPTION_DRAW_PATH_CONTOUR, false);
 

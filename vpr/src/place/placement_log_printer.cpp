@@ -154,7 +154,7 @@ void PlacementLogPrinter::print_placement_swaps_stats() const {
     size_t total_swap_attempts = swap_stats.num_swap_rejected + swap_stats.num_swap_accepted + swap_stats.num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
 
-    size_t num_swap_print_digits = ceil(log10(total_swap_attempts));
+    size_t num_swap_print_digits = std::ceil(std::log10(total_swap_attempts));
     float reject_rate = (float)swap_stats.num_swap_rejected / total_swap_attempts;
     float accept_rate = (float)swap_stats.num_swap_accepted / total_swap_attempts;
     float abort_rate = (float)swap_stats.num_swap_aborted / total_swap_attempts;

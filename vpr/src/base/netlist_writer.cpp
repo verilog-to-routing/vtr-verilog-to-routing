@@ -2147,11 +2147,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         auto& atom_ctx = g_vpr_ctx.atom();
         AtomBlockId blk_id = atom_ctx.lookup().atom_pb_bimap().pb_atom(atom);
-        for (auto param : atom_ctx.netlist().block_params(blk_id)) {
+        for (const auto& param : atom_ctx.netlist().block_params(blk_id)) {
             params[param.first] = param.second;
         }
 
-        for (auto attr : atom_ctx.netlist().block_attrs(blk_id)) {
+        for (const auto& attr : atom_ctx.netlist().block_attrs(blk_id)) {
             attrs[attr.first] = attr.second;
         }
 

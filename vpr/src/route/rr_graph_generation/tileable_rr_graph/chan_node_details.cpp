@@ -44,7 +44,7 @@ size_t ChanNodeDetails::get_track_node_id(const size_t& track_id) const {
 
 /* Return a copy of vector */
 std::vector<size_t> ChanNodeDetails::get_track_node_ids() const {
-    std::vector<size_t> copy;
+    std::vector<size_t> copy(get_chan_width());
     for (size_t inode = 0; inode < get_chan_width(); ++inode) {
         copy.push_back(track_node_ids_[inode]);
     }

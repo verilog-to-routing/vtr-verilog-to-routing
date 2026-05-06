@@ -101,7 +101,7 @@ void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x
 
     xdelta = x2 - x1;
     ydelta = y2 - y1;
-    magnitude = sqrt(xdelta * xdelta + ydelta * ydelta);
+    magnitude = std::sqrt(xdelta * xdelta + ydelta * ydelta);
 
     xunit = xdelta / magnitude;
     yunit = ydelta / magnitude;

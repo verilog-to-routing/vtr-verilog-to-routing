@@ -126,7 +126,7 @@ const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) 
     return intra_lb_pb_pin_lookup_[itype][ipin];
 }
 
-void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
+void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) noexcept {
     std::swap(lhs.block_types_, rhs.block_types_);
     std::swap(lhs.intra_lb_pb_pin_lookup_, rhs.intra_lb_pb_pin_lookup_);
 }

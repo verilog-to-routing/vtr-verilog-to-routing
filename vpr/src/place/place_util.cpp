@@ -131,7 +131,7 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
     }
 
     /* Very small variances sometimes round negative. */
-    return (std_dev > 0.) ? sqrt(std_dev) : 0.;
+    return (std_dev > 0.) ? std::sqrt(std_dev) : 0.;
 }
 
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {

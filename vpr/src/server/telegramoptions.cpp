@@ -39,8 +39,8 @@ std::map<std::size_t, std::set<std::size_t>> TelegramOptions::get_map_of_sets(co
         for (const std::string& path : paths) {
             std::vector<std::string> path_struct = vtr::StringToken(path).split("#");
             if (path_struct.size() == 2) {
-                std::string path_index_str = path_struct[0];
-                std::string path_element_indexes_str = path_struct[1];
+                const std::string& path_index_str = path_struct[0];
+                const std::string& path_element_indexes_str = path_struct[1];
                 std::vector<std::string> path_element_indexes = vtr::StringToken(path_element_indexes_str).split(",");
                 std::set<std::size_t> elements;
                 for (const std::string& path_element_index_Str : path_element_indexes) {

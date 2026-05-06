@@ -50,7 +50,7 @@ const RoutingScheme UserRouteConstraints::get_route_scheme_by_net_name(std::stri
     auto const& rs_itr = route_constraints_.find(net_name);
     if (rs_itr == route_constraints_.end()) {
         // Check for wildcard matches
-        for (auto constraint : route_constraints_) {
+        for (const auto& constraint : route_constraints_) {
             if (std::regex_match(net_name, std::regex(constraint.first))) {
                 route_scheme = constraint.second;
                 break;

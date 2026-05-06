@@ -797,7 +797,7 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                     const std::unordered_set<int>& chain_pins,
                                     int pin_physical_num,
                                     int chain_sink_pin) {
-    VTR_ASSERT(std::find(chain_pins.begin(), chain_pins.end(), pin_physical_num) == chain_pins.end());
+    VTR_ASSERT(chain_pins.find(pin_physical_num) == chain_pins.end());
     float min_delay = std::numeric_limits<float>::max();
     std::vector<int> sink_pins = get_sink_pins_in_cluster(cluster_pins, physical_type, logical_block, pin_physical_num);
     bool sink_pin_found = false;

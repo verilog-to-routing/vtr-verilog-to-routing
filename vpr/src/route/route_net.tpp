@@ -151,7 +151,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     // Pre-route to clock source for clock nets (marked as global nets)
     if (net_list.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
         auto& route_constraints = route_ctx.constraints;
-        std::string net_name = net_list.net_name(net_id);
+        const std::string& net_name = net_list.net_name(net_id);
 
         // If there is no routing constraint for the current global net
         // and the clock modelling is set to dedicated network or

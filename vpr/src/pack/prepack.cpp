@@ -1730,7 +1730,7 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
         MoleculeChainId new_chain_id = MoleculeChainId(chain_info.size());
         t_chain_info new_chain_info;
         new_chain_info.is_long_chain = false;
-        chain_info.push_back(std::move(new_chain_info));
+        chain_info.push_back(new_chain_info);
         molecule.chain_id = new_chain_id;
     } else {
         // this is not the first molecule to be created for this chain

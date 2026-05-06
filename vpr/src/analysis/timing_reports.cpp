@@ -189,7 +189,7 @@ void generate_net_timing_report(const std::string& prefix,
     // Write CSV header
     os << "netname,Fanout,bb_xmin,bb_ymin,bb_layer_min,"
        << "bb_xmax,bb_ymax,bb_layer_max,"
-       << "src_pin_name,src_pin_slack,sinks" << std::endl;
+       << "src_pin_name,src_pin_slack,sinks" << "\n";
 
     for (const auto& net : atom_netlist.nets()) {
         const auto& net_name = atom_netlist.net_name(net);
@@ -225,6 +225,6 @@ void generate_net_timing_report(const std::string& prefix,
             os << pin_name << "," << pin_setup_slack << "," << pin_delay;
             if (i != fanout - 1) os << ";";
         }
-        os << "\"" << std::endl; // Close quoted sinks field and finish the row
+        os << "\"" << "\n"; // Close quoted sinks field and finish the row
     }
 }

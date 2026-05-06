@@ -186,7 +186,7 @@ struct NetlistReader {
 
         // Set the max size of the LUT
         int lut_size = 0;
-        for (auto lut : arch_.lut_cells)
+        for (const auto& lut : arch_.lut_cells)
             lut_size = std::max((int)lut.inputs.size(), lut_size);
         blk_model.inputs[0].size = lut_size;
 
@@ -211,7 +211,7 @@ struct NetlistReader {
             insts.emplace_back(cell_inst, width, init_param);
         }
 
-        for (auto inst : insts) {
+        for (const auto& inst : insts) {
             size_t inst_idx;
             int lut_width;
             std::string init_param;
@@ -398,7 +398,7 @@ struct NetlistReader {
             blk_id = main_netlist_.create_block(inst_name, blk_model_id);
 
             std::unordered_set<AtomPortId> added_ports;
-            for (auto port_net : port_net_map) {
+            for (const auto& port_net : port_net_map) {
                 auto port_idx = port_net.first.first;
                 auto port_bit = port_net.first.second;
 
@@ -494,7 +494,7 @@ struct NetlistReader {
     }
 
     std::tuple<bool, int, std::string> is_lut_cell(std::string cell_name) {
-        for (auto lut_cell : arch_.lut_cells) {
+        for (const auto& lut_cell : arch_.lut_cells) {
             if (cell_name == lut_cell.name) {
                 auto init_param = lut_cell.init_param;
 

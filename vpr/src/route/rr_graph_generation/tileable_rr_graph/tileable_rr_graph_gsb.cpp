@@ -1826,7 +1826,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, i_first_stage);
         VTR_ASSERT(to_node.is_valid());
         VTR_ASSERT(rr_gsb.is_mux_node(to_node));
-        for (auto from : from_infos) {
+        for (const auto& from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 
@@ -1852,10 +1852,10 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             } else if (from.from_type == e_multistage_mux_from_or_to_type::SEGMENT) {
                 char from_dir = from.seg_dir;
                 //int from_index = from.seg_index;
-                t_segment_inf segment = segment_inf[from.type_index];
+                const t_segment_inf& segment = segment_inf[from.type_index];
                 VTR_ASSERT(segment.name == from.type_name);
                 t_seg_group seg_group;
-                for (auto seg : vib->get_seg_groups()) {
+                for (const auto& seg : vib->get_seg_groups()) {
                     if (seg.name == segment.name) {
                         seg_group = seg;
                         break;
@@ -1928,7 +1928,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         const std::vector<t_from_or_to_inf>& tos = second_stages[i_second_stage].to;
 
         std::vector<RRNodeId> to_nodes;
-        for (auto to : tos) {
+        for (const auto& to : tos) {
             RRNodeId to_node;
             if (to.from_type == e_multistage_mux_from_or_to_type::PB) {
 
@@ -1954,10 +1954,10 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             } else if (to.from_type == e_multistage_mux_from_or_to_type::SEGMENT) {
                 char to_dir = to.seg_dir;
                 //int from_index = from.seg_index;
-                t_segment_inf segment = segment_inf[to.type_index];
+                const t_segment_inf& segment = segment_inf[to.type_index];
                 VTR_ASSERT(segment.name == to.type_name);
                 t_seg_group seg_group;
-                for (auto seg : vib->get_seg_groups()) {
+                for (const auto& seg : vib->get_seg_groups()) {
                     if (seg.name == segment.name) {
                         seg_group = seg;
                         break;
@@ -2010,7 +2010,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         }
 
         std::vector<RRNodeId> from_nodes;
-        for (auto from : from_infos) {
+        for (const auto& from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 
@@ -2036,10 +2036,10 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             } else if (from.from_type == e_multistage_mux_from_or_to_type::SEGMENT) {
                 char from_dir = from.seg_dir;
                 //int from_index = from.seg_index;
-                t_segment_inf segment = segment_inf[from.type_index];
+                const t_segment_inf& segment = segment_inf[from.type_index];
                 VTR_ASSERT(segment.name == from.type_name);
                 t_seg_group seg_group;
-                for (auto seg : vib->get_seg_groups()) {
+                for (const auto& seg : vib->get_seg_groups()) {
                     if (seg.name == segment.name) {
                         seg_group = seg;
                         break;

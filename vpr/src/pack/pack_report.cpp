@@ -82,7 +82,7 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
             os << "\t\tHistogram:\n";
 
             auto output_histogram = build_histogram(outputs_used[type], 10, 0, static_cast<float>(total_output_pins[type]));
-            for (auto line : format_histogram(output_histogram)) {
+            for (const auto& line : format_histogram(output_histogram)) {
                 os << "\t\t" << line << "\n";
             }
         }

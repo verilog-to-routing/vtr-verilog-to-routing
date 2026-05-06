@@ -119,8 +119,8 @@ static void read_place_header(std::ifstream& placement_file,
                           "Duplicate Netlist_File/Netlist_ID specification");
             }
 
-            std::string place_netlist_id = tokens[3];
-            std::string place_netlist_file = tokens[1];
+            const std::string& place_netlist_id = tokens[3];
+            const std::string& place_netlist_file = tokens[1];
 
             if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id()) {
                 auto msg = vtr::string_fmt(
@@ -255,7 +255,7 @@ static std::string read_place_body(std::ifstream& placement_file,
                 block_layer_index = 4;
             }
 
-            std::string block_name = tokens[block_name_index];
+            const std::string& block_name = tokens[block_name_index];
             int block_x = vtr::atoi(tokens[block_x_index]);
             int block_y = vtr::atoi(tokens[block_y_index]);
             int sub_tile_index = vtr::atoi(tokens[sub_tile_index_index]);

@@ -1,4 +1,5 @@
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
@@ -529,7 +530,7 @@ t_chan_width init_chan(int cfactor,
  */
 static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, e_graph_type graph_directionality) {
     int computed_width;
-    computed_width = (int)floor(cfactor * comp_width(&chan_dist, distance, separation) + 0.5);
+    computed_width = (int)std::roundf(cfactor * comp_width(&chan_dist, distance, separation));
     if ((e_graph_type::BIDIR == graph_directionality) || computed_width % 2 == 0) {
         return computed_width;
     } else {
@@ -555,7 +556,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
         case e_stat::GAUSSIAN:
             val = (x - chan->xpeak) * (x - chan->xpeak)
                   / (2 * chan->width * chan->width);
-            val = chan->peak * exp(-val);
+            val = chan->peak * std::exp(-val);
             val += chan->dc;
             break;
 

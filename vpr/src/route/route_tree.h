@@ -368,9 +368,9 @@ class RouteTree {
   public:
     RouteTree() = delete;
     RouteTree(const RouteTree&);
-    RouteTree(RouteTree&&);
+    RouteTree(RouteTree&&) noexcept;
     RouteTree& operator=(const RouteTree&);
-    RouteTree& operator=(RouteTree&&);
+    RouteTree& operator=(RouteTree&&) noexcept;
 
     /** Return a RouteTree initialized to inode.
      * Note that prune() won't work on a RouteTree initialized this way (see _net_id comments) */

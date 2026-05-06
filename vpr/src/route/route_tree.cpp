@@ -125,7 +125,7 @@ RouteTree::RouteTree(const RouteTree& rhs) {
  * Refs should stay valid after this?
  * I don't think there's a user crazy enough to move around route trees
  * from multiple threads, but better safe than sorry */
-RouteTree::RouteTree(RouteTree&& rhs) {
+RouteTree::RouteTree(RouteTree&& rhs) noexcept {
     std::unique_lock<std::mutex> rhs_write_lock(rhs._write_mutex);
     _root = rhs._root;
     _net_id = rhs._net_id;
@@ -158,7 +158,7 @@ RouteTree& RouteTree::operator=(const RouteTree& rhs) {
  * Refs should stay valid after this?
  * I don't think there's a user crazy enough to move around route trees
  * from multiple threads, but better safe than sorry */
-RouteTree& RouteTree::operator=(RouteTree&& rhs) {
+RouteTree& RouteTree::operator=(RouteTree&& rhs) noexcept {
     if (this == &rhs)
         return *this;
     /* See https://stackoverflow.com/a/29988626 */

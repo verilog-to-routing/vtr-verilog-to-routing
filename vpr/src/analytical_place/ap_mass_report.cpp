@@ -260,14 +260,14 @@ void print_primitive_vector(std::ofstream& os,
     // Get the max name length of the contained dim name for pretty printing.
     size_t max_model_name_len = 0;
     for (PrimitiveVectorDim dim : contained_dims) {
-        std::string dim_name = dim_manager.get_dim_name(dim);
+        const std::string& dim_name = dim_manager.get_dim_name(dim);
         max_model_name_len = std::max(max_model_name_len,
                                       dim_name.size());
     }
 
     // Print the capacity of each dim.
     for (PrimitiveVectorDim dim : contained_dims) {
-        std::string dim_name = dim_manager.get_dim_name(dim);
+        const std::string& dim_name = dim_manager.get_dim_name(dim);
         os << prefix << std::setw(max_model_name_len) << dim_name;
         os << ": " << primitive_vec.get_dim_val(dim);
         os << "\n";
@@ -383,7 +383,7 @@ void print_netlist_mass_utilization(std::ofstream& os,
     // Get the max string length of any model to make the printing prettier.
     size_t max_dim_name_len = 0;
     for (PrimitiveVectorDim dim : dim_manager.dims()) {
-        std::string dim_name = dim_manager.get_dim_name(dim);
+        const std::string& dim_name = dim_manager.get_dim_name(dim);
         max_dim_name_len = std::max(max_dim_name_len, dim_name.size());
     }
 
@@ -392,7 +392,7 @@ void print_netlist_mass_utilization(std::ofstream& os,
     os << ": Total Netlist Mass | Total Grid Mass | Mass Utilization\n";
     for (LogicalModelId model_id : models.all_models()) {
         PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
-        std::string dim_name = dim_manager.get_dim_name(dim);
+        const std::string& dim_name = dim_manager.get_dim_name(dim);
         float dim_netlist_mass = total_netlist_mass.get_dim_val(dim);
         float dim_grid_capacity = total_grid_capacity.get_dim_val(dim);
         os << std::setw(max_dim_name_len) << dim_name;
@@ -407,7 +407,7 @@ void print_netlist_mass_utilization(std::ofstream& os,
     os << ": Total Netlist Mass | Number of Blocks | Average Mass per Block\n";
     for (LogicalModelId model_id : models.all_models()) {
         PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
-        std::string dim_name = dim_manager.get_dim_name(dim);
+        const std::string& dim_name = dim_manager.get_dim_name(dim);
         float dim_netlist_mass = total_netlist_mass.get_dim_val(dim);
         float num_blocks = netlist_per_dim_counts.get_dim_val(dim);
         float average_mass_per_block = 0.0f;
@@ -447,7 +447,7 @@ void print_expected_device_utilization(std::ofstream& os,
         // For each logical block type, estimate the number of blocks of that type
         // We can estimate this value as being the maximum required number of
         // instances to support the most utilized model.
-        const PrimitiveVector block_type_cap = logical_block_type_capacities[block_type.index];
+        const PrimitiveVector& block_type_cap = logical_block_type_capacities[block_type.index];
         unsigned num_blocks_of_this_type = 0;
         for (PrimitiveVectorDim dim : block_type_cap.get_non_zero_dims()) {
             float netlist_model_mass = total_netlist_mass.get_dim_val(dim);

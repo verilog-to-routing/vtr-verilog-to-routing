@@ -59,7 +59,7 @@ void NodeLookupManager::print_statistics() const {
     VTR_LOG("Grid dimensions: %d x %d\n", fpga_grid_x_, fpga_grid_y_);
 
     // Count nodes per column
-    std::vector<size_t> col_counts;
+    std::vector<size_t> col_counts(column_lookup_.size());
     for (const auto& col_map : column_lookup_) {
         col_counts.push_back(col_map.size());
     }
@@ -72,7 +72,7 @@ void NodeLookupManager::print_statistics() const {
     }
 
     // Count nodes per row
-    std::vector<size_t> row_counts;
+    std::vector<size_t> row_counts(row_lookup_.size());
     for (const auto& row_map : row_lookup_) {
         row_counts.push_back(row_map.size());
     }

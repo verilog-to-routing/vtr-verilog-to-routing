@@ -1158,7 +1158,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
                 }
 
                 if ((Fc_in[itype][0][iseg] <= tracks_in_seg_type - 2)
-                    && (fabs(Fc_ratio - vtr::nint(Fc_ratio)) < (0.5 / (float)tracks_in_seg_type))) {
+                    && (std::fabs(Fc_ratio - vtr::nint(Fc_ratio)) < (0.5f / (float)tracks_in_seg_type))) {
                     result[itype][iseg] = true;
                 }
             }
@@ -2356,7 +2356,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     // will always skip some wires. Thus, we perturb pins if we detect this	case.
 
     // get an upper bound on the number of prime factors of num_wire_types
-    int max_primes = (int)floor(log((float)num_wire_types) / log(2.0));
+    int max_primes = (int)std::floor(std::log((float)num_wire_types) / std::log(2.0f));
     max_primes = std::max(max_primes, 1); // Minimum of 1 to ensure we allocate space for at least one prime_factor
 
     std::vector<int> prime_factors(max_primes, 0);
@@ -2391,7 +2391,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
 
         n = step_size / prime_factors[i];
         n = n - (float)vtr::nint(n); // fractional part
-        if (fabs(n) < threshold) {
+        if (std::fabs(n) < threshold) {
             perturb_opins[0] = true;
             break;
         } else {

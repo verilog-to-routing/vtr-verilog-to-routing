@@ -150,7 +150,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
 
     for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
         /* Assume there is decoder logic */
-        transistor_cnt += ceil(log(max_inputs[lvl_idx]) / log((double)2.0))
+        transistor_cnt += std::ceil(std::log(max_inputs[lvl_idx]) / std::log(2.0))
                           * power_count_transistor_SRAM_bit();
 
         /*
@@ -255,7 +255,7 @@ void power_sizing_init() {
     auto& power_ctx = g_vpr_ctx.power();
 
     // tech size = 2 lambda, so lambda^2/4.0 = tech^2
-    f_MTA_area = ((POWER_MTA_L * POWER_MTA_W) / 4.0) * pow(power_ctx.tech->tech_size, (float)2.0);
+    f_MTA_area = ((POWER_MTA_L * POWER_MTA_W) / 4.0) * std::pow(power_ctx.tech->tech_size, 2.0f);
 
     // Determines physical size of different PBs
     power_size_pb();
@@ -268,7 +268,7 @@ void power_sizing_init() {
      *  - Assume min transistor size is Wx6L
      *  - Assume an overhead to space transistors
      */
-    power_ctx.commonly_used->tile_length = sqrt(power_transistor_area(transistors_per_tile));
+    power_ctx.commonly_used->tile_length = std::sqrt(power_transistor_area(transistors_per_tile));
 }
 
 /**
@@ -631,7 +631,7 @@ static void power_size_pin_to_interconnect(t_interconnect* interc,
 
         case COMPLETE_INTERC:
             /* The sidelength of this crossbar */
-            this_interc_sidelength = sqrt(
+            this_interc_sidelength = std::sqrt(
                 power_transistor_area(
                     interc->interconnect_power->transistor_cnt));
 
@@ -688,7 +688,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
      * //VTR_LOG("here\n");
      * }*/
 
-    this_pb_interc_sidelength = sqrt(
+    this_pb_interc_sidelength = std::sqrt(
         power_transistor_area(
             pin->parent_node->pb_node_power->transistor_cnt_interc));
     if (pin->is_root_block_pin()) {
@@ -696,7 +696,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         parent_pb_interc_sidelength = 0.;
     } else {
         top_level_pb = false;
-        parent_pb_interc_sidelength = sqrt(
+        parent_pb_interc_sidelength = std::sqrt(
             power_transistor_area(
                 pin->parent_node->parent_pb_graph_node->pb_node_power->transistor_cnt_interc));
     }
@@ -828,7 +828,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                                      * power_ctx.arch->C_wire_local;
             break;
         case POWER_WIRE_TYPE_RELATIVE_LENGTH:
-            this_pb_length = sqrt(
+            this_pb_length = std::sqrt(
                 power_transistor_area(
                     power_transistors_for_pb_node(pin->parent_node)));
             pin->pin_power->C_wire = pin->port->port_power->wire.relative_length

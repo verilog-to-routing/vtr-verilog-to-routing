@@ -532,7 +532,7 @@ void enable_autocomplete(ezgl::application* app) {
         return;
     //Checking to make sure that we are on a mode that uses auto-complete
     if (gtk_entry_completion_get_model(completion) == nullptr) {
-        std::cout << "NO MODEL SELECTED" << std::endl;
+        std::cout << "NO MODEL SELECTED" << "\n";
         return;
     }
 

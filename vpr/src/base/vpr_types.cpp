@@ -120,7 +120,7 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
 
 t_ext_pin_util_targets& t_ext_pin_util_targets::operator=(t_ext_pin_util_targets&& other) noexcept {
     if (this != &other) {
-        defaults_ = std::move(other.defaults_);
+        defaults_ = other.defaults_;
         overrides_ = std::move(other.overrides_);
     }
     return *this;
@@ -237,7 +237,7 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<s
 
 t_pack_high_fanout_thresholds& t_pack_high_fanout_thresholds::operator=(t_pack_high_fanout_thresholds&& other) noexcept {
     if (this != &other) {
-        default_ = std::move(other.default_);
+        default_ = other.default_;
         overrides_ = std::move(other.overrides_);
     }
     return *this;

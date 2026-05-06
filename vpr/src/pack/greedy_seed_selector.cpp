@@ -157,7 +157,7 @@ static inline void print_seed_gains(const char* fname,
             if (!blk_id.is_valid()) {
                 continue;
             }
-            std::string name = atom_netlist.block_name(blk_id);
+            const std::string& name = atom_netlist.block_name(blk_id);
             fprintf(fp, "%-*s ", max_name_len, name.c_str());
 
             std::string model_name = models.model_name(atom_netlist.block_model(blk_id));
