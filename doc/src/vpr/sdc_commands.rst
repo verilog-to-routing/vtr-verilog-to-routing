@@ -85,6 +85,12 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
     # Create a clock that is triple the frequency of 'master_clk' with a custom name
     create_generated_clock -name fast_clk -source [get_pins {pll.ref[0]}] -multiply_by 3 [get_pins {pll.out[0]}]
 
+    # Create a divided clock that is phase-inverted relative to the source
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -divide_by 2 -invert [get_pins {div_clk.Q[0]}]
+
+    # Create a multiplied clock with a 30% duty cycle
+    create_generated_clock -source [get_ports clk] -multiply_by 3 -duty_cycle 30 [get_ports clk2]
+
 .. sdc:command:: create_generated_clock
 
     .. sdc:option:: -name <string>
@@ -103,7 +109,7 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         Specifies the division factor applied to the source clock frequency.
 
-        For example, `-divide_by 2` would increase the period by 2x (thus dividing the frequency in half).
+        For example, ``-divide_by 2`` increases the period by 2x (dividing the frequency in half).
 
         **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
 
@@ -111,9 +117,29 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         Specifies the multiplication factor applied to the source clock frequency.
 
-        For example, `-multiply_by 2` would decrease the period by 2x (thus doubling the frequency).
+        For example, ``-multiply_by 2`` decreases the period by 2x (doubling the frequency).
 
         **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
+
+    .. sdc:option:: -duty_cycle <float>
+
+        Specifies the duty cycle of the generated clock as a percentage (0-100).
+
+        For example, ``-duty_cycle 30`` produces a clock that is high for 30% of its period.
+        The default duty cycle is 50%.
+
+        **Required:** No
+
+        .. note:: ``-duty_cycle`` can only be used together with ``-multiply_by``.
+
+    .. sdc:option:: -invert
+
+        Swaps the rising and falling edges of the generated clock, producing a phase-inverted
+        version of what would otherwise be generated.
+
+        **Required:** No
+
+        .. note:: ``-invert`` can only be used together with ``-divide_by`` or ``-multiply_by``.
 
     .. sdc:option:: <pin_list>
 
@@ -122,14 +148,6 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
         If none are specified, this is assumed to be a virtual clock.
 
         **Required:** No
-
-.. note::
-
-    In the current implementation, all generated clocks are produced with a 50% duty cycle, as the scaling factors are calculated relative to the rising edge of the source clock.
-
-.. note::
-
-    Temporary Limitation: VPR currently only supports master source clocks whose rising edge starts at time 0 (e.g., -waveform {0 <half_period>}). Support for source clocks with non-zero initial phases is currently under development.
 
 
 set_clock_groups
