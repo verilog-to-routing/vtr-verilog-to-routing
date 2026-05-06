@@ -11,7 +11,9 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QLayout>
+#include <QVBoxLayout>
 #include <QScrollArea>
+#include <QToolButton>
 
 //keeps track of open windows to avoid reopenning windows that are already open
 struct open_windows {
@@ -51,6 +53,7 @@ void draw_debug_window() {
         QWidget* window = new QWidget;
         window->setAttribute(Qt::WA_DeleteOnClose);
         window->setWindowTitle("Debugger");
+        new QVBoxLayout(window);
         ezgl::center_window(window);
 
         QWidget* mainGrid = ezgl::grid_new();
@@ -184,6 +187,7 @@ void advanced_button_callback() {
 
         QWidget* window = new QWidget;
         window->setAttribute(Qt::WA_DeleteOnClose);
+        new QVBoxLayout(window);
         ezgl::center_window(window);
         window->setWindowTitle("Advanced Debugger Options");
 
@@ -196,9 +200,28 @@ void advanced_button_callback() {
         instructions->setMaximumWidth(instructions->fontMetrics().horizontalAdvance(QString(40, 'x')));
         QLabel* expression_here = new QLabel("Write expression below:");
 
-        // GtkExpander equivalent: QGroupBox
-        auto* expander = new QGroupBox("Variables");
+        // GtkExpander equivalent: a QToolButton acting as the disclosure
+        // header (arrow + label) over a content widget whose visibility is
+        // toggled by the button. Collapsed by default.
+        auto* expander = new QWidget;
+        auto* expanderLayout = new QVBoxLayout(expander);
+        expanderLayout->setContentsMargins(0, 0, 0, 0);
+        expanderLayout->setSpacing(0);
+        auto* expanderToggle = new QToolButton;
+        expanderToggle->setText("Variables");
+        expanderToggle->setCheckable(true);
+        expanderToggle->setChecked(false);
+        expanderToggle->setStyleSheet("QToolButton { border: none; }");
+        expanderToggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        expanderToggle->setArrowType(Qt::RightArrow);
+        expanderLayout->addWidget(expanderToggle);
         QWidget* varGrid = ezgl::grid_new();
+        varGrid->setVisible(false);
+        QObject::connect(expanderToggle, &QToolButton::toggled,
+                         [expanderToggle, varGrid](bool checked) {
+                             expanderToggle->setArrowType(checked ? Qt::DownArrow : Qt::RightArrow);
+                             varGrid->setVisible(checked);
+                         });
         QLabel* pLabel = new QLabel;
         pLabel->setTextFormat(Qt::RichText);
         pLabel->setText("<b>Placer Variables:</b>");
@@ -423,6 +446,7 @@ void set_expression_button_callback(QWidget* /*widget*/, QWidget* grid) {
 void invalid_breakpoint_entry_window(std::string error) {
     QWidget* window = new QWidget;
     window->setAttribute(Qt::WA_DeleteOnClose);
+    new QVBoxLayout(window);
     ezgl::center_window(window);
     window->setWindowTitle("ERROR");
     window->setWindowModality(Qt::ApplicationModal);
@@ -453,6 +477,7 @@ void invalid_breakpoint_entry_window(std::string error) {
 void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state, bool in_placer) {
     QWidget* window = new QWidget;
     window->setAttribute(Qt::WA_DeleteOnClose);
+    new QVBoxLayout(window);
     ezgl::center_window(window);
     window->setWindowTitle("Breakpoint");
 

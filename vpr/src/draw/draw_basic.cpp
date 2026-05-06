@@ -1115,8 +1115,8 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 //Draws critical path shown as flylines.
 void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/) {
     g->draw_line(start, end);
-    draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-    draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
 
     bool draw_delays = get_draw_state_vars()->show_crit_path_delays && !skip_draw_delays;
 
@@ -1140,8 +1140,6 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         }
 
         //TODO: draw the delays nicer
-        //   * rotate to match edge
-        //   * offset from line
         //   * track visible in window
         ezgl::rectangle text_bbox({min_x, min_y}, {max_x, max_y});
 
@@ -1154,30 +1152,31 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
-        // Get the screen coordinates for text drawing
-        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+        // Offset the label perpendicular to the line by a fixed SCREEN-
+        // pixel amount via set_text_screen_offset. The offset is applied
+        // at paint time AFTER world→screen transform, so its visible size
+        // is always exactly kOffsetPx regardless of zoom — and crucially
+        // it's preserved through the camera-only redraw path (zoom/pan
+        // operations that replay cached overlay commands without re-running
+        // this code). The angle is in screen space: +X right, +Y down (Qt
+        // convention), which is why cos is negated here vs. world-Y-up.
+        constexpr float kFontPx   = 16.0f;
+        constexpr float kOffsetPx = 12.0f;
+        const float angle_rad = text_angle * (std::numbers::pi / 180.0f);
+        const ezgl::point2d screen_offset{
+            -kOffsetPx * std::sin(angle_rad),
+            -kOffsetPx * std::cos(angle_rad)};
+
         g->set_text_rotation(text_angle);
-
-        // Set the text colour to black to differentiate it from the line
-        g->set_font_size(16);
+        g->set_font_size(kFontPx);
         g->set_color(ezgl::color(0, 0, 0));
+        g->set_text_screen_offset(screen_offset);
 
-        g->set_coordinate_system(ezgl::SCREEN);
-
-        // Find an offset so it is sitting on top/below of the line
-        float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (std::numbers::pi / 180));
-        float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (std::numbers::pi / 180));
-
-        ezgl::point2d offset_text_bbox(x_offset, y_offset);
-        g->draw_text(offset_text_bbox, incr_delay_str,
+        g->draw_text(text_bbox.center(), incr_delay_str,
                      text_bbox.width(), text_bbox.height());
 
         g->set_font_size(14);
-
         g->set_text_rotation(0);
-        g->set_coordinate_system(ezgl::WORLD);
     }
 }
 

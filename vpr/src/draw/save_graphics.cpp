@@ -14,8 +14,6 @@
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
 
-extern ezgl::rectangle initial_world;
-
 void save_graphics_from_button(QDialog* dialog) {
     QLineEdit* text_entry = dialog->findChild<QLineEdit*>("file_name_text_entry");
     QComboBox* combo_box = dialog->findChild<QComboBox*>("file_name_combo_box");
@@ -34,17 +32,28 @@ void save_graphics(std::string extension, std::string file_name) {
 
     auto canvas = application->get_canvas(application->get_main_canvas_id());
 
+    // Use the CURRENT camera's world rectangle for the output aspect ratio,
+    // not the initial-load world. This way the saved file shows what the
+    // user is currently looking at, with their tiles preserved at the
+    // correct world aspect (e.g., square tiles stay square). Using the
+    // initial-load world produces a distorted image whenever the user has
+    // zoomed or panned to a non-square sub-region.
+    const ezgl::rectangle current_world = canvas->get_camera().get_world();
+    const double aspect_w = current_world.width();
+    const double aspect_h = current_world.height();
+
     bool result = true;
 
     file_name = file_name + "." + extension;
     if (extension == "pdf") {
-        result = canvas->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
+        result = canvas->print_pdf(file_name.c_str(), int(aspect_w), int(aspect_h));
     } else if (extension == "png") {
         constexpr int IMAGE_WIDTH_PIXELS = 2048;
-        int image_height_pixels = IMAGE_WIDTH_PIXELS * float(initial_world.height()) / initial_world.width();
+        const int image_height_pixels =
+            int(IMAGE_WIDTH_PIXELS * (aspect_h / aspect_w));
         result = canvas->print_png(file_name.c_str(), IMAGE_WIDTH_PIXELS, image_height_pixels);
     } else if (extension == "svg") {
-        result = canvas->print_svg(file_name.c_str(), initial_world.width(), initial_world.height());
+        result = canvas->print_svg(file_name.c_str(), int(aspect_w), int(aspect_h));
     } else {
         warning_dialog_box("Invalid file type");
     }

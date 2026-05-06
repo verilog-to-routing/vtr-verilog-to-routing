@@ -152,6 +152,9 @@ ezgl::application* application = nullptr;
 bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0, 0);
+ezgl::point2d window_preview_cursor(0, 0); // updated by act_on_mouse_move while
+                                           // window_point_1_collected is true; drawn
+                                           // as a dashed rect by the regular draw flow.
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
@@ -287,6 +290,23 @@ static void draw_main_canvas(ezgl::renderer* g) {
     } else {
         draw_analytical_place(g);
     }
+
+    // Zoom-Select preview: while the user is in window mode and has clicked
+    // the first point, paint a dashed grey rectangle from that anchor to the
+    // current cursor. Drawing it here (inside the regular draw flow) instead
+    // of on an animation overlay makes the preview work uniformly across all
+    // backends, including RHI.
+    if (window_point_1_collected) {
+        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+        g->set_color(blk_GREY);
+        g->set_line_width(2);
+        g->draw_rectangle(point_1, window_preview_cursor);
+        // Reset to defaults so subsequent overlays (e.g. legend) aren't
+        // accidentally inherited.
+        g->set_line_dash(ezgl::line_dash::none);
+        g->set_line_width(0);
+    }
+
     if (draw_state->auto_proceed) {
         //Automatically exit the event loop, so user's don't need to manually click proceed
 
@@ -757,6 +777,11 @@ void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, do
 
                 window_point_1_collected = true;
                 point_1 = {x, y};
+                // Seed the preview cursor at the anchor so the dashed preview
+                // rect has zero area until the next mouse-move event arrives.
+                // Without this, a stale cursor from a previous zoom-select
+                // operation would briefly produce a wrong-sized rectangle.
+                window_preview_cursor = {x, y};
             } else {
                 //collect second point data
 
@@ -819,13 +844,13 @@ void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, do
 void act_on_mouse_move(ezgl::application* app, QMouseEvent* /* event */, double x, double y) {
     // user has clicked the window button, in window mode
     if (window_point_1_collected) {
-        // draw a grey, dashed-line box to indicate the zoom-in region
+        // Update the preview cursor position and let the regular draw flow
+        // paint the dashed-rectangle preview (see draw_main_canvas). Drawing
+        // it as part of the main draw works uniformly across all backends —
+        // the immediate-renderer "animation" pattern used by GTK does not
+        // translate cleanly to RHI's GPU-composited overlay.
+        window_preview_cursor = {x, y};
         app->refresh_drawing();
-        ezgl::renderer* g = app->get_renderer();
-        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-        g->set_color(blk_GREY);
-        g->set_line_width(2);
-        g->draw_rectangle(point_1, {x, y});
         return;
     }
 
@@ -1214,6 +1239,7 @@ static void set_draw_partitions(bool checked) {
         QDialog* dialog = new QDialog(window);
         dialog->setWindowTitle("Floorplanning Legend");
         dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setWindowFlag(Qt::Tool, true);  // float above the main window
         dialog->resize(400, 500);
 
         QVBoxLayout* layout = new QVBoxLayout(dialog);
@@ -1230,7 +1256,12 @@ static void set_draw_partitions(bool checked) {
             highlight_selected_partition(tree);
         });
 
+        // show() alone is not always enough: some window managers refuse to
+        // give a freshly-created top-level dialog focus, leaving it stacked
+        // behind the main window. raise() + activateWindow() force it on top.
         dialog->show();
+        dialog->raise();
+        dialog->activateWindow();
         draw_state->draw_partitions = true;
     } else {
         draw_state->draw_partitions = false;
