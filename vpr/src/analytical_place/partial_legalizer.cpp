@@ -1614,9 +1614,9 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     }
 
     // Next, try all of the vertical partitions.
-    double min_pivot_x = std::floor(window.region.xmin()) + 1.0;
-    double max_pivot_x = std::ceil(window.region.xmax()) - 1.0;
-    for (double pivot_x = min_pivot_x; pivot_x <= max_pivot_x; pivot_x++) {
+    int min_pivot_x = std::floor(window.region.xmin()) + 1.0;
+    int max_pivot_x = std::ceil(window.region.xmax()) - 1.0;
+    for (int pivot_x = min_pivot_x; pivot_x <= max_pivot_x; pivot_x++) {
         // Cut the region at this cut line.
         auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
                                                                  window.region.ymin()),
@@ -1664,9 +1664,9 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     }
 
     // Next, try all of the horizontal partitions.
-    double min_pivot_y = std::floor(window.region.ymin()) + 1.0;
-    double max_pivot_y = std::ceil(window.region.ymax()) - 1.0;
-    for (double pivot_y = min_pivot_y; pivot_y <= max_pivot_y; pivot_y++) {
+    int min_pivot_y = std::floor(window.region.ymin()) + 1.0;
+    int max_pivot_y = std::ceil(window.region.ymax()) - 1.0;
+    for (int pivot_y = min_pivot_y; pivot_y <= max_pivot_y; pivot_y++) {
         // Cut the region at this cut line.
         auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
                                                                  window.region.ymin()),

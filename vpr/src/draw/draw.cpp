@@ -1224,7 +1224,7 @@ static void run_graphics_commands(const std::string& commands) {
             std::string name = vtr::replace_all(name_ext[0], "{i}",
                                                 std::to_string(draw_state->sequence_number));
 
-            save_graphics(/*extension=*/name_ext[1], /*filename=*/name);
+            save_graphics(/*extension=*/name_ext[1], /*file_name=*/name);
             VTR_LOG("Saving to %s\n", std::string(name + name_ext[1]).c_str());
 
         } else if (cmd[0] == "set_macros") {

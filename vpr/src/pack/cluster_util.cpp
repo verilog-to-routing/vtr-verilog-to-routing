@@ -211,7 +211,6 @@ size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_c
     t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
     t_pb_type* pb_type = pb_graph_node->pb_type;
     t_mode* mode = &pb_type->modes[pb->mode];
-    std::string pb_type_name(pb_type->name);
 
     pb_type_count[pb_type]++;
 
