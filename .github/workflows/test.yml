@@ -857,8 +857,8 @@ jobs:
       - name: Build
         shell: msys2 {0}
         env:
-          CMAKE_PARAMS: "-DWITH_ABC=OFF -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF"
+          CMAKE_PARAMS: "-DWITH_ABC=OFF -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
           BUILD_TYPE: release # Note: Found that release build caches way better than debug build for this test.
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
         run: |
           make -j${{ steps.cpu-cores.outputs.count}}
-
