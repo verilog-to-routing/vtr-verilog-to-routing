@@ -853,32 +853,45 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
     }
 }
 
-/*
- * @brief Determine if speculatively packed cur_pb is pin feasible
+/**
+ * @brief Recompute speculative lookahead pin usage for every atom currently
+ *        assigned to the cluster.
  *
- * Runtime is actually not that bad for this.  It's worst case O(k^2) where k is the
- * number of pb_graph pins.  Can use hash tables or make incremental if becomes an issue.
+ * This routine walks all molecules recorded in @p cluster, finds each valid
+ * atom's primitive pb through @p atom_to_pb, and marks the input/output pin
+ * classes that would be consumed by the atom's nets. The caller is expected to
+ * clear the existing lookahead pin usage before calling this function. When
+ * checking a candidate molecule, the candidate must already be present in
+ * cluster.molecules so that its pins are included in the lookahead counts.
+ *
+ * @param cluster The cluster whose current speculative packing assignment is
+ *        being evaluated.
+ * @param prepacker Provides the molecules listed by @p cluster.
+ * @param atom_cluster Maps atom blocks to their assigned legalization clusters;
+ *        used to determine whether nets are internal to this cluster.
+ * @param atom_to_pb Maps atom blocks to the primitive pbs they currently occupy.
+ *
+ * Runtime is worst case O(k^2), where k is the number of pb graph pins. Hash
+ * tables or an incremental update could be used if this becomes a bottleneck.
  */
-static void try_update_lookahead_pins_used(t_pb* cur_pb,
+static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
+                                           const Prepacker& prepacker,
                                            const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                            const AtomPBBimap& atom_to_pb) {
-    // run recursively till a leaf (primitive) pb block is reached
-    const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
-    if (!pb_type->is_primitive() && cur_pb->name != nullptr) {
-        if (cur_pb->child_pbs != nullptr) {
-            for (int i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
-                if (cur_pb->child_pbs[i] != nullptr) {
-                    for (int j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
-                        try_update_lookahead_pins_used(&cur_pb->child_pbs[i][j], atom_cluster, atom_to_pb);
-                    }
-                }
+    VTR_ASSERT(cluster.pb != nullptr);
+
+    for (PackMoleculeId molecule_id : cluster.molecules) {
+        const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
+            if (!blk_id.is_valid()) {
+                continue;
             }
-        }
-    } else {
-        // find if this child (primitive) pb block has an atom mapped to it,
-        // if yes compute and mark lookahead pins used for that pb block
-        AtomBlockId blk_id = atom_to_pb.pb_atom(cur_pb);
-        if (pb_type->blif_model != nullptr && blk_id) {
+
+            const t_pb* primitive_pb = atom_to_pb.atom_pb(blk_id);
+            VTR_ASSERT_SAFE(primitive_pb != nullptr);
+            VTR_ASSERT_SAFE(primitive_pb->pb_graph_node->pb_type->is_primitive());
+
+            VTR_ASSERT(primitive_pb->pb_graph_node->pb_type->blif_model != nullptr);
             compute_and_mark_lookahead_pins_used(blk_id, atom_cluster, atom_to_pb);
         }
     }
@@ -1298,10 +1311,18 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          mutable_atom_pb_lookup());
         }
 
+        // If we're using the pin feasibility filter, we need to add the candidate molecule to
+        // cluster.molecules. We use this flag to control the cleanup in case of failure.
+        bool candidate_molecule_added_to_cluster = false;
+
         if (enable_pin_feasibility_filter_ && block_pack_status == e_block_pack_status::BLK_PASSED) {
+            // try_update_lookahead_pins_used needs the candidate molecule to be in cluster.molecules.
+            cluster.molecules.push_back(molecule_id);
+            candidate_molecule_added_to_cluster = true;
+
             // Check if pin usage is feasible for the current packing assignment
             reset_lookahead_pins_used(cluster.pb);
-            try_update_lookahead_pins_used(cluster.pb, atom_cluster_, atom_pb_lookup());
+            try_update_lookahead_pins_used(cluster, prepacker_, atom_cluster_, atom_pb_lookup());
             if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
                 VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                 block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
@@ -1450,9 +1471,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // not need the check like the what the PR did above.
                 cluster.noc_grp_id = new_cluster_noc_grp_id;
 
-                // Insert the molecule into the cluster for bookkeeping.
-                cluster.molecules.push_back(molecule_id);
-
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
                     if (!atom_blk_id.is_valid())
@@ -1478,6 +1496,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         }
 
         if (block_pack_status != e_block_pack_status::BLK_PASSED) {
+            if (candidate_molecule_added_to_cluster) {
+                VTR_ASSERT_SAFE(!cluster.molecules.empty());
+                VTR_ASSERT_SAFE(cluster.molecules.back() == molecule_id);
+                cluster.molecules.pop_back();
+            }
+
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
                 if (atom_blk_id) {

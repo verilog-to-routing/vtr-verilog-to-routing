@@ -30,14 +30,14 @@ class vec_id_set {
     typedef const_iterator iterator;
 
     ///@brief Returns an iterator to the first element in the sequence
-    auto begin() const { return vec_.begin(); }
+    auto begin() const noexcept { return vec_.begin(); }
     ///@brief Returns an iterator referring to the past-the-end element in the vector container
-    auto end() const { return vec_.end(); }
+    auto end() const noexcept { return vec_.end(); }
 
     ///@brief Returns a constant iterator to the first element in the sequence
-    auto cbegin() const { return vec_.cbegin(); }
+    auto cbegin() const noexcept { return vec_.cbegin(); }
     ///@brief Returns a constant iterator referring to the past-the-end element in the vector container
-    auto cend() const { return vec_.cend(); }
+    auto cend() const noexcept { return vec_.cend(); }
 
     ///@brief Insert val in the set
     bool insert(T val) {
