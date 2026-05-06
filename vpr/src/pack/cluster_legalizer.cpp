@@ -1770,6 +1770,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     packing_signature_tree_ = (memoize_cluster_packings)
                                   ? std::optional<PackingSignatureTree>(PackingSignatureTree())
                                   : std::nullopt;
+
+    init_feedback_pin_sets();
 }
 
 void ClusterLegalizer::init_feedback_pin_sets() {

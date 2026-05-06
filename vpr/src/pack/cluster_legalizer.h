@@ -460,11 +460,6 @@ class ClusterLegalizer {
      */
     void reset();
 
-    /**
-     * @brief Build the per-type feedback-pin sets used by the intra-cluster router.
-     */
-    void init_feedback_pin_sets();
-
     /*
      * @brief Checks if the given molecule is compatible with the given cluster.
      *
@@ -593,6 +588,10 @@ class ClusterLegalizer {
     ~ClusterLegalizer();
 
   private:
+    /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
+    ///        Called once by the constructor.
+    void init_feedback_pin_sets();
+
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
@@ -633,7 +632,7 @@ class ClusterLegalizer {
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
 
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
-    ///        Indexed by t_logical_block_type::index. Built once by init_feedback_pin_sets().
+    ///        Indexed by t_logical_block_type::index.
     std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
 
     /// @brief The current legalization strategy of the cluster legalizer.

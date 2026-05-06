@@ -1013,7 +1013,6 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
         false, // --memoize_cluster_packings is not yet supported for flat-recon
         arch_.models,
         vpr_setup_.PackerOpts.pack_verbosity);
-    cluster_legalizer.init_feedback_pin_sets();
 
     // Perform clustering using partial placement.
     create_clusters(cluster_legalizer, p_placement);
@@ -1059,7 +1058,6 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                                        vpr_setup_.PackerOpts.memoize_cluster_packings,
                                        arch_.models,
                                        vpr_setup_.PackerOpts.pack_verbosity);
-    cluster_legalizer.init_feedback_pin_sets();
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.
     size_t grid_width = device_grid_.width();
