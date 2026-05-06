@@ -103,9 +103,11 @@ static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t
  ******************************************************************************************/
 
 ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
-                             t_logical_block_type_ptr type) {
+                             t_logical_block_type_ptr type,
+                             const std::unordered_set<int>& valid_feedback_pins) {
     lb_type_graph_ = lb_type_graph;
     lb_type_ = type;
+    valid_feedback_pins_ = &valid_feedback_pins;
 
     size_t size = lb_type_graph->size();
     lb_rr_node_stats_.resize(size);
@@ -308,6 +310,17 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
                                       int verbosity) {
     bool is_impossible = false;
 
+    // Classify the current sink: is it an in-cluster sink, or the special
+    // "cluster-external sink" placeholder representing the signal leaving the cluster?
+    //
+    // The valid-cluster-exit-pin check during edge expansion applies ONLY for
+    // connections whose sink lives inside the cluster but whose path goes "out and
+    // back in" through inter-cluster routing (the feedback case). For a genuinely
+    // external sink (terminals[itarget] == ext_sink_inode), the signal is supposed
+    // to leave the cluster, so we do not impose the constraint.
+    const int ext_sink_inode = get_lb_type_rr_graph_ext_sink_index(lb_type_);
+    const bool target_is_internal_sink = (lb_net.terminals[itarget] != ext_sink_inode);
+
     do {
         if (pq_.empty()) {
             /* No connection possible */
@@ -344,9 +357,9 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
                 explored_node_tb_[exp_inode].prev_index = exp_node->prev_index;
                 if (exp_inode != lb_net.terminals[itarget]) {
                     if (!try_other_modes) {
-                        expand_node_(*exp_node, lb_net.terminals.size() - 1);
+                        expand_node_(*exp_node, lb_net.terminals.size() - 1, target_is_internal_sink);
                     } else {
-                        expand_node_all_modes_(*exp_node, lb_net.terminals.size() - 1);
+                        expand_node_all_modes_(*exp_node, lb_net.terminals.size() - 1, target_is_internal_sink);
                     }
                 }
             }
@@ -992,9 +1005,26 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt
 void ClusterRouter::expand_edges_(int mode,
                                   int cur_inode,
                                   float cur_cost,
-                                  int net_fanout) {
+                                  int net_fanout,
+                                  bool target_is_internal_sink) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
     t_expansion_node enode;
+
+    // Block feedback routing through Fc_out == 0 top-level output pins: such a
+    // pin cannot drive any inter-cluster wire, so the signal cannot physically
+    // loop back to an in-cluster sink. Only applied when the target sink is
+    // inside this cluster; genuine external-sink targets are out of scope.
+    if (target_is_internal_sink) {
+        const t_pb_graph_pin* pb_pin = lb_type_graph[cur_inode].pb_graph_pin;
+        const bool is_top_level_output_pin = (pb_pin != nullptr
+                                              && pb_pin->port != nullptr
+                                              && pb_pin->port->type == OUT_PORT
+                                              && pb_pin->parent_node == lb_type_->pb_graph_head);
+        if (is_top_level_output_pin
+            && valid_feedback_pins_->count(cur_inode) == 0) {
+            return;
+        }
+    }
 
     for (int iedge = 0; iedge < lb_type_graph[cur_inode].num_fanout[mode]; iedge++) {
         /* Init new expansion node */
@@ -1040,7 +1070,9 @@ void ClusterRouter::expand_edges_(int mode,
     }
 }
 
-void ClusterRouter::expand_node_(const t_expansion_node& exp_node, int net_fanout) {
+void ClusterRouter::expand_node_(const t_expansion_node& exp_node,
+                                 int net_fanout,
+                                 bool target_is_internal_sink) {
     int cur_node = exp_node.node_index;
     float cur_cost = exp_node.cost;
     int mode = lb_rr_node_stats_[cur_node].mode;
@@ -1048,10 +1080,12 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node, int net_fanou
         mode = 0;
     }
 
-    expand_edges_(mode, cur_node, cur_cost, net_fanout);
+    expand_edges_(mode, cur_node, cur_cost, net_fanout, target_is_internal_sink);
 }
 
-void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node, int net_fanout) {
+void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node,
+                                           int net_fanout,
+                                           bool target_is_internal_sink) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     int cur_inode = exp_node.node_index;
@@ -1082,7 +1116,7 @@ void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node, int
             continue;
         }
 
-        expand_edges_(mode, cur_inode, cur_cost, net_fanout);
+        expand_edges_(mode, cur_inode, cur_cost, net_fanout, target_is_internal_sink);
     }
 }
 

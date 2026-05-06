@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "atom_pb_bimap.h"
@@ -253,6 +254,7 @@ class ClusterRouter {
      */
     ClusterRouter()
         : lb_type_graph_(nullptr)
+        , valid_feedback_pins_(nullptr)
         , explore_id_index_(0)
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
@@ -262,13 +264,15 @@ class ClusterRouter {
     /**
      * @brief Constructor for the ClusterRouter.
      *
-     * Sets up the ClusterRouter for the given logical block type.
-     *
-     *  @param lb_type_graph    The RR graph for the given lb type.
-     *  @param type             The logical block type to route to.
+     *  @param lb_type_graph        The RR graph for the given lb type.
+     *  @param type                 The logical block type to route to.
+     *  @param valid_feedback_pins  Pre-computed set of top-level output pin
+     *                              indices with Fc_out > 0; owned by the
+     *                              caller and must outlive this router.
      */
     ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
-                  t_logical_block_type_ptr type);
+                  t_logical_block_type_ptr type,
+                  const std::unordered_set<int>& valid_feedback_pins);
 
     /**
      * @brief Add pins of netlist atom to current routing drivers/targets.
@@ -409,11 +413,15 @@ class ClusterRouter {
      * @brief Explore the given node popped from the priority queue and explore
      *        its edges.
      *
-     *  @param exp_node     The node currently being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param exp_node                  The node currently being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True if the sink we are currently
+     *                                   routing toward lives inside this
+     *                                   cluster
      */
     void expand_node_(const t_expansion_node& exp_node,
-                      int net_fanout);
+                      int net_fanout,
+                      bool target_is_internal_sink);
 
     /**
      * @brief Explore the given node popped from the priority queue using all
@@ -422,25 +430,32 @@ class ClusterRouter {
      * This will explore every possible mode that the given node can be in and
      * explore their edges.
      *
-     *  @param exp_node     The node currently being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param exp_node                  The node currently being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True if the sink we are currently
+     *                                   routing toward lives inside this
+     *                                   cluster.
      */
     void expand_node_all_modes_(const t_expansion_node& exp_node,
-                                int net_fanout);
+                                int net_fanout,
+                                bool target_is_internal_sink);
 
     /**
      * @brief Explore all edges of an expansion node and insert connected nodes
      *        into the priority queue (i.e. connection routing).
      *
-     *  @param mode         The mode the node that is being explored is in.
-     *  @param cur_inode    The node that is being explored.
-     *  @param cur_cost     The cost of the node that is being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param mode                      The mode the node that is being explored is in.
+     *  @param cur_inode                 The node that is being explored.
+     *  @param cur_cost                  The cost of the node that is being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True iff the sink is inside this cluster;
+     *                                   gates feedback through Fc_out==0 output pins.
      */
     void expand_edges_(int mode,
                        int cur_inode,
                        float cur_cost,
-                       int net_fanout);
+                       int net_fanout,
+                       bool target_is_internal_sink);
 
     /**
      * @brief Determine if a completed route is valid.
@@ -484,6 +499,10 @@ class ClusterRouter {
 
     /// @brief Pointer to physical intra-logic cluster_ctx.blocks type rr graph.
     std::vector<t_lb_type_rr_node>* lb_type_graph_;
+
+    /// @brief Top-level output pins with Fc_out > 0 for this block type; pointer
+    ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
+    const std::unordered_set<int>* valid_feedback_pins_;
 
     // =========================================================================
     // Logical Netlist Info
