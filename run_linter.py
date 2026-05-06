@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-Small project wrapper around LLVM's run-clang-tidy script. Run using './run_linter.py vpr' to run linter for vpr.
-This script was generated using LLMs. While we have reviewed it and tested the output for some usecases, you should
-not be blindly trusting its output.
+Small wrapper around LLVM's run-clang-tidy script.
+
+Run using './run_linter.py vpr' to run the linter for vpr.
+This script was generated using LLMs. While we have reviewed it and
+tested the output for some use cases, you should not blindly trust its
+output.
 """
 
 from __future__ import annotations
@@ -17,6 +20,7 @@ import sys
 
 
 def parse_args() -> tuple[argparse.Namespace, list[str]]:
+    """Parse wrapper arguments and preserve unknown args for run-clang-tidy."""
     parser = argparse.ArgumentParser(
         description="Run clang-tidy through LLVM's run-clang-tidy wrapper.",
         epilog="Extra arguments are forwarded to run-clang-tidy.",
@@ -57,6 +61,7 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
 
 
 def path_regex(paths: list[str], repo_root: Path) -> str | None:
+    """Build a run-clang-tidy file matching regex from user paths."""
     if not paths:
         return None
 
@@ -76,10 +81,12 @@ def path_regex(paths: list[str], repo_root: Path) -> str | None:
 
 
 def has_forwarded_option(args: list[str], option: str) -> bool:
+    """Return whether an option was already passed through by the user."""
     return any(arg == option or arg.startswith(f"{option}=") for arg in args)
 
 
 def main() -> int:
+    """Run the linter wrapper and return run-clang-tidy's exit code."""
     args, forwarded_args = parse_args()
     repo_root = Path(__file__).resolve().parent
     runner = shutil.which(args.run_clang_tidy)
