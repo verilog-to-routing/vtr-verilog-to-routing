@@ -41,7 +41,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     // set NoC link bandwidth
     // dist_2 is used to generate traffic flow bandwidths.
     // Setting the NoC link bandwidth to max() / 5 makes link congestion more likely to happen
-    const double noc_link_bandwidth = dist_2.max() / 5;
+    const double noc_link_bandwidth = dist_2.max() / 5.0;
     constexpr double noc_link_latency = 1.0;
     constexpr double noc_router_latency = 1.0;
     noc_ctx.noc_model.set_noc_link_bandwidth(noc_link_bandwidth);

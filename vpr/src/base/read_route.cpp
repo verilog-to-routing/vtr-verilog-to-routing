@@ -245,7 +245,7 @@ static void process_route(const Netlist<>& net_list,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
-            ClusterNetId inet(atoi(tokens[1].c_str()));
+            ClusterNetId inet(std::stoi(tokens[1]));
             process_nets(net_list,
                          fp,
                          inet,
@@ -329,8 +329,8 @@ static void process_nodes(const Netlist<>& net_list,
 
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
-    int inode, layer_num, x, y, layer_num2, x2, y2, ptc, switch_id, net_pin_index, offset;
-    std::string prev_type;
+    short switch_id;
+    int inode, layer_num, x, y, layer_num2, x2, y2, ptc, net_pin_index, offset;
     int node_count = 0;
     std::string input;
     std::vector<std::string> tokens;
@@ -360,7 +360,7 @@ static void process_nodes(const Netlist<>& net_list,
             break;
         } else if (tokens[0] == "Node:") {
             /*An actual line, go through each node and add it to the route tree*/
-            inode = atoi(tokens[1].c_str());
+            inode = std::stoi(tokens[1]);
 
             /*First node needs to be source. It is isolated to correctly set heap head.*/
             if (node_count == 0 && tokens[2] != "SOURCE") {
@@ -420,7 +420,7 @@ static void process_nodes(const Netlist<>& net_list,
                 }
             }
 
-            ptc = atoi(tokens[5 + offset].c_str());
+            ptc = std::stoi(tokens[5 + offset]);
             if (rr_graph.node_ptc_num(RRNodeId(inode)) != ptc) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The ptc num of node %d does not match the rr graph, Running without flat routing; "
@@ -466,9 +466,10 @@ static void process_nodes(const Netlist<>& net_list,
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "%d node does not have correct pins", inode);
                 }
-                switch_id = atoi(tokens[8 + offset].c_str());
+
+                switch_id = static_cast<short>(std::stoi(tokens[8 + offset]));
             } else {
-                switch_id = atoi(tokens[7 + offset].c_str());
+                switch_id = static_cast<short>(std::stoi(tokens[7 + offset]));
             }
 
             /* Process net pin index for sinks                                   *
@@ -477,7 +478,7 @@ static void process_nodes(const Netlist<>& net_list,
              * information for sinks. If not, plrase re-generate the routing.    */
             if (tokens[2] == "SINK") {
                 if (tokens[8 + offset] == "Net_pin_index:") {
-                    net_pin_index = atoi(tokens[9 + offset].c_str());
+                    net_pin_index = std::stoi(tokens[9 + offset]);
                 } else {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "%d (sink) node does not have net pin index. If you are using an old .route file without this information, please re-generate the routing.", inode);
@@ -543,7 +544,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
             bnum_str = format_name(tokens[2]);
             /*remove #*/
             bnum_str.erase(bnum_str.begin());
-            ParentBlockId bnum(atoi(bnum_str.c_str()));
+            ParentBlockId bnum(std::stoi(bnum_str));
 
             /*Check for name, coordinate, and pins*/
             if (0 != net_list.block_name(bnum).compare(tokens[1])) {
@@ -562,10 +563,10 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
             }
 
             auto pin_class = get_class_range_for_block(bnum, is_flat);
-            if (pin_class.low > atoi(tokens[7].c_str()) || pin_class.high < atoi(tokens[7].c_str())) {
+            if (pin_class.low > std::stoi(tokens[7]) || pin_class.high < std::stoi(tokens[7])) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The pin class %d of %lu net does not match given ",
-                          atoi(tokens[7].c_str()), size_t(inet));
+                          std::stoi(tokens[7]), size_t(inet));
             }
         }
         oldpos = fp.tellg();

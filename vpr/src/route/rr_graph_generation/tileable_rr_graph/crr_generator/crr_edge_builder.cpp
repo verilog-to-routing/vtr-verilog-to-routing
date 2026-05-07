@@ -56,7 +56,7 @@ std::unordered_map<int, RRSwitchId> pre_create_crr_switches(const int min_delay_
         return delay_to_switch_id;
     }
 
-    delay_to_switch_id.reserve(static_cast<size_t>(max_delay_ps - min_delay_ps + 1));
+    delay_to_switch_id.reserve(max_delay_ps - min_delay_ps + 1);
     for (int delay_ps = min_delay_ps; delay_ps <= max_delay_ps; ++delay_ps) {
         int sw_id = static_cast<int>(all_sw_inf.size());
         all_sw_inf.emplace(sw_id, create_crr_switch(delay_ps));
