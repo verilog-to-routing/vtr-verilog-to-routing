@@ -44,6 +44,12 @@ run_test() {
     echo "--- [SMOKE] ${name}: ${desc}"
     local run_dir="${WORK_DIR}/${name}_run"
     mkdir -p "${run_dir}"
+    if [[ "${SHOW_CMD:-0}" == "1" ]]; then
+        printf 'VPR CMD:\n'
+        printf '%q' "$1"
+        printf ' %q' "${@:2}"
+        printf '\n'
+    fi
     if (cd "${run_dir}" && "$@") > "${WORK_DIR}/${name}.log" 2>&1; then
         echo "    PASS (exit 0)"
         (( PASS++ )) || true

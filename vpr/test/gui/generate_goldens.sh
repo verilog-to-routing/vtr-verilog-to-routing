@@ -60,6 +60,14 @@ generate() {
     local work="${GEN_TMPDIR}/${name}"
     mkdir -p "${work}"
 
+    if [[ "${SHOW_CMD:-0}" == "1" ]]; then
+        printf 'VPR CMD:\n'
+        printf '%q %q %q --disp off --seed 1' \
+            "${VPR}" "${ARCH}" "${BENCH_DIR}/${circuit}"
+        printf ' %q' "${vpr_flags[@]}"
+        printf '\n'
+    fi
+
     if ! (cd "${work}" && "${VPR}" "${ARCH}" "${BENCH_DIR}/${circuit}" \
         --disp off --seed 1 \
         "${vpr_flags[@]}") \
