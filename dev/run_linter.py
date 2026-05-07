@@ -2,7 +2,7 @@
 """
 Small wrapper around LLVM's run-clang-tidy script.
 
-Run using './run_linter.py vpr' to run the linter for vpr.
+Run using './dev/run_linter.py vpr' to run the linter for vpr.
 This script was generated using LLMs. While we have reviewed it and
 tested the output for some use cases, you should not blindly trust its
 output.
@@ -28,7 +28,7 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument(
         "paths",
         nargs="*",
-        help="Files or directories to lint. Example: ./run_linter.py vpr",
+        help="Files or directories to lint. Example: ./dev/run_linter.py vpr",
     )
     parser.add_argument(
         "-p",
@@ -39,7 +39,7 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument(
         "-j",
         "--jobs",
-        default=str(os.cpu_count() or 1),
+        default=str(1),
         help="Number of clang-tidy instances to run in parallel.",
     )
     parser.add_argument(
@@ -88,7 +88,7 @@ def has_forwarded_option(args: list[str], option: str) -> bool:
 def main() -> int:
     """Run the linter wrapper and return run-clang-tidy's exit code."""
     args, forwarded_args = parse_args()
-    repo_root = Path(__file__).resolve().parent
+    repo_root = Path(__file__).resolve().parent.parent
     runner = shutil.which(args.run_clang_tidy)
 
     if runner is None:
@@ -111,8 +111,6 @@ def main() -> int:
         command.extend(["-clang-tidy-binary", args.clang_tidy])
     if args.fix:
         command.append("-fix")
-    if not has_forwarded_option(forwarded_args, "-warnings-as-errors"):
-        command.extend(["-warnings-as-errors", "*"])
 
     filter_regex = path_regex(args.paths, repo_root)
     if filter_regex is not None:

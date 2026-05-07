@@ -30,7 +30,7 @@ Checks: >
   #-readability-redundant-inline-specifier,
   #-readability-isolate-declaration,
 
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
 ExcludeHeaderFilterRegex: '.*/libs/EXTERNAL/.*'
 FormatStyle: file
