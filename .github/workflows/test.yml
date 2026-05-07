@@ -363,6 +363,13 @@ jobs:
         CMAKE_PREFIX_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/qt' || '/opt/qt6/6.9.3/gcc_64' }}
       run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
 
+    # Plan §8.2 PR-merge exit criterion: `./run_reg_test.py vtr_reg_gui`
+    # must be green. Reuses the EZGL build above (vpr binary already
+    # produced) and exercises the four gui_* tasks defined under
+    # vtr_flow/tasks/regression_tests/vtr_reg_gui/.
+    - name: Run vtr_reg_gui regression suite
+      run: ./run_reg_test.py vtr_reg_gui -show_failures
+
     - name: Upload failure logs
       if: failure()
       uses: actions/upload-artifact@v7
