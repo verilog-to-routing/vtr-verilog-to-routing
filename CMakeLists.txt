@@ -349,6 +349,10 @@ set(COVERAGE_FLAGS "")
 if(VTR_ENABLE_COVERAGE)
     #Enable gcov
     set(COVERAGE_FLAGS "-g -ftest-coverage -fprofile-arcs")
+    # List form for target_compile_options / target_link_options consumers
+    # (e.g. libs/EXTERNAL/CMakeLists.txt scopes these to the ezgl submodule
+    # — see DEF-013 in vpr_gui_defects_discovered.rst).
+    set(COVERAGE_FLAGS_LIST -g -ftest-coverage -fprofile-arcs)
     message(STATUS "Coverage Flags: ${COVERAGE_FLAGS}")
 endif()
 
