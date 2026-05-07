@@ -110,6 +110,16 @@ packages_to_install+=(
 )
 
 # ---------------------------------------------------------------------------
+# List-only mode: emit the resolved package list, one per line, and exit.
+# Used by the Dockerfile to avoid brittle sed-parsing of this script's
+# shell logic. Does NOT touch apt, Qt, pip, or anything else.
+# ---------------------------------------------------------------------------
+if [ "${VTR_LIST_PACKAGES_ONLY:-0}" = "1" ]; then
+    printf '%s\n' "${packages_to_install[@]}"
+    exit 0
+fi
+
+# ---------------------------------------------------------------------------
 # System packages (apt) — skippable on hosts without sudo.
 # ---------------------------------------------------------------------------
 if [ "${VTR_SKIP_APT:-0}" = "1" ]; then

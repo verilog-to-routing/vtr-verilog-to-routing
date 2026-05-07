@@ -1,0 +1,200 @@
+/**
+ * @file test_search_null_guard.cpp
+ * @brief GUI-T-019 — Search-subsystem null-guard symmetry (Layer 4).
+ *
+ * Closes the symmetric-guard gap recorded in
+ * doc/src/dev/vpr_gui_defect_issues_log.rst alongside DEF-005 and DEF-012:
+ *
+ *   DEF-005 added a null-`app` early-return to `act_on_mouse_move`.
+ *   DEF-012 named `act_on_key_press` and `act_on_mouse_press` as siblings
+ *           that lack the same defensive guard.
+ *
+ * The search subsystem entry points are
+ *   * search_and_highlight(widget, app)
+ *   * enable_autocomplete(app)
+ *   * search_type_changed(self, app)
+ *
+ * Empirical Layer-4 audit (this PR, against the current branch on Linux):
+ *
+ *   * `enable_autocomplete(nullptr)` — returns cleanly. The `find_widget`
+ *     internals iterate `QApplication::allWidgets()` without dereferencing
+ *     `this`; on a fresh process with no main.ui loaded the lookup
+ *     returns nullptr and the existing `if (!searchBar) return;` guard
+ *     catches it. No defect.
+ *
+ *   * `search_type_changed(combo, nullptr)` — returns cleanly for the same
+ *     reason: the `app->find_line_edit("TextInput")` lookup misses and
+ *     the existing `if (!searchBar) return;` triggers. No defect.
+ *
+ *   * `search_and_highlight(nullptr, nullptr)` — SEGVs. The function
+ *     looks up `text_entry = app->find_line_edit("TextInput")` and then
+ *     unconditionally calls `text_entry->text().toStdString()` without
+ *     a null check. When the lookup misses (because no TextInput exists,
+ *     or because `app` is null and find_widget returns nullptr) the next
+ *     line crashes. Filed as **DEF-013**.
+ *
+ * Per §4 of the test plan we file the failure first and then assert the
+ * contract — the failing case carries `[!shouldfail][DEF-013]` with the
+ * issue link inline per §9. When DEF-013 closes the `[!shouldfail]`
+ * annotation is removed in the same PR.
+ *
+ * The two non-crashing entry points get positive contract cases (no
+ * `[!shouldfail]`) that pin today's behaviour: a future change that adds
+ * an unconditional `app->...` deref at the top of either would flip the
+ * case to FAIL and surface the regression immediately.
+ *
+ * Mechanism:
+ *   Each contract assertion runs in a child process via fork(); the child
+ *   invokes the entry point with a null `ezgl::application*`. A clean
+ *   child-exit (status 0) is the contract. A crash (SIGSEGV / SIGABRT) or
+ *   any non-zero exit means the guard is missing. Forking isolates the
+ *   crash to a child the parent can examine via waitpid(), so a real
+ *   regression does not tear down the whole `test_vpr_gui` binary.
+ *
+ * Tag: [layer4][interactive][search][vpr_gui][GUI-T-019]
+ */
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include <csignal>
+#include <cstdlib>
+#include <functional>
+
+#include <QComboBox>
+
+#include <ezgl/application.hpp>
+
+// The three entry points under contract.
+#include "search_bar.h"
+
+namespace {
+
+// Result of running a callable in a child process.
+struct ChildOutcome {
+    bool exited_cleanly = false; // child returned via exit(0)
+    int exit_code = -1;
+    int signal_no = 0; // non-zero if killed by a signal
+};
+
+// Run `body` in a child process. The child exit-codes back to the parent;
+// any signal-induced termination is reported via signal_no. Catches the
+// "guard returned cleanly" outcome (child runs to end, exits 0) and the
+// "guard missing" outcome (signal or non-zero exit) without taking down
+// the host test binary.
+ChildOutcome run_in_child(std::function<void()> body) {
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Child. Reset SIGABRT/SIGSEGV to default so any crash is observable
+        // as a signal rather than swallowed by an inherited handler.
+        std::signal(SIGABRT, SIG_DFL);
+        std::signal(SIGSEGV, SIG_DFL);
+        body();
+        std::_Exit(0); // body returned -> guard worked
+    }
+    REQUIRE(pid > 0);
+
+    int status = 0;
+    pid_t w = waitpid(pid, &status, 0);
+    REQUIRE(w == pid);
+
+    ChildOutcome o{};
+    if (WIFEXITED(status)) {
+        o.exited_cleanly = (WEXITSTATUS(status) == 0);
+        o.exit_code = WEXITSTATUS(status);
+    } else if (WIFSIGNALED(status)) {
+        o.signal_no = WTERMSIG(status);
+    }
+    return o;
+}
+
+} // namespace
+
+// ---------------------------------------------------------------------------
+// search_and_highlight — DEF-013. Today crashes (SIGSEGV) because
+// `text_entry = app->find_line_edit("TextInput")` returns nullptr on a
+// process with no main.ui loaded, and the next line dereferences it
+// (`text_entry->text()`). Tagged [!shouldfail] until DEF-013 closes.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("Search: search_and_highlight(nullptr) returns cleanly "
+          "[symmetric-guard contract — DEF-013]",
+          "[layer4][interactive][search][vpr_gui][GUI-T-019][!shouldfail]") {
+    // DEF-013 — vpr/src/draw/search_bar.cpp:50-58.
+    //   `text_entry = app->find_line_edit("TextInput");`  // may return null
+    //   `std::string user_input = text_entry->text()...;` // unguarded deref
+    // See:
+    //   doc/src/dev/vpr_gui_defect_issues_log.rst — DEF-013
+    //   https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/40
+    ChildOutcome o = run_in_child([]() {
+        search_and_highlight(/*widget=*/nullptr, /*app=*/nullptr);
+    });
+    INFO("Child exit_code=" << o.exit_code << " signal=" << o.signal_no);
+    CHECK(o.exited_cleanly);
+}
+
+// ---------------------------------------------------------------------------
+// enable_autocomplete — positive contract (no [!shouldfail]). Today returns
+// cleanly because `app->find_line_edit(name)` iterates QApplication's widget
+// list without dereferencing `this`, returns nullptr when the name is
+// absent, and the existing `if (!searchBar) return;` catches it. The case
+// pins this behaviour: a future change that adds an unconditional `app->`
+// deref above the existing guard will flip this to FAIL.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("Search: enable_autocomplete(nullptr) returns cleanly "
+          "[symmetric-guard contract]",
+          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+    ChildOutcome o = run_in_child([]() {
+        enable_autocomplete(/*app=*/nullptr);
+    });
+    INFO("Child exit_code=" << o.exit_code << " signal=" << o.signal_no);
+    REQUIRE(o.exited_cleanly);
+    REQUIRE(o.signal_no == 0);
+}
+
+// ---------------------------------------------------------------------------
+// search_type_changed — positive contract. Same reasoning as above; passes
+// a real combo so the existing `if (!self) return;` and empty-text early-
+// returns are bypassed and the function reaches the `app->find_line_edit`
+// call that the contract is about.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("Search: search_type_changed(combo, nullptr) returns cleanly "
+          "[symmetric-guard contract]",
+          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+    ChildOutcome o = run_in_child([]() {
+        QComboBox combo;
+        combo.addItem("Block Name");
+        combo.setCurrentIndex(0);
+        search_type_changed(&combo, /*app=*/nullptr);
+    });
+    INFO("Child exit_code=" << o.exit_code << " signal=" << o.signal_no);
+    REQUIRE(o.exited_cleanly);
+    REQUIRE(o.signal_no == 0);
+}
+
+// ---------------------------------------------------------------------------
+// Positive-control case: confirm the fork harness itself works — a callable
+// that returns cleanly must report exited_cleanly=true. Without this, a
+// broken harness could mask a real guard regression by always reporting
+// "crashed".
+// ---------------------------------------------------------------------------
+
+TEST_CASE("Search: fork harness reports clean exit for a no-op body "
+          "[positive control]",
+          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+    // The body intentionally constructs a std::string so gcc-13 cannot
+    // prove the lambda is nothrow: a provably-nothrow lambda fed into
+    // std::function<void()> trips -Werror=noexcept inside libstdc++'s
+    // is_nothrow_invocable_r_v SFINAE chain. The std::string ctor
+    // (allocator-throwing) breaks that inference and the assertion
+    // below still validates the positive control.
+    ChildOutcome o = run_in_child([]() { volatile std::string s("ok"); (void)s; });
+    REQUIRE(o.exited_cleanly);
+    REQUIRE(o.signal_no == 0);
+    REQUIRE(o.exit_code == 0);
+}

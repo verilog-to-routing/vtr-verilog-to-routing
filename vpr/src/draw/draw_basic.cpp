@@ -1160,7 +1160,7 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         // operations that replay cached overlay commands without re-running
         // this code). The angle is in screen space: +X right, +Y down (Qt
         // convention), which is why cos is negated here vs. world-Y-up.
-        constexpr float kFontPx   = 16.0f;
+        constexpr float kFontPx = 16.0f;
         constexpr float kOffsetPx = 12.0f;
         const float angle_rad = text_angle * (std::numbers::pi / 180.0f);
         const ezgl::point2d screen_offset{

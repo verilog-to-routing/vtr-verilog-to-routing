@@ -123,7 +123,7 @@ TEST_CASE("Helpers: simulate_mouse_click delivers Qt event to MainCanvas",
     REQUIRE_NOTHROW(simulate_mouse_click(canvas, QPoint(5, 5), Qt::LeftButton));
     REQUIRE_NOTHROW(simulate_mouse_click(canvas, QPoint(5, 5), Qt::RightButton));
     REQUIRE_NOTHROW(simulate_mouse_click(canvas, QPoint(5, 5),
-                                          Qt::LeftButton, Qt::ControlModifier));
+                                         Qt::LeftButton, Qt::ControlModifier));
 }
 
 TEST_CASE("Helpers: simulate_key delivers Qt event to TextInput",
