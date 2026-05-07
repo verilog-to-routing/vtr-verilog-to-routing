@@ -98,6 +98,45 @@ Each script also creates a project-local virtualenv at ``${repo}/.venv``
 containing every Python dependency the test suite requires. Activate it
 with ``source .venv/bin/activate`` before invoking the scripted flows.
 
+3.4 Linux without sudo (shared lab machines)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On hosts where the developer does not have ``sudo`` (typical for shared
+lab machines), the same Linux script is parameterised so the operator
+can install Qt under their home directory instead of ``/opt/qt6``:
+
+.. code-block:: console
+
+   # The system packages listed in install_apt_packages.sh must already
+   # be present (ask an admin once, or verify they were installed by the
+   # base image). Then:
+   VTR_SKIP_APT=1 VTR_QT_PREFIX="$HOME/software-pkgs/qt6" \
+       ./install_apt_packages.sh
+
+This installs Qt 6.9.3 to ``$HOME/software-pkgs/qt6/6.9.3/gcc_64`` and
+creates the same project-local ``.venv``. The script is idempotent —
+re-running it on a populated tree is a no-op.
+
+The Qt tree is relocatable. When an admin later moves it to a shared
+location (for example ``/opt/qt6`` or ``/opt/vtr-tools/qt6``), simply
+set ``VTR_QT_PREFIX`` to the new root in any new shell — no rebuild of
+Qt is required.
+
+After provisioning, every new shell needs the toolchain on ``PATH``
+before invoking ``cmake`` / ``make`` / ``ctest``:
+
+.. code-block:: bash
+
+   export QT6_HOME="$HOME/software-pkgs/qt6/6.9.3/gcc_64"   # or /opt/qt6/...
+   export PATH="$QT6_HOME/bin:$PATH"
+   export LD_LIBRARY_PATH="$QT6_HOME/lib:${LD_LIBRARY_PATH:-}"
+   export CMAKE_PREFIX_PATH="$QT6_HOME:${CMAKE_PREFIX_PATH:-}"
+   export QT_PLUGIN_PATH="$QT6_HOME/plugins"
+   source <repo>/.venv/bin/activate
+
+Save these lines in a personal helper (e.g. ``$HOME/software-pkgs/env.sh``)
+and ``source`` it at the start of each session.
+
 
 4. Test Philosophy
 ------------------
