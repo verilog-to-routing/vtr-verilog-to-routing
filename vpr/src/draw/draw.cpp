@@ -648,7 +648,22 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     // Tile coordinates are now fully populated — set initial_world so that
     // save_graphics / graphics_commands can compute valid image dimensions
     // even in headless mode (show_graphics = false).
+    const ezgl::rectangle prev_initial_world = initial_world;
     set_initial_world();
+
+    // The router's binary search re-runs init_draw_coords() per channel-width
+    // trial, which can change tile_x/tile_y (and therefore initial_world)
+    // without a pic_on_screen state change — so update_screen()'s state-change
+    // branch will not refresh the camera. If the user is currently at "fit"
+    // (camera world == previous initial_world) push the new initial_world to
+    // the camera so the next render uses the correct world rect. If the user
+    // has pan/zoomed away from fit, leave their view alone.
+    if (application != nullptr && initial_world != prev_initial_world) {
+        ezgl::canvas* canvas = application->get_canvas(application->get_main_canvas_id());
+        if (canvas != nullptr && canvas->get_camera().get_world() == prev_initial_world) {
+            canvas->get_camera().set_world(initial_world);
+        }
+    }
 
 #else
     (void)clb_width;
