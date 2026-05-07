@@ -1,0 +1,11 @@
+{
+  "name": "openfpga",
+  "version": "1.0.0",
+  "dependencies": [
+    "zlib",
+    "readline",
+    "openssl",
+    "pkgconf",
+    "capnproto"
+  ]
+}
