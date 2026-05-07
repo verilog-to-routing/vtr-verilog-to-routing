@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QWidget>
 #include <QString>
+#include <QPoint>
+#include <QtTest/QTest>
 
 /**
  * Find a widget by objectName across ALL top-level widgets (including popover
@@ -20,4 +22,28 @@ T* findWidgetByName(const char* name) {
         }
     }
     return nullptr;
+}
+
+// ---------------------------------------------------------------------------
+// Layer 4 — interactive event simulation helpers (S6 of the GUI test plan)
+//
+// Thin wrappers over QTest:: that give the Layer 4 tests a stable surface
+// even if QTest's API shifts between Qt 6 minor versions. They post events
+// synchronously to the target widget (no main-loop spin required when running
+// under QT_QPA_PLATFORM=offscreen).
+// ---------------------------------------------------------------------------
+
+inline void simulate_mouse_move(QWidget* w, QPoint pos) {
+    QTest::mouseMove(w, pos);
+}
+
+inline void simulate_mouse_click(QWidget* w, QPoint pos,
+                                 Qt::MouseButton b = Qt::LeftButton,
+                                 Qt::KeyboardModifiers m = Qt::NoModifier) {
+    QTest::mouseClick(w, b, m, pos);
+}
+
+inline void simulate_key(QWidget* w, Qt::Key k,
+                         Qt::KeyboardModifiers m = Qt::NoModifier) {
+    QTest::keyClick(w, k, m);
 }

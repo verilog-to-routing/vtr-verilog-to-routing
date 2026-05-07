@@ -198,7 +198,18 @@ def vtr_command_argparser(prog=None):
         action="store_true",
         dest="track_memory_usage",
         help="Track the memory usage for each stage."
-        + " Requires /usr/bin/time -v, disabled if not available.",
+        + " Requires GNU 'time -v' (gtime on macOS); silently disabled if unavailable.",
+    )
+
+    # DEF-007: companion flag so memory tracking can be turned off from
+    # the CLI (the underlying GNU-time probe in util.py also auto-disables
+    # when no implementation is available, but an explicit override is
+    # useful for repeatable benchmark runs).
+    house_keeping.add_argument(
+        "-no_track_memory_usage",
+        dest="track_memory_usage",
+        action="store_false",
+        help="Disable per-stage memory tracking (overrides -track_memory_usage).",
     )
 
     house_keeping.add_argument(
