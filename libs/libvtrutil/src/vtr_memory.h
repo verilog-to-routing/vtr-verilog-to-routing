@@ -132,7 +132,6 @@ struct aligned_allocator {
         using other = aligned_allocator<U>;
     };
 
- 
     // Constructor allowing conversion from other types
     template<typename U>
     aligned_allocator(const aligned_allocator<U>&) noexcept {}
