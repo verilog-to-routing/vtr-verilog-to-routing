@@ -929,7 +929,6 @@ jobs:
           restore-keys: ${{ runner.os }}-msvc-
 
       - name: Configure and build with CMake
-        shell: powershell
         run: |
           mkdir build
           cd build
