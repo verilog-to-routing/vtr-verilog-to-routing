@@ -322,6 +322,18 @@ static void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cl
         pre_cluster_timing_manager.set_timing_arc_delay(atom_sink_pin_id, delay);
     }
 
+    // If the timing update type is incremental, we need to invalidate all edges which have changed.
+    // We assume here that all edge delays change in some way. We could do a more complicated
+    // check for each edge modified and check if the delay has changed; but that may likely
+    // take more time than just invalidating all of the edges.
+    // Since this loop iterates over all of the edges in the timing graph, we only do this if incremental
+    // is selected.
+    if (pre_cluster_timing_manager.get_timing_update_type() == e_timing_update_type::INCREMENTAL) {
+        for (tatum::EdgeId edge : pre_cluster_timing_manager.get_timing_info().timing_graph()->edges()) {
+            pre_cluster_timing_manager.get_timing_info_ptr()->invalidate_delay(edge);
+        }
+    }
+
     // Update the timing info. This will run STA to recompute the slacks and
     // the criticalities of all timing arcs.
     pre_cluster_timing_manager.update_timing_info();
