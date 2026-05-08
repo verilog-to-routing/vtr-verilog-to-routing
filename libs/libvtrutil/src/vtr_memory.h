@@ -126,7 +126,9 @@ struct aligned_allocator {
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
 
+#ifdef _MSC_VER // MSVC
     // Add rebind template for allocator conversion
+    // This is required by MSVC 19
     template<typename U>
     struct rebind {
         using other = aligned_allocator<U>;
@@ -137,6 +139,7 @@ struct aligned_allocator {
     aligned_allocator(const aligned_allocator<U>&) noexcept {}
 
     aligned_allocator() noexcept = default;
+#endif
 
     pointer allocate(size_type n, const void* /*hint*/ = 0) {
         void* data;
