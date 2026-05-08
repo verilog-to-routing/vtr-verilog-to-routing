@@ -4,7 +4,9 @@
 #include <cstdio>
 #include <cmath>
 #include <sstream>
+#include <algorithm>
 #include <map>
+#include <set>
 #include <string_view>
 
 #include "atom_lookup.h"
@@ -69,11 +71,17 @@ static void mark_direct_of_ports(int idirect,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
                                  const std::vector<t_physical_tile_type>& physical_tile_types,
-                                 const PortPinToBlockPinConverter& port_pin_to_block_pin);
+                                 int absolute_sub_tile_z);
 
 /**
- * @brief Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in
- * direct_type_from_blk_pin with direct_type from start_pin_index to end_pin_index.
+ * @brief Mark the idirect_from_blk_pin and direct_type_from_blk_pin entries for pins
+ * start_pin_index..end_pin_index of port iport on sub_tile isub_tile of tile itype.
+ *
+ * @param absolute_sub_tile_z  The absolute tile-level sub_tile z-position to mark
+ *   (i.e., a value in the sub_tile's capacity range). If this value falls inside the
+ *   sub_tile's capacity range only that one capacity instance is marked; otherwise
+ *   ALL capacity instances are marked. Pass -1 (or any out-of-range value) to
+ *   unconditionally mark every instance.
  */
 static void mark_direct_of_pins(int start_pin_index,
                                 int end_pin_index,
@@ -87,7 +95,7 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int line,
                                 std::string_view src_string,
                                 const std::vector<t_physical_tile_type>& physical_tile_types,
-                                const PortPinToBlockPinConverter& port_pin_to_block_pin);
+                                int absolute_sub_tile_z);
 
 const std::vector<t_pl_macro>& PlaceMacros::macros() const {
     return pl_macros_;
@@ -98,15 +106,18 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
                          const ClusteredNetlist& clb_nlist,
                          const AtomNetlist& atom_nlist,
                          const AtomLookup& atom_lookup) {
-    /* Allocates allocates and loads placement macros and returns
-     * the total number of macros in 2 steps.
-     *   1) Allocate temporary data structure for maximum possible
-     *      size and loops through all the blocks storing the data
-     *      relevant to the carry chains. At the same time, also count
-     *      the amount of memory required for the actual variables.
-     *   2) Allocate the actual variables with the exact amount of
-     *      memory. Then loads the data from the temporary data
-     *      structures before freeing them.
+    /* Allocates and loads placement macros in two steps:
+     *   1) Allocate temporary data structures sized for the worst case and
+     *      call find_all_the_macro_ to identify all macros. Two kinds are detected:
+     *      - Carry-chain macros: blocks that both drive and receive the same direct
+     *        connection (e.g. a carry chain). pl_macro_idirect is set to the direct index.
+     *      - Pure-source macros: blocks that only DRIVE a direct with no corresponding
+     *        receiver pin of their own (e.g. a multiplier driving a memory block via a
+     *        sub-tile direct). pl_macro_idirect is set to UNDEFINED for these.
+     *   2) Copy the data into the final pl_macros_ vector. Carry-chain offsets are
+     *      derived from the direct's step vector (offset = member_index * direct_offset).
+     *      Pure-source offsets are taken verbatim from pl_macro_member_offsets, which
+     *      find_all_the_macro_ pre-computes for each member.
      */
 
     size_t num_clusters = clb_nlist.blocks().size();
@@ -114,22 +125,20 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
     // Allocate maximum memory for temporary variables.
     std::vector<int> pl_macro_idirect(num_clusters);
     std::vector<int> pl_macro_num_members(num_clusters);
-    /* For pl_macro_member_blk_num, Allocate for the first dimension only at first. Allocate for the second dimension
-     * when I know the size. Otherwise, the array is going to be of size cluster_ctx.clb_nlist.blocks().size()^2 */
+    // First dimension allocated up-front; second dimension allocated per macro once the size is known.
     std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(num_clusters);
 
     alloc_and_load_idirect_from_blk_pin_(directs, physical_tile_types);
 
-    /* Compute required size:
-     * Go through all the pins with possible direct connections in
-     * idirect_from_blk_pin_. Count the number of heads (which is the same
-     * as the number macros) and also the length of each macro
-     * Head - blocks with to_pin OPEN and from_pin connected
-     * Tail - blocks with to_pin connected and from_pin OPEN
-     */
+    // Per-member offsets pre-computed by find_all_the_macro_ for pure-source macros.
+    // Carry-chain macro offsets are derived later from the direct's step vector.
+    std::vector<std::vector<t_pl_offset>> pl_macro_member_offsets(num_clusters);
+
     const int num_macro = find_all_the_macro_(clb_nlist, atom_nlist, atom_lookup,
+                                              directs,
                                               pl_macro_idirect, pl_macro_num_members,
-                                              pl_macro_member_blk_num);
+                                              pl_macro_member_blk_num,
+                                              pl_macro_member_offsets);
 
     // Allocate the memories for the macro.
     pl_macros_.resize(num_macro);
@@ -142,9 +151,16 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
 
         // Load the values for each member of the macro
         for (size_t imember = 0; imember < pl_macros_[imacro].members.size(); imember++) {
-            pl_macros_[imacro].members[imember].offset.x = imember * directs[pl_macro_idirect[imacro]].x_offset;
-            pl_macros_[imacro].members[imember].offset.y = imember * directs[pl_macro_idirect[imacro]].y_offset;
-            pl_macros_[imacro].members[imember].offset.sub_tile = directs[pl_macro_idirect[imacro]].sub_tile_offset;
+            if (pl_macro_idirect[imacro] != UNDEFINED) {
+                // Carry-chain macro: offset for member i is i times the direct's step vector
+                const auto& direct = directs[pl_macro_idirect[imacro]];
+                pl_macros_[imacro].members[imember].offset.x = imember * direct.x_offset;
+                pl_macros_[imacro].members[imember].offset.y = imember * direct.y_offset;
+                pl_macros_[imacro].members[imember].offset.sub_tile = imember * direct.sub_tile_offset;
+            } else {
+                // Pure-source macro: offsets were pre-computed in find_all_the_macro_
+                pl_macros_[imacro].members[imember].offset = pl_macro_member_offsets[imacro][imember];
+            }
             pl_macros_[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
         }
     }
@@ -173,9 +189,11 @@ ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
 int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                                      const AtomNetlist& atom_nlist,
                                      const AtomLookup& atom_lookup,
+                                     const std::vector<t_direct_inf>& directs,
                                      std::vector<int>& pl_macro_idirect,
                                      std::vector<int>& pl_macro_num_members,
-                                     std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num) {
+                                     std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num,
+                                     std::vector<std::vector<t_pl_offset>>& pl_macro_member_offsets) {
     /* Compute required size:                                                *
      * Go through all the pins with possible direct connections in           *
      * idirect_from_blk_pin_. Count the number of heads (which is the same  *
@@ -304,6 +322,168 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
             } // Do nothing if the to_pins does not have same possible direct connection.
         } // Finish going through all the pins for to_pins.
     } // Finish going through all blocks.
+
+    // Pure-source macro detection:
+    // Handles blocks that have DRIVER pins for a direct but no RECEIVER pins for that
+    // same direct (e.g. a multiplier driving memory blocks via sub-tile direct connections).
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
+        if (clusters_macro.count(blk_id)) continue;
+
+        auto logical_block = clb_nlist.block_type(blk_id);
+        auto physical_tile = pick_physical_type(logical_block);
+        int num_blk_pins = logical_block->pb_type->num_pins;
+
+        // Collect per-direct info: which directs have receiver pins on this block,
+        // and which receiver blocks are reached by driver nets.
+        std::set<int> directs_with_receiver_pin;
+        std::map<int, std::set<ClusterBlockId>> direct_to_receivers;
+
+        for (int iblk_pin = 0; iblk_pin < num_blk_pins; iblk_pin++) {
+            int physical_pin = get_physical_pin(physical_tile, logical_block, iblk_pin);
+            int pin_idirect = idirect_from_blk_pin_[physical_tile->index][physical_pin];
+            if (pin_idirect == UNDEFINED) continue;
+
+            e_pin_type pin_type = direct_type_from_blk_pin_[physical_tile->index][physical_pin];
+
+            if (pin_type == e_pin_type::RECEIVER) {
+                directs_with_receiver_pin.insert(pin_idirect);
+            } else if (pin_type == e_pin_type::DRIVER) {
+                ClusterNetId net_id = clb_nlist.block_net(blk_id, iblk_pin);
+                if (net_id == ClusterNetId::INVALID()) continue;
+                if (clb_nlist.net_sinks(net_id).size() != 1) continue;
+                ClusterBlockId sink_blk = clb_nlist.net_pin_block(net_id, 1);
+                if (sink_blk == blk_id) continue;
+                // Default: use the driver's own direct marking. get_physical_pin always
+                // returns cap_idx=0 pins, so pin_idirect is accurate when the driver
+                // sub_tile has capacity=1 (no aliasing). When the driver sub_tile has
+                // capacity > 1, cap_idx=0 aliases all instances so we instead look at
+                // the receiver's physical pin to determine the actual direct.
+                int effective_idirect = pin_idirect;
+                int sink_logical_pin = clb_nlist.net_pin_logical_index(net_id, 1);
+                if (sink_logical_pin != UNDEFINED) {
+                    auto sink_logical_block = clb_nlist.block_type(sink_blk);
+                    auto sink_physical_tile = pick_physical_type(sink_logical_block);
+                    int sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_logical_pin);
+                    int actual_idirect = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
+                    if (actual_idirect != UNDEFINED && actual_idirect != pin_idirect) {
+                        // The two sides disagree. Use the receiver's direct when the
+                        // driver sub_tile has capacity > 1, since then pin_idirect
+                        // only reflects the cap_idx=0 instance (aliasing).
+                        int driver_cap = 1;
+                        for (const auto& st : physical_tile->sub_tiles) {
+                            int cap_total = st.capacity.total();
+                            int pins_per_instance = (int)st.sub_tile_to_tile_pin_indices.size() / cap_total;
+                            for (int p = 0; p < pins_per_instance; p++) {
+                                if (st.sub_tile_to_tile_pin_indices[p] == physical_pin) {
+                                    driver_cap = cap_total;
+                                    break;
+                                }
+                            }
+                            if (driver_cap > 1) break;
+                        }
+                        if (driver_cap > 1) {
+                            effective_idirect = actual_idirect;
+                        }
+                    }
+                }
+                direct_to_receivers[effective_idirect].insert(sink_blk);
+            }
+        }
+
+        // Build macro members from pure-source directs (driver but no receiver pin).
+        // Member 0 is the source block at offset (0,0,0,0).
+        std::vector<std::pair<t_pl_offset, ClusterBlockId>> macro_members;
+        macro_members.push_back({t_pl_offset(0, 0, 0, 0), blk_id});
+
+        // If a receiver is already in an existing macro, extend that macro rather than
+        // creating a duplicate. This handles tiles with capacity > 1 driver sub-tiles
+        // where multiple driver instances connect to the same receiver block.
+        int existing_macro = -1;
+        t_pl_offset driver_offset_in_existing{};
+
+        for (auto& [idir, receivers] : direct_to_receivers) {
+            if (directs_with_receiver_pin.count(idir)) continue; // carry-chain, not pure-source
+            // If multiple different receiver blocks are reachable via the same direct it
+            // is ambiguous which one to use — skip and leave unconstrained.
+            if (receivers.size() != 1) continue;
+            ClusterBlockId receiver_blk = *receivers.begin();
+
+            if (clusters_macro.count(receiver_blk)) {
+                // Receiver is already in an existing macro — compute this driver's offset
+                // relative to that macro's head.
+                // driver_offset = receiver_offset - direct_offset, because:
+                //   driver_z + direct.sub_tile_offset = receiver_z
+                //   => driver_z = receiver_z - direct.sub_tile_offset
+                int recv_macro = clusters_macro[receiver_blk];
+
+                // A single driver block should not have receivers in two different
+                // existing macros; that would require the two macros to be merged,
+                // which is not supported here.
+                VTR_ASSERT_MSG(existing_macro == -1 || existing_macro == recv_macro,
+                               "Pure-source driver block connects to receivers that "
+                               "already belong to two different placement macros.");
+
+                for (size_t i = 0; i < pl_macro_member_blk_num[recv_macro].size(); i++) {
+                    if (pl_macro_member_blk_num[recv_macro][i] == receiver_blk) {
+                        const t_pl_offset& recv_offset = pl_macro_member_offsets[recv_macro][i];
+                        driver_offset_in_existing = recv_offset
+                                                    - t_pl_offset(directs[idir].x_offset,
+                                                                  directs[idir].y_offset,
+                                                                  directs[idir].sub_tile_offset,
+                                                                  0);
+                        existing_macro = recv_macro;
+                        break;
+                    }
+                }
+            } else {
+                macro_members.push_back({t_pl_offset(directs[idir].x_offset,
+                                                     directs[idir].y_offset,
+                                                     directs[idir].sub_tile_offset,
+                                                     0),
+                                         receiver_blk});
+            }
+        }
+
+        if (existing_macro != -1) {
+            // Merge this driver into the existing macro
+            pl_macro_member_blk_num[existing_macro].push_back(blk_id);
+            pl_macro_member_offsets[existing_macro].push_back(driver_offset_in_existing);
+            pl_macro_num_members[existing_macro] = pl_macro_member_blk_num[existing_macro].size();
+            clusters_macro[blk_id] = existing_macro;
+            // Add any new receivers (from macro_members[1:]) not yet in a macro
+            for (size_t i = 1; i < macro_members.size(); i++) {
+                ClusterBlockId new_recv = macro_members[i].second;
+                t_pl_offset new_recv_offset = driver_offset_in_existing + macro_members[i].first;
+                pl_macro_member_blk_num[existing_macro].push_back(new_recv);
+                pl_macro_member_offsets[existing_macro].push_back(new_recv_offset);
+                pl_macro_num_members[existing_macro] = pl_macro_member_blk_num[existing_macro].size();
+                clusters_macro[new_recv] = existing_macro;
+            }
+            continue;
+        }
+
+        if (macro_members.size() < 2) continue;
+
+        // Sort non-head members by sub_tile offset for a deterministic ordering
+        std::sort(macro_members.begin() + 1, macro_members.end(),
+                  [](const auto& a, const auto& b) {
+                      return a.first.sub_tile < b.first.sub_tile;
+                  });
+
+        // Register this macro (pl_macro_idirect == UNDEFINED signals pure-source to constructor)
+        pl_macro_idirect[num_macro] = UNDEFINED;
+        pl_macro_num_members[num_macro] = (int)macro_members.size();
+        pl_macro_member_blk_num[num_macro].resize(macro_members.size());
+        pl_macro_member_offsets[num_macro].resize(macro_members.size());
+
+        for (size_t i = 0; i < macro_members.size(); i++) {
+            pl_macro_member_blk_num[num_macro][i] = macro_members[i].second;
+            pl_macro_member_offsets[num_macro][i] = macro_members[i].first;
+            clusters_macro[macro_members[i].second] = num_macro;
+        }
+
+        num_macro++;
+    }
 
     // Now, all the data is readily stored in the temporary data structures.
     return num_macro;
@@ -435,8 +615,6 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
         direct_type_from_blk_pin_[type.index].resize(type.num_pins, e_pin_type::OPEN);
     }
 
-    const PortPinToBlockPinConverter port_pin_to_block_pin;
-
     /* Load the values */
     // Go through directs and find pins with possible direct connections
     for (size_t idirect = 0; idirect < directs.size(); idirect++) {
@@ -448,26 +626,68 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
         auto [to_end_pin_index, to_start_pin_index, to_pb_type_name, to_port_name] = parse_direct_pin_name(directs[idirect].to_pin,
                                                                                                            directs[idirect].line);
 
-        /* Now I have all the data that I need, I could go through all the block pins
-         * in all the blocks to find all the pins that could have possible direct
-         * connections. Mark all down all those pins with the idirect the pins belong
-         * to and whether it is a source or a sink of the direct connection. */
+        // Returns the first sub_tile of a tile whose name matches tile_name and
+        // that contains a port whose name matches port_name. Returns nullptr if
+        // no match is found.
+        auto find_sub_tile = [&](std::string_view tile_name,
+                                 std::string_view port_name) -> const t_sub_tile* {
+            for (const auto& tile : physical_tile_types) {
+                if (tile_name != tile.name) continue;
+                for (const auto& st : tile.sub_tiles) {
+                    bool found = std::any_of(st.ports.begin(), st.ports.end(),
+                                             [&](const t_physical_tile_port& p) { return p.name == port_name; });
+                    if (found) return &st;
+                }
+            }
+            return nullptr;
+        };
 
-        // Find blocks with the same name as from_pb_type_name and from_port_name
+        const t_sub_tile* from_sub_tile = find_sub_tile(from_pb_type_name, from_port_name);
+        const t_sub_tile* to_sub_tile = find_sub_tile(to_pb_type_name, to_port_name);
+
+        // Compute the absolute sub_tile positions of the driver and receiver.
+        // When driver and receiver live in the same sub_tile (e.g. carry chains), every
+        // capacity instance can act as either end, so pass -1 to mark all instances.
+        // When they are in different sub_tiles (e.g. CIM directs), walk every driver
+        // instance and find the one whose z + z_offset lands inside the receiver's
+        // capacity range.  If the search is ambiguous (multiple matches), fall back to
+        // marking all instances.
+        int driver_abs_z = -1;   // -1 means "mark all driver instances"
+        int receiver_abs_z = -1; // -1 means "mark all receiver instances"
+
+        if (from_sub_tile && to_sub_tile && from_sub_tile != to_sub_tile) {
+            int found_driver_z = -1;
+            int found_receiver_z = -1;
+            for (int z = from_sub_tile->capacity.low; z <= from_sub_tile->capacity.high; z++) {
+                int recv_z = z + directs[idirect].sub_tile_offset;
+                if (to_sub_tile->capacity.is_in_range(recv_z)) {
+                    if (found_driver_z != -1) {
+                        // Multiple driver instances produce a valid receiver → mark all
+                        found_driver_z = -1;
+                        found_receiver_z = -1;
+                        break;
+                    }
+                    found_driver_z = z;
+                    found_receiver_z = recv_z;
+                }
+            }
+            driver_abs_z = found_driver_z;
+            receiver_abs_z = found_receiver_z;
+        }
+
         mark_direct_of_ports(idirect, e_pin_type::DRIVER, from_pb_type_name, from_port_name,
                              from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
                              physical_tile_types,
-                             port_pin_to_block_pin);
+                             driver_abs_z);
 
-        // Then, find blocks with the same name as to_pb_type_name and from_port_name
         mark_direct_of_ports(idirect, e_pin_type::RECEIVER, to_pb_type_name, to_port_name,
                              to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
                              physical_tile_types,
-                             port_pin_to_block_pin);
+                             receiver_abs_z);
 
     } // Finish going through all the directs
 }
@@ -483,56 +703,37 @@ static void mark_direct_of_ports(int idirect,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
                                  const std::vector<t_physical_tile_type>& physical_tile_types,
-                                 const PortPinToBlockPinConverter& port_pin_to_block_pin) {
-    /* Go through all the ports in all the blocks to find the port that has the same   *
-     * name as port_name and belongs to the block type that has the name pb_type_name. *
-     * Then, check that whether start_pin_index and end_pin_index are specified. If    *
-     * they are, mark down the pins from start_pin_index to end_pin_index, inclusive.  *
-     * Otherwise, mark down all the pins in that port.                                 */
-
-    // Go through all the block types
+                                 int absolute_sub_tile_z) {
     for (int itype = 1; itype < (int)physical_tile_types.size(); itype++) {
         auto& physical_tile = physical_tile_types[itype];
-        // Find blocks with the same pb_type_name
-        if (pb_type_name == physical_tile.name) {
-            int num_sub_tiles = physical_tile.sub_tiles.size();
-            for (int isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
-                auto& ports = physical_tile.sub_tiles[isub_tile].ports;
-                int num_ports = ports.size();
-                for (int iport = 0; iport < num_ports; iport++) {
-                    // Find ports with the same port_name
-                    if (port_name == ports[iport].name) {
-                        int num_port_pins = ports[iport].num_pins;
+        if (pb_type_name != physical_tile.name) continue;
+        int num_sub_tiles = physical_tile.sub_tiles.size();
+        for (int isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
+            auto& ports = physical_tile.sub_tiles[isub_tile].ports;
+            int num_ports = ports.size();
+            for (int iport = 0; iport < num_ports; iport++) {
+                if (port_name != ports[iport].name) continue;
+                int num_port_pins = ports[iport].num_pins;
 
-                        // Check whether the end_pin_index is valid
-                        if (end_pin_index > num_port_pins) {
-                            VTR_LOG_ERROR(
-                                "[LINE %d] Invalid pin - %s, the end_pin_index in "
-                                "[end_pin_index:start_pin_index] should "
-                                "be less than the num_port_pins %d.\n",
-                                line, src_string, num_port_pins);
-                            exit(1);
-                        }
+                if (end_pin_index > num_port_pins) {
+                    VTR_LOG_ERROR(
+                        "[LINE %d] Invalid pin - %s, the end_pin_index in "
+                        "[end_pin_index:start_pin_index] should "
+                        "be less than the num_port_pins %d.\n",
+                        line, src_string, num_port_pins);
+                    exit(1);
+                }
 
-                        // Check whether the pin indices are specified
-                        if (start_pin_index >= 0 || end_pin_index >= 0) {
-                            mark_direct_of_pins(start_pin_index, end_pin_index, itype,
-                                                isub_tile, iport, idirect_from_blk_pin, idirect,
-                                                direct_type_from_blk_pin, direct_type, line, src_string,
-                                                physical_tile_types,
-                                                port_pin_to_block_pin);
-                        } else {
-                            mark_direct_of_pins(0, num_port_pins - 1, itype,
-                                                isub_tile, iport, idirect_from_blk_pin, idirect,
-                                                direct_type_from_blk_pin, direct_type, line, src_string,
-                                                physical_tile_types,
-                                                port_pin_to_block_pin);
-                        }
-                    } // Do nothing if port_name does not match
-                } // Finish going through all the ports
-            } // Finish going through all the subtiles
-        } // Do nothing if pb_type_name does not match
-    } // Finish going through all the blocks
+                int pin_lo = (start_pin_index >= 0 || end_pin_index >= 0) ? start_pin_index : 0;
+                int pin_hi = (start_pin_index >= 0 || end_pin_index >= 0) ? end_pin_index : num_port_pins - 1;
+                mark_direct_of_pins(pin_lo, pin_hi, itype,
+                                    isub_tile, iport, idirect_from_blk_pin, idirect,
+                                    direct_type_from_blk_pin, direct_type, line, src_string,
+                                    physical_tile_types,
+                                    absolute_sub_tile_z);
+            }
+        }
+    }
 }
 
 static void mark_direct_of_pins(int start_pin_index,
@@ -547,37 +748,69 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int line,
                                 std::string_view src_string,
                                 const std::vector<t_physical_tile_type>& physical_tile_types,
-                                const PortPinToBlockPinConverter& port_pin_to_block_pin) {
-    // Mark pins with indices from start_pin_index to end_pin_index, inclusive
-    for (int iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
-        int iblk_pin = port_pin_to_block_pin.get_blk_pin_from_port_pin(itype, isub_tile, iport, iport_pin);
+                                int absolute_sub_tile_z) {
+    const auto& sub_tile = physical_tile_types[itype].sub_tiles[isub_tile];
+    int cap_total = sub_tile.capacity.total();
+    // Number of tile-level pin indices belonging to one capacity instance of this sub_tile.
+    int pins_per_instance = (int)sub_tile.sub_tile_to_tile_pin_indices.size() / cap_total;
 
-        // iterate through all segment connections and check if all Fc's are 0
-        bool all_fcs_0 = true;
-        for (const auto& fc_spec : physical_tile_types[itype].fc_specs) {
-            for (int ipin : fc_spec.pins) {
-                if (iblk_pin == ipin && fc_spec.fc_value > 0) {
-                    all_fcs_0 = false;
-                    break;
+    // If absolute_sub_tile_z falls inside this sub_tile's capacity range, mark only that
+    // one capacity instance. Otherwise mark all instances. The caller passes -1 (or any
+    // out-of-range value) to unconditionally mark every instance.
+    int start_cap_idx = 0;
+    int end_cap_idx = cap_total - 1;
+    if (sub_tile.capacity.is_in_range(absolute_sub_tile_z)) {
+        int cap_idx = absolute_sub_tile_z - sub_tile.capacity.low;
+        start_cap_idx = cap_idx;
+        end_cap_idx = cap_idx;
+    }
+
+    // Normalise pin range in case from/to indices are given in reverse order.
+    int pin_lo = std::min(start_pin_index, end_pin_index);
+    int pin_hi = std::max(start_pin_index, end_pin_index);
+
+    // Accumulated pin offset within one capacity instance up to (but not including) iport.
+    // Using sub_tile.ports instead of PortPinToBlockPinConverter gives correct tile-level
+    // indices even when preceding sub_tiles have capacity > 1.
+    int port_start_in_instance = 0;
+    for (int p = 0; p < iport; p++) {
+        port_start_in_instance += sub_tile.ports[p].num_pins;
+    }
+
+    for (int cap_idx = start_cap_idx; cap_idx <= end_cap_idx; cap_idx++) {
+        for (int iport_pin = pin_lo; iport_pin <= pin_hi; iport_pin++) {
+            // Use sub_tile_to_tile_pin_indices for the correct tile-level pin index.
+            // This works correctly regardless of the capacity of preceding sub_tiles.
+            int pin_within_instance = port_start_in_instance + iport_pin;
+            int iblk_pin = sub_tile.sub_tile_to_tile_pin_indices[cap_idx * pins_per_instance + pin_within_instance];
+
+            // iterate through all segment connections and check if all Fc's are 0
+            bool all_fcs_0 = true;
+            for (const auto& fc_spec : physical_tile_types[itype].fc_specs) {
+                for (int ipin : fc_spec.pins) {
+                    if (iblk_pin == ipin && fc_spec.fc_value > 0) {
+                        all_fcs_0 = false;
+                        break;
+                    }
+                }
+                if (!all_fcs_0) break;
+            }
+
+            // Direct chain link only if fc == 0
+            if (all_fcs_0) {
+                idirect_from_blk_pin[itype][iblk_pin] = idirect;
+
+                // Check whether the pin is already marked; error if so
+                if (direct_type_from_blk_pin[itype][iblk_pin] != e_pin_type::OPEN) {
+                    VPR_FATAL_ERROR(VPR_ERROR_ARCH,
+                                    "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
+                                    line, src_string.data());
+                } else {
+                    direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
                 }
             }
-            if (!all_fcs_0) break;
         }
-
-        // Check the fc for the pin, direct chain link only if fc == 0
-        if (all_fcs_0) {
-            idirect_from_blk_pin[itype][iblk_pin] = idirect;
-
-            // Check whether the pins are marked, errors out if so
-            if (direct_type_from_blk_pin[itype][iblk_pin] != e_pin_type::OPEN) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
-                                line, src_string.data());
-            } else {
-                direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
-            }
-        }
-    } // Finish marking all the pins
+    }
 }
 
 /* Allocates and loads imacro_from_iblk array. */
