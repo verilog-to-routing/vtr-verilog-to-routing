@@ -35,11 +35,10 @@ void* free(void* some) {
 }
 
 void* calloc(size_t nelem, size_t size) {
-    void* ret;
     if (nelem == 0) {
         return nullptr;
     }
-    ret = std::calloc(nelem, size);
+    void* ret = std::calloc(nelem, size);
     if (ret == nullptr) {
         throw VtrError("Unable to calloc memory.", __FILE__, __LINE__);
     }
