@@ -62,6 +62,7 @@
 #include "ezgl/qt/render_backend.hpp"
 
 #include <QCheckBox>
+#include <QCoreApplication>
 #include <QDialog>
 #include <QPushButton>
 #include <QLineEdit>
@@ -452,10 +453,27 @@ void update_screen(ScreenUpdatePriority priority,
             draw_state->forced_pause = false; //Reset pause flag
         }
 
+        const bool has_cmds = !draw_state->graphics_commands.empty();
+
+        // Under --disp on, run the script inside the event loop. Without this,
+        // QT_QPA_PLATFORM=offscreen delivers no input events, auto-proceed
+        // never fires, and exec() sleeps forever.
+        if (has_cmds && draw_state->show_graphics) {
+            std::string cmds = draw_state->graphics_commands;
+            application->schedule_initial_callback([cmds]() {
+                run_graphics_commands(cmds);
+                // If the script didn't `exit`, return from exec() so VPR can
+                // continue with subsequent stages.
+                QCoreApplication::quit();
+            });
+        }
+
         application->run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
                          act_on_key_press);
 
-        if (!draw_state->graphics_commands.empty()) {
+        // --disp off path: application::run() short-circuits via
+        // disable_event_loop, so commands must run synchronously here.
+        if (has_cmds && !draw_state->show_graphics) {
             run_graphics_commands(draw_state->graphics_commands);
         }
     }
