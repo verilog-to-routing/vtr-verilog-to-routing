@@ -132,8 +132,10 @@ class CommandRunner:
         memory_limit = ["ulimit", "-Sv", "{val};".format(val=self._max_memory_mb)]
         cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
 
-        # Enable memory tracking?
-        memory_tracking = ["/usr/bin/env", "time", "-v"]
+        # Enable memory tracking? GNU `time -v` is required; BSD time on
+        # macOS does not support -v. Falls back to `gtime` (Homebrew gnu-time)
+        # and is silently skipped if neither is available.
+        memory_tracking = resolve_gnu_time_prefix() if self._track_memory else None
         cmd = (
             (
                 memory_tracking
@@ -151,7 +153,7 @@ class CommandRunner:
                 if self._valgrind
                 else memory_tracking + cmd
             )
-            if self._track_memory and check_cmd(memory_tracking[0])
+            if memory_tracking
             else cmd
         )
 
@@ -269,6 +271,41 @@ def check_cmd(command):
     """
 
     return Path(command).exists()
+
+
+_GNU_TIME_PREFIX = "unset"
+
+
+def resolve_gnu_time_prefix():
+    """
+    Return a command-list prefix that runs GNU time with verbose (-v) output,
+    e.g. ['/usr/bin/env', 'time', '-v'] or ['/usr/bin/env', 'gtime', '-v'].
+
+    Returns None if no GNU-compatible time is available on this system.
+    BSD /usr/bin/time on macOS does not support -v, so we probe by actually
+    running `<binary> -v true` and checking the exit code. Result is cached.
+    """
+    # pylint: disable=global-statement
+    global _GNU_TIME_PREFIX
+    if _GNU_TIME_PREFIX != "unset":
+        return _GNU_TIME_PREFIX
+
+    for binary in ("time", "gtime"):
+        try:
+            result = subprocess.run(
+                ["/usr/bin/env", binary, "-v", "true"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+            if result.returncode == 0:
+                _GNU_TIME_PREFIX = ["/usr/bin/env", binary, "-v"]
+                return _GNU_TIME_PREFIX
+        except (OSError, subprocess.SubprocessError):
+            continue
+
+    _GNU_TIME_PREFIX = None
+    return None
 
 
 def pretty_print_table(file, border=False):
