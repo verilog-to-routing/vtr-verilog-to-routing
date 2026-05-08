@@ -45,6 +45,21 @@ void update_screen(ScreenUpdatePriority priority,
                    e_pic_type pic_on_screen_val,
                    std::shared_ptr<const SetupTimingInfo> timing_info);
 
+/**
+ * @brief Mark a stage as fully complete.
+ *
+ * Records that the given stage (PLACEMENT, ROUTING, ANALYTICAL_PLACEMENT, …)
+ * has finished. The `wait_for_stage <stage>_done` graphics-command barrier
+ * advances only when both the current pic_on_screen matches the requested
+ * stage AND that stage has been marked complete here. This lets scripted
+ * commands defer past per-iteration update_screen() checkpoints and run
+ * only on the post-stage update_screen() where the underlying contexts
+ * (route_ctx, place_ctx, …) are fully settled.
+ *
+ * Call once per stage immediately before that stage's final update_screen.
+ */
+void notify_stage_complete(e_pic_type stage);
+
 //FIXME: Currently broken if no rr-graph is loaded
 /**
  * @brief Load the arrays containing the left and bottom coordinates of the clbs.

@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <set>
 #include <vector>
 #include "draw.h"
 
@@ -159,6 +160,13 @@ ezgl::point2d window_preview_cursor(0, 0); // updated by act_on_mouse_move while
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
+// Stages that have hit their first update_screen() (auto-recorded by
+// update_screen on pic_on_screen transitions) and stages that have been
+// marked complete via notify_stage_complete(). Consulted by the
+// `wait_for_stage <stage>_initial` / `<stage>_done` script barriers.
+std::set<e_pic_type> initial_stages;
+std::set<e_pic_type> completed_stages;
+
 #endif // NO_GRAPHICS
 
 /********************** Subroutine definitions ******************************/
@@ -209,6 +217,14 @@ void init_graphics_state(bool show_graphics_val,
     (void)renderer_type;
     (void)is_flat;
 #endif // NO_GRAPHICS
+}
+
+void notify_stage_complete(e_pic_type stage) {
+#ifndef NO_GRAPHICS
+    completed_stages.insert(stage);
+#else
+    (void)stage;
+#endif
 }
 
 #ifndef NO_GRAPHICS
@@ -403,17 +419,20 @@ void update_screen(ScreenUpdatePriority priority,
                 else if (draw_state->renderer_type == "deferred")
                     rt = ezgl::renderer_type::deferred;
 
-                // Headless mode (save_graphics / graphics_commands without --disp):
-                // use immediate (QPainter) so save_graphics works on the offscreen
-                // QPA without requiring a GPU or platform backing-store RHI.
-                // QRhiWidget cannot be used with the offscreen QPA: its internal
-                // QRhi is obtained from QPlatformBackingStore::rhi(), which the
-                // offscreen plugin returns as nullptr — causing the Qt warnings
-                // "QRhi is not supported on this platform" and
-                // "Failed to create dedicated QRhi for grabbing".
-                // Commented out to test RHI in headless mode:
-                // if (!draw_state->show_graphics)
-                //     rt = ezgl::renderer_type::immediate;
+                // The QRhiWidget path (used only under --disp on) cannot
+                // acquire a QRhi from QPlatformBackingStore::rhi() under the
+                // offscreen QPA — the plugin returns nullptr. Headless
+                // (--disp off) is fine: render_to_image() creates an
+                // offscreen QRhi directly without QRhiWidget. So scope the
+                // fallback to the widget case only.
+                if (rt == ezgl::renderer_type::rhi
+                    && draw_state->show_graphics
+                    && qEnvironmentVariable("QT_QPA_PLATFORM") == "offscreen") {
+                    VTR_LOG_WARN(
+                        "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
+                        "with --disp on; falling back to the immediate renderer.\n");
+                    rt = ezgl::renderer_type::immediate;
+                }
 
                 canvas->set_renderer_type(rt);
             }
@@ -427,6 +446,9 @@ void update_screen(ScreenUpdatePriority priority,
 
         draw_state->setup_timing_info = setup_timing_info;
         draw_state->pic_on_screen = pic_on_screen_val;
+        // Record that we've now reached this stage at least once. Consumed
+        // by the `wait_for_stage <stage>_initial` script barrier.
+        initial_stages.insert(pic_on_screen_val);
     }
 
     bool should_pause = int(priority) >= draw_state->gr_automode;
@@ -1311,23 +1333,91 @@ static void set_force_pause() {
 }
 
 static void run_graphics_commands(const std::string& commands) {
-    // A very simple command interpreter for scripting graphics
+    // A very simple command interpreter for scripting graphics.
+    //
+    // The parsed command list and the script cursor are static so that
+    // `wait_for_stage` barriers can split a script across multiple
+    // update_screen() invocations (e.g. half at placement, half at routing).
+    // On each call, processing resumes at the cursor and stops either at a
+    // wait-barrier whose stage hasn't been reached yet, or at end-of-script.
     t_draw_state* draw_state = get_draw_state_vars();
+
+    static std::string s_last_input;
+    static std::vector<std::vector<std::string>> s_cmds;
+    static size_t s_cursor = 0;
+
+    if (commands != s_last_input) {
+        s_cmds.clear();
+        for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
+            s_cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
+        }
+        s_cursor = 0;
+        s_last_input = commands;
+    }
 
     t_draw_state backup_draw_state = *draw_state;
 
-    std::vector<std::vector<std::string>> cmds;
-    for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
-        cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
-    }
-
-    for (auto& cmd : cmds) {
+    while (s_cursor < s_cmds.size()) {
+        auto& cmd = s_cmds[s_cursor];
         VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
 
         for (auto& item : cmd) {
             VTR_LOG("%s ", item.c_str());
         }
         VTR_LOG("\n");
+
+        if (cmd[0] == "wait_for_stage") {
+            // Argument form: <stage>_<initial|done>, e.g. routing_initial
+            // or placement_done. `_initial` resumes on the first
+            // update_screen() at that stage; `_done` resumes only after the
+            // stage has been marked complete by notify_stage_complete()
+            // (i.e. on the post-stage settled checkpoint).
+            VTR_ASSERT_MSG(cmd.size() == 2,
+                           "Expect <stage>_initial or <stage>_done after 'wait_for_stage' "
+                           "(stage = placement|routing)");
+            const std::string& arg = cmd[1];
+            e_pic_type want = e_pic_type::NO_PICTURE;
+            bool wait_for_done = false;
+            std::string stage_name;
+            const std::string done_suffix = "_done";
+            const std::string init_suffix = "_initial";
+            if (arg.size() > done_suffix.size()
+                && arg.compare(arg.size() - done_suffix.size(), done_suffix.size(), done_suffix) == 0) {
+                wait_for_done = true;
+                stage_name = arg.substr(0, arg.size() - done_suffix.size());
+            } else if (arg.size() > init_suffix.size()
+                && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
+                wait_for_done = false;
+                stage_name = arg.substr(0, arg.size() - init_suffix.size());
+            } else {
+                VPR_ERROR(VPR_ERROR_DRAW,
+                          vtr::string_fmt("Unknown wait_for_stage argument '%s' "
+                                          "(use <stage>_initial or <stage>_done)",
+                                          arg.c_str())
+                              .c_str());
+            }
+
+            if (stage_name == "placement") {
+                want = e_pic_type::PLACEMENT;
+            } else if (stage_name == "routing") {
+                want = e_pic_type::ROUTING;
+            } else {
+                VPR_ERROR(VPR_ERROR_DRAW,
+                          vtr::string_fmt("Unknown or unsupported stage '%s' in "
+                                          "wait_for_stage (use placement|routing)",
+                                          stage_name.c_str())
+                              .c_str());
+            }
+
+            const auto& flag_set = wait_for_done ? completed_stages : initial_stages;
+            if (draw_state->pic_on_screen != want
+                || flag_set.find(want) == flag_set.end()) {
+                *draw_state = backup_draw_state;
+                return;
+            }
+            ++s_cursor;
+            continue;
+        }
 
         if (cmd[0] == "save_graphics") {
             VTR_ASSERT_MSG(cmd.size() == 2,
@@ -1366,19 +1456,27 @@ static void run_graphics_commands(const std::string& commands) {
             }
             VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_cpd") {
-            // Bitmask: 0=off, bit0(1)=flylines, bit1(2)=delay labels.
-            // Common values: 1=flylines, 3=flylines+delays.
+            // Bitmask: 0=off, bit0(1)=flylines, bit1(2)=delay labels,
+            // bit2(4)=routed-wire highlight (only meaningful at routing stage;
+            // gate with `wait_for_stage routing_done`).
+            // Useful values: 1=flylines, 3=flylines+delays,
+            //                4=routing only,
+            //                5=flylines+routing, 7=flylines+delays+routing.
+            // Degenerate (no-op): 2 and 6 — delay labels need flylines to
+            // anchor to, so the delay bit alone draws nothing.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect crit-path draw state (0=off, bitmask 1|2 = flylines|delays) after 'set_cpd'");
+                           "Expect crit-path draw state (0=off, bitmask 1|2|4 = flylines|delays|routing) after 'set_cpd'");
             int state = vtr::atoi(cmd[1]);
             if (state == 0) {
                 draw_state->show_crit_path = false;
                 draw_state->show_crit_path_flylines = false;
                 draw_state->show_crit_path_delays = false;
+                draw_state->show_crit_path_routing = false;
             } else {
                 draw_state->show_crit_path = true;
                 draw_state->show_crit_path_flylines = (state & 1) != 0;
                 draw_state->show_crit_path_delays   = (state & 2) != 0;
+                draw_state->show_crit_path_routing  = (state & 4) != 0;
             }
             VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_routing_util") {
@@ -1393,10 +1491,14 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->clip_routing_util = (bool)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->clip_routing_util);
         } else if (cmd[0] == "set_congestion") {
+            // 0 = off, 1 = congested nodes, 2 = congested nodes + nets.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect congestion draw state after 'set_congestion'");
-            draw_state->show_congestion = (e_draw_congestion)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->show_congestion);
+                           "Expect congestion draw state (0=off, 1=congested, 2=congested+nets) after 'set_congestion'");
+            int state = vtr::atoi(cmd[1]);
+            VTR_ASSERT_MSG(state >= 0 && state <= 2,
+                           "set_congestion expects a value in 0..2");
+            draw_state->show_congestion = (e_draw_congestion)state;
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_draw_block_outlines") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect draw block outlines state after 'set_draw_block_outlines'");
@@ -1426,6 +1528,7 @@ static void run_graphics_commands(const std::string& commands) {
                                       cmd[0].c_str())
                           .c_str());
         }
+        ++s_cursor;
     }
 
     *draw_state = backup_draw_state; // Restore original draw state

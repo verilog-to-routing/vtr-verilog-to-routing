@@ -1105,7 +1105,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             print_switch_usage();
         }
 
-        // Update interactive graphics
+        // Update interactive graphics. Mark routing as complete first so that
+        // scripted graphics_commands using `wait_for_stage routing_done` will
+        // resume at this fully-settled checkpoint rather than per-iteration
+        // routing-stage updates where route_ctx is mid-flight.
+        notify_stage_complete(e_pic_type::ROUTING);
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), e_pic_type::ROUTING, timing_info);
     }
 
