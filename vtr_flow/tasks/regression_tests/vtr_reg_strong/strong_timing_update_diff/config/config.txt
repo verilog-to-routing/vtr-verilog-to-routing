@@ -25,3 +25,8 @@ pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
 script_params = --route_chan_width 100 -check_incremental_sta_consistency
+
+# Script parameters
+script_params_common = --route_chan_width 100 -check_incremental_sta_consistency
+script_params_list_add = --pack --place --route
+script_params_list_add = --analytical_place --route
