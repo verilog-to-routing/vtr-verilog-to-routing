@@ -131,6 +131,7 @@ struct aligned_allocator {
     struct rebind {
         using other = aligned_allocator<U>;
     };
+
  
     // Constructor allowing conversion from other types
     template<typename U>
