@@ -1,5 +1,5 @@
 {
-  "name": "openfpga",
+  "name": "verilog-to-routing",
   "version": "1.0.0",
   "dependencies": [
     "zlib",
