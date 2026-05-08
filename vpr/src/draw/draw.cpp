@@ -1348,17 +1348,39 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->show_placement_macros = (e_draw_placement_macros)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_placement_macros);
         } else if (cmd[0] == "set_nets") {
+            // 0 = off, 1 = flylines, 2 = routed nets.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect net draw state after 'set_nets'");
-            draw_state->draw_nets = (e_draw_nets)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->draw_nets);
+                           "Expect net draw state (0=off, 1=flylines, 2=routed) after 'set_nets'");
+            int state = vtr::atoi(cmd[1]);
+            if (state == 0) {
+                draw_state->show_nets = false;
+                draw_state->draw_inter_cluster_nets = false;
+                draw_state->draw_intra_cluster_nets = false;
+                draw_state->highlight_fan_in_fan_out = false;
+            } else {
+                draw_state->show_nets = true;
+                draw_state->draw_inter_cluster_nets = true;
+                draw_state->draw_intra_cluster_nets = true;
+                draw_state->highlight_fan_in_fan_out = true;
+                draw_state->draw_nets = (state == 2) ? DRAW_ROUTED_NETS : DRAW_FLYLINES;
+            }
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_cpd") {
+            // Bitmask: 0=off, bit0(1)=flylines, bit1(2)=delay labels.
+            // Common values: 1=flylines, 3=flylines+delays.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect show critical path delay (bool), show critical path flylines (bool), and show critical path routing (bool) after 'set_cpd'");
-            draw_state->show_crit_path = true;
-            draw_state->show_crit_path_flylines = true;
-            draw_state->show_crit_path_delays = (bool)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->show_crit_path);
+                           "Expect crit-path draw state (0=off, bitmask 1|2 = flylines|delays) after 'set_cpd'");
+            int state = vtr::atoi(cmd[1]);
+            if (state == 0) {
+                draw_state->show_crit_path = false;
+                draw_state->show_crit_path_flylines = false;
+                draw_state->show_crit_path_delays = false;
+            } else {
+                draw_state->show_crit_path = true;
+                draw_state->show_crit_path_flylines = (state & 1) != 0;
+                draw_state->show_crit_path_delays   = (state & 2) != 0;
+            }
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect routing util draw state after 'set_routing_util'");

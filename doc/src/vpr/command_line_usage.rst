@@ -155,9 +155,16 @@ Graphics Options
     * set_macros <int>
          Sets the placement macro drawing state
     * set_nets <int>
-         Sets the net drawing state
+         Sets the net drawing state.
+         ``0`` = nets off,
+         ``1`` = flylines (direct source-to-sink lines),
+         ``2`` = routed nets (actual routed wire paths).
     * set_cpd <int>
-         Sets the criticla path delay drawing state
+         Sets the critical path delay drawing state.
+         Bitmask: ``0`` = off,
+         bit 0 (``1``) = flylines along the critical path,
+         bit 1 (``2``) = per-edge delay labels.
+         Common values: ``1`` = flylines, ``3`` = flylines + delays.
     * set_routing_util <int>
          Sets the routing utilization drawing state
     * set_clip_routing_util <int>
