@@ -127,15 +127,15 @@ struct aligned_allocator {
     using difference_type = std::ptrdiff_t;
 
     // Add rebind template for allocator conversion
-    template <typename U>
+    template<typename U>
     struct rebind {
         using other = aligned_allocator<U>;
     };
-    
+ 
     // Constructor allowing conversion from other types
-    template <typename U>
+    template<typename U>
     aligned_allocator(const aligned_allocator<U>&) noexcept {}
-    
+
     aligned_allocator() noexcept = default;
 
     pointer allocate(size_type n, const void* /*hint*/ = 0) {
