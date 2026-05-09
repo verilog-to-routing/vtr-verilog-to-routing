@@ -128,6 +128,25 @@ class DeviceGrid {
         return get_width_offset(tile_loc) == 0 && get_height_offset(tile_loc) == 0;
     }
 
+    inline bool is_loc_on_device(const t_physical_tile_loc& tile_loc) const {
+        if (tile_loc.layer_num < 0 || static_cast<size_t>(tile_loc.layer_num) >= get_num_layers())
+            return false;
+        if (tile_loc.x < 0 || static_cast<size_t>(tile_loc.x) >= width())
+            return false;
+        if (tile_loc.y < 0 || static_cast<size_t>(tile_loc.y) >= height())
+            return false;
+        return true;
+    }
+
+    inline t_physical_tile_loc get_nearest_loc_on_device(const t_physical_tile_loc& tile_loc) const {
+        t_physical_tile_loc new_loc;
+        new_loc.layer_num = std::clamp<size_t>(tile_loc.layer_num, 0, get_num_layers());
+        new_loc.x = std::clamp<size_t>(tile_loc.x, 0, width() - 1);
+        new_loc.y = std::clamp<size_t>(tile_loc.y, 0, height() - 1);
+
+        return new_loc;
+    }
+
     ///@brief Given a location, return the root location (bottom-left corner) of the tile instance
     inline t_physical_tile_loc get_root_location(const t_physical_tile_loc& tile_loc) const {
         t_physical_tile_loc root_loc;

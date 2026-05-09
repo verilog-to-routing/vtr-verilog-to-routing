@@ -225,6 +225,8 @@ struct ParseAPFullLegalizer {
             conv_value.set_value(e_ap_full_legalizer::APPack);
         else if (str == "flat-recon")
             conv_value.set_value(e_ap_full_legalizer::FlatRecon);
+        else if (str == "sa-pack")
+            conv_value.set_value(e_ap_full_legalizer::SAPack);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_full_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -244,6 +246,10 @@ struct ParseAPFullLegalizer {
                 break;
             case e_ap_full_legalizer::FlatRecon:
                 conv_value.set_value("flat-recon");
+                break;
+            case e_ap_full_legalizer::SAPack:
+                conv_value.set_value("sa-pack");
+                break;
             default:
                 VTR_ASSERT(false);
         }
@@ -251,7 +257,7 @@ struct ParseAPFullLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"naive", "appack", "flat-recon"};
+        return {"naive", "appack", "flat-recon", "sa-pack"};
     }
 };
 
