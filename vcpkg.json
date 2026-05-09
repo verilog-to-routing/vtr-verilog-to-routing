@@ -1,0 +1,11 @@
+{
+  "name": "verilog-to-routing",
+  "version": "9.0.0",
+  "dependencies": [
+    "zlib",
+    "readline",
+    "openssl",
+    "pkgconf",
+    "capnproto"
+  ]
+}
