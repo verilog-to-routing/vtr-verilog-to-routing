@@ -356,9 +356,3 @@ class APPack : public FullLegalizer {
     void legalize(const PartialPlacement& p_placement) final;
 };
 
-class SAPack : public FullLegalizer {
-  public:
-    using FullLegalizer::FullLegalizer;
-
-    void legalize(const PartialPlacement& p_placement) final;
-};
