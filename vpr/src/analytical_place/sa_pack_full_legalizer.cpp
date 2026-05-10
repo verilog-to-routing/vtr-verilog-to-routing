@@ -161,6 +161,7 @@ bool SAPack::try_place_mol_in_nearest_tile(PackMoleculeId mol_id, t_physical_til
 }
 
 void SAPack::place_molecules(const PartialPlacement& p_placement) {
+    vtr::ScopedStartFinishTimer place_molecules_timer("Placing Molecules on SAPack Grid");
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unplaced_mols;
 
     // Go through each atom in the APNetlist and place them in their tiles.
@@ -236,37 +237,8 @@ std::vector<PackMoleculeId> SAPack::finalize_cluster(SAPackCluster& cluster) {
     return rejected_mols;
 }
 
-void SAPack::legalize(const PartialPlacement& p_placement) {
-    // Start a scoped timer for the Full Legalizer stage.
-    vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
-
-    // The target external pin utilization is set to 1.0 to avoid over-restricting
-    // reconstruction due to conservative pin feasibility. The SKIP_INTRA_LB_ROUTE
-    // strategy speeds up reconstruction by skipping intra-LB routing checks.
-    std::vector<std::string> target_ext_pin_util = {"1.0"};
-    t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
-
-    cluster_legalizer_.emplace(
-        atom_netlist_,
-        prepacker_,
-        vpr_setup_.PackerRRGraph,
-        target_ext_pin_util,
-        high_fanout_thresholds,
-        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
-        false, // --memoize_cluster_packings is not yet supported for flat-recon
-        arch_.models,
-        vpr_setup_.PackerOpts.pack_verbosity);
-
-    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
-    VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
-
-    sa_pack_grid_.emplace(device_grid_);
-
-    primitive_candidate_block_types_ = identify_primitive_candidate_block_types();
-
-    place_molecules(p_placement);
-
+void SAPack::fully_legalize_placement() {
+    vtr::ScopedStartFinishTimer place_molecules_timer("Fully Legalizing SAPack Clusters");
     // Next, fully legalize the clusters one-by-one. When a legalization fails,
     // the atoms should be moved to the nearest cluster that can support them.
     // TODO: It would be a much better idea to legalize the densest clusters
@@ -275,7 +247,7 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
     bool done = false;
     while (!done) {
         done = true;
-        for (const t_physical_tile_loc& tile_loc : device_grid.all_locations()) {
+        for (const t_physical_tile_loc& tile_loc : device_grid_.all_locations()) {
             if (!device_grid_.is_root_location(tile_loc))
                 continue;
 
@@ -302,6 +274,41 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
             }
         }
     }
+}
+
+void SAPack::legalize(const PartialPlacement& p_placement) {
+    // Start a scoped timer for the Full Legalizer stage.
+    vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
+
+    // The target external pin utilization is set to 1.0 to avoid over-restricting
+    // reconstruction due to conservative pin feasibility. The SKIP_INTRA_LB_ROUTE
+    // strategy speeds up reconstruction by skipping intra-LB routing checks.
+    std::vector<std::string> target_ext_pin_util = {"1.0"};
+    t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
+
+    cluster_legalizer_.emplace(
+        atom_netlist_,
+        prepacker_,
+        vpr_setup_.PackerRRGraph,
+        target_ext_pin_util,
+        high_fanout_thresholds,
+        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+        false, // --memoize_cluster_packings is not yet supported for flat-recon
+        arch_.models,
+        vpr_setup_.PackerOpts.pack_verbosity);
+
+    VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid_.width(), device_grid_.height());
+
+    sa_pack_grid_.emplace(device_grid_);
+
+    primitive_candidate_block_types_ = identify_primitive_candidate_block_types();
+
+    place_molecules(p_placement);
+
+    // TODO: Right here we can insert an optimizer to optimize on the flat placement.
+
+    fully_legalize_placement();
 
     // Check and output the clustering.
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();

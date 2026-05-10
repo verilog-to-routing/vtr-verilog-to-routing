@@ -110,4 +110,12 @@ class SAPack : public FullLegalizer {
      * empty.
      */
     std::vector<PackMoleculeId> finalize_cluster(SAPackCluster& cluster);
+
+    /**
+     * @brief Fully legalize clusters on the grid.
+     *
+     * Any illegalities will be solved by moving molecules the minimum
+     * amount from where they presently are.
+     */
+    void fully_legalize_placement();
 };
