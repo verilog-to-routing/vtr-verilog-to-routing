@@ -98,4 +98,16 @@ class SAPack : public FullLegalizer {
      * the nearest compatible tile via BFS.
      */
     void place_molecules(const PartialPlacement& p_placement);
+
+    /**
+     * @brief Finalize the cluster by performing a full intra-lb route.
+     *
+     * If the cluster fails to legalize as is, it will reset itself and
+     * insert the molecules one at a time at the same logical block type.
+     *
+     * Returns a list of molecules which were rejected by the cluster during
+     * full legalization. If the cluster was fully legal, this list will be
+     * empty.
+     */
+    std::vector<PackMoleculeId> finalize_cluster(SAPackCluster& cluster);
 };
