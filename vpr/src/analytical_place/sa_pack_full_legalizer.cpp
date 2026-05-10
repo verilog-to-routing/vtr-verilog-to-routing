@@ -42,6 +42,40 @@
 #include "vtr_time.h"
 #include "vtr_vector.h"
 
+// ============================================================================
+// SAPackDeviceGrid
+// ============================================================================
+
+SAPackDeviceGrid::SAPackDeviceGrid(const DeviceGrid& device_grid) {
+    auto [num_layers, width, height] = device_grid.dim_sizes();
+    clusters_ = vtr::NdMatrix<std::vector<SAPackCluster>, 3>({num_layers, width, height});
+
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t x = 0; x < width; x++) {
+            for (size_t y = 0; y < height; y++) {
+                t_physical_tile_loc tile_loc(x, y, layer);
+                // Ignore non-root locations
+                if (!device_grid.is_root_location(tile_loc))
+                    continue;
+                int tile_capacity = device_grid.get_physical_type(tile_loc)->capacity;
+                clusters_[layer][x][y].resize(tile_capacity);
+            }
+        }
+    }
+}
+
+std::vector<SAPackCluster>& SAPackDeviceGrid::get_clusters(t_physical_tile_loc tile_loc) {
+    return clusters_[tile_loc.layer_num][tile_loc.x][tile_loc.y];
+}
+
+const std::vector<SAPackCluster>& SAPackDeviceGrid::get_clusters(t_physical_tile_loc tile_loc) const {
+    return clusters_[tile_loc.layer_num][tile_loc.x][tile_loc.y];
+}
+
+// ============================================================================
+// SAPack
+// ============================================================================
+
 bool SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc) {
     t_physical_tile_type_ptr tile_type = device_grid_.get_physical_type(tile_loc);
 
@@ -55,21 +89,21 @@ bool SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc ti
     const std::vector<t_logical_block_type_ptr>& candidate_cluster_types = primitive_candidate_block_types_[root_model_id];
 
     // Try each sub-tile from bottom to top to try and place the molecules.
-    std::vector<LegalizationClusterId>& clusters_in_tile = tile_clusters_[tile_loc.layer_num][tile_loc.x][tile_loc.y];
-    for (size_t sub_tile = 0; sub_tile < clusters_in_tile.size(); sub_tile++) {
-        // Cannot use finalized clusters
-        if (is_cluster_finalized_[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile]) {
+    std::vector<SAPackCluster>& clusters_in_tile = sa_pack_grid_->get_clusters(tile_loc);
+    for (SAPackCluster& cluster : clusters_in_tile) {
+        if (cluster.is_finalized)
             continue;
-        }
         // Check if a cluster has been created.
-        if (clusters_in_tile[sub_tile].is_valid()) {
-            if (cluster_legalizer_->is_molecule_compatible(mol_id, clusters_in_tile[sub_tile])) {
-                if (cluster_legalizer_->add_mol_to_cluster(mol_id, clusters_in_tile[sub_tile]) == e_block_pack_status::BLK_PASSED)
+        if (cluster.cluster_id.is_valid()) {
+            if (cluster_legalizer_->is_molecule_compatible(mol_id, cluster.cluster_id)) {
+                if (cluster_legalizer_->add_mol_to_cluster(mol_id, cluster.cluster_id) == e_block_pack_status::BLK_PASSED)
                     return true;
             }
         } else {
             // See if we can create one here.
             // TODO: This search can be made much more efficient.
+            // FIXME: This subtraction is not very clean and should not be used.
+            size_t sub_tile = &cluster - clusters_in_tile.data();
             std::vector<t_logical_block_type_ptr> equivalent_sites;
             for (const t_sub_tile& sub_tile_val : tile_type->sub_tiles) {
                 if (sub_tile_val.capacity.is_in_range(sub_tile)) {
@@ -85,7 +119,7 @@ bool SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc ti
                             LegalizationClusterId new_cluster_id;
                             std::tie(pack_status, new_cluster_id) = cluster_legalizer_->start_new_cluster(mol_id, candidate_cluster_type, mode);
                             if (pack_status == e_block_pack_status::BLK_PASSED) {
-                                clusters_in_tile[sub_tile] = new_cluster_id;
+                                cluster.cluster_id = new_cluster_id;
                                 return true;
                             }
                         }
@@ -188,29 +222,8 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
 
+    sa_pack_grid_.emplace(device_grid_);
     auto [num_layers, width, height] = device_grid_.dim_sizes();
-    tile_clusters_ = vtr::NdMatrix<std::vector<LegalizationClusterId>, 3>({num_layers, width, height});
-    is_cluster_finalized_ = vtr::NdMatrix<std::vector<bool>, 3>({num_layers, width, height});
-
-    // Set the size of the vector at each root tile location to the number of
-    // sub-tiles at that location.
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        for (size_t x = 0; x < width; x++) {
-            for (size_t y = 0; y < height; y++) {
-                t_physical_tile_loc tile_loc(x, y, layer);
-                // Ignore non-root locations
-                // TODO: There is a method in the device grid that does this.
-                size_t width_offset = device_grid_.get_width_offset(tile_loc);
-                size_t height_offset = device_grid_.get_height_offset(tile_loc);
-                if (width_offset != 0 || height_offset != 0) {
-                    continue;
-                }
-                int tile_capacity = device_grid.get_physical_type(tile_loc)->capacity;
-                tile_clusters_[layer][x][y].resize(tile_capacity, LegalizationClusterId::INVALID());
-                is_cluster_finalized_[layer][x][y].resize(tile_capacity, false);
-            }
-        }
-    }
 
     primitive_candidate_block_types_ = identify_primitive_candidate_block_types();
 
@@ -233,15 +246,14 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
 
                 // Try intra-lb route. If it fails, rebuild the cluster and place
                 // any remaining molecules nearby using the prior method.
-                std::vector<LegalizationClusterId>& clusters_in_tile = tile_clusters_[tile_loc.layer_num][tile_loc.x][tile_loc.y];
-                for (size_t sub_tile = 0; sub_tile < clusters_in_tile.size(); sub_tile++) {
-                    LegalizationClusterId cluster_id = clusters_in_tile[sub_tile];
-                    if (!cluster_id.is_valid())
+                std::vector<SAPackCluster>& clusters_in_tile = sa_pack_grid_->get_clusters(tile_loc);
+                for (SAPackCluster& cluster : clusters_in_tile) {
+                    if (!cluster.cluster_id.is_valid())
                         continue;
 
-                    if (cluster_legalizer_->check_cluster_legality(cluster_id)) {
-                        is_cluster_finalized_[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = true;
-                        cluster_legalizer_->clean_cluster(cluster_id);
+                    if (cluster_legalizer_->check_cluster_legality(cluster.cluster_id)) {
+                        cluster.is_finalized = true;
+                        cluster_legalizer_->clean_cluster(cluster.cluster_id);
                         continue;
                     }
 
@@ -249,11 +261,10 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
                     done = false;
 
                     // Rebuild the cluster from scratch.
-                    std::vector<PackMoleculeId> molecules = cluster_legalizer_->get_cluster_molecules(cluster_id);
-                    t_logical_block_type_ptr cluster_type = cluster_legalizer_->get_cluster_type(cluster_id);
-                    cluster_legalizer_->destroy_cluster(cluster_id);
-                    cluster_id = LegalizationClusterId::INVALID();
-                    clusters_in_tile[sub_tile] = LegalizationClusterId::INVALID();
+                    std::vector<PackMoleculeId> molecules = cluster_legalizer_->get_cluster_molecules(cluster.cluster_id);
+                    t_logical_block_type_ptr cluster_type = cluster_legalizer_->get_cluster_type(cluster.cluster_id);
+                    cluster_legalizer_->destroy_cluster(cluster.cluster_id);
+                    cluster.cluster_id = LegalizationClusterId::INVALID();
 
                     // FIXME: Add safety assert here.
                     PackMoleculeId seed_mol_id = molecules[0];
@@ -265,22 +276,21 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
                         LegalizationClusterId new_cluster_id;
                         std::tie(pack_status, new_cluster_id) = cluster_legalizer_->start_new_cluster(seed_mol_id, cluster_type, mode);
                         if (pack_status == e_block_pack_status::BLK_PASSED) {
-                            clusters_in_tile[sub_tile] = new_cluster_id;
-                            cluster_id = new_cluster_id;
+                            cluster.cluster_id = new_cluster_id;
                             break;
                         }
                     }
 
-                    VTR_ASSERT(clusters_in_tile[sub_tile].is_valid());
+                    VTR_ASSERT(cluster.cluster_id.is_valid());
 
                     std::vector<PackMoleculeId> rejected_mols;
                     for (size_t i = 1; i < molecules.size(); i++) {
-                        if (cluster_legalizer_->add_mol_to_cluster(molecules[i], cluster_id) != e_block_pack_status::BLK_PASSED) {
+                        if (cluster_legalizer_->add_mol_to_cluster(molecules[i], cluster.cluster_id) != e_block_pack_status::BLK_PASSED) {
                             rejected_mols.push_back(molecules[i]);
                         }
                     }
-                    cluster_legalizer_->clean_cluster(cluster_id);
-                    is_cluster_finalized_[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = true;
+                    cluster_legalizer_->clean_cluster(cluster.cluster_id);
+                    cluster.is_finalized = true;
                     cluster_legalizer_->set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
 
                     for (PackMoleculeId rejected_mol : rejected_mols) {

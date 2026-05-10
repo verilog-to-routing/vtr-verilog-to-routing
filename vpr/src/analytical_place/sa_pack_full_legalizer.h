@@ -3,7 +3,7 @@
  * @file
  * @author  Alex Singer
  * @date    May 2026
- * @brief   Defines the SAPack full legalizer class.
+ * @brief   Defines the SAPack full legalizer class and its supporting types.
  */
 
 #include <optional>
@@ -16,7 +16,39 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
+class DeviceGrid;
 struct PartialPlacement;
+
+/**
+ * @brief State of a single cluster slot in the SAPack device grid.
+ */
+struct SAPackCluster {
+    /// @brief The legalization cluster occupying this sub-tile slot.
+    LegalizationClusterId cluster_id = LegalizationClusterId::INVALID();
+    /// @brief Whether this cluster has passed full intra-LB routing legality.
+    bool is_finalized = false;
+};
+
+/**
+ * @brief Per-tile cluster state for the SAPack legalizer.
+ *
+ * Wraps a 3-D NdMatrix indexed by (layer, x, y), where each entry is a vector
+ * of SAPackCluster objects sized to the tile's sub-tile capacity. The sizing
+ * and initialization of each root-tile entry is performed in the constructor,
+ * keeping that bookkeeping out of the legalizer itself.
+ */
+class SAPackDeviceGrid {
+  public:
+    /// @brief Construct and initialize cluster slots from the given device grid.
+    explicit SAPackDeviceGrid(const DeviceGrid& device_grid);
+
+    /// @brief Return the cluster slots for the given tile location.
+    std::vector<SAPackCluster>& get_clusters(t_physical_tile_loc tile_loc);
+    const std::vector<SAPackCluster>& get_clusters(t_physical_tile_loc tile_loc) const;
+
+  private:
+    vtr::NdMatrix<std::vector<SAPackCluster>, 3> clusters_;
+};
 
 /**
  * @brief SAPack: An experimental full legalizer that greedily places molecules
@@ -30,11 +62,8 @@ class SAPack : public FullLegalizer {
     void legalize(const PartialPlacement& p_placement) final;
 
   private:
-    /// @brief Clusters at each tile location indexed as [layer][x][y][sub_tile].
-    vtr::NdMatrix<std::vector<LegalizationClusterId>, 3> tile_clusters_;
-
-    /// @brief Tracks which sub-tile slots have been fully legalized.
-    vtr::NdMatrix<std::vector<bool>, 3> is_cluster_finalized_;
+    /// @brief Per-tile cluster state, initialized at the start of legalize().
+    std::optional<SAPackDeviceGrid> sa_pack_grid_;
 
     /// @brief The cluster legalizer, initialized at the start of legalize().
     std::optional<ClusterLegalizer> cluster_legalizer_;
