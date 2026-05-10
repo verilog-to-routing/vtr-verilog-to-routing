@@ -167,6 +167,16 @@ std::string rr_highlight_message;
 std::set<e_pic_type> initial_stages;
 std::set<e_pic_type> completed_stages;
 
+// `exit N` from --graphics_commands is processed deferredly: the
+// interpreter sets these flags and breaks, then update_screen() honors
+// the request after the current render checkpoint completes. This avoids
+// terminating VPR mid-iteration. Both log lines start with the literal
+// "Graphics-command 'exit" — run_vtr_flow.py keys off that prefix to
+// skip downstream convergence/consistency checks for runs intentionally
+// terminated by a graphics command.
+static bool pending_graphics_exit = false;
+static int pending_graphics_exit_code = 0;
+
 #endif // NO_GRAPHICS
 
 /********************** Subroutine definitions ******************************/
@@ -509,6 +519,17 @@ void update_screen(ScreenUpdatePriority priority,
     if (draw_state->save_graphics) {
         std::string extension = "pdf";
         save_graphics(extension, draw_state->save_graphics_file_base);
+    }
+
+    // Honor a deferred `exit N` request from a graphics command. We are at
+    // a render-safe checkpoint here (refresh/flush/save_graphics have
+    // completed). Emit the sentinel so run_vtr_flow.py recognizes this as
+    // an intentional early termination, then exit with the requested code.
+    // exit() flushes stdio, so the sentinel reliably lands in vpr.out.
+    if (pending_graphics_exit) {
+        VTR_LOG("Graphics-command 'exit %d' fired: terminating now.\n",
+                pending_graphics_exit_code);
+        exit(pending_graphics_exit_code);
     }
 
 #else
@@ -1521,7 +1542,15 @@ static void run_graphics_commands(const std::string& commands) {
             VTR_LOG("%d\n", (int)draw_state->draw_net_max_fanout);
         } else if (cmd[0] == "exit") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect exit code after 'exit'");
-            exit(vtr::atoi(cmd[1]));
+            // Deferred exit: record the request and stop processing. The
+            // current render checkpoint finishes (refresh/flush/save_graphics
+            // below in update_screen) and then the flag is honored.
+            pending_graphics_exit = true;
+            pending_graphics_exit_code = vtr::atoi(cmd[1]);
+            VTR_LOG("Graphics-command 'exit %d' deferred until next render checkpoint.\n",
+                    pending_graphics_exit_code);
+            ++s_cursor;
+            break;
         } else {
             VPR_ERROR(VPR_ERROR_DRAW,
                       vtr::string_fmt("Unrecognized graphics command '%s'",

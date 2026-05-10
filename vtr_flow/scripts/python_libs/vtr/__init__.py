@@ -26,6 +26,7 @@ from .log_parse import (
     determine_lut_size,
     determine_min_w,
     determine_memory_addr_width,
+    graphics_exit_requested,
     load_parse_patterns,
     load_pass_requirements,
     load_parse_results,

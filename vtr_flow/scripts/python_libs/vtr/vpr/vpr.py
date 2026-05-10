@@ -5,7 +5,14 @@ Module to interact with VPR and its various options
 from collections import OrderedDict
 from pathlib import Path
 from os import environ
-from vtr import CommandRunner, relax_w, determine_min_w, verify_file, paths
+from vtr import (
+    CommandRunner,
+    relax_w,
+    determine_min_w,
+    graphics_exit_requested,
+    verify_file,
+    paths,
+)
 from vtr.error import InspectError
 
 
@@ -96,6 +103,11 @@ def run_relax_w(
         vpr_exec=vpr_exec,
         vpr_args=vpr_args,
     )
+    # `--graphics_commands "...; exit N"` deliberately terminates VPR
+    # before the binary search converges. Treat it as a successful run and
+    # skip the relaxed-W second invocation.
+    if graphics_exit_requested(str(temp_dir / vpr_min_w_log)):
+        return
     explicit = "pack" in vpr_args or "place" in vpr_args or "analysis" in vpr_args
     if explicit and "route" not in vpr_args:
         # Don't look for min W if routing was not run
