@@ -54,6 +54,7 @@ void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
 
     // get ID from search bar
     QLineEdit* text_entry = app->find_line_edit("TextInput");
+    if (!text_entry) return;
     std::string user_input = text_entry->text().toStdString();
     std::stringstream ss(user_input);
 
