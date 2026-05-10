@@ -863,10 +863,13 @@ void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, do
 
                 //click on any two points to form new window rectangle bound
                 ezgl::point2d point_2 = {x, y};
-                ezgl::rectangle current_window = (app->get_canvas(
-                                                      app->get_main_canvas_id()))
-                                                     ->get_camera()
-                                                     .get_world();
+                // get_canvas() returns nullptr if the canvas hasn't been
+                // registered yet (canvas is added lazily in update_screen()
+                // on the first stage transition). Bail out rather than
+                // dereferencing — same pattern as update_screen() above.
+                auto* canvas = app->get_canvas(app->get_main_canvas_id());
+                if (canvas == nullptr) return;
+                ezgl::rectangle current_window = canvas->get_camera().get_world();
 
                 //calculate a rectangle with the same ratio based on the two clicks
                 double window_ratio = current_window.height()
@@ -876,7 +879,7 @@ void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, do
 
                 //zoom in
                 ezgl::rectangle new_window = {point_1, {point_1.x + new_width, point_2.y}};
-                (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(new_window);
+                canvas->get_camera().set_world(new_window);
 
                 //reset flags
                 window_mode = false;
