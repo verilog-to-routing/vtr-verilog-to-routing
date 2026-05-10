@@ -164,6 +164,45 @@ static bool try_place_mol_in_nearest_tile(PackMoleculeId mol_id,
     return false;
 }
 
+void SAPack::place_molecules(const PartialPlacement& p_placement,
+                             vtr::NdMatrix<std::vector<LegalizationClusterId>, 3>& tile_clusters,
+                             vtr::NdMatrix<std::vector<bool>, 3>& is_cluster_finalized,
+                             ClusterLegalizer& cluster_legalizer,
+                             const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unplaced_mols;
+
+    // Go through each atom in the APNetlist and place them in their tiles.
+    // For now, we never use full legalization.
+    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        // Get the root tile location that this block wants to go to.
+        t_physical_tile_loc tile_loc(p_placement.block_x_locs[ap_blk_id],
+                                     p_placement.block_y_locs[ap_blk_id],
+                                     p_placement.block_layer_nums[ap_blk_id]);
+
+        tile_loc = device_grid_.get_nearest_loc_on_device(tile_loc);
+        tile_loc = device_grid_.get_root_location(tile_loc);
+
+        // FIXME: We need to handle things like RAM blocks here when creating
+        //        the clusters. Maybe able to ignore if SA proves to be better.
+        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
+            bool place_success = try_place_mol_in_tile(mol_id, tile_loc, tile_clusters, is_cluster_finalized, cluster_legalizer, device_grid_, primitive_candidate_block_types, prepacker_);
+            if (!place_success) {
+                unplaced_mols.push_back(std::make_pair(mol_id, tile_loc));
+            }
+        }
+    }
+
+    // Place the rest of the molecules by searching for the nearest place to put
+    // them.
+    for (auto p : unplaced_mols) {
+        bool found_place = try_place_mol_in_nearest_tile(p.first, p.second, tile_clusters, is_cluster_finalized, cluster_legalizer, device_grid_, primitive_candidate_block_types, prepacker_);
+        if (!found_place) {
+            // In the future, we should fall back on APPack
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
+        }
+    }
+}
+
 void SAPack::legalize(const PartialPlacement& p_placement) {
     // Start a scoped timer for the Full Legalizer stage.
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
@@ -216,38 +255,7 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unplaced_mols;
-
-    // Go through each atom in the APNetlist and place them in their tiles.
-    // For now, we never use full legalization.
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        // Get the root tile location that this block wants to go to.
-        t_physical_tile_loc tile_loc(p_placement.block_x_locs[ap_blk_id],
-                                     p_placement.block_y_locs[ap_blk_id],
-                                     p_placement.block_layer_nums[ap_blk_id]);
-
-        tile_loc = device_grid_.get_nearest_loc_on_device(tile_loc);
-        tile_loc = device_grid_.get_root_location(tile_loc);
-
-        // FIXME: We need to handle things like RAM blocks here when creating
-        //        the clusters. Maybe able to ignore if SA proves to be better.
-        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            bool place_success = try_place_mol_in_tile(mol_id, tile_loc, tile_clusters_matrix, is_cluster_finalized, cluster_legalizer, device_grid_, primitive_candidate_block_types, prepacker_);
-            if (!place_success) {
-                unplaced_mols.push_back(std::make_pair(mol_id, tile_loc));
-            }
-        }
-    }
-
-    // Place the rest of the molecules by searching for the nearest place to put
-    // them.
-    for (auto p : unplaced_mols) {
-        bool found_place = try_place_mol_in_nearest_tile(p.first, p.second, tile_clusters_matrix, is_cluster_finalized, cluster_legalizer, device_grid_, primitive_candidate_block_types, prepacker_);
-        if (!found_place) {
-            // In the future, we should fall back on APPack
-            VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
-        }
-    }
+    place_molecules(p_placement, tile_clusters_matrix, is_cluster_finalized, cluster_legalizer, primitive_candidate_block_types);
 
     // Next, fully legalize the clusters one-by-one. When a legalization fails,
     // the atoms should be moved to the nearest cluster that can support them.
