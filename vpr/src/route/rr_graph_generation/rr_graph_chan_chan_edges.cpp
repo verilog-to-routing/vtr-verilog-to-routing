@@ -780,16 +780,16 @@ static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
                 int height_offset = device_ctx.grid.get_height_offset({x, y, layer});
 
                 const int max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].size();
-                for (int iconn = 0; iconn < max_conn; iconn++) {
-                    const int ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side][iconn];
+                // for (int iconn = 0; iconn < max_conn; iconn++) {
+                //     const int ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side][iconn];
 
-                    // Check there is a connection and Fc map isn't wrong
-                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::IPIN, ipin, side);
-                    if (to_node) {
-                        rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch, false);
-                        ++num_conn;
-                    }
-                }
+                //     // Check there is a connection and Fc map isn't wrong
+                //     RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::IPIN, ipin, side);
+                //     if (to_node) {
+                //         // rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch, false);
+                //         // ++num_conn;
+                //     }
+                // }
             }
         }
     }

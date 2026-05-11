@@ -730,10 +730,10 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                 }
 
                 // Create the actual OPIN->CHANX/CHANY edges
-                uniquify_edges(rr_edges_to_create);
-                rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
-                num_edges += rr_edges_to_create.size();
-                rr_edges_to_create.clear();
+                // uniquify_edges(rr_edges_to_create);
+                // rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
+                // num_edges += rr_edges_to_create.size();
+                // rr_edges_to_create.clear();
             }
         }
 
