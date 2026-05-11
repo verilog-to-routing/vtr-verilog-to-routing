@@ -34,15 +34,13 @@ def parse_args():
     Parses and returns script's arguments
     """
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
             Download and extract a symbiflow benchmark release into a
             VTR-style directory structure.
 
             If a previous matching symbiflow release tar.gz file is found
             does nothing (unless --force is specified).
-        """
-    )
+        """)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
     )

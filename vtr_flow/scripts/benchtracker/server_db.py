@@ -51,15 +51,13 @@ def parse_args(ns=None):
     """parse arguments from command line and return as namespace object"""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(
-            """\
+        description=textwrap.dedent("""\
             serve a central database with benchmark information
             
         Generated database:
             Database should be created by populate_db.py, with each task
             organized as a table. A task is a collection of related benchmarks
-            that are commonly run together."""
-        ),
+            that are commonly run together."""),
         usage="%(prog)s [OPTIONS]",
     )
 

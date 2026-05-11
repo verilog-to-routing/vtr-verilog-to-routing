@@ -254,8 +254,7 @@ def parse_args(ns=None):
     """parse arguments from command line and return as namespace object"""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(
-            """\
+        description=textwrap.dedent("""\
             parse parameters per iteration for a given benchmark and plots them
             
         Benchmark:
@@ -276,8 +275,7 @@ def parse_args(ns=None):
 
         Parameter Options:
         	log - make the y-axis log scale for this parameter
-        	"""
-        ),
+        	"""),
         usage="%(prog)s <output_file> <circuit> <channel_width> [OPTIONS]",
     )
 

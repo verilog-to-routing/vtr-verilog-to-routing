@@ -49,13 +49,10 @@ from vtr.error import VtrError, InspectError, CommandError
 def vtr_command_argparser(prog=None):
     """Argument parse for run_vtr_task"""
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
             Runs one or more VTR tasks.
-        """
-    )
-    epilog = textwrap.dedent(
-        """
+        """)
+    epilog = textwrap.dedent("""
         Examples
         --------
 
@@ -74,8 +71,7 @@ def vtr_command_argparser(prog=None):
         Exit Code
         ---------
             The exit code equals the number failures (i.e. exit code 0 indicates no failures).
-        """
-    )
+        """)
 
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -471,9 +467,9 @@ def format_human_readable_time(seconds):
 
 def format_human_readable_memory(num_bytes):
     """format the number of bytes given as a human readable value"""
-    if num_bytes < 1024 ** 3:
-        return "%.2f MiB" % (num_bytes / (1024 ** 2))
-    return "%.2f GiB" % (num_bytes / (1024 ** 3))
+    if num_bytes < 1024**3:
+        return "%.2f MiB" % (num_bytes / (1024**2))
+    return "%.2f GiB" % (num_bytes / (1024**3))
 
 
 def run_vtr_flow_process(queue, run_dirs, job, script) -> None:

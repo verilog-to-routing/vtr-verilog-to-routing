@@ -11,12 +11,12 @@ def make_output_vector(power):
     print("c")
     next_a = 0
     for i in range(0, 512):
-        value = next_a ** power
+        value = next_a**power
         output = f"{value:#0{4}x}"
         print(output[0:2] + output[-2:])
         if i % 2 == 1:
             next_a += 1
-    value = next_a ** power
+    value = next_a**power
     output = f"{value:#0{4}x}"
     print(output[0:2] + output[-2:])
     print("0x00")
