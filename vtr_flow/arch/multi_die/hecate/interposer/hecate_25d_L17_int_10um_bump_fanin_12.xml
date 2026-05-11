@@ -1872,7 +1872,7 @@
         </scatter>
 
         <sg_link_list>
-          <sg_link name="sg_DOWN" y_offset="-17" mux="interposer_sw" seg_type="int_wire"/>
+          <sg_link name="sg_DOWN" y_offset="-17" seg_type="int_wire"/>
         </sg_link_list>
       </sg_pattern>
 
@@ -1888,7 +1888,7 @@
         </scatter>
 
         <sg_link_list>
-          <sg_link name="sg_UP" y_offset="17" mux="interposer_sw" seg_type="int_wire"/>
+          <sg_link name="sg_UP" y_offset="17" seg_type="int_wire"/>
         </sg_link_list>
 
       </sg_pattern>
