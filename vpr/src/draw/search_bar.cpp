@@ -48,13 +48,17 @@
 extern std::string rr_highlight_message;
 
 void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
+    if (!app)
+        return;
+
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // get ID from search bar
     QLineEdit* text_entry = app->find_line_edit("TextInput");
-    if (!text_entry) return;
+    if (!text_entry)
+        return;
     std::string user_input = text_entry->text().toStdString();
     std::stringstream ss(user_input);
 
@@ -491,7 +495,11 @@ void enable_autocomplete(ezgl::application* app) {
 
 //Returns current search type. Returns empty string if fails
 std::string get_search_type(ezgl::application* app) {
+    if (!app)
+        return "";
     QComboBox* combo_box = app->find_combo_box("SearchType");
+    if (!combo_box)
+        return "";
     QString type = combo_box->currentText();
     //Checking that a type is selected
     if (type.isEmpty() || (!type.isEmpty() && type[0] == '\0')) {

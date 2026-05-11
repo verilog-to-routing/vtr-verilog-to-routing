@@ -26,17 +26,14 @@
  *     reason: the `app->find_line_edit("TextInput")` lookup misses and
  *     the existing `if (!searchBar) return;` triggers. No defect.
  *
- *   * `search_and_highlight(nullptr, nullptr)` — SEGVs. The function
- *     looks up `text_entry = app->find_line_edit("TextInput")` and then
- *     unconditionally calls `text_entry->text().toStdString()` without
- *     a null check. When the lookup misses (because no TextInput exists,
- *     or because `app` is null and find_widget returns nullptr) the next
- *     line crashes. Filed as **DEF-013**.
+ *   * `search_and_highlight(nullptr, nullptr)` — Previously SEGVd (DEF-013,
+ *     now closed). Null-app and null-widget guards were added to
+ *     search_and_highlight() and get_search_type() in search_bar.cpp.
+ *     The function now returns cleanly when `app` is nullptr.
  *
  * Per §4 of the test plan we file the failure first and then assert the
- * contract — the failing case carries `[!shouldfail][DEF-013]` with the
- * issue link inline per §9. When DEF-013 closes the `[!shouldfail]`
- * annotation is removed in the same PR.
+ * contract. DEF-013 is now closed — the `[!shouldfail]` annotation has
+ * been removed and the test is a positive-contract case.
  *
  * The two non-crashing entry points get positive contract cases (no
  * `[!shouldfail]`) that pin today's behaviour: a future change that adds
@@ -114,26 +111,23 @@ ChildOutcome run_in_child(std::function<void()> body) {
 } // namespace
 
 // ---------------------------------------------------------------------------
-// search_and_highlight — DEF-013. Today crashes (SIGSEGV) because
-// `text_entry = app->find_line_edit("TextInput")` returns nullptr on a
-// process with no main.ui loaded, and the next line dereferences it
-// (`text_entry->text()`). Tagged [!shouldfail] until DEF-013 closes.
+// search_and_highlight — DEF-013 (CLOSED). Null-app and null-widget guards
+// were added to search_and_highlight() and get_search_type() so the
+// function returns cleanly when app is nullptr. This is now a positive-
+// contract test identical to the enable_autocomplete and search_type_changed
+// cases below.
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Search: search_and_highlight(nullptr) returns cleanly "
           "[symmetric-guard contract — DEF-013]",
-          "[layer4][interactive][search][vpr_gui][GUI-T-019][!shouldfail]") {
-    // DEF-013 — vpr/src/draw/search_bar.cpp:50-58.
-    //   `text_entry = app->find_line_edit("TextInput");`  // may return null
-    //   `std::string user_input = text_entry->text()...;` // unguarded deref
-    // See:
-    //   doc/src/dev/vpr_gui_defect_issues_log.rst — DEF-013
-    //   https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/40
+          "[layer4][interactive][search][vpr_gui][GUI-T-019]") {
+    // DEF-013 — fixed: null guards added to search_bar.cpp.
     ChildOutcome o = run_in_child([]() {
         search_and_highlight(/*widget=*/nullptr, /*app=*/nullptr);
     });
     INFO("Child exit_code=" << o.exit_code << " signal=" << o.signal_no);
-    CHECK(o.exited_cleanly);
+    REQUIRE(o.exited_cleanly);
+    REQUIRE(o.signal_no == 0);
 }
 
 // ---------------------------------------------------------------------------
