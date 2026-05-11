@@ -77,7 +77,8 @@ enum class e_block_pack_status {
     BLK_FAILED_ROUTE,         // Failed due to intra-lb routing failure.
     BLK_FAILED_FLOORPLANNING, // Failed due to not being compatible with the cluster's current PartitionRegion.
     BLK_FAILED_NOC_GROUP,     // Failed due to not being compatible with the cluster's NoC group.
-    BLK_STATUS_UNDEFINED      // Undefined status. Something went wrong.
+    BLK_STATUS_UNDEFINED,          // Undefined status. Something went wrong.
+    BLK_FAILED_CLUSTER_UNINITIALIZED // Cluster must be restarted before adding molecules.
 };
 
 /*
@@ -151,6 +152,18 @@ struct LegalizationCluster {
     ///        placed in the cluster. This is used when the legalizer decides
     ///        what sites it should try to put a new molecule into.
     t_intra_cluster_placement_stats* placement_stats;
+
+    /// @brief True if the cluster currently has a valid (up-to-date) intra-LB
+    ///        routing. Used to decide whether re-routing is needed after a
+    ///        molecule removal.
+    bool routed = false;
+
+    /// @brief True when the cluster has been properly initialized and is ready
+    ///        to accept molecules via add_mol_to_cluster. Set by
+    ///        create_empty_cluster(), restart_cluster(), and start_new_cluster()
+    ///        (on first success). Cleared by remove_mol_from_cluster() when the
+    ///        last molecule is removed.
+    bool is_initialized = false;
 };
 
 /*
@@ -333,6 +346,47 @@ class ClusterLegalizer {
                       int cluster_mode);
 
     /*
+     * @brief Create an empty, initialized cluster of the given type and mode
+     *        without requiring a seed molecule.
+     *
+     * The cluster is immediately ready to accept molecules via
+     * add_mol_to_cluster. Use this to pre-allocate cluster slots (e.g. for
+     * a simulated annealing device grid) and fill them later.
+     *
+     *  @param cluster_type     The logical block type of the new cluster.
+     *  @param cluster_mode     The mode of the new cluster.
+     *
+     *  @return     The ID of the newly created empty cluster.
+     */
+    LegalizationClusterId create_empty_cluster(t_logical_block_type_ptr cluster_type,
+                                               int cluster_mode);
+
+    /*
+     * @brief Re-initialize an empty cluster, potentially with a new type and
+     *        mode, while preserving its cluster ID.
+     *
+     * The cluster must currently have no molecules (is_cluster_empty() returns
+     * true). All internal state (pb, router, placement stats) is torn down and
+     * rebuilt for the requested type and mode. Use this after the last molecule
+     * has been removed from a cluster and the slot needs to be reused.
+     *
+     *  @param cluster_id       The ID of the (empty) cluster to restart.
+     *  @param cluster_type     The logical block type for the restarted cluster.
+     *  @param cluster_mode     The mode for the restarted cluster.
+     */
+    void restart_cluster(LegalizationClusterId cluster_id,
+                         t_logical_block_type_ptr cluster_type,
+                         int cluster_mode);
+
+    /// @brief Returns true if the cluster currently has no molecules packed
+    ///        into it. A cluster that returns true here must be restarted with
+    ///        restart_cluster() before molecules can be added.
+    inline bool is_cluster_empty(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        return legalization_clusters_[cluster_id].molecules.empty();
+    }
+
+    /*
      * @brief Add an unclustered molecule to the given legalization cluster.
      *
      * The ClusterLegalizationStrategy (set either in the constructor or by the
@@ -350,6 +404,26 @@ class ClusterLegalizer {
      */
     e_block_pack_status add_mol_to_cluster(PackMoleculeId molecule_id,
                                            LegalizationClusterId cluster_id);
+
+    /*
+     * @brief Remove the given molecule from the cluster it is currently in.
+     *
+     * After a successful call, the molecule will be unclustered (as if it was
+     * never added) and its former cluster will contain all of its previous
+     * molecules except for this one.
+     *
+     * Returns false without modifying any state if the molecule is not
+     * currently clustered, or if the current ClusterLegalizationStrategy is
+     * FULL, or if the cluster already has a valid intra-LB routing. Removal
+     * is not supported in those cases because intra-LB routing depends on
+     * specific primitives being present and removing a molecule could make a
+     * previously-routed cluster impossible to re-route.
+     *
+     *  @param mol_id   The molecule to remove.
+     *
+     *  @return True if the molecule was successfully removed, false otherwise.
+     */
+    bool remove_mol_from_cluster(PackMoleculeId mol_id);
 
     /*
      * @brief Destroy the given cluster.
@@ -673,14 +747,6 @@ class ClusterLegalizer {
     ///        reused to avoid repeating work.
     std::optional<PackingSignatureTree> packing_signature_tree_;
 
-    /// @brief Used for the packer to track whether it has a valid routing for
-    ///        a finalized cluster.
-    ///
-    /// With the PST, it is possible for the packer to reach a final cluster
-    /// packing without ever routing the cluster. If this value is false when
-    /// the packer is finalizing a cluster, it will run the cluster router so
-    /// that a routing exists for later VPR stages.
-    bool routed_;
 };
 
 /**
