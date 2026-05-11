@@ -36,7 +36,7 @@ EzglAppFixture::EzglAppFixture() {
             "Catch2 enters any TEST_CASE body.");
     }
 
-    ezgl::MainWindow mw;  // loads ":/ezgl/main.ui" by default
+    ezgl::MainWindow mw; // loads ":/ezgl/main.ui" by default
     main_window_.reset(mw.release());
     if (!main_window_) {
         throw std::runtime_error(

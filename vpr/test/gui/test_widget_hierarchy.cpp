@@ -38,7 +38,8 @@
 TEST_CASE("WidgetHierarchy: loadFile returns QMainWindow for valid file", "[layer3][vpr_gui]") {
     ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
     QMainWindow* win = mw.window();
-    REQUIRE(win != nullptr);}
+    REQUIRE(win != nullptr);
+}
 
 TEST_CASE("WidgetHierarchy: loadFile returns null for nonexistent file", "[layer3][vpr_gui]") {
     ezgl::MainWindow mw("/nonexistent/path/to/missing.ui");

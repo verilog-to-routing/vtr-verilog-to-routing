@@ -150,8 +150,7 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app,
         // so a null draw_callback persists into later tests (e.g.
         // save-graphics) whose canvas::render_to_image calls the callback
         // unconditionally and segfaults on the null call.
-        cnv = app->add_canvas(id, /*draw_callback=*/[](ezgl::renderer*) {},
-                              initial_world, ezgl::WHITE);
+        cnv = app->add_canvas(id, /*draw_callback=*/[](ezgl::renderer*) {}, initial_world, ezgl::WHITE);
     }
     cnv->get_camera().set_world(initial_world);
     return cnv;
