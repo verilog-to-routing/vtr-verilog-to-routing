@@ -6,6 +6,8 @@
 #include <cctype>
 #include <algorithm>
 
+#include "globals.h"
+#include "physical_types_util.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -269,8 +271,12 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!index_cell.is_empty()) {
             info.seg_index = static_cast<int>(index_cell.as_int());
         }
-        if (!tap_cell.is_empty() && tap_cell.is_number()) {
-            info.tap = static_cast<int>(tap_cell.as_int());
+        if (!tap_cell.is_empty()) {
+            if (tap_cell.is_number()) {
+                info.tap = static_cast<int>(tap_cell.as_int());
+            } else {
+                info.pin_name = tap_cell.as_string();
+            }
         }
     } else {
         // Horizontal processing (columns)
@@ -291,14 +297,49 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!index_cell.is_empty()) {
             info.seg_index = static_cast<int>(index_cell.as_int());
         }
-        if (!tap_cell.is_empty() && tap_cell.is_number()) {
-            info.tap = static_cast<int>(tap_cell.as_int());
+        if (!tap_cell.is_empty()) {
+            if (tap_cell.is_number()) {
+                info.tap = static_cast<int>(tap_cell.as_int());
+            } else {
+                info.pin_name = tap_cell.as_string();
+            }
         } else {
             info.tap = 1;
         }
     }
 
     return info;
+}
+
+int CRRConnectionBuilder::resolve_pin_ptc(const SegmentInfo& info,
+                                          int x,
+                                          int y) const {
+    if (info.pin_name.empty()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No pin name is specified for segment index %d at (%d,%d)\n", info.seg_index, x, y);
+    }
+
+    // CRR Currently only supports 2D architectures. So, layer number 0 is assigned here
+    auto tile_type = g_vpr_ctx.device().grid.get_physical_type({x, y, 0});
+    if (tile_type == nullptr) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No tile type found while resolving pin '%s' at (%d,%d)\n",
+                        info.pin_name.c_str(), x, y);
+    }
+
+    for (int pin_ptc = 0; pin_ptc < tile_type->num_pins; ++pin_ptc) {
+        // is_flat is false: CRR only specifies connections between general routing resources
+        // and does not touch intra-cluster connections.
+        if (block_type_pin_index_to_name(tile_type, pin_ptc, false) == info.pin_name) {
+            return pin_ptc;
+        }
+    }
+
+    VTR_LOGV(verbosity_ > 0,
+             "Failed to resolve %s pin '%s' on tile type '%s' at (%d,%d); falling back to CSV index %d\n",
+             rr_node_typename[(info.side == e_sw_template_dir::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN],
+             info.pin_name.c_str(),
+             tile_type->name.c_str(),
+             x, y, info.seg_index);
+    return info.seg_index;
 }
 
 RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
@@ -308,8 +349,9 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
     VTR_ASSERT(info.side == e_sw_template_dir::OPIN || info.side == e_sw_template_dir::IPIN);
     e_rr_type node_type = (info.side == e_sw_template_dir::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
+    int pin_ptc = resolve_pin_ptc(info, x, y);
     NodeHash hash = std::make_tuple(node_type,
-                                    std::to_string(info.seg_index),
+                                    std::to_string(pin_ptc),
                                     x, x, y, y);
 
     auto col_it = col_nodes.find(hash);

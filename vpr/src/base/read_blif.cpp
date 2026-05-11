@@ -80,7 +80,6 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT_MSG(blk_model.outputs->size == 1, "Inpad model has non-single-bit output port");
         VTR_ASSERT_MSG(!blk_model.outputs->next, "Inpad model has multiple output ports");
 
-        std::string pin_name = blk_model.outputs->name;
         for (const auto& input : input_names) {
             AtomBlockId blk_id = curr_model().create_block(input, blk_model_id);
             AtomPortId port_id = curr_model().create_port(blk_id, blk_model.outputs);
@@ -99,7 +98,6 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT_MSG(blk_model.inputs->size == 1, "Outpad model has non-single-bit input port");
         VTR_ASSERT_MSG(!blk_model.inputs->next, "Outpad model has multiple input ports");
 
-        std::string pin_name = blk_model.inputs->name;
         for (const auto& output : output_names) {
             //Since we name blocks based on their drivers we need to uniquify outpad names,
             //which we do with a prefix

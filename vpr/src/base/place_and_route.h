@@ -1,21 +1,8 @@
 #pragma once
 
-#define INFINITE -1
-
-#define WNEED 1
-#define WL 2
-
 #include "vpr_types.h"
 #include "timing_info.h"
 #include "RoutingDelayCalculator.h"
-
-struct t_fmap_cell {
-    int fs;         ///<at this fs
-    int fc;         ///<at this fc
-    int wneed;      ///<need wneed to route
-    int wirelength; ///<corresponding wirelength of successful routing at wneed
-    t_fmap_cell* next;
-};
 
 int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const Netlist<>& router_net_list,

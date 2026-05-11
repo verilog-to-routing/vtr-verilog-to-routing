@@ -35,7 +35,7 @@ TelegramHeader::TelegramHeader(const ByteArray& buffer) {
 
     if (buffer.size() >= TelegramHeader::size()) {
         // Check the signature to ensure that this is a valid header
-        if (std::memcmp(buffer.data(), TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE)) {
+        if (std::memcmp(buffer.data(), TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE) != 0) {
             has_error = true;
         }
 
@@ -67,7 +67,7 @@ std::string TelegramHeader::info() const {
        << "l=" << get_pretty_size_str_from_bytes_num(m_body_bytes_num)
        << "/s=" << m_body_check_sum;
     if (m_compressor_id) {
-        ss << "/c=" << m_compressor_id;
+        ss << "/c=" << static_cast<int>(m_compressor_id);
     }
     ss << "]";
     return ss.str();

@@ -57,7 +57,8 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
                                                  const t_arch& arch,
                                                  const t_det_routing_arch& routing_arch,
                                                  const std::string& device_layout,
-                                                 const t_analysis_opts& analysis_opts) {
+                                                 const t_analysis_opts& analysis_opts)
+    : timing_update_type_(timing_update_type) {
 
     // If the flow is not timing driven, do not initialize any of the timing
     // objects and set the valid flag to false. This allows this object to be

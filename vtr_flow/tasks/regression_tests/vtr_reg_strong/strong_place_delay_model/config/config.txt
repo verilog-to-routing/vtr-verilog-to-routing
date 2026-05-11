@@ -25,6 +25,9 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 script_params_common=-starting_stage vpr -track_memory_usage
-script_params_list_add=--place_delay_model delta
-script_params_list_add=--place_delay_model delta_override
+# Delta delay model
+script_params_list_add=--pack --place --route --place_delay_model delta
+script_params_list_add=--analytical_place --route --place_delay_model delta
 
+# Delta delay override model
+script_params_list_add=--pack --place --route --place_delay_model delta_override
