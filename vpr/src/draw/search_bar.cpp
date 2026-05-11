@@ -321,6 +321,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
 
     VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
+    clb_bbox = get_draw_coords_vars()->get_absolute_clb_bbox(
+        clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
+
     ezgl::point2d point_in_clb = clb_bbox.bottom_left();
     highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));
 
