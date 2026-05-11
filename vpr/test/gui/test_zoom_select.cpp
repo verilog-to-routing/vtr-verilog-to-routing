@@ -146,10 +146,11 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app,
     const std::string id = app->get_main_canvas_id();
     ezgl::canvas* cnv = app->get_canvas(id);
     if (!cnv) {
-        // The draw_callback is unused here — canvas::redraw() short-
-        // circuits on a null backend, which is exactly our state since
-        // we never call canvas::initialize().
-        cnv = app->add_canvas(id, /*draw_callback=*/nullptr,
+        // No-op lambda rather than nullptr: the canvas map is process-global,
+        // so a null draw_callback persists into later tests (e.g.
+        // save-graphics) whose canvas::render_to_image calls the callback
+        // unconditionally and segfaults on the null call.
+        cnv = app->add_canvas(id, /*draw_callback=*/[](ezgl::renderer*) {},
                               initial_world, ezgl::WHITE);
     }
     cnv->get_camera().set_world(initial_world);
