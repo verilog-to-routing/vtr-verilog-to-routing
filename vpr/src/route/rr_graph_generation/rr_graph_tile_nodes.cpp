@@ -5,6 +5,7 @@
 
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"
+#include "rr_graph_type.h"
 #include "rr_rc_data.h"
 #include "rr_graph_cost.h"
 #include "physical_types_util.h"
@@ -100,16 +101,18 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
 }
 
 void add_muxes_rr_graph(RRGraphBuilder& rr_graph_builder,
+                        const t_chan_width& nodes_per_chan,
                         const DeviceGrid& grid) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
+    const int num_mux_nodes = nodes_per_chan.max / 4;
 
     for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
         VTR_ASSERT(grid_loc.x <= std::numeric_limits<short>::max()
                    && grid_loc.y <= std::numeric_limits<short>::max()
                    && grid_loc.layer_num <= std::numeric_limits<short>::max());
 
-        for (int color = 0; color < N_COLOR; color++) {
+        for (int color = 0; color < num_mux_nodes; color++) {
             RRNodeId node_id = node_lookup.find_node(grid_loc.layer_num,
                                                      grid_loc.x,
                                                      grid_loc.y,

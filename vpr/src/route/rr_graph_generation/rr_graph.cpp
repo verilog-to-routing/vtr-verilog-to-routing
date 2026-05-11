@@ -1378,7 +1378,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     int num_edges = 0;
     // Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs.
 
-    add_muxes_rr_graph(rr_graph_builder, grid);
+    add_muxes_rr_graph(rr_graph_builder, chan_width, grid);
 
     for (const t_physical_tile_loc& tile_loc : grid.all_locations()) {
         if (grid.is_root_location(tile_loc)) {

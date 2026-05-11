@@ -54,11 +54,12 @@ static void load_chan_rr_indices(const int max_chan_width,
 /**
  * @brief Assigns and loads rr_node indices for routing MUX nodes.
  *
- * Each (layer, x, y) location gets N_COLOR point MUX nodes. The MUX ptc
+ * Each (layer, x, y) location gets max channel width / 4 point MUX nodes. The MUX ptc
  * identifies the color index.
  */
 static void load_mux_rr_indices(RRGraphBuilder& rr_graph_builder,
                                 const DeviceGrid& grid,
+                                const t_chan_width& nodes_per_chan,
                                 int* index);
 
 static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
@@ -229,16 +230,19 @@ static void load_chan_rr_indices(const int max_chan_width,
 
 static void load_mux_rr_indices(RRGraphBuilder& rr_graph_builder,
                                 const DeviceGrid& grid,
+                                const t_chan_width& nodes_per_chan,
                                 int* index) {
+    const int num_mux_nodes = nodes_per_chan.max / 4;
+
     for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
         rr_graph_builder.node_lookup().reserve_nodes(grid_loc.layer_num,
                                                      grid_loc.x,
                                                      grid_loc.y,
                                                      e_rr_type::MUX,
-                                                     N_COLOR,
+                                                     num_mux_nodes,
                                                      TOTAL_2D_SIDES[0]);
 
-        for (int color = 0; color < N_COLOR; color++) {
+        for (int color = 0; color < num_mux_nodes; color++) {
             rr_graph_builder.node_lookup().add_node(RRNodeId(*index),
                                                     grid_loc.layer_num,
                                                     grid_loc.x,
@@ -354,7 +358,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     load_block_rr_indices(rr_graph_builder, grid, index);
 
     // Assign indices for color MUX nodes
-    load_mux_rr_indices(rr_graph_builder, grid, index);
+    load_mux_rr_indices(rr_graph_builder, grid, nodes_per_chan, index);
 
     // Load the data for x and y channels
     load_chan_rr_indices(nodes_per_chan.x_max, grid, grid.width(), grid.height(),

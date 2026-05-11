@@ -37,8 +37,6 @@ enum class e_rr_type : unsigned char {
     NUM_RR_TYPES
 };
 
-constexpr int N_COLOR = 4;
-
 constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
 constexpr bool is_chanxy(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
 constexpr bool is_chanz(e_rr_type type) { return (type == e_rr_type::CHANZ); }

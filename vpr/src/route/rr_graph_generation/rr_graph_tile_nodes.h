@@ -18,6 +18,7 @@
 
 class RRGraphBuilder;
 class RRGraphView;
+struct t_chan_width;
 
 /// @brief Create SOURCE and SINK nodes for each class in a tile and set their properties.
 void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -33,6 +34,7 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 /// @brief Set properties for point MUX nodes at each grid location.
 void add_muxes_rr_graph(RRGraphBuilder& rr_graph_builder,
+                        const t_chan_width& nodes_per_chan,
                         const DeviceGrid& grid);
 
 /**
