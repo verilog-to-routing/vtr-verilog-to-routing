@@ -1451,6 +1451,20 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     VTR_LOGV(route_verbosity > 1, "CHAN->CHAN type edge count:%d\n", num_edges);
 
+    num_edges = 0;
+    connect_muxes_to_chans(rr_graph_builder,
+                           rr_graph,
+                           grid,
+                           rr_edges_to_create,
+                           delayless_switch,
+                           switches_remapped);
+    uniquify_edges(rr_edges_to_create);
+    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+    num_edges += rr_edges_to_create.size();
+    rr_edges_to_create.clear();
+
+    VTR_LOGV(route_verbosity > 1, "MUX->CHAN and CHAN->MUX edge count:%d\n", num_edges);
+
     // If there are any interposer cuts, remove the edges and shorten the wires that cross interposer cut lines.
     if (grid.has_interposer_cuts()) {
         std::vector<RREdgeId> interposer_edges = get_interposer_cut_edges_for_removal(rr_graph, grid);

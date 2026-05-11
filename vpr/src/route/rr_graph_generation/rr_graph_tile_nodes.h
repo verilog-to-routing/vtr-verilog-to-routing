@@ -60,3 +60,11 @@ void connect_opins_muxes_to_ipins(RRGraphBuilder& rr_graph_builder,
                                   t_rr_edge_info_set& rr_edges_to_create,
                                   const int delayless_switch,
                                   bool switches_remapped);
+
+/// @brief Add local CHAN endpoint connections through MUX nodes by ptc/4.
+void connect_muxes_to_chans(RRGraphBuilder& rr_graph_builder,
+                            const RRGraphView& rr_graph,
+                            const DeviceGrid& grid,
+                            t_rr_edge_info_set& rr_edges_to_create,
+                            const int delayless_switch,
+                            bool switches_remapped);

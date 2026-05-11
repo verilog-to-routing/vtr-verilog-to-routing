@@ -182,6 +182,109 @@ void connect_opins_muxes_to_ipins(RRGraphBuilder& rr_graph_builder,
     }
 }
 
+void connect_muxes_to_chans(RRGraphBuilder& rr_graph_builder,
+                            const RRGraphView& rr_graph,
+                            const DeviceGrid& grid,
+                            t_rr_edge_info_set& rr_edges_to_create,
+                            const int delayless_switch,
+                            bool switches_remapped) {
+    const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
+
+    auto sort_by_ptc = [&rr_graph](std::vector<RRNodeId>& nodes) {
+        std::sort(nodes.begin(), nodes.end(), [](RRNodeId lhs, RRNodeId rhs) {
+            return size_t(lhs) < size_t(rhs);
+        });
+        nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+        std::sort(nodes.begin(), nodes.end(), [&rr_graph](RRNodeId lhs, RRNodeId rhs) {
+            const int lhs_ptc = rr_graph.node_ptc_num(lhs);
+            const int rhs_ptc = rr_graph.node_ptc_num(rhs);
+            if (lhs_ptc != rhs_ptc) {
+                return lhs_ptc < rhs_ptc;
+            }
+            return size_t(lhs) < size_t(rhs);
+        });
+    };
+
+    auto chan_endpoint_coords = [&rr_graph](RRNodeId chan_node) {
+        const e_rr_type chan_type = rr_graph.node_type(chan_node);
+        const Direction direction = rr_graph.node_direction(chan_node);
+        VTR_ASSERT(chan_type == e_rr_type::CHANX || chan_type == e_rr_type::CHANY);
+
+        int start_x = rr_graph.node_xlow(chan_node);
+        int start_y = rr_graph.node_ylow(chan_node);
+        int end_x = rr_graph.node_xhigh(chan_node);
+        int end_y = rr_graph.node_yhigh(chan_node);
+
+        if (direction == Direction::DEC) {
+            std::swap(start_x, end_x);
+            std::swap(start_y, end_y);
+        }
+
+        return std::pair{vtr::Point<int>(start_x, start_y), vtr::Point<int>(end_x, end_y)};
+    };
+
+    for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
+        std::vector<RRNodeId> mux_nodes = node_lookup.find_grid_nodes_at_all_sides(grid_loc.layer_num,
+                                                                                  grid_loc.x,
+                                                                                  grid_loc.y,
+                                                                                  e_rr_type::MUX);
+        std::vector<RRNodeId> chan_nodes = node_lookup.find_channel_nodes(grid_loc.layer_num,
+                                                                         grid_loc.x,
+                                                                         grid_loc.y,
+                                                                         e_rr_type::CHANX);
+        std::vector<RRNodeId> chany_nodes = node_lookup.find_channel_nodes(grid_loc.layer_num,
+                                                                          grid_loc.x,
+                                                                          grid_loc.y,
+                                                                          e_rr_type::CHANY);
+        chan_nodes.insert(chan_nodes.end(), chany_nodes.begin(), chany_nodes.end());
+
+        std::vector<RRNodeId> starting_chan_nodes;
+        std::vector<RRNodeId> ending_chan_nodes;
+        std::vector<RRNodeId> passing_chan_nodes;
+        for (RRNodeId chan_node : chan_nodes) {
+            auto [start, end] = chan_endpoint_coords(chan_node);
+            if (start.x() == grid_loc.x && start.y() == grid_loc.y) {
+                starting_chan_nodes.push_back(chan_node);
+            } else if (end.x() == grid_loc.x && end.y() == grid_loc.y) {
+                ending_chan_nodes.push_back(chan_node);
+            } else {
+                passing_chan_nodes.push_back(chan_node);
+            }
+        }
+
+        sort_by_ptc(mux_nodes);
+        sort_by_ptc(starting_chan_nodes);
+        sort_by_ptc(ending_chan_nodes);
+        sort_by_ptc(passing_chan_nodes);
+
+        for (RRNodeId chan_node : starting_chan_nodes) {
+            const int mux_ptc = rr_graph.node_ptc_num(chan_node) / 4;
+            RRNodeId mux_node = node_lookup.find_node(grid_loc.layer_num,
+                                                      grid_loc.x,
+                                                      grid_loc.y,
+                                                      e_rr_type::MUX,
+                                                      mux_ptc,
+                                                      TOTAL_2D_SIDES[0]);
+            if (mux_node != RRNodeId::INVALID()) {
+                rr_edges_to_create.emplace_back(mux_node, chan_node, delayless_switch, switches_remapped);
+            }
+        }
+
+        for (RRNodeId chan_node : ending_chan_nodes) {
+            const int mux_ptc = rr_graph.node_ptc_num(chan_node) / 4;
+            RRNodeId mux_node = node_lookup.find_node(grid_loc.layer_num,
+                                                      grid_loc.x,
+                                                      grid_loc.y,
+                                                      e_rr_type::MUX,
+                                                      mux_ptc,
+                                                      TOTAL_2D_SIDES[0]);
+            if (mux_node != RRNodeId::INVALID()) {
+                rr_edges_to_create.emplace_back(chan_node, mux_node, delayless_switch, switches_remapped);
+            }
+        }
+    }
+}
+
 void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                               const std::vector<int>& class_num_vec,
                               const t_physical_tile_loc& tile_loc,
