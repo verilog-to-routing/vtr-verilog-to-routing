@@ -96,6 +96,40 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
     }
 }
 
+void add_muxes_rr_graph(RRGraphBuilder& rr_graph_builder,
+                        const DeviceGrid& grid) {
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
+
+    for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
+        VTR_ASSERT(grid_loc.x <= std::numeric_limits<short>::max()
+                   && grid_loc.y <= std::numeric_limits<short>::max()
+                   && grid_loc.layer_num <= std::numeric_limits<short>::max());
+
+        for (int color = 0; color < N_COLOR; color++) {
+            RRNodeId node_id = node_lookup.find_node(grid_loc.layer_num,
+                                                     grid_loc.x,
+                                                     grid_loc.y,
+                                                     e_rr_type::MUX,
+                                                     color,
+                                                     TOTAL_2D_SIDES[0]);
+            VTR_ASSERT(node_id != RRNodeId::INVALID());
+
+            rr_graph_builder.set_node_type(node_id, e_rr_type::MUX);
+            rr_graph_builder.set_node_capacity(node_id, 1);
+            rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(MUX_COST_INDEX));
+            rr_graph_builder.set_node_rc_index(node_id, find_create_rr_rc_data(0, 0, mutable_device_ctx.rr_rc_data));
+            rr_graph_builder.set_node_mux_num(node_id, color);
+            rr_graph_builder.set_node_coordinates(node_id,
+                                                  grid_loc.x,
+                                                  grid_loc.y,
+                                                  grid_loc.x,
+                                                  grid_loc.y);
+            rr_graph_builder.set_node_layer(node_id, grid_loc.layer_num, grid_loc.layer_num);
+        }
+    }
+}
+
 void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                               const std::vector<int>& class_num_vec,
                               const t_physical_tile_loc& tile_loc,

@@ -455,7 +455,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     // TODO: This is a temporary fix to ensure that the VIB architecture is supported.
     //       This should be removed and ** grid ** should be used instead.
     // If VIB architecture is not used, these are not going to have any effect.
-    int mux_max_ptc = -1;
+    int mux_max_ptc = N_COLOR;
     const VibInf* vib_type = nullptr;
     if (vib_grid.get_num_layers() > 0) {
         vib_type = vib_grid.get_vib(layer_low, xlow, ylow);

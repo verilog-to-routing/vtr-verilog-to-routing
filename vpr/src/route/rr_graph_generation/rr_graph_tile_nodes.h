@@ -12,6 +12,7 @@
  */
 
 #include <vector>
+#include "device_grid.h"
 #include "physical_types.h"
 #include "rr_edge.h"
 
@@ -28,6 +29,10 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                        const std::vector<int>& pin_num_vec,
                        const t_physical_tile_loc& root_loc,
                        t_physical_tile_type_ptr physical_type);
+
+/// @brief Set properties for point MUX nodes at each grid location.
+void add_muxes_rr_graph(RRGraphBuilder& rr_graph_builder,
+                        const DeviceGrid& grid);
 
 /**
  * @brief Add the edges between IPIN to SINK and SOURCE to OPIN to rr_edges_to_create
