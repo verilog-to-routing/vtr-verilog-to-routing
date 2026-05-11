@@ -769,12 +769,7 @@ def main():
         arguments = parse_shared_args(sys.argv[2:])
 
         exit(
-            {
-                "display": display,
-                "parse": parse,
-                "join": join,
-                "compare": compare,
-            }.get(
+            {"display": display, "parse": parse, "join": join, "compare": compare,}.get(
                 command, lambda: "Invalid Command"
             )(arguments)
         )

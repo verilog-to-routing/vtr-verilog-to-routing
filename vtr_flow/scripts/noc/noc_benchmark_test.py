@@ -70,14 +70,17 @@ MAX_SEED_VAL = 1000000
 def noc_test_command_line_parser(prog=None):
     """Parses the arguments of noc_benchmark_test"""
 
-    description = textwrap.dedent("""
+    description = textwrap.dedent(
+        """
             Runs VPR placer on one or more NoC benchmark designs.
             Runs VPR multiple times on each circuit and collects
             placement & routing metrics. Each run will use a
             different seed (random initialization) and the averaged values over all runs
             are provided.
-        """)
-    epilog = textwrap.dedent("""
+        """
+    )
+    epilog = textwrap.dedent(
+        """
             Examples
             --------
 
@@ -92,7 +95,8 @@ def noc_test_command_line_parser(prog=None):
                     -flow_file <path_to_flows_file> -arch_file
                     <path_to_arch_file> -number_of_seeds 5 -number_of_threads 3
 
-        """)
+        """
+    )
 
     parser = argparse.ArgumentParser(
         prog=prog,

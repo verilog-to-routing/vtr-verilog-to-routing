@@ -54,14 +54,17 @@ def vtr_command_argparser(prog=None):
     The VTR command arg parser
     """
     usage = "%(prog)s circuit_file architecture_file [options]"
-    description = textwrap.dedent("""
+    description = textwrap.dedent(
+        """
                     Runs a single architecture and circuit through the VTR CAD flow - mapping
                     the circuit onto the target archietcture.
 
                     Any unrecognzied arguments are passed to VPR.
-                    """)
+                    """
+    )
 
-    epilog = textwrap.dedent("""
+    epilog = textwrap.dedent(
+        """
                 Examples
                 --------
 
@@ -93,7 +96,8 @@ def vtr_command_argparser(prog=None):
 
                         %(prog)s arch.xml circuit.blif -start vpr -end vpr
 
-                """)
+                """
+    )
 
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -462,10 +466,10 @@ def format_human_readable_memory(num_kbytes):
     """format the number of bytes given as a human readable value"""
     if num_kbytes < 1024:
         value = "%.2f KiB" % (num_kbytes)
-    elif num_kbytes < (1024**2):
-        value = "%.2f MiB" % (num_kbytes / (1024**1))
+    elif num_kbytes < (1024 ** 2):
+        value = "%.2f MiB" % (num_kbytes / (1024 ** 1))
     else:
-        value = "%.2f GiB" % (num_kbytes / (1024**2))
+        value = "%.2f GiB" % (num_kbytes / (1024 ** 2))
     return value
 
 
