@@ -1,0 +1,95 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=/shared/gholam39/koios_3d
+
+# Path to directory of architectures to use
+archs_dir=arch/multi_die/hecate/interposer/hecate_25D
+
+# Add architectures to list to sweep
+#arch_list_add=hecate_25d_L13_int_10um_bump_fanin_48.xml
+arch_list_add=hecate_25d_L17_int_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L21_int_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L25_int_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L29_int_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L33_int_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L37_int_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L5_int_10um_bump_fanin_48.xml
+#arch_list_add=hecate_25d_L9_int_10um_bump_fanin_48.xml
+
+# Add circuits to list to sweep
+#circuit_list_add=attention_layer.blif
+circuit_list_add=bnn.blif
+#circuit_list_add=bwave_like.fixed.small.blif
+#circuit_list_add=bwave_like.fixed.large.blif
+#circuit_list_add=clstm_like.large.blif
+#circuit_list_add=clstm_like.medium.blif
+#circuit_list_add=clstm_like.small.blif
+##circuit_list_add=conv_layer.blif
+#circuit_list_add=conv_layer_hls.blif
+#circuit_list_add=dla_like.medium.blif
+#circuit_list_add=dla_like.small.blif
+#circuit_list_add=dnnweaver.blif
+##circuit_list_add=eltwise_layer.blif
+#circuit_list_add=gemm_layer.blif
+##circuit_list_add=lenet.blif
+#circuit_list_add=lstm.blif
+#circuit_list_add=proxy.5.blif
+#circuit_list_add=proxy.7.blif
+##circuit_list_add=reduction_layer.blif
+##circuit_list_add=robot_rl.blif
+##circuit_list_add=softmax.blif
+##circuit_list_add=spmv.blif
+#circuit_list_add=tdarknet_like.large.blif
+#circuit_list_add=tdarknet_like.small.blif
+#circuit_list_add=tpu_like.large.os.blif
+#circuit_list_add=tpu_like.large.ws.blif
+##circuit_list_add=tpu_like.small.os.blif
+##circuit_list_add=tpu_like.small.ws.blif
+
+#circuit_constraint_list_add=(attention_layer.blif, net_file=/shared/gholam39/koios_3d/net_files/attention_layer.net)
+#circuit_constraint_list_add=(bnn.blif, net_file=/shared/gholam39/koios_3d/net_files/bnn.net)
+##circuit_constraint_list_add=(bwave_like.fixed.small.blif, net_file=/shared/gholam39/koios_3d/net_files/bwave_like.fixed.small.net)
+#circuit_constraint_list_add=(bwave_like.fixed.large.blif, net_file=/shared/gholam39/koios_3d/net_files/bwave_like.fixed.large.net)
+#circuit_constraint_list_add=(clstm_like.large.blif, net_file=/shared/gholam39/koios_3d/net_files/clstm_like.large.net)
+#circuit_constraint_list_add=(clstm_like.medium.blif, net_file=/shared/gholam39/koios_3d/net_files/clstm_like.medium.net)
+#circuit_constraint_list_add=(clstm_like.small.blif, net_file=/shared/gholam39/koios_3d/net_files/clstm_like.small.net)
+##circuit_constraint_list_add=(conv_layer.blif, net_file=/shared/gholam39/koios_3d/net_files/conv_layer.net)
+#circuit_constraint_list_add=(conv_layer_hls.blif, net_file=/shared/gholam39/koios_3d/net_files/conv_layer_hls.net)
+#circuit_constraint_list_add=(dla_like.medium.blif, net_file=/shared/gholam39/koios_3d/net_files/dla_like.medium.net)
+#circuit_constraint_list_add=(dla_like.small.blif, net_file=/shared/gholam39/koios_3d/net_files/dla_like.small.net)
+#circuit_constraint_list_add=(dnnweaver.blif, net_file=/shared/gholam39/koios_3d/net_files/dnnweaver.net)
+##circuit_constraint_list_add=(eltwise_layer.blif, net_file=/shared/gholam39/koios_3d/net_files/eltwise_layer.net)
+#circuit_constraint_list_add=(gemm_layer.blif, net_file=/shared/gholam39/koios_3d/net_files/gemm_layer.net)
+##circuit_constraint_list_add=(lenet.blif, net_file=/shared/gholam39/koios_3d/net_files/lenet.net)
+#circuit_constraint_list_add=(lstm.blif, net_file=/shared/gholam39/koios_3d/net_files/lstm.net)
+#circuit_constraint_list_add=(proxy.5.blif, net_file=/shared/gholam39/koios_3d/net_files/proxy.5.net)
+#circuit_constraint_list_add=(proxy.7.blif, net_file=/shared/gholam39/koios_3d/net_files/proxy.7.net)
+##circuit_constraint_list_add=(reduction_layer.blif, net_file=/shared/gholam39/koios_3d/net_files/reduction_layer.net)
+##circuit_constraint_list_add=(robot_rl.blif, net_file=/shared/gholam39/koios_3d/net_files/robot_rl.net)
+##circuit_constraint_list_add=(softmax.blif, net_file=/shared/gholam39/koios_3d/net_files/softmax.net)
+##circuit_constraint_list_add=(spmv.blif, net_file=/shared/gholam39/koios_3d/net_files/spmv.net)
+#circuit_constraint_list_add=(tdarknet_like.large.blif, net_file=/shared/gholam39/koios_3d/net_files/tdarknet_like.large.net)
+#circuit_constraint_list_add=(tdarknet_like.small.blif, net_file=/shared/gholam39/koios_3d/net_files/tdarknet_like.small.net)
+#circuit_constraint_list_add=(tpu_like.large.os.blif, net_file=/shared/gholam39/koios_3d/net_files/tpu_like.large.os.net)
+#circuit_constraint_list_add=(tpu_like.large.ws.blif, net_file=/shared/gholam39/koios_3d/net_files/tpu_like.large.ws.net)
+##circuit_constraint_list_add=(tpu_like.small.os.blif, net_file=/shared/gholam39/koios_3d/net_files/tpu_like.small.os.net)
+##circuit_constraint_list_add=(tpu_like.small.ws.blif, net_file=/shared/gholam39/koios_3d/net_files/tpu_like.small.ws.net)
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+#Script parameters
+script_params=-starting_stage vpr -max_router_iterations 100 --route_chan_width 300 --place_checkpointing off --place_interposer_cost_factor 0.1 --place_interposer_cong_cost_factor 0.1 --place_interposer_cong_threshold 0.9 --analytical_place --route
+
+#script_params_list_add=--seed 2
+#script_params_list_add=--seed 3
