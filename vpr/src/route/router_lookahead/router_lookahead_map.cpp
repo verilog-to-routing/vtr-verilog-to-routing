@@ -238,7 +238,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
         cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
 
         return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
-    } else if (from_rr_type == e_rr_type::OPIN) {
+    } else if (from_rr_type == e_rr_type::OPIN || from_rr_type == e_rr_type::MUX) {
         if (is_inter_cluster_node(rr_graph, current_node)) {
             // Similar to CHANX and CHANY
             std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);

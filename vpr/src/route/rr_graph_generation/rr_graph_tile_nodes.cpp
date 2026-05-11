@@ -1,7 +1,10 @@
 
 #include "rr_graph_tile_nodes.h"
 
+#include <algorithm>
+
 #include "rr_graph_builder.h"
+#include "rr_graph_view.h"
 #include "rr_rc_data.h"
 #include "rr_graph_cost.h"
 #include "physical_types_util.h"
@@ -126,6 +129,55 @@ void add_muxes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                   grid_loc.x,
                                                   grid_loc.y);
             rr_graph_builder.set_node_layer(node_id, grid_loc.layer_num, grid_loc.layer_num);
+        }
+    }
+}
+
+void connect_opins_muxes_to_ipins(RRGraphBuilder& rr_graph_builder,
+                                  const RRGraphView& rr_graph,
+                                  const DeviceGrid& grid,
+                                  t_rr_edge_info_set& rr_edges_to_create,
+                                  const int delayless_switch,
+                                  bool switches_remapped) {
+    const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
+
+    auto sort_by_ptc = [&rr_graph](std::vector<RRNodeId>& nodes) {
+        std::sort(nodes.begin(), nodes.end(), [](RRNodeId lhs, RRNodeId rhs) {
+            return size_t(lhs) < size_t(rhs);
+        });
+        nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+        std::sort(nodes.begin(), nodes.end(), [&rr_graph](RRNodeId lhs, RRNodeId rhs) {
+            const int lhs_ptc = rr_graph.node_ptc_num(lhs);
+            const int rhs_ptc = rr_graph.node_ptc_num(rhs);
+            if (lhs_ptc != rhs_ptc) {
+                return lhs_ptc < rhs_ptc;
+            }
+            return size_t(lhs) < size_t(rhs);
+        });
+    };
+
+    for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
+        std::vector<RRNodeId> opin_nodes = node_lookup.find_grid_nodes_at_all_sides(grid_loc.layer_num,
+                                                                                   grid_loc.x,
+                                                                                   grid_loc.y,
+                                                                                   e_rr_type::OPIN);
+        std::vector<RRNodeId> mux_nodes = node_lookup.find_grid_nodes_at_all_sides(grid_loc.layer_num,
+                                                                                  grid_loc.x,
+                                                                                  grid_loc.y,
+                                                                                  e_rr_type::MUX);
+        std::vector<RRNodeId> ipin_nodes = node_lookup.find_grid_nodes_at_all_sides(grid_loc.layer_num,
+                                                                                   grid_loc.x,
+                                                                                   grid_loc.y,
+                                                                                   e_rr_type::IPIN);
+
+        sort_by_ptc(opin_nodes);
+        sort_by_ptc(mux_nodes);
+        sort_by_ptc(ipin_nodes);
+
+        const size_t num_chains = std::min({opin_nodes.size(), mux_nodes.size(), ipin_nodes.size()});
+        for (size_t inode = 0; inode < num_chains; inode++) {
+            rr_edges_to_create.emplace_back(opin_nodes[inode], mux_nodes[inode], delayless_switch, switches_remapped);
+            rr_edges_to_create.emplace_back(mux_nodes[inode], ipin_nodes[inode], delayless_switch, switches_remapped);
         }
     }
 }

@@ -1415,6 +1415,20 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     VTR_LOGV(route_verbosity > 1, "SOURCE->OPIN and IPIN->SINK edge count:%d\n", num_edges);
 
     num_edges = 0;
+    connect_opins_muxes_to_ipins(rr_graph_builder,
+                                 rr_graph,
+                                 grid,
+                                 rr_edges_to_create,
+                                 delayless_switch,
+                                 switches_remapped);
+    uniquify_edges(rr_edges_to_create);
+    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+    num_edges += rr_edges_to_create.size();
+    rr_edges_to_create.clear();
+
+    VTR_LOGV(route_verbosity > 1, "OPIN->MUX->IPIN edge count:%d\n", num_edges);
+
+    num_edges = 0;
     int rr_edges_before_directs = 0;
     add_opin_chan_edges(rr_graph_builder, rr_graph, num_seg_types, num_seg_types_x, num_seg_types_y,
                         chan_width, chan_details_x, chan_details_y,

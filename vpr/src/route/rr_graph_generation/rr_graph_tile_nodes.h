@@ -17,6 +17,7 @@
 #include "rr_edge.h"
 
 class RRGraphBuilder;
+class RRGraphView;
 
 /// @brief Create SOURCE and SINK nodes for each class in a tile and set their properties.
 void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -51,3 +52,11 @@ void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                               const int delayless_switch,
                               t_physical_tile_type_ptr physical_type_ptr,
                               bool switches_remapped);
+
+/// @brief Add local OPIN->MUX->IPIN edges by increasing ptc at each grid location.
+void connect_opins_muxes_to_ipins(RRGraphBuilder& rr_graph_builder,
+                                  const RRGraphView& rr_graph,
+                                  const DeviceGrid& grid,
+                                  t_rr_edge_info_set& rr_edges_to_create,
+                                  const int delayless_switch,
+                                  bool switches_remapped);
