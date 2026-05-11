@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Layer 5 — Visual Regression Test Runner
 #
-# Runs VPR to produce current images, then compares each against the
-# corresponding golden image using SSIM (compare_images.py).
+# Runs VPR twice (same two passes as generate_goldens.sh: one for
+# placement_done + routing_done overlays, one for routing_initial
+# congestion) to produce the current images, then compares each named
+# case against the corresponding golden image using SSIM
+# (compare_images.py).
 #
 # Usage:
 #   ./run_visual_regression.sh                                              # use defaults below
@@ -66,7 +69,12 @@ readonly GOLDEN_DIR
 
 readonly THRESHOLD="${5:-${VPR_GUI_SSIM_THRESHOLD:-0.98}}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
+readonly BENCH="${BENCH_DIR}/mult_4x4.blif"
 readonly COMPARE="${SCRIPT_DIR}/compare_images.py"
+
+# Shared case list + graphics_commands strings + visual_run_pass helper.
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/visual_cases.sh"
 
 # Up-front validation
 require_file() {
@@ -78,7 +86,7 @@ require_file() {
 }
 require_file "VPR binary" "${VPR}"
 require_file "architecture" "${ARCH}"
-require_file "benchmark" "${BENCH_DIR}/mult_4x4.blif"
+require_file "benchmark" "${BENCH}"
 require_file "compare_images.py" "${COMPARE}"
 
 # Resolve a Python interpreter that has skimage/PIL/numpy available.
@@ -135,93 +143,60 @@ if [[ ! -d "${GOLDEN_DIR}" ]] || [[ -z "$(ls -A "${GOLDEN_DIR}"/*.png 2>/dev/nul
     exit 2
 fi
 
-# Helper: run VPR, produce current image, compare against golden
-regression_test() {
-    local name="$1"; shift
-    local circuit="$1"; shift
-    local vpr_flags=("$@")
-
-    echo "--- [VISUAL] ${name}"
-
-    local golden="${GOLDEN_DIR}/${name}.png"
-    if [[ ! -f "${golden}" ]]; then
-        echo "    SKIP: no golden image"
-        (( SKIP++ )) || true
-        return
-    fi
-
-    local work="${TEST_TMPDIR}/${name}"
-    mkdir -p "${work}"
-
-    if [[ "${SHOW_CMD:-0}" == "1" ]]; then
-        printf 'VPR CMD:\n'
-        printf '%q %q %q --disp off --seed 1' \
-            "${VPR}" "${ARCH}" "${BENCH_DIR}/${circuit}"
-        printf ' %q' "${vpr_flags[@]}"
-        printf '\n'
-    fi
-
-    if ! (cd "${work}" && "${VPR}" "${ARCH}" "${BENCH_DIR}/${circuit}" \
-        --disp off --seed 1 \
-        "${vpr_flags[@]}") \
-        > "${work}/vpr.log" 2>&1; then
-        echo "    FAIL: VPR exited with error"
-        (( FAIL++ )) || true
-        return
-    fi
-
-    local current="${work}/${name}.png"
-    if [[ ! -f "${current}" ]]; then
-        echo "    FAIL: ${name}.png not generated"
-        (( FAIL++ )) || true
-        return
-    fi
-
-    if "${PYTHON}" "${COMPARE}" "${golden}" "${current}" --threshold "${THRESHOLD}"; then
-        (( PASS++ )) || true
-    else
-        (( FAIL++ )) || true
-        echo "    Golden: ${golden}"
-        echo "    Current: ${current}"
-    fi
-}
-
 echo "=== Layer 5: Visual Regression Tests ==="
 echo "    VPR:       ${VPR}"
+echo "    Bench:     ${BENCH}"
 echo "    Goldens:   ${GOLDEN_DIR}"
 echo "    Python:    ${PYTHON}"
 echo "    Threshold: ${THRESHOLD}"
+echo "    Cases:     ${#VISUAL_CASE_NAMES[@]}"
 echo ""
 
-# 1. placement_default
-regression_test "placement_default" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "save_graphics placement_default.png; exit 0"
+# --- Pass 1: placement_done + routing_done overlays --------------------------
+PASS1_WORK="${TEST_TMPDIR}/pass1"
+echo "--- Pass 1: placement + routing overlays"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS1_WORK}" \
+    "${PASS1_CMDS}" --pack --place --route
 
-# 2. placement_nets
-regression_test "placement_nets" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "set_nets 1; save_graphics placement_nets.png; exit 0"
+# --- Pass 2: routing_initial congestion --------------------------------------
+PASS2_WORK="${TEST_TMPDIR}/pass2"
+echo "--- Pass 2: routing_initial congestion"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS2_WORK}" \
+    "${PASS2_CMDS}" --pack --place --route
 
-# 3. placement_congestion
-regression_test "placement_congestion" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "set_congestion 1; save_graphics placement_congestion.png; exit 0"
+# --- Compare each named case against its golden ------------------------------
+echo ""
+echo "--- Comparing ${#VISUAL_CASE_NAMES[@]} cases against goldens"
+for name in "${VISUAL_CASE_NAMES[@]}"; do
+    echo "--- [VISUAL] ${name}"
 
-# 4. routing_default
-regression_test "routing_default" "mult_4x4.blif" \
-    --pack --place --route \
-    --graphics_commands "save_graphics routing_default.png; exit 0"
+    local_golden="${GOLDEN_DIR}/${name}.png"
+    if [[ ! -f "${local_golden}" ]]; then
+        echo "    SKIP: no golden image"
+        (( SKIP++ )) || true
+        continue
+    fi
 
-# 5. routing_timing
-regression_test "routing_timing" "mult_4x4.blif" \
-    --pack --place --route \
-    --graphics_commands "set_cpd 1; save_graphics routing_timing.png; exit 0"
+    local_current=""
+    if [[ -f "${PASS1_WORK}/${name}.png" ]]; then
+        local_current="${PASS1_WORK}/${name}.png"
+    elif [[ -f "${PASS2_WORK}/${name}.png" ]]; then
+        local_current="${PASS2_WORK}/${name}.png"
+    else
+        echo "    FAIL: ${name}.png not produced by either pass"
+        echo "    See: ${PASS1_WORK}/vpr.log, ${PASS2_WORK}/vpr.log"
+        (( FAIL++ )) || true
+        continue
+    fi
 
-# 6. placement_block_internals
-regression_test "placement_block_internals" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "set_draw_block_internals 2; save_graphics placement_block_internals.png; exit 0"
+    if "${PYTHON}" "${COMPARE}" "${local_golden}" "${local_current}" --threshold "${THRESHOLD}"; then
+        (( PASS++ )) || true
+    else
+        (( FAIL++ )) || true
+        echo "    Golden:  ${local_golden}"
+        echo "    Current: ${local_current}"
+    fi
+done
 
 # ---- Summary ---------------------------------------------------------------
 echo ""

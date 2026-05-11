@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Layer 5 — Generate golden images for visual regression testing.
 #
-# Runs VPR with specific display settings, saves PNGs to golden/ directory.
-# These images serve as the reference baseline for SSIM comparison.
+# Runs VPR twice — one invocation for placement_done + routing_done overlays,
+# one for routing_initial congestion — and saves every named PNG from
+# visual_cases.sh into the golden/ directory. These images serve as the
+# reference baseline for SSIM comparison.
 #
 # Usage:
 #   ./generate_goldens.sh                                              # use defaults below
@@ -36,6 +38,11 @@ readonly ARCH_DIR="$(cd "${ARCH_ARG}" && pwd)"
 readonly BENCH_DIR="$(cd "${BENCH_ARG}" && pwd)"
 readonly GOLDEN_DIR="${4:-${GOLDEN_DEFAULT}}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
+readonly BENCH="${BENCH_DIR}/mult_4x4.blif"
+
+# Shared case list + graphics_commands strings + visual_run_pass helper.
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/visual_cases.sh"
 
 export QT_SCALE_FACTOR=1
 
@@ -47,77 +54,50 @@ mkdir -p "${GOLDEN_DIR}"
 echo "=== Generating Golden Images ==="
 echo "    VPR:     ${VPR}"
 echo "    Arch:    ${ARCH}"
+echo "    Bench:   ${BENCH}"
 echo "    Output:  ${GOLDEN_DIR}"
+echo "    Cases:   ${#VISUAL_CASE_NAMES[@]}"
 echo ""
 
-# Helper: run VPR and move the output PNG to golden/
-generate() {
-    local name="$1"; shift
-    local circuit="$1"; shift
-    local vpr_flags=("$@")
+# --- Pass 1: placement_done + routing_done overlays --------------------------
+PASS1_WORK="${GEN_TMPDIR}/pass1"
+echo "--- Pass 1: placement + routing overlays"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS1_WORK}" \
+    "${PASS1_CMDS}" --pack --place --route
 
-    echo "--- [GOLDEN] ${name}"
-    local work="${GEN_TMPDIR}/${name}"
-    mkdir -p "${work}"
+# --- Pass 2: routing_initial congestion --------------------------------------
+PASS2_WORK="${GEN_TMPDIR}/pass2"
+echo "--- Pass 2: routing_initial congestion"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS2_WORK}" \
+    "${PASS2_CMDS}" --pack --place --route
 
-    if [[ "${SHOW_CMD:-0}" == "1" ]]; then
-        printf 'VPR CMD:\n'
-        printf '%q %q %q --disp off --seed 1' \
-            "${VPR}" "${ARCH}" "${BENCH_DIR}/${circuit}"
-        printf ' %q' "${vpr_flags[@]}"
-        printf '\n'
-    fi
-
-    if ! (cd "${work}" && "${VPR}" "${ARCH}" "${BENCH_DIR}/${circuit}" \
-        --disp off --seed 1 \
-        "${vpr_flags[@]}") \
-        > "${work}/vpr.log" 2>&1; then
-        echo "    ERROR: VPR exited with non-zero status"
-        echo "    See: ${work}/vpr.log"
-        return 1
-    fi
-
-    if [[ -f "${work}/${name}.png" ]]; then
-        mv "${work}/${name}.png" "${GOLDEN_DIR}/${name}.png"
-        local size
-        size=$(wc -c < "${GOLDEN_DIR}/${name}.png")
-        echo "    OK: ${GOLDEN_DIR}/${name}.png (${size} bytes)"
+# --- Collect: each named case must have been emitted by exactly one pass ------
+echo ""
+echo "--- Collecting PNGs into ${GOLDEN_DIR}"
+missing=()
+for name in "${VISUAL_CASE_NAMES[@]}"; do
+    src=""
+    if [[ -f "${PASS1_WORK}/${name}.png" ]]; then
+        src="${PASS1_WORK}/${name}.png"
+    elif [[ -f "${PASS2_WORK}/${name}.png" ]]; then
+        src="${PASS2_WORK}/${name}.png"
     else
-        echo "    ERROR: ${name}.png not generated"
-        echo "    See: ${work}/vpr.log"
-        return 1
+        missing+=("${name}")
+        echo "    MISSING: ${name}.png — not emitted by either pass"
+        continue
     fi
-}
+    mv "${src}" "${GOLDEN_DIR}/${name}.png"
+    size=$(wc -c < "${GOLDEN_DIR}/${name}.png")
+    echo "    OK: ${GOLDEN_DIR}/${name}.png (${size} bytes)"
+done
 
-# 1. placement_default — default placement view
-generate "placement_default" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "save_graphics placement_default.png; exit 0"
-
-# 2. placement_nets — nets overlay on placement
-generate "placement_nets" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "set_nets 1; save_graphics placement_nets.png; exit 0"
-
-# 3. placement_congestion — congestion heatmap
-generate "placement_congestion" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "set_congestion 1; save_graphics placement_congestion.png; exit 0"
-
-# 4. routing_default — routed netlist
-generate "routing_default" "mult_4x4.blif" \
-    --pack --place --route \
-    --graphics_commands "save_graphics routing_default.png; exit 0"
-
-# 5. routing_timing — critical path highlighting
-generate "routing_timing" "mult_4x4.blif" \
-    --pack --place --route \
-    --graphics_commands "set_cpd 1; save_graphics routing_timing.png; exit 0"
-
-# 6. placement_block_internals — sub-block detail
-generate "placement_block_internals" "mult_4x4.blif" \
-    --pack --place \
-    --graphics_commands "set_draw_block_internals 2; save_graphics placement_block_internals.png; exit 0"
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo ""
+    echo "ERROR: ${#missing[@]} case(s) failed to produce a PNG. Check:"
+    echo "    ${PASS1_WORK}/vpr.log"
+    echo "    ${PASS2_WORK}/vpr.log"
+    exit 1
+fi
 
 echo ""
 echo "=== Golden Generation Complete ==="
