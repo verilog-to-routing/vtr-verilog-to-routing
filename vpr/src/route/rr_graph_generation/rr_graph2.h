@@ -52,6 +52,12 @@ int get_seg_end(const t_chan_seg_details* seg_details,
                 const int chan_num,
                 const int seg_max);
 
+bool is_full_length_wire(const t_chan_seg_details* seg_details,
+                         const int itrack,
+                         const int chan_num,
+                         const int seg_num,
+                         const int seg_max);
+
 bool is_cblock(const int chan,
                const int seg,
                const int track,

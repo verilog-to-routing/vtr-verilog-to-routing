@@ -165,7 +165,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
              * intelligent way of connecting pins and tracks.
              * cur_track is used as an offset so that extra tracks
              * from different segment types are hopefully better balanced. */
-            seg_details[cur_track].start = (cur_track / fac) % length + 1;
+            seg_details[cur_track].start = (cur_track / fac) % length;
 
             // These properties are used for vpr_to_phy_track to determine twisting of wires.
             seg_details[cur_track].group_start = group_start;
@@ -382,14 +382,14 @@ int get_seg_start(const t_chan_seg_details* seg_details,
     if (seg_details[itrack].seg_start() >= 0) {
         seg_start = seg_details[itrack].seg_start();
     } else {
-        seg_start = 1;
+        seg_start = 0;
         if (!seg_details[itrack].longline()) {
             int length = seg_details[itrack].length();
             int start = seg_details[itrack].start();
 
             /* Start is guaranteed to be between 1 and length. Hence, adding length to
              * the quantity in brackets below guarantees it will be non-negative. */
-            VTR_ASSERT(start > 0);
+            VTR_ASSERT(start >= 0);
             VTR_ASSERT(start <= length);
 
             /* NOTE: Start points are staggered between different channels.
@@ -397,8 +397,8 @@ int get_seg_start(const t_chan_seg_details* seg_details,
              * Unidirectional routing expects this to allow the N-to-N
              * assumption to be made with respect to ending wires in the core. */
             seg_start = seg_num - (seg_num + length + chan_num - start) % length;
-            if (seg_start < 1) {
-                seg_start = 1;
+            if (seg_start < 0) {
+                seg_start = 0;
             }
         }
     }
@@ -422,11 +422,11 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
     int seg_end = istart + len - 1;
 
     /* If start is against edge it may have been clipped */
-    if (1 == istart) {
+    if (0 == istart) {
         /* If the (staggered) startpoint of first full wire wasn't
-         * also 1, we must be the clipped wire */
-        int first_full = (len - (chan_num % len) + ofs - 1) % len + 1;
-        if (first_full > 1) {
+         * also 0, we must be the clipped wire */
+        int first_full = (len - (chan_num % len) + ofs) % len;
+        if (first_full > 0) {
             /* then we stop just before the first full seg */
             seg_end = first_full - 1;
         }
@@ -438,6 +438,21 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
     }
 
     return seg_end;
+}
+
+bool is_full_length_wire(const t_chan_seg_details* seg_details,
+                         const int itrack,
+                         const int chan_num,
+                         const int seg_num,
+                         const int seg_max) {
+    if (seg_details[itrack].length() <= 0) {
+        return false;
+    }
+
+    int start = get_seg_start(seg_details, itrack, chan_num, seg_num);
+    int end = get_seg_end(seg_details, itrack, start, chan_num, seg_max);
+
+    return end - start + 1 == seg_details[itrack].length();
 }
 
 bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details) {
@@ -668,7 +683,7 @@ bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, 
     // Make sure they gave us correct start
     wire_seg = get_seg_start(seg_details, track, chan, wire_seg);
 
-    int offset = sb_seg - wire_seg + 1; // Offset 0 is behind us, so add 1
+    int offset = sb_seg - wire_seg;
 
     VTR_ASSERT(offset >= 0);
     VTR_ASSERT(offset < length + 1);
@@ -786,12 +801,12 @@ void load_sblock_pattern_lookup(const int i,
         bool skip = true;
         switch (side) {
             case TOP:
-                if (j < int(grid.height()) - 2) {
+                if (j <= int(grid.height()) - 2) {
                     skip = false;
                 }
                 break;
             case RIGHT:
-                if (i < int(grid.width()) - 2) {
+                if (i <= int(grid.width()) - 2) {
                     skip = false;
                 }
                 break;
@@ -819,7 +834,10 @@ void load_sblock_pattern_lookup(const int i,
         int chan_len = (vert ? grid.height() : grid.width()) - 2; //-2 for no perim channels
         int chan = (vert ? i : j);
         int sb_seg = (vert ? j : i);
-        int seg = (pos_dir ? (sb_seg + 1) : sb_seg);
+        int seg = (pos_dir ? sb_seg : (sb_seg - 1));
+        if (seg < 0 || seg > chan_len) {
+            continue;
+        }
         int chan_width = get_chan_width(side, nodes_per_chan);
         const t_chan_seg_details* seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
         if (seg_details[0].length() <= 0)
@@ -977,8 +995,8 @@ void label_wire_muxes(const int chan_num,
             int start = get_seg_start(seg_details, itrack, chan_num, seg_num);
             int end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
 
-            // Skip tracks that are undefined
-            if (seg_details[itrack].length() == 0) {
+            // Skip tracks that are undefined or were clipped shorter than their architecture length.
+            if (!is_full_length_wire(seg_details, itrack, chan_num, seg_num, max_len)) {
                 continue;
             }
 
@@ -1045,8 +1063,8 @@ static void label_incoming_wires(const int chan_num,
     int num_passing = 0;
     for (int pass = 0; pass < 2; ++pass) {
         for (int itrack = 0; itrack < max_chan_width; ++itrack) {
-            /* Skip tracks that are undefined */
-            if (seg_details[itrack].length() == 0) {
+            /* Skip tracks that are undefined or were clipped shorter than their architecture length. */
+            if (!is_full_length_wire(seg_details, itrack, chan_num, seg_num, max_len)) {
                 continue;
             }
 

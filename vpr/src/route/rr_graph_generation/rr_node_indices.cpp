@@ -182,7 +182,7 @@ static void load_chan_rr_indices(const int max_chan_width,
         }
 
         for (int chan = 0; chan < num_chans - 1; ++chan) {
-            for (int seg = 1; seg < chan_len - 1; ++seg) {
+            for (int seg = 0; seg < chan_len - 1; ++seg) {
                 // Assign an inode to the starts of tracks
                 const int x = (type == e_rr_type::CHANX) ? seg : chan;
                 const int y = (type == e_rr_type::CHANX) ? chan : seg;
@@ -193,8 +193,9 @@ static void load_chan_rr_indices(const int max_chan_width,
 
                 for (int track = 0; track < max_chan_width; ++track) {
                     /* TODO: May let the length() == 0 case go through, to model muxes */
-                    if (seg_details[track].length() <= 0)
+                    if (!is_full_length_wire(seg_details, track, chan, seg, chan_len - 2)) {
                         continue;
+                    }
 
                     int start = get_seg_start(seg_details, track, chan, seg);
                     int node_start_x = (type == e_rr_type::CHANX) ? start : chan;

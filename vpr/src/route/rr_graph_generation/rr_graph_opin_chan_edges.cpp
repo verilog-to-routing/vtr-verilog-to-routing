@@ -251,7 +251,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             if (chan < 0) {
                 continue;
             }
-            if (seg < 1) {
+            if (seg < 0) {
                 continue;
             }
             if (seg > int(vert ? grid.width() : grid.height()) - 2) { //-2 since no channels around perim
@@ -327,10 +327,10 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         if (tr_j < 0 || tr_j > int(device_ctx.grid.height() - 2)) { //-2 for no perimeter channels
             continue;
         }
-        if (e_rr_type::CHANX == to_type && tr_i < 1) {
+        if (e_rr_type::CHANX == to_type && tr_i < 0) {
             continue;
         }
-        if (e_rr_type::CHANY == to_type && tr_j < 1) {
+        if (e_rr_type::CHANY == to_type && tr_j < 0) {
             continue;
         }
         if (opin_to_track_map[type->index].empty()) {
@@ -350,8 +350,11 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
 
-            // Only connect to wire if there is a CB
-            if (is_cblock(chan, seg, to_track, seg_details)) {
+            int max_len = (e_rr_type::CHANX == to_type ? device_ctx.grid.width() : device_ctx.grid.height()) - 2;
+
+            // Only connect to full-length wires with connection blocks.
+            if (is_full_length_wire(seg_details, to_track, chan, seg, max_len)
+                && is_cblock(chan, seg, to_track, seg_details)) {
                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
