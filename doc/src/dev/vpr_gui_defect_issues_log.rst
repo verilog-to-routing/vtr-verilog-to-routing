@@ -316,3 +316,248 @@ DEF-012 — ``act_on_key_press`` / ``act_on_mouse_press`` lack the DEF-005 symme
 :GitHub issue: `vtr-verilog-to-routing-QL#35
    <https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/35>`_
 :Status:    Open — to be fixed alongside the DEF-005 root cause.
+
+
+DEF-013 — ``search_and_highlight`` segfaults on a null ``ezgl::application``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:Severity:  Minor
+:Component: ``vpr/src/draw`` search subsystem
+:File(s):   ``vpr/src/draw/search_bar.cpp`` — ``search_and_highlight``
+            (lines 50–58, the ``find_line_edit`` lookup and the next
+            ``text_entry->text()`` deref).
+:Found by:  ``test_search_null_guard.cpp`` (GUI-T-019) —
+            *"search_and_highlight(nullptr) returns cleanly
+            [symmetric-guard contract — DEF-013]"*.
+:Symptom:   ``search_and_highlight`` looks up
+            ``text_entry = app->find_line_edit("TextInput")`` and then
+            unconditionally calls ``text_entry->text().toStdString()``
+            on the next line. When ``app`` is null (or the lookup
+            misses, e.g. because main.ui is not loaded) ``text_entry``
+            is ``nullptr`` and the deref crashes the process with
+            SIGSEGV. The same code path is reached on the regular
+            click-to-search wiring; it has not been seen in production
+            because the search button is connected through
+            ``ui_setup.cpp::basic_button_setup`` only after main.ui is
+            loaded, but the asymmetry with DEF-005 / DEF-012 means the
+            crash will surface the moment the dispatcher mis-fires
+            once.
+:Expected:  ``search_and_highlight`` returns cleanly when ``app`` is
+            null or the ``TextInput`` lookup misses, mirroring the
+            DEF-005 guard pattern. The two sibling entry points
+            (``enable_autocomplete``, ``search_type_changed``) already
+            satisfy the contract via their existing
+            ``if (!searchBar) return;`` lines; this entry only covers
+            the asymmetry in ``search_and_highlight``.
+:GitHub issue: `vtr-verilog-to-routing-QL#40
+   <https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/40>`_
+:Status:    Open — failing case is tagged ``[!shouldfail]`` with an
+            inline DEF-013 citation per §9 of
+            :ref:`vpr_gui_test_plan`. The annotation is removed in the
+            same PR that lands the symmetric guard.
+
+
+DEF-014 — ``QtGladeLoader`` leaks GtkPopover top-level ``QFrame``\ s into ``QApplication::allWidgets()``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:Severity:  Minor (test-infrastructure only — **not a blocker**;
+            unobservable in production where VPR constructs a single
+            ``ezgl::application`` and never destroys + re-loads
+            ``main.ui`` in the same process).
+:Component: ``libs/EXTERNAL/libezgl`` Glade-to-Qt UI loader.
+:File(s):   ``libs/EXTERNAL/libezgl/include/ezgl/qt/qtgladeloader.hpp``,
+            ``libs/EXTERNAL/libezgl/src/qt/qtgladeloader.cpp``.
+            Consumer that surfaces the leak:
+            ``vpr/test/gui/test_gui_helpers.hpp::findWidgetByName<T>``
+            (mirrors ``ezgl::application::find_widget`` which
+            iterates ``QApplication::allWidgets()``).
+:Found by:  Wave 2 GUI-T-008 implementation of
+            ``vpr/test/gui/test_stage_gating.cpp``. Initial
+            implementation flaked the *unrelated*
+            ``Flow: Net popover has expected controls`` case in
+            ``test_gui_flow.cpp`` after the new T-008 cases mutated
+            ``ToggleNetType`` (``netTypeCombo->count() == 1``,
+            expected 2). Failure manifested only when T-008 cases
+            ran before the flow case; ``QApplication::allWidgets()``
+            inspection confirmed multiple ``ToggleNetType`` widgets
+            present after one ``loadFile`` + ``QMainWindow`` destroy.
+:Symptom:   ``QtGladeLoader::loadFile`` creates GtkPopover-converted
+            widgets as orphan top-level ``Qt::Popup`` ``QFrame``\ s
+            **not parented** to the loaded ``QMainWindow``. When the
+            ``QMainWindow`` is destroyed those popovers (and their
+            child ``QComboBox`` / ``QLineEdit`` / ``QSpinBox``
+            widgets) persist in ``QApplication::allWidgets()`` and
+            leak mutated state into anything that subsequently
+            iterates the global widget set —
+            ``ezgl::application::find_widget`` and our test helper
+            ``findWidgetByName<T>`` are exactly such consumers.
+:Expected:  ``QtGladeLoader::loadFile`` returns a widget tree whose
+            destruction releases every widget the loader created.
+            Concretely: any orphan top-level ``Qt::Popup``
+            ``QFrame``\ s the loader produces should be reparented
+            to the returned root before return, so that ``QObject``
+            ownership is transitive and ``delete root`` is
+            sufficient teardown.
+:Workaround in tree: Per-test RAII guards in
+            ``vpr/test/gui/test_stage_gating.cpp``:
+            ``ComboItemsGuard`` (snapshot/restore items + index) and
+            ``WidgetEnabledGuard`` (snapshot/restore enabled bit).
+            An aggressive sweep (delete-all-new-top-level widgets in
+            ``EzglAppFixture::~EzglAppFixture``) was tried and
+            **abandoned** — Qt has deferred-deletion semantics for
+            some ``Qt::Popup`` frames and the sweep crashed mid-suite.
+:GitHub issue: `vtr-verilog-to-routing-QL#41
+   <https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/41>`_
+:Status:    Open — **not a blocker** for Wave 2. No ``[!shouldfail]``
+            Catch2 case (the symptom is non-deterministic and a
+            deterministic reproducer would require its own
+            infrastructure ticket; per §4 of
+            :ref:`vpr_gui_test_plan` we do not add placeholder
+            coverage). Future Layer-4 tickets composing multiple
+            ``QtGladeLoader::loadFile`` lifetimes should either
+            reuse the in-tree RAII guards or wait for the libezgl
+            fix.
+
+
+
+DEF-015 — ``highlight_cluster_block`` probes the world origin instead of the requested block
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:Severity:  Medium (functional — toolbar **Search** silently selects
+            the wrong block / sub-pb whenever the requested cluster
+            block is not the one whose pb-tree happens to cover the
+            world-coordinate origin).
+:Component: ``vpr/src/draw/`` Search bar / block-highlight path.
+:File(s):   ``vpr/src/draw/search_bar.cpp:312-340`` —
+            ``highlight_cluster_block(ClusterBlockId)``.
+:Found by:  Wave 2 GUI-T-001 implementation of
+            ``vpr/test/gui/test_search_dispatch.cpp``. The first
+            draft of the *"Search: Block Name with a real cluster
+            name selects that block"* case asserted
+            ``draw_state->block_color(target) == SELECTED_COLOR``
+            and failed: ``block_color(target)`` was the default
+            colour while ``selected_sub_block_info`` reported a
+            sub-pb of an *unrelated* cluster block as selected.
+            Inspection of ``highlight_cluster_block`` exposed the
+            cause below.
+:Symptom:   ``highlight_cluster_block`` declares ``ezgl::rectangle
+            clb_bbox;`` (zero-sized rect at the origin), **never
+            assigns it**, and immediately probes
+            ``point_in_clb = clb_bbox.bottom_left();`` — i.e.
+            ``(0, 0)`` in world coordinates — and passes that into
+            ``highlight_sub_block(point_in_clb, clb_index, ...)``.
+            On any device whose grid origin contains a placed block
+            with a sub-pb tree, ``highlight_sub_block`` succeeds at
+            ``(0,0)`` and sets ``selected_sub_block_info``; the
+            ``has_selection()`` short-circuit then skips
+            ``draw_highlight_blocks_color(... clb_index)`` and the
+            user-requested block is **never coloured**
+            ``SELECTED_COLOR``. The status-bar message reports
+            *"sub-block X selected"* for the wrong containing block.
+:Expected:  ``clb_bbox`` is filled with the absolute bounding box of
+            the requested ``clb_index`` *before* its corner is used
+            as the sub-block probe point — e.g.::
+
+               clb_bbox = draw_coords->get_absolute_clb_bbox(
+                   clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
+
+            so the sub-block probe runs at a point inside the
+            requested block, and the fall-through to
+            ``draw_highlight_blocks_color(... clb_index)`` colours
+            the right cluster block when no sub-pb is hit.
+:Reproducer: Open VPR with ``--disp on`` on
+            ``and_latch.blif`` / ``k6_N10_40nm.xml`` post-place,
+            select ``Block ID`` in the search combo, type any block
+            id whose location is not ``(0, 0)`` (e.g. the ``clb`` in
+            this benchmark), press *Search*: status bar reads
+            *"sub-block <io-pin> selected"* and the canvas
+            highlights an io block, not the searched clb.
+            In-tree assertion that pins the bug:
+            ``vpr/test/gui/test_search_dispatch.cpp::"Search:
+            Block Name with a real cluster name selects a cluster
+            block"`` and ``"Search: Block ID with a valid id selects
+            that cluster block"`` accept *either* ``block_color ==
+            SELECTED_COLOR`` *or* ``selected_sub_block_info``
+            containing the requested cluster block — both branches
+            are valid resolutions of the search; the broadened
+            observable will tighten to the ``block_color`` branch
+            in the same PR that fixes ``highlight_cluster_block``.
+:Workaround in tree: None required — the tests accept both legal
+            resolutions of the search dispatcher today and a
+            future tightening tracks the fix.
+:GitHub issue: `vtr-verilog-to-routing-QL#42
+   <https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/42>`_
+:Status:    Open — filed during Wave 2; fix is a one-liner in
+            ``highlight_cluster_block``; tightening of the T-001
+            ``Block ID`` / ``Block Name`` assertions to the
+            ``block_color`` branch lands in the same PR.
+
+DEF-016 — ``draw_noc`` dereferences ``router_list.begin()`` before checking emptiness
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:Severity:  Major
+:Component: ``vpr/src/draw`` — NoC overlay rendering
+:File(s):   ``vpr/src/draw/draw_noc.cpp`` — ``draw_noc()``,
+            lines 39 — 45 (the block immediately after the
+            ``DRAW_NO_NOC`` early-return).
+:Found by:  Wave 3 — ``test_visual_render_smoke.cpp``
+            *"Visual: draw_noc with DRAW_NO_NOC is a no-op
+            (baseline-equivalent)"* and accompanying inspection
+            while writing the NoC-overlay coverage. The test
+            deliberately *does not* enable ``draw_noc`` on the
+            NoC-less ``k6_N10_40nm.xml`` benchmark for the reason
+            documented in the case body — the implementation crashes
+            if it does, which is exactly this defect.
+:Symptom:   On any architecture without a NoC (i.e. every benchmark
+            in ``vtr_flow/arch/timing``), if the user toggles
+            *"Draw NoC Links"* or *"Draw NoC Link Usage"* in the
+            toolbar, ``draw_noc`` runs past the ``DRAW_NO_NOC``
+            early-return and immediately calls
+
+            .. code-block:: c++
+
+               const auto& type = device_ctx.grid.get_physical_type(
+                   {router_list.begin()->get_router_grid_position_x(),
+                    router_list.begin()->get_router_grid_position_y(),
+                    router_list.begin()->get_router_layer_position()});
+
+            with ``router_list`` (a
+            ``vtr::vector<NocRouterId, NocRouter>``) empty.
+            ``router_list.begin()`` returns ``end()``, dereferencing
+            it is undefined behaviour and in practice produces a
+            segfault inside ``ezgl``'s draw callback during the very
+            next ``refresh_drawing()``.
+:Expected:  ``draw_noc`` should treat an empty NoC router list as
+            "no NoC, nothing to draw" and early-return symmetrically
+            with the ``DRAW_NO_NOC`` and ``num_subtiles == 0``
+            checks already in place. A two-line fix:
+
+            .. code-block:: c++
+
+               if (router_list.empty()) {
+                   return;
+               }
+
+            inserted between the existing ``DRAW_NO_NOC`` early-return
+            and the ``router_list.begin()->...`` deref closes the gap.
+            The toolbar toggle then becomes a no-op on NoC-less
+            archs (the user's intent on such an arch is undefined,
+            but silently ignoring is safer than crashing).
+:Reproducer:Open VPR with ``--disp on`` on
+            ``and_latch.blif`` / ``k6_N10_40nm.xml``, advance to
+            Placement, click *"Draw NoC Links"* in the toolbar →
+            crash on the next canvas refresh. The same crash is
+            reachable from ``--graphics_commands "draw_noc 1"`` on
+            a NoC-less arch.
+:Workaround in tree: The Layer-5 NoC visual case
+            ``"Visual: draw_noc with DRAW_NO_NOC is a no-op
+            (baseline-equivalent)"`` deliberately leaves
+            ``draw_state->draw_noc`` at ``DRAW_NO_NOC`` and asserts
+            the no-op gate contract; a NoC-arch fixture (future
+            work) will lock the enabled-overlay path symmetrically
+            once this defect is fixed.
+:GitHub issue: `vtr-verilog-to-routing-QL#43
+   <https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/43>`_
+:Status:    Open — Wave 3 finding; fix is a two-line guard in
+            ``draw_noc.cpp``; the Layer-5 NoC visual coverage
+            tightens to the enabled path in the same PR.

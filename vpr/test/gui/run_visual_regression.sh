@@ -33,6 +33,15 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
+# CI offscreen Mesa renders differ from goldens captured on developer hosts
+# (different GL implementation, AA, font hinting). Skip under CI=true so
+# the SSIM regression gate only runs against same-host goldens. Exit 2 is
+# honoured by ctest's SKIP_RETURN_CODE on test_vpr_gui_visual.
+if [[ "${CI:-}" == "true" ]]; then
+    echo "SKIP: CI offscreen Mesa cannot be compared against developer-host goldens" >&2
+    exit 2
+fi
+
 VPR_ARG="${1:-${REPO_ROOT}/build/vpr/vpr}"
 ARCH_ARG="${2:-${REPO_ROOT}/vtr_flow/arch/timing}"
 BENCH_ARG="${3:-${REPO_ROOT}/vtr_flow/benchmarks/microbenchmarks}"

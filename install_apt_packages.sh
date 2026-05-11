@@ -56,8 +56,14 @@ packages_to_install+=(
     libopengl0
     libegl-mesa0
     libgl1-mesa-dri
-    qt6-shadertools-dev
 )
+
+# qt6-shadertools-dev is only available on Ubuntu Noble (24.04+); on
+# Jammy (22.04) it is missing from apt and the build instead relies on
+# the qtshadertools module installed by aqt (see VTR_QT_PREFIX path).
+if apt-cache show qt6-shadertools-dev >/dev/null 2>&1; then
+    packages_to_install+=(qt6-shadertools-dev)
+fi
 
 # Required for parsing SDC files (see LibSDCParse)
 packages_to_install+=(
@@ -102,6 +108,16 @@ fi
 packages_to_install+=(
     gcovr
 )
+
+# ---------------------------------------------------------------------------
+# List-only mode: emit the resolved package list, one per line, and exit.
+# Used by the Dockerfile to avoid brittle sed-parsing of this script's
+# shell logic. Does NOT touch apt, Qt, pip, or anything else.
+# ---------------------------------------------------------------------------
+if [ "${VTR_LIST_PACKAGES_ONLY:-0}" = "1" ]; then
+    printf '%s\n' "${packages_to_install[@]}"
+    exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # System packages (apt) — skippable on hosts without sudo.
