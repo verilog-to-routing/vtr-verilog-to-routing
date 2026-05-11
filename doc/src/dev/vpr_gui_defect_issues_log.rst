@@ -188,17 +188,19 @@ DEF-007 — ``-track_memory_usage`` cannot be disabled from the CLI
 :Component: VTR flow scripts
 :File(s):   ``vtr_flow/scripts/run_vtr_flow.py``
 :Found by:  Same reproducer as DEF-006 plus
-            ``-track_memory_usage off`` (rejected as an unknown
-            positional argument).
-:Symptom:   ``-track_memory_usage`` is declared as ``store_true`` with
-            no companion ``-no_track_memory_usage``; users have no CLI
-            escape hatch on platforms where GNU ``time`` is absent.
-:Expected:  A paired ``-no_track_memory_usage`` flag (or
-            ``BooleanOptionalAction``).
+            ``-track_memory_usage off`` (previously rejected as an
+            unknown positional argument).
+:Symptom:   ``-track_memory_usage`` was declared as ``store_true`` with
+            no value-taking form; users had no CLI escape hatch on
+            platforms where GNU ``time`` is absent.
+:Expected:  ``-track_memory_usage`` accepts an explicit value
+            (``true``/``false``, ``on``/``off``).
 :GitHub issue: `vtr-verilog-to-routing-QL#30
    <https://github.com/QL-Proprietary/vtr-verilog-to-routing-QL/issues/30>`_
-:Status:    Mitigated locally (paired flag exists in this branch);
-            tracked for upstream merge.
+:Status:    Fixed — ``-track_memory_usage`` now accepts an optional
+            value (``true``/``false``/``on``/``off``) via
+            ``nargs="?", type=vtr.argparse_str2bool``; tracked for
+            upstream merge.
 
 
 DEF-008 — ``--disp on`` under offscreen Qt hangs and ignores ``--graphics_commands``

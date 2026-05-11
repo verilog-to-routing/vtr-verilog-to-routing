@@ -327,9 +327,9 @@ of the following hold:
        fix lands.
    * - R2
      - macOS-only ``run_vtr_flow.py`` failures (DEF-006, DEF-007).
-     - Install scripts provision ``gtime`` and a paired
-       ``-no_track_memory_usage`` flag exists; tracked for upstream
-       removal.
+     - Install scripts provision ``gtime`` and ``-track_memory_usage``
+       accepts an explicit value (e.g. ``-track_memory_usage off``) as
+       the CLI escape hatch; tracked for upstream merge.
    * - R3
      - Visual goldens drift between Qt minor versions (DEF-010).
      - SSIM threshold defaults to 0.98 and the runner auto-selects a
