@@ -1326,7 +1326,7 @@ static void set_draw_partitions(bool checked) {
         QDialog* dialog = new QDialog(window);
         dialog->setWindowTitle("Floorplanning Legend");
         dialog->setAttribute(Qt::WA_DeleteOnClose);
-        dialog->setWindowFlag(Qt::Tool, true);  // float above the main window
+        dialog->setWindowFlag(Qt::Tool, true); // float above the main window
         dialog->resize(400, 500);
 
         QVBoxLayout* layout = new QVBoxLayout(dialog);
@@ -1418,7 +1418,7 @@ static void run_graphics_commands(const std::string& commands) {
                 wait_for_done = true;
                 stage_name = arg.substr(0, arg.size() - done_suffix.size());
             } else if (arg.size() > init_suffix.size()
-                && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
+                       && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
                 wait_for_done = false;
                 stage_name = arg.substr(0, arg.size() - init_suffix.size());
             } else {
@@ -1507,8 +1507,8 @@ static void run_graphics_commands(const std::string& commands) {
             } else {
                 draw_state->show_crit_path = true;
                 draw_state->show_crit_path_flylines = (state & 1) != 0;
-                draw_state->show_crit_path_delays   = (state & 2) != 0;
-                draw_state->show_crit_path_routing  = (state & 4) != 0;
+                draw_state->show_crit_path_delays = (state & 2) != 0;
+                draw_state->show_crit_path_routing = (state & 4) != 0;
             }
             VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_routing_util") {

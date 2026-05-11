@@ -37,13 +37,10 @@ inline void simulate_mouse_move(QWidget* w, QPoint pos) {
     QTest::mouseMove(w, pos);
 }
 
-inline void simulate_mouse_click(QWidget* w, QPoint pos,
-                                 Qt::MouseButton b = Qt::LeftButton,
-                                 Qt::KeyboardModifiers m = Qt::NoModifier) {
+inline void simulate_mouse_click(QWidget* w, QPoint pos, Qt::MouseButton b = Qt::LeftButton, Qt::KeyboardModifiers m = Qt::NoModifier) {
     QTest::mouseClick(w, b, m, pos);
 }
 
-inline void simulate_key(QWidget* w, Qt::Key k,
-                         Qt::KeyboardModifiers m = Qt::NoModifier) {
+inline void simulate_key(QWidget* w, Qt::Key k, Qt::KeyboardModifiers m = Qt::NoModifier) {
     QTest::keyClick(w, k, m);
 }

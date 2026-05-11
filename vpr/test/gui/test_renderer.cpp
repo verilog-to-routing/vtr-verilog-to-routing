@@ -66,8 +66,8 @@ TEST_CASE("color: equality and inequality operators",
           "[layer3][vpr_gui][renderer]") {
     color a(1, 2, 3, 4);
     color b(1, 2, 3, 4);
-    color c(1, 2, 3, 5);  // different alpha
-    color d(0, 2, 3, 4);  // different red
+    color c(1, 2, 3, 5); // different alpha
+    color d(0, 2, 3, 4); // different red
 
     CHECK(a == b);
     CHECK(a != c);
@@ -192,8 +192,8 @@ TEST_CASE("rectangle: contains() tests boundary and interior",
           "[layer3][vpr_gui][renderer]") {
     rectangle r({0.0, 0.0}, {10.0, 10.0});
     CHECK(r.contains(5.0, 5.0));
-    CHECK(r.contains(0.0, 0.0));     // bottom-left included
-    CHECK(r.contains(10.0, 10.0));   // top-right included
+    CHECK(r.contains(0.0, 0.0));   // bottom-left included
+    CHECK(r.contains(10.0, 10.0)); // top-right included
     CHECK_FALSE(r.contains(-0.1, 5.0));
     CHECK_FALSE(r.contains(5.0, 10.1));
     CHECK(r.contains(point2d(5.0, 5.0)));

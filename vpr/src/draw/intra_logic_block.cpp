@@ -754,9 +754,9 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
         float center_y = (src_point.y + sink_point.y) / 2;
 
         draw_triangle_along_line(g,
-                                  center_x, center_y,
-                                  src_point.x, sink_point.x,
-                                  src_point.y, sink_point.y);
+                                 center_x, center_y,
+                                 src_point.x, sink_point.x,
+                                 src_point.y, sink_point.y);
     } else {
         // if they are not, put 2 near each end
         draw_triangle_along_line(g, src_point, sink_point, 0.05);

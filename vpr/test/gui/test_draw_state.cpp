@@ -71,31 +71,56 @@ TEST_CASE("DrawState: every plain field round-trips through assignment",
           "[layer3][vpr_gui][drawstate]") {
     t_draw_state ds;
 
-    ds.show_nets = true;                                  CHECK(ds.show_nets);
-    ds.draw_nets = DRAW_ROUTED_NETS;                      CHECK(ds.draw_nets == DRAW_ROUTED_NETS);
-    ds.show_rr = true;                                    CHECK(ds.show_rr);
-    ds.show_crit_path = true;                             CHECK(ds.show_crit_path);
-    ds.show_congestion = DRAW_CONGESTED;                  CHECK(ds.show_congestion == DRAW_CONGESTED);
-    ds.show_routing_util = DRAW_ROUTING_UTIL;             CHECK(ds.show_routing_util == DRAW_ROUTING_UTIL);
-    ds.show_placement_macros = DRAW_PLACEMENT_MACROS;     CHECK(ds.show_placement_macros == DRAW_PLACEMENT_MACROS);
-    ds.draw_block_outlines = false;                       CHECK_FALSE(ds.draw_block_outlines);
-    ds.draw_block_text = false;                           CHECK_FALSE(ds.draw_block_text);
-    ds.show_blk_internal = 3;                             CHECK(ds.show_blk_internal == 3);
-    ds.show_routing_bb = 7;                               CHECK(ds.show_routing_bb == 7);
-    ds.draw_net_max_fanout = 100;                         CHECK(ds.draw_net_max_fanout == 100);
-    ds.gr_automode = 2;                                   CHECK(ds.gr_automode == 2);
-    ds.net_alpha = 128;                                   CHECK(ds.net_alpha == 128);
-    ds.pres_fac = 2.5f;                                   CHECK(ds.pres_fac == 2.5f);
-    ds.is_flat = true;                                    CHECK(ds.is_flat);
-    ds.show_noc_button = true;                            CHECK(ds.show_noc_button);
-    ds.draw_noc = DRAW_NOC_LINK_USAGE;                    CHECK(ds.draw_noc == DRAW_NOC_LINK_USAGE);
-    ds.renderer_type = "deferred";                        CHECK(ds.renderer_type == "deferred");
-    ds.save_graphics = true;                              CHECK(ds.save_graphics);
-    ds.save_graphics_file_base = "out";                   CHECK(ds.save_graphics_file_base == "out");
-    ds.graphics_commands = "set_nets 1; exit 0";          CHECK(ds.graphics_commands == "set_nets 1; exit 0");
-    ds.forced_pause = true;                               CHECK(ds.forced_pause);
-    ds.sequence_number = 42;                              CHECK(ds.sequence_number == 42);
-    ds.draw_route_type = e_route_type::DETAILED;          CHECK(ds.draw_route_type == e_route_type::DETAILED);
+    ds.show_nets = true;
+    CHECK(ds.show_nets);
+    ds.draw_nets = DRAW_ROUTED_NETS;
+    CHECK(ds.draw_nets == DRAW_ROUTED_NETS);
+    ds.show_rr = true;
+    CHECK(ds.show_rr);
+    ds.show_crit_path = true;
+    CHECK(ds.show_crit_path);
+    ds.show_congestion = DRAW_CONGESTED;
+    CHECK(ds.show_congestion == DRAW_CONGESTED);
+    ds.show_routing_util = DRAW_ROUTING_UTIL;
+    CHECK(ds.show_routing_util == DRAW_ROUTING_UTIL);
+    ds.show_placement_macros = DRAW_PLACEMENT_MACROS;
+    CHECK(ds.show_placement_macros == DRAW_PLACEMENT_MACROS);
+    ds.draw_block_outlines = false;
+    CHECK_FALSE(ds.draw_block_outlines);
+    ds.draw_block_text = false;
+    CHECK_FALSE(ds.draw_block_text);
+    ds.show_blk_internal = 3;
+    CHECK(ds.show_blk_internal == 3);
+    ds.show_routing_bb = 7;
+    CHECK(ds.show_routing_bb == 7);
+    ds.draw_net_max_fanout = 100;
+    CHECK(ds.draw_net_max_fanout == 100);
+    ds.gr_automode = 2;
+    CHECK(ds.gr_automode == 2);
+    ds.net_alpha = 128;
+    CHECK(ds.net_alpha == 128);
+    ds.pres_fac = 2.5f;
+    CHECK(ds.pres_fac == 2.5f);
+    ds.is_flat = true;
+    CHECK(ds.is_flat);
+    ds.show_noc_button = true;
+    CHECK(ds.show_noc_button);
+    ds.draw_noc = DRAW_NOC_LINK_USAGE;
+    CHECK(ds.draw_noc == DRAW_NOC_LINK_USAGE);
+    ds.renderer_type = "deferred";
+    CHECK(ds.renderer_type == "deferred");
+    ds.save_graphics = true;
+    CHECK(ds.save_graphics);
+    ds.save_graphics_file_base = "out";
+    CHECK(ds.save_graphics_file_base == "out");
+    ds.graphics_commands = "set_nets 1; exit 0";
+    CHECK(ds.graphics_commands == "set_nets 1; exit 0");
+    ds.forced_pause = true;
+    CHECK(ds.forced_pause);
+    ds.sequence_number = 42;
+    CHECK(ds.sequence_number == 42);
+    ds.draw_route_type = e_route_type::DETAILED;
+    CHECK(ds.draw_route_type == e_route_type::DETAILED);
 }
 
 TEST_CASE("DrawState: copy construction preserves all plain state",
@@ -139,7 +164,7 @@ TEST_CASE("DrawCoords: default tile geometry",
           "[layer3][vpr_gui][drawstate]") {
     t_draw_coords dc;
     CHECK(dc.get_tile_width() == 0);
-    CHECK(dc.get_tile_height() == dc.get_tile_width());  // symmetric per impl note
+    CHECK(dc.get_tile_height() == dc.get_tile_width()); // symmetric per impl note
     CHECK(dc.pin_size == 0);
     CHECK(dc.tile_x.empty());
     CHECK(dc.tile_y.empty());
@@ -166,7 +191,7 @@ TEST_CASE("DrawState global accessors return stable non-null pointers",
     t_draw_state* b = get_draw_state_vars();
     REQUIRE(a != nullptr);
     REQUIRE(b != nullptr);
-    CHECK(a == b);  // singleton — same global
+    CHECK(a == b); // singleton — same global
 
     t_draw_coords* ca = get_draw_coords_vars();
     t_draw_coords* cb = get_draw_coords_vars();

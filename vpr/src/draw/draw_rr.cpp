@@ -502,11 +502,11 @@ void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buf
         if (from_x == to_x || from_y == to_y) {
             //Straight connection
             draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y},
-                                      SB_EDGE_STRAIGHT_ARROW_POSITION);
+                                     SB_EDGE_STRAIGHT_ARROW_POSITION);
         } else {
             //Turn connection
             draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y},
-                                      SB_EDGE_TURN_ARROW_POSITION);
+                                     SB_EDGE_TURN_ARROW_POSITION);
         }
     }
 }
