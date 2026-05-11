@@ -30,6 +30,13 @@ void draw_noc(ezgl::renderer* g) {
     // initialize all the link shift directions to no shift and set the vector size to the total number of links
     list_of_noc_link_shift_directions.resize(noc_ctx.noc_model.get_noc_links().size(), NocLinkShift::NO_SHIFT);
 
+    // if this arch has no NoC, there is nothing to draw
+    // regardless of the user's toolbar preference. Must come before any
+    // dereference of router_list.begin() below.
+    if (router_list.empty()) {
+        return;
+    }
+
     // start by checking to see if the NoC display button was selected
     // if the noc display option was not selected then don't draw the noc
     if (draw_state->draw_noc == DRAW_NO_NOC) {
