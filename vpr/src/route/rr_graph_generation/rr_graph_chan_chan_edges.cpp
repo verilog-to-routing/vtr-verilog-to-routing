@@ -1171,9 +1171,9 @@ void add_chan_chan_edges(RRGraphBuilder& rr_graph_builder,
                                   directionality);
 
                     // Create the actual CHAN->CHAN edges
-                    uniquify_edges(rr_edges_to_create);
-                    rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
-                    num_edges += rr_edges_to_create.size();
+                    // uniquify_edges(rr_edges_to_create);
+                    // rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
+                    // num_edges += rr_edges_to_create.size();
 
                     rr_edges_to_create.clear();
                 }
@@ -1188,10 +1188,10 @@ void add_chan_chan_edges(RRGraphBuilder& rr_graph_builder,
                                   wire_to_ipin_switch,
                                   directionality);
 
-                    // Create the actual CHAN->CHAN edges
-                    uniquify_edges(rr_edges_to_create);
-                    rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
-                    num_edges += rr_edges_to_create.size();
+                    // // Create the actual CHAN->CHAN edges
+                    // uniquify_edges(rr_edges_to_create);
+                    // rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
+                    // num_edges += rr_edges_to_create.size();
                     rr_edges_to_create.clear();
                 }
             }
