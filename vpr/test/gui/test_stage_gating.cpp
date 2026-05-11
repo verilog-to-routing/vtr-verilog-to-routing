@@ -63,8 +63,8 @@ using vpr_gui_test::EzglAppFixture;
 namespace {
 
 /// RAII guard that snapshots a QComboBox's items and item-data at construction
-/// and restores them at destruction. Required because `QtGladeLoader::loadFile`
-/// creates GtkPopover widgets as top-level Qt::Popup QFrames that are NOT
+/// and restores them at destruction. Required because main.ui's GtkPopover
+/// widgets are materialised as top-level Qt::Popup QFrames that are NOT
 /// parented to the loaded QMainWindow (see test_gui_helpers.hpp). When the
 /// fixture's main_window_ is destroyed those popovers persist in
 /// `QApplication::allWidgets()` carrying any mutations forward, and a

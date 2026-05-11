@@ -2,8 +2,8 @@
  * @file test_gui_flow.cpp
  * @brief End-to-end GUI flow tests for VPR's Qt-based interface.
  *
- * Tests the full lifecycle: QtGladeLoader loading main.ui → window creation →
- * widget tree verification → canvas presence → menu bar structure.
+ * Tests the full lifecycle: ezgl::MainWindow loading main.ui → window
+ * creation → widget tree verification → canvas presence → menu bar structure.
  * Also tests the graphics command parser for valid/invalid/sequence commands.
  *
  * Tag: [layer3][vpr_gui]
@@ -27,16 +27,16 @@
 #include <QGridLayout>
 #include <QStatusBar>
 
-#include <ezgl/qt/qtgladeloader.hpp>
+#include <ezgl/main_window.hpp>
 #include "test_gui_helpers.hpp"
 
 // ---------------------------------------------------------------------------
 // Flow: main.ui loading produces a valid window with the expected hierarchy
 // ---------------------------------------------------------------------------
 
-TEST_CASE("Flow: QtGladeLoader loads main.ui successfully", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+TEST_CASE("Flow: MainWindow loads main.ui successfully", "[layer3][vpr_gui]") {
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     SECTION("Window has expected title") {
@@ -53,8 +53,8 @@ TEST_CASE("Flow: QtGladeLoader loads main.ui successfully", "[layer3][vpr_gui]")
 }
 
 TEST_CASE("Flow: main.ui contains MainCanvas drawing area", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     QWidget* canvas = findWidgetByName<QWidget>("MainCanvas");
@@ -72,8 +72,8 @@ TEST_CASE("Flow: main.ui contains MainCanvas drawing area", "[layer3][vpr_gui]")
 }
 
 TEST_CASE("Flow: main.ui contains StatusBar", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     QWidget* statusBar = findWidgetByName<QWidget>("StatusBar");
@@ -81,8 +81,8 @@ TEST_CASE("Flow: main.ui contains StatusBar", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: main.ui contains top menu grid with search", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // Search type combo
@@ -110,8 +110,8 @@ TEST_CASE("Flow: main.ui contains top menu grid with search", "[layer3][vpr_gui]
 }
 
 TEST_CASE("Flow: main.ui contains bottom menu bar with all menu buttons", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // Block menu
@@ -145,8 +145,8 @@ TEST_CASE("Flow: main.ui contains bottom menu bar with all menu buttons", "[laye
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Flow: Block popover has expected controls", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // Popover widgets are top-level (not children of QMainWindow), use findWidgetByName
@@ -178,8 +178,8 @@ TEST_CASE("Flow: Block popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Net popover has expected controls", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* netTypeCombo = findWidgetByName<QComboBox>("ToggleNetType");
@@ -204,8 +204,8 @@ TEST_CASE("Flow: Net popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // RR checkboxes
@@ -255,8 +255,8 @@ TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Misc popover has save, pause, debug, manual move", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* saveBtn = findWidgetByName<QPushButton>("SaveGraphics");
@@ -277,8 +277,8 @@ TEST_CASE("Flow: Misc popover has save, pause, debug, manual move", "[layer3][vp
 }
 
 TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* critFlylines = findWidgetByName<QCheckBox>("ToggleCritPathFlylines");
@@ -295,8 +295,8 @@ TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_
 }
 
 TEST_CASE("Flow: 3D layers popover has layer and transparency boxes", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* layerLabel = findWidgetByName<QLabel>("LayerLabel");
@@ -309,8 +309,8 @@ TEST_CASE("Flow: 3D layers popover has layer and transparency boxes", "[layer3][
 }
 
 TEST_CASE("Flow: Congestion cost combo has all 8 options", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* combo = findWidgetByName<QComboBox>("ToggleCongestionCost");
@@ -322,8 +322,8 @@ TEST_CASE("Flow: Congestion cost combo has all 8 options", "[layer3][vpr_gui]") 
 }
 
 TEST_CASE("Flow: NoC display combo has expected items", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* noc = findWidgetByName<QComboBox>("ToggleNocBox");

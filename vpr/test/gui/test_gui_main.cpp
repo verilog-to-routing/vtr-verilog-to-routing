@@ -8,8 +8,8 @@
  * process, so this is the canonical place to instantiate it.
  *
  * The application's UI XML is *not* loaded here. Tests that need a
- * loaded widget tree do so explicitly via QtGladeLoader (Layer 3) or
- * via the EzglAppFixture (Layer 4).
+ * loaded widget tree construct an ezgl::MainWindow directly (Layer 3)
+ * or use the EzglAppFixture (Layer 4).
  */
 
 #include <catch2/catch_session.hpp>

@@ -11,8 +11,8 @@
  * QFrames that are not parented to the QMainWindow).
  *
  * This mirrors ezgl::application::get_object() which uses
- * QApplication::allWidgets() — necessary because QtGladeLoader creates
- * GtkPopover widgets as top-level Qt::Popup frames with no parent.
+ * QApplication::allWidgets() — necessary because main.ui's GtkPopover
+ * widgets are materialised as top-level Qt::Popup frames with no parent.
  */
 template<typename T = QWidget>
 T* findWidgetByName(const char* name) {

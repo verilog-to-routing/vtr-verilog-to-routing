@@ -12,7 +12,7 @@
  *   2. The widgets named in production code (``ToggleCritPathRouting``,
  *      ``ToggleNetType``, etc.) are loaded into the Qt widget tree.
  *
- * EzglAppFixture loads ``main.ui`` via ``ezgl::QtGladeLoader`` in its
+ * EzglAppFixture loads ``main.ui`` via ``ezgl::MainWindow`` in its
  * constructor, holds the resulting ``QMainWindow`` in a unique_ptr,
  * and tears it down in the destructor. Because Qt registers every
  * constructed QWidget with QApplication's global widget set,
@@ -69,8 +69,8 @@ class EzglAppFixture {
 
     // Set of top-level widget pointers that existed BEFORE this fixture
     // loaded main.ui. On destruction we delete any top-level widgets that
-    // are NOT in this set. Required because QtGladeLoader::loadFile creates
-    // GtkPopover widgets as top-level Qt::Popup QFrames with no parent
+    // are NOT in this set. Required because main.ui's GtkPopover widgets
+    // are materialised as top-level Qt::Popup QFrames with no parent
     // (see test_gui_helpers.hpp); deleting only the QMainWindow leaks
     // those popovers and their children, which then bleed mutated state
     // into subsequent tests via QApplication::allWidgets().

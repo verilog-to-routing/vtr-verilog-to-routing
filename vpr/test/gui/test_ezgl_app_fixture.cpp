@@ -11,15 +11,11 @@
 #include <stdexcept>
 
 #include <ezgl/application.hpp>
-#include <ezgl/qt/qtgladeloader.hpp>
+#include <ezgl/main_window.hpp>
 
 #include "draw_global.h"
 #include "draw_types.h"
 #include "test_app_singleton.hpp"
-
-#ifndef VPR_MAIN_UI_PATH
-#define VPR_MAIN_UI_PATH ":/ezgl/main.ui"
-#endif
 
 namespace vpr_gui_test {
 
@@ -40,13 +36,12 @@ EzglAppFixture::EzglAppFixture() {
             "Catch2 enters any TEST_CASE body.");
     }
 
-    QtGladeLoader loader;
-    main_window_.reset(qobject_cast<QMainWindow*>(
-        loader.loadFile(QString::fromUtf8(VPR_MAIN_UI_PATH))));
+    ezgl::MainWindow mw;  // loads ":/ezgl/main.ui" by default
+    main_window_.reset(mw.release());
     if (!main_window_) {
         throw std::runtime_error(
-            "EzglAppFixture: QtGladeLoader.loadFile(" VPR_MAIN_UI_PATH
-            ") returned null. The compiled .qrc resource may be missing.");
+            "EzglAppFixture: ezgl::MainWindow failed to load main.ui — "
+            "the compiled .qrc resource may be missing.");
     }
 
     snapshot_draw_state();
