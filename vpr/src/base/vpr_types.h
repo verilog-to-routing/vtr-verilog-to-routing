@@ -1008,6 +1008,13 @@ struct t_placer_opts {
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
+    /// Weight for interposer cut-line crossing cost (0 disables).
+    float interposer_cost_factor;
+    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
+    float interposer_cong_threshold;
+    /// Weight for interposer congestion cost above `interposer_cong_threshold`.
+    float interposer_cong_factor;
+
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;
 
