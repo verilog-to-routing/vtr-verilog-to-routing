@@ -1,5 +1,6 @@
 #include "router_lookahead_extended_map.h"
 
+#include <cstddef>
 #include <vector>
 #include <queue>
 
@@ -160,11 +161,17 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     int to_ptc = rr_graph.node_ptc_num(to_node);
     int to_layer_num = rr_graph.node_layer_low(to_node);
 
+    // chan_ipins_delays is populated by sampling a representative tile location for each
+    // tile type using a bounded Dijkstra flood. If an IPIN's ptc was not reached during
+    // that sampling (e.g. because it requires more hops than the expansion limit, or is
+    // only reachable from outside the sampling bounding box), its ptc will be beyond the
+    // end of the vector. Falling back to 0.0 means no CHAN->IPIN delay is subtracted for
+    // that pin, making the lookahead slightly optimistic for those nets, which is
+    // acceptable since the lookahead is a heuristic.
     float site_pin_delay = 0.f;
-    if (this->chan_ipins_delays[to_layer_num][to_tile_index].size() != 0) {
-        auto reachable_wire_inf = this->chan_ipins_delays[to_layer_num][to_tile_index][to_ptc];
-
-        site_pin_delay = reachable_wire_inf.delay;
+    const auto& tile_delays = this->chan_ipins_delays[to_layer_num][to_tile_index];
+    if (to_ptc < (int)tile_delays.size()) {
+        site_pin_delay = tile_delays[to_ptc].delay;
     }
 
     return site_pin_delay;
@@ -555,7 +562,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #endif
 
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS)
-    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+    for (size_t iseg = 0; iseg < num_segments; iseg++) {
         VTR_LOG("cost map for %s(%d)\n",
                 segment_inf[iseg].name.c_str(), iseg);
         cost_map_.print(iseg);

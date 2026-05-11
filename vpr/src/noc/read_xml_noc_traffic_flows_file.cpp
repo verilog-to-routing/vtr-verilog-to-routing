@@ -139,7 +139,7 @@ double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil
     std::string traffic_flow_bandwidth_intermediate_val = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string();
 
     // now convert the value to double
-    traffic_flow_bandwidth = std::atof(traffic_flow_bandwidth_intermediate_val.c_str());
+    traffic_flow_bandwidth = std::stof(traffic_flow_bandwidth_intermediate_val);
 
     return traffic_flow_bandwidth;
 }
@@ -160,7 +160,7 @@ double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiut
         max_traffic_flow_latency_intermediate_val = max_traffic_flow_latency_attribute.as_string();
 
         // now convert the value to double
-        max_traffic_flow_latency = std::atof(max_traffic_flow_latency_intermediate_val.c_str());
+        max_traffic_flow_latency = std::stof(max_traffic_flow_latency_intermediate_val);
     }
 
     return max_traffic_flow_latency;

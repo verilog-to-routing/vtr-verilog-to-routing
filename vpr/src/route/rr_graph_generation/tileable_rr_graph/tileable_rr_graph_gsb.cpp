@@ -1412,84 +1412,65 @@ static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
                                              const size_t& offset,
                                              const std::vector<t_segment_inf>& segment_inf,
                                              t_pin2track_map& opin2track_map) {
-    /* Get a list of segment_ids*/
+    // Get a list of segment_ids*/
     std::vector<RRSegmentId> seg_list = rr_gsb.get_chan_segment_ids(opin_side);
     size_t chan_width = rr_gsb.get_chan_width(chan_side);
     SideManager opin_side_manager(opin_side);
     SideManager chan_side_manager(chan_side);
 
     for (size_t iseg = 0; iseg < seg_list.size(); ++iseg) {
-        /* Get a list of node that have the segment id */
+        // Get a list of node that have the segment id
         std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(chan_side, seg_list[iseg]);
-        /* Refine the track_list: keep those will have connection blocks in the GSB */
+        // Refine the track_list: keep those will have connection blocks in the GSB
         std::vector<size_t> actual_track_list;
         for (size_t inode = 0; inode < track_list.size(); ++inode) {
-            /* Check if tracks allow connection blocks in the GSB*/
+            // Check if tracks allow connection blocks in the GSB
             if (false == is_gsb_in_track_sb_population(rr_graph, rr_gsb, chan_side, track_list[inode], segment_inf)) {
-                continue; /* Bypass condition */
+                continue; // Bypass condition
             }
             if (TRACK_START != determine_track_status_of_gsb(rr_graph, rr_gsb, chan_side, track_list[inode])) {
-                continue; /* Bypass condition */
+                continue; // Bypass condition
             }
-            /* Push the node to actual_track_list  */
+            // Push the node to actual_track_list
             actual_track_list.push_back(track_list[inode]);
         }
 
-        /* Go the next segment if offset is zero or actual_track_list is empty */
+        // Go the next segment if offset is zero or actual_track_list is empty
         if (0 == actual_track_list.size()) {
             continue;
         }
 
-        /* Scale Fc  */
+        // Scale Fc
         int actual_Fc = std::ceil((float)Fc[iseg] * (float)actual_track_list.size() / (float)chan_width);
-        /* Minimum Fc should be 1 : ensure we will drive 1 routing track */
+        // Minimum Fc should be 1 : ensure we will drive 1 routing track
         actual_Fc = std::max(1, actual_Fc);
-        /* Compute the step between two connection from this IPIN to tracks:
-         * step = W' / Fc', W' and Fc' are the adapted W and Fc from actual_track_list and Fc_in
-         */
+        // Compute the step between two connection from this IPIN to tracks:
+        // step = W' / Fc', W' and Fc' are the adapted W and Fc from actual_track_list and Fc_in
+
         size_t track_step = std::floor((float)actual_track_list.size() / (float)actual_Fc);
-        /* Track step mush be a multiple of 2!!!*/
-        /* Make sure step should be at least 1 */
+        // Track step mush be a multiple of 2!!!
+        // Make sure step should be at least 1
         track_step = std::max(1, (int)track_step);
-        /* Adapt offset to the range of actual_track_list */
+        // Adapt offset to the range of actual_track_list
         size_t actual_offset = offset % actual_track_list.size();
 
-        /* No need to rotate if offset is zero */
+        // No need to rotate if offset is zero
         if (0 < actual_offset) {
-            /* rotate the track list by an offset */
+            // rotate the track list by an offset
             std::rotate(actual_track_list.begin(), actual_track_list.begin() + actual_offset, actual_track_list.end());
         }
 
-        /* Assign tracks  */
-        int track_cnt = 0;
-        /* Keep assigning until we meet the Fc requirement */
+        // Assign tracks
+        // Keep assigning until we meet the Fc requirement
         for (size_t itrack = 0; itrack < actual_track_list.size(); itrack = itrack + track_step) {
-            /* Update pin2track map */
+            // Update pin2track map
             size_t opin_side_index = opin_side_manager.to_size_t();
-            /* itrack may exceed the size of actual_track_list, adapt it */
+            // itrack may exceed the size of actual_track_list, adapt it
             size_t actual_itrack = itrack % actual_track_list.size();
             size_t track_index = actual_track_list[actual_itrack];
             const RRNodeId& track_rr_node_index = rr_gsb.get_chan_node(chan_side, track_index);
             opin2track_map[opin_side_index][opin_node_id][chan_side_manager.to_size_t()].push_back(track_rr_node_index);
-            /* update track counter */
-            track_cnt++;
-            /* Stop when we have enough Fc: this may lead to some tracks have zero drivers.
-             * So I comment it. And we just make sure its track_cnt >= actual_Fc
-             * if (actual_Fc == track_cnt) {
-             * break;
-             * }
-             */
         }
-
-        /* Ensure the number of tracks is similar to Fc */
-        /* Give a warning if Fc is < track_cnt */
-        /*
-         * if (actual_Fc != track_cnt) {
-         * vpr_printf(TIO_MESSAGE_INFO,
-         * "OPIN Node(%lu) will have a different Fc(=%lu) than specified(=%lu)!\n",
-         * opin_node_id, track_cnt, actual_Fc);
-         * }
-         */
     }
 }
 

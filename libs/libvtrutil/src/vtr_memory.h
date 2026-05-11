@@ -9,6 +9,14 @@
 #include <malloc.h>
 #endif
 
+#ifdef _MSC_VER // MSVC
+// MSVC does not support GCC __builtin_prefetch.
+// Without this guard, GCC-specific constructs can cause syntax errors
+// (e.g., in multi_queue_d_ary_heap.tpp). Since prefetch is only a
+// performance hint, it is safe to make it a no-op and ignore attributes.
+#define __builtin_prefetch(...) ((void)0)
+#endif
+
 namespace vtr {
 
 /**
@@ -117,6 +125,21 @@ struct aligned_allocator {
     using const_reference = const T&;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
+
+#ifdef _MSC_VER // MSVC
+    // Add rebind template for allocator conversion
+    // This is required by MSVC 19
+    template<typename U>
+    struct rebind {
+        using other = aligned_allocator<U>;
+    };
+
+    // Constructor allowing conversion from other types
+    template<typename U>
+    aligned_allocator(const aligned_allocator<U>&) noexcept {}
+
+    aligned_allocator() noexcept = default;
+#endif
 
     pointer allocate(size_type n, const void* /*hint*/ = 0) {
         void* data;

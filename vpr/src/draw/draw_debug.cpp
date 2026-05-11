@@ -452,7 +452,7 @@ void set_moves_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     GtkWidget* entry = gtk_grid_get_child_at(GTK_GRID(grid), 1, 1);
 
     //check for input validity
-    int moves = atoi(gtk_entry_get_text((GtkEntry*)entry));
+    int moves = std::stoi(gtk_entry_get_text((GtkEntry*)entry));
     if (moves >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
         draw_state->list_of_breakpoints.push_back(Breakpoint(BT_MOVE_NUM, moves));
         std::string bpDescription = "Breakpoint at move_num += " + std::to_string(moves);
@@ -467,7 +467,7 @@ void set_temp_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     GtkWidget* entry = gtk_grid_get_child_at((GtkGrid*)grid, 1, 2);
 
     //input validity
-    int temps = atoi(gtk_entry_get_text((GtkEntry*)entry));
+    int temps = std::stoi(gtk_entry_get_text((GtkEntry*)entry));
     if (temps >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
         draw_state->list_of_breakpoints.push_back(Breakpoint(BT_TEMP_NUM, temps));
         std::string bpDescription = "Breakpoint at temp_count += " + std::to_string(temps);
@@ -481,7 +481,7 @@ void set_block_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     t_draw_state* draw_state = get_draw_state_vars();
     GtkWidget* entry = gtk_grid_get_child_at((GtkGrid*)grid, 1, 3);
 
-    draw_state->list_of_breakpoints.push_back(Breakpoint(BT_FROM_BLOCK, atoi(gtk_entry_get_text((GtkEntry*)entry))));
+    draw_state->list_of_breakpoints.push_back(Breakpoint(BT_FROM_BLOCK, std::stoi(gtk_entry_get_text((GtkEntry*)entry))));
     std::string s(gtk_entry_get_text((GtkEntry*)entry));
     std::string bpDescription = "Breakpoint from_block == " + s;
     add_to_bpList(bpDescription);
@@ -493,7 +493,7 @@ void set_router_iter_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     GtkWidget* entry = gtk_grid_get_child_at(GTK_GRID(grid), 1, 5);
 
     //check for input validity
-    int iters = atoi(gtk_entry_get_text((GtkEntry*)entry));
+    int iters = std::stoi(gtk_entry_get_text((GtkEntry*)entry));
     if (iters >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
         draw_state->list_of_breakpoints.push_back(Breakpoint(BT_ROUTER_ITER, iters));
         std::string bpDescription = "Breakpoint at router_iter == " + std::to_string(iters);
@@ -507,7 +507,7 @@ void set_net_id_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     t_draw_state* draw_state = get_draw_state_vars();
     GtkWidget* entry = gtk_grid_get_child_at((GtkGrid*)grid, 1, 6);
 
-    draw_state->list_of_breakpoints.push_back(Breakpoint(BT_ROUTE_NET_ID, atoi(gtk_entry_get_text((GtkEntry*)entry))));
+    draw_state->list_of_breakpoints.push_back(Breakpoint(BT_ROUTE_NET_ID, std::stoi(gtk_entry_get_text((GtkEntry*)entry))));
     std::string s(gtk_entry_get_text((GtkEntry*)entry));
     std::string bpDescription = "Breakpoint route_net_id == " + s;
     add_to_bpList(bpDescription);

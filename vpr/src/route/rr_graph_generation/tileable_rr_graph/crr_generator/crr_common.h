@@ -68,11 +68,11 @@ class Connection {
     int delay_ps() const { return delay_ps_; }
     const std::string& sw_template_id() const { return sw_template_id_; }
 
-    bool operator<(const Connection& other) const {
+    bool operator<(const Connection& other) const noexcept {
         return std::tie(sink_node_, src_node_, delay_ps_) < std::tie(other.sink_node_, other.src_node_, other.delay_ps_);
     }
 
-    bool operator==(const Connection& other) const {
+    bool operator==(const Connection& other) const noexcept {
         return sink_node_ == other.sink_node_ && src_node_ == other.src_node_ && delay_ps_ == other.delay_ps_;
     }
 

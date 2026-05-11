@@ -251,7 +251,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     VTR_LOG("Moves per temperature: %d\n", first_move_lim);
 
     if (placer_opts.inner_loop_recompute_divider != 0) {
-        inner_recompute_limit_ = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
+        inner_recompute_limit_ = std::lround((float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
     } else {
         // don't do an inner recompute
         inner_recompute_limit_ = first_move_lim + 1;
@@ -260,7 +260,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     /* calculate the number of moves in the quench that we should recompute timing after based on the value of *
      * the commandline option quench_recompute_divider                                                         */
     if (placer_opts.quench_recompute_divider != 0) {
-        quench_recompute_limit_ = static_cast<int>(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
+        quench_recompute_limit_ = std::lround((float)move_lim / (float)placer_opts.quench_recompute_divider);
     } else {
         // don't do an quench recompute
         quench_recompute_limit_ = first_move_lim + 1;

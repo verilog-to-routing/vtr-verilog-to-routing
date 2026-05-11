@@ -40,8 +40,6 @@ void set_tile_type_at_loc(const int x_anchor, const int y_anchor, vtr::NdMatrix<
 }
 
 TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
-    // test device grid name
-    std::string device_grid_name = "test";
 
     // creating a reference for the empty tile name and router name
     char empty_tile_name[] = "empty";
