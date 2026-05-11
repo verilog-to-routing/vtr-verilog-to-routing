@@ -7,6 +7,7 @@
  */
 
 #include <optional>
+#include <set>
 #include <vector>
 #include "cluster_legalizer.h"
 #include "full_legalizer.h"
@@ -27,6 +28,11 @@ struct SAPackCluster {
     LegalizationClusterId cluster_id = LegalizationClusterId::INVALID();
     /// @brief Whether this cluster has passed full intra-LB routing legality.
     bool is_finalized = false;
+
+    // NOTE: This is an ordered set since we iterate over the container in the
+    //       code. This is also expected to be relatively small, so a set is
+    //       likely faster.
+    std::set<PackMoleculeId> overfilled_mols;
 };
 
 /**
@@ -51,9 +57,7 @@ class SAPackDeviceGrid {
 };
 
 /**
- * @brief SAPack: An experimental full legalizer that greedily places molecules
- *        into tiles based on the partial placement, then iteratively legalizes
- *        the resulting clusters using full intra-LB routing checks.
+ * @brief SAPack.
  */
 class SAPack : public FullLegalizer {
   public:
@@ -70,6 +74,8 @@ class SAPack : public FullLegalizer {
 
     /// @brief Candidate cluster types for each primitive model.
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
+
+    bool try_place_mol_in_sub_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc, int target_sub_tile);
 
     /**
      * @brief Try to place the given molecule into the given tile.

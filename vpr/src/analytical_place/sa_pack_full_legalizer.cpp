@@ -7,10 +7,10 @@
 
 #include "sa_pack_full_legalizer.h"
 
+#include <algorithm>
 #include <optional>
 #include <queue>
 #include <unordered_set>
-#include <utility>
 #include <vector>
 
 #include "ap_netlist_fwd.h"
@@ -71,9 +71,28 @@ const std::vector<SAPackCluster>& SAPackDeviceGrid::get_clusters(t_physical_tile
 // SAPack
 // ============================================================================
 
-bool SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc) {
-    t_physical_tile_type_ptr tile_type = device_grid_.get_physical_type(tile_loc);
+bool SAPack::try_place_mol_in_sub_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc, int target_sub_tile) {
+    std::vector<SAPackCluster>& clusters_in_tile = sa_pack_grid_->get_clusters(tile_loc);
+    SAPackCluster& cluster = clusters_in_tile[target_sub_tile];
 
+    // Cannot place in finalized cluster.
+    // TODO: This can be relaxed later. We may want to try it with intra-lb routing
+    //       on so it remains finalized.
+    if (cluster.is_finalized)
+        return false;
+
+    // Check if a cluster has been created.
+    if (cluster.cluster_id.is_valid()) {
+        // If it has, try to add it.
+        if (cluster_legalizer_->is_molecule_compatible(mol_id, cluster.cluster_id)) {
+            if (cluster_legalizer_->add_mol_to_cluster(mol_id, cluster.cluster_id) == e_block_pack_status::BLK_PASSED)
+                return true;
+        }
+        return false;
+    }
+
+    // See if we can create one here.
+    t_physical_tile_type_ptr tile_type = device_grid_.get_physical_type(tile_loc);
     VTR_ASSERT(mol_id.is_valid());
     const t_pack_molecule& seed_molecule = prepacker_.get_molecule(mol_id);
     AtomBlockId root_atom = seed_molecule.atom_block_ids[seed_molecule.root];
@@ -83,45 +102,40 @@ bool SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc ti
     VTR_ASSERT(!primitive_candidate_block_types_[root_model_id].empty());
     const std::vector<t_logical_block_type_ptr>& candidate_cluster_types = primitive_candidate_block_types_[root_model_id];
 
-    // Try each sub-tile from bottom to top to try and place the molecules.
-    std::vector<SAPackCluster>& clusters_in_tile = sa_pack_grid_->get_clusters(tile_loc);
-    for (SAPackCluster& cluster : clusters_in_tile) {
-        if (cluster.is_finalized)
-            continue;
-        // Check if a cluster has been created.
-        if (cluster.cluster_id.is_valid()) {
-            if (cluster_legalizer_->is_molecule_compatible(mol_id, cluster.cluster_id)) {
-                if (cluster_legalizer_->add_mol_to_cluster(mol_id, cluster.cluster_id) == e_block_pack_status::BLK_PASSED)
-                    return true;
-            }
-        } else {
-            // See if we can create one here.
-            // TODO: This search can be made much more efficient.
-            // FIXME: This subtraction is not very clean and should not be used.
-            size_t sub_tile = &cluster - clusters_in_tile.data();
-            std::vector<t_logical_block_type_ptr> equivalent_sites;
-            for (const t_sub_tile& sub_tile_val : tile_type->sub_tiles) {
-                if (sub_tile_val.capacity.is_in_range(sub_tile)) {
-                    equivalent_sites = sub_tile_val.equivalent_sites;
-                }
-            }
-            for (t_logical_block_type_ptr cluster_type : equivalent_sites) {
-                for (t_logical_block_type_ptr candidate_cluster_type : candidate_cluster_types) {
-                    if (cluster_type->index == candidate_cluster_type->index) {
-                        int num_modes = candidate_cluster_type->pb_graph_head->pb_type->num_modes;
-                        for (int mode = 0; mode < num_modes; mode++) {
-                            e_block_pack_status pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
-                            LegalizationClusterId new_cluster_id;
-                            std::tie(pack_status, new_cluster_id) = cluster_legalizer_->start_new_cluster(mol_id, candidate_cluster_type, mode);
-                            if (pack_status == e_block_pack_status::BLK_PASSED) {
-                                cluster.cluster_id = new_cluster_id;
-                                return true;
-                            }
-                        }
+    // TODO: This search can be made much more efficient.
+    std::vector<t_logical_block_type_ptr> equivalent_sites;
+    for (const t_sub_tile& sub_tile_val : tile_type->sub_tiles) {
+        if (sub_tile_val.capacity.is_in_range(target_sub_tile)) {
+            equivalent_sites = sub_tile_val.equivalent_sites;
+        }
+    }
+    for (t_logical_block_type_ptr cluster_type : equivalent_sites) {
+        for (t_logical_block_type_ptr candidate_cluster_type : candidate_cluster_types) {
+            if (cluster_type->index == candidate_cluster_type->index) {
+                int num_modes = candidate_cluster_type->pb_graph_head->pb_type->num_modes;
+                for (int mode = 0; mode < num_modes; mode++) {
+                    e_block_pack_status pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
+                    LegalizationClusterId new_cluster_id;
+                    std::tie(pack_status, new_cluster_id) = cluster_legalizer_->start_new_cluster(mol_id, candidate_cluster_type, mode);
+                    if (pack_status == e_block_pack_status::BLK_PASSED) {
+                        cluster.cluster_id = new_cluster_id;
+                        return true;
                     }
                 }
             }
         }
+    }
+    return false;
+}
+
+bool SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc) {
+
+    // Try each sub-tile from bottom to top to try and place the molecules.
+    int num_sub_tiles = device_grid_.get_physical_type(tile_loc)->capacity;
+    for (int target_sub_tile = 0; target_sub_tile < num_sub_tiles; target_sub_tile++) {
+        bool place_success = try_place_mol_in_sub_tile(mol_id, tile_loc, target_sub_tile);
+        if (place_success)
+            return true;
     }
 
     // If the molecule could not be placed here, return false.
@@ -162,7 +176,6 @@ bool SAPack::try_place_mol_in_nearest_tile(PackMoleculeId mol_id, t_physical_til
 
 void SAPack::place_molecules(const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer place_molecules_timer("Placing Molecules on SAPack Grid");
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unplaced_mols;
 
     // Go through each atom in the APNetlist and place them in their tiles.
     // For now, we never use full legalization.
@@ -175,20 +188,15 @@ void SAPack::place_molecules(const PartialPlacement& p_placement) {
         tile_loc = device_grid_.get_nearest_loc_on_device(tile_loc);
         tile_loc = device_grid_.get_root_location(tile_loc);
 
+        int target_sub_tile = std::clamp(p_placement.block_sub_tiles[ap_blk_id], 0, device_grid_.get_physical_type(tile_loc)->capacity - 1);
+
         // FIXME: We need to handle things like RAM blocks here when creating
         //        the clusters. Maybe able to ignore if SA proves to be better.
         for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            if (!try_place_mol_in_tile(mol_id, tile_loc))
-                unplaced_mols.push_back(std::make_pair(mol_id, tile_loc));
-        }
-    }
-
-    // Place the rest of the molecules by searching for the nearest place to put
-    // them.
-    for (auto p : unplaced_mols) {
-        if (!try_place_mol_in_nearest_tile(p.first, p.second)) {
-            // In the future, we should fall back on APPack
-            VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
+            bool mol_placed = try_place_mol_in_sub_tile(mol_id, tile_loc, target_sub_tile);
+            if (!mol_placed) {
+                sa_pack_grid_->get_clusters(tile_loc)[target_sub_tile].overfilled_mols.insert(mol_id);
+            }
         }
     }
 }
@@ -258,19 +266,32 @@ void SAPack::fully_legalize_placement() {
                 if (!cluster.cluster_id.is_valid())
                     continue;
 
+                if (cluster.is_finalized)
+                    continue;
+
                 std::vector<PackMoleculeId> rejected_mols = finalize_cluster(cluster);
                 // If a molecule was rejected, it could be placed anywhere on the grid.
                 // Need to look for it.
-                if (!rejected_mols.empty()) {
+                if (!rejected_mols.empty() || !cluster.overfilled_mols.empty()) {
                     done = false;
                 }
-                
+
+                // Place all of the rejected molecules.
                 for (PackMoleculeId rejected_mol : rejected_mols) {
                     if (!try_place_mol_in_nearest_tile(rejected_mol, tile_loc)) {
                         // In the future, we should fall back on APPack
                         VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
                     }
                 }
+
+                // Place all of the overfilled molecules.
+                for (PackMoleculeId overfilled_mol : cluster.overfilled_mols) {
+                    if (!try_place_mol_in_nearest_tile(overfilled_mol, tile_loc)) {
+                        // In the future, we should fall back on APPack
+                        VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
+                    }
+                }
+                cluster.overfilled_mols.clear();
             }
         }
     }

@@ -140,7 +140,7 @@ class DeviceGrid {
 
     inline t_physical_tile_loc get_nearest_loc_on_device(const t_physical_tile_loc& tile_loc) const {
         t_physical_tile_loc new_loc;
-        new_loc.layer_num = std::clamp<size_t>(tile_loc.layer_num, 0, get_num_layers());
+        new_loc.layer_num = std::clamp<size_t>(tile_loc.layer_num, 0, get_num_layers() - 1);
         new_loc.x = std::clamp<size_t>(tile_loc.x, 0, width() - 1);
         new_loc.y = std::clamp<size_t>(tile_loc.y, 0, height() - 1);
 
