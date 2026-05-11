@@ -9,6 +9,7 @@ import subprocess
 import argparse
 import csv
 import os
+import shutil
 import signal
 
 from collections import OrderedDict
@@ -21,6 +22,61 @@ from prettytable import PrettyTable
 import vtr.error
 from vtr.error import CommandError
 from vtr import paths
+
+
+# Cached result of the runtime probe in _resolve_memory_tracking_cmd().
+_MEMORY_TRACKING_CMD_CACHE = False  # False means "not yet probed"; None means "unsupported".
+
+
+def _resolve_memory_tracking_cmd():
+    """
+    Return the argv prefix that tracks peak memory of a child process,
+    or ``None`` if no working implementation is available on this host.
+
+    Tracks DEF-006: ``time -v`` is a GNU coreutils extension. macOS BSD
+    ``/usr/bin/time`` does not accept ``-v`` and aborts immediately.
+    On macOS, GNU time is typically installed via Homebrew
+    ``coreutils`` and exposed as ``gtime``. We probe in order:
+
+      1. ``gtime -v`` (Homebrew coreutils on macOS, or distros that
+         install GNU time under that name)
+      2. ``/usr/bin/env time -v`` (Linux / any host where the default
+         ``time`` is GNU time)
+
+    The probe runs ``<candidate> -v true`` once and inspects the exit
+    code. Result is cached for the lifetime of the process.
+    """
+    global _MEMORY_TRACKING_CMD_CACHE
+    if _MEMORY_TRACKING_CMD_CACHE is not False:
+        return _MEMORY_TRACKING_CMD_CACHE
+
+    candidates = []
+    if shutil.which("gtime"):
+        candidates.append(["gtime", "-v"])
+    candidates.append(["/usr/bin/env", "time", "-v"])
+
+    for cand in candidates:
+        try:
+            probe = subprocess.run(
+                cand + ["true"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        except (OSError, FileNotFoundError):
+            continue
+        if probe.returncode == 0:
+            _MEMORY_TRACKING_CMD_CACHE = cand
+            return cand
+
+    print(
+        "warning: GNU 'time -v' is unavailable on this host; per-stage memory "
+        "tracking is disabled. On macOS, install GNU coreutils "
+        "('brew install coreutils') to enable it.",
+        file=sys.stderr,
+    )
+    _MEMORY_TRACKING_CMD_CACHE = None
+    return None
 
 
 class RunDir:
@@ -132,30 +188,29 @@ class CommandRunner:
         memory_limit = ["ulimit", "-Sv", "{val};".format(val=self._max_memory_mb)]
         cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
 
-        # Enable memory tracking? GNU `time -v` is required; BSD time on
-        # macOS does not support -v. Falls back to `gtime` (Homebrew gnu-time)
-        # and is silently skipped if neither is available.
-        memory_tracking = resolve_gnu_time_prefix() if self._track_memory else None
-        cmd = (
-            (
-                memory_tracking
-                + [
-                    "valgrind",
-                    "--leak-check=full",
-                    "--suppressions=" + str(paths.valgrind_supp),
-                    "--error-exitcode=1",
-                    "--errors-for-leak-kinds=none",
-                    "--track-origins=yes",
-                    "--log-file=valgrind.log",
-                    "--error-limit=no",
-                ]
-                + cmd
-                if self._valgrind
-                else memory_tracking + cmd
-            )
-            if memory_tracking
-            else cmd
-        )
+        # Enable memory tracking?
+        # DEF-006: probe for a working GNU 'time -v' instead of hard-coding
+        # the GNU-only path; falls back to no tracking on hosts where it is
+        # unavailable (e.g. macOS without Homebrew coreutils).
+        memory_tracking = _resolve_memory_tracking_cmd() if self._track_memory else None
+        if memory_tracking is not None:
+            if self._valgrind:
+                cmd = (
+                    memory_tracking
+                    + [
+                        "valgrind",
+                        "--leak-check=full",
+                        "--suppressions=" + str(paths.valgrind_supp),
+                        "--error-exitcode=1",
+                        "--errors-for-leak-kinds=none",
+                        "--track-origins=yes",
+                        "--log-file=valgrind.log",
+                        "--error-limit=no",
+                    ]
+                    + cmd
+                )
+            else:
+                cmd = memory_tracking + cmd
 
         # Flush before calling subprocess to ensure output is ordered
         # correctly if stdout is buffered
@@ -271,41 +326,6 @@ def check_cmd(command):
     """
 
     return Path(command).exists()
-
-
-_GNU_TIME_PREFIX = "unset"
-
-
-def resolve_gnu_time_prefix():
-    """
-    Return a command-list prefix that runs GNU time with verbose (-v) output,
-    e.g. ['/usr/bin/env', 'time', '-v'] or ['/usr/bin/env', 'gtime', '-v'].
-
-    Returns None if no GNU-compatible time is available on this system.
-    BSD /usr/bin/time on macOS does not support -v, so we probe by actually
-    running `<binary> -v true` and checking the exit code. Result is cached.
-    """
-    # pylint: disable=global-statement
-    global _GNU_TIME_PREFIX
-    if _GNU_TIME_PREFIX != "unset":
-        return _GNU_TIME_PREFIX
-
-    for binary in ("time", "gtime"):
-        try:
-            result = subprocess.run(
-                ["/usr/bin/env", binary, "-v", "true"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=False,
-            )
-            if result.returncode == 0:
-                _GNU_TIME_PREFIX = ["/usr/bin/env", binary, "-v"]
-                return _GNU_TIME_PREFIX
-        except (OSError, subprocess.SubprocessError):
-            continue
-
-    _GNU_TIME_PREFIX = None
-    return None
 
 
 def pretty_print_table(file, border=False):

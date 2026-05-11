@@ -272,10 +272,21 @@ jobs:
         make test -j${{ steps.cpu-cores.outputs.count }}
 
 
+  # GUITests — Plan §7.9 — runs the full GUI test pyramid on both
+  # ubuntu-24.04 and macos-14. The macOS leg is what S6/S7/S8 was
+  # measured against locally; the Linux leg is what GUICoverage uses
+  # for the gate. Each leg builds independently with -DVPR_USE_EZGL=on
+  # (the BuildVTR artifact is configured without ezgl, so it is not
+  # reused here) so the local and CI command lines are identical:
+  #
+  #     make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
   GUITests:
-    name: 'T: GUI Tests (Layers 1+3+5)'
-    runs-on: ubuntu-24.04
-    needs: [BuildVTR]
+    name: 'T: GUI Tests (Layers 1+3+4+5) [${{ matrix.os }}]'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
     steps:
 
     - uses: actions/checkout@v6
@@ -292,6 +303,115 @@ jobs:
         GIT_SSH_COMMAND="ssh -i ~/.ssh/ezgl_deploy_key -o StrictHostKeyChecking=no" git submodule update --init --recursive
         rm -f ~/.ssh/ezgl_deploy_key
 
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.3
+
+    # Plan §7.9 #3 — cache Homebrew so the macOS leg does not pay
+    # ~15 min Qt install on every run. Key is hashFiles(install_brew_packages.sh)
+    # so the cache invalidates whenever the install list changes.
+    - name: Cache Homebrew
+      if: runner.os == 'macOS'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/Homebrew
+          /opt/homebrew/Cellar/qt
+          /opt/homebrew/Cellar/qt-svg
+        key: brew-${{ runner.os }}-qt6-${{ hashFiles('install_brew_packages.sh') }}
+
+    # Plan §7.9 #2 — same install scripts as the local flow. Linux uses
+    # apt + aqtinstall (Qt 6.9.3 → /opt/qt6), macOS uses Homebrew.
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: ./install_apt_packages.sh
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: ./install_brew_packages.sh
+
+    - name: Install Python Requirements (Layer 5 SSIM)
+      run: pip install scikit-image Pillow numpy
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ matrix.os }}
+
+    # Plan §7.9 #4 — local and CI command lines identical. Top-level
+    # Makefile forwards `gui-tests` to the cmake-generated build dir.
+    # CMAKE_PREFIX_PATH inherits the workflow env on Linux (/opt/qt6);
+    # on macOS Homebrew sets it via brew --prefix qt.
+    - name: Build GUI test binaries
+      env:
+        BUILD_TYPE: release
+        CMAKE_PREFIX_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/qt' || '/opt/qt6/6.9.3/gcc_64' }}
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make CMAKE_PARAMS="-DVPR_USE_EZGL=on" -j${{ steps.cpu-cores.outputs.count }}
+
+    # Drives all four registered GUI ctest entries:
+    #   Layer 1 — test_vpr_gui_smoke      (headless P&R smoke, --disp off)
+    #   Layer 3 — test_vpr_gui            (Catch2 widget tree + S8 unit tests)
+    #   Layer 4 — test_vpr_gui_interactive (S6 mouse/key dispatch)
+    #   Layer 5 — test_vpr_gui_visual     (SSIM compare vs goldens)
+    - name: Run GUI Test Layers 1 + 3 + 4 + 5
+      env:
+        CMAKE_PREFIX_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/qt' || '/opt/qt6/6.9.3/gcc_64' }}
+      run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
+
+    # Plan §8.2 PR-merge exit criterion: `./run_reg_test.py vtr_reg_gui`
+    # must be green. Reuses the EZGL build above (vpr binary already
+    # produced) and exercises the four gui_* tasks defined under
+    # vtr_flow/tasks/regression_tests/vtr_reg_gui/.
+    - name: Run vtr_reg_gui regression suite
+      run: ./run_reg_test.py vtr_reg_gui -show_failures
+
+    - name: Upload failure logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: gui-tests-failure-logs-${{ matrix.os }}
+        path: |
+          build/vpr/test/gui/Testing/Temporary/
+          /tmp/tmp.*
+        if-no-files-found: ignore
+        retention-days: 7
+
+
+  # GUICoverage — Plan §7.9 #5 — Linux-only (gcov toolchain stable on
+  # Ubuntu; macOS uses xcrun llvm-cov gcov and isn't a stable CI target
+  # for coverage yet). Runs the same `make gui-coverage` target the
+  # local flow uses; the wrapper script swallows DEF-010 (visual
+  # regression) so gcovr always emits its report and the regression
+  # gate (35 % line / 22 % branch — see DEF-014) is what gates this job.
+  GUICoverage:
+    name: 'T: GUI Coverage (Linux, gcovr regression gate)'
+    runs-on: ubuntu-24.04
+    needs: [GUITests]
+    steps:
+
+    - uses: actions/checkout@v6
+
+    - name: Fetch submodules
+      env:
+        EZGL_DEPLOY_KEY: ${{ secrets.EZGL_DEPLOY_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$EZGL_DEPLOY_KEY" > ~/.ssh/ezgl_deploy_key
+        chmod 600 ~/.ssh/ezgl_deploy_key
+        ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+        git config submodule.libs/EXTERNAL/libezgl.url "git@github.com:QL-Proprietary/ezgl-QL.git"
+        GIT_SSH_COMMAND="ssh -i ~/.ssh/ezgl_deploy_key -o StrictHostKeyChecking=no" git submodule update --init --recursive
+        rm -f ~/.ssh/ezgl_deploy_key
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
@@ -299,38 +419,50 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - name: Install Python Requirements (Layer 5 SSIM)
-      run: |
-        pip install scikit-image Pillow numpy
+    - name: Install Python Requirements (Layer 5 SSIM + gcovr)
+      run: pip install scikit-image Pillow numpy gcovr
 
-    - name: Download Build Artifact
-      uses: actions/download-artifact@v8
+    - uses: hendrikmuhs/ccache-action@v1.2
       with:
-        name: build-release.tar.gz
+        key: ${{ github.job }}
 
-    - name: Unpack Build
-      shell: bash
+    # Coverage build — separate build/ tree so it does not poison
+    # ccache for the release legs.
+    - name: Build with coverage instrumentation
+      env:
+        BUILD_TYPE: debug
       run: |
-        tar -xvzf build.tar.gz
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make CMAKE_PARAMS="-DVPR_USE_EZGL=on -DVTR_ENABLE_COVERAGE=on" \
+             -j${{ steps.cpu-cores.outputs.count }}
 
-    # Run all three GUI test layers via the local CTest registry:
-    #   Layer 1 — test_vpr_gui_smoke   : headless P&R smoke (--disp off)
-    #   Layer 3 — test_vpr_gui         : Catch2 widget tree / Glade loader
-    #   Layer 5 — test_vpr_gui_visual  : SSIM compare PNGs vs vpr/test/gui/golden/
-    - name: Run GUI Test Layers 1 + 3 + 5
-      run: |
-        cd build/vpr/test/gui
-        ctest -R "test_vpr_gui$|test_vpr_gui_smoke|test_vpr_gui_visual" \
-              --output-on-failure --no-tests=error
+    - name: Run gui-coverage target (gcovr regression gate)
+      run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on -DVTR_ENABLE_COVERAGE=on" gui-coverage
 
-    - name: Upload failure logs
+    - name: Upload coverage HTML artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: gui-coverage-html
+        path: build/coverage_gui.html
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Upload coverage XML to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: build/coverage_gui.xml
+        flags: gui
+        fail_ci_if_error: false
+      continue-on-error: true
+
+    - name: Upload coverage failure logs
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: gui-tests-failure-logs
+        name: gui-coverage-failure-logs
         path: |
+          build/coverage_gui.txt
           build/vpr/test/gui/Testing/Temporary/
-          /tmp/tmp.*
         if-no-files-found: ignore
         retention-days: 7
 

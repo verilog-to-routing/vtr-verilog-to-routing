@@ -4,8 +4,20 @@
 # Layer 1: Headless smoke tests (bash script)
 # Layer 5: Visual regression tests (bash + Python SSIM)
 
-# Enable CTest for this directory (top-level enable_testing() is disabled
-# during QT_MIGRATION_TMP; this ensures our tests are still registered).
+# Enable CTest for this directory.
+#
+# Audit (S3 of vpr_gui_test_implementation_plan, evidence in
+# doc/src/dev/vpr_gui_s0_validation.rst §S0.4):
+#   - In the default build (QT_MIGRATION_FAST_BUILD=OFF) the top-level
+#     enable_testing() at CMakeLists.txt:462 is active and this local
+#     call is redundant — `ctest -N` returns the same 7 tests with or
+#     without it.
+#   - Under QT_MIGRATION_FAST_BUILD=ON the top-level call is skipped
+#     (CMakeLists.txt:459-463) and this local call is the only thing
+#     keeping our 3 GUI tests registered.
+# TODO(QT_MIGRATION_FAST_BUILD): remove this enable_testing() once the
+# fast-build mode is retired (tracked alongside DEF-004 cleanup in
+# Session S10 of the test implementation plan).
 enable_testing()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Xml Svg Test)
@@ -14,6 +26,9 @@ add_executable(test_vpr_gui
     test_gui_main.cpp
     test_qtgladeloader.cpp
     test_gui_flow.cpp
+    test_mouse_events.cpp
+    test_draw_state.cpp
+    test_renderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../vpr.qrc
 )
 
@@ -42,6 +57,21 @@ add_test(
 )
 set_tests_properties(test_vpr_gui PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "gui;unit;layer3"
+)
+
+# ---------------------------------------------------------------------------
+# Layer 4 — Interactive (mouse/keyboard) tests
+# Same Catch2 binary, filtered by tag so we get a separate ctest entry with a
+# distinct label triple. S6 of vpr_gui_test_implementation_plan.
+# ---------------------------------------------------------------------------
+add_test(
+    NAME test_vpr_gui_interactive
+    COMMAND test_vpr_gui --colour-mode ansi "[layer4]"
+)
+set_tests_properties(test_vpr_gui_interactive PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "gui;interactive;layer4"
 )
 
 # ---------------------------------------------------------------------------
@@ -77,3 +107,115 @@ set_tests_properties(test_vpr_gui_visual PROPERTIES
     LABELS "gui;visual;layer5"
     SKIP_RETURN_CODE 2
 )
+
+# ---------------------------------------------------------------------------
+# Aggregate make targets (S2 of vpr_gui_test_implementation_plan)
+#
+# Label-based selection — every GUI test carries LABELS "gui;<kind>;<layerN>"
+# so a future S6 layer-4 test joins the aggregate automatically.
+# WORKING_DIRECTORY must be the top-level build dir so ctest sees the
+# whole registry; CMAKE_CURRENT_BINARY_DIR would only see this subdir.
+# ---------------------------------------------------------------------------
+add_custom_target(gui-tests
+    COMMENT "Running VPR Qt GUI test suite (all layers, label=gui)"
+    COMMAND ${CMAKE_CTEST_COMMAND}
+            -L gui --output-on-failure --no-tests=error
+    DEPENDS vpr test_vpr_gui
+    USES_TERMINAL
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_custom_target(gui-tests-unit
+    COMMENT "Running VPR Qt GUI Layer 3 (Catch2) tests only"
+    COMMAND ${CMAKE_CTEST_COMMAND} -L layer3 --output-on-failure
+    DEPENDS test_vpr_gui
+    USES_TERMINAL
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_custom_target(gui-tests-smoke
+    COMMENT "Running VPR Qt GUI Layer 1 (headless smoke) tests only"
+    COMMAND ${CMAKE_CTEST_COMMAND} -L layer1 --output-on-failure
+    DEPENDS vpr
+    USES_TERMINAL
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_custom_target(gui-tests-visual
+    COMMENT "Running VPR Qt GUI Layer 5 (visual regression) tests only"
+    COMMAND ${CMAKE_CTEST_COMMAND} -L layer5 --output-on-failure
+    DEPENDS vpr
+    USES_TERMINAL
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+add_custom_target(gui-tests-interactive
+    COMMENT "Running VPR Qt GUI Layer 4 (interactive) tests only"
+    COMMAND ${CMAKE_CTEST_COMMAND} -L layer4 --output-on-failure
+    DEPENDS test_vpr_gui
+    USES_TERMINAL
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# ---------------------------------------------------------------------------
+# S7 — GUI code-coverage report (measure only; no fail-under gate)
+#
+# Plan reference: doc/src/dev/vpr_gui_test_implementation_plan.rst §7.7
+#
+# Activated by `-DVTR_ENABLE_COVERAGE=on`, which the top-level CMakeLists.txt
+# turns into `-g -ftest-coverage -fprofile-arcs` for the whole tree (see
+# CMakeLists.txt:344-352). The target itself does NOT add per-file coverage
+# flags — it relies on the global flag set so that libvpr, ezgl, and the
+# test binary all emit .gcno/.gcda consistently.
+#
+# v1.1 of the plan deliberately omits any --fail-under-* flag here; that
+# gate is added by S8 once the test corpus is rich enough to clear it.
+# ---------------------------------------------------------------------------
+if(VTR_ENABLE_COVERAGE)
+    if(APPLE)
+        # macOS clang emits LLVM-format coverage; gcovr needs the gcc-style
+        # shim that `xcrun llvm-cov gcov` provides. Quote-protect the two-
+        # word command so gcovr forwards it intact to subprocess.
+        set(GCOV_EXECUTABLE "xcrun llvm-cov gcov")
+    else()
+        find_program(GCOV_EXECUTABLE gcov REQUIRED)
+    endif()
+
+    find_program(GCOVR_EXECUTABLE gcovr REQUIRED)
+
+    # Wrapper script: runs the GUI ctest aggregate but always exits 0 so
+    # the downstream gcovr step still runs. S7 is measurement-only — see
+    # the comment block below the add_custom_target call.
+    set(_gui_cov_wrapper "${CMAKE_CURRENT_BINARY_DIR}/run_gui_tests_for_coverage.sh")
+    file(WRITE  "${_gui_cov_wrapper}" "#!/bin/sh\n")
+    file(APPEND "${_gui_cov_wrapper}"
+         "\"${CMAKE_CTEST_COMMAND}\" -L gui --output-on-failure\n")
+    file(APPEND "${_gui_cov_wrapper}" "exit 0\n")
+    execute_process(COMMAND chmod +x "${_gui_cov_wrapper}")
+
+    add_custom_target(gui-coverage
+        COMMENT "Generating GUI code coverage report (gcovr → coverage_gui.{html,xml,txt})"
+        COMMAND sh "${_gui_cov_wrapper}"
+        COMMAND ${GCOVR_EXECUTABLE} -r ${CMAKE_SOURCE_DIR}
+                --gcov-executable "${GCOV_EXECUTABLE}"
+                --html-details ${CMAKE_BINARY_DIR}/coverage_gui.html
+                --xml ${CMAKE_BINARY_DIR}/coverage_gui.xml
+                --txt ${CMAKE_BINARY_DIR}/coverage_gui.txt
+                # S8 regression gate (see DEF-014 in the discovered-defects
+                # log for the rationale: the plan §7.8 80%/70% target is
+                # unreachable from Layer 3 alone on the current renderer
+                # architecture, so we ship a regression-only gate set
+                # ~5pp below the measured baseline of 40.85% / 27.23%).
+                --fail-under-line 35
+                --fail-under-branch 22
+                -f ${CMAKE_SOURCE_DIR}/vpr/src/draw
+                -f ${CMAKE_SOURCE_DIR}/vpr/src/base/read_options.cpp
+                -f ${CMAKE_SOURCE_DIR}/libs/EXTERNAL/libezgl/src
+                -e ".*moc_.*"
+                -e ".*qrc_.*"
+                -e ".*ui_.*"
+                ${CMAKE_BINARY_DIR}
+        DEPENDS test_vpr_gui vpr
+        USES_TERMINAL
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()

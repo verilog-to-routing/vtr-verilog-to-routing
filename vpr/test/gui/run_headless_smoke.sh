@@ -33,6 +33,21 @@ readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
 
 export QT_SCALE_FACTOR=1
 
+# Up-front validation — fail loudly with one clear line instead of letting
+# VPR error out 8 times with the same root cause buried in vpr.log.
+require_file() {
+    local label="$1" path="$2"
+    if [[ ! -e "${path}" ]]; then
+        echo "ERROR: ${label} not found: ${path}" >&2
+        exit 2
+    fi
+}
+require_file "VPR binary" "${VPR}"
+require_file "architecture" "${ARCH}"
+for bench in and.blif and_latch.blif mult_2x2.blif mult_4x4.blif; do
+    require_file "benchmark" "${BENCH_DIR}/${bench}"
+done
+
 PASS=0
 FAIL=0
 XFAIL=0
