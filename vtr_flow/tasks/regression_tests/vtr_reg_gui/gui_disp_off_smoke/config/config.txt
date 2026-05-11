@@ -36,8 +36,8 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # -start vpr : skip parmys/odin (Risk R7)
-# -no_track_memory_usage : DEF-006 belt-and-braces; gtime is preferred
+# -track_memory_usage false : DEF-006 belt-and-braces; gtime is preferred
 #                          on macOS but disabling avoids any host that
 #                          lacks GNU time entirely.
 # --disp off : DEF-008 — --disp on hangs under offscreen QPA.
-script_params_common=-start vpr -no_track_memory_usage --disp off
+script_params_common=-start vpr -track_memory_usage false --disp off

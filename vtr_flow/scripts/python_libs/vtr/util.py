@@ -158,6 +158,7 @@ class CommandRunner:
         self._valgrind = valgrind
         self._expect_fail = expect_fail
 
+    # pylint: disable=too-many-branches
     def run_system_command(
         self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
     ):

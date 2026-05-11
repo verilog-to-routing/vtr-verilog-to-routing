@@ -212,6 +212,17 @@ def vtr_command_argparser(prog=None):
         help="Disable per-stage memory tracking (overrides -track_memory_usage).",
     )
 
+    # DEF-007: companion flag so memory tracking can be turned off from
+    # the CLI (the underlying GNU-time probe in util.py also auto-disables
+    # when no implementation is available, but an explicit override is
+    # useful for repeatable benchmark runs).
+    house_keeping.add_argument(
+        "-no_track_memory_usage",
+        dest="track_memory_usage",
+        action="store_false",
+        help="Disable per-stage memory tracking (overrides -track_memory_usage).",
+    )
+
     house_keeping.add_argument(
         "-show_failures",
         default=False,
