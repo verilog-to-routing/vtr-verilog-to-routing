@@ -283,7 +283,7 @@ static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_laye
             if (from_layer_num == to_layer_num) {
                 copy_entry = util::Cost_Entry(0., 0.);
             } else {
-                copy_entry = util::Cost_Entry(std::numeric_limits<float>::max() / 1e12, std::numeric_limits<float>::max() / 1e12);
+                copy_entry = util::Cost_Entry(ROUTER_LOOKAHEAD_NO_PATH_SENTINEL, ROUTER_LOOKAHEAD_NO_PATH_SENTINEL);
             }
         } else {
             copy_entry = get_nearby_cost_entry_compressed_lookahead(from_layer_num, copy_x, copy_y, to_layer_num, segment_index, chan_index);

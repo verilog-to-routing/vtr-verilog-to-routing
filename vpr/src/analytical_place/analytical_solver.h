@@ -12,6 +12,7 @@
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
 #include "device_grid.h"
+#include "physical_types.h"
 #include "place_delay_model.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
@@ -647,6 +648,36 @@ class B2BSolver : public AnalyticalSolver {
                                   std::vector<Eigen::Triplet<double>>& triplet_list,
                                   Eigen::VectorXd& b);
 
+    enum class CentralDifferenceDim {
+        X,
+        Y,
+        Layer,
+    };
+
+    /**
+     * @brief Computes the central-difference approximation of d(delay)/d(position)
+     *        for one spatial dimension.
+     *
+     * Queries the delay model one tile forward and one tile backward from the
+     * sink along @p dim and averages the two finite differences. Out-of-bounds
+     * neighbors and missing-path sentinel values are handled gracefully:
+     * only valid neighbor delays contribute to the result.
+     *
+     *  @param driver_block_loc   Physical tile location of the driver block.
+     *  @param sink_block_loc     Physical tile location of the sink block.
+     *  @param current_edge_delay Delay from the driver to the sink at their
+     *                            current locations.
+     *  @param dim                Spatial dimension to differentiate along.
+     *
+     *  @return Approximate derivative of delay with respect to tile position in
+     *          @p dim. Positive values indicate delay increases as the sink
+     *          moves further from the driver.
+     */
+    double get_central_difference(const t_physical_tile_loc& driver_block_loc,
+                                  const t_physical_tile_loc& sink_block_loc,
+                                  double current_edge_delay,
+                                  CentralDifferenceDim dim);
+
     /**
      * @brief Get the instantaneous derivative of delay for the given driver
      *        and sink pair.
@@ -656,20 +687,20 @@ class B2BSolver : public AnalyticalSolver {
      * objective function to help guide the solver to trading off timing and
      * wirelength.
      *
+     * The delay derivative is computed on the legalized placement, not the
+     * currently solved placement. So this would be constant per iteration of
+     * the solver.
+     *
      *  @param driver_blk
      *      The driver block for the edge to get the derivative of.
      *  @param sink_blk
      *      The sink block for the edge to get the derivative of.
-     *  @param p_placement
-     *      The current placement of the AP blocks. Used to get the current
-     *      distance from the driver to the sink.
      *
      *  @return The instantaneous derivative of delay with respect to distance
      *          in the x, y, and z dimensions respectively.
      */
     std::tuple<double, double, double> get_delay_derivative(APBlockId driver_blk,
-                                                            APBlockId sink_blk,
-                                                            const PartialPlacement& p_placement);
+                                                            APBlockId sink_blk);
 
     /**
      * @brief Get normalization factors to normalize away time units out of the
