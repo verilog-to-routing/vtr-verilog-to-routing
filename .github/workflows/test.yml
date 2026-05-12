@@ -883,7 +883,7 @@ jobs:
         id: cpu-cores
 
       - name: vcpkg build
-        uses: johnwason/vcpkg-action@v7
+        uses: johnwason/vcpkg-action@v8
         id: vcpkg
         with:
           # vcpkg will automatically find and use the vcpkg.json in your repo root
