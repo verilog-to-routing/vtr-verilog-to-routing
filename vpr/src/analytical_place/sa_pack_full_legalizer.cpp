@@ -392,6 +392,25 @@ std::vector<PackMoleculeId> SAPack::finalize_cluster(SAPackCluster& cluster) {
 void SAPack::fully_legalize_placement() {
     vtr::ScopedStartFinishTimer place_molecules_timer("Fully Legalizing SAPack Clusters");
 
+    // Start by moving any overfilled molecules out.
+    for (const t_physical_tile_loc& tile_loc : device_grid_.all_locations()) {
+        if (!device_grid_.is_root_location(tile_loc))
+                continue;
+
+        std::vector<SAPackCluster>& clusters_in_tile = sa_pack_grid_->get_clusters(tile_loc);
+        for (SAPackCluster& cluster : clusters_in_tile) {
+            // Place all of the overfilled molecules.
+            for (PackMoleculeId overfilled_mol : cluster.overfilled_mols) {
+                if (!try_place_mol_in_nearest_tile(overfilled_mol, tile_loc)) {
+                    // In the future, we should fall back on APPack
+                    VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
+                }
+            }
+            // FIXME: It is a bit unsafe to be modifying the overfilled molecules like this.
+            cluster.overfilled_mols.clear();
+        }
+    }
+
     // Next, fully legalize the clusters one-by-one. When a legalization fails,
     // the atoms should be moved to the nearest cluster that can support them.
     // TODO: It would be a much better idea to legalize the densest clusters
