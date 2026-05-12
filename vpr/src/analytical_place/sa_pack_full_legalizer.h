@@ -77,6 +77,8 @@ class SAPack : public FullLegalizer {
 
     bool try_place_mol_in_sub_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc, int target_sub_tile);
 
+    vtr::vector<PackMoleculeId, t_pl_loc> mol_locations_;
+
     /**
      * @brief Try to place the given molecule into the given tile.
      *
@@ -104,6 +106,8 @@ class SAPack : public FullLegalizer {
      * the nearest compatible tile via BFS.
      */
     void place_molecules(const PartialPlacement& p_placement);
+
+    void optimize_placement();
 
     /**
      * @brief Finalize the cluster by performing a full intra-lb route.

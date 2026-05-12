@@ -614,6 +614,8 @@ static void clustering_xml_blocks_from_legalizer(pugi::xml_node& block_node,
     // its pb_route calculated.
     cluster_legalizer.finalize();
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+        if (cluster_legalizer.is_cluster_empty(cluster_id))
+            continue;
         clustering_xml_block(block_node,
                              cluster_legalizer.get_cluster_type(cluster_id),
                              pb_graph_pin_lookup_from_index_by_type,

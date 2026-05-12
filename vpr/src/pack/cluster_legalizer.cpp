@@ -1908,6 +1908,9 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     // Free the cluster placement stats.
     free_cluster_placement_stats(cluster.placement_stats);
     cluster.placement_stats = nullptr;
+    // By definition, a cleaned cluster is routed.
+    // FIXME: This routed interface is a little silly. Need to investigate.
+    cluster.routed = true;
 }
 
 // TODO: This is fine for the current implementation of the legalizer. But if
@@ -2094,6 +2097,8 @@ void ClusterLegalizer::verify() {
     for (LegalizationClusterId cluster_id : clusters()) {
         if (!cluster_id.is_valid())
             continue;
+        if (is_cluster_empty(cluster_id))
+            continue;
         check_cluster_atom_blocks(get_cluster_pb(cluster_id), atoms_checked, atom_pb_lookup());
     }
 
@@ -2154,14 +2159,38 @@ size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId 
 }
 
 void ClusterLegalizer::finalize() {
+    bool should_compress = false;
     for (LegalizationClusterId cluster_id : legalization_cluster_ids_) {
         if (!cluster_id.is_valid())
             continue;
+        if (is_cluster_empty(cluster_id)) {
+            destroy_cluster(cluster_id);
+            should_compress = true;
+            continue;
+        }
         // If the cluster has not already been cleaned, clean it. This will
         // generate the pb_route necessary for generating a clustered netlist.
         const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
         if (!cluster.cluster_router.is_clean())
             clean_cluster(cluster_id);
+
+        // Each pb name must be unique. To ensure this, we rename the name
+        // of each pb to the name of the first primitive in the cluster.
+        // FIXME: This should be done cleaner. The code that writes this to
+        //        the XML file should probably be updated.
+        // NOTE: The reason this was needed is because a cluster may have been
+        //       created with a seed which was then moved to another location
+        //       and used as a seed for another cluster.
+        const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
+        const t_pack_molecule& molecule = prepacker_.get_molecule(cluster.molecules[0]);
+        AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
+        const std::string& root_atom_name = atom_nlist.block_name(root_atom);
+        if (cluster.pb->name != nullptr)
+            free(cluster.pb->name);
+        cluster.pb->name = vtr::strdup(root_atom_name.c_str());
+    }
+    if (should_compress) {
+        compress();
     }
 }
 

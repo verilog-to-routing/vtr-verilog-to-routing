@@ -592,6 +592,12 @@ class ClusterLegalizer {
         return cluster.molecules.size();
     }
 
+    inline bool is_cluster_routed(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+        return cluster.routed;
+    }
+
     /// @brief Gets the total number of cluster inputs available.
     size_t get_num_cluster_inputs_available(LegalizationClusterId cluster_id) const;
 

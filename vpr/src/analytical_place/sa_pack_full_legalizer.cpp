@@ -160,6 +160,7 @@ bool SAPack::try_place_mol_in_nearest_tile(PackMoleculeId mol_id, t_physical_til
             continue;
         visited[current_loc.layer_num][current_loc.x][current_loc.y] = true;
 
+        // FIXME: Update the location of the molecule!
         if (try_place_mol_in_tile(mol_id, current_loc))
             return true;
 
@@ -197,8 +198,151 @@ void SAPack::place_molecules(const PartialPlacement& p_placement) {
             if (!mol_placed) {
                 sa_pack_grid_->get_clusters(tile_loc)[target_sub_tile].overfilled_mols.insert(mol_id);
             }
+            mol_locations_[mol_id] = t_pl_loc(tile_loc, target_sub_tile);
         }
     }
+}
+
+void SAPack::optimize_placement() {
+    vtr::ScopedStartFinishTimer place_molecules_timer("Annealing Molecules on SAPack Grid");
+    size_t num_moves = 10000;
+    vtr::RandomNumberGenerator rng(0);
+    unsigned moves_accepted = 0;
+    unsigned moves_rejected = 0;
+    unsigned moves_aborted = 0;
+    for (size_t i = 0; i < num_moves; i++) {
+        // Generate move.
+        //  Select random molecule.
+        PackMoleculeId mol_to_move = *(prepacker_.molecules().begin() + rng.irand(prepacker_.molecules().size() - 1));
+        //  Select a random location.
+        t_physical_tile_loc target_physical_tile_loc(rng.irand(device_grid_.width() - 1),
+                                              rng.irand(device_grid_.height() - 1),
+                                              rng.irand(device_grid_.get_num_layers() - 1));
+        if (!device_grid_.is_loc_on_device(target_physical_tile_loc)) {
+            moves_aborted++;
+            continue;
+        }
+        target_physical_tile_loc = device_grid_.get_root_location(target_physical_tile_loc);
+        if (device_grid_.get_physical_type(target_physical_tile_loc)->capacity == 0) {
+            moves_aborted++;
+            continue;
+        }
+        int target_sub_tile = rng.irand(device_grid_.get_physical_type(target_physical_tile_loc)->capacity - 1);
+
+        // Perform the move.
+        //  Remove the molecule from its cluster.
+        t_pl_loc original_mol_loc = mol_locations_[mol_to_move];
+        t_physical_tile_loc source_mol_physical_loc(original_mol_loc.x, original_mol_loc.y, original_mol_loc.layer);
+        SAPackCluster& source_cluster = sa_pack_grid_->get_clusters(source_mol_physical_loc)[original_mol_loc.sub_tile];
+        bool mol_was_illegal_before_move = false;
+        if (source_cluster.overfilled_mols.contains(mol_to_move)) {
+            source_cluster.overfilled_mols.erase(mol_to_move);
+            mol_was_illegal_before_move = true;
+        } else {
+            cluster_legalizer_->remove_mol_from_cluster(mol_to_move);
+        }
+        //  Insert the molecule into the target cluster.
+        bool mol_is_illegal_after_move = false;
+        SAPackCluster& target_cluster = sa_pack_grid_->get_clusters(target_physical_tile_loc)[target_sub_tile];
+        bool mol_placed = try_place_mol_in_sub_tile(mol_to_move, target_physical_tile_loc, target_sub_tile);
+        if (!mol_placed) {
+            target_cluster.overfilled_mols.insert(mol_to_move);
+            mol_is_illegal_after_move = true;
+        }
+        //  Compute the change in cost.
+        double delta_c = 0.0;
+        std::unordered_set<AtomNetId> connected_nets;
+        t_pack_molecule molecule = prepacker_.get_molecule(mol_to_move);
+        for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            for (AtomPinId pin_id : atom_netlist_.block_pins(atom_blk_id)) {
+                AtomNetId pin_net_id = atom_netlist_.pin_net(pin_id);
+                // FIXME: We should have a max fanout net threshold!!!
+                connected_nets.insert(pin_net_id);
+            }
+        }
+        //      Compute HPWL of connected nets before move.
+        //          NOTE: Sub-tile has no affect on HPWL
+        double pre_move_hpwl_cost = 0.0;
+        for (AtomNetId connected_net : connected_nets) {
+            int min_x = std::numeric_limits<int>::max();
+            int max_x = std::numeric_limits<int>::min();
+            int min_y = std::numeric_limits<int>::max();
+            int max_y = std::numeric_limits<int>::min();
+            int min_layer = std::numeric_limits<int>::max();
+            int max_layer = std::numeric_limits<int>::min();
+            for (AtomPinId net_pin : atom_netlist_.net_pins(connected_net)) {
+                AtomBlockId net_pin_blk = atom_netlist_.pin_block(net_pin);
+                PackMoleculeId net_pin_mol = prepacker_.get_atom_molecule(net_pin_blk);
+                t_pl_loc net_pin_mol_loc = mol_locations_[net_pin_mol];
+                min_x = std::min(min_x, net_pin_mol_loc.x);
+                max_x = std::min(max_x, net_pin_mol_loc.x);
+                min_y = std::min(min_y, net_pin_mol_loc.y);
+                max_y = std::min(max_y, net_pin_mol_loc.y);
+                min_layer = std::min(min_layer, net_pin_mol_loc.layer);
+                max_layer = std::min(max_layer, net_pin_mol_loc.layer);
+            }
+            int hpwl = max_x - min_x + max_y - min_y + max_layer - min_layer;
+            pre_move_hpwl_cost = static_cast<double>(hpwl);
+        }
+        //      Compute HPWL of connected nets after move.
+        //      FIXME: The way we are doing this is a bit flakey. Should be more explicit about the move and cost calculations.
+        mol_locations_[mol_to_move] = t_pl_loc(target_physical_tile_loc, target_sub_tile);
+        double post_move_hpwl_cost = 0.0;
+        for (AtomNetId connected_net : connected_nets) {
+            int min_x = std::numeric_limits<int>::max();
+            int max_x = std::numeric_limits<int>::min();
+            int min_y = std::numeric_limits<int>::max();
+            int max_y = std::numeric_limits<int>::min();
+            int min_layer = std::numeric_limits<int>::max();
+            int max_layer = std::numeric_limits<int>::min();
+            for (AtomPinId net_pin : atom_netlist_.net_pins(connected_net)) {
+                AtomBlockId net_pin_blk = atom_netlist_.pin_block(net_pin);
+                PackMoleculeId net_pin_mol = prepacker_.get_atom_molecule(net_pin_blk);
+                t_pl_loc net_pin_mol_loc = mol_locations_[net_pin_mol];
+                min_x = std::min(min_x, net_pin_mol_loc.x);
+                max_x = std::min(max_x, net_pin_mol_loc.x);
+                min_y = std::min(min_y, net_pin_mol_loc.y);
+                max_y = std::min(max_y, net_pin_mol_loc.y);
+                min_layer = std::min(min_layer, net_pin_mol_loc.layer);
+                max_layer = std::min(max_layer, net_pin_mol_loc.layer);
+            }
+            int hpwl = max_x - min_x + max_y - min_y + max_layer - min_layer;
+            post_move_hpwl_cost = static_cast<double>(hpwl);
+        }
+        delta_c += post_move_hpwl_cost - pre_move_hpwl_cost;
+        //      Add the cost due to legality.
+        if (mol_was_illegal_before_move && !mol_is_illegal_after_move) {
+            // If the molecule was illegal and became legal, give a bonus.
+            delta_c -= 10000;
+        }
+        if (!mol_was_illegal_before_move && mol_is_illegal_after_move) {
+            // If the molecule was legal and became illegal, penalize.
+            delta_c += 10000;
+        }
+
+        // Revert the move if the cost was bad.
+        if (delta_c > 0.0) {
+            if (target_cluster.overfilled_mols.contains(mol_to_move)) {
+                target_cluster.overfilled_mols.erase(mol_to_move);
+            } else {
+                cluster_legalizer_->remove_mol_from_cluster(mol_to_move);
+            }
+
+            bool mol_revert_placed = try_place_mol_in_sub_tile(mol_to_move, source_mol_physical_loc, original_mol_loc.sub_tile);
+            if (!mol_revert_placed) {
+                source_cluster.overfilled_mols.insert(mol_to_move);
+            }
+
+            mol_locations_[mol_to_move] = original_mol_loc;
+            moves_rejected++;
+        } else {
+            moves_accepted++;
+        }
+    }
+
+    VTR_LOG("\tACCEPTED: %u, REJECTED: %u, ABORTED: %u\n", moves_accepted, moves_rejected, moves_aborted);
 }
 
 std::vector<PackMoleculeId> SAPack::finalize_cluster(SAPackCluster& cluster) {
@@ -247,6 +391,7 @@ std::vector<PackMoleculeId> SAPack::finalize_cluster(SAPackCluster& cluster) {
 
 void SAPack::fully_legalize_placement() {
     vtr::ScopedStartFinishTimer place_molecules_timer("Fully Legalizing SAPack Clusters");
+
     // Next, fully legalize the clusters one-by-one. When a legalization fails,
     // the atoms should be moved to the nearest cluster that can support them.
     // TODO: It would be a much better idea to legalize the densest clusters
@@ -325,9 +470,11 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
 
     primitive_candidate_block_types_ = identify_primitive_candidate_block_types();
 
+    mol_locations_.resize(prepacker_.molecules().size(), t_pl_loc(-1, -1, -1, -1));
+
     place_molecules(p_placement);
 
-    // TODO: Right here we can insert an optimizer to optimize on the flat placement.
+    optimize_placement();
 
     fully_legalize_placement();
 
