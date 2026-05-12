@@ -1148,7 +1148,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
     // neighbor that stays on the device, or 0 if the dimension is one tile wide.
     auto pick_step = [](int coord, int max_val) -> int {
         if (coord < max_val - 1)
-            return  1;
+            return 1;
         if (coord > 0)
             return -1;
         return 0;
