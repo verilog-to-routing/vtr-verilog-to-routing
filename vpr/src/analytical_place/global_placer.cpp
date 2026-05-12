@@ -314,6 +314,14 @@ static void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cl
                                               0 /*from_pin*/,
                                               sink_block_loc,
                                               0 /*to_pin*/);
+        // TODO: The place delay model returns ROUTER_LOOKAHEAD_NO_PATH_SENTINEL
+        //       when it does not have a delay for the given driver/sink pair.
+        //       This makes the placement look artificially bad, but it may
+        //       simply be a gap in the delay model. For now we treat it as zero;
+        //       a better fix would be to estimate it from distance, e.g.
+        //       distance * delay_per_tile.
+        if (delay >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+            delay = 0.0;
 
         // Get the atom pin associated with this AP pin (i.e. the one the AP
         // netlist is modeling).

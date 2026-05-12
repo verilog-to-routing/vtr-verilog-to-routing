@@ -969,132 +969,82 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
     }
 }
 
-// Use Finite Differences to compute derivative.
-std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
-                                                                   APBlockId sink_blk,
-                                                                   const PartialPlacement& p_placement) {
-
-    // Get the flat distance from the driver block to the sink block.
-    // NOTE: Here we take the magnitude of the difference since we assume that
-    //       the delay is symmetric (same delay regardless if you are going left
-    //       or right for example). This simplifies the code below some by having
-    //       us only focus on the positive axis.
-    float flat_dx = std::abs(p_placement.block_x_locs[sink_blk] - p_placement.block_x_locs[driver_blk]);
-    float flat_dy = std::abs(p_placement.block_y_locs[sink_blk] - p_placement.block_y_locs[driver_blk]);
-    float flat_dlayer = std::abs(p_placement.block_layer_nums[sink_blk] - p_placement.block_layer_nums[driver_blk]);
-
-    // Special case: If the distance between the driver and sink is as large as
-    // the device, we cannot take the forward difference (since it will go off
-    // chip). We can still approximate the derivative by taking one tile step
-    // back and getting the central difference at that point. This avoids the
-    // boundary condition, which should be very rare to occur.
-    // TODO: Investigate better ways of doing this.
-    if ((int)flat_dx + 1 > (int)device_grid_width_ - 1)
-        flat_dx = device_grid_width_ - 2;
-    if ((int)flat_dy + 1 > (int)device_grid_height_ - 1)
-        flat_dy = device_grid_height_ - 2;
-    // NOTE: layers are directly checked for going off chip.
-
-    // Get the physical tile location of the legalized driver block. The PlaceDelayModel
-    // may use this position to determine the physical tile the wire is coming from.
-    // When the placement is being solved, the driver may be moved to a physical tile
-    // which cannot implement any wires and the delays become infinite. By using the
-    // legalized position of the driver block, we ensure that the delays always exist
-    // (assuming the partial legalizer only places blocks in locations that a block
-    // can be implemented, which it currently does).
-    t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
-                                         block_y_locs_legalized[driver_blk],
-                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
-
-    // Get the physical tle location of the sink block, relative to the driver block.
-    // Based on the current implementation of the PlaceDelayModel, the location of this
-    // block does not actually matter, only the difference in x and y position is used.
-    // Hence, it is ok if this position is off the device, so long as the difference
-    // in x/y is not larger than the width/height of the device.
-    t_physical_tile_loc sink_block_loc(driver_block_loc.x + flat_dx,
-                                       driver_block_loc.y + flat_dy,
-                                       is_multi_die() ? driver_block_loc.layer_num + flat_dlayer : 0);
-
-    int tile_dx = sink_block_loc.x - driver_block_loc.x;
-    int tile_dy = sink_block_loc.y - driver_block_loc.y;
-    int tile_dlayer = sink_block_loc.layer_num - driver_block_loc.layer_num;
-    // The following asserts are to protect the "delay" calls used for the forward
-    // difference calculations below.
-    VTR_ASSERT_SAFE(tile_dx + 1 < (int)device_grid_width_);
-    VTR_ASSERT_SAFE(tile_dy + 1 < (int)device_grid_height_);
-
-    // Get the delay of a wire going from the given driver block location to the
-    // given sink block location. This should only use the physical tile type of
-    // the driver block location and the dx / dy of the positions to compute
-    // delay.
-    float current_edge_delay = place_delay_model_->delay(driver_block_loc,
-                                                         0 /*from_pin*/,
-                                                         sink_block_loc,
-                                                         0 /*to_pin*/);
-
-    // Get the delays of going from the driver block to the blocks directly
-    // surrounding the sink block (one tile above, below, left, and right).
-    // These will be used to compute the derivative.
-    t_physical_tile_loc right_block_loc(sink_block_loc.x + 1,
-                                        sink_block_loc.y,
-                                        sink_block_loc.layer_num);
-    t_physical_tile_loc left_block_loc(sink_block_loc.x - 1,
-                                       sink_block_loc.y,
-                                       sink_block_loc.layer_num);
-    t_physical_tile_loc upper_block_loc(sink_block_loc.x,
-                                        sink_block_loc.y + 1,
-                                        sink_block_loc.layer_num);
-    t_physical_tile_loc lower_block_loc(sink_block_loc.x,
-                                        sink_block_loc.y - 1,
-                                        sink_block_loc.layer_num);
-    // For layers, we need to ensure that the layers do not go off device.
-    // The delay method does not check for out of bounds.
-    int outer_sink_layer = sink_block_loc.layer_num + 1;
-    int inner_sink_layer = sink_block_loc.layer_num - 1;
-    if (outer_sink_layer >= (int)device_grid_num_layers_) {
-        outer_sink_layer = device_grid_num_layers_ - 1;
+double B2BSolver::get_central_difference(const t_physical_tile_loc& driver_block_loc,
+                                         const t_physical_tile_loc& sink_block_loc,
+                                         double current_edge_delay,
+                                         B2BSolver::CentralDifferenceDim dim) {
+    // Get the location of a block one step away from the driver (in the direction
+    // of the sink) and one step towards the driver (from the direction of the
+    // sink) in the selected dimension. We also collect some information about
+    // the selected dim.
+    int signed_delta_dist = 0;
+    int forward_step = 0;
+    t_physical_tile_loc forward_block_loc(sink_block_loc.x,
+                                          sink_block_loc.y,
+                                          sink_block_loc.layer_num);
+    t_physical_tile_loc backward_block_loc(sink_block_loc.x,
+                                           sink_block_loc.y,
+                                           sink_block_loc.layer_num);
+    int forward_pos = -1;
+    int backward_pos = -1;
+    int max_val = -1;
+    switch (dim) {
+        case B2BSolver::CentralDifferenceDim::X:
+            signed_delta_dist = sink_block_loc.x - driver_block_loc.x;
+            forward_step = signed_delta_dist >= 0 ? 1 : -1;
+            forward_block_loc.x += forward_step;
+            backward_block_loc.x -= forward_step;
+            forward_pos = forward_block_loc.x;
+            backward_pos = backward_block_loc.x;
+            max_val = device_grid_width_;
+            break;
+        case B2BSolver::CentralDifferenceDim::Y:
+            signed_delta_dist = sink_block_loc.y - driver_block_loc.y;
+            forward_step = signed_delta_dist >= 0 ? 1 : -1;
+            forward_block_loc.y += forward_step;
+            backward_block_loc.y -= forward_step;
+            forward_pos = forward_block_loc.y;
+            backward_pos = backward_block_loc.y;
+            max_val = device_grid_height_;
+            break;
+        case B2BSolver::CentralDifferenceDim::Layer:
+            signed_delta_dist = sink_block_loc.layer_num - driver_block_loc.layer_num;
+            forward_step = signed_delta_dist >= 0 ? 1 : -1;
+            forward_block_loc.layer_num += forward_step;
+            backward_block_loc.layer_num -= forward_step;
+            forward_pos = forward_block_loc.layer_num;
+            backward_pos = backward_block_loc.layer_num;
+            max_val = device_grid_num_layers_;
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unknown central difference dim.");
     }
-    if (inner_sink_layer < 0) {
-        inner_sink_layer = 0;
+
+    // Next, we compute the forward delay, if the forward block is on the device.
+    float forward_edge_delay = -1.0f;
+    bool forward_edge_delay_valid = false;
+    if (forward_pos >= 0 && forward_pos < max_val) {
+        forward_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                       0 /*from_pin*/,
+                                                       forward_block_loc,
+                                                       0 /*to_pin*/);
+        // NOTE: The lookahead uses ROUTER_LOOKAHEAD_NO_PATH_SENTINEL as a
+        //       placeholder when no routing path was found for a given pair.
+        //       Arithmetic on this value is meaningless, so we exclude it.
+        if (forward_edge_delay < ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+            forward_edge_delay_valid = true;
     }
-    t_physical_tile_loc outer_block_loc(sink_block_loc.x,
-                                        sink_block_loc.y,
-                                        outer_sink_layer);
-    t_physical_tile_loc inner_block_loc(sink_block_loc.x,
-                                        sink_block_loc.y,
-                                        inner_sink_layer);
-
-    float right_edge_delay = place_delay_model_->delay(driver_block_loc,
-                                                       0 /*from_pin*/,
-                                                       right_block_loc,
-                                                       0 /*to_pin*/);
-    float left_edge_delay = place_delay_model_->delay(driver_block_loc,
-                                                      0 /*from_pin*/,
-                                                      left_block_loc,
-                                                      0 /*to_pin*/);
-    float upper_edge_delay = place_delay_model_->delay(driver_block_loc,
-                                                       0 /*from_pin*/,
-                                                       upper_block_loc,
-                                                       0 /*to_pin*/);
-    float lower_edge_delay = place_delay_model_->delay(driver_block_loc,
-                                                       0 /*from_pin*/,
-                                                       lower_block_loc,
-                                                       0 /*to_pin*/);
-
-    float outer_edge_delay, inner_edge_delay;
-    if (is_multi_die()) {
-        // Only compute these delays if the design has multiple dies.
-        outer_edge_delay = place_delay_model_->delay(driver_block_loc,
-                                                     0 /*from_pin*/,
-                                                     outer_block_loc,
-                                                     0 /*to_pin*/);
-        inner_edge_delay = place_delay_model_->delay(driver_block_loc,
-                                                     0 /*from_pin*/,
-                                                     inner_block_loc,
-                                                     0 /*to_pin*/);
-    } else {
-        outer_edge_delay = current_edge_delay;
-        inner_edge_delay = current_edge_delay;
+    // Similarly for the backward delay.
+    float backward_edge_delay = -1.0f;
+    bool backward_edge_delay_valid = false;
+    if (backward_pos >= 0 && backward_pos < max_val) {
+        backward_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                        0 /*from_pin*/,
+                                                        backward_block_loc,
+                                                        0 /*to_pin*/);
+        // NOTE: Same sentinel check as above.
+        if (backward_edge_delay < ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+            backward_edge_delay_valid = true;
     }
 
     // Use Finite Differences to compute the instantanious derivative of delay
@@ -1109,59 +1059,74 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     // difference) and one tile behind the current point (the backward difference).
     // We can then approximate the derivative by averaging the forward and backward
     // differences to get what is called the central difference.
-    float forward_difference_x = right_edge_delay - current_edge_delay;
-    float backward_difference_x = current_edge_delay - left_edge_delay;
-    float central_difference_x = (forward_difference_x + backward_difference_x) / 2.0f;
+    // NOTE: These are computed unconditionally, but the validity guards below
+    //       ensure each difference is only returned when its delay was valid.
+    float forward_difference = forward_edge_delay - current_edge_delay;
+    float backward_difference = current_edge_delay - backward_edge_delay;
+    float central_difference = (forward_difference + backward_difference) / 2.0f;
 
-    float forward_difference_y = upper_edge_delay - current_edge_delay;
-    float backward_difference_y = current_edge_delay - lower_edge_delay;
-    float central_difference_y = (forward_difference_y + backward_difference_y) / 2.0f;
+    // If both the forward and backwards blocks are off the device, set the
+    // central difference to 0. This should only occur in the case when the
+    // device is only size 1 in the given dimension.
+    if (!forward_edge_delay_valid && !backward_edge_delay_valid)
+        return 0.0;
 
-    float forward_difference_z = outer_edge_delay - current_edge_delay;
-    float backward_difference_z = current_edge_delay - inner_edge_delay;
-    float central_difference_z = (forward_difference_z + backward_difference_z) / 2.0f;
-
-    // Set the resulting derivative to be equal to the central difference.
-    float d_delay_x = central_difference_x;
-    float d_delay_y = central_difference_y;
-    float d_delay_z = central_difference_z;
+    // If one of the backward or forward delays are invalid, return the other's
+    // difference.
+    if (!backward_edge_delay_valid)
+        return forward_difference;
+    if (!forward_edge_delay_valid)
+        return backward_difference;
 
     // For approximating the derivative of our PlaceDelayModel, there is a special
-    // case when the distance between the driver and sink are 0 in x or y. Since
-    // our delay models are symmetric, the forward and backward difference will
-    // be equal in magnitude and opposite. This means the central difference will
-    // be 0. This is not good since it would cause the objective to ignore the
-    // delay of blocks within the same cluster (making them more incentivized to
-    // not be in the same cluster together). To prevent this, we set the derivative
-    // to be the forward difference in that case. It must be the forward difference
-    // since the backward difference will likely be negative. This basically sets
-    // the derivative to be the penalty for putting the driver and sink in different
+    // case when the distance between the driver and sink are 0 in the chosen
+    // dimension. Since our delay models are symmetric, the forward and backward
+    // differences will be equal in magnitude and opposite in sign, making the
+    // central difference 0. This is not good since it would cause the objective
+    // to ignore the delay of blocks within the same cluster (making them more
+    // incentivized to not be in the same cluster together). To prevent this, we
+    // use the forward difference instead. It must be the forward difference since
+    // the backward difference will likely be negative. This basically sets the
+    // derivative to be the penalty for putting the driver and sink in different
     // tiles.
-    if (tile_dx == 0) {
-        d_delay_x = forward_difference_x;
-    }
-    if (tile_dy == 0) {
-        d_delay_y = forward_difference_y;
+    if (signed_delta_dist == 0) {
+        return forward_difference;
     }
 
-    // The layer has some special cases that occur when we are close to a boundary.
-    // NOTE: This is not needed for x and y since the delay calculator uses the
-    //       magnitude of dx/dy.
-    if (outer_sink_layer == sink_block_loc.layer_num) {
-        // If the sink is pressed against the top layer, use the backward difference.
-        d_delay_z = backward_difference_z;
-    }
-    if (inner_sink_layer == sink_block_loc.layer_num) {
-        // If the sink is pressed against the bottom layer, use the forward difference.
-        d_delay_z = forward_difference_z;
-    }
-    if (tile_dlayer == 0) {
-        // If the driver and sink are on the same layer, pick the forward/backward
-        // difference that is valid due to boundaries.
-        if (inner_sink_layer != sink_block_loc.layer_num)
-            d_delay_z = forward_difference_z;
-        else
-            d_delay_z = backward_difference_z;
+    // In the usual case, return the central difference.
+    return central_difference;
+}
+
+// Use Finite Differences to compute derivative.
+std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
+                                                                   APBlockId sink_blk) {
+    // Get the physical tile location of the legalized blocks. The PlaceDelayModel
+    // may use this position to determine the physical tile the wire is coming from.
+    // When the placement is being solved, the driver may be moved to a physical tile
+    // which cannot implement any wires and the delays become infinite. By using the
+    // legalized position of the driver block, we ensure that the delays always exist
+    // (assuming the partial legalizer only places blocks in locations that a block
+    // can be implemented, which it currently does).
+    t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
+                                         block_y_locs_legalized[driver_blk],
+                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
+    t_physical_tile_loc sink_block_loc(block_x_locs_legalized[sink_blk],
+                                       block_y_locs_legalized[sink_blk],
+                                       is_multi_die() ? block_z_locs_legalized[sink_blk] : 0);
+
+    // Get the delay of a wire going from the given driver block location to the
+    // given sink block location.
+    float current_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                         0 /*from_pin*/,
+                                                         sink_block_loc,
+                                                         0 /*to_pin*/);
+
+    // Set the resulting derivative to be equal to the central difference.
+    float d_delay_x = get_central_difference(driver_block_loc, sink_block_loc, current_edge_delay, CentralDifferenceDim::X);
+    float d_delay_y = get_central_difference(driver_block_loc, sink_block_loc, current_edge_delay, CentralDifferenceDim::Y);
+    float d_delay_z = 0.0;
+    if (is_multi_die()) {
+        d_delay_z = get_central_difference(driver_block_loc, sink_block_loc, current_edge_delay, CentralDifferenceDim::Layer);
     }
 
     return std::make_tuple(d_delay_x, d_delay_y, d_delay_z);
@@ -1179,38 +1144,52 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
                                          block_y_locs_legalized[driver_blk],
                                          is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
 
-    // Get the delay of exiting the block.
+    // Get the delay of exiting the block in each dimension. We pick the nearest
+    // neighbor that stays on the device, or 0 if the dimension is one tile wide.
+    auto pick_step = [](int coord, int max_val) -> int {
+        if (coord < max_val - 1)
+            return  1;
+        if (coord > 0)
+            return -1;
+        return 0;
+    };
+
+    int dx = pick_step(driver_block_loc.x, device_grid_width_);
+    int dy = pick_step(driver_block_loc.y, device_grid_height_);
+
+    // TODO: For each dimension, we should investigate what happens when
+    //       the sentinel is hit and potentially choose either 0 or infinity.
+    //       Using infinity would cause this timing arc to be ignored; using 0
+    //       would cause it to be very heavily weighted.
     double norm_fac_inv_x = place_delay_model_->delay(driver_block_loc,
                                                       0 /*from_pin*/,
-                                                      {driver_block_loc.x + 1, driver_block_loc.y, driver_block_loc.layer_num},
+                                                      {driver_block_loc.x + dx, driver_block_loc.y, driver_block_loc.layer_num},
                                                       0 /*to_pin*/);
+    if (norm_fac_inv_x >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+        norm_fac_inv_x = 1.0;
+
     double norm_fac_inv_y = place_delay_model_->delay(driver_block_loc,
                                                       0 /*from_pin*/,
-                                                      {driver_block_loc.x, driver_block_loc.y + 1, driver_block_loc.layer_num},
+                                                      {driver_block_loc.x, driver_block_loc.y + dy, driver_block_loc.layer_num},
                                                       0 /*to_pin*/);
-    double norm_fac_inv_z;
+    if (norm_fac_inv_y >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+        norm_fac_inv_y = 1.0;
+
+    double norm_fac_inv_z = 1.0;
     if (is_multi_die()) {
-        // Get the target layer. This will be either the layer above or below
-        // the driver block. We pick the layer such that we do not go off device.
-        int target_layer = driver_block_loc.layer_num + 1;
-        if (target_layer >= (int)device_grid_num_layers_) {
-            target_layer = driver_block_loc.layer_num - 1;
-        }
-        if (target_layer < 0) {
-            target_layer = 0;
-        }
+        int dlayer = pick_step(driver_block_loc.layer_num, device_grid_num_layers_);
         norm_fac_inv_z = place_delay_model_->delay(driver_block_loc,
                                                    0 /*from_pin*/,
-                                                   {driver_block_loc.x, driver_block_loc.y, target_layer},
+                                                   {driver_block_loc.x, driver_block_loc.y, driver_block_loc.layer_num + dlayer},
                                                    0 /*to_pin*/);
-    } else {
-        norm_fac_inv_z = 1.0;
+        if (norm_fac_inv_z >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+            norm_fac_inv_z = 1.0;
     }
 
     // Normalization factors are expected to be non-negative.
-    VTR_ASSERT_SAFE(norm_fac_inv_x >= 0.0);
-    VTR_ASSERT_SAFE(norm_fac_inv_y >= 0.0);
-    VTR_ASSERT_SAFE(norm_fac_inv_z >= 0.0);
+    norm_fac_inv_x = std::max(norm_fac_inv_x, 0.0);
+    norm_fac_inv_y = std::max(norm_fac_inv_y, 0.0);
+    norm_fac_inv_z = std::max(norm_fac_inv_z, 0.0);
 
     // The normalization factors will become infinite if we divide by 0 delay.
     // If the normalization factor is near 0, just set it to 1e-9 (or on the order
@@ -1319,8 +1298,7 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 // if the tradeoff between delay and wirelength is better, and
                 // lower when the tradeoff between delay and wirelength is worse.
                 auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
-                                                                              sink_blk,
-                                                                              p_placement);
+                                                                              sink_blk);
 
                 // Since the delay between two blocks may not monotonically increase
                 // (it may go down with distance due to different length wires), it
