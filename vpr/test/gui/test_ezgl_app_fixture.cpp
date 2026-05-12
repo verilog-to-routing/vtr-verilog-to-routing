@@ -5,9 +5,7 @@
 
 #include "test_ezgl_app_fixture.hpp"
 
-#include <QApplication>
 #include <QMainWindow>
-#include <QWidget>
 #include <stdexcept>
 
 #include <ezgl/application.hpp>
@@ -54,9 +52,6 @@ EzglAppFixture::~EzglAppFixture() {
     }
     main_window_.reset();
 }
-
-void EzglAppFixture::snapshot_top_level_widgets() {}
-void EzglAppFixture::delete_new_top_level_widgets() {}
 
 void EzglAppFixture::snapshot_draw_state() {
     snapshot_ = std::make_unique<DrawStateSnapshot>();

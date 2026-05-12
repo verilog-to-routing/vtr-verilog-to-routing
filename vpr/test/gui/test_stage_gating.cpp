@@ -42,12 +42,9 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <memory>
-#include <utility>
-#include <vector>
 
 #include <QComboBox>
 #include <QString>
-#include <QVariant>
 #include <QWidget>
 
 #include <ezgl/application.hpp>
@@ -61,62 +58,6 @@
 using vpr_gui_test::EzglAppFixture;
 
 namespace {
-
-/// RAII guard that snapshots a QComboBox's items and item-data at construction
-/// and restores them at destruction. Required because main.ui's GtkPopover
-/// widgets are materialised as top-level Qt::Popup QFrames that are NOT
-/// parented to the loaded QMainWindow (see test_gui_helpers.hpp). When the
-/// fixture's main_window_ is destroyed those popovers persist in
-/// `QApplication::allWidgets()` carrying any mutations forward, and a
-/// subsequent test that calls `findWidgetByName<QComboBox>("ToggleNetType")`
-/// can pick up the leaked, mutated copy. Restoring within the test body
-/// keeps any leak idempotent.
-class ComboItemsGuard {
-  public:
-    explicit ComboItemsGuard(QComboBox* cb)
-        : cb_(cb) {
-        if (!cb_) return;
-        for (int i = 0; i < cb_->count(); ++i) {
-            saved_.emplace_back(cb_->itemText(i), cb_->itemData(i));
-        }
-        saved_index_ = cb_->currentIndex();
-    }
-    ~ComboItemsGuard() {
-        if (!cb_) return;
-        cb_->clear();
-        for (auto& [text, data] : saved_) {
-            cb_->addItem(text, data);
-        }
-        if (saved_index_ >= 0 && saved_index_ < cb_->count()) {
-            cb_->setCurrentIndex(saved_index_);
-        }
-    }
-    ComboItemsGuard(const ComboItemsGuard&) = delete;
-    ComboItemsGuard& operator=(const ComboItemsGuard&) = delete;
-
-  private:
-    QComboBox* cb_ = nullptr;
-    std::vector<std::pair<QString, QVariant>> saved_;
-    int saved_index_ = -1;
-};
-
-/// RAII guard that snapshots a QWidget's enabled state and restores it.
-/// Same rationale as ComboItemsGuard for the ToggleCritPathRouting checkbox.
-class WidgetEnabledGuard {
-  public:
-    explicit WidgetEnabledGuard(QWidget* w)
-        : w_(w)
-        , saved_(w ? w->isEnabled() : true) {}
-    ~WidgetEnabledGuard() {
-        if (w_) w_->setEnabled(saved_);
-    }
-    WidgetEnabledGuard(const WidgetEnabledGuard&) = delete;
-    WidgetEnabledGuard& operator=(const WidgetEnabledGuard&) = delete;
-
-  private:
-    QWidget* w_ = nullptr;
-    bool saved_ = true;
-};
 
 /// Build a non-null shared_ptr<const SetupTimingInfo> *without*
 /// constructing a SetupTimingInfo (the class is purely abstract).
@@ -171,7 +112,6 @@ TEST_CASE("hide_crit_path_routing: enabled iff timing && ROUTING && show_crit",
 
     QWidget* w = app->find_widget("ToggleCritPathRouting");
     REQUIRE(w != nullptr);
-    WidgetEnabledGuard restore_w(w);
 
     t_draw_state* ds = get_draw_state_vars();
     auto truthy_tip = make_truthy_timing_info_handle();
@@ -227,7 +167,6 @@ TEST_CASE("hide_draw_routing: PLACEMENT removes 'Routing' item",
 
     QComboBox* cb = app->find_combo_box("ToggleNetType");
     REQUIRE(cb != nullptr);
-    ComboItemsGuard restore_cb(cb);
 
     t_draw_state* ds = get_draw_state_vars();
 
@@ -262,7 +201,6 @@ TEST_CASE("hide_draw_routing: non-PLACEMENT stages keep/restore 'Routing' item",
 
     QComboBox* cb = app->find_combo_box("ToggleNetType");
     REQUIRE(cb != nullptr);
-    ComboItemsGuard restore_cb(cb);
 
     t_draw_state* ds = get_draw_state_vars();
 
@@ -311,7 +249,6 @@ TEST_CASE("hide_draw_routing: stage transitions toggle item presence",
 
     QComboBox* cb = app->find_combo_box("ToggleNetType");
     REQUIRE(cb != nullptr);
-    ComboItemsGuard restore_cb(cb);
 
     t_draw_state* ds = get_draw_state_vars();
 

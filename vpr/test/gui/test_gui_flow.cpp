@@ -26,6 +26,9 @@
 #include <QLineEdit>
 #include <QGridLayout>
 #include <QStatusBar>
+#include <QSet>
+#include <QString>
+#include <QStringList>
 
 #include <ezgl/main_window.hpp>
 #include "test_gui_helpers.hpp"
@@ -332,4 +335,56 @@ TEST_CASE("Flow: NoC display combo has expected items", "[layer3][vpr_gui]") {
     CHECK(noc->itemText(0) == "None");
     CHECK(noc->itemText(1) == "NoC Links");
     CHECK(noc->itemText(2) == "NoC Link Usage");
+}
+
+// ---------------------------------------------------------------------------
+// Regression: QtGladeLoader::loadFile must not leak any widgets past
+// ~QMainWindow. Before the fix in libezgl/src/qt/qtgladeloader.cpp (pass-2
+// reparenting of orphan Qt::Popup frames), each loadFile/destroy cycle left
+// stale popovers + their children in QApplication::allWidgets(); subsequent
+// find_widget()/findWidgetByName() lookups could return a leaked copy
+// (hash-iteration-order dependent) and shadow the freshly-loaded one. The
+// original visible symptom was "Flow: Net popover has expected controls"
+// flaking on `ToggleNetType.count() == 1` (expected 2).
+//
+// Asserts the invariant directly: the full widget set returns to baseline
+// after the owning QMainWindow is destroyed. Any new widget alive in
+// QApplication::allWidgets() that wasn't there before the load is a leak,
+// regardless of class or name — catches popover-resident widgets we haven't
+// thought to name explicitly, including future additions to main.ui.
+// Deterministic, independent of test ordering and RNG seed.
+// ---------------------------------------------------------------------------
+TEST_CASE("Flow: widgets lifetime bounded by window lifetime",
+          "[layer3][vpr_gui][regression]") {
+    // Pointer-set snapshot of every widget Qt knows about right now. We never
+    // dereference these pointers after taking the snapshot — only test them
+    // for set membership — so even if Qt destroys one of them during the
+    // load/unload cycle (it shouldn't), the comparison stays well-defined.
+    const QList<QWidget*> baseline_list = QApplication::allWidgets();
+    const QSet<QWidget*> baseline_set(baseline_list.cbegin(), baseline_list.cend());
+
+    {
+        ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+        std::unique_ptr<QMainWindow> win(mw.release());
+        REQUIRE(win != nullptr);
+        // Sanity check: loading main.ui actually added widgets, so an empty
+        // post-leak list below is genuine cleanup, not "nothing happened".
+        REQUIRE(QApplication::allWidgets().size() > baseline_list.size());
+    }
+
+    // Anything alive now that wasn't in the baseline is a leak.
+    QStringList leaked;
+    for (QWidget* w : QApplication::allWidgets()) {
+        if (!baseline_set.contains(w)) {
+            const QString name = w->objectName().isEmpty()
+                                     ? QStringLiteral("<unnamed>")
+                                     : w->objectName();
+            const QString klass = QString::fromUtf8(w->metaObject()->className());
+            leaked << QStringLiteral("%1 (%2)").arg(name, klass);
+        }
+    }
+
+    INFO("leaked widgets (" << leaked.size() << "): "
+                            << leaked.join(QStringLiteral(", ")).toStdString());
+    REQUIRE(leaked.isEmpty());
 }

@@ -31,7 +31,6 @@
 #pragma once
 
 #include <memory>
-#include <set>
 
 #include <QMainWindow>
 
@@ -61,20 +60,9 @@ class EzglAppFixture {
   private:
     void snapshot_draw_state();
     void restore_draw_state();
-    void snapshot_top_level_widgets();
-    void delete_new_top_level_widgets();
 
     ezgl::application* app_ = nullptr;
     std::unique_ptr<QMainWindow> main_window_ = nullptr;
-
-    // Set of top-level widget pointers that existed BEFORE this fixture
-    // loaded main.ui. On destruction we delete any top-level widgets that
-    // are NOT in this set. Required because main.ui's GtkPopover widgets
-    // are materialised as top-level Qt::Popup QFrames with no parent
-    // (see test_gui_helpers.hpp); deleting only the QMainWindow leaks
-    // those popovers and their children, which then bleed mutated state
-    // into subsequent tests via QApplication::allWidgets().
-    std::set<QWidget*> pre_fixture_top_levels_;
 
     // Opaque storage for the saved t_draw_state. Sized generously so we
     // do not include draw_types.h in this header (which would pull in the
