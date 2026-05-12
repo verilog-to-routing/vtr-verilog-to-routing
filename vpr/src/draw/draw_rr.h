@@ -14,6 +14,7 @@
 
 #include "rr_graph_fwd.h"
 #include "rr_node.h"
+#include "draw_types.h"
 
 #include "ezgl/graphics.hpp"
 
@@ -44,6 +45,13 @@ inline const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> EDGE_TYPE_MA
     {{e_rr_type::CHANX, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
     {{e_rr_type::CHANY, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
     {{e_rr_type::CHANY, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
+    // Connections through explicit routing mux nodes
+    {{e_rr_type::OPIN, e_rr_type::MUX}, e_edge_type::OPIN_TO_CHAN},
+    {{e_rr_type::MUX, e_rr_type::IPIN}, e_edge_type::CHAN_TO_IPIN},
+    {{e_rr_type::MUX, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
+    {{e_rr_type::MUX, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
+    {{e_rr_type::CHANX, e_rr_type::MUX}, e_edge_type::CHAN_TO_CHAN},
+    {{e_rr_type::CHANY, e_rr_type::MUX}, e_edge_type::CHAN_TO_CHAN},
 };
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
@@ -70,6 +78,10 @@ void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
 void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g);
 
 void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
+
+void draw_rr_mux(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
+
+void draw_get_rr_mux_coords(RRNodeId inode, float* xcen, float* ycen);
 
 /* Draws a buffer (triangle) or pass transistor (circle) on the edge
  * connecting from to to, depending on the status of buffered.  The drawing

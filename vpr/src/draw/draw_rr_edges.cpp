@@ -581,6 +581,65 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     }
 }
 
+void draw_mux_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId rr_switch_id, ezgl::renderer* g) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    auto pin_coord = [&rr_graph](RRNodeId pin_node) {
+        std::vector<e_side> candidate_sides;
+        for (const e_side pin_side : TOTAL_2D_SIDES) {
+            if (rr_graph.is_node_on_specific_side(pin_node, pin_side)) {
+                candidate_sides.push_back(pin_side);
+            }
+        }
+        VTR_ASSERT(!candidate_sides.empty());
+
+        float x = 0;
+        float y = 0;
+        draw_get_rr_pin_coords(pin_node, &x, &y, candidate_sides.back());
+        return ezgl::point2d(x, y);
+    };
+
+    auto chan_coord_closest_to = [&rr_graph](RRNodeId chan_node, ezgl::point2d target) {
+        ezgl::rectangle chan_bbox = draw_get_rr_chan_bbox(chan_node);
+        if (rr_graph.node_type(chan_node) == e_rr_type::CHANX) {
+            return ezgl::point2d(std::clamp(target.x, chan_bbox.left(), chan_bbox.right()),
+                                 chan_bbox.bottom());
+        }
+
+        VTR_ASSERT(rr_graph.node_type(chan_node) == e_rr_type::CHANY);
+        return ezgl::point2d(chan_bbox.left(),
+                             std::clamp(target.y, chan_bbox.bottom(), chan_bbox.top()));
+    };
+
+    auto mux_coord = [](RRNodeId mux_node) {
+        float x = 0;
+        float y = 0;
+        draw_get_rr_mux_coords(mux_node, &x, &y);
+        return ezgl::point2d(x, y);
+    };
+
+    auto node_coord = [&](RRNodeId node, ezgl::point2d target) {
+        const e_rr_type node_type = rr_graph.node_type(node);
+        if (node_type == e_rr_type::MUX) {
+            return mux_coord(node);
+        }
+        if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
+            return pin_coord(node);
+        }
+        VTR_ASSERT(node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY);
+        return chan_coord_closest_to(node, target);
+    };
+
+    ezgl::point2d from_target = (rr_graph.node_type(to_node) == e_rr_type::MUX) ? mux_coord(to_node) : ezgl::point2d(0, 0);
+    ezgl::point2d from = node_coord(from_node, from_target);
+    ezgl::point2d to = node_coord(to_node, from);
+
+    g->draw_line(from, to);
+    draw_rr_switch(from.x, from.y, to.x, to.y,
+                   rr_graph.rr_switch_inf(rr_switch_id).buffered(),
+                   rr_graph.rr_switch_inf(rr_switch_id).configurable(), g);
+}
+
 void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::renderer* g) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
@@ -632,9 +691,15 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
     RRSwitchId rr_switch_id = (RRSwitchId)rr_graph.edge_switch(prev_node, iedge);
 
     switch (rr_type) {
+        case e_rr_type::MUX:
+            draw_mux_edge(prev_node, inode, rr_switch_id, g);
+            break;
+
         case e_rr_type::IPIN:
             if (prev_type == e_rr_type::OPIN) {
                 draw_pin_to_pin(prev_node, inode, g);
+            } else if (prev_type == e_rr_type::MUX) {
+                draw_mux_edge(prev_node, inode, rr_switch_id, g);
             } else {
                 draw_pin_to_chan_edge(inode, prev_node, g);
             }
@@ -652,6 +717,10 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
 
                 case e_rr_type::OPIN:
                     draw_pin_to_chan_edge(prev_node, inode, g);
+                    break;
+
+                case e_rr_type::MUX:
+                    draw_mux_edge(prev_node, inode, rr_switch_id, g);
                     break;
 
                 default:
@@ -675,6 +744,10 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
                 case e_rr_type::OPIN:
                     draw_pin_to_chan_edge(prev_node, inode, g);
 
+                    break;
+
+                case e_rr_type::MUX:
+                    draw_mux_edge(prev_node, inode, rr_switch_id, g);
                     break;
 
                 default:

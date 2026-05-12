@@ -60,7 +60,7 @@ void draw_rr(ezgl::renderer* g) {
                                                                                               DEFAULT_RR_NODE_COLOR,
                                                                                               DEFAULT_RR_NODE_COLOR,
                                                                                               DEFAULT_RR_NODE_COLOR,
-                                                                                              DEFAULT_RR_NODE_COLOR};
+                                                                                              blk_DARKORANGE};
 
     // Draw edges first, then nodes, so that nodes (and their muxes) are rendered on top of edges.
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
@@ -79,7 +79,7 @@ void draw_rr(ezgl::renderer* g) {
 
         if (!node_highlighted) {
             // Draw channel nodes if enabled
-            if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && !draw_state->draw_channel_nodes) {
+            if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::MUX) && !draw_state->draw_channel_nodes) {
                 continue;
             }
 
@@ -364,6 +364,11 @@ void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
         draw_rr_chan(inode, color, g);
         return;
     }
+
+    if (rr_type == e_rr_type::MUX) {
+        draw_rr_mux(inode, color, g);
+        return;
+    }
 }
 
 void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
@@ -482,6 +487,48 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
 
     float ypos = (class_height_shift + 1) / class_section_height;
     *ycen = yc + ypos * draw_coords->get_tile_height();
+}
+
+void draw_rr_mux(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    float xcen = 0;
+    float ycen = 0;
+    draw_get_rr_mux_coords(inode, &xcen, &ycen);
+
+    int transparency_factor = get_rr_node_transparency(inode);
+    g->set_color(color, transparency_factor);
+
+    const float mux_size = std::max(draw_coords->pin_size, 0.4f * WIRE_DRAWING_WIDTH);
+    g->fill_rectangle({xcen - mux_size, ycen - mux_size},
+                      {xcen + mux_size, ycen + mux_size});
+
+    g->set_color(ezgl::BLACK, transparency_factor);
+    g->draw_text({xcen, ycen},
+                 std::to_string(rr_graph.node_ptc_num(inode)).c_str(),
+                 2 * mux_size,
+                 2 * mux_size);
+}
+
+void draw_get_rr_mux_coords(RRNodeId inode, float* xcen, float* ycen) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::MUX);
+
+    const int x = rr_graph.node_xlow(inode);
+    const int y = rr_graph.node_ylow(inode);
+    const int mux_ptc = rr_graph.node_ptc_num(inode);
+
+    // Place explicit mux nodes in the switch-block drawing area, centered in
+    // the group of four channel tracks whose ptc values map to this mux.
+    constexpr float TRACKS_PER_MUX = 4.f;
+    constexpr float TRACK_GROUP_CENTER_OFFSET = 2.f;
+    const float track_offset = TRACK_GROUP_CENTER_OFFSET + TRACKS_PER_MUX * mux_ptc;
+
+    *xcen = draw_coords->tile_x[x] + draw_coords->get_tile_width() + track_offset;
+    *ycen = draw_coords->tile_y[y] + draw_coords->get_tile_height() + track_offset;
 }
 
 void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool configurable, ezgl::renderer* g) {
@@ -626,6 +673,18 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 }
                 break;
             }
+            case e_rr_type::MUX: {
+                float xcen = 0;
+                float ycen = 0;
+                draw_get_rr_mux_coords(inode, &xcen, &ycen);
+
+                const float tolerance = std::max(draw_coords->pin_size, 0.4f * WIRE_DRAWING_WIDTH);
+                if (click_x >= xcen - tolerance && click_x <= xcen + tolerance && click_y >= ycen - tolerance && click_y <= ycen + tolerance) {
+                    hit_node = inode;
+                    return hit_node;
+                }
+                break;
+            }
             default:
                 break;
         }
@@ -718,6 +777,10 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
             case e_rr_type::SINK:
                 color.alpha *= 0.8;
                 draw_rr_src_sink(inode, color, g);
+                if (with_edges) draw_rr_edges(inode, g);
+                break;
+            case e_rr_type::MUX:
+                draw_rr_mux(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
             default:

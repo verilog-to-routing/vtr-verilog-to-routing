@@ -73,6 +73,11 @@ e_side get_pin_side(RRNodeId pin_node, RRNodeId chan_node);
 void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer* g);
 
 /**
+ * @brief Draws an edge incident to an explicit routing MUX node.
+ */
+void draw_mux_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId rr_switch_id, ezgl::renderer* g);
+
+/**
  * @brief Draws an edge between two RR nodes.
  * 
  * This function determines the type of the RR nodes and calls the appropriate drawing function.
