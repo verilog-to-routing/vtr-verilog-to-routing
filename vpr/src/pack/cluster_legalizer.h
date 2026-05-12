@@ -601,6 +601,24 @@ class ClusterLegalizer {
     /// @brief Gets the total number of cluster inputs available.
     size_t get_num_cluster_inputs_available(LegalizationClusterId cluster_id) const;
 
+    /// @brief Returns the total number of committed external input pin slots in
+    ///        use across all input pin classes at the cluster root.
+    size_t get_num_external_inputs_used(LegalizationClusterId cluster_id) const;
+
+    /// @brief Returns the total number of committed external output pin slots in
+    ///        use across all output pin classes at the cluster root.
+    size_t get_num_external_outputs_used(LegalizationClusterId cluster_id) const;
+
+    /// @brief Returns the total external input pin slot capacity across all
+    ///        input pin classes at the cluster root. Fixed for a given cluster
+    ///        type; the SA engine can cache this per type.
+    size_t get_num_external_inputs_total(LegalizationClusterId cluster_id) const;
+
+    /// @brief Returns the total external output pin slot capacity across all
+    ///        output pin classes at the cluster root. Fixed for a given cluster
+    ///        type; the SA engine can cache this per type.
+    size_t get_num_external_outputs_total(LegalizationClusterId cluster_id) const;
+
     /// @brief Gets the ID of the cluster that contains the given atom block.
     inline LegalizationClusterId get_atom_cluster(AtomBlockId blk_id) const {
         VTR_ASSERT_SAFE(blk_id.is_valid() && (size_t)blk_id < atom_cluster_.size());

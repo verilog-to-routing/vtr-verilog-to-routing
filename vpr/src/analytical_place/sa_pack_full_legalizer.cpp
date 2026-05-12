@@ -229,11 +229,32 @@ void SAPack::optimize_placement() {
         }
         int target_sub_tile = rng.irand(device_grid_.get_physical_type(target_physical_tile_loc)->capacity - 1);
 
-        // Perform the move.
-        //  Remove the molecule from its cluster.
         t_pl_loc original_mol_loc = mol_locations_[mol_to_move];
         t_physical_tile_loc source_mol_physical_loc(original_mol_loc.x, original_mol_loc.y, original_mol_loc.layer);
         SAPackCluster& source_cluster = sa_pack_grid_->get_clusters(source_mol_physical_loc)[original_mol_loc.sub_tile];
+
+        SAPackCluster& target_cluster = sa_pack_grid_->get_clusters(target_physical_tile_loc)[target_sub_tile];
+
+        // Get the external pin utlization before the move.
+        size_t num_source_external_inputs_used_before;
+        size_t num_source_external_outputs_used_before;
+        bool source_pins_valid = false;
+        if (source_cluster.cluster_id.is_valid()) {
+            num_source_external_inputs_used_before = cluster_legalizer_->get_num_external_inputs_used(source_cluster.cluster_id);
+            num_source_external_outputs_used_before = cluster_legalizer_->get_num_external_outputs_used(source_cluster.cluster_id);
+            source_pins_valid = true;
+        }
+        size_t num_target_external_inputs_used_before;
+        size_t num_target_external_outputs_used_before;
+        bool target_pins_valid = false;
+        if (target_cluster.cluster_id.is_valid()) {
+            num_target_external_inputs_used_before = cluster_legalizer_->get_num_external_inputs_used(target_cluster.cluster_id);
+            num_target_external_outputs_used_before = cluster_legalizer_->get_num_external_outputs_used(target_cluster.cluster_id);
+            target_pins_valid = true;
+        }
+
+        // Perform the move.
+        //  Remove the molecule from its cluster.
         bool mol_was_illegal_before_move = false;
         if (source_cluster.overfilled_mols.contains(mol_to_move)) {
             source_cluster.overfilled_mols.erase(mol_to_move);
@@ -243,7 +264,6 @@ void SAPack::optimize_placement() {
         }
         //  Insert the molecule into the target cluster.
         bool mol_is_illegal_after_move = false;
-        SAPackCluster& target_cluster = sa_pack_grid_->get_clusters(target_physical_tile_loc)[target_sub_tile];
         bool mol_placed = try_place_mol_in_sub_tile(mol_to_move, target_physical_tile_loc, target_sub_tile);
         if (!mol_placed) {
             target_cluster.overfilled_mols.insert(mol_to_move);
@@ -321,6 +341,23 @@ void SAPack::optimize_placement() {
             // If the molecule was legal and became illegal, penalize.
             delta_c += 10000;
         }
+        //      Add the cost due to external pin utilization.
+        //      TODO: We should normalize by the total possible input and output pins that can occur.
+        // FIXME: The source / target clusters may have existed after the swap!!!!
+        size_t source_delta_external_pins_used = 0;
+        if (source_pins_valid) {
+            size_t num_source_external_inputs_used_after = cluster_legalizer_->get_num_external_inputs_used(source_cluster.cluster_id);
+            size_t num_source_external_outputs_used_after = cluster_legalizer_->get_num_external_outputs_used(source_cluster.cluster_id);
+            source_delta_external_pins_used = (num_source_external_inputs_used_after + num_source_external_outputs_used_after) - (num_source_external_inputs_used_before + num_source_external_outputs_used_before);
+        }
+        size_t target_delta_external_pins_used = 0;
+        if (target_pins_valid) {
+            size_t num_target_external_inputs_used_after = cluster_legalizer_->get_num_external_inputs_used(target_cluster.cluster_id);
+            size_t num_target_external_outputs_used_after = cluster_legalizer_->get_num_external_outputs_used(target_cluster.cluster_id);
+            target_delta_external_pins_used = (num_target_external_inputs_used_after + num_target_external_outputs_used_after) - (num_target_external_inputs_used_before + num_target_external_outputs_used_before);
+        }
+        
+        delta_c += 10.0 * (source_delta_external_pins_used + target_delta_external_pins_used);
 
         // Revert the move if the cost was bad.
         if (delta_c > 0.0) {

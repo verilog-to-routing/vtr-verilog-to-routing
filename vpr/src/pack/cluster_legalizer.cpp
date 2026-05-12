@@ -2158,6 +2158,42 @@ size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId 
     return inputs_avail;
 }
 
+size_t ClusterLegalizer::get_num_external_inputs_used(LegalizationClusterId cluster_id) const {
+    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+    size_t count = 0;
+    for (int i = 0; i < cluster.pb->pb_graph_node->num_input_pin_class; i++)
+        count += cluster.pb->pb_stats->input_pins_used[i].size();
+    return count;
+}
+
+size_t ClusterLegalizer::get_num_external_outputs_used(LegalizationClusterId cluster_id) const {
+    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+    size_t count = 0;
+    for (int i = 0; i < cluster.pb->pb_graph_node->num_output_pin_class; i++)
+        count += cluster.pb->pb_stats->output_pins_used[i].size();
+    return count;
+}
+
+size_t ClusterLegalizer::get_num_external_inputs_total(LegalizationClusterId cluster_id) const {
+    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+    size_t count = 0;
+    for (int i = 0; i < cluster.pb->pb_graph_node->num_input_pin_class; i++)
+        count += cluster.pb->pb_graph_node->input_pin_class_size[i];
+    return count;
+}
+
+size_t ClusterLegalizer::get_num_external_outputs_total(LegalizationClusterId cluster_id) const {
+    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+    size_t count = 0;
+    for (int i = 0; i < cluster.pb->pb_graph_node->num_output_pin_class; i++)
+        count += cluster.pb->pb_graph_node->output_pin_class_size[i];
+    return count;
+}
+
 void ClusterLegalizer::finalize() {
     bool should_compress = false;
     for (LegalizationClusterId cluster_id : legalization_cluster_ids_) {
