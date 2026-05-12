@@ -55,16 +55,13 @@ C/C++ formatting applies to: `vpr/`, `libs/libarchfpga`, `libs/libvtrutil`, `lib
 
 ## Python Environment
 
-Many scripts in `vtr_flow/scripts/` require the Python virtual environment. Set it up once and activate it in every new terminal before running flow scripts or regression tests:
+Many scripts in `vtr_flow/scripts/` require the Python virtual environment. Before running any flow scripts or regression tests, activate it with:
 
 ```shell
-# One-time setup
-make env
-pip install -r requirements.txt
-
-# Every new terminal session
 source .venv/bin/activate
 ```
+
+The virtual environment is set up by the user once (`make env` + `pip install -r requirements.txt`). Do not run those setup commands — assume the environment already exists.
 
 ## Running Tests
 
@@ -80,16 +77,6 @@ source .venv/bin/activate
 # Run both
 ./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 
-# Nightly (requires Titan/ISPD/Symbiflow benchmarks)
-./run_reg_test.py vtr_reg_nightly_test1   # through test7 in parallel on CI
-./run_reg_test.py vtr_reg_weekly
-```
-
-Download extra benchmarks when needed:
-```shell
-make get_titan_benchmarks
-make get_ispd_benchmarks
-make get_symbiflow_benchmarks
 ```
 
 ### Unit Tests
@@ -178,6 +165,10 @@ Prefer `VTR_ASSERT` and `VTR_ASSERT_SAFE` over bare `assert()`:
 - `VTR_ASSERT(cond)` — inexpensive checks, always on including release builds
 - `VTR_ASSERT_SAFE(cond)` — expensive checks, disabled in release builds
 
+Each has a `_MSG` variant that takes a message string — use it when the condition alone is not self-explanatory:
+- `VTR_ASSERT_MSG(cond, "message")`
+- `VTR_ASSERT_SAFE_MSG(cond, "message")`
+
 ### Logging
 
 Use VTR logging macros instead of `printf`, `std::cerr`, or `exit()`:
@@ -224,7 +215,7 @@ Use `auto` only when the type is long or complex (iterators, lambdas, long templ
 
 ### External Subtrees (`libs/EXTERNAL/`)
 
-`libs/EXTERNAL/` contains code pulled in from upstream repositories via `git subtree`: `abc`, `libargparse`, `libblifparse`, `libsdcparse`, and `libtatum`. Do not modify files under `libs/EXTERNAL/` directly — changes must be made in the upstream repository and then synced into VTR using `dev/external_subtrees.py`.
+`libs/EXTERNAL/` contains code pulled in from upstream repositories via `git subtree`: `libargparse`, `libblifparse`, `libsdcparse`, and `libtatum`. Do not modify files under `libs/EXTERNAL/` directly — changes must be made in the upstream repository and then synced into VTR using `dev/external_subtrees.py`. The `abc/` directory at the repo root is similarly external and should not be modified directly.
 
 ### Shared Libraries (`libs/`)
 
