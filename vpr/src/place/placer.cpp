@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 #include <utility>
+#include <cmath>
 
 #include "echo_files.h"
 #include "flat_placement_types.h"
@@ -21,6 +22,7 @@
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 #include "tatum/echo_writer.hpp"
+#include "vtr_math.h"
 
 #ifndef NO_GRAPHICS
 #include "draw_global.h"
@@ -270,9 +272,11 @@ void Placer::check_place_() {
 int Placer::check_placement_costs_() {
     int error = 0;
 
+    constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
+
     const auto [cost_terms_check, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
 
-    if (fabs(cost_terms_check.bb_cost - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
+    if (!vtr::isclose(cost_terms_check.bb_cost, costs_.bb_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
         VTR_LOG_ERROR(
             "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
             cost_terms_check.bb_cost, costs_.bb_cost);
@@ -286,17 +290,16 @@ int Placer::check_placement_costs_() {
     // We treat both values as equivalent whenthey are below this threshold.
     // We only apply this to congestion cost and interposer congestion cost because
     // other cost terms are never zero.
-    constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
-    if (!(fabs(cost_terms_check.cong_cost) < MIN_EXPECTED_CONG_COST && fabs(costs_.congestion_cost) < MIN_EXPECTED_CONG_COST)) {
-        if (fabs(cost_terms_check.cong_cost - costs_.congestion_cost) > fabs(costs_.congestion_cost) * PL_INCREMENTAL_COST_TOLERANCE) {
-            VTR_LOG_ERROR(
-                "cong_cost_check: %g and congestion_cost: %g differ in check_place.\n",
-                cost_terms_check.cong_cost, costs_.congestion_cost);
-            error++;
-        }
+    if (!((std::fabs(cost_terms_check.cong_cost) < MIN_EXPECTED_CONG_COST
+           && std::fabs(costs_.congestion_cost) < MIN_EXPECTED_CONG_COST)
+          || vtr::isclose(cost_terms_check.cong_cost, costs_.congestion_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
+        VTR_LOG_ERROR(
+            "cong_cost_check: %g and congestion_cost: %g differ in check_place.\n",
+            cost_terms_check.cong_cost, costs_.congestion_cost);
+        error++;
     }
 
-    if (fabs(cost_terms_check.interposer_cost - costs_.interposer_cost) > costs_.interposer_cost * PL_INCREMENTAL_COST_TOLERANCE) {
+    if (!vtr::isclose(cost_terms_check.interposer_cost, costs_.interposer_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
         VTR_LOG_ERROR(
             "interposer_cost_check: %g and interposer_cost: %g differ in check_place.\n",
             cost_terms_check.interposer_cost, costs_.interposer_cost);
@@ -304,19 +307,19 @@ int Placer::check_placement_costs_() {
     }
 
     // Similar logic to congestion cost.
-    if (!(fabs(cost_terms_check.interposer_cong_cost) < MIN_EXPECTED_CONG_COST && fabs(costs_.interposer_cong_cost) < MIN_EXPECTED_CONG_COST)) {
-        if (fabs(cost_terms_check.interposer_cong_cost - costs_.interposer_cong_cost) > costs_.interposer_cong_cost * PL_INCREMENTAL_COST_TOLERANCE) {
-            VTR_LOG_ERROR(
-                "interposer_cong_cost_check: %g and interposer_cong_cost: %g differ in check_place.\n",
-                cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost);
-            error++;
-        }
+    if (!((std::fabs(cost_terms_check.interposer_cong_cost) < MIN_EXPECTED_CONG_COST
+           && std::fabs(costs_.interposer_cong_cost) < MIN_EXPECTED_CONG_COST)
+          || vtr::isclose(cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
+        VTR_LOG_ERROR(
+            "interposer_cong_cost_check: %g and interposer_cong_cost: %g differ in check_place.\n",
+            cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost);
+        error++;
     }
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double timing_cost_check;
         comp_td_costs(place_delay_model_.get(), *placer_criticalities_, placer_state_, &timing_cost_check);
-        if (fabs(timing_cost_check - costs_.timing_cost) > costs_.timing_cost * PL_INCREMENTAL_COST_TOLERANCE) {
+        if (!vtr::isclose(timing_cost_check, costs_.timing_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
             VTR_LOG_ERROR(
                 "timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
                 timing_cost_check, costs_.timing_cost);
