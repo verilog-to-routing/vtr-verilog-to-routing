@@ -1422,6 +1422,10 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
+    // This routine is O(total interposer cut lines): every cut is checked against the net BB.
+    // If we support devices with many dice, consider a refactor (e.g. interval queries)
+    // so cost updates do not scale linearly with cut count.
+
     // Select the trial (tentative) vs the committed bounding box.
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
