@@ -1005,7 +1005,7 @@ class t_rr_graph_storage {
      * storage_ stores the core RR node data used by the router and is **very**
      * hot.
      */
-    vtr::vector<RRNodeId, t_rr_node_data, vtr::aligned_allocator<t_rr_node_data>> node_storage_;
+    vtr::vector<RRNodeId, t_rr_node_data> node_storage_;
 
     /** @brief
      * The PTC data is cold data, and is generally not used during the inner
