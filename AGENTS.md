@@ -4,12 +4,12 @@ This file provides guidance to AI coding agents working in this repository.
 
 ## Quick Reference
 
-Detailed guides are in `doc/agents/`:
+Detailed guides are in `doc/agents/`. Read the relevant file before starting work in that area:
 
-- **Build details**: See `doc/agents/build.md`
-- **Codebase layout**: See `doc/agents/codebase.md`
-- **Coding conventions**: See `doc/agents/coding.md`
-- **Testing guide**: See `doc/agents/testing.md`
+- `doc/agents/coding.md` — read before writing or reviewing any C++ code
+- `doc/agents/codebase.md` — read before exploring or navigating the codebase
+- `doc/agents/testing.md` — read before adding or running tests
+- `doc/agents/build.md` — read before building or changing build configuration
 
 ## Project Overview
 
