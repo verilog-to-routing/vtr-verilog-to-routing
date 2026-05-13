@@ -89,7 +89,7 @@ std::pair<float, float> InterposerLookahead::get_interposer_lookahead_cost(RRNod
     auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
     auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
 
-    return get_interposer_lookahead_cost({to_x, to_y, to_layer}, {from_x, from_y, from_layer});
+    return get_interposer_lookahead_cost({from_x, from_y, from_layer}, {to_x, to_y, to_layer});
 }
 
 std::pair<float, float> InterposerLookahead::get_interposer_lookahead_cost(t_physical_tile_loc from_loc, t_physical_tile_loc to_loc) const {
