@@ -11,6 +11,7 @@
 #include "vtr_prefix_sum.h"
 
 #include <functional>
+#include <utility>
 
 class PlacerState;
 class PlacerCriticalities;
@@ -636,6 +637,12 @@ class NetCostHandler {
      * @return Interposer crossing cost of the net.
      */
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
+
+    /**
+     * @brief Count interposer cut lines in the BB interior.
+     * @return first: horizontal cuts (constant-y lines) straddled by the BB; second: vertical cuts (constant-x).
+     */
+    std::pair<int, int> count_bb_interposer_cut_crossings_(const t_bb& bb) const;
 
     /**
      * @brief Calculate the congestion cost of net using its 3D bounding box.

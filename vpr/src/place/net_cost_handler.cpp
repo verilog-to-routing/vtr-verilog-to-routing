@@ -1419,26 +1419,15 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     return ncost;
 }
 
-double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
+std::pair<int, int> NetCostHandler::count_bb_interposer_cut_crossings_(const t_bb& bb) const {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
-
-    // This routine is O(total interposer cut lines): every cut is checked against the net BB.
-    // If we support devices with many dice, consider a refactor (e.g. interval queries)
-    // so cost updates do not scale linearly with cut count.
-
-    // Select the trial (tentative) vs the committed bounding box.
-    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
-
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
 
     int num_horizontal_crossings = 0;
     int num_vertical_crossings = 0;
 
-    // Count how many times this net crosses interposer cut-lines.
-    // We count a cut as a crossing if the cut-line passes through the interior of the net's bounding box.
     for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
-        // Count vertical cut-lines that pass through the interior of the BB on this layer.
         const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
         for (int cut_y : layer_h_cuts) {
             if (cut_y >= bb.ymin && cut_y < bb.ymax) {
@@ -1446,7 +1435,6 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
             }
         }
 
-        // Count vertical cut-lines that pass through the interior of the BB on this layer.
         const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
         for (int cut_x : layer_v_cuts) {
             if (cut_x >= bb.xmin && cut_x < bb.xmax) {
@@ -1454,6 +1442,17 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
             }
         }
     }
+
+    return {num_horizontal_crossings, num_vertical_crossings};
+}
+
+double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
+    // This routine is O(total interposer cut lines): every cut is checked against the net BB.
+    // If we support devices with many dice, consider a refactor (e.g. interval queries)
+    // so cost updates do not scale linearly with cut count.
+
+    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
+    const auto [num_horizontal_crossings, num_vertical_crossings] = count_bb_interposer_cut_crossings_(bb);
 
     // Weight crossings by the normalized BB span orthogonal to the cut direction:
     // - a horizontal cut spans X, so we scale by BB height / grid height
@@ -1859,7 +1858,8 @@ int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
 
     for (ClusterNetId net_id : clb_nlist.nets()) {
         if (!clb_nlist.net_is_ignored(net_id)) {
-            if (get_net_interposer_cost_(net_id, /*use_ts=*/false) > 0) {
+            const auto [num_h_cuts, num_v_cuts] = count_bb_interposer_cut_crossings_(bb_coords_[net_id]);
+            if (num_h_cuts > 0 || num_v_cuts > 0) {
                 num_nets_crossing_interposer_cuts++;
             }
         }
