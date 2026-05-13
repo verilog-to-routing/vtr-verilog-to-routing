@@ -59,9 +59,14 @@ class NetCostHandler {
      * @param placer_state Contains information about block locations and net bounding boxes.
      * @param cube_bb True if the 3D cube bounding box should be used, false otherwise.
      * @param place_algorithm The placement algorithm in use (e.g. bounding-box only vs timing-driven).
-     * @param interposer_cost_enabled Enables interposer cost term.
-     * @param interposer_cong_threshold Congestion threshold used for interposer congestion cost.
-     * @param congestion_chan_util_threshold Channel utilization threshold used for congestion cost.
+     * @param interposer_cost_enabled If true, adds the interposer crossing term that penalizes nets whose bounding boxes intersectinterposer cut lines.
+     * @param interposer_cong_threshold Floor on estimated interposer channel utilization (normalized routing demand vs capacity
+     *                                along each crossed cut). Only utilization above this contributes to `interposer_cong_cost`.
+     *                                A value of 0 skips allocating and updating that term.
+     * @param congestion_chan_util_threshold Floor on estimated average routing-channel utilization within a net's bounding
+     *                                       box for the routing congestion term (`cong_cost`): for each of the horizontal and
+     *                                       vertical channel directions, only utilization above this adds to that net's congestion
+     *                                       penalty. It is independent of the interposer congestion threshold.
      */
     NetCostHandler(PlacerState& placer_state,
                    bool cube_bb,
