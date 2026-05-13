@@ -194,6 +194,9 @@ class NetCostHandler {
     t_place_algorithm place_algorithm_;
     double interposer_cong_threshold_;
     double congestion_chan_util_threshold_;
+    /// Reciprocals of device grid width and height for normalizing bounding-box spans (e.g. interposer crossing cost).
+    double inv_device_grid_width_;
+    double inv_device_grid_height_;
 
     /// Points to the proper method for computing BB/wirelength, congestion, and interposer cost terms (crossing + congestion) from scratch.
     std::function<std::pair<t_net_cost_terms, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;

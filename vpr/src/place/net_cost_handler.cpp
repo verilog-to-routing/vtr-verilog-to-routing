@@ -117,6 +117,11 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
+    // Precompute 1/width and 1/height so interposer crossing cost can normalize BB spans with
+    // multiplies instead of a divide per net (see get_net_interposer_cost_).
+    inv_device_grid_width_ = 1.0 / static_cast<double>(grid.width());
+    inv_device_grid_height_ = 1.0 / static_cast<double>(grid.height());
+
     const size_t num_layers = grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
@@ -1449,8 +1454,8 @@ double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts
     // Weight crossings by the normalized BB span orthogonal to the cut direction:
     // - a horizontal cut spans X, so we scale by BB height / grid height
     // - a vertical cut spans Y, so we scale by BB width / grid width
-    const double bb_width_factor = double(bb.xmax - bb.xmin + 1) / grid.width();
-    const double bb_height_factor = double(bb.ymax - bb.ymin + 1) / grid.height();
+    const double bb_width_factor = double(bb.xmax - bb.xmin + 1) * inv_device_grid_width_;
+    const double bb_height_factor = double(bb.ymax - bb.ymin + 1) * inv_device_grid_height_;
 
     double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
     return cost;
