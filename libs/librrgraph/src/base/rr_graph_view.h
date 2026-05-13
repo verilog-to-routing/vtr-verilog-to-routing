@@ -62,6 +62,7 @@
  * \endinternal
  */
 
+#include <tuple>
 #include <vector>
 
 #include "metadata_storage.h"
@@ -70,6 +71,7 @@
 #include "physical_types.h"
 #include "rr_node_types.h"
 #include "rr_spatial_lookup.h"
+#include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "rr_graph_utils.h"
 #include "vtr_range.h"
@@ -321,9 +323,7 @@ class RRGraphView {
         }
 
         // CHANX/CHANY to CHANZ (in any order)
-        if ((type1 == e_rr_type::CHANZ || type2 == e_rr_type::CHANZ) &&
-            (type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY ||
-             type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY)) {
+        if ((type1 == e_rr_type::CHANZ || type2 == e_rr_type::CHANZ) && (type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY || type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY)) {
             return chanxy_chanz_adjacent(*this, node1, node2);
         }
 
@@ -667,7 +667,6 @@ class RRGraphView {
     /** @brief Get the segment id which a routing resource node represents. Only applicable to nodes whose type is CHANX or CHANY */
     RRSegmentId node_segment(RRNodeId node) const;
 
-
     /** @brief Return detailed routing segment information of a specified segment
      * @note The routing segments here may not be exactly same as those defined in architecture file. They have been
      * adapted to fit the context of routing resource graphs.
@@ -751,7 +750,6 @@ class RRGraphView {
     inline bool valid_switch(RRSwitchId switch_id) const {
         return (size_t(switch_id) < rr_switch_inf_.size());
     }
-
 
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */

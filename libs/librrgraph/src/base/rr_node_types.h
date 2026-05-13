@@ -40,6 +40,7 @@ enum class e_rr_type : unsigned char {
 constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
 constexpr bool is_chanxy(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
 constexpr bool is_chanz(e_rr_type type) { return (type == e_rr_type::CHANZ); }
+constexpr bool is_wire(e_rr_type type) { return (is_chanxy(type) || is_chanz(type));}
 constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
 
 /// Used to iterate for different e_rr_type values in range-based for loops.

@@ -92,6 +92,8 @@ static std::pair<int, int> get_adjusted_rr_wire_position(RRNodeId rr);
  */
 static std::pair<int, int> get_adjusted_rr_src_sink_position(RRNodeId rr);
 
+static std::pair<int, int> get_rr_wire_driving_position(const RRNodeId rr);
+
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
 // of the device.
@@ -545,6 +547,24 @@ std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
 
     if (is_chanxy(rr_type)) {
         return get_adjusted_rr_wire_position(rr);
+    } else if (is_pin(rr_type)) {
+        return get_adjusted_rr_pin_position(rr);
+    } else if (is_src_sink(rr_type)) {
+        return get_adjusted_rr_src_sink_position(rr);
+    } else {
+        VTR_ASSERT_SAFE(is_chanz(rr_type));
+        return {rr_graph.node_xlow(rr), rr_graph.node_ylow(rr)};
+    }
+}
+
+std::pair<int, int> get_rr_node_driving_position(const RRNodeId rr) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    e_rr_type rr_type = rr_graph.node_type(rr);
+
+    if (is_chanxy(rr_type)) {
+        return get_rr_wire_driving_position(rr);
     } else if (is_pin(rr_type)) {
         return get_adjusted_rr_pin_position(rr);
     } else if (is_src_sink(rr_type)) {
@@ -1549,6 +1569,29 @@ static std::pair<int, int> get_adjusted_rr_wire_position(const RRNodeId rr) {
     } else if (rr_dir == Direction::INC) {
         return {rr_graph.node_xlow(rr),
                 rr_graph.node_ylow(rr)};
+    } else {
+        VTR_ASSERT_SAFE(rr_dir == Direction::BIDIR);
+        //Not sure what to do here...
+        //Try average for now.
+        return {vtr::nint((rr_graph.node_xlow(rr) + rr_graph.node_xhigh(rr)) / 2.),
+                vtr::nint((rr_graph.node_ylow(rr) + rr_graph.node_yhigh(rr)) / 2.)};
+    }
+}
+
+static std::pair<int, int> get_rr_wire_driving_position(const RRNodeId rr) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    VTR_ASSERT_SAFE(is_chanxy(rr_graph.node_type(rr)));
+
+    Direction rr_dir = rr_graph.node_direction(rr);
+
+    if (rr_dir == Direction::DEC) {
+        return {rr_graph.node_xlow(rr),
+                rr_graph.node_ylow(rr)};
+    } else if (rr_dir == Direction::INC) {
+        return {rr_graph.node_xhigh(rr),
+                rr_graph.node_yhigh(rr)};
     } else {
         VTR_ASSERT_SAFE(rr_dir == Direction::BIDIR);
         //Not sure what to do here...

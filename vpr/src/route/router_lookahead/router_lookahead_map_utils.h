@@ -349,6 +349,8 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
  */
 std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr);
 
+std::pair<int, int> get_rr_node_driving_position(const RRNodeId rr);
+
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         unsigned from_layer_num,
                                         const e_rr_type chan_type,

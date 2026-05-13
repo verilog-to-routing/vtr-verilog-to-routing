@@ -23,12 +23,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <utility>
 #include <vector>
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
 #include "device_grid.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "router_lookahead_interposer.h"
 #include "rr_graph_fwd.h"
@@ -326,6 +328,44 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);
+
+    if (has_interposer_cuts_) {
+        // get which interposer cuts are crossed by the path from from_node to to_node, subtract min segment length from delta_x and delta_y
+        auto [from_end_x, from_end_y] = util::get_rr_node_driving_position(from_node);
+        auto [to_start_x, to_start_y] = util::get_adjusted_rr_position(to_node);
+
+        int ylow = std::min(from_end_x, to_start_x);
+        int yhigh = std::max(from_end_x, to_start_x);
+
+        int crossed_horizontal_interposer_segments_length = 0;
+        int crossed_vertical_interposer_segments_length = 0;
+
+        const std::vector<int>& layer_h_cuts = device_ctx.grid.get_horizontal_interposer_cuts()[from_layer_num];
+        for (size_t cut_idx = 0; cut_idx < layer_h_cuts.size(); cut_idx++) {
+            int cut_y = layer_h_cuts[cut_idx];
+            // This CHANY node crosses the horizontal cut at y = cut_y.
+            if (ylow <= cut_y && cut_y < yhigh) {
+                int interposer_segment_length = device_ctx.horz_min_interposer_segment_length_[from_layer_num][cut_idx];
+                crossed_vertical_interposer_segments_length += interposer_segment_length;
+            }
+        }
+
+        int xlow = std::min(from_end_y, to_start_y);
+        int xhigh = std::min(from_end_y, to_start_y);
+
+        const std::vector<int>& layer_v_cuts = device_ctx.grid.get_vertical_interposer_cuts()[from_layer_num];
+        for (size_t cut_idx = 0; cut_idx < layer_v_cuts.size(); cut_idx++) {
+            int cut_x = layer_v_cuts[cut_idx];
+            // This CHANX node crosses the vertical cut at x = cut_x.
+            if (xlow <= cut_x && cut_x < xhigh) {
+                int interposer_segment_length = device_ctx.vert_min_interposer_segment_length_[from_layer_num][cut_idx];
+                crossed_horizontal_interposer_segments_length += interposer_segment_length;
+            }
+        }
+
+        delta_x = std::abs(delta_x - crossed_horizontal_interposer_segments_length);
+        delta_y = std::abs(delta_y - crossed_vertical_interposer_segments_length);
+    }
 
     float expected_delay_cost = std::numeric_limits<float>::infinity();
     float expected_cong_cost = std::numeric_limits<float>::infinity();

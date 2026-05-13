@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -12,6 +13,7 @@
 #include "user_route_constraints.h"
 #include "vpr_types.h"
 #include "vtr_cache.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
@@ -274,6 +276,9 @@ struct DeviceContext : public Context {
      * Values are accumulated from the capacities of `CHANX` rr_nodes which cross the cut.
      */
     vtr::NdMatrix<int, 3> vert_interposer_capacity_;
+
+    vtr::NdMatrix<uint16_t, 2> horz_min_interposer_segment_length_;
+    vtr::NdMatrix<uint16_t, 2> vert_min_interposer_segment_length_;
 
     /// Stores the maximum channel segment width in each horizontal/vertical channel
     ChannelMetric<std::vector<int>> rr_chan_width;

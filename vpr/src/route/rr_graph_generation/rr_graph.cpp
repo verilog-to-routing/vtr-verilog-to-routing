@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
@@ -17,6 +18,7 @@
 #include "vpr_context.h"
 #include "vtr_assert.h"
 
+#include "vtr_ndmatrix.h"
 #include "vtr_util.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
@@ -1098,12 +1100,20 @@ static void alloc_and_init_channel_width() {
         vtr::NdMatrix<int, 3>& horz_interposer_capacity = mutable_device_ctx.horz_interposer_capacity_;
         vtr::NdMatrix<int, 3>& vert_interposer_capacity = mutable_device_ctx.vert_interposer_capacity_;
 
+        vtr::NdMatrix<uint16_t, 2>& horz_min_interposer_segment_length = mutable_device_ctx.horz_min_interposer_segment_length_;
+        vtr::NdMatrix<uint16_t, 2>& vert_min_interposer_segment_length_ = mutable_device_ctx.vert_min_interposer_segment_length_;
+
         // Matrices are sized to the maximum cut count across layers.
         // Layers with fewer cuts will leave the extra [cut_idx] planes at zero.
         horz_interposer_capacity.resize({num_layers, max_h_cuts, grid.width()});
         vert_interposer_capacity.resize({num_layers, max_v_cuts, grid.height()});
         horz_interposer_capacity.fill(0);
         vert_interposer_capacity.fill(0);
+
+        horz_min_interposer_segment_length.resize({num_layers, max_h_cuts});
+        vert_min_interposer_segment_length_.resize({num_layers, max_v_cuts});
+        horz_min_interposer_segment_length.fill(std::numeric_limits<uint16_t>::max());
+        vert_min_interposer_segment_length_.fill(std::numeric_limits<uint16_t>::max());
 
         for (RRNodeId node_id : rr_graph.nodes()) {
             e_rr_type rr_type = rr_graph.node_type(node_id);
@@ -1120,6 +1130,7 @@ static void alloc_and_init_channel_width() {
                     // This CHANY node crosses the horizontal cut at y = cut_y.
                     if (ylow <= cut_y && cut_y < yhigh) {
                         horz_interposer_capacity[layer][cut_idx][x] += cap;
+                        horz_min_interposer_segment_length[layer][cut_idx] = std::min(horz_min_interposer_segment_length[layer][cut_idx], static_cast<uint16_t>(yhigh - ylow));
                     }
                 }
             } else if (rr_type == e_rr_type::CHANX) {
@@ -1132,6 +1143,7 @@ static void alloc_and_init_channel_width() {
                     // This CHANX node crosses the vertical cut at x = cut_x.
                     if (xlow <= cut_x && cut_x < xhigh) {
                         vert_interposer_capacity[layer][cut_idx][y] += cap;
+                        vert_min_interposer_segment_length_[layer][cut_idx] = std::min(vert_min_interposer_segment_length_[layer][cut_idx], static_cast<uint16_t>(xhigh - xlow));
                     }
                 }
             }
