@@ -46,15 +46,14 @@ The virtual environment is set up by the user once (`make env` + `pip install -r
 
 ## Running Tests
 
+Use judgment — not every change requires running tests. Run `vtr_reg_basic` when the change touches core VPR flow and correctness is uncertain. Run only the `vtr_reg_strong` sub-tasks relevant to your change if broader impact is possible — do not run the full suite routinely. Small, localized changes may not require any test run.
+
 ```shell
 # Fast smoke test (~1 min)
 ./run_reg_test.py vtr_reg_basic
 
 # Full functionality check (~20 min)
 ./run_reg_test.py vtr_reg_strong -j4
-
-# Run both
-./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 
 # All unit tests
 make && make test
@@ -65,7 +64,3 @@ New features **must** include a regression test in `vtr_reg_strong`. See `doc/ag
 ## AI Usage Policy
 
 VTR requires that humans author all commits and pull requests. Do not create commits or open pull requests autonomously. When helping a developer, produce code and explanations for them to review, and let them decide what to commit and how to phrase the commit message. Do not add `Co-Authored-By: Claude` or similar lines to commit messages.
-
-## Quality of Results (QoR) Policy
-
-Any change to algorithms must be evaluated for QoR impact using the VTR benchmarks (`vtr_reg_qor_chain` in nightly). Key metrics: `num_post_packed_blocks`, `device_grid_tiles`, `min_chan_width`, `crit_path_routed_wirelength`, `critical_path_delay`, and runtime/memory. Compare using GEOMEAN across all benchmarks. A broken build or regression test failure must be fixed at top priority.
