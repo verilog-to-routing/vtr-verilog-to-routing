@@ -53,12 +53,32 @@ Each has a `_MSG` variant that takes a message string — use it when the condit
 - `VTR_ASSERT_MSG(cond, "message")`
 - `VTR_ASSERT_SAFE_MSG(cond, "message")`
 
+## Fatal Errors
+
+Use `VPR_FATAL_ERROR(type, ...)` for unrecoverable errors — not `exit()`, `abort()`, or `VTR_ASSERT(false)`. Pick the category that matches the failing stage (e.g., `VPR_ERROR_ROUTE`, `VPR_ERROR_PLACE`, `VPR_ERROR_ARCH`; use `VPR_ERROR_OTHER` when none fit). Categories are defined in `libs/libvtrutil/src/vpr_error.h`.
+
+Do not use `VTR_ASSERT(false)` as an error handler. Assertions are for invariants that must never be violated by correct code — not for handling bad input or unexpected runtime state. `VTR_ASSERT(false)` is only appropriate to mark code paths that are genuinely unreachable by design.
+
 ## Logging
 
 Use VTR logging macros instead of `printf`, `std::cerr`, or `exit()`:
 - `VTR_LOG(...)` — informational
 - `VTR_LOG_WARN(...)` — warnings
 - `VTR_LOG_ERROR(...)` — errors
+
+## Data Structures
+
+VPR uses strongly-typed IDs (e.g., `AtomNetId`, `ClusterBlockId`) as indices into collections. Use `vtr::vector<IdType, T>` instead of `std::vector<T>` when indexing by these IDs — this enforces type safety and prevents accidental cross-indexing at compile time.
+
+For multi-dimensional arrays, prefer `vtr::NdMatrix<T, N>` over nested `std::vector` — it uses a single contiguous allocation and is significantly faster for large arrays.
+
+VPR runs on very large circuits. When data is sparse (not every net or node has a value), use a sparse container such as `std::unordered_map` rather than a dense array — a dense array over all nets or nodes can consume prohibitive memory.
+
+## Global Context (`g_vpr_ctx`)
+
+VPR's global state is accessible anywhere via `g_vpr_ctx` (declared in `vpr/src/base/globals.h`). Use the const sub-context accessors for reading (e.g., `g_vpr_ctx.placement()`) and `mutable_*()` methods only when writing (e.g., `g_vpr_ctx.mutable_placement()`).
+
+Prefer passing data through function parameters over reaching into `g_vpr_ctx` — this keeps data flow explicit and makes the code easier to reason about. Use `g_vpr_ctx` when the alternative would require threading many parameters through deep call stacks and the global access makes the code significantly cleaner.
 
 ## Use of `auto`
 

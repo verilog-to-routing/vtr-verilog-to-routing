@@ -51,7 +51,8 @@ New features **must** include a regression test in `vtr_reg_strong` (small bench
 cd vtr_flow/tasks/regression_tests/vtr_reg_strong
 mkdir -p strong_mytest/config
 cp strong_timing/config/config.txt strong_mytest/config/.
-# Edit the config, then from vtr_flow/tasks/:
+# Edit the config: update the architecture file, circuit list, and VPR command-line flags for your test
+# Then from vtr_flow/tasks/:
 ../scripts/run_vtr_task.py regression_tests/vtr_reg_strong/strong_mytest
 ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_strong/strong_mytest -create_golden
 ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_strong/strong_mytest -check_golden
