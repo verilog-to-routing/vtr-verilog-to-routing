@@ -1869,6 +1869,14 @@ int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
 }
 
 double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost) {
+    // Predict interposer channel utilization along each cut and store it for fast range queries, then optionally
+    // refresh per-net interposer congestion for all nets.
+    //
+    // (1) For every net, spread a unit of wire demand across coordinates along each cut that lies inside the net BB.
+    // (2) Divide by precomputed interposer capacity at each coordinate to get demand/capacity ratio.
+    // (3) Convert to prefix sums along the cut line so get_net_cube_interposer_cong_cost_ can average
+    // utilization over a net span in O(1).
+    // (4) If requested, fill net_interposer_cong_cost_ per net and return the total across the design.
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
@@ -1884,6 +1892,7 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
     horz_interposer_est_cong_.fill(0.);
     vert_interposer_est_cong_.fill(0.);
 
+    // (1) Consider one unit of wire demand per net for each cut; split it evenly along the BB extent parallel to each crossed cut
     for (ClusterNetId net_id : clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue;
@@ -1897,9 +1906,9 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
             for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
                 int cut_y = layer_h_cuts[i_cut];
                 if (cut_y >= bb.ymin && cut_y < bb.ymax) {
-                    const double cong_congribution = 1.0 / (bb.xmax - bb.xmin + 1);
+                    const double contribution = 1.0 / (bb.xmax - bb.xmin + 1);
                     for (int x = bb.xmin; x <= bb.xmax; x++) {
-                        horz_interposer_est_cong_[layer][i_cut][x] += cong_congribution;
+                        horz_interposer_est_cong_[layer][i_cut][x] += contribution;
                     }
                 }
             }
@@ -1908,9 +1917,9 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
             for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
                 int cut_x = layer_v_cuts[i_cut];
                 if (cut_x >= bb.xmin && cut_x < bb.xmax) {
-                    const double cong_congribution = 1.0 / (bb.ymax - bb.ymin + 1);
+                    const double contribution = 1.0 / (bb.ymax - bb.ymin + 1);
                     for (int y = bb.ymin; y <= bb.ymax; y++) {
-                        vert_interposer_est_cong_[layer][i_cut][y] += cong_congribution;
+                        vert_interposer_est_cong_[layer][i_cut][y] += contribution;
                     }
                 }
             }
@@ -1919,7 +1928,7 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
 
     const vtr::NdMatrix<int, 3>& horz_interposer_capacity = device_ctx.horz_interposer_capacity_;
     const vtr::NdMatrix<int, 3>& vert_interposer_capacity = device_ctx.vert_interposer_capacity_;
-    // Convert estimated wire count to utilization ratio (estimated / available).
+    // (2) Turn accumulated demand into utilization: divide by per-coordinate capacity from the RR graph
     for (size_t layer = 0; layer < num_layers; layer++) {
         for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
             for (size_t x = 0; x < grid_width; x++) {
@@ -1945,8 +1954,8 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
         }
     }
 
-    // Convert estimated congestion to prefix sums along the last dimension.
-    // Stored so that prefix[0]=0 and prefix[i]=sum(contrib[0..i-1]), so range [a,b] sum = prefix[b+1]-prefix[a] (no bounds check for a-1).
+    // (3) Prefix sums along each cut: after this, position i holds sum(util[0..i-1]) and index N holds total;
+    // range sum over [a,b] is prefix[b+1] - prefix[a] (see get_net_cube_interposer_cong_cost_).
     for (size_t layer = 0; layer < num_layers; layer++) {
         for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
             double running_sum = 0.;
@@ -1976,6 +1985,7 @@ double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost
     interposer_cong_modeling_started_ = true;
 
     double total_interposer_cong_cost = 0.;
+    // (4) Optionally compute each net's congestion penalty and return the total.
     if (compute_congestion_cost) {
         for (ClusterNetId net_id : clb_nlist.nets()) {
             if (clb_nlist.net_is_ignored(net_id)) {
