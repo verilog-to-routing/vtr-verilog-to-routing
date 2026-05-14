@@ -1,10 +1,10 @@
-/**
- * @file
- * @author  Alex Singer
- * @date    September 2024
- * @brief   Definition of the gen_ap_netlist_from_atoms method, used for
- *          generating an APNetlist from the results of the Prepacker.
- */
+﻿/**
+  * @file
+  * @author  Alex Singer
+  * @date    September 2024
+  * @brief   Definition of the gen_ap_netlist_from_atoms method, used for
+  *          generating an APNetlist from the results of the Prepacker.
+  */
 
 #include "gen_ap_netlist_from_atoms.h"
 #include "ap_netlist.h"

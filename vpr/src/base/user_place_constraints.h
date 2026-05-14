@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /**
  * 
  * @brief This file defines the UserPlaceConstraints class used to store and read out data related to user-specified
@@ -30,6 +30,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <string>
 
 #include "vtr_vector.h"
 #include "partition.h"
@@ -129,6 +130,26 @@ class UserPlaceConstraints {
      */
     const std::unordered_set<t_logical_block_type_ptr>& get_part_lb_type_constraints(PartitionId part_id) const;
 
+    /**
+     * @brief Associate an atom with its logical_block_location constraint.
+     *
+     * The cluster legalizer later resolves this location into concrete primitive
+     * matches.
+     */
+    void set_atom_logical_block_location(AtomBlockId blk_id, const std::string& logical_block_location);
+
+    /**
+     * @brief Return an atom's logical_block_location constraint, if one exists.
+     *
+     * Returns empty string when no location constraint was provided.
+     */
+    const std::string get_atom_logical_block_location(AtomBlockId blk_id) const;
+
+    /**
+     * @brief Returns true if any atom has a logical_block_location constraint.
+     */
+    bool has_atom_logical_block_location_constraints() const;
+
   private:
     /**
      * Store logical block type constraints for each partition
@@ -139,6 +160,11 @@ class UserPlaceConstraints {
      * Store all constrained atoms
      */
     std::unordered_map<AtomBlockId, PartitionId> constrained_atoms;
+
+    /**
+     * Store optional per-atom logical_block_location strings.
+     */
+    std::unordered_map<AtomBlockId, std::string> atom_logical_block_locations_;
 
     /**
      * Store all partitions
