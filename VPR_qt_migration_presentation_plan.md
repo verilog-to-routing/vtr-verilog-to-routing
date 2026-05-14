@@ -121,14 +121,13 @@ This is the core comparison slide. Render as one table on the slide.
 | **Batching** | none | by `(primitive, color, line-width, dash, cap)` | render-tile-binned (32×32 = 1024 render tiles) + style |
 | **CPU multithread optimization** | none | none | **batching workers per band** (`std::thread::hardware_concurrency`) during scene composition |
 | **Offscreen-visibility culling** | per-primitive viewport test right before each QPainter call | per-primitive viewport tests (line/rect/poly/arc/text/surface) before batching | render-tile-band culling: only render tiles intersecting the viewport are emitted |
+| **Overlay** | none | none | **dedicated overlay layer** for text, arcs, surfaces, screen-space lines — owns a `deferred_renderer` instance (`m_overlay_deferred`) that paints these primitives into a separate `QImage`, which is uploaded as a texture and composited on top of the GPU frame via `m_overlay_pso` |
 | **Approx. throughput on 100 M-line stress scene** | ~0.1 fps | ~2 fps | **60+ fps** |
 
 Notes for the speaker:
 - **Terminology note**: throughout this slide, "render tile" refers to ezgl's own scene-space partitioning (a 32×32 grid over the visible world) — *not* a GPU device tile (tiled-rasteriser hardware concept). The two are unrelated.
 - **\* on RHI CPU usage**: the spike is at *scene composition* — when the user (or the P&R pipeline) hands us a new scene, the CPU bins all primitives by style/render tile and packs them into `SceneBuffers`. Once that's done, redraws (and especially camera-only frames via `flush_mvp_only()`) reuse the cached buffers and the CPU goes back to near-idle. This is what the multithreaded band workers were added to amortise.
-- RHI multithread batching is **scene composition**, not the GPU submit — workers slice commands into bands, each band fills its own render-tile-local buffers, then the main thread submits.
-- Per-primitive visibility tests in deferred: see `screen_*_visible()` methods in [deferred_renderer.cpp:286-412](libs/EXTERNAL/libezgl/src/qt/deferred_renderer.cpp#L286-L412).
-- Render-tile grid constant in RHI: `kTileGridDimension = 32` (1024 render tiles total).
+- **Why RHI has an overlay layer at all**: text rasterisation (font hinting, shaping, antialiasing) and complex curves are exactly the things GPUs are *bad* at compared to QPainter. Instead of porting all that to shaders, RHI builds a separate transparent `QImage` once per camera using QPainter (via an internally-owned `deferred_renderer` for batching efficiency) and composites that image on top of the GPU frame. Deferred has no equivalent because it already runs entirely on QPainter — there's nothing to "lift" onto a different surface.
 
 **Suggested visual on this slide:** small bar chart of fps from the stress-bench results, with one bar per renderer.
 
