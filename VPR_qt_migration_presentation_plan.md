@@ -253,23 +253,6 @@ Side-by-side: upstream `ql_main` vs our `qt_layer`. Rows that changed are flagge
 
 **Color legend:** green = new command, orange = changed semantics.
 
-#### `set_cpd <state>` — full combination table
-
-Bitmask layout: **bit 0 (1) = flylines**, **bit 1 (2) = delay labels**, **bit 2 (4) = routed-wire highlight** (the routed-wire bit only takes effect at the routing stage — gate with `wait_for_stage routing_done`).
-
-| Value | Binary | Flylines | Delay labels | Routed wires | What you see |
-|---|---|---|---|---|---|
-| `0` | `000` | ✗ | ✗ | ✗ | crit-path display **off** |
-| `1` | `001` | ✓ | ✗ | ✗ | flylines only |
-| `2` | `010` | ✗ | ✓ | ✗ | <span style="color:#c0392b">**degenerate** — delay labels anchor to flylines, so nothing is drawn</span> |
-| `3` | `011` | ✓ | ✓ | ✗ | flylines + delay labels |
-| `4` | `100` | ✗ | ✗ | ✓ | routed wires only (routing stage) |
-| `5` | `101` | ✓ | ✗ | ✓ | flylines + routed wires |
-| `6` | `110` | ✗ | ✓ | ✓ | <span style="color:#c0392b">**degenerate** — same reason as 2; delays have no flylines to anchor to</span> |
-| `7` | `111` | ✓ | ✓ | ✓ | everything on |
-
-The degenerate values (`2`, `6`) are accepted by the parser but produce no visible delay labels because labels need flyline endpoints to anchor to. Source comment at [vpr/src/draw/draw.cpp:1491-1498](vpr/src/draw/draw.cpp#L1491-L1498).
-
 Supporting infra changes that aren't visible as command rows (cover in speaker notes or as a separate slide):
 
 - **caf2004f2** — `--graphics_commands` now scheduled **inside the Qt event loop** so `--disp on` works under `QT_QPA_PLATFORM=offscreen` (this is what made layer 1 / layer 5 tests possible).
