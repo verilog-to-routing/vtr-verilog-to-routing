@@ -236,21 +236,19 @@ void SAPack::optimize_placement() {
         SAPackCluster& target_cluster = sa_pack_grid_->get_clusters(target_physical_tile_loc)[target_sub_tile];
 
         // Get the external pin utlization before the move.
-        size_t num_source_external_inputs_used_before;
-        size_t num_source_external_outputs_used_before;
+        size_t num_source_external_inputs_used_before = 0;
+        size_t num_source_external_outputs_used_before = 0;
         bool source_pins_valid = false;
         if (source_cluster.cluster_id.is_valid()) {
             num_source_external_inputs_used_before = cluster_legalizer_->get_num_external_inputs_used(source_cluster.cluster_id);
             num_source_external_outputs_used_before = cluster_legalizer_->get_num_external_outputs_used(source_cluster.cluster_id);
             source_pins_valid = true;
         }
-        size_t num_target_external_inputs_used_before;
-        size_t num_target_external_outputs_used_before;
-        bool target_pins_valid = false;
+        size_t num_target_external_inputs_used_before = 0;
+        size_t num_target_external_outputs_used_before = 0;
         if (target_cluster.cluster_id.is_valid()) {
             num_target_external_inputs_used_before = cluster_legalizer_->get_num_external_inputs_used(target_cluster.cluster_id);
             num_target_external_outputs_used_before = cluster_legalizer_->get_num_external_outputs_used(target_cluster.cluster_id);
-            target_pins_valid = true;
         }
 
         // Perform the move.
@@ -297,14 +295,14 @@ void SAPack::optimize_placement() {
                 PackMoleculeId net_pin_mol = prepacker_.get_atom_molecule(net_pin_blk);
                 t_pl_loc net_pin_mol_loc = mol_locations_[net_pin_mol];
                 min_x = std::min(min_x, net_pin_mol_loc.x);
-                max_x = std::min(max_x, net_pin_mol_loc.x);
+                max_x = std::max(max_x, net_pin_mol_loc.x);
                 min_y = std::min(min_y, net_pin_mol_loc.y);
-                max_y = std::min(max_y, net_pin_mol_loc.y);
+                max_y = std::max(max_y, net_pin_mol_loc.y);
                 min_layer = std::min(min_layer, net_pin_mol_loc.layer);
-                max_layer = std::min(max_layer, net_pin_mol_loc.layer);
+                max_layer = std::max(max_layer, net_pin_mol_loc.layer);
             }
             int hpwl = max_x - min_x + max_y - min_y + max_layer - min_layer;
-            pre_move_hpwl_cost = static_cast<double>(hpwl);
+            pre_move_hpwl_cost += static_cast<double>(hpwl);
         }
         //      Compute HPWL of connected nets after move.
         //      FIXME: The way we are doing this is a bit flakey. Should be more explicit about the move and cost calculations.
@@ -322,14 +320,14 @@ void SAPack::optimize_placement() {
                 PackMoleculeId net_pin_mol = prepacker_.get_atom_molecule(net_pin_blk);
                 t_pl_loc net_pin_mol_loc = mol_locations_[net_pin_mol];
                 min_x = std::min(min_x, net_pin_mol_loc.x);
-                max_x = std::min(max_x, net_pin_mol_loc.x);
+                max_x = std::max(max_x, net_pin_mol_loc.x);
                 min_y = std::min(min_y, net_pin_mol_loc.y);
-                max_y = std::min(max_y, net_pin_mol_loc.y);
+                max_y = std::max(max_y, net_pin_mol_loc.y);
                 min_layer = std::min(min_layer, net_pin_mol_loc.layer);
-                max_layer = std::min(max_layer, net_pin_mol_loc.layer);
+                max_layer = std::max(max_layer, net_pin_mol_loc.layer);
             }
             int hpwl = max_x - min_x + max_y - min_y + max_layer - min_layer;
-            post_move_hpwl_cost = static_cast<double>(hpwl);
+            post_move_hpwl_cost += static_cast<double>(hpwl);
         }
         delta_c += post_move_hpwl_cost - pre_move_hpwl_cost;
         //      Add the cost due to legality.
@@ -343,21 +341,22 @@ void SAPack::optimize_placement() {
         }
         //      Add the cost due to external pin utilization.
         //      TODO: We should normalize by the total possible input and output pins that can occur.
-        // FIXME: The source / target clusters may have existed after the swap!!!!
-        size_t source_delta_external_pins_used = 0;
-        if (source_pins_valid) {
+        int64_t source_delta_external_pins_used = 0;
+        if (source_pins_valid && source_cluster.cluster_id.is_valid()) {
             size_t num_source_external_inputs_used_after = cluster_legalizer_->get_num_external_inputs_used(source_cluster.cluster_id);
             size_t num_source_external_outputs_used_after = cluster_legalizer_->get_num_external_outputs_used(source_cluster.cluster_id);
-            source_delta_external_pins_used = (num_source_external_inputs_used_after + num_source_external_outputs_used_after) - (num_source_external_inputs_used_before + num_source_external_outputs_used_before);
+            source_delta_external_pins_used = static_cast<int64_t>(num_source_external_inputs_used_after + num_source_external_outputs_used_after)
+                                            - static_cast<int64_t>(num_source_external_inputs_used_before + num_source_external_outputs_used_before);
         }
-        size_t target_delta_external_pins_used = 0;
-        if (target_pins_valid) {
+        int64_t target_delta_external_pins_used = 0;
+        if (target_cluster.cluster_id.is_valid()) {
             size_t num_target_external_inputs_used_after = cluster_legalizer_->get_num_external_inputs_used(target_cluster.cluster_id);
             size_t num_target_external_outputs_used_after = cluster_legalizer_->get_num_external_outputs_used(target_cluster.cluster_id);
-            target_delta_external_pins_used = (num_target_external_inputs_used_after + num_target_external_outputs_used_after) - (num_target_external_inputs_used_before + num_target_external_outputs_used_before);
+            target_delta_external_pins_used = static_cast<int64_t>(num_target_external_inputs_used_after + num_target_external_outputs_used_after)
+                                            - static_cast<int64_t>(num_target_external_inputs_used_before + num_target_external_outputs_used_before);
         }
-        
-        delta_c += 10.0 * (source_delta_external_pins_used + target_delta_external_pins_used);
+
+        delta_c += 10.0 * static_cast<double>(source_delta_external_pins_used + target_delta_external_pins_used);
 
         // Revert the move if the cost was bad.
         if (delta_c > 0.0) {
@@ -506,6 +505,7 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
     // reconstruction due to conservative pin feasibility. The SKIP_INTRA_LB_ROUTE
     // strategy speeds up reconstruction by skipping intra-LB routing checks.
     std::vector<std::string> target_ext_pin_util = {"1.0"};
+    // std::vector<std::string> target_ext_pin_util = vpr_setup_.PackerOpts.target_external_pin_util;
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
 
     cluster_legalizer_.emplace(
