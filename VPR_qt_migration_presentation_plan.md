@@ -71,8 +71,7 @@ In other words: once `main.ui` upstream is itself a Qt Designer file, we drop th
 
 #### 1.3.2 — Code-comment coverage
 
-- The Qt port introduced new modules (RHI backend, deferred renderer, RHI canvas widget, scene renderer) — public-API headers are documented, but many private helpers are not.
-- Particularly thin: `rhi_renderer.cpp` (tile grid, band scheduling, MVP-only path) and `deferred_backend.cpp`.
+- The Qt port introduced new modules (RHI backend, deferred renderer, RHI canvas widget, RHI scene renderer) — public-API headers are documented, but many private helpers are not.
 - Next step: pass over hot files to bring them to Doxygen-friendly comments.
 
 #### 1.3.3 — More automated GUI test coverage
@@ -131,6 +130,22 @@ Notes for the speaker:
 - Tile grid constant in RHI: `kTileGridDimension = 32` (1024 tiles total).
 
 **Suggested visual on this slide:** small bar chart of fps from the stress-bench results, with one bar per renderer.
+
+### Slide 2.1.1 — Inside the RHI: the scene renderer
+
+- The "scene renderer" referenced on slide 2.1 is **`RhiSceneRenderer`** ([rhi_scene_renderer.hpp](libs/EXTERNAL/libezgl/include/ezgl/qt/rhi_scene_renderer.hpp), [rhi_scene_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/rhi_scene_renderer.cpp)). It exists **only in the RHI path** — immediate and deferred renderers don't need an equivalent.
+- It is the **GPU half** of the RHI renderer: owns every QRhi object (pipelines, SRBs, vertex/instance/uniform buffers, overlay texture+sampler, per-frame-slot resources).
+
+**Problems it solves, in one line each:**
+
+1. **CPU↔GPU separation.** `RhiRenderer` builds POD `SceneBuffers` on the CPU; `RhiSceneRenderer` uploads them and records draw commands on the GPU. Keeping these in two classes means each side can change without re-validating the other.
+2. **Same GPU code, two callers.** Drives both the on-screen `RhiCanvasWidget` and the offscreen `save_graphics` path (own QRhi on a `QOffscreenSurface`) — this is how visual-regression PNG export works without an X display.
+3. **Frame-in-flight bookkeeping.** Owns a `std::vector<FrameResources>` and a per-slot dirty bitmap (`m_frame_slot_geom_valid`) so geometry re-uploads lazily, one slot at a time, instead of stalling the pipeline on every scene change.
+4. **One draw call per `(primitive, style)` group.** The `StyleKey` packs `(primitive_type, rgba, line_width, line_dash)` into a `uint64_t`; all geometry sharing a key lands in one vertex buffer and one draw call — a few hundred draws cover millions of primitives.
+5. **GPU-side culling via chunks.** Each style buffer is sliced into world-space chunks with bounding rectangles; chunks outside `visible_world` are skipped at submit time — same data uploaded once, only the visible slice drawn.
+6. **Deterministic GPU teardown.** Explicit `release()` decouples GPU-object destruction from canvas widget lifetime — important under QRhi where order-of-destruction relative to the `QRhi*` matters.
+
+**Why deferred doesn't have an equivalent:** its "scene" is just `std::vector<QLineF>` etc., consumed by the same QPainter that the renderer was handed — no upload, no frame slots, no offscreen-vs-display split. Splitting it into two classes would buy nothing.
 
 ### Slide 2.2 — `redraw()` split idea (geometry vs camera-move)
 
