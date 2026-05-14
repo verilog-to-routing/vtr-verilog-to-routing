@@ -39,6 +39,8 @@
 
 Three concrete items still on the work list. One bullet per slide.
 
+
+
 #### 1.3.1 — QtGladeLoader
 
 - We **kept the GTK `.glade` XML** as the single source of truth for the widget tree, and we parse it ourselves at runtime into Qt widgets — instead of porting the .glade files to Qt Designer `.ui` files.
@@ -82,15 +84,6 @@ In other words: once `main.ui` upstream is itself a Qt Designer file, we drop th
   - layer-4 keyboard navigation depth,
   - layer-5 visual-regression cases — grow the golden corpus beyond the current 14 scenes.
 
-#### 1.3.4 — Reduce RHI RAM usage after upload to GPU
-
-- Today the RHI renderer keeps a full CPU-side master copy of the scene (`m_cached_scene` in `RhiSceneRenderer`) **for the lifetime of the renderer** — for a 100 M-line scene that's roughly **~1.6 GB held on top of the same data already on the GPU**.
-- Two reasons it's still held: (1) frame-in-flight upload to slots that haven't received the geometry yet; (2) device-loss recovery (QRhi can lose the device → all GPU buffers invalidated).
-- Two cheap wins available, not yet done:
-  - drop `m_cached_scene` once `all(m_frame_slot_geom_valid) == true`, and rely on a re-record of the draw callback if device loss happens later,
-  - clear the per-band command queues (`m_cmd_thin_lines`, `m_cmd_fill_rects`, …) once their content has been folded into `SceneBuffers`.
-- Slide visual suggestion: a small "lifetime bar" — when each buffer is allocated vs when it could be released, with a red gap showing the wasted retention.
-
 ---
 
 ## 2. Renderers
@@ -125,7 +118,7 @@ This is the core comparison slide. Render as one table on the slide.
 | Source | [immediate_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/immediate_renderer.cpp) | [deferred_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/deferred_renderer.cpp) | [rhi_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/rhi_renderer.cpp) |
 | **CPU usage** | high (one QPainter call per primitive) | medium (collect → flush batches) | <span style="color:#27ae60">low–medium overall,</span> <span style="color:#c0392b">**high\*** during scene composition (binning into render tiles, building `SceneBuffers`);</span> <span style="color:#27ae60">steady-state and camera-only frames are very cheap</span> |
 | **GPU usage** | none | none | high (intended path) |
-| **RAM usage** | <span style="color:#27ae60">minimal (no per-frame storage; just QPainter state)</span> | <span style="color:#e67e22">scales with scene — two structures held until flush: (1) style-keyed batch vectors of `QLineF` / `QRectF` / `QPolygonF` for batchable primitives, (2) a `std::variant` command queue (`m_overlay_commands`) for text, arcs, polys, surfaces, screen-space arrows</span> | <span style="color:#c0392b">scales with scene — CPU-side `SceneBuffers` (POD geometry per style, chunked) + QImage overlay cache. **Master copy kept for renderer's lifetime even after GPU upload** (~1.6 GB on 100 M-line scenes — same size as **one** GPU slot's buffers; VRAM holds N copies, so VRAM total = N × this) to feed frame-in-flight slots and device-loss recovery. **TODO §1.3.4: free after all slots uploaded.**</span> |
+| **RAM usage** | <span style="color:#27ae60">minimal (no per-frame storage; just QPainter state)</span> | <span style="color:#e67e22">scales with scene — two structures held until flush: (1) style-keyed batch vectors of `QLineF` / `QRectF` / `QPolygonF` for batchable primitives, (2) a `std::variant` command queue (`m_overlay_commands`) for text, arcs, polys, surfaces, screen-space arrows</span> | <span style="color:#c0392b">scales with scene — CPU-side `SceneBuffers` (POD geometry per style, chunked) + QImage overlay cache. Held for the renderer's lifetime (~1.6 GB on 100 M-line scenes — same size as one GPU slot's buffers; VRAM holds N copies, so VRAM total = N × this).</span> |
 | **VRAM usage** | <span style="color:#27ae60">none</span> | <span style="color:#27ae60">none</span> | <span style="color:#c0392b">high (vertex/index buffers per render tile)</span> |
 | **Batching** | none | by `(primitive, color, line-width, dash, cap)` | render-tile-binned (32×32 = 1024 render tiles) + style |
 | **CPU multithread optimization** | none | none | **batching workers per band** (`std::thread::hardware_concurrency`) during scene composition |
