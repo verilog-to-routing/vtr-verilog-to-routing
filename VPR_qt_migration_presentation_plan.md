@@ -192,6 +192,61 @@ Notes for the speaker:
 - Plumbed via `ezgl::renderer_type` enum in `render_backend.hpp`, propagated through `QtGladeLoader::setRendererType()` so the `GtkDrawingArea` element is materialised as either `RhiCanvasWidget` or `DrawingAreaWidget`.
 - VPR-side: same flag, parsed in `vpr/src/base/read_options.cpp`.
 
+### Slide 2.4 — RHI render targets: UI vs headless
+
+The RHI renderer has **two distinct render-target paths**, governed by where the `QRhi` instance and its surface come from:
+
+| Aspect | UI mode | Headless mode |
+|---|---|---|
+| Entry point | `RhiCanvasWidget` (extends `QRhiWidget`) | `RhiCanvasWidget::render_offscreen()` (static) |
+| `QRhi` instance | provided by Qt; widget owns it | constructed standalone via `create_headless_rhi()` ([rhi_canvas_widget.cpp:164-211](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L164-L211)) |
+| Backend selection | Qt picks per-platform | explicit per-platform: D3D11 (Win), Metal (mac/iOS), else OpenGL on a `QOffscreenSurface` |
+| Render target | widget's **swap-chain backbuffer** | **`QRhiTextureRenderTarget`** over an RGBA8 `QRhiTexture` ([rhi_canvas_widget.cpp:244-254](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L244-L254)) |
+| Frame submission | `beginFrame()` / `endFrame()` driven by Qt paint loop | `beginOffscreenFrame()` / `endOffscreenFrame()` |
+| Output | on-screen pixels | `QImage` via `readBackTexture` ([rhi_canvas_widget.cpp:268-272](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L268-L272)) |
+| Frames-in-flight | 2 or 3 (per backend) | 1 |
+| Qt platform plugin requirement | needs a GUI plugin (xcb/wayland/cocoa/windows) with **a working GPU context** | works under any plugin, including `QT_QPA_PLATFORM=offscreen` |
+
+Both paths drive the **same** `RhiSceneRenderer` (the pipeline/buffer/shader code) — the only difference is who owns the `QRhi*` and the render target.
+
+#### The driving constraint, with proof
+
+`QRhiWidget` requires a real GPU context for its swap chain. Qt's **offscreen platform plugin** (`QT_QPA_PLATFORM=offscreen`) provides only software surfaces and **does not give `QRhiWidget` a usable GPU context** under our CI environment. Three independent sources of evidence in this very tree:
+
+1. **Source comment in the headless path** ([rhi_canvas_widget.cpp:236](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L236)):
+   > *"No QRhiWidget is involved so this works on `QT_QPA_PLATFORM=offscreen`."*
+2. **Layer-3 tests that touch the widget path skip under offscreen** ([test_save_graphics.cpp:159, 185, 229](vpr/test/gui/test_save_graphics.cpp#L159)):
+   > `SKIP("CI offscreen Mesa lacks a working GL context for QRhiGles2")`
+3. **Layer-5 visual regression driver acknowledges the divergence** ([run_visual_regression.sh:44](vpr/test/gui/run_visual_regression.sh#L44)):
+   > `SKIP: CI offscreen Mesa cannot be compared against developer-host goldens`
+
+In short: the standalone-`QRhi`-on-`QOffscreenSurface` route is the only RHI path that runs under offscreen Qt — by design, and confirmed by our own test infrastructure.
+
+### Slide 2.5 — Layer 5 caveat and manual-GUI mitigation
+
+Concrete consequence of the asymmetry on slide 2.4 for the test framework (cf. Slide 3.1, Layer 5):
+
+- Layer 5 visual regression **runs under `QT_QPA_PLATFORM=offscreen`** and goes through `flush_capture()` → `RhiCanvasWidget::render_offscreen()` → headless path.
+- It therefore exercises the standalone-`QRhi` + texture-render-target pipeline.
+- It does **not** exercise the `QRhiWidget` swap-chain pipeline.
+
+Bug classes Layer 5 cannot catch, because they live entirely on the UI path:
+
+- Swap-chain framing issues (multi-slot frame-in-flight timing, presentation glitches, vsync interactions).
+- `QRhiWidget` resize handling — the `releaseResources()` / `initialize()` cycle Qt fires on surface re-create. (We hit a concrete instance of this earlier in the migration.)
+- Render-pass-descriptor mismatches that only appear with a swap-chain render target.
+- Backend-selection asymmetries in Qt's widget-integrated `QRhi` choice vs our explicit `create_headless_rhi()` selection.
+
+#### Suggested mitigation: manual UI re-run of Layer 5
+
+Until either (a) Qt's offscreen plugin gains usable GPU-context support, or (b) we set up a CI rig with a real or virtualised (e.g. `LLVMpipe`) GPU surface, the gap is real but bounded. The cheap and immediate mitigation:
+
+1. On a developer host with a working display, **rerun each Layer-5 scenario interactively** — no `--disp off`, no `QT_QPA_PLATFORM=offscreen`.
+2. Drive the scenes from [vpr/test/gui/visual_cases.sh](vpr/test/gui/visual_cases.sh) by hand (or via a small script that toggles `--disp on`).
+3. Compare visually against the headless goldens in [vpr/test/gui/golden/](vpr/test/gui/golden/). Substantive differences indicate a UI-only regression to investigate and file.
+
+This is **gap coverage, not duplication** — these manual runs catch a class of bugs the automated Layer 5 structurally cannot. Worth doing before each release tag and after any change to `RhiCanvasWidget`, `rhi_backend`, or QRhi-version bumps.
+
 ---
 
 ## 3. GUI test framework
