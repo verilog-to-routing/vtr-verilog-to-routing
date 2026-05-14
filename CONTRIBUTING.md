@@ -169,3 +169,21 @@ The following are general tips for making your pull requests easy to review (and
 * Match existing code style
     When modifying existing code, try match the existing coding style.
     This helps to keep the code consistent and reduces noise in the pull request (e.g. by avoiding re-formatting changes), which makes it easier to review and more likely to be merged.
+
+### AI-Assisted Contributions
+
+VTR permits the use of AI coding assistants (e.g. GitHub Copilot, Claude, ChatGPT) as development aids, subject to the following policy:
+
+* **Humans author commits and pull requests — not AI tools.**
+    Every commit must be authored and signed off by the human developer who is responsible for it.
+    Do not use AI-generated author/co-author lines (e.g. `Co-Authored-By: Claude`) in commit messages.
+
+* **You must genuinely understand every line you submit.**
+    AI tools can produce plausible-looking but incorrect, inefficient, or insecure code.
+    Passing AI output directly into a pull request without thoroughly understanding it shifts the review burden onto VTR maintainers, which is not acceptable.
+    Maintainers may ask you to explain specific implementation decisions; inability to do so is grounds to close the pull request.
+
+* **AI-generated code is subject to the same standards as hand-written code.**
+    It must pass all regression tests, meet QoR expectations, follow the code style, and be accompanied by appropriate tests and documentation.
+
+The intent of this policy is to ensure clear human accountability for every change in the VTR codebase, while not restricting the tools developers use to produce that work.
