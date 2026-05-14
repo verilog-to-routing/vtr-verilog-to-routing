@@ -19,16 +19,18 @@
 ### Slide 1.1 — Qt 6.9.3, why this version
 
 - **Required version: Qt 6.9.3** (enforced by `find_package` check in [libs/EXTERNAL/libezgl/CMakeLists.txt:25-36](libs/EXTERNAL/libezgl/CMakeLists.txt#L25-L36)).
-- **Reason for the floor**: Qt 6.8 has a bug in the RHI backend — geometry buffers are not invalidated after the MVP matrix changes, producing rendering artifacts. Fixed in 6.9.3.
-- Suggested visual: side-by-side screenshot (artifacts on 6.8 vs clean on 6.9.3) if we still have one captured, otherwise just a quote of the CMake `message(FATAL_ERROR ...)` block.
+- **Why we care about a recent Qt**: our default renderer is built on **QRhi**, Qt's modern Rendering Hardware Interface — a portable GPU abstraction over OpenGL / Vulkan / Direct3D / Metal. QRhi has been **part of Qt since 6.7** (it was a private API earlier; promoted to public/stable in 6.7), so we need a Qt new enough to expose it as a supported surface.
+- **Reason for the 6.9.3 floor specifically**: Qt 6.8 has a bug in the RHI backend — geometry buffers are not invalidated after the MVP matrix changes, producing rendering artifacts. Fixed in 6.9.3.
+- Mental model for the slide: *"QRhi gives us one renderer that works on every desktop OS, but it only matured into a public API in Qt 6.7, and the first version where it renders our scene correctly is 6.9.3."*
+- Suggested visual: a small timeline bar — `Qt 6.7 (QRhi public) → Qt 6.8 (RHI MVP bug) → Qt 6.9.3 (our floor, ✓)` — followed by a side-by-side screenshot (artifacts on 6.8 vs clean on 6.9.3) if we still have one captured.
 
 ### Slide 1.2 — Target platforms
 
 | Platform | Status | CI | Notes |
 |---|---|---|---|
 | Linux (Ubuntu 22.04 + 24.04) | **Active** | yes — `.github/workflows/test.yml` | Qt 6.9.3 via `aqtinstall` to `/opt/qt6/6.9.3/gcc_64` |
-| macOS | **Planned** | currently disabled | `install_brew_packages.sh` exists; libezgl ctor uses `std::construct_at` in a way Apple libc++ rejects — re-enables once fixed |
-| Windows (win32) | **Planned** | none yet | no install script / no CI matrix; intended target via Qt's MSVC build |
+| macOS | **In Progress** — automatic GUI test framework run manually + quick manual smoke test | currently disabled | `install_brew_packages.sh` exists; libezgl ctor uses `std::construct_at` in a way Apple libc++ rejects — re-enables once fixed |
+| Windows (win32) | **Planned** | none yet | no install script / no CI matrix; intended target via Qt's MinGW / MSYS2 build (MSVC explicitly out of scope for now) |
 
 - Compilers exercised in CI: GCC 11–14, Clang 16–18.
 - Suggested visual: traffic-light table (green / amber / red) for each OS.
@@ -41,8 +43,6 @@ Three concrete items still on the work list. One bullet per slide.
 
 - We **kept the GTK `.glade` XML** as the single source of truth for the widget tree, and we parse it ourselves at runtime into Qt widgets — instead of porting the .glade files to Qt Designer `.ui` files.
 - **Why**: upstream master continues to maintain `main.ui` as a Glade file. Forking to a different XML dialect would force a manual three-way merge every time upstream touches the UI. Parsing the Glade XML lets upstream changes flow in unchanged.
-- **Cost**: every GTK widget class we use must have a manual mapping in [`libs/EXTERNAL/libezgl/src/qt/qtgladeloader.cpp:135-161`](libs/EXTERNAL/libezgl/src/qt/qtgladeloader.cpp#L135-L161). Today: 15 widget classes are mapped, 3 non-widget data classes are silently skipped, everything else hits `qCritical()`.
-- **Status**: stable, but every new upstream widget needs a one-time entry here.
 
 **Suggested diagram:**
 ```
@@ -51,13 +51,23 @@ Three concrete items still on the work list. One bullet per slide.
             ▼
    QtGladeLoader::loadFile()
             │
-   ┌────────┴────────┐
-   │ pass 1: popovers│   (built parentless, reparented later)
-   │ pass 2: window  │
-   └────────┬────────┘
             ▼
        QMainWindow + QWidget tree
 ```
+
+**Future state** (once upstream migrates the source-of-truth UI file):
+
+```
+   upstream main.ui (Qt Designer XML)
+            │
+            ▼
+       Qt UI loader (built-in)
+            │
+            ▼
+       QMainWindow + QWidget tree
+```
+
+In other words: once `main.ui` upstream is itself a Qt Designer file, we drop the custom GTK-XML parser entirely and use Qt's native UI loader — QtGladeLoader becomes dead code we can delete.
 
 #### 1.3.2 — Code-comment coverage
 
