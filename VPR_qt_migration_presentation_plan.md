@@ -210,20 +210,7 @@ The RHI renderer has **two distinct render-target paths**, governed by where the
 
 Both paths drive the **same** `RhiSceneRenderer` (the pipeline/buffer/shader code) — the only difference is who owns the `QRhi*` and the render target.
 
-**Why the "Backend" row reads asymmetrically:** the standalone `QRhi::create()` API has **no auto-select mode** — the caller must name an `Implementation` (`D3D11`, `Metal`, `OpenGLES2`, …). In UI mode the `QRhiWidget` abstraction makes that choice for us (per-platform default + `QSG_RHI_BACKEND` env-var override); in headless mode there is no widget, so libezgl reimplements the same per-platform priority chain by hand in `create_headless_rhi()`. Both routes converge on the same backend on a given OS — the headless side just has to spell it out because there is no abstraction to hide it.
-
-#### The driving constraint, with proof
-
-`QRhiWidget` requires a real GPU context for its swap chain. Qt's **offscreen platform plugin** (`QT_QPA_PLATFORM=offscreen`) provides only software surfaces and **does not give `QRhiWidget` a usable GPU context** under our CI environment. Three independent sources of evidence in this very tree:
-
-1. **Source comment in the headless path** ([rhi_canvas_widget.cpp:236](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L236)):
-   > *"No QRhiWidget is involved so this works on `QT_QPA_PLATFORM=offscreen`."*
-2. **Layer-3 tests that touch the widget path skip under offscreen** ([test_save_graphics.cpp:159, 185, 229](vpr/test/gui/test_save_graphics.cpp#L159)):
-   > `SKIP("CI offscreen Mesa lacks a working GL context for QRhiGles2")`
-3. **Layer-5 visual regression driver acknowledges the divergence** ([run_visual_regression.sh:44](vpr/test/gui/run_visual_regression.sh#L44)):
-   > `SKIP: CI offscreen Mesa cannot be compared against developer-host goldens`
-
-In short: the standalone-`QRhi`-on-`QOffscreenSurface` route is the only RHI path that runs under offscreen Qt — by design, and confirmed by our own test infrastructure.
+**Why the "Backend" row reads asymmetrically:** the standalone `QRhi::create()` API has **no auto-select mode** — the caller must name an `Implementation` (`D3D11`, `Metal`, `OpenGLES2`, …). In UI mode the `QRhiWidget` abstraction makes that choice for us (per-platform default + `QSG_RHI_BACKEND` env-var override); in headless mode there is no widget, so libezgl reimplements the same per-platform priority chain by hand in `create_headless_rhi()`.
 
 ### Slide 2.5 — Layer 5 caveat and manual-GUI mitigation
 
@@ -272,11 +259,6 @@ Render as a pyramid or a layered stack. Layers go from cheapest/fastest (top) to
 - They live in `libs/EXTERNAL/libezgl/test/` and are run from the libezgl repository's own CI.
 - They are **deliberately not registered** in VPR's CTest, because (a) they duplicate coverage already provided by VPR layer 3, and (b) the submodule build doesn't always pull the test sources.
 - Plan: revisit once libezgl stabilises — either lift the most useful ones into VPR layer 3, or wire the submodule's tests through `add_test()` directly.
-
-### Slide 3.3 — Coverage map
-
-- Show a heatmap or numeric chart: for each VPR GUI subsystem (canvas, draw_rr, draw_noc, search, breakpoint, popovers, status bar), which layer covers it today and which doesn't.
-- Layer 5 is active with 14 golden scenes shipped; mark cells green for covered subsystems and amber where coverage is shallow.
 
 ---
 

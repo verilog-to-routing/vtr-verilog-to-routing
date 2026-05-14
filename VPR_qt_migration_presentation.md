@@ -253,7 +253,7 @@ table { font-size: 13px; }
 
 ---
 
-## Slide 2.4a — RHI render targets: UI vs headless
+## Slide 2.4 — RHI render targets: UI vs headless
 
 <style scoped>
 table { font-size: 14px; }
@@ -271,24 +271,7 @@ Two distinct render-target paths in the RHI renderer — both drive the **same**
 | Output | on-screen pixels | `QImage` via `readBackTexture` |
 | Works under `QT_QPA_PLATFORM=offscreen`? | **No** | **Yes** |
 
-<p style="font-size:60%;"><strong>Why "Backend" reads differently for the two paths:</strong> <code>QRhi::create()</code> has <strong>no auto-select mode</strong> — the caller must name an <code>Implementation</code>. In UI mode <code>QRhiWidget</code> does that picking for us (per-platform: D3D11 / Metal / OpenGL); in headless mode there's no widget, so libezgl encodes the same per-platform logic by hand in <code>create_headless_rhi()</code>. Same end result on a given OS — just no abstraction to hide the choice on the headless side.</p>
-
----
-
-## Slide 2.4b — Driving constraint, with proof
-
-`QRhiWidget` needs a real GPU context for its swap chain. Qt's offscreen platform plugin (`QT_QPA_PLATFORM=offscreen`) gives only software surfaces and does **not** provide `QRhiWidget` a usable GPU context — confirmed by three independent sources in this tree:
-
-1. **Source comment in the headless path** ([rhi_canvas_widget.cpp:236](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L236)):
-   *"No QRhiWidget is involved so this works on `QT_QPA_PLATFORM=offscreen`."*
-
-2. **Layer-3 tests that touch the widget path skip under offscreen** ([test_save_graphics.cpp:159, 185, 229](vpr/test/gui/test_save_graphics.cpp#L159)):
-   `SKIP("CI offscreen Mesa lacks a working GL context for QRhiGles2")`
-
-3. **Layer-5 visual-regression driver acknowledges the divergence** ([run_visual_regression.sh:44](vpr/test/gui/run_visual_regression.sh#L44)):
-   `SKIP: CI offscreen Mesa cannot be compared against developer-host goldens`
-
-In short: the standalone-`QRhi`-on-`QOffscreenSurface` route is the only RHI path that runs under offscreen Qt — by design, and confirmed by our own test infrastructure.
+<p style="font-size:60%;"><strong>Why "Backend" reads differently for the two paths:</strong> <code>QRhi::create()</code> has <strong>no auto-select mode</strong> — the caller must name an <code>Implementation</code>. In UI mode <code>QRhiWidget</code> does that picking for us (per-platform: D3D11 / Metal / OpenGL); in headless mode there's no widget, so libezgl encodes the same per-platform logic by hand in <code>create_headless_rhi()</code>.</p>
 
 ---
 
@@ -357,13 +340,6 @@ Layers go from cheapest/fastest (top) to slowest/highest fidelity (bottom).
 
 ---
 
-## Slide 3.3 — Coverage map
-
-- Heatmap or numeric chart: for each VPR GUI subsystem (canvas, draw_rr, draw_noc, search, breakpoint, popovers, status bar), which layer covers it today and which doesn't.
-- Layer 5 is active with 14 golden scenes shipped; mark cells green for covered subsystems and amber where coverage is shallow.
-
----
-
 <!-- _class: lead -->
 
 # Part 4 — Upstream changes
@@ -419,21 +395,9 @@ Side-by-side: upstream `ql_main` vs our `qt_layer`. Rows with sub-lists (`set_cp
 table { font-size: 14px; }
 </style>
 
-| | |
-|---|---|
-| **Upstream (`ql_main`)** | hard-codes `show_crit_path = true; show_crit_path_flylines = true;` and only `show_crit_path_delays` is taken from the argument. The comment claims `(bool)(bool)(bool)` but the code reads one int. |
-| **qt_layer** | <span style="color:#e67e22">**redefined as bitmask** (d6aa9adcc)</span> |
-
-**qt_layer bitmask values:**
-
-| Value | Meaning |
-|---|---|
-| `0` | off |
-| `1` | flylines only |
-| `3` | flylines + delay labels |
-| `4` | routed wires only |
-| `5` | flylines + routed wires |
-| `7` | all on |
+| Command | Upstream (`ql_main`) | qt_layer |
+|---|---|---|
+| `set_cpd <state>` | hard-codes `show_crit_path = true; show_crit_path_flylines = true;` and only `show_crit_path_delays` is taken from the argument. The comment claims `(bool)(bool)(bool)` but the code reads one int. | <span style="color:#e67e22">**redefined as bitmask** (d6aa9adcc)<br/><br/>`0` = off<br/>`1` = flylines only<br/>`3` = flylines + delay labels<br/>`4` = routed wires only<br/>`5` = flylines + routed wires<br/>`7` = all on</span> |
 
 ---
 
