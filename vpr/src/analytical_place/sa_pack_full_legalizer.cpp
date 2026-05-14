@@ -210,27 +210,36 @@ void SAPack::optimize_placement() {
     unsigned moves_accepted = 0;
     unsigned moves_rejected = 0;
     unsigned moves_aborted = 0;
+    // Since the SA starts from the AP global placer's solution (already near-optimal),
+    // a fixed range limit scaled to the device size is more appropriate than a decaying
+    // schedule. The range only needs to be large enough to find a legal site near each
+    // molecule's global placement position.
+    // TODO: This may be too tight since it could be possible that there is no valid tile
+    //       within the range_limit. This can be fixed with the dense selection that RLPlace
+    //       does.
+    const int range_limit = std::max(1, (int)std::max(device_grid_.width(),
+                                                      device_grid_.height()) / 10);
     for (size_t i = 0; i < num_moves; i++) {
         // Generate move.
         //  Select random molecule.
         PackMoleculeId mol_to_move = *(prepacker_.molecules().begin() + rng.irand(prepacker_.molecules().size() - 1));
-        //  Select a random location.
-        t_physical_tile_loc target_physical_tile_loc(rng.irand(device_grid_.width() - 1),
-                                              rng.irand(device_grid_.height() - 1),
-                                              rng.irand(device_grid_.get_num_layers() - 1));
-        if (!device_grid_.is_loc_on_device(target_physical_tile_loc)) {
-            moves_aborted++;
-            continue;
-        }
+
+        t_pl_loc original_mol_loc = mol_locations_[mol_to_move];
+        t_physical_tile_loc source_mol_physical_loc(original_mol_loc.x, original_mol_loc.y, original_mol_loc.layer);
+
+        //  Select a random location within the range limit of the current location,
+        //  clamped to the device grid so moves near the boundary are never aborted.
+        int target_x = std::clamp(original_mol_loc.x + rng.irand(2 * range_limit) - range_limit,
+                                  0, (int)device_grid_.width() - 1);
+        int target_y = std::clamp(original_mol_loc.y + rng.irand(2 * range_limit) - range_limit,
+                                  0, (int)device_grid_.height() - 1);
+        t_physical_tile_loc target_physical_tile_loc(target_x, target_y, original_mol_loc.layer);
         target_physical_tile_loc = device_grid_.get_root_location(target_physical_tile_loc);
         if (device_grid_.get_physical_type(target_physical_tile_loc)->capacity == 0) {
             moves_aborted++;
             continue;
         }
         int target_sub_tile = rng.irand(device_grid_.get_physical_type(target_physical_tile_loc)->capacity - 1);
-
-        t_pl_loc original_mol_loc = mol_locations_[mol_to_move];
-        t_physical_tile_loc source_mol_physical_loc(original_mol_loc.x, original_mol_loc.y, original_mol_loc.layer);
         SAPackCluster& source_cluster = sa_pack_grid_->get_clusters(source_mol_physical_loc)[original_mol_loc.sub_tile];
 
         SAPackCluster& target_cluster = sa_pack_grid_->get_clusters(target_physical_tile_loc)[target_sub_tile];
