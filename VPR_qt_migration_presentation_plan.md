@@ -38,7 +38,7 @@ Across **every** target platform, Qt is installed identically: **Qt 6.9.3 via `a
 
 ### Slide 1.3 — Migration limitations / what's left
 
-Three concrete items still on the work list. One bullet per slide.
+Two concrete items still on the work list. One bullet per slide.
 
 
 
@@ -75,15 +75,8 @@ In other words: once `main.ui` upstream is itself a Qt Designer file, we drop th
 #### 1.3.2 — Code-comment coverage
 
 - The Qt port introduced new modules (RHI backend, deferred renderer, RHI canvas widget, RHI scene renderer) — public-API headers are documented, but many private helpers are not.
-- Next step: pass over hot files to bring them to Doxygen-friendly comments.
-
-#### 1.3.3 — More automated GUI test coverage
-
-- Cross-reference with section 3. Today we have ~220–250 test cases across 5 layers. *(Coverage numbers and gate thresholds to be filled in from the current `make gui-coverage` run before the deck ships — do not pull from the test-plan doc, it is stale.)*
-- Specific gaps to call out on the slide:
-  - layer-3 widget coverage of recently-added popovers / menu buttons,
-  - layer-4 keyboard navigation depth,
-  - layer-5 visual-regression cases — grow the golden corpus beyond the current 14 scenes.
+- **Existing Doxygen comments inherited from upstream still describe the GTK function signatures** — they were not updated as part of the Qt port, so they no longer match the current Qt-based parameter lists / return types / ownership semantics. Reading those comments today can be misleading.
+- Next step: pass over hot files to (a) bring private helpers to Doxygen-friendly comments, and (b) rewrite the stale GTK-era comments to reflect the current Qt signatures.
 
 ---
 
@@ -138,7 +131,7 @@ This is the core comparison slide. Render as one table on the slide.
 | Source | [immediate_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/immediate_renderer.cpp) | [deferred_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/deferred_renderer.cpp) | [rhi_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/rhi_renderer.cpp) |
 | **CPU usage** | high (one QPainter call per primitive) | medium (collect → flush batches) | <span style="color:#27ae60">low–medium overall,</span> <span style="color:#c0392b">**high\*** during scene composition (binning into render tiles, building `SceneBuffers`);</span> <span style="color:#27ae60">steady-state and camera-only frames are very cheap</span> |
 | **GPU usage** | none | none | high (intended path) |
-| **RAM usage** | <span style="color:#27ae60">minimal (no per-frame storage; just QPainter state)</span> | <span style="color:#e67e22">scales with scene — two structures held until flush: (1) style-keyed batch vectors of `QLineF` / `QRectF` / `QPolygonF` for batchable primitives, (2) a `std::variant` command queue (`m_overlay_commands`) for text, arcs, polys, surfaces, screen-space arrows</span> | <span style="color:#c0392b">scales with scene — CPU-side `SceneBuffers` (POD geometry per style, chunked) + QImage overlay cache. Held for the renderer's lifetime (~1.6 GB on 100 M-line scenes — same size as one GPU slot's buffers; VRAM holds N copies, so VRAM total = N × this).</span> |
+| **RAM usage** | <span style="color:#27ae60">minimal (no per-frame storage; just QPainter state)</span> | <span style="color:#e67e22">scales with scene — two structures held until flush: (1) style-keyed batch vectors of `QLineF` / `QRectF` / `QPolygonF` for batchable primitives, (2) a `std::variant` command queue (`m_overlay_commands`) for text, arcs, polys, surfaces, screen-space arrows. **Both structures are cleared at the end of each `flush()`** (`replay()` + `reset()`), so peak retention is one frame's worth of primitives.</span> | <span style="color:#c0392b">scales with scene — CPU-side `SceneBuffers` (POD geometry per style, chunked) + QImage overlay cache. Held for the renderer's lifetime (~1.6 GB on 100 M-line scenes — same size as one GPU slot's buffers; VRAM holds N copies, so VRAM total = N × this).</span> |
 | **VRAM usage** | <span style="color:#27ae60">none</span> | <span style="color:#27ae60">none</span> | <span style="color:#c0392b">high (vertex/index buffers per render tile)</span> |
 | **Batching** | none | by `(primitive, color, line-width, dash, cap)` | render-tile-binned (32×32 = 1024 render tiles) + style |
 | **CPU multithread optimization** | none | none | **batching workers per band** (`std::thread::hardware_concurrency`) during scene composition |
@@ -157,27 +150,23 @@ Notes for the speaker:
 ### Slide 2.1.1 — Inside the RHI: the scene renderer
 
 - The "scene renderer" referenced on slide 2.1 is **`RhiSceneRenderer`** ([rhi_scene_renderer.hpp](libs/EXTERNAL/libezgl/include/ezgl/qt/rhi_scene_renderer.hpp), [rhi_scene_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/rhi_scene_renderer.cpp)). It exists **only in the RHI path** — immediate and deferred renderers don't need an equivalent.
-- It is the **GPU half** of the RHI renderer: owns every QRhi object (pipelines, SRBs, vertex/instance/uniform buffers, overlay texture+sampler, per-frame-slot resources).
+- It is the **GPU half** of the RHI renderer: owns every QRhi object (pipelines, vertex/instance/uniform buffers, overlay texture+sampler, per-frame-slot resources).
 
 **Problems it solves, in one line each:**
 
-1. **CPU↔GPU separation.** `RhiRenderer` builds POD `SceneBuffers` on the CPU; `RhiSceneRenderer` uploads them and records draw commands on the GPU. Keeping these in two classes means each side can change without re-validating the other.
+1. **CPU↔GPU separation.** `RhiRenderer` builds POD (Plain Old Data — trivially copyable) `SceneBuffers` on the CPU; `RhiSceneRenderer` uploads them and records draw commands on the GPU. Keeping these in two classes means each side can change without re-validating the other.
 2. **Same GPU code, two callers.** Drives both the on-screen `RhiCanvasWidget` and the offscreen `save_graphics` path (own QRhi on a `QOffscreenSurface`) — this is how visual-regression PNG export works without an X display.
-3. **Frame-in-flight bookkeeping.** Owns a `std::vector<FrameResources>` and a per-slot dirty bitmap (`m_frame_slot_geom_valid`) so geometry re-uploads lazily, one slot at a time, instead of stalling the pipeline on every scene change.
-4. **One draw call per `(primitive, style)` group.** The `StyleKey` packs `(primitive_type, rgba, line_width, line_dash)` into a `uint64_t`; all geometry sharing a key lands in one vertex buffer and one draw call — a few hundred draws cover millions of primitives.
-5. **GPU-side culling via chunks.** Each style buffer is sliced into world-space chunks with bounding rectangles; chunks outside `visible_world` are skipped at submit time — same data uploaded once, only the visible slice drawn.
-6. **Deterministic GPU teardown.** Explicit `release()` decouples GPU-object destruction from canvas widget lifetime — important under QRhi where order-of-destruction relative to the `QRhi*` matters.
+3. **One draw call per `(primitive, style)` group.** The `StyleKey` packs `(primitive_type, rgba, line_width, line_dash)` into a `uint64_t`; all geometry sharing a key lands in one vertex buffer and one draw call — a few hundred draws cover millions of primitives.
+4. **GPU-side culling via chunks.** Each style buffer is sliced into world-space chunks with bounding rectangles; chunks outside `visible_world` are skipped at submit time — same data uploaded once, only the visible slice drawn.
 
 **Why deferred doesn't have an equivalent:** its "scene" is just `std::vector<QLineF>` etc., consumed by the same QPainter that the renderer was handed — no upload, no frame slots, no offscreen-vs-display split. Splitting it into two classes would buy nothing.
 
 ### Slide 2.2 — `redraw()` split idea (geometry vs camera-move)
 
 - Most user interaction is **pan / zoom** — the geometry of the scene doesn't change, only the camera does.
-- Today, RHI already has this split:
-  - `flush()` — full path: re-records commands, re-bins into tiles, re-uploads buffers.
-  - `flush_mvp_only()` — camera path: pushes a new 64-byte MVP matrix only; geometry buffers are reused, overlay is replayed from cache (`m_overlay_deferred->replay_overlay()`).
-  - Selected by `rhi_backend.cpp:27-66`.
-- Proposal: **mirror this split in the deferred renderer** — keep the batch cache across camera-only changes, redo only the screen-space projection.
+- Today, RHI already has this split at the `rhi_backend` level:
+  - `redraw()` — **full path**: `begin_frame()` resets state, then **re-runs the user's draw callback** (which calls `draw_line` / `draw_rectangle` / `draw_text` / … to refill the per-band command queues), then `flush()` dispatches commands into tiles, builds `SceneBuffers`, and re-uploads buffers to the GPU.
+  - `redraw_camera_only()` — **camera path**: skips the draw callback entirely. Calls `flush_mvp_only()` which pushes a new 64-byte MVP matrix only; geometry buffers are reused, overlay is replayed from cache via `m_overlay_deferred->replay_overlay()`.
 - Suggested slide visual: two paths, one wide ("full redraw") and one narrow ("camera-only") feeding the same final frame.
 
 ```
