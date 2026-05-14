@@ -27,18 +27,21 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
-#include <new>
 #include <thread>
 #include "d_ary_heap.tpp"
 
-// std::hardware_destructive_interference_size is the standard C++17 way to get
-// the cache line size for the target architecture. GCC warns about it when
-// ABI stability matters (e.g. a value used in a shared library header). That is
-// not a concern here, so suppress the warning.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Winterference-size"
-static constexpr std::size_t CACHELINE = std::hardware_destructive_interference_size;
-#pragma GCC diagnostic pop
+// Cache line size in bytes. Hardcoded to 64 since that is correct for all
+// x86/x86-64 CPUs (32B and 128B have never shipped). Apple Silicon uses 128B,
+// but VTR does not currently target it.
+//
+// The idiomatic C++17 alternative is std::hardware_destructive_interference_size
+// from <new>, which queries the target at compile time. However:
+//   1. GCC warns about it (-Winterference-size) unless the warning is suppressed
+//      with a #pragma GCC diagnostic, which we are willing to do.
+//   2. The interface is not available in GCC < 12 (e.g. GCC 11 on Ubuntu 22.04
+//      Jammy, one of our supported build environments), so it cannot be used
+//      portably until that toolchain is retired.
+#define CACHELINE 64
 
 #define MQ_IO_ENABLE_CLEAR_FOR_POP
 
