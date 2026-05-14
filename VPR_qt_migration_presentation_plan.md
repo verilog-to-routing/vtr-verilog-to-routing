@@ -171,20 +171,20 @@ Notes for the speaker:
 
 ```
    user action  ═══►  redraw_geometry()  ═══►  rebuild batches + update MVP  ═══►─┐
-                        ▲  HEAVY: re-runs draw callback,             │
-                        │         batching,                          │
-                        │         re-uploads GPU buffers             │
-                        │         applies on_camera_change           │
-                                                                     ▼
-                                                              present frame
-                                                                     ▲
-   pan/zoom     ───►  on_camera_change() ───►  update MVP only ─────┘
-                        CHEAP: 64-byte MVP push;
-                               geometry reused;
-                               overlay re-painted from cached commands
+                       HEAVY: re-runs draw callback,                              │
+                              batching,                                           │
+                              re-uploads GPU buffers.                             │
+                       applies on_camera_change                                   │
+                                                                                  ▼
+                                                                          present frame
+                                                                                  ▲
+   pan/zoom     ───►  on_camera_change() ───►  update MVP only ───────────────────┘
+                       CHEAP: 64-byte MVP push;
+                              geometry reused;
+                              overlay re-painted from cached commands
 ```
 
-**MVP** = Model-View-Projection matrix — the 4×4 matrix the shader uses to transform world-space coordinates into clip space. In the camera-only path, this matrix is the only per-frame data uploaded to the GPU (≈ 64 bytes). Geometry buffers are reused; the overlay QImage is *re-painted* from the cached deferred-renderer commands (text/arcs reposition on zoom, so the pixels can't be reused — but the user's draw callback does not re-run).
+**MVP** — Model-View-Projection matrix — the 4×4 matrix the shader uses to transform world-space coordinates into clip space.
 
 Note on naming: `on_camera_change` is intentionally generic — it covers pan, zoom, fit-to-screen, programmatic camera moves, anything that mutates the camera transform without changing the scene geometry.
 
@@ -192,7 +192,6 @@ Note on naming: `on_camera_change` is intentionally generic — it covers pan, z
 
 - CLI: `--renderer <immediate|deferred|rhi>`
 - Default: **`rhi`** (falls back to immediate if QRhi init fails on the host).
-- Plumbed via `ezgl::renderer_type` enum in `render_backend.hpp`, propagated through `QtGladeLoader::setRendererType()` so the `GtkDrawingArea` element is materialised as either `RhiCanvasWidget` or `DrawingAreaWidget`.
 - VPR-side: same flag, parsed in `vpr/src/base/read_options.cpp`.
 
 ### Slide 2.4 — RHI render targets: UI vs headless
@@ -204,13 +203,14 @@ The RHI renderer has **two distinct render-target paths**, governed by where the
 | Entry point | `RhiCanvasWidget` (extends `QRhiWidget`) | `RhiCanvasWidget::render_offscreen()` (static) |
 | `QRhi` instance | provided by Qt; widget owns it | constructed standalone via `create_headless_rhi()` ([rhi_canvas_widget.cpp:164-211](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L164-L211)) |
 | Backend selection | Qt picks per-platform | explicit per-platform: D3D11 (Win), Metal (mac/iOS), else OpenGL on a `QOffscreenSurface` |
-| Render target | widget's **swap-chain backbuffer** | **`QRhiTextureRenderTarget`** over an RGBA8 `QRhiTexture` ([rhi_canvas_widget.cpp:244-254](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L244-L254)) |
+| Render target | **`QRhiWidget` back buffer** | **`QRhiTextureRenderTarget`** over an RGBA8 `QRhiTexture` ([rhi_canvas_widget.cpp:244-254](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L244-L254)) |
 | Frame submission | `beginFrame()` / `endFrame()` driven by Qt paint loop | `beginOffscreenFrame()` / `endOffscreenFrame()` |
 | Output | on-screen pixels | `QImage` via `readBackTexture` ([rhi_canvas_widget.cpp:268-272](libs/EXTERNAL/libezgl/src/qt/rhi_canvas_widget.cpp#L268-L272)) |
-| Frames-in-flight | 2 or 3 (per backend) | 1 |
 | Qt platform plugin requirement | needs a GUI plugin (xcb/wayland/cocoa/windows) with **a working GPU context** | works under any plugin, including `QT_QPA_PLATFORM=offscreen` |
 
 Both paths drive the **same** `RhiSceneRenderer` (the pipeline/buffer/shader code) — the only difference is who owns the `QRhi*` and the render target.
+
+**Why the "Backend" row reads asymmetrically:** the standalone `QRhi::create()` API has **no auto-select mode** — the caller must name an `Implementation` (`D3D11`, `Metal`, `OpenGLES2`, …). In UI mode the `QRhiWidget` abstraction makes that choice for us (per-platform default + `QSG_RHI_BACKEND` env-var override); in headless mode there is no widget, so libezgl reimplements the same per-platform priority chain by hand in `create_headless_rhi()`. Both routes converge on the same backend on a given OS — the headless side just has to spell it out because there is no abstraction to hide it.
 
 #### The driving constraint, with proof
 

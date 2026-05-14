@@ -226,20 +226,20 @@ table { font-size: 13px; }
 
 ```
    user action  ═══►  redraw_geometry()  ═══►  rebuild batches + update MVP  ═══►─┐
-                       HEAVY: re-runs draw callback,                  │
-                              batching,                               │
-                              re-uploads GPU buffers.                 │
-                       applies on_camera_change                       │
-                                                                      ▼
-                                                              present frame
-                                                                      ▲
-   pan/zoom     ───►  on_camera_change() ───►  update MVP only ──────┘
+                       HEAVY: re-runs draw callback,                              │
+                              batching,                                           │
+                              re-uploads GPU buffers.                             │
+                       applies on_camera_change                                   │
+                                                                                  ▼
+                                                                          present frame
+                                                                                  ▲
+   pan/zoom     ───►  on_camera_change() ───►  update MVP only ───────────────────┘
                        CHEAP: 64-byte MVP push;
                               geometry reused;
                               overlay re-painted from cached commands
 ```
 
-**MVP** = Model-View-Projection matrix — the 4×4 matrix the shader uses to transform world-space coordinates into clip space. In the camera-only path, this matrix is the only per-frame data uploaded to the GPU (≈ 64 bytes). Geometry buffers are reused; the overlay QImage is *re-painted* from the cached deferred-renderer commands (text/arcs reposition on zoom, so the pixels can't be reused — but the user's draw callback does not re-run).
+**MVP** — Model-View-Projection matrix — the 4×4 matrix the shader uses to transform world-space coordinates into clip space.
 
 `on_camera_change` is intentionally generic — covers pan, zoom, fit-to-screen, any camera-transform mutation that doesn't change the scene geometry.
 
@@ -249,7 +249,6 @@ table { font-size: 13px; }
 
 - CLI: `--renderer <immediate|deferred|rhi>`
 - Default: **`rhi`** (falls back to immediate if QRhi init fails on the host).
-- Plumbed via `ezgl::renderer_type` enum in `render_backend.hpp`, propagated through `QtGladeLoader::setRendererType()` so the `GtkDrawingArea` element is materialised as either `RhiCanvasWidget` or `DrawingAreaWidget`.
 - VPR-side: same flag, parsed in `vpr/src/base/read_options.cpp`.
 
 ---
@@ -267,11 +266,12 @@ Two distinct render-target paths in the RHI renderer — both drive the **same**
 | Entry | `RhiCanvasWidget : QRhiWidget` | `RhiCanvasWidget::render_offscreen()` (static) |
 | `QRhi` owner | Qt provides; widget owns it | standalone via `create_headless_rhi()` |
 | Backend | Qt picks per-platform | explicit: D3D11 (Win), Metal (mac), else OpenGL on `QOffscreenSurface` |
-| Render target | swap-chain backbuffer | `QRhiTextureRenderTarget` (RGBA8) |
+| Render target | `QRhiWidget` back buffer | `QRhiTextureRenderTarget` (RGBA8) |
 | Submission | `beginFrame()` / `endFrame()` | `beginOffscreenFrame()` / `endOffscreenFrame()` |
 | Output | on-screen pixels | `QImage` via `readBackTexture` |
-| Frames-in-flight | 2 or 3 | 1 |
 | Works under `QT_QPA_PLATFORM=offscreen`? | **No** | **Yes** |
+
+<p style="font-size:60%;"><strong>Why "Backend" reads differently for the two paths:</strong> <code>QRhi::create()</code> has <strong>no auto-select mode</strong> — the caller must name an <code>Implementation</code>. In UI mode <code>QRhiWidget</code> does that picking for us (per-platform: D3D11 / Metal / OpenGL); in headless mode there's no widget, so libezgl encodes the same per-platform logic by hand in <code>create_headless_rhi()</code>. Same end result on a given OS — just no abstraction to hide the choice on the headless side.</p>
 
 ---
 
