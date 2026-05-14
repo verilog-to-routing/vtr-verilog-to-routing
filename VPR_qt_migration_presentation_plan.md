@@ -233,31 +233,49 @@ Render as a pyramid or a layered stack. Layers go from cheapest/fastest (top) to
 
 ### Slide 4.3 — Graphics-command surface, full delta
 
-List the commands currently supported and call out what's new/changed.
+Side-by-side: upstream `ql_main` vs our `qt_layer`. Rows that changed are flagged in the right column.
 
-| Command | Status |
-|---|---|
-| `wait_for_stage <stage>_<initial\|done>` | **new** (97709a7ad) |
-| `save_graphics <filename>` | existing |
-| `set_macros <state>` | existing |
-| `set_nets <0\|1\|2>` | **redefined** as documented states (d6aa9adcc) |
-| `set_cpd <bitmask>` | **extended** — bit 0 flylines, bit 1 delay labels, bit 2 routed-wire highlight (d6aa9adcc) |
-| `set_routing_util <state>` | existing |
-| `set_clip_routing_util <state>` | existing |
-| `set_congestion <0\|1\|2>` | existing (0=off, 1=nodes, 2=nodes+nets) |
-| `set_draw_block_outlines <state>` | existing |
-| `set_draw_block_text <state>` | existing |
-| `set_draw_block_internals <state>` | existing |
-| `set_draw_net_max_fanout <int>` | existing |
-| `exit <int>` | **deferred** to next render checkpoint (19cae2df6) |
+| Command | Upstream (`ql_main`) | qt_layer |
+|---|---|---|
+| `wait_for_stage <stage>_<initial\|done>` | — | <span style="color:#27ae60">**new** — barrier; resume on stage init or stage completion (97709a7ad)<br/><br/>where `stage` ∈ {`placement`, `routing`}</span> |
+| `save_graphics <filename>` | save current frame to file | unchanged |
+| `set_macros <state>` | sets `show_placement_macros` from raw integer | unchanged |
+| `set_nets <state>` | raw cast `(e_draw_nets)atoi(cmd[1])` — **no documented values**, error message just says "Expect net draw state" | <span style="color:#e67e22">same parser, but **documented states**; error message lists them (d6aa9adcc)<br/><br/>`0`=off<br/>`1`=flylines<br/>`2`=routed</span> |
+| `set_cpd <state>` | hard-codes `show_crit_path = true; show_crit_path_flylines = true;` and only `show_crit_path_delays` is taken from the argument — comment claims "(bool)(bool)(bool)" but code reads one int | <span style="color:#e67e22">**redefined as bitmask** (d6aa9adcc)<br/><br/>`0`=off<br/>`1`=flylines only<br/>`3`=flylines + delay labels<br/>`4`=routed wires only (routing stage)<br/>`5`=flylines + routed wires<br/>`7`=flylines + delay labels + routed wires (all on)</span> |
+| `set_routing_util <state>` | raw cast to `e_draw_routing_util` | unchanged |
+| `set_clip_routing_util <state>` | bool | unchanged |
+| `set_congestion <state>` | raw cast to `e_draw_congestion`, no doc | <span style="color:#e67e22">**documented states**: 0=off, 1=congested, 2=congested+nets; **range-asserted** 0..2</span> |
+| `set_draw_block_outlines <state>` | int | unchanged |
+| `set_draw_block_text <state>` | int | unchanged |
+| `set_draw_block_internals <state>` | int | unchanged |
+| `set_draw_net_max_fanout <int>` | int | unchanged |
+| `exit <int>` | `exit(atoi(cmd[1]))` — **immediate** process termination mid-iteration | <span style="color:#e67e22">**deferred** — sets `pending_graphics_exit` flag; honoured at next render checkpoint so the current frame finishes cleanly (19cae2df6)</span> |
 
-Plus supporting infra:
-- **caf2004f2** — moved `--graphics_commands` scheduling inside the Qt event loop, so `--disp on` works under `QT_QPA_PLATFORM=offscreen`.
-- **55c2fade7** — added `--renderer {immediate|deferred|rhi}` to VPR (stored in `draw_state->renderer_type`).
-- **19cae2df6** — `exit N` now flips `pending_graphics_exit` and is honoured at the next render checkpoint, preventing mid-iteration termination. `run_vtr_flow.py` recognises the "Graphics-command 'exit" log prefix to skip downstream consistency checks.
-- Several RHI / deferred stability fixes (7a996714e, 621e88f50, 310ecf1d1, ace28de13) for offscreen and headless world-coord init.
+**Color legend:** green = new command, orange = changed semantics.
 
-**Speaker prompt at end of slide:** *"anything I missed from your branch — let me know now and I'll patch the slide"*. This is the "did I forget anything" hook the user asked for.
+#### `set_cpd <state>` — full combination table
+
+Bitmask layout: **bit 0 (1) = flylines**, **bit 1 (2) = delay labels**, **bit 2 (4) = routed-wire highlight** (the routed-wire bit only takes effect at the routing stage — gate with `wait_for_stage routing_done`).
+
+| Value | Binary | Flylines | Delay labels | Routed wires | What you see |
+|---|---|---|---|---|---|
+| `0` | `000` | ✗ | ✗ | ✗ | crit-path display **off** |
+| `1` | `001` | ✓ | ✗ | ✗ | flylines only |
+| `2` | `010` | ✗ | ✓ | ✗ | <span style="color:#c0392b">**degenerate** — delay labels anchor to flylines, so nothing is drawn</span> |
+| `3` | `011` | ✓ | ✓ | ✗ | flylines + delay labels |
+| `4` | `100` | ✗ | ✗ | ✓ | routed wires only (routing stage) |
+| `5` | `101` | ✓ | ✗ | ✓ | flylines + routed wires |
+| `6` | `110` | ✗ | ✓ | ✓ | <span style="color:#c0392b">**degenerate** — same reason as 2; delays have no flylines to anchor to</span> |
+| `7` | `111` | ✓ | ✓ | ✓ | everything on |
+
+The degenerate values (`2`, `6`) are accepted by the parser but produce no visible delay labels because labels need flyline endpoints to anchor to. Source comment at [vpr/src/draw/draw.cpp:1491-1498](vpr/src/draw/draw.cpp#L1491-L1498).
+
+Supporting infra changes that aren't visible as command rows (cover in speaker notes or as a separate slide):
+
+- **caf2004f2** — `--graphics_commands` now scheduled **inside the Qt event loop** so `--disp on` works under `QT_QPA_PLATFORM=offscreen` (this is what made layer 1 / layer 5 tests possible).
+- **55c2fade7** — new `--renderer {immediate|deferred|rhi}` CLI option, stored in `draw_state->renderer_type`.
+- **19cae2df6** (companion) — `run_vtr_flow.py` recognises `"Graphics-command 'exit"` log prefix and skips downstream consistency checks.
+- Several RHI/deferred stability fixes for offscreen/headless world-coord init (7a996714e, 621e88f50, 310ecf1d1, ace28de13).
 
 ---
 
