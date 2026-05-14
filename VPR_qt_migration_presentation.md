@@ -329,17 +329,6 @@ Layers go from cheapest/fastest (top) to slowest/highest fidelity (bottom).
 
 ---
 
-## Slide 3.2 — Why layer 2 isn't wired yet
-
-- Layer 2 is GUI tests that are **Qt-only** — they exercise the canvas, renderers, controls, theme loading. These have no concept of VPR data structures.
-- They live in `libs/EXTERNAL/libezgl/test/` and are run from the libezgl repository's own CI.
-- They are **deliberately not registered** in VPR's CTest, because:
-  - they duplicate coverage already provided by VPR layer 3, and
-  - the submodule build doesn't always pull the test sources.
-- Plan: revisit once libezgl stabilises — either lift the most useful ones into VPR layer 3, or wire the submodule's tests through `add_test()` directly.
-
----
-
 <!-- _class: lead -->
 
 # Part 4 — Upstream changes
@@ -401,30 +390,25 @@ table { font-size: 14px; }
 
 ---
 
-## Slide 4.3c — Graphics-command delta: unchanged commands
+## Slide 4.4 — Open question for the team
 
-These commands ship identically on `ql_main` and `qt_layer`:
+The graphics-command changes shown on the previous slides (`wait_for_stage`, `set_cpd` bitmask, `set_nets` / `set_congestion` documentation, deferred `exit`) are conceptually independent of the Qt migration itself — they would have made sense even if VPR had stayed on GTK.
 
-| Command | What it does (both branches) |
-|---|---|
-| `save_graphics <filename>` | save current frame to file |
-| `set_macros <state>` | sets `show_placement_macros` from raw integer |
-| `set_routing_util <state>` | raw cast to `e_draw_routing_util` |
-| `set_clip_routing_util <state>` | bool |
-| `set_draw_block_outlines <state>` | int |
-| `set_draw_block_text <state>` | int |
-| `set_draw_block_internals <state>` | int |
-| `set_draw_net_max_fanout <int>` | int |
+**Should we split them out into a separate upstream PR, or land them together with the main Qt-migration branch?**
+
+| Option | Pros | Cons |
+|---|---|---|
+| **Separate PR** | smaller, focused review; easier for upstream maintainers to land; doesn't gate command-surface clean-ups on the migration timeline | extra branch to maintain; minor merge friction |
+| **Bundled with the Qt branch** | one merge, single review thread; commit history stays together | larger PR; harder for non-renderer reviewers to evaluate; couples timing |
 
 ---
 
-## Slide 4.4 — Supporting infra changes
+## Help Manual Test
 
-Not visible as command rows, but shipped on this branch:
+![w:400 Help test screenshot](help_test.png)
 
-- **caf2004f2** — `--graphics_commands` now scheduled **inside the Qt event loop** so `--disp on` works under `QT_QPA_PLATFORM=offscreen` (this is what made layer 1 / layer 5 tests possible).
-- **55c2fade7** — new `--renderer {immediate|deferred|rhi}` CLI option, stored in `draw_state->renderer_type`.
-- Several RHI/deferred stability fixes for offscreen/headless world-coord init (7a996714e, 621e88f50, 310ecf1d1, ace28de13).
+- Debug
+- Manual Move
 
 ---
 

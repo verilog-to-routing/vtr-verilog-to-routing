@@ -253,13 +253,6 @@ Render as a pyramid or a layered stack. Layers go from cheapest/fastest (top) to
 | 4 | Interactive (mouse / keyboard via `QTest`) | ~30–40 | same files, tagged `[layer4]` | Catch2 + `QTest::mouseMove`/`keyClick` | active (subset of L3 binary) |
 | 5 | Visual regression (PNG + SSIM) | 14 cases | [vpr/test/gui/run_visual_regression.sh](vpr/test/gui/run_visual_regression.sh), goldens in [vpr/test/gui/golden/](vpr/test/gui/golden/) | bash + Python `skimage.metrics.structural_similarity` | active (14 goldens shipped; corpus to be expanded) |
 
-### Slide 3.2 — Why layer 2 isn't wired yet
-
-- Layer 2 is GUI tests that are **Qt-only** — they exercise the canvas, renderers, controls, theme loading. These have no concept of VPR data structures.
-- They live in `libs/EXTERNAL/libezgl/test/` and are run from the libezgl repository's own CI.
-- They are **deliberately not registered** in VPR's CTest, because (a) they duplicate coverage already provided by VPR layer 3, and (b) the submodule build doesn't always pull the test sources.
-- Plan: revisit once libezgl stabilises — either lift the most useful ones into VPR layer 3, or wire the submodule's tests through `add_test()` directly.
-
 ---
 
 ## 4. Upstream changes (VPR delta vs `ql_main`)
@@ -309,6 +302,17 @@ Supporting infra changes that aren't visible as command rows (cover in speaker n
 - **caf2004f2** — `--graphics_commands` now scheduled **inside the Qt event loop** so `--disp on` works under `QT_QPA_PLATFORM=offscreen` (this is what made layer 1 / layer 5 tests possible).
 - **55c2fade7** — new `--renderer {immediate|deferred|rhi}` CLI option, stored in `draw_state->renderer_type`.
 - Several RHI/deferred stability fixes for offscreen/headless world-coord init (7a996714e, 621e88f50, 310ecf1d1, ace28de13).
+
+### Slide 4.4 — Open question for the team
+
+The graphics-command changes (`wait_for_stage`, `set_cpd` bitmask, `set_nets` / `set_congestion` documentation, deferred `exit`) are conceptually independent of the Qt migration — they would have been worth doing even if we stayed on GTK.
+
+**Question to settle on this slide: do we split these out into a separate upstream PR, or land them together with the main Qt-migration branch?**
+
+| Option | Pros | Cons |
+|---|---|---|
+| Separate PR | smaller, focused review; easier for upstream maintainers to land; doesn't gate command-surface clean-ups on the migration timeline | extra branch to maintain; minor merge friction |
+| Bundled with the Qt branch | one merge, single review thread; commit history stays together | larger PR; harder for non-renderer reviewers to evaluate; couples timing |
 
 ---
 
