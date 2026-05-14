@@ -329,6 +329,7 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
             "route_chan_width",
             "read_flat_place",
             "net_file",
+            "sdc_file",
         ]
     )
 
@@ -805,6 +806,10 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     net_file = config.circuit_constraints[circuit]["net_file"]
     if net_file is not None:
         cmd += ["--net_file", net_file]
+    # Check if the circuit has a specific SDC file.
+    sdc_file = config.circuit_constraints[circuit]["sdc_file"]
+    if sdc_file is not None:
+        cmd += ["-sdc_file", resolve_vtr_source_file(config, sdc_file)]
 
 
 def resolve_vtr_source_file(config, filename, base_dir=""):

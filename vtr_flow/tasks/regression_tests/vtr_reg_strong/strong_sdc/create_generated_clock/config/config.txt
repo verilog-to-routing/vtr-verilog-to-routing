@@ -10,6 +10,21 @@ archs_dir=arch/timing
 
 # Add circuits to list to sweep
 circuit_list_add=clock_divider.blif
+circuit_list_add=clock_divider_invert.blif
+circuit_list_add=clock_divider_nonzero_rise.blif
+circuit_list_add=clock_multiplier_duty_cycle.blif
+circuit_list_add=multiclock_divide.blif
+circuit_list_add=multiclock_multiply.blif
+circuit_list_add=multiclock_multiply_invert.blif
+
+# Bind each circuit to its corresponding SDC file via circuit constraints.
+circuit_constraint_list_add=(clock_divider.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_divider.sdc)
+circuit_constraint_list_add=(clock_divider_invert.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_divider_invert.sdc)
+circuit_constraint_list_add=(clock_divider_nonzero_rise.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_divider_nonzero_rise.sdc)
+circuit_constraint_list_add=(clock_multiplier_duty_cycle.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_multiplier_duty_cycle.sdc)
+circuit_constraint_list_add=(multiclock_divide.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/multiclock_divide.sdc)
+circuit_constraint_list_add=(multiclock_multiply.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/multiclock_multiply.sdc)
+circuit_constraint_list_add=(multiclock_multiply_invert.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/multiclock_multiply_invert.sdc)
 
 # Add architectures to list to sweep
 arch_list_add=k6_N10_mem32K_40nm.xml
@@ -25,4 +40,3 @@ pass_requirements_file=pass_requirements.txt
 
 # Script parameters
 script_params_common = -starting_stage vpr
-script_params_list_add = -sdc_file tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_divider.sdc
