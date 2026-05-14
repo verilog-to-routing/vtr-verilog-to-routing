@@ -18,7 +18,7 @@
 
 ### Slide 1.1 — Qt 6.9.3, why this version
 
-- **Required version: Qt 6.9.3** (enforced by `find_package` check in [libs/EXTERNAL/libezgl/CMakeLists.txt:25-36](libs/EXTERNAL/libezgl/CMakeLists.txt#L25-L36)).
+- **Required version: Qt 6.9.3**.
 - **Why we care about a recent Qt**: our default renderer is built on **QRhi**, Qt's modern Rendering Hardware Interface — a portable GPU abstraction over OpenGL / Vulkan / Direct3D / Metal. QRhi has been **part of Qt since 6.7** (it was a private API earlier; promoted to public/stable in 6.7), so we need a Qt new enough to expose it as a supported surface.
 - **Reason for the 6.9.3 floor specifically**: Qt 6.8 has a bug in the RHI backend — geometry buffers are not invalidated after the MVP matrix changes, producing rendering artifacts. Fixed in 6.9.3.
 - Mental model for the slide: *"QRhi gives us one renderer that works on every desktop OS, but it only matured into a public API in Qt 6.7, and the first version where it renders our scene correctly is 6.9.3."*
