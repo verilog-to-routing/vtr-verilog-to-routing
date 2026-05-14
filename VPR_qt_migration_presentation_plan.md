@@ -108,6 +108,25 @@ In other words: once `main.ui` upstream is itself a Qt Designer file, we drop th
 OpenGL Vulkan  D3D11  Metal
 ```
 
+### Slide 2.0.5 — One drawing API, three backends
+
+- All three renderers inherit from a single abstract base, **`ezgl::irenderer`** ([include/ezgl/irenderer.hpp](libs/EXTERNAL/libezgl/include/ezgl/irenderer.hpp)). Every drawing primitive — `draw_line`, `draw_rectangle`, `fill_rectangle`, `fill_poly`, `fill_triangle`, `draw_arc` / `fill_arc`, `draw_text`, `draw_surface`, `fill_arrow_pointer_triangle`, etc. — is a pure-virtual on that base.
+- Application code (the VPR draw callback in `vpr/src/draw/`) sees only `ezgl::renderer*` and calls those primitives. **The code is identical regardless of `--renderer immediate|deferred|rhi`** — no `#ifdef`, no branching on backend, no compile-time variation in user code.
+- The choice of renderer is a runtime decision made once during canvas setup (`QtGladeLoader::setRendererType()` in slide 2.3); from the application's point of view it's invisible.
+- **Implication for the comparison table on the next slide**: every difference between the three columns is *internal* (CPU/GPU paths, batching, multithreading, culling strategy). None of them require client-code changes. Swapping renderers is configuration, not migration.
+
+```
+        VPR draw callback
+                │
+                ▼
+       virtual ezgl::irenderer
+       (one API surface)
+                │
+   ┌────────────┼────────────┐
+   ▼            ▼            ▼
+immediate    deferred       rhi
+```
+
 ### Slide 2.1 — Three renderers, side by side
 
 This is the core comparison slide. Render as one table on the slide.
