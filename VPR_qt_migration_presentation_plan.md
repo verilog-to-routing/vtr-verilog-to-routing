@@ -229,7 +229,6 @@ Render as a pyramid or a layered stack. Layers go from cheapest/fastest (top) to
 - Invisible under the **immediate** renderer because the second pass fills over the first.
 - **Visible** under deferred/RHI because batching reorders fills before overlays — both text passes survive, offset by ~2 px (14 vs 16), producing visible double labels.
 - Fix: duplicated calls commented out at [vpr/src/draw/draw.cpp:222-234](vpr/src/draw/draw.cpp#L222-L234) with a note explaining the backend-dependent visibility.
-- **Speaker point**: this is a good example of how the new renderers expose latent bugs that immediate-mode masked.
 
 ### Slide 4.3 — Graphics-command surface, full delta
 
@@ -257,7 +256,6 @@ Supporting infra changes that aren't visible as command rows (cover in speaker n
 
 - **caf2004f2** — `--graphics_commands` now scheduled **inside the Qt event loop** so `--disp on` works under `QT_QPA_PLATFORM=offscreen` (this is what made layer 1 / layer 5 tests possible).
 - **55c2fade7** — new `--renderer {immediate|deferred|rhi}` CLI option, stored in `draw_state->renderer_type`.
-- **19cae2df6** (companion) — `run_vtr_flow.py` recognises `"Graphics-command 'exit"` log prefix and skips downstream consistency checks.
 - Several RHI/deferred stability fixes for offscreen/headless world-coord init (7a996714e, 621e88f50, 310ecf1d1, ace28de13).
 
 ---
