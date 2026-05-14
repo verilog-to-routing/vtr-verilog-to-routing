@@ -76,13 +76,11 @@ In other words: once `main.ui` upstream is itself a Qt Designer file, we drop th
 
 #### 1.3.3 — More automated GUI test coverage
 
-- Cross-reference with section 3. Today we have ~220–250 test cases across 5 layers, but several gates are skipped:
-  - Layer 5 (visual regression) goldens are blocked on **DEF-004** (Qt offscreen RHI heap corruption during `save_graphics`).
-  - Coverage gate stays at baseline (35 % line / 22 % branch) rather than the 80 % target.
+- Cross-reference with section 3. Today we have ~220–250 test cases across 5 layers. *(Coverage numbers and gate thresholds to be filled in from the current `make gui-coverage` run before the deck ships — do not pull from the test-plan doc, it is stale.)*
 - Specific gaps to call out on the slide:
   - layer-3 widget coverage of recently-added popovers / menu buttons,
   - layer-4 keyboard navigation depth,
-  - layer-5 goldens once DEF-004 lands.
+  - layer-5 visual-regression cases — grow the golden corpus beyond the current 14 scenes.
 
 ---
 
@@ -116,18 +114,21 @@ This is the core comparison slide. Render as one table on the slide.
 |---|---|---|---|
 | Backend | QPainter, synchronous | QPainter, batched | GPU via QRhi |
 | Source | [immediate_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/immediate_renderer.cpp) | [deferred_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/deferred_renderer.cpp) | [rhi_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/rhi_renderer.cpp) |
-| **CPU usage** | high (one QPainter call per primitive) | medium (collect → flush batches) | low–medium (CPU does binning; GPU does draw) |
+| **CPU usage** | high (one QPainter call per primitive) | medium (collect → flush batches) | low–medium overall, **high\*** during scene composition (binning into render tiles, building `SceneBuffers`); steady-state and camera-only frames are very cheap |
 | **GPU usage** | none | none | high (intended path) |
-| **VRAM usage** | none | none | non-trivial (vertex/index buffers per tile) |
-| **Batching** | none | by `(primitive, color, line-width, dash, cap)` | tile-binned (32×32 = 1024 tiles) + style |
-| **Multithreading** | none | none | **batching workers per band** (`std::thread::hardware_concurrency`) during scene composition |
-| **Offscreen-visibility culling** | none | per-primitive viewport tests (line/rect/poly/arc/text/surface) | tile-band culling: only tiles intersecting the viewport are emitted |
+| **RAM usage** | minimal (no per-frame storage; just QPainter state) | scales with scene — holds all batched primitives (`std::vector<QLineF>`, `<QRectF>`, …) until flush | scales with scene — CPU-side `SceneBuffers` (POD geometry per style, chunked) + QImage overlay cache |
+| **VRAM usage** | none | none | non-trivial (vertex/index buffers per render tile) |
+| **Batching** | none | by `(primitive, color, line-width, dash, cap)` | render-tile-binned (32×32 = 1024 render tiles) + style |
+| **CPU multithread optimization** | none | none | **batching workers per band** (`std::thread::hardware_concurrency`) during scene composition |
+| **Offscreen-visibility culling** | per-primitive viewport test right before each QPainter call | per-primitive viewport tests (line/rect/poly/arc/text/surface) before batching | render-tile-band culling: only render tiles intersecting the viewport are emitted |
 | **Approx. throughput on 100 M-line stress scene** | ~0.1 fps | ~2 fps | **60+ fps** |
 
 Notes for the speaker:
-- RHI multithread batching is **scene composition**, not the GPU submit — workers slice commands into bands, each band fills its own tile-local buffers, then the main thread submits.
+- **Terminology note**: throughout this slide, "render tile" refers to ezgl's own scene-space partitioning (a 32×32 grid over the visible world) — *not* a GPU device tile (tiled-rasteriser hardware concept). The two are unrelated.
+- **\* on RHI CPU usage**: the spike is at *scene composition* — when the user (or the P&R pipeline) hands us a new scene, the CPU bins all primitives by style/render tile and packs them into `SceneBuffers`. Once that's done, redraws (and especially camera-only frames via `flush_mvp_only()`) reuse the cached buffers and the CPU goes back to near-idle. This is what the multithreaded band workers were added to amortise.
+- RHI multithread batching is **scene composition**, not the GPU submit — workers slice commands into bands, each band fills its own render-tile-local buffers, then the main thread submits.
 - Per-primitive visibility tests in deferred: see `screen_*_visible()` methods in [deferred_renderer.cpp:286-412](libs/EXTERNAL/libezgl/src/qt/deferred_renderer.cpp#L286-L412).
-- Tile grid constant in RHI: `kTileGridDimension = 32` (1024 tiles total).
+- Render-tile grid constant in RHI: `kTileGridDimension = 32` (1024 render tiles total).
 
 **Suggested visual on this slide:** small bar chart of fps from the stress-bench results, with one bar per renderer.
 
@@ -184,7 +185,7 @@ Render as a pyramid or a layered stack. Layers go from cheapest/fastest (top) to
 | 2 | libezgl unit (Qt-only) | — | inside the libezgl submodule | Qt Test / Catch2 | **runs in the libezgl repo, not wired into VPR CTest yet** |
 | 3 | Catch2 unit/integration (widget tree, draw state, renderer plumbing) | ~156 | `vpr/test/gui/test_*.cpp` (22 files) | Catch2 + fixtures (`EzglAppFixture`, `VprRunStageFixture`, `DrawStructsScope`) | active |
 | 4 | Interactive (mouse / keyboard via `QTest`) | ~30–40 | same files, tagged `[layer4]` | Catch2 + `QTest::mouseMove`/`keyClick` | active (subset of L3 binary) |
-| 5 | Visual regression (PNG + SSIM) | 14 cases | [vpr/test/gui/run_visual_regression.sh](vpr/test/gui/run_visual_regression.sh), goldens in [vpr/test/gui/golden/](vpr/test/gui/golden/) | bash + Python `skimage.metrics.structural_similarity` | **blocked on DEF-004** (no goldens shipped) |
+| 5 | Visual regression (PNG + SSIM) | 14 cases | [vpr/test/gui/run_visual_regression.sh](vpr/test/gui/run_visual_regression.sh), goldens in [vpr/test/gui/golden/](vpr/test/gui/golden/) | bash + Python `skimage.metrics.structural_similarity` | active (14 goldens shipped; corpus to be expanded) |
 
 ### Slide 3.2 — Why layer 2 isn't wired yet
 
@@ -196,7 +197,7 @@ Render as a pyramid or a layered stack. Layers go from cheapest/fastest (top) to
 ### Slide 3.3 — Coverage map
 
 - Show a heatmap or numeric chart: for each VPR GUI subsystem (canvas, draw_rr, draw_noc, search, breakpoint, popovers, status bar), which layer covers it today and which doesn't.
-- Highlight the "no layer 5" row in red until DEF-004 is fixed.
+- Layer 5 is active with 14 golden scenes shipped; mark cells green for covered subsystems and amber where coverage is shallow.
 
 ---
 
@@ -281,3 +282,4 @@ Cite these inline on the slides as small URLs / footers, not in the speaker note
 2. Layer 2 (libezgl unit tests) — do we want to lift them into VPR CTest or keep them separate? The answer drives the slide-3.2 framing.
 3. `redraw_geometry` / `on_camera_move` split for the deferred renderer — proposal or already prototyped? If prototyped, point me at the branch so I can include numbers.
 4. Anything in `graphic_commands` you remember adding/changing that's missing from the table on slide 4.3?
+5. **Current coverage numbers** for slide 1.3.3 — what does `make gui-coverage` report today on Linux and macOS? (The test-plan RST is stale; please paste fresh numbers from a recent run.)
