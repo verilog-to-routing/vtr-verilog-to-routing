@@ -23,7 +23,6 @@ import vtr.error
 from vtr.error import CommandError
 from vtr import paths
 
-
 # Cached result of the runtime probe in _resolve_memory_tracking_cmd().
 _MEMORY_TRACKING_CMD_CACHE = False  # False means "not yet probed"; None means "unsupported".
 

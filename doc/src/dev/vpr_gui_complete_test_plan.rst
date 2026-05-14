@@ -182,8 +182,8 @@ aggregate automatically.
    * - 3
      - Catch2 integration
      - ``test_vpr_gui`` binary
-     - GUI logic without a window: ``QtGladeLoader``, draw-state
-       transitions, renderer plumbing, ``ezgl_qtcompat`` macros.
+     - GUI logic without a window: ``ezgl::MainWindow`` widget-tree
+       loading, draw-state transitions, renderer plumbing.
    * - 4
      - Interactive
      - ``test_vpr_gui [layer4]`` (``QTest::mouseMove`` /
@@ -327,9 +327,9 @@ of the following hold:
        fix lands.
    * - R2
      - macOS-only ``run_vtr_flow.py`` failures (DEF-006, DEF-007).
-     - Install scripts provision ``gtime`` and a paired
-       ``-no_track_memory_usage`` flag exists; tracked for upstream
-       removal.
+     - Install scripts provision ``gtime`` and ``-track_memory_usage``
+       accepts an explicit value (e.g. ``-track_memory_usage off``) as
+       the CLI escape hatch; tracked for upstream merge.
    * - R3
      - Visual goldens drift between Qt minor versions (DEF-010).
      - SSIM threshold defaults to 0.98 and the runner auto-selects a
@@ -354,10 +354,11 @@ follow the same conventions:
   running anything; a missing input fails with a single actionable
   error line, not a buried log dive.
 * **RAII for Qt windows.** Tests that load ``main.ui`` via
-  ``QtGladeLoader`` own the resulting ``QMainWindow`` through a
-  ``std::unique_ptr<QMainWindow>``, so a failed ``REQUIRE`` cannot
-  leak windows or leave widgets registered with the global
-  ``QApplication``.
+  ``ezgl::MainWindow`` own the resulting ``QMainWindow`` (either
+  through ``MainWindow``'s own destructor or by transferring with
+  ``MainWindow::release()`` into a ``std::unique_ptr<QMainWindow>``),
+  so a failed ``REQUIRE`` cannot leak windows or leave widgets
+  registered with the global ``QApplication``.
 * **Platform-aware visual goldens.** The Layer 5 runner first looks
   for ``vpr/test/gui/golden/<os>-<arch>/`` (e.g.
   ``golden/darwin-arm64/``) and falls back to the shared
@@ -398,15 +399,19 @@ test source.
   ``set_congestion``, ``set_routing_util``, ``set_cpd``,
   ``set_draw_net_max_fanout``, ``save_graphics``, ``exit``); the
   GUI-linked binary's pack-only and full P&R paths.
-* Layer 3 — structural UI loading: ``QtGladeLoader`` builders for
-  every Glade widget type used in ``main.ui``; presence and item
-  counts for every named widget; ``t_draw_state``/``t_draw_coords``
-  POD round-trip; ezgl primitive value types
-  (``color``, ``point2d``, ``rectangle``).
+* Layer 3 — structural UI loading: ``ezgl::MainWindow`` (which today
+  delegates to ``QtGladeLoader``) produces every widget type used in
+  ``main.ui``; presence and item counts for every named widget;
+  ``t_draw_state``/``t_draw_coords`` POD round-trip; ezgl primitive
+  value types (``color``, ``point2d``, ``rectangle``).
 * Layer 4 — null-pointer guard for ``act_on_mouse_move`` (DEF-005).
-* Layer 5 — six ``save_graphics`` scenes covering placement and
-  routing baselines plus four overlay variants (``set_nets``,
-  ``set_congestion``, ``set_cpd``, ``set_draw_block_internals``).
+* Layer 5 — fourteen ``save_graphics`` scenes covering placement,
+  routing, and mid-routing baselines plus every overlay variant
+  (``set_nets`` ∈ {1, 2}, ``set_cpd`` ∈ {1, 2, 3, 4, 5, 7},
+  ``set_draw_block_internals 2``, ``set_congestion`` ∈ {1, 2}). The
+  case list is the sourced ``vpr/test/gui/visual_cases.sh``; saves
+  are batched into two VPR invocations at the ``placement_done``,
+  ``routing_done``, and ``routing_initial`` stage barriers.
 * ``vtr_reg_gui`` — four flow-level scenarios driving the GUI-linked
   binary end-to-end with `--disp off` and a single setter.
 
@@ -564,13 +569,13 @@ golden coverage on top of an unverified behaviour path.
 
        Built atop the new Layer-4 substrate landed in this same PR
        (see GUI-T-017 Step 2): ``EzglAppFixture`` loads ``main.ui``
-       via ``QtGladeLoader`` and exposes the process-wide
+       via ``ezgl::MainWindow`` and exposes the process-wide
        ``ezgl::application*`` constructed in ``test_gui_main.cpp``;
        the fixture snapshots / restores ``t_draw_state`` per case so
        stage mutations do not bleed. Local ``ComboItemsGuard`` and
        ``WidgetEnabledGuard`` RAII helpers restore widget state
        inside each case to immunise downstream tests against the
-       known top-level-popover leak in ``QtGladeLoader::loadFile``.
+       known top-level-popover leak in main.ui's GtkPopover entries.
        **Coverage gaps tracked separately:** ``ToggleCongestion``
        and ``ToggleRoutingUtil`` post-route enablement, and
        ``ToggleNocBox`` NoC-arch gating, ride on later VPR run-stage
@@ -644,7 +649,7 @@ golden coverage on top of an unverified behaviour path.
        ``ezgl::application`` (singleton accessor in
        ``test_app_singleton.hpp``); ``EzglAppFixture``
        (``test_ezgl_app_fixture.hpp/.cpp``) loads ``main.ui`` via
-       ``QtGladeLoader`` and snapshots / restores ``t_draw_state``,
+       ``ezgl::MainWindow`` and snapshots / restores ``t_draw_state``,
        providing the Layer-4 substrate that GUI-T-008 (and later
        GUI-T-013 / GUI-T-014 / GUI-T-001) require. **Step 3+ open:**
        per-test widget restoration helpers may be promoted into the

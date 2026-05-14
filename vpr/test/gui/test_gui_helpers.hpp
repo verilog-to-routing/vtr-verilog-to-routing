@@ -7,12 +7,12 @@
 #include <QtTest/QTest>
 
 /**
- * Find a widget by objectName across ALL top-level widgets (including popover
- * QFrames that are not parented to the QMainWindow).
+ * Find a widget by objectName across QApplication::allWidgets().
  *
- * This mirrors ezgl::application::get_object() which uses
- * QApplication::allWidgets() — necessary because QtGladeLoader creates
- * GtkPopover widgets as top-level Qt::Popup frames with no parent.
+ * Mirrors ezgl::application::find_widget(), which uses the same lookup
+ * so that production callers can find widgets without knowing the
+ * QMainWindow pointer. Useful in tests that have access to the
+ * application singleton but not the loaded window.
  */
 template<typename T = QWidget>
 T* findWidgetByName(const char* name) {

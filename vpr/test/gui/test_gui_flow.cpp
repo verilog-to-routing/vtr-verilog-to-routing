@@ -2,8 +2,8 @@
  * @file test_gui_flow.cpp
  * @brief End-to-end GUI flow tests for VPR's Qt-based interface.
  *
- * Tests the full lifecycle: QtGladeLoader loading main.ui → window creation →
- * widget tree verification → canvas presence → menu bar structure.
+ * Tests the full lifecycle: ezgl::MainWindow loading main.ui → window
+ * creation → widget tree verification → canvas presence → menu bar structure.
  * Also tests the graphics command parser for valid/invalid/sequence commands.
  *
  * Tag: [layer3][vpr_gui]
@@ -26,17 +26,20 @@
 #include <QLineEdit>
 #include <QGridLayout>
 #include <QStatusBar>
+#include <QSet>
+#include <QString>
+#include <QStringList>
 
-#include <ezgl/qt/qtgladeloader.hpp>
+#include <ezgl/main_window.hpp>
 #include "test_gui_helpers.hpp"
 
 // ---------------------------------------------------------------------------
 // Flow: main.ui loading produces a valid window with the expected hierarchy
 // ---------------------------------------------------------------------------
 
-TEST_CASE("Flow: QtGladeLoader loads main.ui successfully", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+TEST_CASE("Flow: MainWindow loads main.ui successfully", "[layer3][vpr_gui]") {
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     SECTION("Window has expected title") {
@@ -53,8 +56,8 @@ TEST_CASE("Flow: QtGladeLoader loads main.ui successfully", "[layer3][vpr_gui]")
 }
 
 TEST_CASE("Flow: main.ui contains MainCanvas drawing area", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     QWidget* canvas = findWidgetByName<QWidget>("MainCanvas");
@@ -72,8 +75,8 @@ TEST_CASE("Flow: main.ui contains MainCanvas drawing area", "[layer3][vpr_gui]")
 }
 
 TEST_CASE("Flow: main.ui contains StatusBar", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     QWidget* statusBar = findWidgetByName<QWidget>("StatusBar");
@@ -81,8 +84,8 @@ TEST_CASE("Flow: main.ui contains StatusBar", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: main.ui contains top menu grid with search", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // Search type combo
@@ -110,8 +113,8 @@ TEST_CASE("Flow: main.ui contains top menu grid with search", "[layer3][vpr_gui]
 }
 
 TEST_CASE("Flow: main.ui contains bottom menu bar with all menu buttons", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // Block menu
@@ -145,8 +148,8 @@ TEST_CASE("Flow: main.ui contains bottom menu bar with all menu buttons", "[laye
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Flow: Block popover has expected controls", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // Popover widgets are top-level (not children of QMainWindow), use findWidgetByName
@@ -178,8 +181,8 @@ TEST_CASE("Flow: Block popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Net popover has expected controls", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* netTypeCombo = findWidgetByName<QComboBox>("ToggleNetType");
@@ -204,8 +207,8 @@ TEST_CASE("Flow: Net popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     // RR checkboxes
@@ -255,8 +258,8 @@ TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
 }
 
 TEST_CASE("Flow: Misc popover has save, pause, debug, manual move", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* saveBtn = findWidgetByName<QPushButton>("SaveGraphics");
@@ -277,8 +280,8 @@ TEST_CASE("Flow: Misc popover has save, pause, debug, manual move", "[layer3][vp
 }
 
 TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* critFlylines = findWidgetByName<QCheckBox>("ToggleCritPathFlylines");
@@ -295,8 +298,8 @@ TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_
 }
 
 TEST_CASE("Flow: 3D layers popover has layer and transparency boxes", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* layerLabel = findWidgetByName<QLabel>("LayerLabel");
@@ -309,8 +312,8 @@ TEST_CASE("Flow: 3D layers popover has layer and transparency boxes", "[layer3][
 }
 
 TEST_CASE("Flow: Congestion cost combo has all 8 options", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* combo = findWidgetByName<QComboBox>("ToggleCongestionCost");
@@ -322,8 +325,8 @@ TEST_CASE("Flow: Congestion cost combo has all 8 options", "[layer3][vpr_gui]") 
 }
 
 TEST_CASE("Flow: NoC display combo has expected items", "[layer3][vpr_gui]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
     auto* noc = findWidgetByName<QComboBox>("ToggleNocBox");
@@ -332,4 +335,56 @@ TEST_CASE("Flow: NoC display combo has expected items", "[layer3][vpr_gui]") {
     CHECK(noc->itemText(0) == "None");
     CHECK(noc->itemText(1) == "NoC Links");
     CHECK(noc->itemText(2) == "NoC Link Usage");
+}
+
+// ---------------------------------------------------------------------------
+// Regression: QtGladeLoader::loadFile must not leak any widgets past
+// ~QMainWindow. Before the fix in libezgl/src/qt/qtgladeloader.cpp (pass-2
+// reparenting of orphan Qt::Popup frames), each loadFile/destroy cycle left
+// stale popovers + their children in QApplication::allWidgets(); subsequent
+// find_widget()/findWidgetByName() lookups could return a leaked copy
+// (hash-iteration-order dependent) and shadow the freshly-loaded one. The
+// original visible symptom was "Flow: Net popover has expected controls"
+// flaking on `ToggleNetType.count() == 1` (expected 2).
+//
+// Asserts the invariant directly: the full widget set returns to baseline
+// after the owning QMainWindow is destroyed. Any new widget alive in
+// QApplication::allWidgets() that wasn't there before the load is a leak,
+// regardless of class or name — catches popover-resident widgets we haven't
+// thought to name explicitly, including future additions to main.ui.
+// Deterministic, independent of test ordering and RNG seed.
+// ---------------------------------------------------------------------------
+TEST_CASE("Flow: widgets lifetime bounded by window lifetime",
+          "[layer3][vpr_gui][regression]") {
+    // Pointer-set snapshot of every widget Qt knows about right now. We never
+    // dereference these pointers after taking the snapshot — only test them
+    // for set membership — so even if Qt destroys one of them during the
+    // load/unload cycle (it shouldn't), the comparison stays well-defined.
+    const QList<QWidget*> baseline_list = QApplication::allWidgets();
+    const QSet<QWidget*> baseline_set(baseline_list.cbegin(), baseline_list.cend());
+
+    {
+        ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+        std::unique_ptr<QMainWindow> win(mw.release());
+        REQUIRE(win != nullptr);
+        // Sanity check: loading main.ui actually added widgets, so an empty
+        // post-leak list below is genuine cleanup, not "nothing happened".
+        REQUIRE(QApplication::allWidgets().size() > baseline_list.size());
+    }
+
+    // Anything alive now that wasn't in the baseline is a leak.
+    QStringList leaked;
+    for (QWidget* w : QApplication::allWidgets()) {
+        if (!baseline_set.contains(w)) {
+            const QString name = w->objectName().isEmpty()
+                                     ? QStringLiteral("<unnamed>")
+                                     : w->objectName();
+            const QString klass = QString::fromUtf8(w->metaObject()->className());
+            leaked << QStringLiteral("%1 (%2)").arg(name, klass);
+        }
+    }
+
+    INFO("leaked widgets (" << leaked.size() << "): "
+                            << leaked.join(QStringLiteral(", ")).toStdString());
+    REQUIRE(leaked.isEmpty());
 }

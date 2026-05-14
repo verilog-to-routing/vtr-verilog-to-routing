@@ -17,8 +17,8 @@
  *   ui_setup.cpp would fail at runtime — silently for the non-fatal lookups,
  *   noisily on a dereference for the rest — if anyone renames or retypes a
  *   widget in main.ui. There is currently no compile-time, link-time, or
- *   test-time check binding the two together. The Glade XML is parsed at
- *   runtime by ezgl::QtGladeLoader, and the C++ side casts via the qobject
+ *   test-time check binding the two together. main.ui is parsed at runtime
+ *   by ezgl::MainWindow, and the C++ side casts via the qobject
  *   meta-system in find_* — both sides see "string -> QWidget" only.
  *
  * Per §4 of the test plan, this test follows the bug-discovery discipline:
@@ -56,7 +56,7 @@
 #include <QSpinBox>
 #include <QWidget>
 
-#include <ezgl/qt/qtgladeloader.hpp>
+#include <ezgl/main_window.hpp>
 #include <ezgl/qt/switchbutton.hpp>
 
 #include "test_gui_helpers.hpp"
@@ -233,8 +233,8 @@ constexpr ComboContentSpec kComboContent[] = {
 
 TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt type",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
 
@@ -264,8 +264,8 @@ TEST_CASE("UiContract: every find_*() target exists in main.ui with correct Qt t
 
 TEST_CASE("UiContract: menu combos have the contracted item counts",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
 
@@ -289,8 +289,8 @@ TEST_CASE("UiContract: menu combos have the contracted item counts",
 
 TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
 
@@ -317,8 +317,8 @@ TEST_CASE("UiContract: SearchType combo entries appear in the contracted order",
 
 TEST_CASE("UiContract: top-level canvas and status surfaces are present",
           "[layer3][ui-contract][vpr_gui][GUI-T-018]") {
-    QtGladeLoader loader;
-    std::unique_ptr<QMainWindow> win(loader.loadFile(VPR_MAIN_UI_PATH));
+    ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
+    std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
     win->show();
 

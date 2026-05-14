@@ -24,7 +24,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Xml Svg Test)
 
 add_executable(test_vpr_gui
     test_gui_main.cpp
-    test_qtgladeloader.cpp
+    test_widget_hierarchy.cpp
     test_gui_flow.cpp
     test_mouse_events.cpp
     test_draw_state.cpp
