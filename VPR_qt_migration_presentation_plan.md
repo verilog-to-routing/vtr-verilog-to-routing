@@ -82,6 +82,15 @@ In other words: once `main.ui` upstream is itself a Qt Designer file, we drop th
   - layer-4 keyboard navigation depth,
   - layer-5 visual-regression cases — grow the golden corpus beyond the current 14 scenes.
 
+#### 1.3.4 — Reduce RHI RAM usage after upload to GPU
+
+- Today the RHI renderer keeps a full CPU-side master copy of the scene (`m_cached_scene` in `RhiSceneRenderer`) **for the lifetime of the renderer** — for a 100 M-line scene that's roughly **~1.6 GB held on top of the same data already on the GPU**.
+- Two reasons it's still held: (1) frame-in-flight upload to slots that haven't received the geometry yet; (2) device-loss recovery (QRhi can lose the device → all GPU buffers invalidated).
+- Two cheap wins available, not yet done:
+  - drop `m_cached_scene` once `all(m_frame_slot_geom_valid) == true`, and rely on a re-record of the draw callback if device loss happens later,
+  - clear the per-band command queues (`m_cmd_thin_lines`, `m_cmd_fill_rects`, …) once their content has been folded into `SceneBuffers`.
+- Slide visual suggestion: a small "lifetime bar" — when each buffer is allocated vs when it could be released, with a red gap showing the wasted retention.
+
 ---
 
 ## 2. Renderers
@@ -114,18 +123,19 @@ This is the core comparison slide. Render as one table on the slide.
 |---|---|---|---|
 | Backend | QPainter, synchronous | QPainter, batched | GPU via QRhi |
 | Source | [immediate_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/immediate_renderer.cpp) | [deferred_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/deferred_renderer.cpp) | [rhi_renderer.cpp](libs/EXTERNAL/libezgl/src/qt/rhi_renderer.cpp) |
-| **CPU usage** | high (one QPainter call per primitive) | medium (collect → flush batches) | low–medium overall, **high\*** during scene composition (binning into render tiles, building `SceneBuffers`); steady-state and camera-only frames are very cheap |
+| **CPU usage** | high (one QPainter call per primitive) | medium (collect → flush batches) | <span style="color:#27ae60">low–medium overall,</span> <span style="color:#c0392b">**high\*** during scene composition (binning into render tiles, building `SceneBuffers`);</span> <span style="color:#27ae60">steady-state and camera-only frames are very cheap</span> |
 | **GPU usage** | none | none | high (intended path) |
-| **RAM usage** | minimal (no per-frame storage; just QPainter state) | scales with scene — holds all batched primitives (`std::vector<QLineF>`, `<QRectF>`, …) until flush | scales with scene — CPU-side `SceneBuffers` (POD geometry per style, chunked) + QImage overlay cache |
-| **VRAM usage** | none | none | non-trivial (vertex/index buffers per render tile) |
+| **RAM usage** | <span style="color:#27ae60">minimal (no per-frame storage; just QPainter state)</span> | <span style="color:#e67e22">scales with scene — two structures held until flush: (1) style-keyed batch vectors of `QLineF` / `QRectF` / `QPolygonF` for batchable primitives, (2) a `std::variant` command queue (`m_overlay_commands`) for text, arcs, polys, surfaces, screen-space arrows</span> | <span style="color:#c0392b">scales with scene — CPU-side `SceneBuffers` (POD geometry per style, chunked) + QImage overlay cache. **Master copy kept for renderer's lifetime even after GPU upload** (~1.6 GB on 100 M-line scenes — same size as **one** GPU slot's buffers; VRAM holds N copies, so VRAM total = N × this) to feed frame-in-flight slots and device-loss recovery. **TODO §1.3.4: free after all slots uploaded.**</span> |
+| **VRAM usage** | <span style="color:#27ae60">none</span> | <span style="color:#27ae60">none</span> | <span style="color:#c0392b">high (vertex/index buffers per render tile)</span> |
 | **Batching** | none | by `(primitive, color, line-width, dash, cap)` | render-tile-binned (32×32 = 1024 render tiles) + style |
 | **CPU multithread optimization** | none | none | **batching workers per band** (`std::thread::hardware_concurrency`) during scene composition |
-| **Offscreen-visibility culling** | per-primitive viewport test right before each QPainter call | per-primitive viewport tests (line/rect/poly/arc/text/surface) before batching | render-tile-band culling: only render tiles intersecting the viewport are emitted |
+| **Offscreen-visibility culling** | <span style="color:#e67e22">per-primitive viewport test right before each QPainter call</span> | <span style="color:#e67e22">per-primitive viewport tests (line/rect/poly/arc/text/surface) before batching</span> | <span style="color:#27ae60">render-tile-band culling: only render tiles intersecting the viewport are emitted *(exception: overlay primitives — text, arcs, surfaces, screen-space lines — are routed through `m_overlay_deferred`, so they use the deferred renderer's per-primitive viewport tests instead)*</span> |
 | **Overlay** | none | none | **dedicated overlay layer** for text, arcs, surfaces, screen-space lines — owns a `deferred_renderer` instance (`m_overlay_deferred`) that paints these primitives into a separate `QImage`, which is uploaded as a texture and composited on top of the GPU frame via `m_overlay_pso` |
-| **Approx. throughput on 100 M-line stress scene** | ~0.1 fps | ~2 fps | **60+ fps** |
+| **Approx. throughput on 100 M-line stress scene** | <span style="color:#c0392b">~0.1 fps</span> | <span style="color:#e67e22">~2 fps</span> | <span style="color:#27ae60">**60+ fps**</span> |
 
 Notes for the speaker:
 - **Terminology note**: throughout this slide, "render tile" refers to ezgl's own scene-space partitioning (a 32×32 grid over the visible world) — *not* a GPU device tile (tiled-rasteriser hardware concept). The two are unrelated.
+- **"flush" footnote** (deferred/RHI): `flush()` = `replay()` + `reset()`. `replay()` walks the batches and overlay command queue and issues the actual QPainter / GPU draw calls — *this is the moment pixels are written*. `reset()` empties the accumulators so the next frame starts clean. Reset is automatic at end of flush; it is **not** triggered by draw-state changes — those just cause a redraw, and reset is part of that redraw's flush.
 - **\* on RHI CPU usage**: the spike is at *scene composition* — when the user (or the P&R pipeline) hands us a new scene, the CPU bins all primitives by style/render tile and packs them into `SceneBuffers`. Once that's done, redraws (and especially camera-only frames via `flush_mvp_only()`) reuse the cached buffers and the CPU goes back to near-idle. This is what the multithreaded band workers were added to amortise.
 - **Why RHI has an overlay layer at all**: text rasterisation (font hinting, shaping, antialiasing) and complex curves are exactly the things GPUs are *bad* at compared to QPainter. Instead of porting all that to shaders, RHI builds a separate transparent `QImage` once per camera using QPainter (via an internally-owned `deferred_renderer` for batching efficiency) and composites that image on top of the GPU frame. Deferred has no equivalent because it already runs entirely on QPainter — there's nothing to "lift" onto a different surface.
 
