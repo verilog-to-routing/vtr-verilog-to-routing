@@ -213,18 +213,35 @@ table { font-size: 13px; }
 
 ---
 
-## Slide 2.2 — `redraw()` split idea (geometry vs camera-move)
+## Slide 2.2a — `redraw()` split idea (geometry vs camera-change)
 
 - Most user interaction is **pan / zoom** — the geometry of the scene doesn't change, only the camera does.
 - Today, RHI already has this split at the `rhi_backend` level:
   - `redraw()` — **full path**: `begin_frame()` resets state → **re-runs the user's draw callback** (which refills the per-band command queues via `draw_line` / `draw_rectangle` / `draw_text` / …) → `flush()` dispatches into tiles, builds `SceneBuffers`, re-uploads to GPU.
   - `redraw_camera_only()` — **camera path**: skips the draw callback entirely; calls `flush_mvp_only()` which pushes a new 64-byte MVP only. Geometry buffers reused, overlay replayed from cache via `m_overlay_deferred->replay_overlay()`.
 
+---
+
+## Slide 2.2b — `redraw()` split: visual
+
 ```
-   user action ──► redraw_geometry()  ──►  rebuild batches  ──┐
-                                                              ▼
-   pan/zoom   ──► on_camera_move() ──► update MVP only ───► present
+   user action  ═══►  redraw_geometry()  ═══►  rebuild batches + update MVP  ═══►─┐
+                       HEAVY: re-runs draw callback,                  │
+                              batching,                               │
+                              re-uploads GPU buffers.                 │
+                       applies on_camera_change                       │
+                                                                      ▼
+                                                              present frame
+                                                                      ▲
+   pan/zoom     ───►  on_camera_change() ───►  update MVP only ──────┘
+                       CHEAP: 64-byte MVP push;
+                              geometry reused;
+                              overlay re-painted from cached commands
 ```
+
+**MVP** = Model-View-Projection matrix — the 4×4 matrix the shader uses to transform world-space coordinates into clip space. In the camera-only path, this matrix is the only per-frame data uploaded to the GPU (≈ 64 bytes). Geometry buffers are reused; the overlay QImage is *re-painted* from the cached deferred-renderer commands (text/arcs reposition on zoom, so the pixels can't be reused — but the user's draw callback does not re-run).
+
+`on_camera_change` is intentionally generic — covers pan, zoom, fit-to-screen, any camera-transform mutation that doesn't change the scene geometry.
 
 ---
 
