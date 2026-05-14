@@ -83,15 +83,18 @@ bool SAPack::try_place_mol_in_sub_tile(PackMoleculeId mol_id, t_physical_tile_lo
 
     // Check if a cluster has been created.
     if (cluster.cluster_id.is_valid()) {
-        // If it has, try to add it.
-        if (cluster_legalizer_->is_molecule_compatible(mol_id, cluster.cluster_id)) {
-            if (cluster_legalizer_->add_mol_to_cluster(mol_id, cluster.cluster_id) == e_block_pack_status::BLK_PASSED)
-                return true;
+        if (!cluster_legalizer_->is_cluster_empty(cluster.cluster_id)) {
+            // Non-empty cluster: try to add the molecule directly.
+            if (cluster_legalizer_->is_molecule_compatible(mol_id, cluster.cluster_id)) {
+                if (cluster_legalizer_->add_mol_to_cluster(mol_id, cluster.cluster_id) == e_block_pack_status::BLK_PASSED)
+                    return true;
+            }
+            return false;
         }
-        return false;
+        // Empty cluster: fall through to restart it with a compatible type/mode.
     }
 
-    // See if we can create one here.
+    // Either no cluster exists yet, or it is empty and needs to be restarted.
     t_physical_tile_type_ptr tile_type = device_grid_.get_physical_type(tile_loc);
     VTR_ASSERT(mol_id.is_valid());
     const t_pack_molecule& seed_molecule = prepacker_.get_molecule(mol_id);
@@ -114,12 +117,20 @@ bool SAPack::try_place_mol_in_sub_tile(PackMoleculeId mol_id, t_physical_tile_lo
             if (cluster_type->index == candidate_cluster_type->index) {
                 int num_modes = candidate_cluster_type->pb_graph_head->pb_type->num_modes;
                 for (int mode = 0; mode < num_modes; mode++) {
-                    e_block_pack_status pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
-                    LegalizationClusterId new_cluster_id;
-                    std::tie(pack_status, new_cluster_id) = cluster_legalizer_->start_new_cluster(mol_id, candidate_cluster_type, mode);
-                    if (pack_status == e_block_pack_status::BLK_PASSED) {
-                        cluster.cluster_id = new_cluster_id;
-                        return true;
+                    if (cluster.cluster_id.is_valid()) {
+                        // Restart the existing empty cluster with the new type/mode.
+                        cluster_legalizer_->restart_cluster(cluster.cluster_id, candidate_cluster_type, mode);
+                        if (cluster_legalizer_->add_mol_to_cluster(mol_id, cluster.cluster_id) == e_block_pack_status::BLK_PASSED)
+                            return true;
+                    } else {
+                        // No cluster exists yet: create a new one.
+                        e_block_pack_status pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
+                        LegalizationClusterId new_cluster_id;
+                        std::tie(pack_status, new_cluster_id) = cluster_legalizer_->start_new_cluster(mol_id, candidate_cluster_type, mode);
+                        if (pack_status == e_block_pack_status::BLK_PASSED) {
+                            cluster.cluster_id = new_cluster_id;
+                            return true;
+                        }
                     }
                 }
             }
@@ -448,6 +459,15 @@ void SAPack::fully_legalize_placement() {
             for (PackMoleculeId overfilled_mol : cluster.overfilled_mols) {
                 if (!try_place_mol_in_nearest_tile(overfilled_mol, tile_loc)) {
                     // In the future, we should fall back on APPack
+                    AtomBlockId root_atom = prepacker_.get_molecule_root_atom(overfilled_mol);
+                    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
+                    const LogicalModels& models = g_vpr_ctx.device().arch->models;
+                    VTR_LOG("Cannot place molecule: %s (model: %s)\n",
+                            atom_nlist.block_name(root_atom).c_str(),
+                            models.model_name(atom_nlist.block_model(root_atom)).c_str());
+                    VTR_LOG("  Starting tile: (%d, %d, %d), tile type: %s\n",
+                            tile_loc.x, tile_loc.y, tile_loc.layer_num,
+                            device_grid_.get_physical_type(tile_loc)->name.c_str());
                     VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
                 }
             }
