@@ -128,6 +128,7 @@ class DeviceGrid {
         return get_width_offset(tile_loc) == 0 && get_height_offset(tile_loc) == 0;
     }
 
+    ///@brief Returns true if the given location is within the bounds of the device grid.
     inline bool is_loc_on_device(const t_physical_tile_loc& tile_loc) const {
         if (tile_loc.layer_num < 0 || static_cast<size_t>(tile_loc.layer_num) >= get_num_layers())
             return false;
@@ -138,11 +139,12 @@ class DeviceGrid {
         return true;
     }
 
+    ///@brief Returns the nearest location on the device to the given location, clamping each coordinate to the grid bounds.
     inline t_physical_tile_loc get_nearest_loc_on_device(const t_physical_tile_loc& tile_loc) const {
         t_physical_tile_loc new_loc;
-        new_loc.layer_num = std::clamp<size_t>(tile_loc.layer_num, 0, get_num_layers() - 1);
-        new_loc.x = std::clamp<size_t>(tile_loc.x, 0, width() - 1);
-        new_loc.y = std::clamp<size_t>(tile_loc.y, 0, height() - 1);
+        new_loc.layer_num = std::clamp(tile_loc.layer_num, 0, static_cast<int>(get_num_layers()) - 1);
+        new_loc.x = std::clamp(tile_loc.x, 0, static_cast<int>(width()) - 1);
+        new_loc.y = std::clamp(tile_loc.y, 0, static_cast<int>(height()) - 1);
 
         return new_loc;
     }
