@@ -13,7 +13,9 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <map>
@@ -116,9 +118,9 @@ ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
     explore_id_index_ = 1;
 
     params_.max_iterations = 50;
-    params_.pres_fac = 1;
+    params_.pres_fac = 4;
     params_.pres_fac_mult = 2;
-    params_.hist_fac = 0.3;
+    params_.hist_fac = 1.0;
 
     pres_con_fac_ = 1;
 
@@ -276,12 +278,22 @@ void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
             int inode = pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
             lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
+            // Mark any nets using this node as dirty.
+            auto range = rr_node_to_saved_nets_.equal_range(inode);
+            for (auto it = range.first; it != range.second; ++it) {
+                dirty_nets_.insert(it->second);
+            }
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
             int inode = pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
             lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
+            // Mark any nets using this node as dirty.
+            auto range = rr_node_to_saved_nets_.equal_range(inode);
+            for (auto it = range.first; it != range.second; ++it) {
+                dirty_nets_.insert(it->second);
+            }
         }
     }
 
@@ -296,6 +308,11 @@ void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
                     for (int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
                         int inode = child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
                         lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
+                        // Mark any nets using this node as dirty.
+                        auto range = rr_node_to_saved_nets_.equal_range(inode);
+                        for (auto it = range.first; it != range.second; ++it) {
+                            dirty_nets_.insert(it->second);
+                        }
                     }
                 }
             }
@@ -392,6 +409,29 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
     }
 
     std::unordered_map<const t_pb_graph_node*, const t_mode*> mode_map;
+
+    // Populate a quick lookup between atom nets and their intra-lb net ID.
+    std::unordered_map<AtomNetId, size_t> atom_net_to_inet;
+    for (size_t inet = 0; inet < intra_lb_nets_.size(); inet++) {
+        atom_net_to_inet.insert({intra_lb_nets_[inet].atom_net_id, inet});
+    }
+
+    // If there are any saved nets, use this information to hot-start the intra-
+    // lb route.
+    for (const auto& saved_lb_net : saved_lb_nets_) {
+        // If the net is dirty (meaning any part of it has changed since the
+        // last route), we cannot use its route tree.
+        if (dirty_nets_.contains(saved_lb_net.atom_net_id))
+            continue;
+
+        // Commit the saved route tree to the routes.
+        commit_remove_rt_(saved_lb_net.rt_tree, RT_COMMIT, mode_map, mode_status);
+
+        // Save the route tree in the appropraite intra-lb net.
+        VTR_ASSERT(atom_net_to_inet.contains(saved_lb_net.atom_net_id));
+        size_t inet = atom_net_to_inet[saved_lb_net.atom_net_id];
+        intra_lb_nets_[inet].rt_tree = saved_lb_net.rt_tree;
+    }
 
     /*	Iteratively remove congestion until a successful route is found.
      * Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinitely */
@@ -601,6 +641,9 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
     VTR_ASSERT(intra_lb_nets_[ipos].atom_net_id == net_id);
     VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() == intra_lb_nets_[ipos].terminals.size());
 
+    // Mark this net as dirty since its terminals has changed.
+    dirty_nets_.insert(net_id);
+
     /*
      * Determine whether or not this is a new intra lb net, if yes, then add to list of intra lb nets
      */
@@ -759,6 +802,9 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
 
     VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() == intra_lb_nets_[ipos].terminals.size());
 
+    // Mark net as dirty since the terminals has changed.
+    dirty_nets_.insert(net_id);
+
     auto port_type = atom_netlist.port_type(port_id);
     if (port_type == PortType::OUTPUT) {
         /* Net driver pin takes 0th position in terminals */
@@ -899,6 +945,8 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb
 
                 //Change the target
                 intra_lb_nets_[ilb_net].terminals[term_idx] = pin_index;
+                // Mark this net as dirty since its terminals has changed.
+                dirty_nets_.insert(intra_lb_nets_[ilb_net].atom_net_id);
             }
         }
     }
@@ -1243,6 +1291,29 @@ void ClusterRouter::save_and_reset_lb_route_() {
         saved_lb_nets_[inet].terminals = intra_lb_nets_[inet].terminals;
         saved_lb_nets_[inet].rt_tree = std::move(intra_lb_nets_[inet].rt_tree);
         reset_lb_net_rt(intra_lb_nets_[inet].rt_tree);
+    }
+
+    // Reset the dirty nets. Once we save the current routing, there are no dirty
+    // nets.
+    dirty_nets_.clear();
+
+    // Populate a lookup between used RR nodes and the atom net currently
+    // occupying them. This is used to detect for dirty nets.
+    rr_node_to_saved_nets_.clear();
+    for (const auto& saved_lb_net : saved_lb_nets_) {
+        // Basic traversal of the route tree, inserting each RR node and its
+        // associated Atom net.
+        std::queue<const t_lb_trace*> q;
+        q.push(&saved_lb_net.rt_tree);
+        while (!q.empty()) {
+            const t_lb_trace* n = q.front();
+            // Here we assume that each RR node is only occupied by a single net.
+            rr_node_to_saved_nets_.insert({n->current_node, saved_lb_net.atom_net_id});
+            for (const auto& node : n->next_nodes) {
+                q.push(&node);
+            }
+            q.pop();
+        }
     }
 }
 
