@@ -78,34 +78,7 @@ All architecture files use `<architecture>` as the root tag. The top-level secti
 
 ## Models
 
-Declares custom BLIF primitive types the architecture supports. Standard structures (`.names`, `.latch`, `.input`, `.output`) are implicit — do not declare them here.
-
-```xml
-<models>
-  <model name="single_port_ram">
-    <input_ports>
-      <port name="we"   clock="clk"/>
-      <port name="addr" clock="clk" combinational_sink_ports="out"/>
-      <port name="data" clock="clk" combinational_sink_ports="out"/>
-      <port name="clk"  is_clock="1"/>
-    </input_ports>
-    <output_ports>
-      <port name="out" clock="clk"/>
-    </output_ports>
-  </model>
-  <model name="adder">
-    <input_ports>
-      <port name="a"   combinational_sink_ports="cout sumout"/>
-      <port name="b"   combinational_sink_ports="cout sumout"/>
-      <port name="cin" combinational_sink_ports="cout sumout"/>
-    </input_ports>
-    <output_ports>
-      <port name="cout"/>
-      <port name="sumout"/>
-    </output_ports>
-  </model>
-</models>
-```
+Declares custom BLIF primitive types the architecture supports. Standard structures (`.names`, `.latch`, `.input`, `.output`) are implicit — do not declare them here. Each `<model>` contains `<input_ports>` and `<output_ports>`, each holding `<port>` tags. See the reference architectures above for complete examples.
 
 Port attributes:
 - `is_clock="1"` — marks a clock port
@@ -114,27 +87,10 @@ Port attributes:
 
 ## Tiles
 
-Defines the ports visible at the tile boundary — what the routing network connects to. Each `<tile>` corresponds to one top-level `<pb_type>` in the complexblocklist.
-
-```xml
-<tiles>
-  <tile name="CLB">
-    <sub_tile name="CLB" capacity="1">
-      <equivalent_sites>
-        <site pb_type="CLB" pin_mapping="direct"/>
-      </equivalent_sites>
-      <input  name="I"   num_pins="33"/>
-      <output name="O"   num_pins="10"/>
-      <clock  name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
-    </sub_tile>
-  </tile>
-</tiles>
-```
+Defines the ports visible at the tile boundary — what the routing network connects to. Each `<tile>` contains one or more `<sub_tile>` tags; each sub-tile holds the port definitions, `<equivalent_sites>`, `<fc>`, and `<pinlocations>`. See the reference architectures above for complete examples.
 
 - `capacity` on `<sub_tile>` — how many sites of this type fit in the tile (e.g., multiple I/O pads per tile)
-- `<equivalent_sites>` — links the tile to its `<pb_type>`; `pin_mapping="direct"` means ports map by name
+- `<equivalent_sites>` — links the sub-tile to its `<pb_type>`; `pin_mapping="direct"` means ports map by name
 - `<fc>` — connection block density; `frac` is a fraction of channel width, `abs` is an absolute count
 - `<pinlocations pattern="spread">` — distributes pins evenly across tile edges; `pattern="custom"` lets you assign specific edges per port
 
@@ -143,18 +99,6 @@ Defines the ports visible at the tile boundary — what the routing network conn
 Specifies where each block type appears on the FPGA grid. Use `<auto_layout>` for a scalable device or `<fixed_layout name="..." width="W" height="H">` for fixed dimensions.
 
 Grid location tags are applied in priority order — higher priority overrides lower. All positions default to `EMPTY`.
-
-```xml
-<layout>
-  <auto_layout aspect_ratio="1.0">
-    <perimeter type="io"    priority="10"/>   <!-- edges (includes corners) -->
-    <corners   type="EMPTY" priority="100"/>  <!-- override corners to empty -->
-    <col type="RAM" startx="2" repeatx="8" starty="1" priority="3"/>
-    <col type="DSP" startx="6" repeatx="8" starty="1" priority="3"/>
-    <fill      type="CLB"   priority="1"/>    <!-- fill remainder -->
-  </auto_layout>
-</layout>
-```
 
 Grid location tags:
 
@@ -174,40 +118,14 @@ Position attributes accept expressions using `W` (device width), `H` (device hei
 
 ## Device
 
-Physical parameters required by VPR's area model and routing:
-
-```xml
-<device>
-  <sizing R_minW_nmos="6065.520" R_minW_pmos="18138.500"/>
-  <area grid_logic_tile_area="14813.392"/>
-  <chan_width_distr>
-    <x distr="uniform" peak="1.0"/>
-    <y distr="uniform" peak="1.0"/>
-  </chan_width_distr>
-  <switch_block type="wilton" fs="3"/>
-  <connection_block input_switch_name="ipin_cblock"/>
-</device>
-```
+Physical parameters required by VPR's area model and routing. Required sub-tags: `<sizing>`, `<area>`, `<chan_width_distr>`, `<switch_block>`, `<connection_block>`. See the reference architectures above for values.
 
 - `switch_block type` — `wilton`, `universal`, or `subset`; `fs` is the number of tracks each wire connects to at a switch block
 - `connection_block input_switch_name` — must name a switch defined in `<switchlist>`
 
 ## Switchlist
 
-Defines the electrical properties of routing switches:
-
-```xml
-<switchlist>
-  <!-- Buffered mux used in switch blocks -->
-  <switch type="mux" name="0"
-          R="551" Cin=".77e-15" Cout="4e-15"
-          Tdel="58e-12" mux_trans_size="2.630" buf_size="27.645"/>
-  <!-- Unbuffered pass gate used in connection blocks -->
-  <switch type="pass_gate" name="ipin_cblock"
-          R="2231.5" Cin=".5e-15" Cout="0"
-          Tdel="6.837e-12" mux_trans_size="1.222" buf_size="0"/>
-</switchlist>
-```
+Defines the electrical properties of routing switches. Each `<switch>` has attributes `type`, `name`, `R`, `Cin`, `Cout`, `Tdel`, `mux_trans_size`, and `buf_size`. See the reference architectures above for values.
 
 Switch types: `mux` (buffered), `pass_gate` (unbuffered transistor), `short` (ideal zero-resistance wire), `buffer` (non-configurable buffer).
 
@@ -234,16 +152,7 @@ Defines routing wire segment types:
 
 ## Directlist
 
-Optional. Specifies direct connections between specific ports on adjacent tiles without going through the routing network (e.g., carry chains):
-
-```xml
-<directlist>
-  <direct name="adder_carry" from_pin="BLE.cout" to_pin="BLE.cin"
-          x_offset="0" y_offset="1" z_offset="0"/>
-</directlist>
-```
-
-`x_offset`/`y_offset` is the tile-coordinate offset of the destination relative to the source.
+Optional. Specifies direct connections between specific ports on adjacent tiles without going through the routing network (e.g., carry chains). Each `<direct>` names a `from_pin` and `to_pin` (as `TileName.port`) and an `x_offset`/`y_offset` tile-coordinate offset of the destination relative to the source.
 
 ## Complexblocklist
 
@@ -319,82 +228,19 @@ Port references use `pb_type_name.port_name` notation. Ranges use `pb_type_name[
 
 ### Modes
 
-When a block can operate in multiple configurations, use `<mode>` tags. A `<pb_type>` with modes has no direct children — all children live inside the modes:
-
-```xml
-<pb_type name="fle" num_pb="1">
-  <input  name="in"  num_pins="6"/>
-  <output name="out" num_pins="2"/>
-  <clock  name="clk" num_pins="1"/>
-
-  <mode name="n1_lut6">
-    <pb_type name="lut6" blif_model=".names" num_pb="1">
-      <input  name="in"  num_pins="6"/>
-      <output name="out" num_pins="1"/>
-    </pb_type>
-    <interconnect>
-      <direct name="in"  input="fle.in"    output="lut6.in"/>
-      <direct name="out" input="lut6.out"  output="fle.out[0:0]"/>
-    </interconnect>
-  </mode>
-
-  <mode name="n2_lut5">
-    <pb_type name="lut5" blif_model=".names" num_pb="2">
-      <input  name="in"  num_pins="5"/>
-      <output name="out" num_pins="1"/>
-    </pb_type>
-    <interconnect>
-      <direct name="in0" input="fle.in[4:0]" output="lut5[0].in"/>
-      <direct name="in1" input="fle.in[4:0]" output="lut5[1].in"/>
-      <direct name="out" input="lut5[1:0].out" output="fle.out"/>
-    </interconnect>
-  </mode>
-</pb_type>
-```
+When a block can operate in multiple configurations, use `<mode>` tags. A `<pb_type>` with modes has no direct children — all children live inside the modes. The flagship and Koios architectures both use modes for fracturable LUTs; refer to them for complete examples.
 
 ### Pack Patterns
 
-Tell the packer which primitives should be packed together into the same `<pb_type>` instance. Patterns are named and must appear consistently on both sides of a connection:
-
-```xml
-<!-- On the LUT output (source side) -->
-<pb_type name="lut_6" blif_model=".names" num_pb="1">
-  <output name="out" num_pins="1">
-    <pack_pattern name="ble" out_port="lut_6.out" in_port="ff.D"/>
-  </output>
-</pb_type>
-
-<!-- On the FF input (sink side) -->
-<pb_type name="ff" blif_model=".latch" num_pb="1">
-  <input name="D" num_pins="1">
-    <pack_pattern name="ble" in_port="ff.D" out_port="lut_6.out"/>
-  </input>
-</pb_type>
-```
-
-`in_port` and `out_port` must refer to sibling `<pb_type>` ports at the same hierarchy level.
+Tell the packer which primitives should be packed together into the same `<pb_type>` instance. Patterns are named and must appear consistently on both sides of a connection: on the source port's `<output>` tag and on the sink port's `<input>` tag, each referencing the other via `in_port` and `out_port`. Both must name sibling `<pb_type>` ports at the same hierarchy level. See the reference architectures for complete examples.
 
 ## Timing Modeling
 
-**Combinational delays** use `<delay_matrix>` (one value per input pin, space-separated) or `<delay_constant>`:
+All timing values are in seconds. See the reference architectures for complete examples.
 
-```xml
-<delay_matrix type="max" in_port="lut_6.in" out_port="lut_6.out">
-  261e-12 261e-12 261e-12 261e-12 261e-12 261e-12
-</delay_matrix>
+**Combinational delays** use `<delay_matrix>` (one value per input pin, space-separated) or `<delay_constant max="..." in_port="..." out_port="..."/>`.
 
-<delay_constant max="25e-12" in_port="adder.a" out_port="adder.sumout"/>
-```
-
-**Sequential primitives** use setup/hold and clock-to-Q:
-
-```xml
-<T_setup      value="66e-12"  port="ff.D" clock="clk"/>
-<T_hold       value="0"       port="ff.D" clock="clk"/>
-<T_clock_to_Q max="124e-12"   port="ff.Q" clock="clk"/>
-```
-
-All timing values are in seconds.
+**Sequential primitives** use `<T_setup value="..." port="..." clock="..."/>`, `<T_hold>`, and `<T_clock_to_Q max="..." port="..." clock="..."/>`.
 
 ## Validation
 
