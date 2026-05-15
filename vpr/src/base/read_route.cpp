@@ -18,6 +18,7 @@
 #include <sstream>
 #include <string>
 #include <stack>
+#include <algorithm>
 
 #include "physical_types_util.h"
 #include "vtr_assert.h"
@@ -379,10 +380,20 @@ static void process_nodes(const Netlist<>& net_list,
 
             if (tokens[4] == "to") {
                 format_coordinates(layer_num2, x2, y2, tokens[5], inet, filename, lineno);
-                if (rr_graph.node_xlow(rr_node) != x || rr_graph.node_xhigh(rr_node) != x2 || rr_graph.node_yhigh(rr_node) != y2 || rr_graph.node_ylow(rr_node) != y) {
+                /* Endpoints may be listed low-first (INC wires) or high-first (DEC wires). */
+                const int x_min = std::min(x, x2);
+                const int x_max = std::max(x, x2);
+                const int y_min = std::min(y, y2);
+                const int y_max = std::max(y, y2);
+                const int layer_min = std::min(layer_num, layer_num2);
+                const int layer_max = std::max(layer_num, layer_num2);
+                if (rr_graph.node_xlow(rr_node) != x_min || rr_graph.node_xhigh(rr_node) != x_max || rr_graph.node_ylow(rr_node) != y_min || rr_graph.node_yhigh(rr_node) != y_max || rr_graph.node_layer_low(rr_node) != layer_min || rr_graph.node_layer_high(rr_node) != layer_max) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "The coordinates of node %d does not match the rr graph", inode);
                 }
+                x = x_min;
+                y = y_min;
+                layer_num = layer_min;
                 offset = 2;
 
                 /* Check for connectivity, this throws an exception when a dangling net is encountered in the routing file */
@@ -694,11 +705,22 @@ void print_route(const Netlist<>& net_list,
                     int ilow = rr_graph.node_xlow(inode);
                     int jlow = rr_graph.node_ylow(inode);
                     int layer_low = rr_graph.node_layer_low(inode);
+                    int ih = rr_graph.node_xhigh(inode);
+                    int jh = rr_graph.node_yhigh(inode);
+                    int layer_h = rr_graph.node_layer_high(inode);
 
-                    fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode), rr_graph.node_type_string(inode), ilow, jlow, layer_low);
+                    Direction wire_dir = rr_graph.node_direction(inode);
+                    bool multi_span = (ilow != ih || jlow != jh || layer_low != layer_h);
+                    bool dec_first = multi_span && wire_dir == Direction::DEC;
 
-                    if (ilow != rr_graph.node_xhigh(inode) || jlow != rr_graph.node_yhigh(inode) || layer_low != rr_graph.node_layer_high(inode))
-                        fprintf(fp, "to (%d,%d,%d) ", rr_graph.node_xhigh(inode), rr_graph.node_yhigh(inode), rr_graph.node_layer_high(inode));
+                    if (dec_first) {
+                        fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode), rr_graph.node_type_string(inode), ih, jh, layer_h);
+                        fprintf(fp, "to (%d,%d,%d) ", ilow, jlow, layer_low);
+                    } else {
+                        fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode), rr_graph.node_type_string(inode), ilow, jlow, layer_low);
+                        if (multi_span)
+                            fprintf(fp, "to (%d,%d,%d) ", ih, jh, layer_h);
+                    }
 
                     t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_low});
 
