@@ -1,0 +1,365 @@
+# VTR Architecture Description Guide
+
+Read this before writing or modifying FPGA architecture XML files.
+
+For the complete tag-by-tag specification, see `doc/src/arch/reference.rst`.
+For annotated examples, see `doc/src/arch/example_arch.xml` and `libs/libarchfpga/arch/sample_arch.xml`.
+Additional examples organized by feature are in `vtr_flow/arch/`.
+
+## File Structure
+
+All architecture files use `<architecture>` as the root tag. The top-level sections must appear in this order:
+
+```xml
+<architecture>
+  <models/>           <!-- Custom primitive models (BLIF .subckt types) -->
+  <tiles/>            <!-- Tile-level port definitions (what the routing network sees) -->
+  <layout/>           <!-- FPGA grid: which block type goes where -->
+  <device/>           <!-- Physical device parameters (transistor sizes, area) -->
+  <switchlist/>       <!-- Routing switch types (muxes, buffers) -->
+  <segmentlist/>      <!-- Routing wire segment types -->
+  <directlist/>       <!-- Optional: direct block-to-block connections -->
+  <complexblocklist/> <!-- Detailed pb_type hierarchy (logic inside each tile) -->
+</architecture>
+```
+
+## Models
+
+Declares custom BLIF primitive types the architecture supports. Standard structures (`.names`, `.latch`, `.input`, `.output`) are implicit — do not declare them here.
+
+```xml
+<models>
+  <model name="single_port_ram">
+    <input_ports>
+      <port name="we"   clock="clk"/>
+      <port name="addr" clock="clk" combinational_sink_ports="out"/>
+      <port name="data" clock="clk" combinational_sink_ports="out"/>
+      <port name="clk"  is_clock="1"/>
+    </input_ports>
+    <output_ports>
+      <port name="out" clock="clk"/>
+    </output_ports>
+  </model>
+  <model name="adder">
+    <input_ports>
+      <port name="a"   combinational_sink_ports="cout sumout"/>
+      <port name="b"   combinational_sink_ports="cout sumout"/>
+      <port name="cin" combinational_sink_ports="cout sumout"/>
+    </input_ports>
+    <output_ports>
+      <port name="cout"/>
+      <port name="sumout"/>
+    </output_ports>
+  </model>
+</models>
+```
+
+Port attributes:
+- `is_clock="1"` — marks a clock port
+- `clock="clk"` — makes the port sequential (registered on the named clock)
+- `combinational_sink_ports="a b"` — space-separated list of output ports with combinational paths from this input
+
+## Tiles
+
+Defines the ports visible at the tile boundary — what the routing network connects to. Each `<tile>` corresponds to one top-level `<pb_type>` in the complexblocklist.
+
+```xml
+<tiles>
+  <tile name="CLB">
+    <sub_tile name="CLB" capacity="1">
+      <equivalent_sites>
+        <site pb_type="CLB" pin_mapping="direct"/>
+      </equivalent_sites>
+      <input  name="I"   num_pins="33"/>
+      <output name="O"   num_pins="10"/>
+      <clock  name="clk" num_pins="1"/>
+      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <pinlocations pattern="spread"/>
+    </sub_tile>
+  </tile>
+</tiles>
+```
+
+- `capacity` on `<sub_tile>` — how many sites of this type fit in the tile (e.g., multiple I/O pads per tile)
+- `<equivalent_sites>` — links the tile to its `<pb_type>`; `pin_mapping="direct"` means ports map by name
+- `<fc>` — connection block density; `frac` is a fraction of channel width, `abs` is an absolute count
+- `<pinlocations pattern="spread">` — distributes pins evenly across tile edges; `pattern="custom"` lets you assign specific edges per port
+
+## Layout
+
+Specifies where each block type appears on the FPGA grid. Use `<auto_layout>` for a scalable device or `<fixed_layout name="..." width="W" height="H">` for fixed dimensions.
+
+Grid location tags are applied in priority order — higher priority overrides lower. All positions default to `EMPTY`.
+
+```xml
+<layout>
+  <auto_layout aspect_ratio="1.0">
+    <perimeter type="io"    priority="10"/>   <!-- edges (includes corners) -->
+    <corners   type="EMPTY" priority="100"/>  <!-- override corners to empty -->
+    <col type="RAM" startx="2" repeatx="8" starty="1" priority="3"/>
+    <col type="DSP" startx="6" repeatx="8" starty="1" priority="3"/>
+    <fill      type="CLB"   priority="1"/>    <!-- fill remainder -->
+  </auto_layout>
+</layout>
+```
+
+Grid location tags:
+
+| Tag | Meaning |
+|-----|---------|
+| `<fill type="X">` | Fill entire grid with X |
+| `<perimeter type="X">` | Set all edge cells (including corners) |
+| `<corners type="X">` | Set corner cells only |
+| `<single type="X" x="?" y="?">` | Place one instance at (x, y) |
+| `<col type="X" startx="?" repeatx="?">` | Column(s) of X |
+| `<row type="X" starty="?" repeaty="?">` | Row(s) of X |
+| `<region type="X" startx="?" endx="?" starty="?" endy="?">` | Rectangular region |
+
+Position attributes accept expressions using `W` (device width), `H` (device height), `w` (block width), `h` (block height). All arithmetic is integer. Example: `startx="W/2 - w/2"` centers a block horizontally.
+
+`<col>` and `<row>` have a `starty`/`startx` offset useful when a `<perimeter>` occupies the edge (set to `1` to avoid overlap). `repeatx`/`repeaty` repeats every N cells.
+
+## Device
+
+Physical parameters required by VPR's area model and routing:
+
+```xml
+<device>
+  <sizing R_minW_nmos="6065.520" R_minW_pmos="18138.500"/>
+  <area grid_logic_tile_area="14813.392"/>
+  <chan_width_distr>
+    <x distr="uniform" peak="1.0"/>
+    <y distr="uniform" peak="1.0"/>
+  </chan_width_distr>
+  <switch_block type="wilton" fs="3"/>
+  <connection_block input_switch_name="ipin_cblock"/>
+</device>
+```
+
+- `switch_block type` — `wilton`, `universal`, or `subset`; `fs` is the number of tracks each wire connects to at a switch block
+- `connection_block input_switch_name` — must name a switch defined in `<switchlist>`
+
+## Switchlist
+
+Defines the electrical properties of routing switches:
+
+```xml
+<switchlist>
+  <!-- Buffered mux used in switch blocks -->
+  <switch type="mux" name="0"
+          R="551" Cin=".77e-15" Cout="4e-15"
+          Tdel="58e-12" mux_trans_size="2.630" buf_size="27.645"/>
+  <!-- Unbuffered pass gate used in connection blocks -->
+  <switch type="pass_gate" name="ipin_cblock"
+          R="2231.5" Cin=".5e-15" Cout="0"
+          Tdel="6.837e-12" mux_trans_size="1.222" buf_size="0"/>
+</switchlist>
+```
+
+Switch types: `mux` (buffered), `pass_gate` (unbuffered transistor), `short` (ideal zero-resistance wire), `buffer` (non-configurable buffer).
+
+## Segmentlist
+
+Defines routing wire segment types:
+
+```xml
+<segmentlist>
+  <segment name="L4" length="4" freq="1.0" type="unidir"
+           Rmetal="101" Cmetal="22.5e-15">
+    <sb type="pattern">1 1 1 1 1</sb>  <!-- switch block tap at each position (length+1 values) -->
+    <cb type="pattern">1 1 1 1</cb>    <!-- connection block tap at each position (length values) -->
+    <mux name="0"/>                     <!-- switch used to drive this segment -->
+  </segment>
+</segmentlist>
+```
+
+- `type="unidir"` — driven by a buffer at one end; most modern architectures use this
+- `type="bidir"` — pass transistors at each switch block; used in older/bidirectional architectures
+- `freq` — relative proportion of routing tracks of this type (normalized across all segments)
+- `<sb>` pattern — `1` means a switch block tap exists at that position along the wire; `0` means none
+- `<cb>` pattern — same idea for connection block taps (one value per routing tile the wire spans)
+
+## Directlist
+
+Optional. Specifies direct connections between specific ports on adjacent tiles without going through the routing network (e.g., carry chains):
+
+```xml
+<directlist>
+  <direct name="adder_carry" from_pin="BLE.cout" to_pin="BLE.cin"
+          x_offset="0" y_offset="1" z_offset="0"/>
+</directlist>
+```
+
+`x_offset`/`y_offset` is the tile-coordinate offset of the destination relative to the source.
+
+## Complexblocklist
+
+Defines the internal logic hierarchy of each block type using nested `<pb_type>` tags. This is the most complex section.
+
+### pb_type Hierarchy
+
+Top-level `<pb_type>` names must match the tile names in `<tiles>`. Intermediate `<pb_type>` nodes group children; leaf nodes (with `blif_model`) represent actual primitives.
+
+```xml
+<complexblocklist>
+  <pb_type name="CLB">
+    <input  name="I"   num_pins="33"/>
+    <output name="O"   num_pins="10"/>
+    <clock  name="clk" num_pins="1"/>
+
+    <pb_type name="ble" num_pb="10">
+      <input  name="in"  num_pins="6"/>
+      <output name="out" num_pins="1"/>
+      <clock  name="clk" num_pins="1"/>
+
+      <!-- Leaf: LUT -->
+      <pb_type name="lut_6" blif_model=".names" num_pb="1">
+        <input  name="in"  num_pins="6"/>
+        <output name="out" num_pins="1"/>
+        <delay_matrix type="max" in_port="lut_6.in" out_port="lut_6.out">
+          261e-12 261e-12 261e-12 261e-12 261e-12 261e-12
+        </delay_matrix>
+      </pb_type>
+
+      <!-- Leaf: flip-flop -->
+      <pb_type name="ff" blif_model=".latch" num_pb="1">
+        <input  name="D"   num_pins="1"/>
+        <output name="Q"   num_pins="1"/>
+        <clock  name="clk" num_pins="1"/>
+        <T_setup      value="66e-12"  port="ff.D" clock="clk"/>
+        <T_clock_to_Q max="124e-12"  port="ff.Q" clock="clk"/>
+      </pb_type>
+
+      <interconnect>
+        <direct name="lut_to_ff" input="lut_6.out" output="ff.D"/>
+        <mux    name="ble_out"   input="lut_6.out ff.Q" output="ble.out"/>
+      </interconnect>
+    </pb_type>
+
+    <interconnect>
+      <complete name="crossbar" input="CLB.I ble[9:0].out" output="ble[9:0].in"/>
+      <complete name="clks"     input="CLB.clk"            output="ble[9:0].clk"/>
+      <direct   name="clb_out"  input="ble[9:0].out"       output="CLB.O"/>
+    </interconnect>
+  </pb_type>
+</complexblocklist>
+```
+
+**Leaf node `blif_model` values:**
+- `.names` — LUT
+- `.latch` — flip-flop
+- `.input` — top-level input pad
+- `.output` — top-level output pad
+- `".subckt model_name"` — custom model declared in `<models>`
+
+### Interconnect
+
+`<interconnect>` appears inside each non-leaf `<pb_type>` and specifies how ports connect:
+
+| Tag | Meaning |
+|-----|---------|
+| `<direct name="..." input="A.x" output="B.y"/>` | Point-to-point or bus (widths must match) |
+| `<mux name="..." input="A.x B.y" output="C.z"/>` | Programmable mux; output selects one input |
+| `<complete name="..." input="A.x B.y" output="C.z"/>` | Full crossbar: every input bit connects to every output bit |
+
+Port references use `pb_type_name.port_name` notation. Ranges use `pb_type_name[high:low].port_name`.
+
+### Modes
+
+When a block can operate in multiple configurations, use `<mode>` tags. A `<pb_type>` with modes has no direct children — all children live inside the modes:
+
+```xml
+<pb_type name="fle" num_pb="1">
+  <input  name="in"  num_pins="6"/>
+  <output name="out" num_pins="2"/>
+  <clock  name="clk" num_pins="1"/>
+
+  <mode name="n1_lut6">
+    <pb_type name="lut6" blif_model=".names" num_pb="1">
+      <input  name="in"  num_pins="6"/>
+      <output name="out" num_pins="1"/>
+    </pb_type>
+    <interconnect>
+      <direct name="in"  input="fle.in"    output="lut6.in"/>
+      <direct name="out" input="lut6.out"  output="fle.out[0:0]"/>
+    </interconnect>
+  </mode>
+
+  <mode name="n2_lut5">
+    <pb_type name="lut5" blif_model=".names" num_pb="2">
+      <input  name="in"  num_pins="5"/>
+      <output name="out" num_pins="1"/>
+    </pb_type>
+    <interconnect>
+      <direct name="in0" input="fle.in[4:0]" output="lut5[0].in"/>
+      <direct name="in1" input="fle.in[4:0]" output="lut5[1].in"/>
+      <direct name="out" input="lut5[1:0].out" output="fle.out"/>
+    </interconnect>
+  </mode>
+</pb_type>
+```
+
+### Pack Patterns
+
+Tell the packer which primitives should be packed together into the same `<pb_type>` instance. Patterns are named and must appear consistently on both sides of a connection:
+
+```xml
+<!-- On the LUT output (source side) -->
+<pb_type name="lut_6" blif_model=".names" num_pb="1">
+  <output name="out" num_pins="1">
+    <pack_pattern name="ble" out_port="lut_6.out" in_port="ff.D"/>
+  </output>
+</pb_type>
+
+<!-- On the FF input (sink side) -->
+<pb_type name="ff" blif_model=".latch" num_pb="1">
+  <input name="D" num_pins="1">
+    <pack_pattern name="ble" in_port="ff.D" out_port="lut_6.out"/>
+  </input>
+</pb_type>
+```
+
+`in_port` and `out_port` must refer to sibling `<pb_type>` ports at the same hierarchy level.
+
+## Timing Modeling
+
+**Combinational delays** use `<delay_matrix>` (one value per input pin, space-separated) or `<delay_constant>`:
+
+```xml
+<delay_matrix type="max" in_port="lut_6.in" out_port="lut_6.out">
+  261e-12 261e-12 261e-12 261e-12 261e-12 261e-12
+</delay_matrix>
+
+<delay_constant max="25e-12" in_port="adder.a" out_port="adder.sumout"/>
+```
+
+**Sequential primitives** use setup/hold and clock-to-Q:
+
+```xml
+<T_setup      value="66e-12"  port="ff.D" clock="clk"/>
+<T_hold       value="0"       port="ff.D" clock="clk"/>
+<T_clock_to_Q max="124e-12"   port="ff.Q" clock="clk"/>
+```
+
+All timing values are in seconds.
+
+## Validation
+
+To check an architecture file, run VPR with a small benchmark circuit:
+
+```bash
+source .venv/bin/activate
+./vpr/vpr <arch.xml> vtr_flow/benchmarks/blif/and.blif --route_chan_width 100
+```
+
+VPR reports the exact location of any XML error (mismatched widths, missing tags, unknown attributes). The `and.blif` benchmark is the simplest available test circuit.
+
+## Common Mistakes
+
+- **Missing model declaration** — any `.subckt` model used in `<complexblocklist>` must be declared in `<models>` first
+- **Mismatched port widths in interconnect** — `<direct>` requires identical widths on input and output; VPR reports the exact mismatch
+- **`<complete>` vs `<direct>`** — `<complete>` creates an N×M full crossbar; use `<direct>` for 1-to-1 or bus connections
+- **Missing `<equivalent_sites>`** — every `<sub_tile>` requires this to link it to its `<pb_type>`
+- **`<pack_pattern>` port references** — `in_port`/`out_port` must name ports on sibling `<pb_type>` nodes at the same hierarchy level, not on parent or child nodes
+- **`starty` offset missing with `<perimeter>`** — when using `<col>` or `<row>` alongside `<perimeter>`, set `starty="1"` (or `startx="1"`) to avoid overlapping the perimeter tiles
+- **Multi-die layout** — all dice share the same width and height; use `EMPTY` to leave areas of a die unused

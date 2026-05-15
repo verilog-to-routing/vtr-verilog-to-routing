@@ -10,6 +10,7 @@ Detailed guides are in `doc/agents/`. Read the relevant file before starting wor
 - `doc/agents/codebase.md` — read before exploring or navigating the codebase
 - `doc/agents/testing.md` — read before adding or running tests
 - `doc/agents/build.md` — read before building or changing build configuration
+- `doc/agents/arch.md` — read before writing or modifying FPGA architecture XML files
 
 ## Project Overview
 
