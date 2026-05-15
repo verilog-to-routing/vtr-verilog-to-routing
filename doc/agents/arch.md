@@ -6,6 +6,59 @@ For the complete tag-by-tag specification, see `doc/src/arch/reference.rst`.
 For annotated examples, see `doc/src/arch/example_arch.xml` and `libs/libarchfpga/arch/sample_arch.xml`.
 Additional examples organized by feature are in `vtr_flow/arch/`.
 
+## Reference Architectures
+
+The following are the community's primary reference architectures. Study them before designing a new architecture — they represent years of accumulated modeling judgment:
+
+| File | Description |
+|------|-------------|
+| `vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml` | Flagship 40nm heterogeneous arch: fracturable 6-LUT CLB, memory, and multiplier hard blocks. The most widely used baseline. |
+| `vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml` | Koios 22nm arch: complex DSP blocks and custom switch blocks. Good reference for hard DSP modeling. |
+| `vtr_flow/arch/titan/stratixiv_arch.timing.xml` | Stratix IV architecture capture. Reference for commercial-grade heterogeneous modeling. |
+| `vtr_flow/arch/titan/stratix10_arch.timing.xml` | Stratix 10 architecture capture. Reference for more modern commercial modeling. |
+
+## Modeling Concepts
+
+These concepts must be understood before making structural decisions about an architecture. Modeling mistakes at this level are hard to fix after the fact.
+
+### The Two Layers: Physical and Logical
+
+A VTR architecture description has two distinct layers that serve different purposes in the CAD flow:
+
+**Physical layer** — `<tiles>`, `<layout>`, `<device>`, `<switchlist>`, `<segmentlist>`:
+- Describes the FPGA grid: which block types exist, how large they are, and where they appear
+- Describes the global routing fabric: wire segments, switch blocks, connection blocks
+- Controls pin locations (which edge of a tile each port appears on) and connection block density (`<fc>`)
+
+**Logical layer** — `<models>`, `<complexblocklist>`:
+- Describes the internal logic hierarchy of each block type using `<pb_type>` trees
+- Specifies which primitives exist (LUTs, FFs, hard blocks) and how they interconnect internally
+- Does not encode any physical position or layout information
+
+The `<tiles>` section bridges the two layers: each `<sub_tile>` within a tile declares which `<pb_type>` (complex block) can be placed inside it via `<equivalent_sites>`. A tile can contain multiple sub-tile types to describe a heterogeneous tile (one that hosts different kinds of complex blocks at the same grid location).
+
+### CAD Flow Order and Its Consequences
+
+VTR's CAD flow runs in this order: **Pack → Place → Route**.
+
+The packer runs first and has no knowledge of where on the device clusters will eventually be placed. It creates cluster instances of each logical block type (each top-level `<pb_type>`), but the placer assigns those clusters to physical tile locations later.
+
+This has a critical implication: **complex blocks must be physically agnostic**. A complex block of type `X` can be placed in any tile that lists `X` as an equivalent site, anywhere on the device. The packer cannot reason about which tile location a cluster will land in, so it cannot distinguish between "left-side tile" and "right-side tile" when choosing a block type.
+
+### Positional Invariance
+
+When you define a tile type and place it on the grid, you are implicitly declaring that any complex block compatible with that tile can be placed in *any* instance of that tile, without restriction. This is **positional invariance**: the packer treats all tiles of a given type as interchangeable.
+
+The corollary is that if you need different physical behavior at different grid locations (e.g., IO tiles on different chip edges), that variation must be handled in the **tile** layer, not in the complex block. The complex block stays uniform. A common mistake is creating separate `io_left` and `io_right` pb_types for side-specific IO — the packer cannot know at pack time which side a cluster will land on, so it cannot choose between them correctly. The right approach is one `io` pb_type whose internal logic is side-agnostic, with side-specific pin placement handled by `<pinlocations>` in the tile.
+
+### Intra-Cluster vs. Global Routing
+
+The `<interconnect>` tags inside `<pb_type>` nodes define **intra-cluster routing** — the connections between primitives within a single cluster. This routing is resolved by the packer: when the packer assembles atoms into a cluster, it determines which internal connections are used and verifies they are legal according to the `<pb_type>` hierarchy.
+
+The channels, switch blocks, and connection blocks defined in `<segmentlist>` and `<switchlist>` define **global routing** — the connections between clusters across the device. This routing is resolved by the router, after placement is complete.
+
+These two routing domains are entirely separate. Do not attempt to model intra-cluster connectivity using global routing constructs, or vice versa.
+
 ## File Structure
 
 All architecture files use `<architecture>` as the root tag. The top-level sections must appear in this order:
