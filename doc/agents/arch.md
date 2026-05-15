@@ -59,6 +59,20 @@ The channels, switch blocks, and connection blocks defined in `<segmentlist>` an
 
 These two routing domains are entirely separate. Do not attempt to model intra-cluster connectivity using global routing constructs, or vice versa.
 
+### Carry Chains and Placement Macros
+
+Some structures — carry chains being the canonical example — span cluster boundaries. Modeling them correctly requires three coordinated pieces across separate sections of the architecture file.
+
+**Pack patterns in the complexblocklist:** Mark each edge along the carry path with a `<pack_pattern>` tag (same pattern name throughout). VPR's prepacker groups matching netlist atoms into *molecules* — units the packer must keep together in one cluster. When a pack pattern chain has exactly one connection touching a block-level input pin (e.g., `cin`) and exactly one touching a block-level output pin (e.g., `cout`), VPR treats it as cross-cluster: it breaks long chains into cluster-sized molecules connected in order by the carry links.
+
+**A directlist entry:** The `<direct>` tag in `<directlist>` defines the physical inter-tile wire, naming the tile ports and the `x_offset`/`y_offset` to the neighboring tile. This is the only path carry signals may travel between clusters.
+
+**`fc_val="0"` on the carry ports:** Add `<fc_override>` entries in the tile's `<fc>` tag for the carry ports, setting `fc_val="0"`. This removes them from the connection block so the router cannot route carry signals through general interconnect — only the directlist wire is available.
+
+At placement time, the placer detects clusters linked by a directlist connection and forms a *placement macro*: a group of clusters that must land at specific relative tile offsets matching the directlist `x_offset`/`y_offset`. The whole macro is placed as a unit, ensuring the physical direct connection is realizable.
+
+The flagship architecture (`vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml`) implements this pattern and is the best reference for carry chain modeling.
+
 ## File Structure
 
 All architecture files use `<architecture>` as the root tag. The top-level sections must appear in this order:
@@ -154,6 +168,8 @@ Defines routing wire segment types:
 
 Optional. Specifies direct connections between specific ports on adjacent tiles without going through the routing network (e.g., carry chains). Each `<direct>` names a `from_pin` and `to_pin` (as `TileName.port`) and an `x_offset`/`y_offset` tile-coordinate offset of the destination relative to the source.
 
+A directlist entry is the physical counterpart to a cross-cluster pack pattern. The two must be paired: a directlist entry alone does not constrain placement, and a pack pattern chain alone has no physical wire to use. The carry ports also need `fc_val="0"` via `<fc_override>` in the tile's `<fc>` tag; without it the router can reach those ports through general routing, bypassing the direct connection. See Carry Chains and Placement Macros in the Modeling Concepts section for the full pattern.
+
 ## Complexblocklist
 
 Defines the internal logic hierarchy of each block type using nested `<pb_type>` tags. This is the most complex section.
@@ -232,7 +248,11 @@ When a block can operate in multiple configurations, use `<mode>` tags. A `<pb_t
 
 ### Pack Patterns
 
-Tell the packer which primitives should be packed together into the same `<pb_type>` instance. Patterns are named and must appear consistently on both sides of a connection: on the source port's `<output>` tag and on the sink port's `<input>` tag, each referencing the other via `in_port` and `out_port`. Both must name sibling `<pb_type>` ports at the same hierarchy level. See the reference architectures for complete examples.
+A `<pack_pattern>` tag nested inside a `<direct>` in `<interconnect>` labels that edge with a pattern name. VPR's prepacker scans the input netlist for atoms connected in a way that matches a named pattern and assembles them into *molecules* — units the packer must keep together in the same cluster. All edges carrying the same pattern name belong to one molecule.
+
+Patterns must be named consistently: every `<direct>` along the carry path should carry the same `name`, and each `<pack_pattern>` references the source and sink via `in_port`/`out_port` at the same `<pb_type>` hierarchy level.
+
+When a pack pattern chain has exactly one connection to a block-level input pin and exactly one to a block-level output pin, VPR treats it as a cross-cluster carry chain. This triggers the three-part modeling requirement described in Carry Chains and Placement Macros in the Modeling Concepts section. See the reference architectures for complete examples.
 
 ## Timing Modeling
 
@@ -260,5 +280,6 @@ VPR reports the exact location of any XML error (mismatched widths, missing tags
 - **`<complete>` vs `<direct>`** — `<complete>` creates an N×M full crossbar; use `<direct>` for 1-to-1 or bus connections
 - **Missing `<equivalent_sites>`** — every `<sub_tile>` requires this to link it to its `<pb_type>`
 - **`<pack_pattern>` port references** — `in_port`/`out_port` must name ports on sibling `<pb_type>` nodes at the same hierarchy level, not on parent or child nodes
+- **Incomplete carry chain modeling** — a carry chain requires all three pieces: `<pack_pattern>` tags on carry edges in the complexblocklist, a `<direct>` entry in `<directlist>`, and `<fc_override fc_val="0">` on the carry ports in the tile's `<fc>`. Missing any one of them causes incorrect packing, placement, or routing
 - **`starty` offset missing with `<perimeter>`** — when using `<col>` or `<row>` alongside `<perimeter>`, set `starty="1"` (or `startx="1"`) to avoid overlapping the perimeter tiles
 - **Multi-die layout** — all dice share the same width and height; use `EMPTY` to leave areas of a die unused
