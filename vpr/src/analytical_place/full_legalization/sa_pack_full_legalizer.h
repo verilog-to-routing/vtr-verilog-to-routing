@@ -85,9 +85,10 @@ class SAPack : public FullLegalizer {
      * Iterates over each sub-tile. Tries to add the molecule to an existing
      * non-finalized cluster, or creates a new cluster if the slot is empty.
      *
-     * @return True if the molecule was successfully placed, false otherwise.
+     * @return The sub-tile index where the molecule was placed, or -1 if no
+     *         sub-tile in this tile could accept the molecule.
      */
-    bool try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc);
+    int try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc);
 
     /**
      * @brief Try to place the given molecule into the nearest compatible tile,

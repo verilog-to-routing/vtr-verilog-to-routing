@@ -139,18 +139,18 @@ bool SAPack::try_place_mol_in_sub_tile(PackMoleculeId mol_id, t_physical_tile_lo
     return false;
 }
 
-bool SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc) {
+int SAPack::try_place_mol_in_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc) {
 
     // Try each sub-tile from bottom to top to try and place the molecules.
     int num_sub_tiles = device_grid_.get_physical_type(tile_loc)->capacity;
     for (int target_sub_tile = 0; target_sub_tile < num_sub_tiles; target_sub_tile++) {
         bool place_success = try_place_mol_in_sub_tile(mol_id, tile_loc, target_sub_tile);
         if (place_success)
-            return true;
+            return target_sub_tile;
     }
 
-    // If the molecule could not be placed here, return false.
-    return false;
+    // If the molecule could not be placed here, return -1.
+    return -1;
 }
 
 bool SAPack::try_place_mol_in_nearest_tile(PackMoleculeId mol_id, t_physical_tile_loc tile_loc) {
@@ -171,9 +171,11 @@ bool SAPack::try_place_mol_in_nearest_tile(PackMoleculeId mol_id, t_physical_til
             continue;
         visited[current_loc.layer_num][current_loc.x][current_loc.y] = true;
 
-        // FIXME: Update the location of the molecule!
-        if (try_place_mol_in_tile(mol_id, current_loc))
+        int placed_sub_tile = try_place_mol_in_tile(mol_id, current_loc);
+        if (placed_sub_tile >= 0) {
+            mol_locations_[mol_id] = t_pl_loc(current_loc, placed_sub_tile);
             return true;
+        }
 
         search_queue.push(t_physical_tile_loc(current_loc.x - 1, current_loc.y, current_loc.layer_num));
         search_queue.push(t_physical_tile_loc(current_loc.x + 1, current_loc.y, current_loc.layer_num));
@@ -206,6 +208,10 @@ void SAPack::place_molecules(const PartialPlacement& p_placement) {
         //        the clusters. Maybe able to ignore if SA proves to be better.
         for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
             bool mol_placed = try_place_mol_in_sub_tile(mol_id, tile_loc, target_sub_tile);
+            // TODO: If the molecule fails to place, we should try another sub-tile in the same
+            //       sub-tile instead of just leaving it overfilled; however we do not want
+            //       to displace future placements, so this should be done after we have tried
+            //       to place all other molecules.
             if (!mol_placed) {
                 sa_pack_grid_->get_clusters(tile_loc)[target_sub_tile].overfilled_mols.insert(mol_id);
             }
@@ -296,8 +302,11 @@ void SAPack::optimize_placement() {
                 continue;
             for (AtomPinId pin_id : atom_netlist_.block_pins(atom_blk_id)) {
                 AtomNetId pin_net_id = atom_netlist_.pin_net(pin_id);
-                // FIXME: We should have a max fanout net threshold!!!
-                connected_nets.insert(pin_net_id);
+                // TODO: We should also ignore global nets, however these are
+                //       not annotated by default on the atom netlist. Need to
+                //       investigate that.
+                if (atom_netlist_.net_pins(pin_net_id).size() <= 256)
+                    connected_nets.insert(pin_net_id);
             }
         }
         //      Compute HPWL of connected nets before move.
@@ -415,7 +424,7 @@ std::vector<PackMoleculeId> SAPack::finalize_cluster(SAPackCluster& cluster) {
     cluster_legalizer_->destroy_cluster(cluster.cluster_id);
     cluster.cluster_id = LegalizationClusterId::INVALID();
 
-    // FIXME: Add safety assert here.
+    VTR_ASSERT_MSG(!molecules.empty(), "Cannot finalize an empty cluster.");
     PackMoleculeId seed_mol_id = molecules[0];
 
     cluster_legalizer_->set_legalization_strategy(ClusterLegalizationStrategy::FULL);
