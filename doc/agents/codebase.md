@@ -26,10 +26,28 @@
 | `analysis/` | Post-route analysis and reporting |
 | `draw/` | OpenGL/EZGL graphical visualization |
 | `noc/` | Network-on-Chip placement support |
-| `analytical_place/` | Analytical placement (AP) engine. Entry point: `analytical_placement_flow.h` / `run_analytical_placement_flow()` |
+| `analytical_place/` | Analytical placement (AP) engine. Entry point: `analytical_placement_flow.h` / `run_analytical_placement_flow()`. Subdirectories: `common/` (APNetlist and PartialPlacement data structures shared across stages), `global_placement/` (Stage 1: analytical solver + iterative partial legalization), `full_legalization/` (Stage 2: flat-to-clustered placement legalization), `detailed_placement/` (Stage 3: post-legalization quality optimization) |
 | `power/` | Power estimation |
 | `util/` | Shared VPR utilities (`vpr_utils.h`) used across multiple stages |
 | `server/` | VPR server mode for external tool integration |
+
+## VPR Data Flow
+
+Understanding how data moves through VPR is essential before touching any stage. The traditional flow is:
+
+```
+AtomNetlist → Prepacker → Packer → ClusteredNetlist → Placer → Router
+```
+
+- **AtomNetlist** (`base/`) — primitive-level netlist parsed from the input circuit
+- **Prepacker** (`pack/`) — groups atoms into molecules based on pack patterns; runs before both packing and analytical placement
+- **Packer** (`pack/`) — clusters molecules into logic blocks, producing a **ClusteredNetlist**
+- **Placer** (`place/`) — assigns each cluster to a physical tile on the device grid, populating **BlkLocRegistry**
+- **Router** (`route/`) — routes all nets through the routing resource graph
+
+The analytical placement flow (`analytical_place/`) is an alternative path that integrates global placement before legalization into clusters, bypassing or wrapping the traditional packer depending on configuration.
+
+All major VPR data structures are held in contexts accessible via `g_vpr_ctx` (declared in `vpr/src/base/globals.h`). `vpr_context.h` in the same directory defines the full set of contexts and is the best starting point for understanding what data exists at each stage.
 
 ## Shared Libraries (`libs/`)
 

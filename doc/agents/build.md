@@ -18,6 +18,17 @@ make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
 
 Build artifacts go in `build/`. CMake options are sticky — once set, subsequent `make` calls reuse them until explicitly changed.
 
+## Optional Dependencies
+
+VPR has several optional system libraries that are auto-detected at configure time via `find_package`. When a library is not found, the features it enables are compiled out behind an `#ifdef` — no CMake flag is needed, and no error is raised. Look for `Found` / `Not Found` lines in the CMake output to confirm what was detected.
+
+| Library | Feature gated | System package (Debian/Ubuntu) |
+|---------|--------------|-------------------------------|
+| Eigen3 | LP/QP analytical solvers in AP (`EIGEN_INSTALLED`) | `libeigen3-dev` |
+| Cap'n Proto | Binary RR graph serialization (`VTR_ENABLE_CAPNPROTO`) | `libcapnp-dev capnproto` |
+
+If a feature appears missing at runtime or a code path is `#ifdef`-gated and inactive, check whether its library was found during configuration.
+
 ## Key CMake Options
 
 Pass via `CMAKE_PARAMS="-DOPTION=value"`:
