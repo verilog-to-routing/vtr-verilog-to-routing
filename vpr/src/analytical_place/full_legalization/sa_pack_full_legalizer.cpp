@@ -457,18 +457,23 @@ std::vector<PackMoleculeId> SAPack::finalize_cluster(SAPackCluster& cluster) {
 void SAPack::fully_legalize_placement() {
     vtr::ScopedStartFinishTimer place_molecules_timer("Fully Legalizing SAPack Clusters");
 
-    // Start by moving any overfilled molecules out.
+    // Start by moving any overfilled molecules out. Snapshot each cluster's
+    // overfilled set into a local vector and clear it before calling
+    // try_place_mol_in_nearest_tile, so placement calls cannot observe a
+    // partially-modified set.
     for (const t_physical_tile_loc& tile_loc : device_grid_.all_locations()) {
         if (!device_grid_.is_root_location(tile_loc))
-                continue;
+            continue;
 
         std::vector<SAPackCluster>& clusters_in_tile = sa_pack_grid_->get_clusters(tile_loc);
         for (SAPackCluster& cluster : clusters_in_tile) {
-            // Place all of the overfilled molecules.
-            for (PackMoleculeId overfilled_mol : cluster.overfilled_mols) {
-                if (!try_place_mol_in_nearest_tile(overfilled_mol, tile_loc)) {
-                    // In the future, we should fall back on APPack
-                    AtomBlockId root_atom = prepacker_.get_molecule_root_atom(overfilled_mol);
+            std::vector<PackMoleculeId> to_place(cluster.overfilled_mols.begin(),
+                                                 cluster.overfilled_mols.end());
+            cluster.overfilled_mols.clear();
+            for (PackMoleculeId mol : to_place) {
+                if (!try_place_mol_in_nearest_tile(mol, tile_loc)) {
+                    // TODO: In the future, we should fall back on APPack
+                    AtomBlockId root_atom = prepacker_.get_molecule_root_atom(mol);
                     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
                     const LogicalModels& models = g_vpr_ctx.device().arch->models;
                     VTR_LOG("Cannot place molecule: %s (model: %s)\n",
@@ -480,58 +485,77 @@ void SAPack::fully_legalize_placement() {
                     VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
                 }
             }
-            // FIXME: It is a bit unsafe to be modifying the overfilled molecules like this.
-            cluster.overfilled_mols.clear();
         }
     }
 
-    // Next, fully legalize the clusters one-by-one. When a legalization fails,
-    // the atoms should be moved to the nearest cluster that can support them.
-    // TODO: It would be a much better idea to legalize the densest clusters
-    //       first; however this algorithm is likely to change.
-    // FIXME: This while loop is terrible.
-    bool done = false;
-    while (!done) {
-        done = true;
-        for (const t_physical_tile_loc& tile_loc : device_grid_.all_locations()) {
-            if (!device_grid_.is_root_location(tile_loc))
-                continue;
-
-            // Try intra-lb route. If it fails, rebuild the cluster and place
-            // any remaining molecules nearby using the prior method.
-            std::vector<SAPackCluster>& clusters_in_tile = sa_pack_grid_->get_clusters(tile_loc);
-            for (SAPackCluster& cluster : clusters_in_tile) {
-                if (!cluster.cluster_id.is_valid())
-                    continue;
-
-                if (cluster.is_finalized)
-                    continue;
-
-                std::vector<PackMoleculeId> rejected_mols = finalize_cluster(cluster);
-                // If a molecule was rejected, it could be placed anywhere on the grid.
-                // Need to look for it.
-                if (!rejected_mols.empty() || !cluster.overfilled_mols.empty()) {
-                    done = false;
-                }
-
-                // Place all of the rejected molecules.
-                for (PackMoleculeId rejected_mol : rejected_mols) {
-                    if (!try_place_mol_in_nearest_tile(rejected_mol, tile_loc)) {
-                        // In the future, we should fall back on APPack
-                        VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
-                    }
-                }
-
-                // Place all of the overfilled molecules.
-                for (PackMoleculeId overfilled_mol : cluster.overfilled_mols) {
-                    if (!try_place_mol_in_nearest_tile(overfilled_mol, tile_loc)) {
-                        // In the future, we should fall back on APPack
-                        VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
-                    }
-                }
-                cluster.overfilled_mols.clear();
-            }
+    // Fully legalize clusters one-by-one using a max-priority queue ordered by
+    // molecule load. Processing the densest clusters first minimizes cascading
+    // failures: ejected molecules are more likely to land in less-constrained
+    // clusters that have not yet been finalized.
+    //
+    // Complexity: O((n_clusters + n_ejections) * log(n_clusters))
+    struct ClusterWorkItem {
+        size_t mol_load;
+        t_physical_tile_loc tile_loc;
+        int sub_tile;
+        bool operator<(const ClusterWorkItem& rhs) const {
+            return mol_load < rhs.mol_load; // max-heap: higher load = higher priority
         }
+    };
+
+    auto get_mol_load = [&](const SAPackCluster& cluster) -> size_t {
+        if (!cluster.cluster_id.is_valid())
+            return cluster.overfilled_mols.size();
+        return cluster_legalizer_->get_cluster_molecules(cluster.cluster_id).size()
+               + cluster.overfilled_mols.size();
+    };
+
+    std::priority_queue<ClusterWorkItem> work_queue;
+    for (const t_physical_tile_loc& tile_loc : device_grid_.all_locations()) {
+        if (!device_grid_.is_root_location(tile_loc))
+            continue;
+        std::vector<SAPackCluster>& clusters = sa_pack_grid_->get_clusters(tile_loc);
+        for (int sub_tile = 0; sub_tile < (int)clusters.size(); sub_tile++) {
+            const SAPackCluster& cluster = clusters[sub_tile];
+            if (cluster.cluster_id.is_valid() && !cluster.is_finalized)
+                work_queue.push({get_mol_load(cluster), tile_loc, sub_tile});
+        }
+    }
+
+    // Place a rejected/overfilled molecule and re-enqueue its destination
+    // cluster if it has not yet been finalized.
+    auto place_and_reenqueue = [&](PackMoleculeId mol_id, t_physical_tile_loc source_tile) {
+        // TODO: We should fall pack on APPack.
+        if (!try_place_mol_in_nearest_tile(mol_id, source_tile))
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Cannot find anywhere to place molecule.");
+        t_pl_loc new_loc = mol_locations_[mol_id];
+        t_physical_tile_loc new_tile(new_loc.x, new_loc.y, new_loc.layer);
+        SAPackCluster& dest = sa_pack_grid_->get_clusters(new_tile)[new_loc.sub_tile];
+        if (dest.cluster_id.is_valid() && !dest.is_finalized)
+            work_queue.push({get_mol_load(dest), new_tile, new_loc.sub_tile});
+    };
+
+    while (!work_queue.empty()) {
+        ClusterWorkItem item = work_queue.top();
+        work_queue.pop();
+
+        SAPackCluster& cluster = sa_pack_grid_->get_clusters(item.tile_loc)[item.sub_tile];
+        // Skip stale entries: the cluster may have been finalized by a prior
+        // iteration, or this is a duplicate entry from a re-enqueue.
+        if (!cluster.cluster_id.is_valid() || cluster.is_finalized)
+            continue;
+
+        std::vector<PackMoleculeId> rejected_mols = finalize_cluster(cluster);
+
+        for (PackMoleculeId mol : rejected_mols)
+            place_and_reenqueue(mol, item.tile_loc);
+
+        // Snapshot overfilled_mols before clearing (same pattern as phase 1).
+        std::vector<PackMoleculeId> overfilled(cluster.overfilled_mols.begin(),
+                                               cluster.overfilled_mols.end());
+        cluster.overfilled_mols.clear();
+        for (PackMoleculeId mol : overfilled)
+            place_and_reenqueue(mol, item.tile_loc);
     }
 }
 
