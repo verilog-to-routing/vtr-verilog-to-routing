@@ -53,6 +53,11 @@ packages_to_install+=(
     zlib1g-dev
 )
 
+# Optional, but improves performance
+packages_to_install+=(
+    libjemalloc-dev
+)
+
 # Required for code formatting
 # NOTE: clang-format-18 may only be found on specific distributions. Only
 #       install it if the distribution has this version of clang format.

@@ -49,3 +49,7 @@ sudo dnf install --refresh -y \
 # Required to run the analytical placement flow
 sudo dnf install --refresh -y \
     eigen3-devel
+
+# Optional, but improves performance
+sudo dnf install --refresh -y \
+    jemalloc-devel

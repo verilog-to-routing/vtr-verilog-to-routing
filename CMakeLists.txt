@@ -33,6 +33,8 @@ option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 option(VTR_ENABLE_VERBOSE "Enable increased debug verbosity" OFF)
 option(SPEC_CPU "Enable SPEC CPU v8 support" OFF)
 
+option(VPR_USE_JEMALLOC "Use jemalloc for vpr instead of default glibc allocator when available" ON)
+
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
