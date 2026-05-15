@@ -260,6 +260,10 @@ static void print_SimPL_status(size_t iteration,
  *
  * Used as a fallback when the delay model returns ROUTER_LOOKAHEAD_NO_PATH_SENTINEL
  * for a driver/sink pair. Returns 0.0f if the reference point is also missing.
+ *
+ * TODO: It is possible that the tile at the center of the device has no possible
+ *       routes within one tile unit. We should have a more systematic way of
+ *       doing this. For now this is better than just returning 0.0.
  */
 static float get_delay_per_tile(const PlaceDelayModel& place_delay_model) {
     const auto& grid = g_vpr_ctx.device().grid;
@@ -339,7 +343,7 @@ static void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cl
         // these arcs rather than treating them as free (delay = 0).
         if (delay >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
             int manhattan_dist = std::abs(driver_block_loc.x - sink_block_loc.x)
-                               + std::abs(driver_block_loc.y - sink_block_loc.y);
+                                 + std::abs(driver_block_loc.y - sink_block_loc.y);
             delay = manhattan_dist * get_delay_per_tile(place_delay_model);
         }
 
