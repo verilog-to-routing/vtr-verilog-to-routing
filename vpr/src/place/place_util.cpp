@@ -22,6 +22,18 @@ void t_placer_costs::update_norm_factors() {
         congestion_cost_norm = 1. / (double)clustered_nlist.nets().size();
     }
 
+    if (interposer_cost > 0.) {
+        interposer_cost_norm = 1 / interposer_cost;
+    } else {
+        interposer_cost_norm = 1. / (double)clustered_nlist.nets().size();
+    }
+
+    if (interposer_cong_cost > 0.) {
+        interposer_cong_cost_norm = 1 / interposer_cong_cost;
+    } else {
+        interposer_cong_cost_norm = 1. / (double)clustered_nlist.nets().size();
+    }
+
     if (place_algorithm.is_timing_driven()) {
         // Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
@@ -47,6 +59,8 @@ double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_
     }
 
     total_cost += placer_opts.congestion_factor * congestion_cost * congestion_cost_norm;
+    total_cost += placer_opts.interposer_cost_factor * interposer_cost * interposer_cost_norm;
+    total_cost += placer_opts.interposer_cong_factor * interposer_cong_cost * interposer_cong_cost_norm;
 
     if (noc_opts.noc) {
         // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
@@ -89,6 +103,8 @@ void t_placer_statistics::reset() {
     av_bb_cost = 0.;
     av_timing_cost = 0.;
     av_cong_cost = 0.;
+    av_interposer_cost = 0.;
+    av_interposer_cong_cost = 0.;
     sum_of_squares = 0.;
     success_sum = 0;
     success_rate = 0.;
@@ -102,6 +118,8 @@ void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
     av_bb_cost += costs.bb_cost;
     av_timing_cost += costs.timing_cost;
     av_cong_cost += costs.congestion_cost;
+    av_interposer_cost += costs.interposer_cost;
+    av_interposer_cong_cost += costs.interposer_cong_cost;
     sum_of_squares += (costs.cost) * (costs.cost);
 }
 
@@ -112,11 +130,15 @@ void t_placer_statistics::calc_iteration_stats(const t_placer_costs& costs, int 
         av_bb_cost = costs.bb_cost;
         av_timing_cost = costs.timing_cost;
         av_cong_cost = costs.congestion_cost;
+        av_interposer_cost = costs.interposer_cost;
+        av_interposer_cong_cost = costs.interposer_cong_cost;
     } else {
         av_cost /= success_sum;
         av_bb_cost /= success_sum;
         av_timing_cost /= success_sum;
         av_cong_cost /= success_sum;
+        av_interposer_cost /= success_sum;
+        av_interposer_cong_cost /= success_sum;
     }
     success_rate = success_sum / float(move_lim);
     std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
