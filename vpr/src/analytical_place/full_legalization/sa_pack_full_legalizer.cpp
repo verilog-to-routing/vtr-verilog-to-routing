@@ -582,21 +582,17 @@ void SAPack::legalize(const PartialPlacement& p_placement) {
     // Use the initial placer to place the atoms, but we should use their current
     // positions as our guess for where they should go. This should handle any
     // weird macro cases thay will come up.
-
-    // Convert the Partial Placement (APNetlist) to a flat placement (AtomNetlist).
-    // FIXME: Update this to be the locations AFTER clustering.
     FlatPlacementInfo flat_placement_info(atom_netlist_);
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                if (!atom_blk_id.is_valid())
-                    continue;
-                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-            }
+    for (PackMoleculeId mol_id : prepacker_.molecules()) {
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            const t_pl_loc& mol_loc = mol_locations_[mol_id];
+            flat_placement_info.blk_x_pos[atom_blk_id] = mol_loc.x;
+            flat_placement_info.blk_y_pos[atom_blk_id] = mol_loc.y;
+            flat_placement_info.blk_layer[atom_blk_id] = mol_loc.layer;
+            flat_placement_info.blk_sub_tile[atom_blk_id] = mol_loc.sub_tile;
         }
     }
 
