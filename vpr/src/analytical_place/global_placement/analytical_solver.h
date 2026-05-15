@@ -688,8 +688,9 @@ class B2BSolver : public AnalyticalSolver {
      * wirelength.
      *
      * The delay derivative is computed on the legalized placement, not the
-     * currently solved placement. So this would be constant per iteration of
-     * the solver.
+     * currently solved placement, so it is constant within a solver iteration.
+     * This keeps the derivative stable: recomputing it from the solver's own
+     * moving blocks may cause oscillation.
      *
      *  @param driver_blk
      *      The driver block for the edge to get the derivative of.
