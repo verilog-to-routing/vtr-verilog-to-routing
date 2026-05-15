@@ -39,4 +39,5 @@ Multiple examples of how this language can be used to describe different types o
 .. toctree::
     :maxdepth: 1
 
+    modeling_concepts
     timing_modeling/index
