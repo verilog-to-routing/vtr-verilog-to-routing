@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include "vtr_geometry.h"
 #include "rr_graph_view.h"
+#include "router_lookahead_constants.h"
 
 namespace util {
 

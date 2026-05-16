@@ -98,7 +98,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
         //The cost estimate should still be *extremely* large compared to a typical delay, and
         //so should ensure that the router de-prioritizes exploring this path, but does not
         //forbid the router from trying.
-        float max = std::numeric_limits<float>::max() / 1e12;
+        float max = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
         return std::make_pair(max, max);
     } else {
         //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
