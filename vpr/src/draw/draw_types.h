@@ -299,6 +299,17 @@ struct t_draw_state {
 
     std::string graphics_commands;
 
+    ///@brief Tokenized form of `graphics_commands` (one inner vector per
+    /// `;`-separated command). Built lazily by run_graphics_commands on the
+    /// first call (when this vector is still empty); `graphics_commands` is
+    /// set once at init and never mutated, so a single parse is sufficient.
+    std::vector<std::vector<std::string>> parsed_graphics_cmds;
+
+    ///@brief Cursor into `parsed_graphics_cmds`. Persists across
+    /// run_graphics_commands() invocations so that `wait_for_stage` barriers
+    /// can split a script across multiple update_screen() calls.
+    size_t graphics_cmd_cursor = 0;
+
     ///@brief Rendering backend: "immediate", "deferred", or "rhi"
     std::string renderer_type = "rhi";
 

@@ -1367,30 +1367,26 @@ static void set_force_pause() {
 static void run_graphics_commands(const std::string& commands) {
     // A very simple command interpreter for scripting graphics.
     //
-    // The parsed command list and the script cursor are static so that
-    // `wait_for_stage` barriers can split a script across multiple
-    // update_screen() invocations (e.g. half at placement, half at routing).
-    // On each call, processing resumes at the cursor and stops either at a
-    // wait-barrier whose stage hasn't been reached yet, or at end-of-script.
+    // The parsed command list and the script cursor live on draw_state
+    // (parsed_graphics_cmds / graphics_cmd_cursor) so that `wait_for_stage`
+    // barriers can split a script across multiple update_screen() invocations
+    // (e.g. half at placement, half at routing). On each call, processing
+    // resumes at the cursor and stops either at a wait-barrier whose stage
+    // hasn't been reached yet, or at end-of-script.
     t_draw_state* draw_state = get_draw_state_vars();
 
-    static std::string s_last_input;
-    static std::vector<std::vector<std::string>> s_cmds;
-    static size_t s_cursor = 0;
-
-    if (commands != s_last_input) {
-        s_cmds.clear();
+    // Parse once: `graphics_commands` is set at init and never mutated, so
+    // the empty-vector check doubles as a "first call" trigger.
+    if (draw_state->parsed_graphics_cmds.empty()) {
         for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
-            s_cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
+            draw_state->parsed_graphics_cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
         }
-        s_cursor = 0;
-        s_last_input = commands;
     }
 
     t_draw_state backup_draw_state = *draw_state;
 
-    while (s_cursor < s_cmds.size()) {
-        auto& cmd = s_cmds[s_cursor];
+    while (draw_state->graphics_cmd_cursor < draw_state->parsed_graphics_cmds.size()) {
+        auto& cmd = draw_state->parsed_graphics_cmds[draw_state->graphics_cmd_cursor];
         VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
 
         for (auto& item : cmd) {
@@ -1444,10 +1440,15 @@ static void run_graphics_commands(const std::string& commands) {
             const auto& flag_set = wait_for_done ? completed_stages : initial_stages;
             if (draw_state->pic_on_screen != want
                 || flag_set.find(want) == flag_set.end()) {
+                // Revert any draw-state mutations made by commands earlier in
+                // this script run, but keep the script bookkeeping (cursor +
+                // parse cache) so the next update_screen() resumes here.
+                size_t saved_cursor = draw_state->graphics_cmd_cursor;
                 *draw_state = backup_draw_state;
+                draw_state->graphics_cmd_cursor = saved_cursor;
                 return;
             }
-            ++s_cursor;
+            ++draw_state->graphics_cmd_cursor;
             continue;
         }
 
@@ -1560,7 +1561,7 @@ static void run_graphics_commands(const std::string& commands) {
             pending_graphics_exit_code = vtr::atoi(cmd[1]);
             VTR_LOG("Graphics-command 'exit %d' deferred until next render checkpoint.\n",
                     pending_graphics_exit_code);
-            ++s_cursor;
+            ++draw_state->graphics_cmd_cursor;
             break;
         } else {
             VPR_ERROR(VPR_ERROR_DRAW,
@@ -1568,10 +1569,15 @@ static void run_graphics_commands(const std::string& commands) {
                                       cmd[0].c_str())
                           .c_str());
         }
-        ++s_cursor;
+        ++draw_state->graphics_cmd_cursor;
     }
 
-    *draw_state = backup_draw_state; // Restore original draw state
+    // Restore user-controllable draw state, but keep the script cursor at
+    // end-of-script so subsequent update_screen() calls are no-ops rather
+    // than re-running the whole script.
+    size_t saved_cursor = draw_state->graphics_cmd_cursor;
+    *draw_state = backup_draw_state;
+    draw_state->graphics_cmd_cursor = saved_cursor;
 
     //Advance the sequence number
     ++draw_state->sequence_number;
