@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <set>
 #include <vector>
 #include "draw.h"
 
@@ -140,6 +141,13 @@ ezgl::point2d point_1(0, 0);
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
+// Stages that have hit their first update_screen() (auto-recorded by
+// update_screen on pic_on_screen transitions) and stages that have been
+// marked complete via notify_stage_complete(). Consulted by the
+// `wait_for_stage <stage>_initial` / `<stage>_done` script barriers.
+std::set<e_pic_type> initial_stages;
+std::set<e_pic_type> completed_stages;
+
 #endif // NO_GRAPHICS
 
 /********************** Subroutine definitions ******************************/
@@ -174,6 +182,14 @@ void init_graphics_state(bool show_graphics_val,
     (void)graphics_commands;
     (void)is_flat;
 #endif // NO_GRAPHICS
+}
+
+void notify_stage_complete(e_pic_type stage) {
+#ifndef NO_GRAPHICS
+    completed_stages.insert(stage);
+#else
+    (void)stage;
+#endif
 }
 
 #ifndef NO_GRAPHICS
@@ -339,6 +355,9 @@ void update_screen(ScreenUpdatePriority priority,
 
         draw_state->setup_timing_info = setup_timing_info;
         draw_state->pic_on_screen = pic_on_screen_val;
+        // Record that we've now reached this stage at least once. Consumed
+        // by the `wait_for_stage <stage>_initial` script barrier.
+        initial_stages.insert(pic_on_screen_val);
     }
 
     bool should_pause = int(priority) >= draw_state->gr_automode;
@@ -1196,23 +1215,92 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
 }
 
 static void run_graphics_commands(const std::string& commands) {
-    // A very simple command interpreter for scripting graphics
+    // A very simple command interpreter for scripting graphics.
+    //
+    // The parsed command list and the script cursor live on draw_state
+    // (parsed_graphics_cmds / graphics_cmd_cursor) so that `wait_for_stage`
+    // barriers can split a script across multiple update_screen() invocations
+    // (e.g. half at placement, half at routing). On each call, processing
+    // resumes at the cursor and stops either at a wait-barrier whose stage
+    // hasn't been reached yet, or at end-of-script.
     t_draw_state* draw_state = get_draw_state_vars();
+
+    // Parse once: `graphics_commands` is set at init and never mutated, so
+    // the empty-vector check doubles as a "first call" trigger.
+    if (draw_state->parsed_graphics_cmds.empty()) {
+        for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
+            draw_state->parsed_graphics_cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
+        }
+    }
 
     t_draw_state backup_draw_state = *draw_state;
 
-    std::vector<std::vector<std::string>> cmds;
-    for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
-        cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
-    }
-
-    for (auto& cmd : cmds) {
+    while (draw_state->graphics_cmd_cursor < draw_state->parsed_graphics_cmds.size()) {
+        auto& cmd = draw_state->parsed_graphics_cmds[draw_state->graphics_cmd_cursor];
         VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
 
         for (auto& item : cmd) {
             VTR_LOG("%s ", item.c_str());
         }
         VTR_LOG("\n");
+
+        if (cmd[0] == "wait_for_stage") {
+            // Argument form: <stage>_<initial|done>, e.g. routing_initial
+            // or placement_done. `_initial` resumes on the first
+            // update_screen() at that stage; `_done` resumes only after the
+            // stage has been marked complete by notify_stage_complete()
+            // (i.e. on the post-stage settled checkpoint).
+            VTR_ASSERT_MSG(cmd.size() == 2,
+                           "Expect <stage>_initial or <stage>_done after 'wait_for_stage' "
+                           "(stage = placement|routing)");
+            const std::string& arg = cmd[1];
+            e_pic_type want = e_pic_type::NO_PICTURE;
+            bool wait_for_done = false;
+            std::string stage_name;
+            const std::string done_suffix = "_done";
+            const std::string init_suffix = "_initial";
+            if (arg.size() > done_suffix.size()
+                && arg.compare(arg.size() - done_suffix.size(), done_suffix.size(), done_suffix) == 0) {
+                wait_for_done = true;
+                stage_name = arg.substr(0, arg.size() - done_suffix.size());
+            } else if (arg.size() > init_suffix.size()
+                && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
+                wait_for_done = false;
+                stage_name = arg.substr(0, arg.size() - init_suffix.size());
+            } else {
+                VPR_ERROR(VPR_ERROR_DRAW,
+                          vtr::string_fmt("Unknown wait_for_stage argument '%s' "
+                                          "(use <stage>_initial or <stage>_done)",
+                                          arg.c_str())
+                              .c_str());
+            }
+
+            if (stage_name == "placement") {
+                want = e_pic_type::PLACEMENT;
+            } else if (stage_name == "routing") {
+                want = e_pic_type::ROUTING;
+            } else {
+                VPR_ERROR(VPR_ERROR_DRAW,
+                          vtr::string_fmt("Unknown or unsupported stage '%s' in "
+                                          "wait_for_stage (use placement|routing)",
+                                          stage_name.c_str())
+                              .c_str());
+            }
+
+            const auto& flag_set = wait_for_done ? completed_stages : initial_stages;
+            if (draw_state->pic_on_screen != want
+                || flag_set.find(want) == flag_set.end()) {
+                // Revert any draw-state mutations made by commands earlier in
+                // this script run, but keep the script bookkeeping (cursor +
+                // parse cache) so the next update_screen() resumes here.
+                size_t saved_cursor = draw_state->graphics_cmd_cursor;
+                *draw_state = backup_draw_state;
+                draw_state->graphics_cmd_cursor = saved_cursor;
+                return;
+            }
+            ++draw_state->graphics_cmd_cursor;
+            continue;
+        }
 
         if (cmd[0] == "save_graphics") {
             VTR_ASSERT_MSG(cmd.size() == 2,
@@ -1233,17 +1321,39 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->show_placement_macros = (e_draw_placement_macros)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_placement_macros);
         } else if (cmd[0] == "set_nets") {
+            // 0 = off, 1 = flylines, 2 = routed nets.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect net draw state after 'set_nets'");
-            draw_state->draw_nets = (e_draw_nets)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->draw_nets);
+                           "Expect net draw state (0=off, 1=flylines, 2=routed) after 'set_nets'");
+            int state = vtr::atoi(cmd[1]);
+            if (state == 0) {
+                draw_state->show_nets = false;
+                draw_state->draw_inter_cluster_nets = false;
+                draw_state->draw_intra_cluster_nets = false;
+                draw_state->highlight_fan_in_fan_out = false;
+            } else {
+                draw_state->show_nets = true;
+                draw_state->draw_inter_cluster_nets = true;
+                draw_state->draw_intra_cluster_nets = true;
+                draw_state->highlight_fan_in_fan_out = true;
+                draw_state->draw_nets = (state == 2) ? DRAW_ROUTED_NETS : DRAW_FLYLINES;
+            }
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_cpd") {
+            // Bitmask: 0=off, bit0(1)=flylines, bit1(2)=delay labels.
+            // Common values: 1=flylines, 3=flylines+delays.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect show critical path delay (bool), show critical path flylines (bool), and show critical path routing (bool) after 'set_cpd'");
-            draw_state->show_crit_path = true;
-            draw_state->show_crit_path_flylines = true;
-            draw_state->show_crit_path_delays = (bool)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->show_crit_path);
+                           "Expect crit-path draw state (0=off, bitmask 1|2 = flylines|delays) after 'set_cpd'");
+            int state = vtr::atoi(cmd[1]);
+            if (state == 0) {
+                draw_state->show_crit_path = false;
+                draw_state->show_crit_path_flylines = false;
+                draw_state->show_crit_path_delays = false;
+            } else {
+                draw_state->show_crit_path = true;
+                draw_state->show_crit_path_flylines = (state & 1) != 0;
+                draw_state->show_crit_path_delays   = (state & 2) != 0;
+            }
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect routing util draw state after 'set_routing_util'");
@@ -1256,10 +1366,14 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->clip_routing_util = (bool)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->clip_routing_util);
         } else if (cmd[0] == "set_congestion") {
+            // 0 = off, 1 = congested nodes, 2 = congested nodes + nets.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect congestion draw state after 'set_congestion'");
-            draw_state->show_congestion = (e_draw_congestion)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->show_congestion);
+                           "Expect congestion draw state (0=off, 1=congested, 2=congested+nets) after 'set_congestion'");
+            int state = vtr::atoi(cmd[1]);
+            VTR_ASSERT_MSG(state >= 0 && state <= 2,
+                           "set_congestion expects a value in 0..2");
+            draw_state->show_congestion = (e_draw_congestion)state;
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_draw_block_outlines") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect draw block outlines state after 'set_draw_block_outlines'");
@@ -1289,9 +1403,15 @@ static void run_graphics_commands(const std::string& commands) {
                                       cmd[0].c_str())
                           .c_str());
         }
+        ++draw_state->graphics_cmd_cursor;
     }
 
-    *draw_state = backup_draw_state; // Restore original draw state
+    // Restore user-controllable draw state, but keep the script cursor at
+    // end-of-script so subsequent update_screen() calls are no-ops rather
+    // than re-running the whole script.
+    size_t saved_cursor = draw_state->graphics_cmd_cursor;
+    *draw_state = backup_draw_state;
+    draw_state->graphics_cmd_cursor = saved_cursor;
 
     //Advance the sequence number
     ++draw_state->sequence_number;
