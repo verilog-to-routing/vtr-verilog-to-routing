@@ -1216,6 +1216,25 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
     draw_state->forced_pause = true;
 }
 
+enum e_set_nets_arg : int {
+    SET_NETS_OFF      = 0,
+    SET_NETS_FLYLINES = 1,
+    SET_NETS_ROUTED   = 2,
+};
+
+enum e_set_cpd_arg_bits : int {
+    SET_CPD_OFF      = 0,
+    SET_CPD_FLYLINES = 1 << 0,
+    SET_CPD_DELAYS   = 1 << 1,
+    SET_CPD_ROUTING  = 1 << 2,
+};
+
+enum e_set_congestion_arg : int {
+    SET_CONGESTION_OFF            = 0,
+    SET_CONGESTION_NODES          = 1,
+    SET_CONGESTION_NODES_AND_NETS = 2,
+};
+
 static void run_graphics_commands(const std::string& commands) {
     // A very simple command interpreter for scripting graphics.
     //
@@ -1323,11 +1342,12 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->show_placement_macros = (e_draw_placement_macros)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_placement_macros);
         } else if (cmd[0] == "set_nets") {
-            // 0 = off, 1 = flylines, 2 = routed nets.
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect net draw state (0=off, 1=flylines, 2=routed) after 'set_nets'");
             int state = vtr::atoi(cmd[1]);
-            if (state == 0) {
+            VTR_ASSERT_MSG(state >= SET_NETS_OFF && state <= SET_NETS_ROUTED,
+                           "set_nets expects a value in 0..2");
+            if (state == SET_NETS_OFF) {
                 draw_state->show_nets = false;
                 draw_state->draw_inter_cluster_nets = false;
                 draw_state->draw_intra_cluster_nets = false;
@@ -1337,23 +1357,27 @@ static void run_graphics_commands(const std::string& commands) {
                 draw_state->draw_inter_cluster_nets = true;
                 draw_state->draw_intra_cluster_nets = true;
                 draw_state->highlight_fan_in_fan_out = true;
-                draw_state->draw_nets = (state == 2) ? DRAW_ROUTED_NETS : DRAW_FLYLINES;
+                draw_state->draw_nets = (state == SET_NETS_ROUTED)
+                                            ? DRAW_ROUTED_NETS
+                                            : DRAW_FLYLINES;
             }
             VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_cpd") {
-            // Bitmask: 0=off, bit0(1)=flylines, bit1(2)=delay labels.
-            // Common values: 1=flylines, 3=flylines+delays.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect crit-path draw state (0=off, bitmask 1|2 = flylines|delays) after 'set_cpd'");
+                           "Expect crit-path draw state (0=off, bitmask 1|2|4 = flylines|delays|routing) after 'set_cpd'");
             int state = vtr::atoi(cmd[1]);
-            if (state == 0) {
+            VTR_ASSERT_MSG(state >= SET_CPD_OFF && state <= (SET_CPD_FLYLINES | SET_CPD_DELAYS | SET_CPD_ROUTING),
+                           "set_cpd expects a value in 0..7");
+            if (state == SET_CPD_OFF) {
                 draw_state->show_crit_path = false;
                 draw_state->show_crit_path_flylines = false;
                 draw_state->show_crit_path_delays = false;
+                draw_state->show_crit_path_routing = false;
             } else {
                 draw_state->show_crit_path = true;
-                draw_state->show_crit_path_flylines = (state & 1) != 0;
-                draw_state->show_crit_path_delays   = (state & 2) != 0;
+                draw_state->show_crit_path_flylines = (state & SET_CPD_FLYLINES) != 0;
+                draw_state->show_crit_path_delays   = (state & SET_CPD_DELAYS) != 0;
+                draw_state->show_crit_path_routing  = (state & SET_CPD_ROUTING) != 0;
             }
             VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_routing_util") {
@@ -1372,7 +1396,7 @@ static void run_graphics_commands(const std::string& commands) {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect congestion draw state (0=off, 1=congested, 2=congested+nets) after 'set_congestion'");
             int state = vtr::atoi(cmd[1]);
-            VTR_ASSERT_MSG(state >= 0 && state <= 2,
+            VTR_ASSERT_MSG(state >= SET_CONGESTION_OFF && state <= SET_CONGESTION_NODES_AND_NETS,
                            "set_congestion expects a value in 0..2");
             draw_state->show_congestion = (e_draw_congestion)state;
             VTR_LOG("%d\n", state);

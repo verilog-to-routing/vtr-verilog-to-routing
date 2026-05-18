@@ -163,8 +163,16 @@ Graphics Options
          Sets the critical path delay drawing state.
          Bitmask: ``0`` = off,
          bit 0 (``1``) = flylines along the critical path,
-         bit 1 (``2``) = per-edge delay labels.
-         Common values: ``1`` = flylines, ``3`` = flylines + delays.
+         bit 1 (``2``) = per-edge delay labels,
+         bit 2 (``4``) = routed-wire highlight along the critical path.
+         Useful values: ``1`` = flylines, ``3`` = flylines + delays,
+         ``4`` = routing only, ``5`` = flylines + routing,
+         ``7`` = flylines + delays + routing.
+         Values ``2`` and ``6`` are degenerate (no-ops): delay labels are
+         drawn alongside flylines, so the delay bit on its own renders
+         nothing.
+         Bit 2 (routing) only renders at the routing stage; gate with
+         ``wait_for_stage routing_done``.
     * set_routing_util <int>
          Sets the routing utilization drawing state
     * set_clip_routing_util <int>
@@ -178,7 +186,9 @@ Graphics Options
     * set_draw_net_max_fanout <int>
          Sets the maximum fanout for nets to be drawn (if fanout is beyond this value the net will not be drawn)
     * set_congestion <int>
-         Sets the routing congestion drawing state
+         Sets the routing congestion drawing state.
+         ``0`` = off, ``1`` = congested nodes, ``2`` = congested nodes + nets.
+         Only renders when invoked at the routing stage.
     * wait_for_stage <stage>_<initial|done>
          Pauses script execution until VPR reaches the named stage at the
          requested checkpoint. Stages: ``placement``, ``routing``.
