@@ -334,10 +334,10 @@ void update_screen(ScreenUpdatePriority priority,
 
         state_change = true;
 
-        // Compute initial_world unconditionally — save_graphics derives the
-        // output image height from initial_world.width()/height(), so gating
+        // Compute initial_world unconditionally — it's used as the canvas's
+        // initial bounds (and as the reset target on stage change), so gating
         // this on show_graphics produces a zero-sized rectangle under
-        // `--disp off` and silently breaks headless `save_graphics`
+        // `--disp off` and silently breaks headless `save_graphics`.
         if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
             set_initial_world_ap();
         } else {
@@ -569,6 +569,26 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 
     // Load coordinates of sub-blocks inside the clbs
     draw_internal_init_blk();
+
+    // Tile coordinates are now fully populated — set initial_world so that
+    // save_graphics / graphics_commands can compute valid image dimensions
+    // even in headless mode (show_graphics = false).
+    const ezgl::rectangle prev_initial_world = initial_world;
+    set_initial_world();
+
+    // The router's binary search re-runs init_draw_coords() per channel-width
+    // trial, which can change tile_x/tile_y (and therefore initial_world)
+    // without a pic_on_screen state change — so update_screen()'s state-change
+    // branch will not refresh the camera. If the user is currently at "fit"
+    // (camera world == previous initial_world) push the new initial_world to
+    // the camera so the next render uses the correct world rect. If the user
+    // has pan/zoomed away from fit, leave their view alone.
+    if (initial_world != prev_initial_world) {
+        ezgl::canvas* canvas = application.get_canvas(application.get_main_canvas_id());
+        if (canvas != nullptr && canvas->get_camera().get_world() == prev_initial_world) {
+            canvas->get_camera().set_world(initial_world);
+        }
+    }
 
 #else
     (void)clb_width;
