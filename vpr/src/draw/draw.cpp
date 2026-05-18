@@ -1237,21 +1237,21 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
 }
 
 enum e_set_nets_arg : int {
-    SET_NETS_OFF      = 0,
+    SET_NETS_OFF = 0,
     SET_NETS_FLYLINES = 1,
-    SET_NETS_ROUTED   = 2,
+    SET_NETS_ROUTED = 2,
 };
 
 enum e_set_cpd_arg_bits : int {
-    SET_CPD_OFF      = 0,
+    SET_CPD_OFF = 0,
     SET_CPD_FLYLINES = 1 << 0,
-    SET_CPD_DELAYS   = 1 << 1,
-    SET_CPD_ROUTING  = 1 << 2,
+    SET_CPD_DELAYS = 1 << 1,
+    SET_CPD_ROUTING = 1 << 2,
 };
 
 enum e_set_congestion_arg : int {
-    SET_CONGESTION_OFF            = 0,
-    SET_CONGESTION_NODES          = 1,
+    SET_CONGESTION_OFF = 0,
+    SET_CONGESTION_NODES = 1,
     SET_CONGESTION_NODES_AND_NETS = 2,
 };
 
@@ -1305,7 +1305,7 @@ static void run_graphics_commands(const std::string& commands) {
                 wait_for_done = true;
                 stage_name = arg.substr(0, arg.size() - done_suffix.size());
             } else if (arg.size() > init_suffix.size()
-                && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
+                       && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
                 wait_for_done = false;
                 stage_name = arg.substr(0, arg.size() - init_suffix.size());
             } else {
@@ -1396,8 +1396,8 @@ static void run_graphics_commands(const std::string& commands) {
             } else {
                 draw_state->show_crit_path = true;
                 draw_state->show_crit_path_flylines = (state & SET_CPD_FLYLINES) != 0;
-                draw_state->show_crit_path_delays   = (state & SET_CPD_DELAYS) != 0;
-                draw_state->show_crit_path_routing  = (state & SET_CPD_ROUTING) != 0;
+                draw_state->show_crit_path_delays = (state & SET_CPD_DELAYS) != 0;
+                draw_state->show_crit_path_routing = (state & SET_CPD_ROUTING) != 0;
             }
             VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_routing_util") {
