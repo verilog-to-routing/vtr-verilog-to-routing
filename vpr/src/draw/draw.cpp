@@ -334,14 +334,12 @@ void update_screen(ScreenUpdatePriority priority,
 
         state_change = true;
 
-        // Compute initial_world unconditionally — it's used as the canvas's
-        // initial bounds (and as the reset target on stage change), so gating
-        // this on show_graphics produces a zero-sized rectangle under
-        // `--disp off` and silently breaks headless `save_graphics`.
-        if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
-            set_initial_world_ap();
-        } else {
-            set_initial_world();
+        if (draw_state->show_graphics) {
+            if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
+                set_initial_world_ap();
+            } else {
+                set_initial_world();
+            }
         }
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
