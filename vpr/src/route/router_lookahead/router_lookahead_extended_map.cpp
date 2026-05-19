@@ -1,5 +1,6 @@
 #include "router_lookahead_extended_map.h"
 
+#include <cstddef>
 #include <vector>
 #include <queue>
 
@@ -97,7 +98,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
         //The cost estimate should still be *extremely* large compared to a typical delay, and
         //so should ensure that the router de-prioritizes exploring this path, but does not
         //forbid the router from trying.
-        float max = std::numeric_limits<float>::max() / 1e12;
+        float max = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
         return std::make_pair(max, max);
     } else {
         //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
@@ -160,11 +161,17 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     int to_ptc = rr_graph.node_ptc_num(to_node);
     int to_layer_num = rr_graph.node_layer_low(to_node);
 
+    // chan_ipins_delays is populated by sampling a representative tile location for each
+    // tile type using a bounded Dijkstra flood. If an IPIN's ptc was not reached during
+    // that sampling (e.g. because it requires more hops than the expansion limit, or is
+    // only reachable from outside the sampling bounding box), its ptc will be beyond the
+    // end of the vector. Falling back to 0.0 means no CHAN->IPIN delay is subtracted for
+    // that pin, making the lookahead slightly optimistic for those nets, which is
+    // acceptable since the lookahead is a heuristic.
     float site_pin_delay = 0.f;
-    if (this->chan_ipins_delays[to_layer_num][to_tile_index].size() != 0) {
-        auto reachable_wire_inf = this->chan_ipins_delays[to_layer_num][to_tile_index][to_ptc];
-
-        site_pin_delay = reachable_wire_inf.delay;
+    const auto& tile_delays = this->chan_ipins_delays[to_layer_num][to_tile_index];
+    if (to_ptc < (int)tile_delays.size()) {
+        site_pin_delay = tile_delays[to_ptc].delay;
     }
 
     return site_pin_delay;
@@ -418,9 +425,9 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, device_model_warnings_);
 
-    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_);
+    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_, device_model_warnings_);
 
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
 
@@ -507,8 +514,9 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #endif
 
         if (total_path_count == 0) {
-            VTR_LOG_WARN("No paths found for sample region %s(%d, %d)\n",
-                         segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
+            VTR_LOGV_WARN(device_model_warnings_ || route_verbosity_ > 1,
+                          "No paths found for sample region %s(%d, %d)\n",
+                          segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
         }
 
         // combine the cost map from this run with the final cost maps for each segment
@@ -539,7 +547,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     VTR_LOG("Combining results\n");
     /* boil down the cost list in routing_cost_map at each coordinate to a
      * representative cost entry and store it in the lookahead cost map */
-    cost_map_.set_cost_map(all_delay_costs, all_base_costs);
+    cost_map_.set_cost_map(all_delay_costs, all_base_costs, device_model_warnings_);
 
 // diagnostics
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_ENTRIES)
@@ -554,7 +562,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #endif
 
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS)
-    for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
+    for (size_t iseg = 0; iseg < num_segments; iseg++) {
         VTR_LOG("cost map for %s(%d)\n",
                 segment_inf[iseg].name.c_str(), iseg);
         cost_map_.print(iseg);
@@ -601,9 +609,9 @@ void ExtendedMapLookahead::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
     cost_map_.read(file);
 
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, device_model_warnings_);
 
-    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_);
+    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_, device_model_warnings_);
 #else  // VTR_ENABLE_CAPNPROTO
     (void)file;
     VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");

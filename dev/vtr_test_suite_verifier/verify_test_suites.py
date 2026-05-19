@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-    Module to verify VTR test suites run by the GitHub CI.
+Module to verify VTR test suites run by the GitHub CI.
 
-    Test suites in VTR are verified by ensuring that all tasks in the test suite
-    appear in the task list and that there are no tasks in the task list which
-    are not in the test suite.
+Test suites in VTR are verified by ensuring that all tasks in the test suite
+appear in the task list and that there are no tasks in the task list which
+are not in the test suite.
 
-    A JSON file is used to tell this module which test suites to verify.
+A JSON file is used to tell this module which test suites to verify.
 
-    This module is designed to be used within the CI of VTR to ensure that tasks
-    within test suites are running all the tasks they are intended to.
+This module is designed to be used within the CI of VTR to ensure that tasks
+within test suites are running all the tasks they are intended to.
 """
+
 import os
 import argparse
 import json

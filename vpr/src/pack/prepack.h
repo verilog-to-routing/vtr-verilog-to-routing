@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <map>
+#include <unordered_set>
 #include "atom_netlist_fwd.h"
 #include "pack_patterns.h"
 #include "vtr_assert.h"
@@ -142,6 +143,13 @@ struct t_molecule_stats {
     int num_used_ext_outputs = 0;
 };
 
+/// @brief Sets of nets that cross the boundary of a molecule, partitioned by pin type.
+struct t_molecule_external_nets {
+    std::unordered_set<AtomNetId> ext_clock_nets;  ///< Nets driving a clock pin from outside the molecule.
+    std::unordered_set<AtomNetId> ext_input_nets;  ///< Nets driving an input pin from outside the molecule.
+    std::unordered_set<AtomNetId> ext_output_nets; ///< Nets driven by the molecule with at least one sink outside.
+};
+
 /**
  * @brief Class that performs prepacking.
  *
@@ -234,6 +242,15 @@ class Prepacker {
         return expected_lowest_cost_pb_gnode[blk_id];
     }
 
+    /**
+     * @brief Search through all primitives and return the lowest cost primitive that fits this atom block.
+     *
+     * @param blk_id               Atom to find a primitive for.
+     * @param logical_block_types  Block types to search through.
+     */
+    t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+                                                                       const std::vector<t_logical_block_type>& logical_block_types) const;
+
     /*
      * @brief Calculates molecule statistics for a single molecule.
      */
@@ -246,6 +263,20 @@ class Prepacker {
      */
     t_molecule_stats calc_max_molecule_stats(const AtomNetlist& netlist,
                                              const LogicalModels& models) const;
+
+    /**
+     * @brief Returns the sets of nets that cross the boundary of a molecule,
+     *        partitioned into clock, input, and output nets.
+     *
+     * @param molecule_id  Molecule to compute external nets for.
+     * @param atom_nlist   Used to iterate pins and look up net drivers.
+     *
+     * Note: Complexity is O(A * P * S) in the worst case, where A is the number of
+     *       atoms in the molecule, P is the maximum number of pins per atom, and S
+     *       is the maximum fanout of an output net.
+     */
+    t_molecule_external_nets calc_molecule_external_nets(PackMoleculeId molecule_id,
+                                                         const AtomNetlist& atom_nlist) const;
 
     /**
      * @brief Gets the largest number of blocks (atoms) that any molecule contains.

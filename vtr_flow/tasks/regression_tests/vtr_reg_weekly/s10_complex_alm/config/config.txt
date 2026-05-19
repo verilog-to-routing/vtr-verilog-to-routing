@@ -1,0 +1,34 @@
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/titan_blif/titanium/stratix10
+
+# Path to directory of SDCs to use
+sdc_dir=benchmarks/titan_blif/titanium/stratix10
+
+# Path to directory of architectures to use
+archs_dir=arch/titan
+
+# Add circuits to list to sweep
+circuit_list_add=ASU_BSC_stratix10_arch_timing.blif
+
+# Add architectures to list to sweep
+arch_list_add=stratix10_arch.timing.depop50.complex_alm.xml
+
+# Parse info and how to parse
+parse_file=vpr_titan_s10.txt
+
+# How to parse QoR info
+qor_parse_file=qor_vpr_titan.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_vpr_titan_s10.txt
+
+#The Titan benchmarks are run at a fixed channel width of 400 to simulate a Stratix 10-like routing architecture
+#A large number of routing iterations is set to ensure the router doesn't give up to easily on the larger benchmarks
+#To be more run-time comparable to commercial tools like Quartus, we run with higher placer effort (inner_num=2) and lower astar_fac (1.0)
+#Set a 48hr timeout so they don't run forever
+#Use memoization to make runtime more reasonable
+script_params=-starting_stage vpr --route_chan_width 400 --max_router_iterations 400 --router_lookahead map --inner_num 2 --astar_fac 1.0 -timeout 172800 --memoize_cluster_packings on

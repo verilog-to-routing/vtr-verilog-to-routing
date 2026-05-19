@@ -1,5 +1,5 @@
 """
-    __init__ for the VTR python module
+__init__ for the VTR python module
 """
 
 from .util import (

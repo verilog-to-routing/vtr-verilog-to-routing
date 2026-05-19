@@ -31,6 +31,10 @@
         ]
     },
     {
+        "name": "vtr_reg_parallel",
+        "ignored_tasks": []
+    },
+    {
         "name": "vtr_reg_strong_odin",
         "ignored_tasks": [
             "strong_router_heap",

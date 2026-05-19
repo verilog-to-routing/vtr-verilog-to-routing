@@ -42,7 +42,7 @@ class StrongIdIterator {
     using value_type = StrongId;
     using reference = StrongId&;
     using pointer = StrongId*;
-    using difference_type = ssize_t;
+    using difference_type = ptrdiff_t;
 
     ///@brief Dereference operator (*)
     StrongId operator*() const {
@@ -51,7 +51,7 @@ class StrongIdIterator {
     }
 
     ///@brief += operator
-    StrongIdIterator& operator+=(ssize_t n) {
+    StrongIdIterator& operator+=(ptrdiff_t n) {
         VTR_ASSERT_SAFE(bool(id_));
         id_ = StrongId(size_t(id_) + n);
         VTR_ASSERT_SAFE(bool(id_));
@@ -59,7 +59,7 @@ class StrongIdIterator {
     }
 
     ///@brief -= operator
-    StrongIdIterator& operator-=(ssize_t n) {
+    StrongIdIterator& operator-=(ptrdiff_t n) {
         VTR_ASSERT_SAFE(bool(id_));
         id_ = StrongId(size_t(id_) - n);
         VTR_ASSERT_SAFE(bool(id_));
@@ -91,17 +91,17 @@ class StrongIdIterator {
     }
 
     ///@brief Indexing operator []
-    StrongId operator[](ssize_t offset) const {
+    StrongId operator[](ptrdiff_t offset) const {
         return StrongId(size_t(id_) + offset);
     }
 
     ///@brief ~ operator
     template<typename IdType>
-    ssize_t operator-(const StrongIdIterator<IdType>& other) const {
+    ptrdiff_t operator-(const StrongIdIterator<IdType>& other) const {
         VTR_ASSERT_SAFE(bool(id_));
         VTR_ASSERT_SAFE(bool(other.id_));
 
-        ssize_t ret = size_t(id_);
+        ptrdiff_t ret = size_t(id_);
         ret -= size_t(other.id_);
         return ret;
     }
@@ -132,7 +132,7 @@ class StrongIdIterator {
 template<typename IdType>
 inline StrongIdIterator<IdType> operator+(
     const StrongIdIterator<IdType>& lhs,
-    ssize_t n) {
+    ptrdiff_t n) {
     StrongIdIterator ret = lhs;
     ret += n;
     return ret;
@@ -142,7 +142,7 @@ inline StrongIdIterator<IdType> operator+(
 template<typename IdType>
 inline StrongIdIterator<IdType> operator-(
     const StrongIdIterator<IdType>& lhs,
-    ssize_t n) {
+    ptrdiff_t n) {
     StrongIdIterator ret = lhs;
     ret -= n;
     return ret;

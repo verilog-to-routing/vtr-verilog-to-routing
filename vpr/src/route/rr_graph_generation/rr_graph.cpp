@@ -155,7 +155,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const e_clock_modeling clock_modeling,
-                                                                  const int route_verbosity);
+                                                                  const int route_verbosity,
+                                                                  bool device_model_warnings);
 
 /**
  * @brief Add the edges between pins and their respective SINK/SRC. It is important to mention that in contrast to another similar function,
@@ -278,7 +279,8 @@ static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_layer_def>& interposer_inf,
                            bool is_flat,
                            int* Warnings,
-                           const int route_verbosity);
+                           const int route_verbosity,
+                           bool device_model_warnings);
 
 /**
  * Return the ID for delay-less switch. If the RR graph is loaded from a file, then the assumption
@@ -348,7 +350,8 @@ void create_rr_graph(e_graph_type graph_type,
                              echo_enabled,
                              echo_file_name,
                              router_opts.route_verbosity,
-                             is_flat);
+                             is_flat,
+                             router_opts.device_model_warnings);
                 if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                     mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                                       router_opts.reorder_rr_graph_nodes_threshold,
@@ -378,7 +381,8 @@ void create_rr_graph(e_graph_type graph_type,
                                device_ctx.arch->grid_layout().layers,
                                is_flat,
                                Warnings,
-                               router_opts.route_verbosity);
+                               router_opts.route_verbosity,
+                               router_opts.device_model_warnings);
             } else {
                 // Note: We do not support dedicated network for clocks in tileable rr_graph generation
                 build_tileable_unidir_rr_graph(block_types,
@@ -403,7 +407,8 @@ void create_rr_graph(e_graph_type graph_type,
                                                det_routing_arch.concat_wire,      // Allow end-point tracks to be wired to a starting point track on the opposite in a switch block.It means a wire can be continued in the same direction to another wire
                                                det_routing_arch.concat_pass_wire, // Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another
                                                router_opts.route_verbosity,
-                                               Warnings);
+                                               Warnings,
+                                               router_opts.device_model_warnings);
             }
         }
 
@@ -432,7 +437,8 @@ void create_rr_graph(e_graph_type graph_type,
                                      det_routing_arch.R_minW_pmos,
                                      mutable_device_ctx.rr_graph_builder,
                                      is_flat,
-                                     load_rr_graph);
+                                     load_rr_graph,
+                                     router_opts.device_model_warnings);
 
         // Reorder nodes upon needs in algorithms and router options
         if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
@@ -476,7 +482,8 @@ void create_rr_graph(e_graph_type graph_type,
                        echo_enabled,
                        echo_file_name,
                        router_opts.route_verbosity,
-                       is_flat);
+                       is_flat,
+                       router_opts.device_model_warnings);
     }
 }
 
@@ -546,7 +553,8 @@ static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_layer_def>& interposer_inf,
                            bool is_flat,
                            int* Warnings,
-                           const int route_verbosity) {
+                           const int route_verbosity,
+                           bool device_model_warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     // Reset warning flag
@@ -812,7 +820,8 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                                                       chan_details_x, chan_details_y,
                                                                                                       nodes_per_chan,
                                                                                                       switchpoint_rng,
-                                                                                                      interdie_3d_links);
+                                                                                                      interdie_3d_links,
+                                                                                                      device_model_warnings);
 
     // Check whether RR graph need to allocate new nodes for 3D connections.
     // To avoid wasting memory, the data structures are only allocated if we have more than one die in device grid.
@@ -922,7 +931,8 @@ static void build_rr_graph(e_graph_type graph_type,
         clb_to_clb_directs,
         is_global_graph,
         clock_modeling,
-        route_verbosity);
+        route_verbosity,
+        device_model_warnings);
 
     // Verify no incremental node allocation.
     // AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks.
@@ -967,7 +977,7 @@ static void build_rr_graph(e_graph_type graph_type,
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type, device_model_warnings);
 
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
@@ -977,7 +987,8 @@ static void build_rr_graph(e_graph_type graph_type,
                    vib_grid,
                    device_ctx.chan_width,
                    graph_type,
-                   is_flat);
+                   is_flat,
+                   device_model_warnings);
 
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
@@ -1098,7 +1109,8 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
                         const std::vector<t_segment_inf>& segment_inf_y,
                         const std::vector<t_segment_inf>& segment_inf_z,
-                        e_base_cost_type base_cost_type) {
+                        e_base_cost_type base_cost_type,
+                        bool device_model_warnings) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
     const DeviceGrid& grid = device_ctx.grid;
@@ -1108,7 +1120,7 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     add_rr_graph_C_from_switches();
     alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x, segment_inf_y, segment_inf_z,
-                                   rr_indexed_data, base_cost_type, echo_enabled, echo_file_name);
+                                   rr_indexed_data, base_cost_type, echo_enabled, echo_file_name, device_model_warnings);
     //load_rr_index_segments(segment_inf.size());
 }
 
@@ -1339,7 +1351,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const e_clock_modeling clock_modeling,
-                                                                  const int route_verbosity) {
+                                                                  const int route_verbosity,
+                                                                  bool device_model_warnings) {
     // We take special care when creating RR graph edges (there are typically many more
     // edges than nodes in an RR graph).
     //
@@ -1405,7 +1418,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                         chan_width, chan_details_x, chan_details_y,
                         seg_index_map, opin_to_track_map, interdie_3d_links,
                         Fc_out, directs, clb_to_clb_directs, directionality,
-                        num_edges, rr_edges_before_directs, Fc_clipped);
+                        num_edges, rr_edges_before_directs, Fc_clipped,
+                        device_model_warnings);
 
     VTR_LOGV(route_verbosity > 1, "OPIN->CHANX/CHANY edge count before creating direct connections: %d\n", rr_edges_before_directs);
     VTR_LOGV(route_verbosity > 1, "OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);

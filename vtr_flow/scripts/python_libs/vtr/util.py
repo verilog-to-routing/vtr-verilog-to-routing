@@ -1,5 +1,5 @@
 """
-    Module to utilize many of the tools needed for VTR.
+Module to utilize many of the tools needed for VTR.
 """
 
 import sys

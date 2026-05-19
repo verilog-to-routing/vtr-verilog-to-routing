@@ -128,6 +128,8 @@ struct t_options {
     argparse::ArgValue<int> pack_feasible_block_array_size;
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
+    argparse::ArgValue<bool> use_ram_mapper;
+    argparse::ArgValue<bool> memoize_cluster_packings;
 
     // Placement options
     argparse::ArgValue<int> seed;
@@ -239,6 +241,7 @@ struct t_options {
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> router_opt_choke_points;
     argparse::ArgValue<int> route_verbosity;
+    argparse::ArgValue<bool> device_model_warnings;
 
     // Timing-driven router options only
     argparse::ArgValue<float> astar_fac;
@@ -268,6 +271,7 @@ struct t_options {
     argparse::ArgValue<bool> generate_router_lookahead_report;
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_threshold;
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_weight;
+    argparse::ArgValue<float> router_lookahead_interposer_base_cut_multiplier;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<bool> router_update_lower_bound_delays;

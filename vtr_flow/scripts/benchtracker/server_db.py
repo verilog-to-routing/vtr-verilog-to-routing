@@ -51,15 +51,13 @@ def parse_args(ns=None):
     """parse arguments from command line and return as namespace object"""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(
-            """\
+        description=textwrap.dedent("""\
             serve a central database with benchmark information
             
         Generated database:
             Database should be created by populate_db.py, with each task
             organized as a table. A task is a collection of related benchmarks
-            that are commonly run together."""
-        ),
+            that are commonly run together."""),
         usage="%(prog)s [OPTIONS]",
     )
 
@@ -129,7 +127,7 @@ def get_param_desc():
     param = request.args.get("p")
     mode = request.args.get("m", "range")  # by default give ranges, overriden if param is text
     try:
-        (param_type, param_val) = d.describe_param(param, mode, tasks, real_db(database))
+        param_type, param_val = d.describe_param(param, mode, tasks, real_db(database))
     except ValueError as e:
         return jsonify({"status": "Parameter value error: {}".format(e)})
     return jsonify(
@@ -156,11 +154,11 @@ def get_shared_params():
 @app.route("/data", methods=["GET"])
 @catch_operation_errors
 def get_filtered_data():
-    (exception, payload) = parse_data()
+    exception, payload = parse_data()
     if exception:
         return payload
     else:
-        (databaes, tasks, params, data) = payload
+        databaes, tasks, params, data = payload
         return jsonify(
             {"status": "OK", "database": database, "tasks": tasks, "params": params, "data": data}
         )
@@ -170,11 +168,11 @@ def get_filtered_data():
 @catch_operation_errors
 def get_csv_data():
     """Return a zipped archive of csv files for selected tasks"""
-    (exception, payload) = parse_data()
+    exception, payload = parse_data()
     if exception:
         return payload
     else:
-        (database, tasks, params, data) = payload
+        database, tasks, params, data = payload
         memory_file = BytesIO()
         with zipfile.ZipFile(memory_file, "a", zipfile.ZIP_DEFLATED) as zf:
             t = 0
@@ -205,7 +203,7 @@ def get_view():
     if queried_tasks:
         x = request.args.get("x")
         y = request.args.get("y")
-        (temp, filters) = parse_filters(verbose=True)
+        temp, filters = parse_filters(verbose=True)
 
     return render_template(
         "viewer.html",
@@ -308,7 +306,7 @@ def parse_data():
     y_param = y_param.split()[0]
 
     try:
-        (filtered_params, filters) = parse_filters()
+        filtered_params, filters = parse_filters()
     except IndexError:
         return (True, jsonify({"status": "Incomplete filter arguments!"}))
     except ValueError:
@@ -316,7 +314,7 @@ def parse_data():
 
     tasks = parse_tasks()
 
-    (params, data) = d.retrieve_data(x_param, y_param, filters, tasks, real_db(database))
+    params, data = d.retrieve_data(x_param, y_param, filters, tasks, real_db(database))
     return (False, (database, tasks, params, data))
 
 

@@ -2288,9 +2288,48 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("30")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool, ParseOnOff>(args.memoize_cluster_packings, "--memoize_cluster_packings")
+        .help("Enables memoization of previously seen clusters during packing.\n"
+              "\n"
+              "This can significantly reduce runtime for architectures with\n"
+              "complex or sparse logic block interconnects by skipping redundant\n"
+              "intracluster routing calls made to test for cluster legality.\n"
+              "Architectures with simple logic block interconnects (i.e. those\n"
+              "with full or regular crossbars) are likely to only see a marginal\n"
+              "improvement, if any. Enabling this option does not affect circuit\n"
+              "quality metrics like routed wirelength or critical path delay.\n"
+              "\n"
+              "Note: Use of this feature with `--analytical_place` is experimental.\n"
+              "For now, `--memoize_cluster_packings` is unsupported if\n"
+              "`--ap_full_legalizer` is set to `flat-recon`, and will be ignored.\n")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument<bool, ParseOnOff>(args.use_ram_mapper, "--use_ram_premapper")
+        .help("Controls whether a separate RAM pre-mapping algorithm is invoked\n"
+              "before the main packing stage.\n"
+              "\n"
+              "When enabled, this algorithm decides which RAM slices are grouped\n"
+              "together to form a physical RAM (based on shared address and control\n"
+              "signals) and which physical RAM type in the architecture implements\n"
+              "each group. The type selection runs in two passes: an initial pass\n"
+              "that maps each group to minimize area, followed by a second pass\n"
+              "that remaps the most timing-critical groups to smaller, faster RAM\n"
+              "types when resources allow. The resulting groups guide RAM packing\n"
+              "and prioritize RAMs in the packing order, and in the analytical\n"
+              "placement flow global placement treats each physical RAM group as a\n"
+              "single moveable unit.\n"
+              "\n"
+              "When disabled, these mapping decisions are instead made by the\n"
+              "general heuristics within the main packing algorithm, and in the\n"
+              "analytical placement flow each RAM slice is treated as a single\n"
+              "moveable unit rather than being grouped.\n")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
@@ -2903,6 +2942,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument<bool, ParseOnOff>(args.device_model_warnings, "--device_model_warnings")
+        .help("Show warnings related to architecture files, RR graph generation, and router lookahead."
+              " These warnings are intended for VTR developers."
+              " End users who are given fixed architecture and RR graph files can safely set this parameter to off.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
@@ -3117,6 +3163,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               "when computing the initial accumulated cost (acc_cost)of routing resources. "
               "Higher values make the router more sensitive to early congestion.")
         .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<float>(args.router_lookahead_interposer_base_cut_multiplier, "--router_lookahead_interposer_base_cut_multiplier")
+        .help("Multiplier applied to base cost of interposer wires for the router lookahead.")
+        .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
@@ -3762,7 +3813,7 @@ bool verify_args(const t_options& args) {
      * describe the communication within the NoC. We ensure that a noc traffic
      * flows file is provided when the "--noc" option is used. If it is not
      * provided, we throw an error.
-     * 
+     *
      */
     if (args.noc.provenance() == Provenance::SPECIFIED && args.noc_flows_file.provenance() != Provenance::SPECIFIED) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,

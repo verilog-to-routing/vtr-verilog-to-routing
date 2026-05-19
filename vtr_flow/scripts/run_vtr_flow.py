@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-    Module to run the VTR Flow
+Module to run the VTR Flow
 """
+
 import sys
 from pathlib import Path
 import argparse
@@ -53,17 +54,14 @@ def vtr_command_argparser(prog=None):
     The VTR command arg parser
     """
     usage = "%(prog)s circuit_file architecture_file [options]"
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
                     Runs a single architecture and circuit through the VTR CAD flow - mapping
                     the circuit onto the target archietcture.
 
                     Any unrecognzied arguments are passed to VPR.
-                    """
-    )
+                    """)
 
-    epilog = textwrap.dedent(
-        """
+    epilog = textwrap.dedent("""
                 Examples
                 --------
 
@@ -95,8 +93,7 @@ def vtr_command_argparser(prog=None):
 
                         %(prog)s arch.xml circuit.blif -start vpr -end vpr
 
-                """
-    )
+                """)
 
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -371,6 +368,15 @@ def vtr_command_argparser(prog=None):
         help="Specify a parser for the Yosys synthesizer [default (Verilog-2005), surelog (UHDM), "
         + "system-verilog]. The script used the Yosys conventional Verilog"
         + " parser if this argument is not specified.",
+    )
+    parmys.add_argument(
+        "-synthesis_params",
+        default=None,
+        dest="synthesis_params",
+        help="Specify additional synthesis parameters"
+        + " directly appended to the parmys command in the default flow"
+        + " (e.g., -mults_ratio 0.5), or used to substitute the 'YYY' placeholder"
+        + " in a custom Yosys script.",
     )
     #
     # VPR arguments
@@ -736,6 +742,7 @@ def process_parmys_args(args):
     """
     parmys_args = OrderedDict()
     parmys_args["parser"] = args.parser
+    parmys_args["synthesis_params"] = args.synthesis_params or ""
 
     return parmys_args
 

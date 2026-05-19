@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <vector>
 #include "flat_placement_types.h"
+#include "logical_ram_infer.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "greedy_clusterer.h"
@@ -118,6 +119,14 @@ struct ClusterGainStats {
     ///        set when the stats are created based on the primitive pb type
     ///        of the seed.
     bool is_memory = false;
+
+    /// @brief The logical RAM group ID of this cluster's seed atom.
+    ///        Set to INVALID for non-memory clusters.
+    LogicalRamGroupId logical_ram_id;
+
+    /// @brief The physical RAM group ID of this cluster's seed atom.
+    ///        Set to INVALID for non-memory clusters.
+    PhysicalRamGroupId physical_ram_id;
 
     /// @brief List of feasible block and its gain pairs.
     ///        The list is maintained in heap structure with the highest gain block
@@ -249,6 +258,7 @@ class GreedyCandidateSelector {
      */
     GreedyCandidateSelector(const AtomNetlist& atom_netlist,
                             const Prepacker& prepacker,
+                            const RamMapper& ram_mapper,
                             const t_packer_opts& packer_opts,
                             bool allow_unrelated_clustering,
                             const t_molecule_stats& max_molecule_stats,
@@ -456,6 +466,34 @@ class GreedyCandidateSelector {
     // ===================================================================== //
 
     /**
+     * @brief Populate the feasible blocks list for the given cluster using
+     *        net-traversal based candidate search. Candidates are found
+     *        progressively by connectivity and timing, transitive connections,
+     *        high-fanout nets, and attraction groups.
+     */
+    void add_general_cluster_molecule_candidates(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
+
+    /**
+     * @brief Populate the feasible blocks list for a RAM cluster by offering
+     *        all unclustered atoms from the same physical RAM group as the
+     *        cluster seed.
+     *        TODO: Although this function adds all unclustered atoms in the
+     *        physical RAM group to feasible blocks list, the caller (get_next_candidate_for_cluster)
+     *        still uses candidate propose limit. We can hoist the RAM clustering
+     *        path and create their clusters in a similar way to "flat-recon" without
+     *        any propose limit as we are trying to legalize physical RAM groups here.
+     */
+    void add_ram_cluster_molecule_candidates(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
+
+    /**
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
      */
@@ -549,6 +587,13 @@ class GreedyCandidateSelector {
 
     /// @brief The prepacker used to pack atoms into molecule pack patterns.
     const Prepacker& prepacker_;
+
+    /// @brief Used to look up the logical RAM group of an atom for memory cluster filtering.
+    const RamMapper& ram_mapper_;
+
+    /// @brief True if the RAM mapper has at least one logical RAM group.
+    ///        Used to guard RAM-specific candidate filtering.
+    bool has_ram_groups_ = false;
 
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;

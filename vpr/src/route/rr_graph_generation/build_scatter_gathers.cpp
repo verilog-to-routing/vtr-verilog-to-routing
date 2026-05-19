@@ -326,7 +326,8 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
                                                                          vtr::RngContainer& rng,
-                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
+                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                                                         bool device_model_warnings) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     // Storage for identifying source/destination channels of an SG link.
@@ -430,14 +431,14 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                 if (fwd_bottleneck_fanin == 0 || fwd_bottleneck_fanout == 0) {
 
-                    VTR_LOGV_WARN(fwd_bottleneck_fanin == 0,
+                    VTR_LOGV_WARN(device_model_warnings && fwd_bottleneck_fanin == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero gather fanin connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   gather_loc.layer_num, gather_loc.x, gather_loc.y,
                                   fwd_gather_wire_candidates.size());
 
-                    VTR_LOGV_WARN(fwd_bottleneck_fanout == 0,
+                    VTR_LOGV_WARN(device_model_warnings && fwd_bottleneck_fanout == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero scatter fanout connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
@@ -497,24 +498,25 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     bottleneck_link.C_metal = seg_it->Cmetal;
 
                     // Choose the correct switch (INC vs DEC) based on the link's physical direction.
-                    if (is_3d_link) {
-                        if (sg_link.z_offset < 0
+                    if (sg_link.mux_index.has_value()) {
+                        bottleneck_link.arch_wire_switch = sg_link.mux_index.value();
+                    } else {
+                        const bool has_negative_offset = is_3d_link
+                                                             ? (sg_link.z_offset < 0)
+                                                             : (sg_link.x_offset < 0 || sg_link.y_offset < 0);
+
+                        if (has_negative_offset
                             && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL
                             && sg_pattern.type != e_scatter_gather_type::BIDIR) {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
                         } else {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
                         }
+                    }
+
+                    if (is_3d_link) {
                         interdie_3d_links[gather_loc.x][gather_loc.y].push_back(std::move(bottleneck_link));
                     } else {
-                        if ((sg_link.x_offset < 0 || sg_link.y_offset < 0)
-                            && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL
-                            && sg_pattern.type != e_scatter_gather_type::BIDIR) {
-                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
-                        } else {
-                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
-                        }
-
                         bottleneck_links.push_back(std::move(bottleneck_link));
                     }
                 }

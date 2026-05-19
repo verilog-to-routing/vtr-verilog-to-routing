@@ -7,6 +7,7 @@
 
 #include "vpr_types.h"
 #include "router_delay_profiling.h"
+#include "router_lookahead_constants.h"
 
 #ifndef __has_attribute
 #define __has_attribute(x) 0 // Compatibility with non-clang compilers.

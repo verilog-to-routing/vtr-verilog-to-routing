@@ -26,6 +26,7 @@
       that it is required by setting use="required".-->
   <xs:complexType name="add_atom">
     <xs:attribute name="name_pattern" type="xs:string" use="required"/>
+    <xs:attribute name="is_regex" type="xs:string" default="false"/>
   </xs:complexType>
 
   <xs:complexType name="add_region">
@@ -40,6 +41,7 @@
 
   <xs:complexType name="add_logical_block">
     <xs:attribute name="name_pattern" type="xs:string" use="required"/>
+    <xs:attribute name="is_regex" type="xs:string" default="false"/>
   </xs:complexType>
 
   <!--If an element can occur multiple times, the attribute maxOccurs can be set to 
