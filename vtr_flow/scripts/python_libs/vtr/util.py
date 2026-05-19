@@ -13,6 +13,7 @@ import shutil
 import signal
 
 from collections import OrderedDict
+from functools import lru_cache
 from pathlib import PurePath
 from pathlib import Path
 from typing import List, Tuple
@@ -23,10 +24,7 @@ import vtr.error
 from vtr.error import CommandError
 from vtr import paths
 
-# Cached result of the runtime probe in _resolve_memory_tracking_cmd().
-_MEMORY_TRACKING_CMD_CACHE = False  # False means "not yet probed"; None means "unsupported".
-
-
+@lru_cache(maxsize=1)
 def _resolve_memory_tracking_cmd():
     """
     Return the argv prefix that tracks peak memory of a child process,
@@ -45,10 +43,6 @@ def _resolve_memory_tracking_cmd():
     The probe runs ``<candidate> -v true`` once and inspects the exit
     code. Result is cached for the lifetime of the process.
     """
-    global _MEMORY_TRACKING_CMD_CACHE
-    if _MEMORY_TRACKING_CMD_CACHE is not False:
-        return _MEMORY_TRACKING_CMD_CACHE
-
     candidates = []
     if shutil.which("gtime"):
         candidates.append(["gtime", "-v"])
@@ -65,7 +59,6 @@ def _resolve_memory_tracking_cmd():
         except (OSError, FileNotFoundError):
             continue
         if probe.returncode == 0:
-            _MEMORY_TRACKING_CMD_CACHE = cand
             return cand
 
     print(
@@ -74,7 +67,6 @@ def _resolve_memory_tracking_cmd():
         "('brew install coreutils') to enable it.",
         file=sys.stderr,
     )
-    _MEMORY_TRACKING_CMD_CACHE = None
     return None
 
 
