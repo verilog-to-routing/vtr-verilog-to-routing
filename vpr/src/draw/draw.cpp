@@ -1351,21 +1351,21 @@ static void set_force_pause() {
 }
 
 enum e_set_nets_arg : int {
-    SET_NETS_OFF      = 0,
+    SET_NETS_OFF = 0,
     SET_NETS_FLYLINES = 1,
-    SET_NETS_ROUTED   = 2,
+    SET_NETS_ROUTED = 2,
 };
 
 enum e_set_cpd_arg_bits : int {
-    SET_CPD_OFF      = 0,
+    SET_CPD_OFF = 0,
     SET_CPD_FLYLINES = 1 << 0,
-    SET_CPD_DELAYS   = 1 << 1,
-    SET_CPD_ROUTING  = 1 << 2,
+    SET_CPD_DELAYS = 1 << 1,
+    SET_CPD_ROUTING = 1 << 2,
 };
 
 enum e_set_congestion_arg : int {
-    SET_CONGESTION_OFF            = 0,
-    SET_CONGESTION_NODES          = 1,
+    SET_CONGESTION_OFF = 0,
+    SET_CONGESTION_NODES = 1,
     SET_CONGESTION_NODES_AND_NETS = 2,
 };
 
