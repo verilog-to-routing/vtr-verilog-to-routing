@@ -351,7 +351,7 @@ VPR delta vs `ql_main`
 
 ## Slide 4.2 — Duplication of render calls bug
 
-- Commit **d62d4cdfd** (April 2026) — *"fix doubled text rendering in deffered and rhi renderers"*.
+- Commit **d62d4cdfd** (April 2026) — *"fix doubled text rendering in deferred and rhi renderers"*.
 - Root cause: upstream commit `b53c8583b` ("Reapply Feature ap draw") double-invoked `draw_block_pin_util()`, `draw_place(g)`, and `draw_internal_draw_subblk(g)`.
 - Invisible under the **immediate** renderer because the second pass fills over the first.
 - **Visible** under deferred/RHI because batching reorders fills before overlays — both text passes survive, offset by ~2 px (14 vs 16), producing visible double labels.
