@@ -243,25 +243,11 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     g->set_font_size(14);
     if (draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT) {
+        draw_interposer_cuts(g);
+
         draw_block_pin_util();
         draw_place(g);
         draw_internal_draw_subblk(g);
-
-        draw_interposer_cuts(g);
-
-        // The block below is a duplicate of the three calls above. It was
-        // added in commit b53c8583b ("Reapply Feature ap draw") and looks
-        // unintentional. With the immediate renderer the duplicate is
-        // invisible because draw_place's fill_rectangle wipes the previous
-        // text before redrawing it, but with deferred/RHI renderers
-        // primitives are batched (fills first, overlays last), so the two
-        // text passes — drawn at px=14 and px=16 because
-        // draw_internal_draw_subblk leaves the font at 16 — both survive
-        // and produce visibly doubled labels. Commented out until we
-        // confirm whether this duplication is intentional.
-        // draw_block_pin_util();
-        // draw_place(g);
-        // draw_internal_draw_subblk(g);
 
         if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
 
