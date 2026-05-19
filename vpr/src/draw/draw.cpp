@@ -182,10 +182,6 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     g->set_font_size(14);
     if (draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT) {
-        draw_block_pin_util();
-        draw_place(g);
-        draw_internal_draw_subblk(g);
-
         draw_interposer_cuts(g);
 
         draw_block_pin_util();
