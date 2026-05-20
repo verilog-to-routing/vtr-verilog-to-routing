@@ -34,7 +34,16 @@ CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
     : rr_graph_(rr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager)
-    , verbosity_(verbosity) {}
+    , verbosity_(verbosity) {
+    for (const t_physical_tile_type& tile_type : g_vpr_ctx.device().physical_tile_types) {
+        std::unordered_map<std::string, int> name_to_ptc;
+        name_to_ptc.reserve(tile_type.num_pins);
+        for (int pin_ptc = 0; pin_ptc < tile_type.num_pins; ++pin_ptc) {
+            name_to_ptc.emplace(block_type_pin_index_to_name(&tile_type, pin_ptc, false), pin_ptc);
+        }
+        pin_name_to_ptc_cache_.emplace(&tile_type, std::move(name_to_ptc));
+    }
+}
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
                                       int fpga_grid_y,
@@ -325,12 +334,10 @@ int CRRConnectionBuilder::resolve_pin_ptc(const SegmentInfo& info,
                         info.pin_name.c_str(), x, y);
     }
 
-    for (int pin_ptc = 0; pin_ptc < tile_type->num_pins; ++pin_ptc) {
-        // is_flat is false: CRR only specifies connections between general routing resources
-        // and does not touch intra-cluster connections.
-        if (block_type_pin_index_to_name(tile_type, pin_ptc, false) == info.pin_name) {
-            return pin_ptc;
-        }
+    const auto& name_to_ptc = pin_name_to_ptc_cache_.at(tile_type);
+    auto pin_it = name_to_ptc.find(info.pin_name);
+    if (pin_it != name_to_ptc.end()) {
+        return pin_it->second;
     }
 
     VTR_LOGV(verbosity_ > 0,

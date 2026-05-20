@@ -6,6 +6,8 @@
  * which should be connected together based on switch block templates.
  */
 
+#include <unordered_map>
+
 #include "rr_graph_view.h"
 #include "physical_types.h"
 
@@ -179,6 +181,10 @@ class CRRConnectionBuilder {
                                 RRNodeId source_node,
                                 RRNodeId sink_node,
                                 int segment_length = -1) const;
+
+    // Per-tile-type reverse map: pin_name -> pin_ptc.
+    // Built once at construction for all physical tile types.
+    std::unordered_map<const t_physical_tile_type*, std::unordered_map<std::string, int>> pin_name_to_ptc_cache_;
 };
 
 } // namespace crrgenerator
