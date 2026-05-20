@@ -1721,6 +1721,8 @@ bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_
 
         return (computed_legality == e_ecn_legality::LEGAL);
     } else {
+        // FIXME: This is wrong if the current legality mode was set to always route. If so just return true. No need to recheck.
+        //        Should make this stronger. Some way of telling if a saved route exists and all points are there.
         return check_cluster_legality(cluster_id);
     }
 }
