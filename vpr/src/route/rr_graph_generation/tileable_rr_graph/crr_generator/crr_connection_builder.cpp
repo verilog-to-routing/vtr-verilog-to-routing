@@ -211,6 +211,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
 
         if (node_id != RRNodeId::INVALID()) {
             source_nodes[row] = node_id;
+        } else {
+            VTR_LOGV(verbosity_ > 1, "No node found for source at row %zu in tile (%d,%d)\n", row, x, y);
         }
 
         prev_seg_type = info.seg_type;
@@ -248,6 +250,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(i
 
         if (node_id != RRNodeId::INVALID()) {
             sink_nodes[col] = node_id;
+        } else {
+            VTR_LOGV(verbosity_ > 1, "No node found for sink at column %zu in tile (%d,%d)\n", col, x, y);
         }
 
         prev_seg_type = info.seg_type;
@@ -371,7 +375,8 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
         return row_it->second;
     }
 
-    return RRNodeId::INVALID();
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find %s node for pin '%s' at (%d,%d)\n",
+                    rr_node_typename[node_type], info.pin_name.c_str(), x, y);
 }
 
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
@@ -433,9 +438,8 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
         return row_it->second;
     }
 
-    VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-             seg_sequence.c_str(), x_low, y_low, x_high, y_high);
-    return RRNodeId::INVALID();
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
+                    seg_sequence.c_str(), x_low, y_low, x_high, y_high);
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
