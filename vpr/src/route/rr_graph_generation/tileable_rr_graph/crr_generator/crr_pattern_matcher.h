@@ -9,6 +9,8 @@
 
 #include <optional>
 #include <string>
+
+#include "vpr_error.h"
 #include <string_view>
 #include <regex>
 #include <unordered_map>
@@ -24,22 +26,23 @@ namespace crrgenerator {
  */
 class CRRPatternMatcher {
   public:
-    // Returns true if name matches pattern. Compiled regexes are cached internally
-    // so each distinct pattern string is only compiled once.
-    bool matches_pattern(const std::string& name, const std::string& pattern) {
+    // Pre-compile a pattern and store it in the cache. Call once per pattern at startup.
+    void register_pattern(const std::string& pattern) {
+        cache_.emplace(pattern, compile(pattern));
+    }
+
+    // Returns true if name matches pattern. Uses the pre-compiled cache for registered
+    // patterns; falls back to on-the-fly compilation for unregistered ones.
+    bool matches_pattern(const std::string& name, const std::string& pattern) const {
         auto it = cache_.find(pattern);
         if (it == cache_.end()) {
-            it = cache_.emplace(pattern, compile(pattern)).first;
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Pattern '%s' was not registered before use\n", pattern.c_str());
         }
-        const auto& compiled = it->second;
-        if (!compiled.has_value()) {
-            return name == pattern; // exact match — no regex needed
-        }
-        return validate_regex_match(name, pattern, *compiled);
+        if (!it->second.has_value()) return name == pattern;
+        return validate_regex_match(name, pattern, *it->second);
     }
 
   private:
-    // nullopt means exact match (no regex needed); otherwise holds compiled regex.
     std::unordered_map<std::string, std::optional<std::regex>> cache_;
 
     static std::optional<std::regex> compile(const std::string& pattern) {
