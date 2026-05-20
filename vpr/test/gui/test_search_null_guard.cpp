@@ -48,10 +48,25 @@
  *   crash to a child the parent can examine via waitpid(), so a real
  *   regression does not tear down the whole `test_vpr_gui` binary.
  *
+ * Platform scope — POSIX only:
+ *   The null-guard contracts are codepath-agnostic C++ assertions (no OS-
+ *   specific branches inside search_and_highlight / enable_autocomplete /
+ *   search_type_changed), so verifying them on a single OS is sufficient.
+ *   This file is gated on !_WIN32 because the crash-isolation harness uses
+ *   fork() + waitpid(), which have no Win32 equivalent. A Windows port
+ *   (VEH + longjmp, or CreateProcess + re-exec self) would add significant
+ *   platform-conditional code without adding test coverage — a regression
+ *   in any of the three entry points will already fail on the POSIX build.
+ *
  * Tag: [layer4][interactive][search][vpr_gui][GUI-T-019]
  */
 
 #include <catch2/catch_test_macros.hpp>
+
+// POSIX-only — see the "Platform scope" note in the file docstring. The
+// rest of the file is gated on !_WIN32 so this TU compiles to nothing on
+// Windows (Catch2 is fine with TUs that register no test cases).
+#if !defined(_WIN32)
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -192,3 +207,5 @@ TEST_CASE("Search: fork harness reports clean exit for a no-op body "
     REQUIRE(o.signal_no == 0);
     REQUIRE(o.exit_code == 0);
 }
+
+#endif // !_WIN32

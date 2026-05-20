@@ -44,7 +44,7 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
             sw_template_file = "";
         }
 
-        std::string full_path = std::filesystem::path(sb_templates_dir) / sw_template_file;
+        std::string full_path = (std::filesystem::path(sb_templates_dir) / sw_template_file).string();
         if (sw_template_file.empty()) {
             full_path = "";
         }

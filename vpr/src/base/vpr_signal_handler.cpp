@@ -18,7 +18,7 @@
 #include "read_route.h"
 
 // Currently safe_write uses the POSIX write system call. This could be extended to other platforms in the future.
-#if defined(__unix__) || defined(__APPLE__)
+#if defined(__unix__) || defined(__APPLE__) || defined(__MINGW32__)
 #include <unistd.h>
 #endif
 
