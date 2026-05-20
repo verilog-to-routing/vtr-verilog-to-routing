@@ -6,7 +6,18 @@
 #
 # Usage:
 #   ./run_all_tests.sh                                          # use defaults below
-#   ./run_all_tests.sh <vpr_binary> <arch_dir> <bench_dir>
+#   ./run_all_tests.sh [--debug] <vpr_binary> <arch_dir> <bench_dir>
+#
+# Options:
+#   --debug, -d   Also write a [golden | current | diff] triptych PNG for
+#                 every visual-regression case (not just failures). Without
+#                 this flag, the triptych is written only when SSIM fails.
+#
+# Rendered output PNGs and triptychs (when written) are kept under
+# build/vpr/test/gui/artifacts/. The whole artifacts/ dir is wiped at the
+# start of every Layer-5 run so stale PNGs from a previous session can't be
+# mistaken for the current one; the parent dir (which holds the cmake build
+# tree) is left untouched.
 #
 # Defaults (resolved relative to the repo root containing this script):
 #   <vpr_binary> = build/vpr/vpr
@@ -22,6 +33,21 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+
+DEBUG=0
+POSITIONAL=()
+for arg in "$@"; do
+    case "${arg}" in
+        --debug|-d) DEBUG=1 ;;
+        --help|-h)
+            sed -n '2,29p' "$0"
+            exit 0
+            ;;
+        *) POSITIONAL+=("${arg}") ;;
+    esac
+done
+set -- "${POSITIONAL[@]+"${POSITIONAL[@]}"}"
+export VPR_GUI_DEBUG="${DEBUG}"
 
 VPR_ARG="${1:-${REPO_ROOT}/build/vpr/vpr}"
 ARCH_ARG="${2:-${REPO_ROOT}/vtr_flow/arch/timing}"
@@ -88,6 +114,12 @@ echo "  VPR:         ${VPR}"
 echo "  Arch dir:    ${ARCH_DIR}"
 echo "  Bench dir:   ${BENCH_DIR}"
 echo "  Test binary: ${TEST_BIN:-NOT FOUND}"
+echo "  Artifacts:   ${REPO_ROOT}/build/vpr/test/gui/artifacts/"
+if [[ "${DEBUG}" -eq 1 ]]; then
+    echo "  Debug mode:  on — triptych diffs written for every case"
+else
+    echo "  Debug mode:  off — triptych diffs only on SSIM failure"
+fi
 
 # ---- Layer 3: Catch2 Integration Tests ------------------------------------
 if [[ -n "${TEST_BIN}" ]]; then

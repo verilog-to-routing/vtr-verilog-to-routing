@@ -24,6 +24,7 @@ import vtr.error
 from vtr.error import CommandError
 from vtr import paths
 
+
 @lru_cache(maxsize=1)
 def _resolve_memory_tracking_cmd():
     """

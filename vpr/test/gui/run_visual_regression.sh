@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Layer 5 — Visual Regression Test Runner
 #
-# Runs VPR twice (same two passes as generate_goldens.sh: one for
-# placement_done + routing_done overlays, one for routing_initial
-# congestion) to produce the current images, then compares each named
-# case against the corresponding golden image using SSIM
-# (compare_images.py).
+# Runs VPR twice with the shared graphics_commands sequences from
+# visual_cases.sh (one invocation for placement_done + routing_done overlays,
+# one for routing_initial congestion) — the same sequences used by
+# generate_goldens.sh — then compares each named case against the
+# corresponding golden image using SSIM (compare_images.py).
 #
 # Usage:
 #   ./run_visual_regression.sh                                              # use defaults below
@@ -123,8 +123,19 @@ readonly PYTHON
 
 export QT_SCALE_FACTOR=1
 
-TEST_TMPDIR=$(mktemp -d)
-trap 'rm -rf "${TEST_TMPDIR}"' EXIT
+# Rendered PNGs and per-case diff PNGs go to a stable, predictable dir under
+# the cmake build tree so a human can open them after the run. The whole
+# artifacts dir is wiped at the start of every run so stale outputs from a
+# previous session can't be mistaken for the current one.
+#
+# Diff-write policy:
+#   default              → diff written only when SSIM < threshold (FAIL).
+#   VPR_GUI_DEBUG=1      → diff written for every case (PASS and FAIL),
+#                          set by `run_all_tests.sh --debug`.
+readonly TEST_OUTDIR="${REPO_ROOT}/build/vpr/test/gui/artifacts"
+rm -rf "${TEST_OUTDIR}"
+mkdir -p "${TEST_OUTDIR}/diff"
+readonly DIFF_DIR="${TEST_OUTDIR}/diff"
 
 PASS=0
 FAIL=0
@@ -152,17 +163,15 @@ echo "    Threshold: ${THRESHOLD}"
 echo "    Cases:     ${#VISUAL_CASE_NAMES[@]}"
 echo ""
 
-# --- Pass 1: placement_done + routing_done overlays --------------------------
-PASS1_WORK="${TEST_TMPDIR}/pass1"
-echo "--- Pass 1: placement + routing overlays"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS1_WORK}" \
-    "${PASS1_CMDS}" --pack --place --route
+# All rendered PNGs land flat in TEST_OUTDIR alongside per-invocation logs;
+# the case-name namespace is unique across invocations so there's no clash.
+echo "--- VPR run 1: placement + routing overlays"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${TEST_OUTDIR}" \
+    "${TEST_OUTDIR}/vpr_placement_routing.log" "${PLACEMENT_ROUTING_CMDS}" --pack --place --route
 
-# --- Pass 2: routing_initial congestion --------------------------------------
-PASS2_WORK="${TEST_TMPDIR}/pass2"
-echo "--- Pass 2: routing_initial congestion"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS2_WORK}" \
-    "${PASS2_CMDS}" --pack --place --route
+echo "--- VPR run 2: routing_initial congestion"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${TEST_OUTDIR}" \
+    "${TEST_OUTDIR}/vpr_routing_initial.log" "${ROUTING_INITIAL_CMDS}" --pack --place --route
 
 # --- Compare each named case against its golden ------------------------------
 echo ""
@@ -177,19 +186,25 @@ for name in "${VISUAL_CASE_NAMES[@]}"; do
         continue
     fi
 
-    local_current=""
-    if [[ -f "${PASS1_WORK}/${name}.png" ]]; then
-        local_current="${PASS1_WORK}/${name}.png"
-    elif [[ -f "${PASS2_WORK}/${name}.png" ]]; then
-        local_current="${PASS2_WORK}/${name}.png"
-    else
-        echo "    FAIL: ${name}.png not produced by either pass"
-        echo "    See: ${PASS1_WORK}/vpr.log, ${PASS2_WORK}/vpr.log"
+    local_current="${TEST_OUTDIR}/${name}.png"
+    if [[ ! -f "${local_current}" ]]; then
+        echo "    FAIL: ${name}.png not produced"
+        echo "    See: ${TEST_OUTDIR}/vpr_placement_routing.log, ${TEST_OUTDIR}/vpr_routing_initial.log"
         (( FAIL++ )) || true
         continue
     fi
 
-    if "${PYTHON}" "${COMPARE}" "${local_golden}" "${local_current}" --threshold "${THRESHOLD}"; then
+    compare_args=(
+        "${local_golden}" "${local_current}"
+        --threshold "${THRESHOLD}"
+        --diff-out "${DIFF_DIR}/${name}.png"
+    )
+    if [[ "${VPR_GUI_DEBUG:-0}" != "1" ]]; then
+        # Default: only write the triptych on FAIL — keeps passing runs cheap.
+        # --debug flips this off so passing cases also produce diffs.
+        compare_args+=(--diff-on-fail-only)
+    fi
+    if "${PYTHON}" "${COMPARE}" "${compare_args[@]}"; then
         (( PASS++ )) || true
     else
         (( FAIL++ )) || true
@@ -204,6 +219,14 @@ echo "=== Visual Regression Summary ==="
 echo "    Passed:  ${PASS}"
 echo "    Failed:  ${FAIL}"
 echo "    Skipped: ${SKIP}"
+echo "    Artifacts: ${TEST_OUTDIR}"
+echo "      <case>.png         rendered output PNGs (flat, mirrors golden/ layout)"
+echo "      vpr_<phase>.log    stdout/stderr per VPR invocation (one file per phase)"
+if [[ "${VPR_GUI_DEBUG:-0}" == "1" ]]; then
+    echo "      diff/              per-case diff PNGs vs golden (--debug: all cases)"
+else
+    echo "      diff/              per-case diff PNGs vs golden (failures only)"
+fi
 
 if [[ "${FAIL}" -gt 0 ]]; then
     echo "    RESULT: FAIL"

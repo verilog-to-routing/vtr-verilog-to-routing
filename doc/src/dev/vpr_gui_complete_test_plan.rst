@@ -232,6 +232,17 @@ The standard regression runner is also wired:
 
    ./run_reg_test.py vtr_reg_gui
 
+Layer 5 artifacts and the ``--debug`` runner flag are described in §11
+under *Persistent Layer 5 outputs* and *On-fail diff triptychs*:
+
+.. code-block:: console
+
+   # Default: triptych diffs land in build/vpr/test/gui/artifacts/diff/ for FAIL cases only.
+   ./vpr/test/gui/run_all_tests.sh
+
+   # --debug: triptychs are written for every case (PASS and FAIL).
+   ./vpr/test/gui/run_all_tests.sh --debug
+
 
 7. Coverage Targets
 -------------------
@@ -370,6 +381,24 @@ follow the same conventions:
   ``VPR_GUI_SSIM_THRESHOLD`` environment variable or the optional 5th
   positional argument to ``run_visual_regression.sh``. Lower it only
   with a paired defect entry — never to silence a regression.
+* **Persistent Layer 5 outputs.** Rendered PNGs from
+  ``run_visual_regression.sh`` are written **flat** into
+  ``build/vpr/test/gui/artifacts/`` — one ``<case>.png`` per entry in
+  ``VISUAL_CASE_NAMES``, mirroring the ``vpr/test/gui/golden/``
+  layout, so each image is self-sufficient by filename and can be
+  diffed against the matching golden without path translation. The
+  whole ``artifacts/`` dir is wiped at the **start** of every run so
+  stale PNGs from a previous session can't be mistaken for the
+  current one; the parent dir is left alone because it also hosts the
+  cmake build tree.
+* **On-fail diff triptychs.** For every failing case (SSIM <
+  threshold), ``compare_images.py`` writes a
+  ``[golden | current | amplified-diff]`` triptych to
+  ``build/vpr/test/gui/artifacts/diff/<case>.png``. The diff channel
+  is ``|golden − current|`` amplified 8× so sub-pixel drift is
+  actually visible. ``run_all_tests.sh --debug`` flips the policy via
+  ``VPR_GUI_DEBUG=1`` so the triptych is written for **every** case,
+  passing or failing — useful when eyeballing sub-threshold drift.
 * **Stable label scheme.** Every test carries
   ``LABELS "gui;<kind>;<layerN>"``; ``ctest -L`` is the only supported
   selection mechanism. Filenames or test-name regexes are not part of
