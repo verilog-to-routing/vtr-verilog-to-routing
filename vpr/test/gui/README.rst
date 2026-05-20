@@ -87,25 +87,31 @@ Layer 5 Output and Diff Triptychs
 ---------------------------------
 
 Rendered PNGs and per-case diff triptychs from the visual-regression
-runner are written into the cmake build tree and are **never wiped** —
-new runs overwrite by filename, stale PNGs from removed cases linger
-until cleaned by hand.
+runner are written into ``build/vpr/test/gui/artifacts/`` under the
+cmake build tree. The whole ``artifacts/`` dir is wiped at the
+**start** of every run so stale PNGs from a previous session can't be
+mistaken for the current one. The parent ``build/vpr/test/gui/`` dir
+is left alone — it also hosts the cmake build state (``test_vpr_gui``
+binary, ``CMakeFiles/``, ``CTestTestfile.cmake``).
 
 .. list-table::
    :widths: 35 65
    :header-rows: 1
 
-   * - Path (under ``build/vpr/test/gui/``)
+   * - Path (under ``build/vpr/test/gui/artifacts/``)
      - Contents
-   * - ``pass1/<case>.png``
-     - Rendered PNGs from VPR pass 1 (placement_done + routing_done
-       overlays). One file per case in ``VISUAL_CASE_NAMES``.
-   * - ``pass1/vpr.log``
-     - Full VPR stdout/stderr for pass 1.
-   * - ``pass2/<case>.png``
-     - Rendered PNGs from VPR pass 2 (routing_initial congestion).
-   * - ``pass2/vpr.log``
-     - Full VPR stdout/stderr for pass 2.
+   * - ``<case>.png``
+     - One rendered PNG per case in ``VISUAL_CASE_NAMES``. The flat
+       naming mirrors ``vpr/test/gui/golden/``, so each image is
+       self-sufficient by filename and can be diffed against the
+       golden of the same name without any path translation.
+   * - ``vpr_<phase>.log``
+     - Full stdout/stderr of one VPR invocation, named after the
+       phase it covers. Today there are two:
+       ``vpr_placement_routing.log`` (placement_done + routing_done
+       overlays) and ``vpr_routing_initial.log`` (routing_initial
+       congestion). See ``visual_cases.sh`` for the case-to-phase
+       mapping.
    * - ``diff/<case>.png``
      - ``[golden | current | amplified-diff]`` triptych. The diff
        channel is ``|golden − current|`` amplified 8× and clipped, so

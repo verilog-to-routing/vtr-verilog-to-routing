@@ -59,31 +59,25 @@ echo "    Output:  ${GOLDEN_DIR}"
 echo "    Cases:   ${#VISUAL_CASE_NAMES[@]}"
 echo ""
 
-# --- Pass 1: placement_done + routing_done overlays --------------------------
-PASS1_WORK="${GEN_TMPDIR}/pass1"
-echo "--- Pass 1: placement + routing overlays"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS1_WORK}" \
-    "${PASS1_CMDS}" --pack --place --route
+# Both VPR invocations write into the same flat dir; case names are unique
+# across invocations so there's no clash.
+echo "--- VPR run 1: placement + routing overlays"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${GEN_TMPDIR}" \
+    "${GEN_TMPDIR}/vpr_placement_routing.log" "${PLACEMENT_ROUTING_CMDS}" --pack --place --route
 
-# --- Pass 2: routing_initial congestion --------------------------------------
-PASS2_WORK="${GEN_TMPDIR}/pass2"
-echo "--- Pass 2: routing_initial congestion"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS2_WORK}" \
-    "${PASS2_CMDS}" --pack --place --route
+echo "--- VPR run 2: routing_initial congestion"
+visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${GEN_TMPDIR}" \
+    "${GEN_TMPDIR}/vpr_routing_initial.log" "${ROUTING_INITIAL_CMDS}" --pack --place --route
 
-# --- Collect: each named case must have been emitted by exactly one pass ------
+# --- Collect: every named case must have been emitted by some invocation -----
 echo ""
 echo "--- Collecting PNGs into ${GOLDEN_DIR}"
 missing=()
 for name in "${VISUAL_CASE_NAMES[@]}"; do
-    src=""
-    if [[ -f "${PASS1_WORK}/${name}.png" ]]; then
-        src="${PASS1_WORK}/${name}.png"
-    elif [[ -f "${PASS2_WORK}/${name}.png" ]]; then
-        src="${PASS2_WORK}/${name}.png"
-    else
+    src="${GEN_TMPDIR}/${name}.png"
+    if [[ ! -f "${src}" ]]; then
         missing+=("${name}")
-        echo "    MISSING: ${name}.png — not emitted by either pass"
+        echo "    MISSING: ${name}.png — not emitted by any VPR invocation"
         continue
     fi
     mv "${src}" "${GOLDEN_DIR}/${name}.png"
@@ -94,8 +88,8 @@ done
 if [[ ${#missing[@]} -gt 0 ]]; then
     echo ""
     echo "ERROR: ${#missing[@]} case(s) failed to produce a PNG. Check:"
-    echo "    ${PASS1_WORK}/vpr.log"
-    echo "    ${PASS2_WORK}/vpr.log"
+    echo "    ${GEN_TMPDIR}/vpr_placement_routing.log"
+    echo "    ${GEN_TMPDIR}/vpr_routing_initial.log"
     exit 1
 fi
 

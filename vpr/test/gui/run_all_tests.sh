@@ -13,10 +13,11 @@
 #                 every visual-regression case (not just failures). Without
 #                 this flag, the triptych is written only when SSIM fails.
 #
-# Rendered output PNGs are always kept under build/vpr/test/gui/{pass1,pass2}/
-# and triptychs (when written) land in build/vpr/test/gui/diff/. The dir is
-# never wiped (it's the cmake build tree); stale PNGs from removed cases may
-# linger, clean by hand if needed.
+# Rendered output PNGs and triptychs (when written) are kept under
+# build/vpr/test/gui/artifacts/. The whole artifacts/ dir is wiped at the
+# start of every Layer-5 run so stale PNGs from a previous session can't be
+# mistaken for the current one; the parent dir (which holds the cmake build
+# tree) is left untouched.
 #
 # Defaults (resolved relative to the repo root containing this script):
 #   <vpr_binary> = build/vpr/vpr
@@ -113,7 +114,7 @@ echo "  VPR:         ${VPR}"
 echo "  Arch dir:    ${ARCH_DIR}"
 echo "  Bench dir:   ${BENCH_DIR}"
 echo "  Test binary: ${TEST_BIN:-NOT FOUND}"
-echo "  Artifacts:   ${REPO_ROOT}/build/vpr/test/gui/{pass1,pass2,diff}/"
+echo "  Artifacts:   ${REPO_ROOT}/build/vpr/test/gui/artifacts/"
 if [[ "${DEBUG}" -eq 1 ]]; then
     echo "  Debug mode:  on — triptych diffs written for every case"
 else
