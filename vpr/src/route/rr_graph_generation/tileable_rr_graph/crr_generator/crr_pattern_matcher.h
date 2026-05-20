@@ -24,35 +24,33 @@ namespace crrgenerator {
  */
 class CRRPatternMatcher {
   public:
-    // Returns nullopt for exact-match patterns (no regex needed), otherwise a
-    // compiled std::regex. Call this once per pattern at startup and store the
-    // result; pass it to the two-argument overload of matches_pattern below.
-    static std::optional<std::regex> compile_pattern(const std::string& pattern) {
-        if (pattern.find('*') == std::string::npos
-            && pattern.find('[') == std::string::npos
-            && pattern.find('\\') == std::string::npos) {
-            return std::nullopt; // exact match — no regex required
+    // Returns true if name matches pattern. Compiled regexes are cached internally
+    // so each distinct pattern string is only compiled once.
+    bool matches_pattern(const std::string& name, const std::string& pattern) {
+        auto it = cache_.find(pattern);
+        if (it == cache_.end()) {
+            it = cache_.emplace(pattern, compile(pattern)).first;
         }
-        return std::regex(pattern_to_regex(pattern));
-    }
-
-    // Fast path: uses a pre-compiled regex produced by compile_pattern().
-    // nullopt means the pattern is an exact match; just compare strings.
-    static bool matches_pattern(const std::string& name,
-                                const std::string& pattern,
-                                const std::optional<std::regex>& compiled) {
+        const auto& compiled = it->second;
         if (!compiled.has_value()) {
-            return name == pattern;
+            return name == pattern; // exact match — no regex needed
         }
         return validate_regex_match(name, pattern, *compiled);
     }
 
-    // Slow path kept for call sites that don't have a pre-compiled regex.
-    static bool matches_pattern(const std::string& name, const std::string& pattern) {
-        return matches_pattern(name, pattern, compile_pattern(pattern));
+  private:
+    // nullopt means exact match (no regex needed); otherwise holds compiled regex.
+    std::unordered_map<std::string, std::optional<std::regex>> cache_;
+
+    static std::optional<std::regex> compile(const std::string& pattern) {
+        if (pattern.find('*') == std::string::npos
+            && pattern.find('[') == std::string::npos
+            && pattern.find('\\') == std::string::npos) {
+            return std::nullopt;
+        }
+        return std::regex(pattern_to_regex(pattern));
     }
 
-  private:
     // Helper function to parse range [start:end:step] or comma-separated values [7,20]
     static bool matches_range(int value, const std::string& range_str) {
         size_t start_pos = range_str.find('[');
