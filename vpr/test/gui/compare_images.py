@@ -19,6 +19,26 @@ from pathlib import Path
 from typing import Optional
 
 
+def _write_diff_triptych(img_a, img_b, diff_out: Path) -> None:
+    """Write a ``[golden | current | amplified-diff]`` triptych PNG.
+
+    The diff channel is ``|img_a − img_b|`` amplified 8× and clipped, so
+    sub-pixel drift is visible to the eye — a pure 256-level absdiff is
+    invisible at the SSIM thresholds we care about (~0.98+).
+    """
+    # pylint: disable=import-outside-toplevel,import-error
+    from PIL import Image
+    import numpy as np
+
+    diff = np.clip(
+        np.abs(img_a.astype(np.int16) - img_b.astype(np.int16)) * 8,
+        0,
+        255,
+    ).astype(np.uint8)
+    diff_out.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(np.concatenate([img_a, img_b, diff], axis=1)).save(diff_out)
+
+
 def compare_ssim(
     path_a: Path,
     path_b: Path,
@@ -58,21 +78,8 @@ def compare_ssim(
 
     score = structural_similarity(img_a, img_b, channel_axis=2)
 
-    should_write_diff = diff_out is not None and (
-        diff_only_below is None or score < diff_only_below
-    )
-    if should_write_diff:
-        # Amplify by 8x and clip so sub-pixel drift is actually visible
-        # to the eye; pure |a-b| on a 256-level scale is invisible at the
-        # SSIM thresholds we care about (~0.98+).
-        diff = np.clip(
-            np.abs(img_a.astype(np.int16) - img_b.astype(np.int16)) * 8,
-            0,
-            255,
-        ).astype(np.uint8)
-        triptych = np.concatenate([img_a, img_b, diff], axis=1)
-        diff_out.parent.mkdir(parents=True, exist_ok=True)
-        Image.fromarray(triptych).save(diff_out)
+    if diff_out is not None and (diff_only_below is None or score < diff_only_below):
+        _write_diff_triptych(img_a, img_b, diff_out)
 
     return float(score)
 
