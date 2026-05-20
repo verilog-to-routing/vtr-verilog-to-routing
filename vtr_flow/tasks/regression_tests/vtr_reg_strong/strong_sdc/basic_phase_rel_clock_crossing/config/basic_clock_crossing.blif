@@ -1,0 +1,26 @@
+# Basic clock crossing circuit where FFA feeds directly into FFB.
+# FFA (the launch register) is clocked by clk
+# FFB (the capture register) is clocked by clk2
+.model basic_clock_crossing
+.inputs in clk clk2
+.outputs out
+
+# Buffer for the input.
+.names in to_FFA
+1 1
+
+# Latch for FFA, relative to clk.
+.latch to_FFA FFA re clk 0
+
+# Invert the output of FFA and feed into FFB.
+.names FFA to_FFB
+0 1
+
+# Latch for FFB, relative to clk2.
+.latch to_FFB FFB re clk2 0
+
+# Output buffer.
+.names FFB out
+1 1
+
+.end
