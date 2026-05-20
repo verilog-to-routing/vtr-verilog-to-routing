@@ -123,8 +123,20 @@ readonly PYTHON
 
 export QT_SCALE_FACTOR=1
 
-TEST_TMPDIR=$(mktemp -d)
-trap 'rm -rf "${TEST_TMPDIR}"' EXIT
+# Rendered PNGs and per-case diff PNGs go to a stable, predictable dir under
+# the cmake build tree so a human can open them after the run. We never wipe
+# this dir — the cmake build state (test_vpr_gui binary, CTestTestfile.cmake,
+# CMakeFiles/) lives in the same parent path, and old artifacts are simply
+# overwritten by name on the next run. Stale PNGs from removed cases may
+# linger; clean by hand if that matters.
+#
+# Diff-write policy:
+#   default              → diff written only when SSIM < threshold (FAIL).
+#   VPR_GUI_DEBUG=1      → diff written for every case (PASS and FAIL),
+#                          set by `run_all_tests.sh --debug`.
+TEST_OUTDIR="${REPO_ROOT}/build/vpr/test/gui"
+mkdir -p "${TEST_OUTDIR}/diff"
+readonly DIFF_DIR="${TEST_OUTDIR}/diff"
 
 PASS=0
 FAIL=0
@@ -153,13 +165,13 @@ echo "    Cases:     ${#VISUAL_CASE_NAMES[@]}"
 echo ""
 
 # --- Pass 1: placement_done + routing_done overlays --------------------------
-PASS1_WORK="${TEST_TMPDIR}/pass1"
+PASS1_WORK="${TEST_OUTDIR}/pass1"
 echo "--- Pass 1: placement + routing overlays"
 visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS1_WORK}" \
     "${PASS1_CMDS}" --pack --place --route
 
 # --- Pass 2: routing_initial congestion --------------------------------------
-PASS2_WORK="${TEST_TMPDIR}/pass2"
+PASS2_WORK="${TEST_OUTDIR}/pass2"
 echo "--- Pass 2: routing_initial congestion"
 visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS2_WORK}" \
     "${PASS2_CMDS}" --pack --place --route
@@ -189,7 +201,17 @@ for name in "${VISUAL_CASE_NAMES[@]}"; do
         continue
     fi
 
-    if "${PYTHON}" "${COMPARE}" "${local_golden}" "${local_current}" --threshold "${THRESHOLD}"; then
+    compare_args=(
+        "${local_golden}" "${local_current}"
+        --threshold "${THRESHOLD}"
+        --diff-out "${DIFF_DIR}/${name}.png"
+    )
+    if [[ "${VPR_GUI_DEBUG:-0}" != "1" ]]; then
+        # Default: only write the triptych on FAIL — keeps passing runs cheap.
+        # --debug flips this off so passing cases also produce diffs.
+        compare_args+=(--diff-on-fail-only)
+    fi
+    if "${PYTHON}" "${COMPARE}" "${compare_args[@]}"; then
         (( PASS++ )) || true
     else
         (( FAIL++ )) || true
@@ -204,6 +226,13 @@ echo "=== Visual Regression Summary ==="
 echo "    Passed:  ${PASS}"
 echo "    Failed:  ${FAIL}"
 echo "    Skipped: ${SKIP}"
+echo "    Artifacts: ${TEST_OUTDIR}"
+echo "      pass1/, pass2/    rendered output PNGs"
+if [[ "${VPR_GUI_DEBUG:-0}" == "1" ]]; then
+    echo "      diff/             per-case diff PNGs vs golden (--debug: all cases)"
+else
+    echo "      diff/             per-case diff PNGs vs golden (failures only)"
+fi
 
 if [[ "${FAIL}" -gt 0 ]]; then
     echo "    RESULT: FAIL"

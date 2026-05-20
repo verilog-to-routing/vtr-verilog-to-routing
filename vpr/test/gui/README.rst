@@ -74,6 +74,59 @@ Quick Start
        ./vtr_flow/arch/timing \
        ./vtr_flow/benchmarks/microbenchmarks
 
+**Debug mode (write a diff PNG for every visual case):**
+
+.. code-block:: bash
+
+   ./vpr/test/gui/run_all_tests.sh --debug \
+       ./build/vpr/vpr \
+       ./vtr_flow/arch/timing \
+       ./vtr_flow/benchmarks/microbenchmarks
+
+Layer 5 Output and Diff Triptychs
+---------------------------------
+
+Rendered PNGs and per-case diff triptychs from the visual-regression
+runner are written into the cmake build tree and are **never wiped** —
+new runs overwrite by filename, stale PNGs from removed cases linger
+until cleaned by hand.
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Path (under ``build/vpr/test/gui/``)
+     - Contents
+   * - ``pass1/<case>.png``
+     - Rendered PNGs from VPR pass 1 (placement_done + routing_done
+       overlays). One file per case in ``VISUAL_CASE_NAMES``.
+   * - ``pass1/vpr.log``
+     - Full VPR stdout/stderr for pass 1.
+   * - ``pass2/<case>.png``
+     - Rendered PNGs from VPR pass 2 (routing_initial congestion).
+   * - ``pass2/vpr.log``
+     - Full VPR stdout/stderr for pass 2.
+   * - ``diff/<case>.png``
+     - ``[golden | current | amplified-diff]`` triptych. The diff
+       channel is ``|golden − current|`` amplified 8× and clipped, so
+       sub-pixel drift is actually visible at the SSIM thresholds we
+       care about (~0.98+).
+
+Diff-write policy:
+
+* **default** — the triptych is written only when SSIM falls below
+  the threshold (i.e. a test case fails). Passing cases skip the
+  triptych-write cost so the runner stays cheap.
+* **--debug** — the triptych is written for **every** case, passing
+  or failing, so a developer can eyeball even passing renders for
+  sub-threshold drift.
+
+The triptych behaviour is implemented by ``compare_images.py``'s
+``--diff-out`` (path) and ``--diff-on-fail-only`` (toggle) flags;
+``run_visual_regression.sh`` always passes ``--diff-out`` and adds
+``--diff-on-fail-only`` unless ``VPR_GUI_DEBUG=1`` is set by
+``run_all_tests.sh --debug``.
+
 **Via CTest (from build subdirectory):**
 
 .. code-block:: bash
