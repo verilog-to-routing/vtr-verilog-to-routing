@@ -92,10 +92,10 @@ renderers — VPR is invoked twice per renderer with the shared
 graphics_commands sequences from ``visual_cases.sh``, passing
 ``--renderer <renderer>`` explicitly. Outputs land in
 ``build/vpr/test/gui/artifacts/<renderer>/`` and are compared against
-the **shared** flat golden corpus at
-``vpr/test/gui/golden/<case>.png`` — the same reference image is used
-for all three renderers. Cross-renderer drift beyond the SSIM
-threshold surfaces as a FAIL for the affected renderer(s). Missing
+**per-renderer** goldens at
+``vpr/test/gui/golden/<renderer>/<case>.png``. Each renderer has its
+own baseline so legitimate cross-renderer differences (dash phase,
+0.5px stroke shift, etc.) don't show up as regressions. Missing
 goldens **FAIL** the case (strict mode). The whole ``artifacts/`` dir
 is wiped at the **start** of every run so stale PNGs from a previous
 session can't be mistaken for the current one. The parent
@@ -112,9 +112,8 @@ build state (``test_vpr_gui`` binary, ``CMakeFiles/``,
    * - ``<renderer>/<case>.png``
      - One rendered PNG per (renderer, case) pair. The renderer
        subdir groups all outputs from one ``--renderer`` value
-       together — useful for triaging a renderer-wide regression.
-       All three renderers' images are compared against the same
-       ``vpr/test/gui/golden/<case>.png``.
+       together — mirrors ``vpr/test/gui/golden/<renderer>/`` so the
+       compare loop just diffs same-name files in matching dirs.
    * - ``<renderer>/vpr_<phase>.log``
      - Full stdout/stderr of one VPR invocation, named after the
        phase it covers: ``vpr_placement_routing.log``
@@ -127,11 +126,12 @@ build state (``test_vpr_gui`` binary, ``CMakeFiles/``,
        sub-pixel drift is actually visible at the SSIM thresholds we
        care about (~0.98+).
 
-Refreshing the shared golden corpus (e.g. after an intentional visual
-change) — use the ``rhi`` renderer's output as the reference::
+Promoting a current render to a per-renderer golden (e.g. when adding
+goldens for ``immediate`` / ``deferred`` for the first time, or after
+an intentional visual change)::
 
-    cp build/vpr/test/gui/artifacts/rhi/<case>.png \
-       vpr/test/gui/golden/<case>.png
+    cp build/vpr/test/gui/artifacts/<renderer>/<case>.png \
+       vpr/test/gui/golden/<renderer>/<case>.png
 
 Diff-write policy:
 

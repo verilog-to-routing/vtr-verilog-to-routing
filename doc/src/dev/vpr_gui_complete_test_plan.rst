@@ -384,16 +384,16 @@ follow the same conventions:
 * **Persistent Layer 5 outputs.** Rendered PNGs from
   ``run_visual_regression.sh`` are written under per-renderer subdirs
   ``build/vpr/test/gui/artifacts/<renderer>/<case>.png`` and compared
-  against the **shared** flat golden corpus
-  ``vpr/test/gui/golden/<case>.png`` — the same reference image is
-  used for all three renderers. The runner sweeps the matrix of
-  ``VISUAL_CASE_NAMES × {rhi, immediate, deferred}``, invoking VPR
-  twice per renderer with ``--renderer <renderer>`` explicit.
-  Cross-renderer drift beyond the SSIM threshold surfaces as a FAIL
-  for the affected renderer(s). Missing goldens **FAIL** the case
-  (strict mode); refresh the corpus with
-  ``cp artifacts/rhi/<case>.png golden/<case>.png`` after eyeballing
-  the new render. The whole ``artifacts/`` dir is wiped at the
+  against **per-renderer** goldens
+  ``vpr/test/gui/golden/<renderer>/<case>.png``. The runner sweeps
+  the matrix of ``VISUAL_CASE_NAMES × {rhi, immediate, deferred}``,
+  invoking VPR twice per renderer with ``--renderer <renderer>``
+  explicit; each renderer has its own baseline so legitimate
+  cross-renderer differences (dash phase, sub-pixel stroke shift)
+  don't masquerade as regressions. Missing goldens **FAIL** the case
+  (strict mode); promote a current render with
+  ``cp artifacts/<renderer>/<case>.png golden/<renderer>/<case>.png``
+  after eyeballing. The whole ``artifacts/`` dir is wiped at the
   **start** of every run so stale PNGs from a previous session can't
   be mistaken for the current one; the parent dir is left alone
   because it also hosts the cmake build tree.

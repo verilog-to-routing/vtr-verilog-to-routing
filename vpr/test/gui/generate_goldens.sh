@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
-# Layer 5 — Generate golden images for visual regression testing.
+# Layer 5 — Generate per-renderer golden images for visual regression testing.
 #
-# Runs VPR twice — one invocation for placement_done + routing_done overlays,
-# one for routing_initial congestion — and saves every named PNG from
-# visual_cases.sh into the golden/ directory. These images serve as the
-# reference baseline for SSIM comparison.
+# For each renderer in {rhi, immediate, deferred}, runs VPR twice (one
+# invocation for placement_done + routing_done overlays, one for
+# routing_initial congestion — same as run_visual_regression.sh) and saves
+# every named PNG from visual_cases.sh into golden/<renderer>/<case>.png.
+#
+# Also produces developer-debug triptychs under golden/tmp/, one per
+# non-rhi renderer per case:
+#   golden/tmp/<case>_immediate.png = [rhi | immediate | 8x-amplified-diff]
+#   golden/tmp/<case>_deferred.png  = [rhi | deferred  | 8x-amplified-diff]
+# These are NOT goldens; they exist so a human can eyeball cross-renderer
+# divergence (dash phase, sub-pixel stroke shift, ...) after a regeneration.
 #
 # Usage:
 #   ./generate_goldens.sh                                              # use defaults below
@@ -14,7 +21,8 @@
 #   <vpr_binary> = build/vpr/vpr
 #   <arch_dir>   = vtr_flow/arch/timing
 #   <bench_dir>  = vtr_flow/benchmarks/microbenchmarks
-#   [golden_dir] = vpr/test/gui/golden  (next to this script)
+#   [golden_dir] = vpr/test/gui/golden  (next to this script; per-renderer
+#                  subdirs and the tmp/ debug dir all live underneath)
 #
 # NOTE: Re-generating goldens invalidates all previous comparisons.
 #       Only regenerate when intentional visual changes are made.
@@ -39,10 +47,15 @@ readonly BENCH_DIR="$(cd "${BENCH_ARG}" && pwd)"
 readonly GOLDEN_DIR="${4:-${GOLDEN_DEFAULT}}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
 readonly BENCH="${BENCH_DIR}/mult_4x4.blif"
+readonly COMPARE="${SCRIPT_DIR}/compare_images.py"
 
 # Shared case list + graphics_commands strings + visual_run_pass helper.
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/visual_cases.sh"
+
+# Renderer matrix. Order matters: rhi is index 0 and used as the reference
+# for the cross-renderer debug triptychs below.
+readonly RENDERERS=(rhi immediate deferred)
 
 export QT_SCALE_FACTOR=1
 
@@ -52,48 +65,113 @@ trap 'rm -rf "${GEN_TMPDIR}"' EXIT
 mkdir -p "${GOLDEN_DIR}"
 
 echo "=== Generating Golden Images ==="
-echo "    VPR:     ${VPR}"
-echo "    Arch:    ${ARCH}"
-echo "    Bench:   ${BENCH}"
-echo "    Output:  ${GOLDEN_DIR}"
-echo "    Cases:   ${#VISUAL_CASE_NAMES[@]}"
+echo "    VPR:       ${VPR}"
+echo "    Arch:      ${ARCH}"
+echo "    Bench:     ${BENCH}"
+echo "    Output:    ${GOLDEN_DIR}"
+echo "    Renderers: ${RENDERERS[*]}"
+echo "    Cases:     ${#VISUAL_CASE_NAMES[@]}"
 echo ""
 
-# Both VPR invocations write into the same flat dir; case names are unique
-# across invocations so there's no clash.
-echo "--- VPR run 1: placement + routing overlays"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${GEN_TMPDIR}" \
-    "${GEN_TMPDIR}/vpr_placement_routing.log" "${PLACEMENT_ROUTING_CMDS}" --pack --place --route
+# --- VPR: run each renderer through both graphics_commands phases ------------
+for renderer in "${RENDERERS[@]}"; do
+    R_TMPDIR="${GEN_TMPDIR}/${renderer}"
+    mkdir -p "${R_TMPDIR}"
 
-echo "--- VPR run 2: routing_initial congestion"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${GEN_TMPDIR}" \
-    "${GEN_TMPDIR}/vpr_routing_initial.log" "${ROUTING_INITIAL_CMDS}" --pack --place --route
+    echo "--- VPR [${renderer}] run 1: placement + routing overlays"
+    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_TMPDIR}" \
+        "${R_TMPDIR}/vpr_placement_routing.log" "${PLACEMENT_ROUTING_CMDS}" \
+        --pack --place --route --renderer "${renderer}"
 
-# --- Collect: every named case must have been emitted by some invocation -----
+    echo "--- VPR [${renderer}] run 2: routing_initial congestion"
+    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_TMPDIR}" \
+        "${R_TMPDIR}/vpr_routing_initial.log" "${ROUTING_INITIAL_CMDS}" \
+        --pack --place --route --renderer "${renderer}"
+done
+
+# --- Collect: every (renderer, case) pair must have produced a PNG -----------
 echo ""
-echo "--- Collecting PNGs into ${GOLDEN_DIR}"
+echo "--- Collecting PNGs into ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
 missing=()
-for name in "${VISUAL_CASE_NAMES[@]}"; do
-    src="${GEN_TMPDIR}/${name}.png"
-    if [[ ! -f "${src}" ]]; then
-        missing+=("${name}")
-        echo "    MISSING: ${name}.png — not emitted by any VPR invocation"
-        continue
-    fi
-    mv "${src}" "${GOLDEN_DIR}/${name}.png"
-    size=$(wc -c < "${GOLDEN_DIR}/${name}.png")
-    echo "    OK: ${GOLDEN_DIR}/${name}.png (${size} bytes)"
+for renderer in "${RENDERERS[@]}"; do
+    R_TMPDIR="${GEN_TMPDIR}/${renderer}"
+    R_GOLDEN="${GOLDEN_DIR}/${renderer}"
+    mkdir -p "${R_GOLDEN}"
+    for name in "${VISUAL_CASE_NAMES[@]}"; do
+        src="${R_TMPDIR}/${name}.png"
+        if [[ ! -f "${src}" ]]; then
+            missing+=("${renderer}/${name}")
+            echo "    MISSING: ${renderer}/${name}.png — not emitted by VPR"
+            continue
+        fi
+        mv "${src}" "${R_GOLDEN}/${name}.png"
+        size=$(wc -c < "${R_GOLDEN}/${name}.png")
+        echo "    OK: ${R_GOLDEN}/${name}.png (${size} bytes)"
+    done
 done
 
 if [[ ${#missing[@]} -gt 0 ]]; then
     echo ""
-    echo "ERROR: ${#missing[@]} case(s) failed to produce a PNG. Check:"
-    echo "    ${GEN_TMPDIR}/vpr_placement_routing.log"
-    echo "    ${GEN_TMPDIR}/vpr_routing_initial.log"
+    echo "ERROR: ${#missing[@]} (renderer, case) pair(s) failed to produce a PNG. Check:"
+    for renderer in "${RENDERERS[@]}"; do
+        echo "    ${GEN_TMPDIR}/${renderer}/vpr_placement_routing.log"
+        echo "    ${GEN_TMPDIR}/${renderer}/vpr_routing_initial.log"
+    done
     exit 1
+fi
+
+# --- Debug triptychs: [rhi | <renderer> | 8x-diff] under golden/tmp/ ---------
+# Resolve a Python interpreter that has skimage/PIL/numpy available; same
+# fallback chain used by run_visual_regression.sh.
+resolve_python() {
+    local candidates=()
+    [[ -n "${VPR_GUI_PYTHON:-}" ]] && candidates+=("${VPR_GUI_PYTHON}")
+    [[ -x "${REPO_ROOT}/.venv/bin/python3" ]] && candidates+=("${REPO_ROOT}/.venv/bin/python3")
+    [[ -n "${VIRTUAL_ENV:-}" && -x "${VIRTUAL_ENV}/bin/python3" ]] && candidates+=("${VIRTUAL_ENV}/bin/python3")
+    candidates+=(python3 python)
+    for cand in "${candidates[@]}"; do
+        local resolved
+        resolved="$(command -v "${cand}" 2>/dev/null || true)"
+        [[ -z "${resolved}" ]] && continue
+        if "${resolved}" -c 'import skimage, PIL, numpy' >/dev/null 2>&1; then
+            echo "${resolved}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+echo ""
+if ! PYTHON="$(resolve_python)"; then
+    echo "WARNING: no Python with scikit-image/Pillow/numpy on PATH —"
+    echo "         skipping cross-renderer debug triptychs."
+    echo "         Install with:  python3 -m pip install scikit-image Pillow numpy"
+else
+    readonly TMP_DIR="${GOLDEN_DIR}/tmp"
+    rm -rf "${TMP_DIR}"
+    mkdir -p "${TMP_DIR}"
+    echo "--- Writing debug triptychs into ${TMP_DIR}"
+    for renderer in "${RENDERERS[@]}"; do
+        [[ "${renderer}" == "rhi" ]] && continue
+        for name in "${VISUAL_CASE_NAMES[@]}"; do
+            rhi_png="${GOLDEN_DIR}/rhi/${name}.png"
+            cur_png="${GOLDEN_DIR}/${renderer}/${name}.png"
+            out_png="${TMP_DIR}/${name}_${renderer}.png"
+            # --threshold 0.0 → always exit 0 so set -e doesn't kill us on
+            # unrelated SSIM-below-threshold differences; the triptych is
+            # always written when --diff-on-fail-only is omitted.
+            "${PYTHON}" "${COMPARE}" "${rhi_png}" "${cur_png}" \
+                --threshold 0.0 --diff-out "${out_png}" --quiet
+        done
+    done
+    echo "    Wrote $(ls "${TMP_DIR}"/*.png 2>/dev/null | wc -l) triptychs."
 fi
 
 echo ""
 echo "=== Golden Generation Complete ==="
-echo "    Files in: ${GOLDEN_DIR}"
-ls -la "${GOLDEN_DIR}"/*.png 2>/dev/null || echo "    (no PNG files found)"
+echo "    Goldens under: ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
+for renderer in "${RENDERERS[@]}"; do
+    count=$(ls "${GOLDEN_DIR}/${renderer}"/*.png 2>/dev/null | wc -l)
+    echo "      ${renderer}/: ${count} files"
+done
+echo "    Debug triptychs: ${GOLDEN_DIR}/tmp/ (rhi-vs-{immediate,deferred} per case)"
