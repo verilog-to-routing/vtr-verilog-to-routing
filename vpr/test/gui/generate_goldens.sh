@@ -142,13 +142,16 @@ resolve_python() {
 }
 
 echo ""
+# Always wipe the debug-triptych dir at the start of a regeneration so stale
+# PNGs from a previous run can't linger — even when the Python deps below
+# are missing and we skip the rewrite.
+readonly TMP_DIR="${GOLDEN_DIR}/tmp"
+rm -rf "${TMP_DIR}"
 if ! PYTHON="$(resolve_python)"; then
     echo "WARNING: no Python with scikit-image/Pillow/numpy on PATH —"
     echo "         skipping cross-renderer debug triptychs."
     echo "         Install with:  python3 -m pip install scikit-image Pillow numpy"
 else
-    readonly TMP_DIR="${GOLDEN_DIR}/tmp"
-    rm -rf "${TMP_DIR}"
     mkdir -p "${TMP_DIR}"
     echo "--- Writing debug triptychs into ${TMP_DIR}"
     for renderer in "${RENDERERS[@]}"; do
