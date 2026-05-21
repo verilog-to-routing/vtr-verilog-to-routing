@@ -232,6 +232,17 @@ The standard regression runner is also wired:
 
    ./run_reg_test.py vtr_reg_gui
 
+Layer 5 artifacts and the ``--debug`` runner flag are described in §11
+under *Persistent Layer 5 outputs* and *On-fail diff triptychs*:
+
+.. code-block:: console
+
+   # Default: triptych diffs land in build/vpr/test/gui/artifacts/<renderer>/diff/ for FAIL cases only.
+   ./vpr/test/gui/run_all_tests.sh
+
+   # --debug: triptychs are written for every case (PASS and FAIL).
+   ./vpr/test/gui/run_all_tests.sh --debug
+
 
 7. Coverage Targets
 -------------------
@@ -370,6 +381,31 @@ follow the same conventions:
   ``VPR_GUI_SSIM_THRESHOLD`` environment variable or the optional 5th
   positional argument to ``run_visual_regression.sh``. Lower it only
   with a paired defect entry — never to silence a regression.
+* **Persistent Layer 5 outputs.** Rendered PNGs from
+  ``run_visual_regression.sh`` are written under per-renderer subdirs
+  ``build/vpr/test/gui/artifacts/<renderer>/<case>.png`` and compared
+  against **per-renderer** goldens
+  ``vpr/test/gui/golden/<renderer>/<case>.png``. The runner sweeps
+  the matrix of ``VISUAL_CASE_NAMES × {rhi, immediate, deferred}``,
+  invoking VPR twice per renderer with ``--renderer <renderer>``
+  explicit; each renderer has its own baseline so legitimate
+  cross-renderer differences (dash phase, sub-pixel stroke shift)
+  don't masquerade as regressions. Missing goldens **FAIL** the case
+  (strict mode); promote a current render with
+  ``cp artifacts/<renderer>/<case>.png golden/<renderer>/<case>.png``
+  after eyeballing. The whole ``artifacts/`` dir is wiped at the
+  **start** of every run so stale PNGs from a previous session can't
+  be mistaken for the current one; the parent dir is left alone
+  because it also hosts the cmake build tree.
+* **On-fail diff triptychs.** For every failing case (SSIM <
+  threshold), ``compare_images.py`` writes a
+  ``[golden | current | amplified-diff]`` triptych to
+  ``build/vpr/test/gui/artifacts/<renderer>/diff/<case>.png``. The
+  diff channel is ``|golden − current|`` amplified 8× so sub-pixel
+  drift is actually visible. ``run_all_tests.sh --debug`` flips the
+  policy via ``VPR_GUI_DEBUG=1`` so the triptych is written for
+  **every** case, passing or failing — useful when eyeballing
+  sub-threshold drift.
 * **Stable label scheme.** Every test carries
   ``LABELS "gui;<kind>;<layerN>"``; ``ctest -L`` is the only supported
   selection mechanism. Filenames or test-name regexes are not part of

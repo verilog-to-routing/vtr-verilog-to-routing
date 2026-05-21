@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 # Layer 5 — Visual Regression Test Runner
 #
-# Runs VPR twice (same two passes as generate_goldens.sh: one for
-# placement_done + routing_done overlays, one for routing_initial
-# congestion) to produce the current images, then compares each named
-# case against the corresponding golden image using SSIM
-# (compare_images.py).
+# For each renderer in {rhi, immediate, deferred}, runs VPR twice with the
+# shared graphics_commands sequences from visual_cases.sh (one invocation
+# for placement_done + routing_done overlays, one for routing_initial
+# congestion) — passing --renderer <renderer> explicitly each time — then
+# compares each emitted PNG against the matching per-renderer golden at
+# vpr/test/gui/golden/<renderer>/<case>.png using SSIM (compare_images.py).
+#
+# Matrix: ${#VISUAL_CASE_NAMES[@]} cases × 3 renderers = total comparisons.
+# Goldens are PER-RENDERER: each renderer is compared against its own
+# baseline so legitimate cross-renderer differences (dash phase, 0.5px
+# stroke shift, etc.) don't masquerade as regressions.
 #
 # Usage:
 #   ./run_visual_regression.sh                                              # use defaults below
@@ -15,13 +21,10 @@
 #   <vpr_binary> = build/vpr/vpr
 #   <arch_dir>   = vtr_flow/arch/timing
 #   <bench_dir>  = vtr_flow/benchmarks/microbenchmarks
-#   [golden_dir] = vpr/test/gui/golden  (next to this script). When the
-#                  caller does NOT pass an explicit dir, the runner first
-#                  looks for a platform-specific subdirectory
-#                  (golden/linux-x86_64/, golden/darwin-arm64/, ...) and
-#                  falls back to the shared dir if none exists. This keeps
-#                  per-platform AA / font-hinting drift from being a test
-#                  failure.
+#   [golden_dir] = vpr/test/gui/golden  (parent of per-renderer subdirs,
+#                  next to this script). Per-renderer goldens live under
+#                  golden/<renderer>/<case>.png. Missing goldens FAIL their
+#                  case (strict mode).
 #   [threshold]  = $VPR_GUI_SSIM_THRESHOLD or 0.98
 #                  0.98 catches real regressions while tolerating sub-pixel
 #                  drift between Qt minor versions / platforms. Override
@@ -53,24 +56,15 @@ readonly VPR="$(cd "$(dirname "${VPR_ARG}")" && pwd)/$(basename "${VPR_ARG}")"
 readonly ARCH_DIR="$(cd "${ARCH_ARG}" && pwd)"
 readonly BENCH_DIR="$(cd "${BENCH_ARG}" && pwd)"
 
-# Platform-aware golden lookup: golden/<os>-<arch>/ if it exists, else the
-# shared golden/ directory. Caller can still override with $4.
-uname_os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-uname_arch="$(uname -m)"
-_default_shared="${SCRIPT_DIR}/golden"
-_default_platform="${SCRIPT_DIR}/golden/${uname_os}-${uname_arch}"
-if [[ -z "${4:-}" && -d "${_default_platform}" \
-      && -n "$(ls -A "${_default_platform}"/*.png 2>/dev/null)" ]]; then
-    GOLDEN_DIR="${_default_platform}"
-else
-    GOLDEN_DIR="${4:-${_default_shared}}"
-fi
-readonly GOLDEN_DIR
-
+readonly GOLDEN_DIR="${4:-${SCRIPT_DIR}/golden}"
 readonly THRESHOLD="${5:-${VPR_GUI_SSIM_THRESHOLD:-0.98}}"
 readonly ARCH="${ARCH_DIR}/k6_N10_40nm.xml"
 readonly BENCH="${BENCH_DIR}/mult_4x4.blif"
 readonly COMPARE="${SCRIPT_DIR}/compare_images.py"
+
+# Renderer matrix. Order matters only for log/output ordering — comparisons
+# are independent across renderers.
+readonly RENDERERS=(rhi immediate deferred)
 
 # Shared case list + graphics_commands strings + visual_run_pass helper.
 # shellcheck disable=SC1091
@@ -123,16 +117,34 @@ readonly PYTHON
 
 export QT_SCALE_FACTOR=1
 
-TEST_TMPDIR=$(mktemp -d)
-trap 'rm -rf "${TEST_TMPDIR}"' EXIT
+# Rendered PNGs and per-case diff PNGs go to a stable, predictable dir under
+# the cmake build tree so a human can open them after the run. The whole
+# artifacts dir is wiped at the start of every run so stale outputs from a
+# previous session can't be mistaken for the current one.
+#
+# Diff-write policy:
+#   default              → diff written only when SSIM < threshold (FAIL).
+#   VPR_GUI_DEBUG=1      → diff written for every case (PASS and FAIL),
+#                          set by `run_all_tests.sh --debug`.
+readonly TEST_OUTDIR="${REPO_ROOT}/build/vpr/test/gui/artifacts"
+rm -rf "${TEST_OUTDIR}"
 
 PASS=0
 FAIL=0
 SKIP=0
 
-# Check golden directory
-if [[ ! -d "${GOLDEN_DIR}" ]] || [[ -z "$(ls -A "${GOLDEN_DIR}"/*.png 2>/dev/null)" ]]; then
-    echo "WARNING: No golden images in ${GOLDEN_DIR}"
+# Fresh checkout: no goldens at all under golden/<renderer>/. Skip the
+# whole layer instead of producing 42 FAILs with the same root cause.
+have_any_goldens=0
+for r in "${RENDERERS[@]}"; do
+    if [[ -d "${GOLDEN_DIR}/${r}" ]] \
+       && [[ -n "$(ls -A "${GOLDEN_DIR}/${r}"/*.png 2>/dev/null)" ]]; then
+        have_any_goldens=1
+        break
+    fi
+done
+if [[ "${have_any_goldens}" -eq 0 ]]; then
+    echo "WARNING: No golden images in ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
     echo "Run generate_goldens.sh first (requires DEF-004 to be fixed)."
     echo ""
     echo "=== Visual Regression Summary ==="
@@ -149,53 +161,71 @@ echo "    Bench:     ${BENCH}"
 echo "    Goldens:   ${GOLDEN_DIR}"
 echo "    Python:    ${PYTHON}"
 echo "    Threshold: ${THRESHOLD}"
-echo "    Cases:     ${#VISUAL_CASE_NAMES[@]}"
+echo "    Renderers: ${RENDERERS[*]}"
+echo "    Cases:     ${#VISUAL_CASE_NAMES[@]} × ${#RENDERERS[@]} = $(( ${#VISUAL_CASE_NAMES[@]} * ${#RENDERERS[@]} ))"
 echo ""
 
-# --- Pass 1: placement_done + routing_done overlays --------------------------
-PASS1_WORK="${TEST_TMPDIR}/pass1"
-echo "--- Pass 1: placement + routing overlays"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS1_WORK}" \
-    "${PASS1_CMDS}" --pack --place --route
+# --- VPR: run each renderer through both graphics_commands phases ------------
+for renderer in "${RENDERERS[@]}"; do
+    R_OUTDIR="${TEST_OUTDIR}/${renderer}"
+    mkdir -p "${R_OUTDIR}/diff"
 
-# --- Pass 2: routing_initial congestion --------------------------------------
-PASS2_WORK="${TEST_TMPDIR}/pass2"
-echo "--- Pass 2: routing_initial congestion"
-visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${PASS2_WORK}" \
-    "${PASS2_CMDS}" --pack --place --route
+    echo "--- VPR [${renderer}] run 1: placement + routing overlays"
+    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_OUTDIR}" \
+        "${R_OUTDIR}/vpr_placement_routing.log" "${PLACEMENT_ROUTING_CMDS}" \
+        --pack --place --route --renderer "${renderer}"
 
-# --- Compare each named case against its golden ------------------------------
+    echo "--- VPR [${renderer}] run 2: routing_initial congestion"
+    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_OUTDIR}" \
+        "${R_OUTDIR}/vpr_routing_initial.log" "${ROUTING_INITIAL_CMDS}" \
+        --pack --place --route --renderer "${renderer}"
+done
+
+# --- Compare each (renderer, case) pair against its per-renderer golden ------
 echo ""
-echo "--- Comparing ${#VISUAL_CASE_NAMES[@]} cases against goldens"
-for name in "${VISUAL_CASE_NAMES[@]}"; do
-    echo "--- [VISUAL] ${name}"
+echo "--- Comparing ${#VISUAL_CASE_NAMES[@]} cases × ${#RENDERERS[@]} renderers"
+for renderer in "${RENDERERS[@]}"; do
+    R_OUTDIR="${TEST_OUTDIR}/${renderer}"
+    R_GOLDEN="${GOLDEN_DIR}/${renderer}"
+    R_DIFF="${R_OUTDIR}/diff"
 
-    local_golden="${GOLDEN_DIR}/${name}.png"
-    if [[ ! -f "${local_golden}" ]]; then
-        echo "    SKIP: no golden image"
-        (( SKIP++ )) || true
-        continue
-    fi
+    for name in "${VISUAL_CASE_NAMES[@]}"; do
+        echo "--- [VISUAL ${renderer}] ${name}"
 
-    local_current=""
-    if [[ -f "${PASS1_WORK}/${name}.png" ]]; then
-        local_current="${PASS1_WORK}/${name}.png"
-    elif [[ -f "${PASS2_WORK}/${name}.png" ]]; then
-        local_current="${PASS2_WORK}/${name}.png"
-    else
-        echo "    FAIL: ${name}.png not produced by either pass"
-        echo "    See: ${PASS1_WORK}/vpr.log, ${PASS2_WORK}/vpr.log"
-        (( FAIL++ )) || true
-        continue
-    fi
+        local_golden="${R_GOLDEN}/${name}.png"
+        if [[ ! -f "${local_golden}" ]]; then
+            echo "    FAIL: missing golden ${local_golden}"
+            echo "          Promote with: cp ${R_OUTDIR}/${name}.png ${local_golden}"
+            (( FAIL++ )) || true
+            continue
+        fi
 
-    if "${PYTHON}" "${COMPARE}" "${local_golden}" "${local_current}" --threshold "${THRESHOLD}"; then
-        (( PASS++ )) || true
-    else
-        (( FAIL++ )) || true
-        echo "    Golden:  ${local_golden}"
-        echo "    Current: ${local_current}"
-    fi
+        local_current="${R_OUTDIR}/${name}.png"
+        if [[ ! -f "${local_current}" ]]; then
+            echo "    FAIL: ${name}.png not produced by --renderer ${renderer}"
+            echo "    See: ${R_OUTDIR}/vpr_placement_routing.log, ${R_OUTDIR}/vpr_routing_initial.log"
+            (( FAIL++ )) || true
+            continue
+        fi
+
+        compare_args=(
+            "${local_golden}" "${local_current}"
+            --threshold "${THRESHOLD}"
+            --diff-out "${R_DIFF}/${name}.png"
+        )
+        if [[ "${VPR_GUI_DEBUG:-0}" != "1" ]]; then
+            # Default: only write the triptych on FAIL — keeps passing runs cheap.
+            # --debug flips this off so passing cases also produce diffs.
+            compare_args+=(--diff-on-fail-only)
+        fi
+        if "${PYTHON}" "${COMPARE}" "${compare_args[@]}"; then
+            (( PASS++ )) || true
+        else
+            (( FAIL++ )) || true
+            echo "    Golden:  ${local_golden}"
+            echo "    Current: ${local_current}"
+        fi
+    done
 done
 
 # ---- Summary ---------------------------------------------------------------
@@ -204,6 +234,14 @@ echo "=== Visual Regression Summary ==="
 echo "    Passed:  ${PASS}"
 echo "    Failed:  ${FAIL}"
 echo "    Skipped: ${SKIP}"
+echo "    Artifacts: ${TEST_OUTDIR}"
+echo "      <renderer>/<case>.png         rendered output PNGs (one subdir per --renderer)"
+echo "      <renderer>/vpr_<phase>.log    stdout/stderr per VPR invocation"
+if [[ "${VPR_GUI_DEBUG:-0}" == "1" ]]; then
+    echo "      <renderer>/diff/<case>.png    diff triptychs vs golden (--debug: all cases)"
+else
+    echo "      <renderer>/diff/<case>.png    diff triptychs vs golden (failures only)"
+fi
 
 if [[ "${FAIL}" -gt 0 ]]; then
     echo "    RESULT: FAIL"

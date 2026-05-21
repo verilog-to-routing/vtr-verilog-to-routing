@@ -74,6 +74,80 @@ Quick Start
        ./vtr_flow/arch/timing \
        ./vtr_flow/benchmarks/microbenchmarks
 
+**Debug mode (write a diff PNG for every visual case):**
+
+.. code-block:: bash
+
+   ./vpr/test/gui/run_all_tests.sh --debug \
+       ./build/vpr/vpr \
+       ./vtr_flow/arch/timing \
+       ./vtr_flow/benchmarks/microbenchmarks
+
+Layer 5 Output and Diff Triptychs
+---------------------------------
+
+Each visual-regression run sweeps the matrix of
+``${#VISUAL_CASE_NAMES[@]} cases × {rhi, immediate, deferred}``
+renderers — VPR is invoked twice per renderer with the shared
+graphics_commands sequences from ``visual_cases.sh``, passing
+``--renderer <renderer>`` explicitly. Outputs land in
+``build/vpr/test/gui/artifacts/<renderer>/`` and are compared against
+**per-renderer** goldens at
+``vpr/test/gui/golden/<renderer>/<case>.png``. Each renderer has its
+own baseline so legitimate cross-renderer differences (dash phase,
+0.5px stroke shift, etc.) don't show up as regressions. Missing
+goldens **FAIL** the case (strict mode). The whole ``artifacts/`` dir
+is wiped at the **start** of every run so stale PNGs from a previous
+session can't be mistaken for the current one. The parent
+``build/vpr/test/gui/`` dir is left alone — it also hosts the cmake
+build state (``test_vpr_gui`` binary, ``CMakeFiles/``,
+``CTestTestfile.cmake``).
+
+.. list-table::
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Path (under ``build/vpr/test/gui/artifacts/``)
+     - Contents
+   * - ``<renderer>/<case>.png``
+     - One rendered PNG per (renderer, case) pair. The renderer
+       subdir groups all outputs from one ``--renderer`` value
+       together — mirrors ``vpr/test/gui/golden/<renderer>/`` so the
+       compare loop just diffs same-name files in matching dirs.
+   * - ``<renderer>/vpr_<phase>.log``
+     - Full stdout/stderr of one VPR invocation, named after the
+       phase it covers: ``vpr_placement_routing.log``
+       (placement_done + routing_done overlays) and
+       ``vpr_routing_initial.log`` (routing_initial congestion). See
+       ``visual_cases.sh`` for the case-to-phase mapping.
+   * - ``<renderer>/diff/<case>.png``
+     - ``[golden | current | amplified-diff]`` triptych. The diff
+       channel is ``|golden − current|`` amplified 8× and clipped, so
+       sub-pixel drift is actually visible at the SSIM thresholds we
+       care about (~0.98+).
+
+Promoting a current render to a per-renderer golden (e.g. when adding
+goldens for ``immediate`` / ``deferred`` for the first time, or after
+an intentional visual change)::
+
+    cp build/vpr/test/gui/artifacts/<renderer>/<case>.png \
+       vpr/test/gui/golden/<renderer>/<case>.png
+
+Diff-write policy:
+
+* **default** — the triptych is written only when SSIM falls below
+  the threshold (i.e. a test case fails). Passing cases skip the
+  triptych-write cost so the runner stays cheap.
+* **--debug** — the triptych is written for **every** case, passing
+  or failing, so a developer can eyeball even passing renders for
+  sub-threshold drift.
+
+The triptych behaviour is implemented by ``compare_images.py``'s
+``--diff-out`` (path) and ``--diff-on-fail-only`` (toggle) flags;
+``run_visual_regression.sh`` always passes ``--diff-out`` and adds
+``--diff-on-fail-only`` unless ``VPR_GUI_DEBUG=1`` is set by
+``run_all_tests.sh --debug``.
+
 **Via CTest (from build subdirectory):**
 
 .. code-block:: bash
