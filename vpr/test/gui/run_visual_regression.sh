@@ -5,13 +5,13 @@
 # shared graphics_commands sequences from visual_cases.sh (one invocation
 # for placement_done + routing_done overlays, one for routing_initial
 # congestion) — passing --renderer <renderer> explicitly each time — then
-# compares each emitted PNG against the shared golden at
-# vpr/test/gui/golden/<case>.png using SSIM (compare_images.py).
+# compares each emitted PNG against the matching per-renderer golden at
+# vpr/test/gui/golden/<renderer>/<case>.png using SSIM (compare_images.py).
 #
 # Matrix: ${#VISUAL_CASE_NAMES[@]} cases × 3 renderers = total comparisons.
-# Goldens are NOT per-renderer; the same reference image is compared against
-# all three renderers' outputs. Cross-renderer drift larger than the SSIM
-# threshold will surface as FAILs against the same baseline.
+# Goldens are PER-RENDERER: each renderer is compared against its own
+# baseline so legitimate cross-renderer differences (dash phase, 0.5px
+# stroke shift, etc.) don't masquerade as regressions.
 #
 # Usage:
 #   ./run_visual_regression.sh                                              # use defaults below
@@ -21,8 +21,10 @@
 #   <vpr_binary> = build/vpr/vpr
 #   <arch_dir>   = vtr_flow/arch/timing
 #   <bench_dir>  = vtr_flow/benchmarks/microbenchmarks
-#   [golden_dir] = vpr/test/gui/golden  (flat, next to this script). Missing
-#                  goldens FAIL their case (strict mode).
+#   [golden_dir] = vpr/test/gui/golden  (parent of per-renderer subdirs,
+#                  next to this script). Per-renderer goldens live under
+#                  golden/<renderer>/<case>.png. Missing goldens FAIL their
+#                  case (strict mode).
 #   [threshold]  = $VPR_GUI_SSIM_THRESHOLD or 0.98
 #                  0.98 catches real regressions while tolerating sub-pixel
 #                  drift between Qt minor versions / platforms. Override
@@ -131,10 +133,18 @@ PASS=0
 FAIL=0
 SKIP=0
 
-# Fresh checkout: no goldens at all. Skip the whole layer instead of
-# producing 42 FAILs with the same root cause.
-if [[ ! -d "${GOLDEN_DIR}" ]] || [[ -z "$(ls -A "${GOLDEN_DIR}"/*.png 2>/dev/null)" ]]; then
-    echo "WARNING: No golden images in ${GOLDEN_DIR}"
+# Fresh checkout: no goldens at all under golden/<renderer>/. Skip the
+# whole layer instead of producing 42 FAILs with the same root cause.
+have_any_goldens=0
+for r in "${RENDERERS[@]}"; do
+    if [[ -d "${GOLDEN_DIR}/${r}" ]] \
+       && [[ -n "$(ls -A "${GOLDEN_DIR}/${r}"/*.png 2>/dev/null)" ]]; then
+        have_any_goldens=1
+        break
+    fi
+done
+if [[ "${have_any_goldens}" -eq 0 ]]; then
+    echo "WARNING: No golden images in ${GOLDEN_DIR}/{${RENDERERS[*]// /,}}/"
     echo "Run generate_goldens.sh first (requires DEF-004 to be fixed)."
     echo ""
     echo "=== Visual Regression Summary ==="
@@ -171,19 +181,21 @@ for renderer in "${RENDERERS[@]}"; do
         --pack --place --route --renderer "${renderer}"
 done
 
-# --- Compare each (renderer, case) pair against the shared golden ------------
+# --- Compare each (renderer, case) pair against its per-renderer golden ------
 echo ""
 echo "--- Comparing ${#VISUAL_CASE_NAMES[@]} cases × ${#RENDERERS[@]} renderers"
 for renderer in "${RENDERERS[@]}"; do
     R_OUTDIR="${TEST_OUTDIR}/${renderer}"
+    R_GOLDEN="${GOLDEN_DIR}/${renderer}"
     R_DIFF="${R_OUTDIR}/diff"
 
     for name in "${VISUAL_CASE_NAMES[@]}"; do
         echo "--- [VISUAL ${renderer}] ${name}"
 
-        local_golden="${GOLDEN_DIR}/${name}.png"
+        local_golden="${R_GOLDEN}/${name}.png"
         if [[ ! -f "${local_golden}" ]]; then
             echo "    FAIL: missing golden ${local_golden}"
+            echo "          Promote with: cp ${R_OUTDIR}/${name}.png ${local_golden}"
             (( FAIL++ )) || true
             continue
         fi
