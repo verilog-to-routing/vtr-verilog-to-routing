@@ -438,8 +438,16 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
         return row_it->second;
     }
 
-    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-                    seg_sequence.c_str(), x_low, y_low, x_high, y_high);
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                    "Node not found: SB(%d,%d) side=%s seg_type=%s seg_index=%d tap=%d -> %s [%s] (%d,%d) -> (%d,%d)\n",
+                    x, y,
+                    template_side_name[info.side],
+                    info.seg_type.c_str(),
+                    info.seg_index,
+                    info.tap,
+                    seg_type_label.c_str(),
+                    seg_sequence.c_str(),
+                    x_low, y_low, x_high, y_high);
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
