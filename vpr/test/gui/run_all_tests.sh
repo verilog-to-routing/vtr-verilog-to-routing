@@ -13,11 +13,12 @@
 #                 every visual-regression case (not just failures). Without
 #                 this flag, the triptych is written only when SSIM fails.
 #
+# Layer 5 sweeps the matrix of cases × {rhi, immediate, deferred} renderers.
 # Rendered output PNGs and triptychs (when written) are kept under
-# build/vpr/test/gui/artifacts/. The whole artifacts/ dir is wiped at the
-# start of every Layer-5 run so stale PNGs from a previous session can't be
-# mistaken for the current one; the parent dir (which holds the cmake build
-# tree) is left untouched.
+# build/vpr/test/gui/artifacts/<renderer>/. The whole artifacts/ dir is wiped
+# at the start of every Layer-5 run so stale PNGs from a previous session
+# can't be mistaken for the current one; the parent dir (which holds the
+# cmake build tree) is left untouched.
 #
 # Defaults (resolved relative to the repo root containing this script):
 #   <vpr_binary> = build/vpr/vpr

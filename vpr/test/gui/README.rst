@@ -86,37 +86,52 @@ Quick Start
 Layer 5 Output and Diff Triptychs
 ---------------------------------
 
-Rendered PNGs and per-case diff triptychs from the visual-regression
-runner are written into ``build/vpr/test/gui/artifacts/`` under the
-cmake build tree. The whole ``artifacts/`` dir is wiped at the
-**start** of every run so stale PNGs from a previous session can't be
-mistaken for the current one. The parent ``build/vpr/test/gui/`` dir
-is left alone — it also hosts the cmake build state (``test_vpr_gui``
-binary, ``CMakeFiles/``, ``CTestTestfile.cmake``).
+Each visual-regression run sweeps the matrix of
+``${#VISUAL_CASE_NAMES[@]} cases × {rhi, immediate, deferred}``
+renderers — VPR is invoked twice per renderer with the shared
+graphics_commands sequences from ``visual_cases.sh``, passing
+``--renderer <renderer>`` explicitly. Outputs land in
+``build/vpr/test/gui/artifacts/<renderer>/`` and are compared against
+the **shared** flat golden corpus at
+``vpr/test/gui/golden/<case>.png`` — the same reference image is used
+for all three renderers. Cross-renderer drift beyond the SSIM
+threshold surfaces as a FAIL for the affected renderer(s). Missing
+goldens **FAIL** the case (strict mode). The whole ``artifacts/`` dir
+is wiped at the **start** of every run so stale PNGs from a previous
+session can't be mistaken for the current one. The parent
+``build/vpr/test/gui/`` dir is left alone — it also hosts the cmake
+build state (``test_vpr_gui`` binary, ``CMakeFiles/``,
+``CTestTestfile.cmake``).
 
 .. list-table::
-   :widths: 35 65
+   :widths: 45 55
    :header-rows: 1
 
    * - Path (under ``build/vpr/test/gui/artifacts/``)
      - Contents
-   * - ``<case>.png``
-     - One rendered PNG per case in ``VISUAL_CASE_NAMES``. The flat
-       naming mirrors ``vpr/test/gui/golden/``, so each image is
-       self-sufficient by filename and can be diffed against the
-       golden of the same name without any path translation.
-   * - ``vpr_<phase>.log``
+   * - ``<renderer>/<case>.png``
+     - One rendered PNG per (renderer, case) pair. The renderer
+       subdir groups all outputs from one ``--renderer`` value
+       together — useful for triaging a renderer-wide regression.
+       All three renderers' images are compared against the same
+       ``vpr/test/gui/golden/<case>.png``.
+   * - ``<renderer>/vpr_<phase>.log``
      - Full stdout/stderr of one VPR invocation, named after the
-       phase it covers. Today there are two:
-       ``vpr_placement_routing.log`` (placement_done + routing_done
-       overlays) and ``vpr_routing_initial.log`` (routing_initial
-       congestion). See ``visual_cases.sh`` for the case-to-phase
-       mapping.
-   * - ``diff/<case>.png``
+       phase it covers: ``vpr_placement_routing.log``
+       (placement_done + routing_done overlays) and
+       ``vpr_routing_initial.log`` (routing_initial congestion). See
+       ``visual_cases.sh`` for the case-to-phase mapping.
+   * - ``<renderer>/diff/<case>.png``
      - ``[golden | current | amplified-diff]`` triptych. The diff
        channel is ``|golden − current|`` amplified 8× and clipped, so
        sub-pixel drift is actually visible at the SSIM thresholds we
        care about (~0.98+).
+
+Refreshing the shared golden corpus (e.g. after an intentional visual
+change) — use the ``rhi`` renderer's output as the reference::
+
+    cp build/vpr/test/gui/artifacts/rhi/<case>.png \
+       vpr/test/gui/golden/<case>.png
 
 Diff-write policy:
 
