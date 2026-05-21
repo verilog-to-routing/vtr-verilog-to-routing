@@ -5,19 +5,7 @@
 # Layer 5: Visual regression tests (bash + Python SSIM)
 
 # Enable CTest for this directory.
-#
-# Audit (S3 of vpr_gui_test_implementation_plan, evidence in
-# doc/src/dev/vpr_gui_s0_validation.rst §S0.4):
-#   - In the default build (QT_MIGRATION_FAST_BUILD=OFF) the top-level
-#     enable_testing() at CMakeLists.txt:462 is active and this local
-#     call is redundant — `ctest -N` returns the same 7 tests with or
-#     without it.
-#   - Under QT_MIGRATION_FAST_BUILD=ON the top-level call is skipped
-#     (CMakeLists.txt:459-463) and this local call is the only thing
-#     keeping our 3 GUI tests registered.
-# TODO(QT_MIGRATION_FAST_BUILD): remove this enable_testing() once the
-# fast-build mode is retired (tracked alongside DEF-004 cleanup in
-# Session S10 of the test implementation plan).
+
 enable_testing()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Xml Svg Test)

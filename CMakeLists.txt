@@ -5,10 +5,6 @@ include(SupportCcache)
 
 project("VTR")
 
-set(QT_MIGRATION_FAST_BUILD OFF CACHE BOOL "Enable fast build for Qt migration")
-set(FORCE_SLANG_SYSTEMVERILOG_DISABLE OFF CACHE BOOL "FORCE_SLANG_SYSTEMVERILOG_DISABLE")
-#set(CMAKE_BUILD_TYPE Debug) 
-
 #
 # macOS / Homebrew configuration
 #
@@ -94,12 +90,7 @@ option(VPR_ENABLE_NOC_SAT_ROUTING "Enable NoC SAT routing." OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
-if(QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: force WITH_ABC=OFF")
-    option(WITH_ABC "Enable building abc" OFF)
-else()
-    option(WITH_ABC "Enable building abc" ON)
-endif()
+option(WITH_ABC "Enable building abc" ON)
 option(WITH_ODIN "Enable building odin" OFF)
 option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
 option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
@@ -108,24 +99,8 @@ option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
-if(QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: force WITH_PARMYS=OFF")
-    option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" OFF)
-else()
-    option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
-endif()
-
-if(QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: force WITH_PARMYS=OFF")
-    option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" OFF)
-else()
-    if(FORCE_SLANG_SYSTEMVERILOG_DISABLE)
-        message("WARNING!!!: FORCE_SLANG_SYSTEMVERILOG_DISABLE=ON, SLANG_SYSTEMVERILOG was deactivate during dev because of the build issues on ubuntu20.04. This should be undo on a stage of finalizing migrating to Qt")
-        option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" OFF)
-    else()
-        option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" ON)
-    endif()
-endif()
+option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
+option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" ON)
 
 set(VTR_VERSION_MAJOR 9)
 set(VTR_VERSION_MINOR 0)
@@ -460,11 +435,7 @@ add_custom_target(get_flat_placements
 #
 # Unit Testing
 #
-if(QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip VTR tests build")
-else()
-    enable_testing()
-endif()
+enable_testing()
 
 #
 # Sub-projects

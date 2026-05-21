@@ -266,23 +266,19 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libvpr)
 #
 # Unit Tests
 #
-if (QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skip VPR tests build")
-else()
-    file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
-    # Exclude GUI tests — they require Qt and are built separately via
-    # add_subdirectory(test/gui) only when VPR_USE_EZGL is "on".
-    list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/test/gui/.*")
-    add_executable(test_vpr ${TEST_SOURCES})
-    target_link_libraries(test_vpr
-                            Catch2::Catch2WithMain
-                            libvpr)
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+# Exclude GUI tests — they require Qt and are built separately via
+# add_subdirectory(test/gui) only when VPR_USE_EZGL is "on".
+list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/test/gui/.*")
+add_executable(test_vpr ${TEST_SOURCES})
+target_link_libraries(test_vpr
+                        Catch2::Catch2WithMain
+                        libvpr)
 
-    add_test(NAME test_vpr
-        COMMAND test_vpr --colour-mode ansi
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
-        )
-endif()
+add_test(NAME test_vpr
+    COMMAND test_vpr --colour-mode ansi
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
+    )
 
 #
 # GUI Tests — Qt-based GUI flow verification (separate from legacy tests)

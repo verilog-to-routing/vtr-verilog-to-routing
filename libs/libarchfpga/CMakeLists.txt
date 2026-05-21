@@ -63,15 +63,11 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libarchfpga)
 # 
 # Unit Tests
 #
-if (QT_MIGRATION_FAST_BUILD)
-    message("WARNING!!! QT_MIGRATION_FAST_BUILD is ON: skipping test_archfpga build")
-else()
-    file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
-    add_executable(test_archfpga ${TEST_SOURCES})
-    target_link_libraries(test_archfpga Catch2::Catch2WithMain libarchfpga)
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+add_executable(test_archfpga ${TEST_SOURCES})
+target_link_libraries(test_archfpga Catch2::Catch2WithMain libarchfpga)
 
-    add_test(NAME test_archfpga
-        COMMAND test_archfpga
-        --colour-mode ansi
-        )
-endif()
+add_test(NAME test_archfpga
+    COMMAND test_archfpga
+    --colour-mode ansi
+    )
