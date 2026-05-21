@@ -162,3 +162,6 @@ cmake-build-release
 #
 compile_commands.json
 .clangd
+
+vpr/test/gui/golden/tmp/*
+

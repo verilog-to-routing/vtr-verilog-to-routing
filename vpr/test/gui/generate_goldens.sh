@@ -154,17 +154,38 @@ if ! PYTHON="$(resolve_python)"; then
 else
     mkdir -p "${TMP_DIR}"
     echo "--- Writing debug triptychs into ${TMP_DIR}"
+    echo "    Columns: <case>                              SSIM=<score>  (delta=1-SSIM)"
     for renderer in "${RENDERERS[@]}"; do
         [[ "${renderer}" == "rhi" ]] && continue
+        echo "  rhi vs ${renderer}:"
         for name in "${VISUAL_CASE_NAMES[@]}"; do
             rhi_png="${GOLDEN_DIR}/rhi/${name}.png"
             cur_png="${GOLDEN_DIR}/${renderer}/${name}.png"
             out_png="${TMP_DIR}/${name}_${renderer}.png"
             # --threshold 0.0 → always exit 0 so set -e doesn't kill us on
             # unrelated SSIM-below-threshold differences; the triptych is
-            # always written when --diff-on-fail-only is omitted.
-            "${PYTHON}" "${COMPARE}" "${rhi_png}" "${cur_png}" \
-                --threshold 0.0 --diff-out "${out_png}" --quiet
+            # always written when --diff-on-fail-only is omitted. Drop
+            # --quiet so we can extract the SSIM score and surface it
+            # alongside the case name.
+            cmp_out=$("${PYTHON}" "${COMPARE}" "${rhi_png}" "${cur_png}" \
+                --threshold 0.0 --diff-out "${out_png}") || cmp_out="ERROR"
+            ssim=$(printf '%s\n' "${cmp_out}" | awk '/^SSIM:/ {print $2}')
+            ssim="${ssim:-?}"
+            # Match the runner's default SSIM threshold (0.98). Any case
+            # below that gets a [WARNING] tag in the leading column so a
+            # scan of the output surfaces real cross-renderer drift.
+            if [[ "${ssim}" == "?" ]]; then
+                delta="?"
+                tag="[ERROR]   "
+            else
+                delta=$(awk "BEGIN { printf \"%.6f\", 1 - ${ssim} }")
+                if awk "BEGIN { exit !(${ssim} < 0.98) }"; then
+                    tag="[WARNING] "
+                else
+                    tag="          "
+                fi
+            fi
+            printf "    %s%-50s  SSIM=%s  delta=%s\n" "${tag}" "${name}" "${ssim}" "${delta}"
         done
     done
     echo "    Wrote $(ls "${TMP_DIR}"/*.png 2>/dev/null | wc -l) triptychs."
