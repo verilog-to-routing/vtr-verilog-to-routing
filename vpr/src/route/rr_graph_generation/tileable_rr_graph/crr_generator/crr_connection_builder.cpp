@@ -27,6 +27,32 @@ static bool is_integer(const std::string& s) {
     return ec == std::errc() && ptr == s.data() + s.size();
 }
 
+/**
+ * @brief Builds the per-tile-type reverse map (pin_name -> pin_ptc) for every
+ *        physical tile type.
+ *
+ * The returned vector is indexed by t_physical_tile_type::index.
+ *
+ * Kept as a free helper so it can be invoked directly in the constructor's
+ * initializer list. The returned vector is a prvalue, so it is moved (not
+ * copied) into the member it initializes.
+ */
+static std::vector<std::unordered_map<std::string, int>>
+create_pin_name_to_ptc_cache(const std::vector<t_physical_tile_type>& physical_tile_types) {
+    std::vector<std::unordered_map<std::string, int>> pin_name_to_ptc_cache(physical_tile_types.size());
+
+    for (const t_physical_tile_type& tile_type : physical_tile_types) {
+        VTR_ASSERT(tile_type.index >= 0 && tile_type.index < static_cast<int>(physical_tile_types.size()));
+        std::unordered_map<std::string, int>& name_to_ptc = pin_name_to_ptc_cache[tile_type.index];
+        name_to_ptc.reserve(tile_type.num_pins);
+        for (int pin_ptc = 0; pin_ptc < tile_type.num_pins; ++pin_ptc) {
+            name_to_ptc.emplace(block_type_pin_index_to_name(&tile_type, pin_ptc, false), pin_ptc);
+        }
+    }
+
+    return pin_name_to_ptc_cache;
+}
+
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
                                            const NodeLookupManager& node_lookup,
                                            const SwitchBlockManager& sb_manager,
@@ -34,16 +60,8 @@ CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
     : rr_graph_(rr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager)
-    , verbosity_(verbosity) {
-    for (const t_physical_tile_type& tile_type : g_vpr_ctx.device().physical_tile_types) {
-        std::unordered_map<std::string, int> name_to_ptc;
-        name_to_ptc.reserve(tile_type.num_pins);
-        for (int pin_ptc = 0; pin_ptc < tile_type.num_pins; ++pin_ptc) {
-            name_to_ptc.emplace(block_type_pin_index_to_name(&tile_type, pin_ptc, false), pin_ptc);
-        }
-        pin_name_to_ptc_cache_.emplace(&tile_type, std::move(name_to_ptc));
-    }
-}
+    , verbosity_(verbosity)
+    , pin_name_to_ptc_cache_(create_pin_name_to_ptc_cache(g_vpr_ctx.device().physical_tile_types)) {}
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
                                       int fpga_grid_y,
@@ -338,7 +356,7 @@ int CRRConnectionBuilder::resolve_pin_ptc(const SegmentInfo& info,
                         info.pin_name.c_str(), x, y);
     }
 
-    const auto& name_to_ptc = pin_name_to_ptc_cache_.at(tile_type);
+    const auto& name_to_ptc = pin_name_to_ptc_cache_.at(tile_type->index);
     auto pin_it = name_to_ptc.find(info.pin_name);
     if (pin_it != name_to_ptc.end()) {
         return pin_it->second;
