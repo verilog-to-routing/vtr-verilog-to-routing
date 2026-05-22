@@ -100,6 +100,19 @@ static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_n
  */
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t_lb_type_rr_node>& lb_rr_graph);
 
+/**
+ * @brief Returns true if every edge in the route tree is reachable under the
+ *        current mode assignments in lb_rr_node_stats.
+ *
+ * Used at hot-start time to decide whether a saved route tree can be reused
+ * without re-routing. An edge parent→child is valid only if child appears in
+ * lb_type_graph[parent].outedges[mode], where mode is the current forced mode
+ * of parent (defaulting to 0 when unconstrained).
+ */
+static bool is_route_mode_compatible(const t_lb_trace& rt,
+                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
+
 /*****************************************************************************************
  * Constructor/Destructor functions
  ******************************************************************************************/
@@ -302,22 +315,12 @@ void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
             int inode = pb_graph_node->input_pins[iport][ipin].pin_count_in_cluster;
             lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
-            // Mark any nets using this node as dirty.
-            auto range = rr_node_to_saved_nets_.equal_range(inode);
-            for (auto it = range.first; it != range.second; ++it) {
-                dirty_nets_.insert(it->second);
-            }
         }
     }
     for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
             int inode = pb_graph_node->clock_pins[iport][ipin].pin_count_in_cluster;
             lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
-            // Mark any nets using this node as dirty.
-            auto range = rr_node_to_saved_nets_.equal_range(inode);
-            for (auto it = range.first; it != range.second; ++it) {
-                dirty_nets_.insert(it->second);
-            }
         }
     }
 
@@ -332,11 +335,6 @@ void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
                     for (int ipin = 0; ipin < child_pb_graph_node->num_output_pins[iport]; ipin++) {
                         int inode = child_pb_graph_node->output_pins[iport][ipin].pin_count_in_cluster;
                         lb_rr_node_stats_[inode].mode = (set == true) ? mode : -1;
-                        // Mark any nets using this node as dirty.
-                        auto range = rr_node_to_saved_nets_.equal_range(inode);
-                        for (auto it = range.first; it != range.second; ++it) {
-                            dirty_nets_.insert(it->second);
-                        }
                     }
                 }
             }
@@ -452,7 +450,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
             continue;
 
         // Skip if a mode change has invalidated this net's route tree.
-        if (dirty_nets_.contains(saved_lb_net.atom_net_id))
+        if (!is_route_mode_compatible(saved_lb_net.rt_tree, *lb_type_graph_, lb_rr_node_stats_))
             continue;
 
         // Commit the saved route tree to the routes.
@@ -1038,6 +1036,31 @@ static bool is_skip_route_net(const t_lb_trace& rt,
     return true;
 }
 
+static bool is_route_mode_compatible(const t_lb_trace& rt,
+                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats) {
+    int cur_node = rt.current_node;
+    int mode = lb_rr_node_stats[cur_node].mode;
+    if (mode == -1) mode = 0;
+
+    for (const auto& child : rt.next_nodes) {
+        // Verify the edge cur_node -> child.current_node exists in the current mode.
+        bool edge_exists = false;
+        if (mode < lb_type_graph[cur_node].num_modes) {
+            for (int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+                if (lb_type_graph[cur_node].outedges[mode][iedge].node_index == child.current_node) {
+                    edge_exists = true;
+                    break;
+                }
+            }
+        }
+        if (!edge_exists) return false;
+        if (!is_route_mode_compatible(child, lb_type_graph, lb_rr_node_stats))
+            return false;
+    }
+    return true;
+}
+
 void ClusterRouter::add_source_to_rt_(int inet) {
     VTR_ASSERT(intra_lb_nets_[inet].rt_tree.current_node == UNDEFINED);
     intra_lb_nets_[inet].rt_tree.current_node = intra_lb_nets_[inet].terminals[0];
@@ -1312,28 +1335,6 @@ void ClusterRouter::save_and_reset_lb_route_() {
         reset_lb_net_rt(intra_lb_nets_[inet].rt_tree);
     }
 
-    // Reset the dirty nets. Once we save the current routing, there are no dirty
-    // nets.
-    dirty_nets_.clear();
-
-    // Populate a lookup between used RR nodes and the atom net currently
-    // occupying them. This is used to detect for dirty nets.
-    rr_node_to_saved_nets_.clear();
-    for (const auto& saved_lb_net : saved_lb_nets_) {
-        // Basic traversal of the route tree, inserting each RR node and its
-        // associated Atom net.
-        std::queue<const t_lb_trace*> q;
-        q.push(&saved_lb_net.rt_tree);
-        while (!q.empty()) {
-            const t_lb_trace* n = q.front();
-            // Here we assume that each RR node is only occupied by a single net.
-            rr_node_to_saved_nets_.insert({n->current_node, saved_lb_net.atom_net_id});
-            for (const auto& node : n->next_nodes) {
-                q.push(&node);
-            }
-            q.pop();
-        }
-    }
 }
 
 static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
