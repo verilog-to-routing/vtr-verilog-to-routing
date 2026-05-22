@@ -776,7 +776,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     Note: Use of this feature with ``--analytical_place`` is experimental. For now, ``--memoize_cluster_packings`` is unsupported if ``--ap_full_legalizer`` is set to ``flat-recon``, and will be ignored.
 
-    **Default:** ``off``
+    **Default:** ``on``
 
 .. option:: --pack_verbosity <int>
 
@@ -2054,7 +2054,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
 .. option:: --router_lookahead_interposer_base_cut_multiplier
     .. note:: This option only works affects the map router lookahead and devices that have interposer cuts
-    
+
     A multiplier that's applied to the base cost of interposer wires for the router lookahead.
 
     **Default:** ``2``
