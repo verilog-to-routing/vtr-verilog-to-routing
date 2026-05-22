@@ -31,8 +31,9 @@ class CRRPatternMatcher {
         cache_.emplace(pattern, compile(pattern));
     }
 
-    // Returns true if name matches pattern. Uses the pre-compiled cache for registered
-    // patterns; falls back to on-the-fly compilation for unregistered ones.
+    // Returns true if name matches pattern, using the pre-compiled cache.
+    // The pattern must have been registered via register_pattern() beforehand;
+    // an unregistered pattern raises a fatal error.
     bool matches_pattern(const std::string& name, const std::string& pattern) const {
         auto it = cache_.find(pattern);
         if (it == cache_.end()) {
