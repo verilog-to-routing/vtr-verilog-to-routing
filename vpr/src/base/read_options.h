@@ -175,6 +175,14 @@ struct t_options {
     argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;
 
+    argparse::ArgValue<float> place_interposer_cost_factor;
+    argparse::ArgValue<float> place_interposer_cong_cost_factor;
+    argparse::ArgValue<float> place_interposer_cong_threshold;
+
+    argparse::ArgValue<float> place_congestion_factor;
+    argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
+    argparse::ArgValue<float> place_congestion_chan_util_threshold;
+
     // NoC Options
     argparse::ArgValue<bool> noc;
     argparse::ArgValue<std::string> noc_flows_file;
@@ -194,9 +202,6 @@ struct t_options {
     argparse::ArgValue<std::string> noc_placement_file_name;
 
     // Timing-driven placement options only
-    argparse::ArgValue<float> place_congestion_factor;
-    argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
-    argparse::ArgValue<float> place_congestion_chan_util_threshold;
     argparse::ArgValue<float> place_timing_tradeoff;
     argparse::ArgValue<int> recompute_crit_iter;
     argparse::ArgValue<int> inner_loop_recompute_divider;
