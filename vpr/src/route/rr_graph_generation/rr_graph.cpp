@@ -292,6 +292,21 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph);
 
 /**
+ * @brief Build per-cut interposer crossing-capacity tables from the RR graph.
+ *
+ * Architectures with interposer cut lines need a fast way to know how much routing capacity
+ * crosses each cut at every coordinate along the cut. Placement and interposer congestion
+ * estimation consume these tables; computing them here (once, next to channel-width init)
+ * keeps that logic out of the hot path.
+ *
+ * @param device_ctx Writable device context; fills horz_interposer_capacity_ and
+ *                   vert_interposer_capacity_ when the grid defines interposer cuts.
+ * @param rr_graph   RR graph whose CHANX/CHANY segment capacities are summed per cut.
+ */
+static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
+                                                   const RRGraphView& rr_graph);
+
+/**
  * @brief Calculates the routing channel width at each grid location.
  *
  * Iterates through all RR nodes and counts how many wires pass through each (layer, x, y) location
@@ -1020,6 +1035,68 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
     return delayless_switch;
 }
 
+static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
+                                                   const RRGraphView& rr_graph) {
+    const DeviceGrid& grid = device_ctx.grid;
+    // No interposer cuts on this device; nothing to populate.
+    if (!grid.has_interposer_cuts()) {
+        return;
+    }
+
+    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+    const size_t num_layers = grid.get_num_layers();
+
+    // Per-layer cut lists can differ in length; max over layers sets the shared [cut_idx] size.
+    size_t max_h_cuts = 0, max_v_cuts = 0;
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        max_h_cuts = std::max(max_h_cuts, horizontal_cuts[layer].size());
+        max_v_cuts = std::max(max_v_cuts, vertical_cuts[layer].size());
+    }
+
+    vtr::NdMatrix<int, 3>& horz_interposer_capacity = device_ctx.horz_interposer_capacity_;
+    vtr::NdMatrix<int, 3>& vert_interposer_capacity = device_ctx.vert_interposer_capacity_;
+
+    // Matrices are sized to the maximum cut count across layers.
+    // Layers with fewer cuts will leave the extra [cut_idx] planes at zero.
+    horz_interposer_capacity.resize({num_layers, max_h_cuts, grid.width()});
+    vert_interposer_capacity.resize({num_layers, max_v_cuts, grid.height()});
+    horz_interposer_capacity.fill(0);
+    vert_interposer_capacity.fill(0);
+
+    for (RRNodeId node_id : rr_graph.nodes()) {
+        e_rr_type rr_type = rr_graph.node_type(node_id);
+        int layer = rr_graph.node_layer_low(node_id);
+        int cap = rr_graph.node_capacity(node_id);
+
+        if (rr_type == e_rr_type::CHANY) {
+            int x = rr_graph.node_xlow(node_id);
+            int ylow = rr_graph.node_ylow(node_id);
+            int yhigh = rr_graph.node_yhigh(node_id);
+            const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+            for (size_t cut_idx = 0; cut_idx < layer_h_cuts.size(); cut_idx++) {
+                int cut_y = layer_h_cuts[cut_idx];
+                // This CHANY node crosses the horizontal cut at y = cut_y.
+                if (ylow <= cut_y && cut_y < yhigh) {
+                    horz_interposer_capacity[layer][cut_idx][x] += cap;
+                }
+            }
+        } else if (rr_type == e_rr_type::CHANX) {
+            int y = rr_graph.node_ylow(node_id);
+            int xlow = rr_graph.node_xlow(node_id);
+            int xhigh = rr_graph.node_xhigh(node_id);
+            const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+            for (size_t cut_idx = 0; cut_idx < layer_v_cuts.size(); cut_idx++) {
+                int cut_x = layer_v_cuts[cut_idx];
+                // This CHANX node crosses the vertical cut at x = cut_x.
+                if (xlow <= cut_x && cut_x < xhigh) {
+                    vert_interposer_capacity[layer][cut_idx][y] += cap;
+                }
+            }
+        }
+    }
+}
+
 static void alloc_and_init_channel_width() {
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const DeviceGrid& grid = mutable_device_ctx.grid;
@@ -1074,6 +1151,8 @@ static void alloc_and_init_channel_width() {
         chan_width_list.x[loc.y] = std::max(chan_width.x[loc.layer_num][loc.x][loc.y], chan_width_list.x[loc.y]);
         chan_width_list.y[loc.x] = std::max(chan_width.y[loc.layer_num][loc.x][loc.y], chan_width_list.y[loc.x]);
     }
+
+    init_interposer_capacity_from_rr_graph(mutable_device_ctx, rr_graph);
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,

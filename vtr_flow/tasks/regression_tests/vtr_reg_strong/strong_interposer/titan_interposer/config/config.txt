@@ -21,7 +21,7 @@ circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
 circuit_constraint_list_add=(ucsb_152_tap_fir_stratixiv_arch_timing.blif,    device=titan_extra_small_1x4)
 
 # Parse info and how to parse
-parse_file=vpr_titan.txt
+parse_file=vpr_titan_interposer.txt
 
 # How to parse QoR info
 qor_parse_file=qor_vpr_titan.txt
