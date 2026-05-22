@@ -443,17 +443,20 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
     // If there are any saved nets, use this information to hot-start the intra-
     // lb route.
     for (const auto& saved_lb_net : saved_lb_nets_) {
-        // If the net is dirty (meaning any part of it has changed since the
-        // last route), we cannot use its route tree.
+        // Skip if the net's terminals have changed since the last save — the
+        // saved route tree no longer reaches the right pins.
+        auto it = atom_net_to_inet.find(saved_lb_net.atom_net_id);
+        VTR_ASSERT(it != atom_net_to_inet.end());
+        size_t inet = it->second;
+        if (intra_lb_nets_[inet].terminals != saved_lb_net.terminals)
+            continue;
+
+        // Skip if a mode change has invalidated this net's route tree.
         if (dirty_nets_.contains(saved_lb_net.atom_net_id))
             continue;
 
         // Commit the saved route tree to the routes.
         commit_remove_rt_(saved_lb_net.rt_tree, RT_COMMIT, mode_map, mode_status);
-
-        // Save the route tree in the appropraite intra-lb net.
-        VTR_ASSERT(atom_net_to_inet.contains(saved_lb_net.atom_net_id));
-        size_t inet = atom_net_to_inet[saved_lb_net.atom_net_id];
         intra_lb_nets_[inet].rt_tree = saved_lb_net.rt_tree;
     }
 
@@ -665,9 +668,6 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
     VTR_ASSERT(intra_lb_nets_[ipos].atom_net_id == net_id);
     VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() == intra_lb_nets_[ipos].terminals.size());
 
-    // Mark this net as dirty since its terminals has changed.
-    dirty_nets_.insert(net_id);
-
     /*
      * Determine whether or not this is a new intra lb net, if yes, then add to list of intra lb nets
      */
@@ -826,9 +826,6 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
 
     VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() == intra_lb_nets_[ipos].terminals.size());
 
-    // Mark net as dirty since the terminals has changed.
-    dirty_nets_.insert(net_id);
-
     auto port_type = atom_netlist.port_type(port_id);
     if (port_type == PortType::OUTPUT) {
         /* Net driver pin takes 0th position in terminals */
@@ -969,8 +966,6 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb
 
                 //Change the target
                 intra_lb_nets_[ilb_net].terminals[term_idx] = pin_index;
-                // Mark this net as dirty since its terminals has changed.
-                dirty_nets_.insert(intra_lb_nets_[ilb_net].atom_net_id);
             }
         }
     }

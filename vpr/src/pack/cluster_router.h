@@ -572,9 +572,10 @@ class ClusterRouter {
     /// @brief Priority queue used during path search.
     ClusterRouterPriorityQueue pq_;
 
-    /// @brief Set of nets which have been modified since the last successful
-    ///        route. This is used when hot-starting the next route, since these
-    ///        nets must be ignored due to being changed.
+    /// @brief Set of nets whose saved route trees have been invalidated by a
+    ///        mode change since the last successful route. Terminal changes are
+    ///        handled lazily at hot-start time by comparing terminals directly,
+    ///        so only mode-based invalidation is tracked here.
     std::unordered_set<AtomNetId> dirty_nets_;
 
     /// @brief A lookup between used RR nodes and the nets from the previous
