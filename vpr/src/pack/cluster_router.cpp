@@ -411,8 +411,8 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
 }
 
 void ClusterRouter::hot_start_intra_lb_route_(
-        std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
-        t_mode_selection_status* mode_status) {
+    std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
+    t_mode_selection_status* mode_status) {
     // Build a lookup from atom net ID to intra-lb net index for fast access.
     std::unordered_map<AtomNetId, size_t> atom_net_to_inet;
     atom_net_to_inet.reserve(intra_lb_nets_.size());

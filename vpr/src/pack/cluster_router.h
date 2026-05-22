@@ -505,8 +505,8 @@ class ClusterRouter {
      * @param mode_status Mode-selection status updated by commit_remove_rt_.
      */
     void hot_start_intra_lb_route_(
-            std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
-            t_mode_selection_status* mode_status);
+        std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
+        t_mode_selection_status* mode_status);
 
     /**
      * @brief Debugging function, used to print the description of the given

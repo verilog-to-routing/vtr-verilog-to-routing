@@ -684,7 +684,6 @@ class ClusterLegalizer {
     ///        feasibility. Cluster legality check results are memoized and
     ///        reused to avoid repeating work.
     std::optional<PackingSignatureTree> packing_signature_tree_;
-
 };
 
 /**
