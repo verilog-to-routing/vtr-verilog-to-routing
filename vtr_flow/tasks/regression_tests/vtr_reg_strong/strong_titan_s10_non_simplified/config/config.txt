@@ -1,5 +1,4 @@
-#
-############################################
+##############################################
 # Configuration file for running experiments
 ##############################################
 
@@ -16,7 +15,7 @@ archs_dir=arch/titan
 circuit_list_add=tiny_murax_stratix10_arch_timing.blif
 
 # Add architectures to list to sweep
-arch_list_add=stratix10_arch.timing.depop50.complex_alm.xml
+arch_list_add=stratix10_arch.timing.non_simplified.xml
 
 # Parse info and how to parse
 parse_file=vpr_titan_s10.txt
@@ -28,5 +27,4 @@ qor_parse_file=qor_vpr_titan.txt
 pass_requirements_file=pass_requirements_vpr_titan_s10.txt
 
 script_params_common=-starting_stage vpr -track_memory_usage --route_chan_width 400 --max_router_iterations 400 --router_lookahead map
-script_params_list_add =
 script_params_list_add = --pack --place --route --analysis
