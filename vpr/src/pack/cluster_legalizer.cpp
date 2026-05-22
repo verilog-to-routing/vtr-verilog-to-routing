@@ -63,12 +63,13 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                         const std::unordered_set<int>& valid_feedback_pins)
+                                         const std::unordered_set<int>& valid_feedback_pins,
+                                         bool enable_router_hot_start)
     : pb(new t_pb)
     , type(cluster_type)
     , pr(PartitionRegion())
     , noc_grp_id(NocGroupId::INVALID())
-    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins)
+    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, enable_router_hot_start)
     , placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
@@ -1534,7 +1535,8 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     VTR_ASSERT_MSG(cluster_type->index < (int)valid_feedback_pins_by_type_.size(),
                    ("Logical block type not found in feedback pin map: " + std::string(cluster_type->name)).c_str());
     LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_,
-                                    valid_feedback_pins_by_type_[cluster_type->index]);
+                                    valid_feedback_pins_by_type_[cluster_type->index],
+                                    enable_cluster_router_hot_start_);
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
@@ -1734,6 +1736,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
                                    bool enable_pin_feasibility_filter,
                                    bool memoize_cluster_packings,
+                                   bool enable_cluster_router_hot_start,
                                    const LogicalModels& models,
                                    int log_verbosity)
     : prepacker_(prepacker) {
@@ -1763,6 +1766,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Copy the options passed by the user
     cluster_legalization_strategy_ = cluster_legalization_strategy;
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;
+    enable_cluster_router_hot_start_ = enable_cluster_router_hot_start;
     log_verbosity_ = log_verbosity;
     VTR_ASSERT(g_vpr_ctx.atom().lookup().atom_pb_bimap().is_empty());
     atom_pb_lookup_ = AtomPBBimap();

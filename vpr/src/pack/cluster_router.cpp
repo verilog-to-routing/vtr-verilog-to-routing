@@ -119,7 +119,8 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
 
 ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
                              t_logical_block_type_ptr type,
-                             const std::unordered_set<int>& valid_feedback_pins) {
+                             const std::unordered_set<int>& valid_feedback_pins,
+                             bool enable_hot_start) {
     lb_type_graph_ = lb_type_graph;
     lb_type_ = type;
     valid_feedback_pins_ = &valid_feedback_pins;
@@ -139,6 +140,7 @@ ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
 
     is_clean_ = false;
     is_valid_ = true;
+    enable_hot_start_ = enable_hot_start;
 }
 
 void ClusterRouter::clean_router_data() {
@@ -462,7 +464,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
 
     // Hot-start: seed previously-saved, still-valid route trees so that
     // pathfinder can skip unchanged nets on its first iteration.
-    if (!saved_lb_nets_.empty())
+    if (enable_hot_start_ && !saved_lb_nets_.empty())
         hot_start_intra_lb_route_(mode_map, mode_status);
 
     /*	Iteratively remove congestion until a successful route is found.

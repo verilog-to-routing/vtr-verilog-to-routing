@@ -259,7 +259,8 @@ class ClusterRouter {
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
         , is_clean_(true)
-        , is_valid_(false) {}
+        , is_valid_(false)
+        , enable_hot_start_(false) {}
 
     /**
      * @brief Constructor for the ClusterRouter.
@@ -269,10 +270,15 @@ class ClusterRouter {
      *  @param valid_feedback_pins  Pre-computed set of top-level output pin
      *                              indices with Fc_out > 0; owned by the
      *                              caller and must outlive this router.
+     *  @param enable_hot_start     When true, each call to try_intra_lb_route
+     *                              seeds unchanged nets from the last successful
+     *                              route before running pathfinder, reducing
+     *                              the number of nets that need re-routing.
      */
     ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
                   t_logical_block_type_ptr type,
-                  const std::unordered_set<int>& valid_feedback_pins);
+                  const std::unordered_set<int>& valid_feedback_pins,
+                  bool enable_hot_start = false);
 
     /**
      * @brief Add pins of netlist atom to current routing drivers/targets.
@@ -594,6 +600,10 @@ class ClusterRouter {
     /// @brief Flag that indicates if this object has valid state or not. If the
     ///        router is invalid, none of the methods should be used.
     bool is_valid_;
+
+    /// @brief When true, try_intra_lb_route seeds unchanged nets from the last
+    ///        successful route before running pathfinder (hot-start).
+    bool enable_hot_start_;
 };
 
 /**

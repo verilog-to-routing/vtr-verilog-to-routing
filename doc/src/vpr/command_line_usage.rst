@@ -778,6 +778,17 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``off``
 
+.. option:: --cluster_router_hot_start {on | off}
+
+    Enables hot-starting of the intra-cluster router during packing.
+
+    When enabled, each call to the intra-cluster router seeds unchanged nets from the previous successful route before running pathfinder.
+    Nets whose terminals are unchanged and whose route trees are still valid under the current mode assignments are committed upfront, allowing pathfinder to skip them on its first iteration.
+    This can reduce router runtime when many candidate molecules are tried and rejected: after a failed molecule is removed, the cluster returns to a known-good state without re-routing nets that did not change.
+    Enabling this option does not affect circuit quality metrics like routed wirelength or critical path delay.
+
+    **Default:** ``off``
+
 .. option:: --pack_verbosity <int>
 
     Controls the verbosity of clustering output.

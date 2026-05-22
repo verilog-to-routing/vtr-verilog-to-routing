@@ -2305,6 +2305,21 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool, ParseOnOff>(args.cluster_router_hot_start, "--cluster_router_hot_start")
+        .help("Enables hot-starting of the intra-cluster router during packing.\n"
+              "\n"
+              "When enabled, the router seeds each new routing attempt with the\n"
+              "route trees from the previous successful route. Nets whose terminals\n"
+              "are unchanged and whose route trees are still valid under the current\n"
+              "mode assignments are committed before pathfinder begins, allowing them\n"
+              "to be skipped in the first iteration. This can reduce router runtime\n"
+              "when many molecules are tried and rejected, since the cluster returns\n"
+              "to a known-good state without re-routing nets that did not change.\n"
+              "\n"
+              "Enabling this option does not affect circuit quality metrics.\n")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
