@@ -31,6 +31,8 @@
 %option noyywrap
 %option yylineno
 %option nounput
+%option never-interactive
+%option nounistd
 
 /*********************************************************************/
 /**** PUT SYMBOL DEFINITIONS HERE ************************************/
@@ -41,7 +43,6 @@
 ^[ \t]*\(\*[^\n\r]*\*\)                     /* skip synthesis attributes and directives */
 [ \t\n\r]+                                      /* skip white spaces */
 !				    /* skip the logical operator ! applied on the input ports of the lut - this results in lut mask not being valid anoymore */
-(\n|\r\n)                                   /* skip empty lines */
 module                                      return TOKEN_MODULE;
 endmodule                                   return TOKEN_ENDMODULE;
 defparam                                    return TOKEN_DEFPARAM;

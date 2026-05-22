@@ -21,11 +21,85 @@ open(my $abcInFile, "<".$ARGV[1]) || die "Error Opening ABC Input File $ARGV[1]:
 #Open the ABC Optimized (ODIN II) BLIF File
 open(my $abcOutFile, ">".$ARGV[2]) || die "Error Opening Output File $ARGV[2]: $!\n";
 
+#Variables to store outputs declaration
+my @outputs_block = ();
+my $found_outputs = 0;
+my $skip_output_continuations = 0;
+my $odin_seen_model = 0;
+my $odin_in_top_model = 0;
+my $abc_seen_model = 0;
+my $abc_in_top_model = 0;
+my $replaced_outputs = 0;
+
+#First pass: extract the outputs block from the ODIN BLIF
+seek $odinInFile, 0, 0;
+while(($lineOdn = <$odinInFile>))
+{
+	if (!$odin_seen_model && $lineOdn =~ /^\.model/)
+	{
+		$odin_seen_model = 1;
+		$odin_in_top_model = 1;
+		next;
+	}
+
+	if ($odin_in_top_model && $lineOdn =~ /^\.end/)
+	{
+		$odin_in_top_model = 0;
+		last;
+	}
+
+	if ($odin_in_top_model && $lineOdn =~ /^\.outputs/ )
+	{
+		push(@outputs_block, $lineOdn);
+		while (($lineOdn =~ /\\\s*$/) && ($lineOdn = <$odinInFile>))
+		{
+			push(@outputs_block, $lineOdn);
+		}
+		$found_outputs = 1;
+		last;
+	}
+}
+
 #While there are lines in the ABC Optimized (ODIN II) BLIF File
 while(($line = <$abcInFile>))
 {
+	if (!$abc_seen_model && $line =~ /^\.model/)
+	{
+		$abc_seen_model = 1;
+		$abc_in_top_model = 1;
+		print $abcOutFile $line;
+		next;
+	}
+
+	if ($abc_in_top_model && $line =~ /^\.end/)
+	{
+		$abc_in_top_model = 0;
+		$skip_output_continuations = 0;
+		print $abcOutFile $line;
+		next;
+	}
+
+	# If we just replaced .outputs, drop stale continuation tokens until the
+	# next BLIF directive line.
+	if ($skip_output_continuations)
+	{
+		if ($line !~ /^\./)
+		{
+			next;
+		}
+		$skip_output_continuations = 0;
+	}
+
+	#If the Line is an outputs declaration and we didn't find outputs in ABC
+	if ($abc_in_top_model && !$replaced_outputs && $line =~ /^\.outputs/ && $found_outputs)
+	{
+		#Replace the ABC outputs block with the original outputs from ODIN BLIF
+		print $abcOutFile @outputs_block;
+		$skip_output_continuations = 1;
+		$replaced_outputs = 1;
+	}
 	#If the Line is a Latch
-	if ($line =~ /^\.latch/ )
+	elsif ($line =~ /^\.latch/ )
 	{
 		#Tokenize the Line
 		my @tokens = split(/[\s]+/, $line);
@@ -95,7 +169,7 @@ while(($line = <$abcInFile>))
 }
 
 #Close the ODIN II BLIF File
-close($odin2File);
+close($odinInFile);
 
 #Close the ABC Optimized (ODIN II) BLIF File
 close($abcInFile);

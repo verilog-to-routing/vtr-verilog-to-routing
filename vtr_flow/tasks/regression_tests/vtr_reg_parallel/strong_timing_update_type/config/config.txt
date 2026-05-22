@@ -1,0 +1,35 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=stereovision3.v
+
+# Add architectures to list to sweep
+arch_list_add=k6_N10_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+script_params_common = --route_chan_width 100
+script_params_list_add = --timing_update_type incremental --router_algorithm parallel --num_workers 4  # rarely exercised code path
+script_params_list_add = --timing_update_type full --router_algorithm parallel --num_workers 4
+script_params_list_add = --timing_update_type incremental --enable_parallel_connection_router on --astar_fac 0.0 --post_target_prune_fac 0.0 --post_target_prune_offset 0.0
+script_params_list_add = --timing_update_type incremental --enable_parallel_connection_router on --multi_queue_num_threads 2 --multi_queue_num_queues 4 --astar_fac 0.0 --post_target_prune_fac 0.0 --post_target_prune_offset 0.0
+script_params_list_add = --timing_update_type incremental --enable_parallel_connection_router on --multi_queue_num_threads 2 --multi_queue_num_queues 8 --multi_queue_direct_draining on --astar_fac 0.0 --post_target_prune_fac 0.0 --post_target_prune_offset 0.0
+script_params_list_add = --timing_update_type full --enable_parallel_connection_router on --astar_fac 0.0 --post_target_prune_fac 0.0 --post_target_prune_offset 0.0
+script_params_list_add = --timing_update_type full --enable_parallel_connection_router on --multi_queue_num_threads 2 --multi_queue_num_queues 4 --astar_fac 0.0 --post_target_prune_fac 0.0 --post_target_prune_offset 0.0
+script_params_list_add = --timing_update_type full --enable_parallel_connection_router on --multi_queue_num_threads 2 --multi_queue_num_queues 8 --multi_queue_direct_draining on --astar_fac 0.0 --post_target_prune_fac 0.0 --post_target_prune_offset 0.0

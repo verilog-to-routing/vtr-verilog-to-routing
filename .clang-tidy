@@ -1,0 +1,36 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-derived-method-shadowing-base-method,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-branch-clone,
+  -bugprone-signed-char-misuse,
+  -bugprone-sizeof-expression,
+  -bugprone-lambda-function-name,
+  -bugprone-throwing-static-initialization,
+  -bugprone-random-generator-seed,
+  -bugprone-nondeterministic-pointer-iteration-order,
+  -bugprone-unchecked-optional-access,
+  -bugprone-suspicious-stringview-data-usage,
+  -bugprone-return-const-ref-from-parameter,
+  -bugprone-unchecked-string-to-number-conversion,
+  # performance-*,
+  # readability-*,
+  #-readability-function-cognitive-complexity,
+  #-readability-identifier-length,
+  #-readability-simplify-boolean-expr,
+  #-readability-redundant-access-specifiers,
+  #-readability-avoid-const-params-in-decls,
+  #-readability-else-after-return,
+  #-readability-uppercase-literal-suffix,
+  #-readability-use-anyofallof,
+  #-readability-redundant-inline-specifier,
+  #-readability-isolate-declaration,
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+ExcludeHeaderFilterRegex: '.*/libs/EXTERNAL/.*'
+FormatStyle: file

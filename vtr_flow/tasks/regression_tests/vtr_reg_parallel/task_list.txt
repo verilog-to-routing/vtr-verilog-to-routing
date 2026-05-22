@@ -1,0 +1,5 @@
+regression_tests/vtr_reg_parallel/koios_test
+regression_tests/vtr_reg_parallel/strong_flat_router
+regression_tests/vtr_reg_parallel/strong_multiclock
+regression_tests/vtr_reg_parallel/strong_timing
+regression_tests/vtr_reg_parallel/strong_timing_update_type

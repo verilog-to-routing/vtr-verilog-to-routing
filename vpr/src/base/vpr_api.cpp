@@ -49,7 +49,7 @@
 #include "read_options.h"
 #include "echo_files.h"
 #include "setup_vpr.h"
-#include "ShowSetup.h"
+#include "show_setup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
 #include "rr_graph.h"
@@ -76,6 +76,7 @@
 #include "timing_fail_error.h"
 #include "analytical_placement_flow.h"
 #include "verify_clustering.h"
+#include "device_size_estimate.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -490,12 +491,25 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
                                        cluster_ctx.clb_nlist.netlist_id().c_str(),
                                        filename_opts.PlaceFile.c_str(),
                                        block_locs);
+
+            // Due to flow divergence, vpr_create_device is never called.
+            // We handle creating the device grid and the nocs within the AP
+            // flow, we leave creating the clock networks to here since they are
+            // not used in AP right now and they modify the global state, so its
+            // best to keep this as high in the flow as possible.
+            // TODO: This flow-divergence needs to be cleaned up such that AP
+            //       and No-AP hit the same setup code to prevent issues.
+            vpr_setup_clock_networks(vpr_setup, arch);
         }
     }
 
-    bool pack_only = is_pack_only(vpr_setup);
+    // The AP flow creates the device internally. All other flows create the
+    // device here.
+    if (vpr_setup.APOpts.doAP != e_stage_action::DO) {
+        bool pack_only = is_pack_only(vpr_setup);
+        vpr_create_device(vpr_setup, arch, pack_only);
+    }
 
-    vpr_create_device(vpr_setup, arch, pack_only);
     // If packing is not skipped, cluster netlist contain valid information, so
     // we can print the resource usage and device utilization
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
@@ -740,12 +754,32 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
 
+    // Estimate the device size before packing and build the RR graph if necessary.
+    // When auto-sizing is used, this sets the device grid to the estimated size so
+    // that downstream stages (e.g. RAM mapper) can query realistic device
+    // dimensions before packing. The packer may later grow or shrink the device
+    // size to match the actual resource requirements after packing completes.
+    DeviceSizeEstimator device_size_estimator(vpr_setup, arch, prepacker);
+
+    // Infer logical RAMs and assign to physical types to prioritize during packing.
+    // For the auto-device flow, reuse the groups already computed by the estimator.
+    RamMapper ram_mapper;
+    if (vpr_setup.PackerOpts.use_ram_mapper) {
+        ram_mapper = RamMapper(g_vpr_ctx.atom().netlist(),
+                               prepacker,
+                               pre_cluster_timing_manager,
+                               device_size_estimator.ram_groups(),
+                               vpr_setup.PackerOpts.pack_verbosity,
+                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+    }
+
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,
                     vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
-                    g_vpr_ctx.atom().flat_placement_info());
+                    g_vpr_ctx.atom().flat_placement_info(),
+                    ram_mapper);
 }
 
 void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -800,7 +834,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 
     // Output the netlist stats to console and optionally to file.
-    writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
+    write_clustered_netlist_stats(vpr_setup.FileNameOpts.write_block_usage);
 
     // print the total number of used physical blocks for each
     // physical block type after finishing the packing stage
@@ -908,7 +942,9 @@ void vpr_place(const Netlist<>& net_list,
             vpr_setup.RouterOpts.read_router_lookahead,
             vpr_setup.Segments,
             is_flat,
-            vpr_setup.RouterOpts.route_verbosity);
+            vpr_setup.RouterOpts.route_verbosity,
+            vpr_setup.RouterOpts.device_model_warnings,
+            vpr_setup.RouterOpts.router_lookahead_interposer_base_cut_multiplier);
     }
 
     // Read in the flat placement if a flat placement file is provided and it
@@ -1131,7 +1167,9 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
         vpr_setup.RouterOpts.read_router_lookahead,
         vpr_setup.Segments,
         is_flat,
-        vpr_setup.RouterOpts.route_verbosity);
+        vpr_setup.RouterOpts.route_verbosity,
+        vpr_setup.RouterOpts.device_model_warnings,
+        vpr_setup.RouterOpts.router_lookahead_interposer_base_cut_multiplier);
 
     vtr::ScopedStartFinishTimer timer("Routing");
 
@@ -1474,7 +1512,7 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
 
 ///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup) {
-    ShowSetup(vpr_setup);
+    show_setup(vpr_setup);
 }
 
 bool vpr_analysis_flow(const Netlist<>& net_list,

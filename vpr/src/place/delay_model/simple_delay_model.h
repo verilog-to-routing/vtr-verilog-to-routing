@@ -1,6 +1,8 @@
 #pragma once
 
+#include <optional>
 #include "place_delay_model.h"
+#include "router_lookahead_interposer.h"
 
 /**
  * @class SimpleDelayModel
@@ -35,4 +37,7 @@ class SimpleDelayModel : public PlaceDelayModel {
      *One might argue that this variability could also occur for dx and dy. However, we are operating under the assumption that the FPGA fabric architecture is regular.
      */
     vtr::NdMatrix<float, 5> delays_; // [0..num_physical_type-1][0..num_layers-1][0..num_layers-1][0..max_dx][0..max_dy]
+
+    /// @brief Contains delay information of crossing a die, used in 2.5D architectures.
+    std::optional<InterposerLookahead> interposer_lookahead_;
 };

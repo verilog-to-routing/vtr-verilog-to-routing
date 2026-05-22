@@ -276,12 +276,14 @@ struct ArchReader {
                Device::Reader& arch_reader,
                const char* arch_file,
                std::vector<t_physical_tile_type>& phys_types,
-               std::vector<t_logical_block_type>& logical_types)
+               std::vector<t_logical_block_type>& logical_types,
+               bool device_model_warnings)
         : arch_(arch)
         , arch_file_(arch_file)
         , ar_(arch_reader)
         , ptypes_(phys_types)
-        , ltypes_(logical_types) {
+        , ltypes_(logical_types)
+        , device_model_warnings_(device_model_warnings) {
         set_arch_file_name(arch_file);
 
         for (std::string str : ar_.getStrList()) {
@@ -325,6 +327,7 @@ struct ArchReader {
     Device::Reader& ar_;
     std::vector<t_physical_tile_type>& ptypes_;
     std::vector<t_logical_block_type>& ltypes_;
+    bool device_model_warnings_;
 
     t_default_fc_spec default_fc_;
 
@@ -964,7 +967,7 @@ struct ArchReader {
 
                     check_model_clocks(new_model, arch_file_, __LINE__);
                     check_model_combinational_sinks(new_model, arch_file_, __LINE__);
-                    warn_model_missing_timing(new_model, arch_file_, __LINE__);
+                    warn_model_missing_timing(new_model, arch_file_, __LINE__, device_model_warnings_);
                 } catch (ArchFpgaError& e) {
                     throw;
                 }
@@ -2489,7 +2492,8 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
                              const bool /*timing_enabled*/,
                              t_arch* arch,
                              std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                             std::vector<t_logical_block_type>& LogicalBlockTypes) {
+                             std::vector<t_logical_block_type>& LogicalBlockTypes,
+                             bool device_model_warnings) {
 #ifdef VTR_ENABLE_CAPNPROTO
     // Decompress GZipped capnproto device file
     gzFile file = gzopen(FPGAInterchangeDeviceFile, "r");
@@ -2529,7 +2533,7 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
     arch->architecture_id = vtr::secure_digest_file(FPGAInterchangeDeviceFile);
 
-    ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes);
+    ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes, device_model_warnings);
     reader.read_arch();
 #else  // VTR_ENABLE_CAPNPROTO
     // If CAPNPROTO is disabled, throw an error.
@@ -2537,6 +2541,7 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
     (void)arch;
     (void)PhysicalTileTypes;
     (void)LogicalBlockTypes;
+    (void)device_model_warnings;
     throw vtr::VtrError("Unable to read FPGA interchange if CAPNPROTO is not enabled", __FILE__, __LINE__);
 #endif // VTR_ENABLE_CAPNPROTO
 }

@@ -17,6 +17,7 @@
 #include "echo_files.h"
 #include "greedy_clusterer.h"
 #include "logic_types.h"
+#include "logical_ram_infer.h"
 #include "prepack.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -176,7 +177,8 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                        const e_cluster_seed seed_type,
                                        const t_molecule_stats& max_molecule_stats,
                                        const LogicalModels& models,
-                                       const PreClusterTimingManager& pre_cluster_timing_manager)
+                                       const PreClusterTimingManager& pre_cluster_timing_manager,
+                                       const RamMapper& ram_mapper)
     : seed_mols_(prepacker.molecules().begin(), prepacker.molecules().end()) {
     // Seed molecule list is initialized with all molecule in the netlist.
 
@@ -230,6 +232,19 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
         return molecule_gains[lhs] > molecule_gains[rhs];
     };
     std::stable_sort(seed_mols_.begin(), seed_mols_.end(), by_descending_gain);
+
+    // If there are RAM groups, move RAM seeds to the front so that RAM clusters
+    // are formed first. Since the RAM mapper has full information about which
+    // atoms belong together, packing RAM clusters early gives non-RAM clusters
+    // transitive connectivity information and makes ordering more intuitive.
+    if (ram_mapper.num_groups() > 0) {
+        std::stable_partition(seed_mols_.begin(), seed_mols_.end(),
+                              [&](PackMoleculeId mol_id) {
+                                  const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+                                  AtomBlockId root = mol.atom_block_ids[mol.root];
+                                  return ram_mapper.group_id_of(root).is_valid();
+                              });
+    }
 
     // Print the seed gains if requested.
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {

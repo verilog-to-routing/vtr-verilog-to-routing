@@ -314,6 +314,7 @@ void refresh_bpList() {
 
 //adds new breakpoint to the breakpoint list in the ui
 void add_to_bpList(std::string bpDescription) {
+    //create description label
     draw_debug_glob_vars.bp_labels.push_back(bpDescription);
     int row = ++draw_debug_glob_vars.bpList_row;
 
@@ -395,8 +396,8 @@ void set_block_button_callback(QWidget* /*widget*/, QWidget* grid) {
     t_draw_state* draw_state = get_draw_state_vars();
     QLineEdit* entry = ezgl::grid_get_child_at<QLineEdit>(grid, 1, 3);
 
-    std::string s(entry->text().toStdString());
     draw_state->list_of_breakpoints.push_back(Breakpoint(BT_FROM_BLOCK, entry->text().toInt()));
+    std::string s(entry->text().toStdString());
     std::string bpDescription = "Breakpoint from_block == " + s;
     add_to_bpList(bpDescription);
 }
@@ -518,6 +519,7 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     QWidget* b = make_image("src/draw/b.png");
     ezgl::widget_set_margin_start(b, 18);
 
+    //info grid labels
     std::string move_num = "move_num: " + std::to_string(draw_breakpoint_state.move_num);
     QLabel* move_info = new QLabel(move_num.c_str());
     ezgl::widget_set_margin_start(move_info, 5);
@@ -542,6 +544,7 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     ezgl::widget_set_margin_start(net_info, 5);
     ezgl::widget_set_halign(net_info, Qt::AlignLeft);
 
+    //attach to grid
     if (in_placer) {
         ezgl::grid_attach(info_grid, m, 0, 0, 1, 1);
         ezgl::grid_attach(info_grid, t, 0, 1, 1, 1);

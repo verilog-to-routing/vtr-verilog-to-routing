@@ -204,6 +204,14 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
     : log_verbosity_(verbosity) {
     vtr::ScopedStartFinishTimer timer("Ram Mapper");
 
+    // Skip the RAM mapping if flat placement is provided. AP blocks created with
+    // the RAM mapping information may conflict with the provided flat placement.
+    // This is analogous to skipping global placement if flat placement is provided.
+    if (g_vpr_ctx.atom().flat_placement_info().valid) {
+        VTR_LOG("Flat Placement is provided, skipping the RAM mapping.\n");
+        return;
+    }
+
     if (precomputed_groups.empty()) {
         VTR_LOG("No pre-computed RAM groups, running grouping and area assignment.\n");
         logical_ram_groups_ = group_ram_atoms(atom_nlist, prepacker);
@@ -220,7 +228,9 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         log_utilizations("Device ram utilizations after timing driven remapping:");
         check_assigned_rams_fit_on_device();
     }
-    build_atom_to_group_map(atom_nlist);
+    build_atom_to_logical_group_map(atom_nlist);
+    physical_ram_groups_ = create_physical_ram_groups(prepacker);
+    build_atom_to_physical_group_map();
 }
 
 LogicalRamGroupId RamMapper::group_id_of(AtomBlockId blk) const {
@@ -236,11 +246,68 @@ const LogicalRamGroup& RamMapper::group(LogicalRamGroupId id) const {
     return logical_ram_groups_[id];
 }
 
-void RamMapper::build_atom_to_group_map(const AtomNetlist& atom_nlist) {
+vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram_groups(const Prepacker& prepacker) const {
+    vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> physical_groups;
+
+    for (LogicalRamGroupId logical_id : logical_ram_groups_.keys()) {
+        const LogicalRamGroup& logical_group = logical_ram_groups_[logical_id];
+        VTR_ASSERT_MSG(logical_group.pre_assigned_type,
+                       "All logical RAM groups must have a pre-assigned type before "
+                       "creating physical RAM groups.");
+
+        int tile_capacity = logical_group.candidate_capacity.at(logical_group.pre_assigned_type);
+
+        PhysicalRamGroup current_group;
+        current_group.logical_ram_group_id = logical_id;
+
+        // Pack each logical RAM into as few physical RAMs of the type chosen
+        // by the RAM mapper as possible. Atoms are packed into physical RAMs
+        // in whatever order they are listed in the logical group, which might
+        // tend to keep datapaths together (e.g. if data[0] and data[1] in a
+        // wide bus are put in this data structure in order), but no direct
+        // attempt is made to ensure this happens.
+        for (AtomBlockId atom_id : logical_group.atoms) {
+            if (!atom_id)
+                continue;
+            if (current_group.total_memory_slices >= tile_capacity) {
+                physical_groups.push_back(current_group);
+                current_group = {logical_id, {}, {}, 0};
+            }
+            current_group.atoms.push_back(atom_id);
+            current_group.molecules.push_back(prepacker.get_atom_molecule(atom_id));
+            current_group.total_memory_slices++;
+        }
+
+        if (!current_group.atoms.empty())
+            physical_groups.push_back(current_group);
+    }
+
+    return physical_groups;
+}
+
+void RamMapper::build_atom_to_logical_group_map(const AtomNetlist& atom_nlist) {
     atom_to_group_.assign(atom_nlist.blocks().size(), LogicalRamGroupId::INVALID());
     for (LogicalRamGroupId group_id : logical_ram_groups_.keys()) {
         for (AtomBlockId atom_id : logical_ram_groups_[group_id].atoms) {
             atom_to_group_[atom_id] = group_id;
+        }
+    }
+}
+
+PhysicalRamGroupId RamMapper::physical_group_id_of(AtomBlockId blk) const {
+    if (!blk.is_valid())
+        return PhysicalRamGroupId::INVALID();
+    if (size_t(blk) >= atom_to_physical_group_.size())
+        return PhysicalRamGroupId::INVALID();
+    return atom_to_physical_group_[blk];
+}
+
+void RamMapper::build_atom_to_physical_group_map() {
+    // Size the map to cover all atom IDs seen in logical groups (same extent as atom_to_group_).
+    atom_to_physical_group_.assign(atom_to_group_.size(), PhysicalRamGroupId::INVALID());
+    for (PhysicalRamGroupId phys_id : physical_ram_groups_.keys()) {
+        for (AtomBlockId atom_id : physical_ram_groups_[phys_id].atoms) {
+            atom_to_physical_group_[atom_id] = phys_id;
         }
     }
 }

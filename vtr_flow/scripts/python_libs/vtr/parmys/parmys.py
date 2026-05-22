@@ -54,6 +54,7 @@ def init_script_file(
     output_netlist,
     architecture_file_path,
     odin_config_full_path,
+    synthesis_params="",
 ):
     """initializing the raw yosys script file"""
     # specify the input files type
@@ -68,6 +69,7 @@ def init_script_file(
         {
             "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
             # "TTT": str(vtr.paths.yosys_tcl_path),
+            "YYY": synthesis_params,
             "CCC": odin_config_full_path,
             "ZZZ": output_netlist,
             "QQQ": architecture_file_path,
@@ -136,6 +138,7 @@ def run(
     yosys_script=None,
     min_hard_mult_size=3,
     min_hard_adder_size=1,
+    synthesis_params="",
 ):
     """
     Runs Yosys on the specified architecture file and circuit
@@ -239,6 +242,7 @@ def run(
         output_netlist.name,
         architecture_file_path,
         odin_config_full_path,
+        synthesis_params=synthesis_params,
     )
 
     # Set the slang exe script path in the environment variable

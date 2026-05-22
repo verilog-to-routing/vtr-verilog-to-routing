@@ -105,6 +105,9 @@ class CRRConnectionBuilder {
         std::string seg_type;
         int seg_index;
         int tap;
+        // Used for IPIN/OPIN when the CSV specifies a pin by name rather
+        // than by numeric PTC index. resolve_pin_ptc() uses it to look up the PTC.
+        std::string pin_name;
 
         SegmentInfo()
             : side(e_sw_template_dir::NUM_SIDES)
@@ -127,6 +130,22 @@ class CRRConnectionBuilder {
                                     int y,
                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
+
+    /**
+     * @brief Resolves the PTC (Pin/Track/Channel) number for an IPIN or OPIN.
+     *
+     * Looks up the physical tile at (x, y) and searches its pins by name to find
+     * the PTC number corresponding to info.pin_name. Falls back to info.seg_index
+     * if no matching pin name is found.
+     *
+     * @param info Segment info containing the pin name and fallback segment index.
+     * @param x    X coordinate of the tile.
+     * @param y    Y coordinate of the tile.
+     * @return The resolved PTC number for the pin.
+     */
+    int resolve_pin_ptc(const SegmentInfo& info,
+                        int x,
+                        int y) const;
 
     RRNodeId process_channel_node(const SegmentInfo& info,
                                   int x,

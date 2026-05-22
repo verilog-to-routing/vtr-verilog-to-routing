@@ -412,8 +412,7 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node* node,
     int child_idx;
     int pin_idx = starting_pin_idx;
 
-    node->num_inputs = (int)(pow(num_primary_inputs, 1 / ((float)level + 1))
-                             + 0.5);
+    node->num_inputs = std::lround(pow(num_primary_inputs, 1 / ((float)level + 1)));
     node->level = level;
     node->starting_pin_idx = starting_pin_idx;
 

@@ -357,7 +357,7 @@
       </scatter>
 
       <sg_link_list>
-        <sg_link name="L_DOWN" y_offset="-2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_DOWN" y_offset="-2" mux="1" seg_type="int_wire"/>
       </sg_link_list>
     </sg_pattern>
 
@@ -371,7 +371,7 @@
       </scatter>
 
       <sg_link_list>
-        <sg_link name="L_RIGHT" x_offset="2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_RIGHT" x_offset="2" mux="1" seg_type="int_wire"/>
       </sg_link_list>
     </sg_pattern>
   </scatter_gather_list>

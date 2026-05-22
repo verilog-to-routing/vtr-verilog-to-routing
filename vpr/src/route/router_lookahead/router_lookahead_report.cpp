@@ -275,18 +275,14 @@ static void profile_lookahead_overestimation(std::ofstream& os,
 
     // Create a NOP router lookahead to be used during the all-destination dijkstra search.
     t_det_routing_arch temp_det_routing_arch;
-    std::unique_ptr<RouterLookahead> temp_router_lookahead = make_router_lookahead(temp_det_routing_arch, e_router_lookahead::NO_OP,
-                                                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
-                                                                                   /*segment_inf=*/{},
-                                                                                   false /*is_flat*/,
-                                                                                   1 /*route_verbosity*/);
+    NoOpLookahead temp_router_lookahead = NoOpLookahead();
 
     // Create the router to perform the all-destination dijkstra search,
     // TODO: The parallel connection router would be ideal for this use case.
     //       Should use it instead.
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
-        *temp_router_lookahead,
+        temp_router_lookahead,
         rr_graph.rr_nodes(),
         &rr_graph,
         device_ctx.rr_rc_data,

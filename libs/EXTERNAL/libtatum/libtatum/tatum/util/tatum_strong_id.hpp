@@ -155,10 +155,10 @@ class StrongId;
 // We need to do this before the class definition so the class can
 // friend them
 template<typename tag, typename T, T sentinel>
-bool operator==(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
+bool operator==(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
 
 template<typename tag, typename T, T sentinel>
-bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
+bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
 
 template<typename tag, typename T, T sentinel>
 bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
@@ -196,20 +196,20 @@ class StrongId {
         //To enable comparisons between Ids
         // Note that since these are templated functions we provide an empty set of template parameters
         // after the function name (i.e. <>)
-        friend bool operator== <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
-        friend bool operator!= <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
+        friend bool operator== <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
+        friend bool operator!= <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
         friend bool operator< <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
     private:
         T id_;
 };
 
 template<typename tag, typename T, T sentinel>
-bool operator==(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) {
+bool operator==(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept {
     return lhs.id_ == rhs.id_;
 }
 
 template<typename tag, typename T, T sentinel>
-bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) {
+bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept {
     return !(lhs == rhs);
 }
 

@@ -5,13 +5,23 @@ set(INTERCHANGE_SCHEMA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../interchange)
 
 find_program(WGET wget REQUIRED)
 
+if(WIN32)
+  if (MSVC)
+    set(WGET_OUTPUT_OPTION -o)
+  elseif (DEFINED ENV{MSYSTEM})
+    set(WGET_OUTPUT_OPTION -O)
+  endif()
+else()
+  set(WGET_OUTPUT_OPTION -O)
+endif()
+
 set(JAVA_SCHEMA ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/java.capnp)
 add_custom_command(
     OUTPUT ${JAVA_SCHEMA}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/
     COMMAND ${WGET}
         https://raw.githubusercontent.com/capnproto/capnproto-java/master/compiler/src/main/schema/capnp/java.capnp
-        -O ${JAVA_SCHEMA}
+        ${WGET_OUTPUT_OPTION} ${JAVA_SCHEMA}
     )
 add_custom_target(
     get_java_capnp_schema

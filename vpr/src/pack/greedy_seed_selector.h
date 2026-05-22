@@ -15,6 +15,7 @@ class AtomNetlist;
 class ClusterLegalizer;
 class LogicalModels;
 class PreClusterTimingManager;
+class RamMapper;
 struct t_molecule_stats;
 
 /**
@@ -48,13 +49,18 @@ class GreedySeedSelector {
      *  @param pre_cluster_timing_manager
      *              Timing manager class for the primitive netlist. Used to
      *              compute the criticalities of seeds.
+     *  @param ram_mapper
+     *              The RAM mapper which contains the pre-assigned RAM groups.
+     *              If there are any RAM groups, RAM seeds are moved to the
+     *              front of the seed list so that RAM clusters are formed first.
      */
     GreedySeedSelector(const AtomNetlist& atom_netlist,
                        const Prepacker& prepacker,
                        const e_cluster_seed seed_type,
                        const t_molecule_stats& max_molecule_stats,
                        const LogicalModels& models,
-                       const PreClusterTimingManager& pre_cluster_timing_manager);
+                       const PreClusterTimingManager& pre_cluster_timing_manager,
+                       const RamMapper& ram_mapper);
 
     /**
      * @brief Propose a new seed molecule to start a new cluster with. If no
