@@ -5,18 +5,18 @@ import re
 import os
 from lxml import etree
 
-# pylint: disable=line-too-long, c-extension-no-member, too-many-branches, too-many-locals
+# pylint: disable=c-extension-no-member, too-many-branches, too-many-locals
 
 
 def generate_archs_for_row(row, template_path, output_dir, parser, connection_sizes):
     """Generate all Hecate interposer architecture variants for one CSV row."""
-    arch_id = row['arch_id']
-    mux_name = row['mux_name']
-    wire_name = row['wire_name']
-    csv_num = row['num']
+    arch_id = row["arch_id"]
+    mux_name = row["mux_name"]
+    wire_name = row["wire_name"]
+    csv_num = row["num"]
 
     # Extract the interposer segment length
-    match = re.search(r'\d+', wire_name)
+    match = re.search(r"\d+", wire_name)
     segment_length = int(match.group()) if match else 1
 
     for gather_n_val, scatter_n_val in connection_sizes:
@@ -24,7 +24,8 @@ def generate_archs_for_row(row, template_path, output_dir, parser, connection_si
         tree = etree.parse(template_path, parser)
         root = tree.getroot()
 
-        # Configure physical segment properties (e.g. length and driver mux name) for the inter-die wire
+        # Configure physical segment properties (e.g. length and driver mux name)
+        # for the inter-die wire.
         segment = root.xpath(".//segmentlist/segment[@name='int_wire']")
         if segment:
             seg = segment[0]
@@ -46,8 +47,10 @@ def generate_archs_for_row(row, template_path, output_dir, parser, connection_si
         # Update scatter-gather pattern definitions which model the multi-die connections.
         # This specifies the number of upward and downward incoming/outgoing connections.
         patterns = {
-            "downward": root.xpath(".//scatter_gather_list/sg_pattern[@name='interposer_sg_downward']"),
-            "upward": root.xpath(".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']")
+            "downward": root.xpath(
+                ".//scatter_gather_list/sg_pattern[@name='interposer_sg_downward']"
+            ),
+            "upward": root.xpath(".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']"),
         }
 
         for direction, sg_list in patterns.items():
@@ -72,13 +75,17 @@ def generate_archs_for_row(row, template_path, output_dir, parser, connection_si
 
         # Adjust starting and ending coordinates for top-level interposer cut wires.
         # These specify where interposer connections can legally form on the top level grid.
-        up_wire = root.xpath(".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']")
+        up_wire = root.xpath(
+            ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']"
+        )
         if up_wire:
             up_wire[0].set("offset_start", str(-(segment_length - 1)))
             up_wire[0].set("offset_end", "-1")
             up_wire[0].set("num", csv_num)
 
-        down_wire = root.xpath(".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_downward']")
+        down_wire = root.xpath(
+            ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_downward']"
+        )
         if down_wire:
             down_wire[0].set("offset_start", "1")
             down_wire[0].set("offset_end", str(segment_length - 1))
@@ -112,11 +119,14 @@ def generate_hecate_interposer_archs(csv_file, template_path, output_dir="hecate
     scatter_conn_sizes = ["4", "8", "16", "32", "64"]
     connection_sizes = list(zip(gather_conn_sizes, scatter_conn_sizes))
 
-    with open(csv_file, mode='r', newline='', encoding='utf-8') as f:
+    with open(csv_file, mode="r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
 
         for row in reader:
             generate_archs_for_row(row, template_path, output_dir, parser, connection_sizes)
 
+
 if __name__ == "__main__":
-    generate_hecate_interposer_archs('int_connectivity.csv', 'hecate_25d_L17_int_10um_bump_fanin_12.xml')
+    generate_hecate_interposer_archs(
+        "int_connectivity.csv", "hecate_25d_L17_int_10um_bump_fanin_12.xml"
+    )
