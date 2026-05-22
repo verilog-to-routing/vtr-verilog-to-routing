@@ -487,6 +487,22 @@ class ClusterRouter {
     void save_and_reset_lb_route_();
 
     /**
+     * @brief Seed the current routing with route trees from the last successful
+     *        route (hot-start).
+     *
+     * For each saved net whose terminals are unchanged and whose route tree is
+     * still valid under the current mode assignments, commits the saved tree
+     * into intra_lb_nets_ so that the pathfinder loop can skip those nets on
+     * the first iteration via is_skip_route_net.
+     *
+     * @param mode_map    Mode map updated by commit_remove_rt_ as trees are committed.
+     * @param mode_status Mode-selection status updated by commit_remove_rt_.
+     */
+    void hot_start_intra_lb_route_(
+            std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
+            t_mode_selection_status* mode_status);
+
+    /**
      * @brief Debugging function, used to print the description of the given
      *        lb-type RR node.
      */
@@ -571,7 +587,6 @@ class ClusterRouter {
 
     /// @brief Priority queue used during path search.
     ClusterRouterPriorityQueue pq_;
-
 
     /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;
