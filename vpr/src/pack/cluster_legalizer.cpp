@@ -1365,14 +1365,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 }
             }
 
-            // Set the fall-through value of the routed state. If the current
-            // cluster is recognised as being seen before by the PST, then routing
-            // gets skipped and the cluster routing structures fall out of date.
-            // If the PST is used, then a repeated cluster pattern will reach a
-            // final solution without ever running routing, so the packer must
-            // check this boolean to know if it must run one final routing.
-            routed_ = false;
-
             // Determine whether a legal routing exists for this cluster.
             t_mode_selection_status mode_status;
             e_ecn_legality legality = e_ecn_legality::UNKNOWN;
@@ -1386,19 +1378,21 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     // If the PST does not know the legality of this cluster, then
                     // a routing legality check must be run, as usual.
                     if (legality == e_ecn_legality::UNKNOWN) {
+                        bool routed;
                         do {
                             cluster.cluster_router.reset_intra_lb_route();
-                            routed_ = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
+                            routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
                         } while (mode_status.is_mode_issue());
-                        legality = (routed_) ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
+                        legality = routed ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
                         packing_signature_tree_->add_ecn(legality);
                     }
                 } else {
+                    bool routed;
                     do {
                         cluster.cluster_router.reset_intra_lb_route();
-                        routed_ = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
+                        routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
                     } while (mode_status.is_mode_issue());
-                    legality = (routed_) ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
+                    legality = routed ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
                 }
             }
 
@@ -1524,8 +1518,6 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     if (packing_signature_tree_) {
         packing_signature_tree_->start_packing_signature(cluster_type);
     }
-
-    routed_ = false;
 
     // Safety asserts to ensure the API is being called with valid arguments.
     VTR_ASSERT_DEBUG(molecule_id.is_valid());
@@ -1708,7 +1700,16 @@ bool ClusterLegalizer::check_cluster_legality(LegalizationClusterId cluster_id) 
 }
 
 bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_id) {
-    if (routed_) return true;
+    // Safety asserts to make sure the inputs are valid.
+    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+
+    // Fast path: if the saved route already covers the current nets exactly,
+    // no re-route is needed. This handles both the normal case (last molecule
+    // was successfully routed) and the case where a molecule that failed routing
+    // was removed, restoring the cluster to its last successfully-routed state.
+    if (cluster.cluster_router.is_saved_route_valid())
+        return true;
 
     if (packing_signature_tree_) {
         e_ecn_legality stored_legality = packing_signature_tree_->check_legality();
@@ -1721,8 +1722,6 @@ bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_
 
         return (computed_legality == e_ecn_legality::LEGAL);
     } else {
-        // FIXME: This is wrong if the current legality mode was set to always route. If so just return true. No need to recheck.
-        //        Should make this stronger. Some way of telling if a saved route exists and all points are there.
         return check_cluster_legality(cluster_id);
     }
 }

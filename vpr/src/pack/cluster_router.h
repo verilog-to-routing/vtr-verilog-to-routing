@@ -333,6 +333,21 @@ class ClusterRouter {
     t_pb_routes alloc_and_load_pb_route(const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
 
     /**
+     * @brief Returns true if the saved route from the last successful
+     *        try_intra_lb_route is still valid for the current intra_lb_nets_.
+     *
+     * A saved route is valid when intra_lb_nets_ and saved_lb_nets_ contain
+     * exactly the same set of nets with exactly the same terminals. In that
+     * case the saved route trees constitute a proven, congestion-free solution
+     * for the current cluster state and no re-route is required.
+     *
+     * This is cheaper than re-running routing and covers the common case where
+     * a molecule that failed routing was removed, restoring the cluster to its
+     * last successfully-routed state.
+     */
+    bool is_saved_route_valid() const;
+
+    /**
      * @brief Returns true if the router data has been cleaned.
      */
     inline bool is_clean() const { return is_clean_; }

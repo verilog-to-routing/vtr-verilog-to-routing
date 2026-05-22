@@ -673,14 +673,6 @@ class ClusterLegalizer {
     ///        reused to avoid repeating work.
     std::optional<PackingSignatureTree> packing_signature_tree_;
 
-    /// @brief Used for the packer to track whether it has a valid routing for
-    ///        a finalized cluster.
-    ///
-    /// With the PST, it is possible for the packer to reach a final cluster
-    /// packing without ever routing the cluster. If this value is false when
-    /// the packer is finalizing a cluster, it will run the cluster router so
-    /// that a routing exists for later VPR stages.
-    bool routed_;
 };
 
 /**

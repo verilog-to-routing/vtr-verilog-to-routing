@@ -143,6 +143,30 @@ void ClusterRouter::clean_router_data() {
     is_valid_ = false;
 }
 
+bool ClusterRouter::is_saved_route_valid() const {
+    // No saved route exists yet.
+    if (saved_lb_nets_.empty() || intra_lb_nets_.size() != saved_lb_nets_.size())
+        return false;
+
+    // Build a lookup from atom net ID to the terminals recorded in the saved route.
+    std::unordered_map<AtomNetId, const std::vector<int>*> saved_map;
+    saved_map.reserve(saved_lb_nets_.size());
+    for (const auto& net : saved_lb_nets_)
+        saved_map[net.atom_net_id] = &net.terminals;
+
+    // Every current net must appear in the saved route with identical terminals.
+    // Identical terminals means the saved route trees cover exactly the same
+    // physical pins, so the saved solution is still valid without re-routing.
+    for (const auto& net : intra_lb_nets_) {
+        auto it = saved_map.find(net.atom_net_id);
+        if (it == saved_map.end())
+            return false;
+        if (net.terminals != *it->second)
+            return false;
+    }
+    return true;
+}
+
 static bool route_has_conflict(const t_lb_trace& rt,
                                const std::vector<t_lb_type_rr_node>& lb_type_graph) {
     int cur_mode = -1;
