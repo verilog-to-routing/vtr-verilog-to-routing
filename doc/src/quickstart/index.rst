@@ -183,7 +183,7 @@ which we can visualize with:
         --route_chan_width 100 \
         --analysis --disp on
 
-.. note:: When :option:`--analysis <vpr --analysis>` is provided, the VPR flow will attempt to read the temporary files under ``temp``, and hence we need to cd to that directory. If it is not provided, this step is optional.
+.. note:: When :option:`--analysis <vpr --analysis>` is provided, the VPR flow will attempt to read the prior optimization output files (``.net``, ``.place`` and ``.route``) under ``temp``, and hence we need to cd to that directory. If it is not provided, this step is optional.
 
 
 
