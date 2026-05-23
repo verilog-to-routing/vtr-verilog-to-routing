@@ -556,7 +556,8 @@ static const t_pb_graph_pin* find_mapped_equivalent_pb_pin_by_net(t_pb* pb,
         }
     }
 
-    VTR_ASSERT(1 == cnt);
+    if (cnt != 1)
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Expected exactly 1 pb_graph_pin mapped to the atom net, found %d.", cnt);
 
     return found_pb_pin;
 }
@@ -769,7 +770,8 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                     const t_pb* sink_pb = pb->find_pb(new_sink_pb_pin_to_add->parent_node);
                     VTR_ASSERT(sink_pb);
                     t_pb_graph_pin* next_sink_pb_pin_to_add = find_used_sink_pb_pin(new_sink_pb_pin_to_add, sink_pb->mode);
-                    VTR_ASSERT(next_sink_pb_pin_to_add);
+                    if (next_sink_pb_pin_to_add == nullptr)
+                        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Could not find a unique sink pb_graph_pin from the driver pb_graph_pin.");
 
                     /* Assign sinks */
                     new_pb_routes[new_sink_pb_route_id].sink_pb_pin_ids.push_back(next_sink_pb_pin_to_add->pin_count_in_cluster);
@@ -824,7 +826,8 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                             const t_pb* next_pb = pb->find_pb(next_pb_pin->parent_node);
                             VTR_ASSERT(next_pb);
                             next_pb_pin = find_used_sink_pb_pin(next_pb_pin, next_pb->mode);
-                            VTR_ASSERT(next_pb_pin);
+                            if (next_pb_pin == nullptr)
+                                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Could not find a unique sink pb_graph_pin from the driver pb_graph_pin.");
                             new_pb_routes[next_pb_pin->pin_count_in_cluster].atom_net_id = remapped_net;
                         }
 

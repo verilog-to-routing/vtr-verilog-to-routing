@@ -1760,7 +1760,8 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                             break;
                         }
                     }
-                    VTR_ASSERT(to_sub_tile != nullptr);
+                    if (to_sub_tile == nullptr)
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Could not find the sub-tile instance for the target capacity.");
                     // Check if the to port is the one from the subtile, if not, pass as this is not the destination
                     bool port_match = false;
                     for (auto to_sub_tile_port : to_sub_tile->ports) {
