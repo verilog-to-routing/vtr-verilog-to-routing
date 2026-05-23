@@ -109,6 +109,9 @@ t_trace* TracebackCompat::traceback_from_route_tree(const RouteTree& tree) {
 
     std::tie(head, tail) = traceback_from_route_tree_recurr(nullptr, nullptr, tree.root());
 
+    // Intentionally inside VTR_ASSERT: this is a pure validation check with no
+    // side effects, and it is expensive enough to matter on hot paths. Stripping
+    // it at lower assert levels is acceptable.
     VTR_ASSERT(validate_and_update_traceback(head));
 
     return head;
