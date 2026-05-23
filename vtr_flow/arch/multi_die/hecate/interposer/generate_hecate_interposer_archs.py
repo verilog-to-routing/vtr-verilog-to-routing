@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """Generate Hecate interposer architecture variants from a CSV description."""
 
 import csv
