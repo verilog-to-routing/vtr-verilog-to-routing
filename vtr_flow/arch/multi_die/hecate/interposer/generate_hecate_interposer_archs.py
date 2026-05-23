@@ -3,14 +3,15 @@
 import csv
 import re
 import os
+from typing import Any, Mapping, Sequence, Tuple
 from lxml import etree
 
 # pylint: disable=c-extension-no-member
 
 
-def configure_interposer_segment(root, segment_length, mux_name):
+def configure_interposer_segment(xml_root: Any, segment_length: int, mux_name: str) -> None:
     """Configure the physical interposer segment properties."""
-    segment = root.xpath(".//segmentlist/segment[@name='int_wire']")
+    segment = xml_root.xpath(".//segmentlist/segment[@name='int_wire']")
     if not segment:
         return
 
@@ -31,13 +32,17 @@ def configure_interposer_segment(root, segment_length, mux_name):
         cb_tag[0].text = " ".join(["0"] * segment_length)
 
 
-def configure_scatter_gather_patterns(root, segment_length, gather_n_val, scatter_n_val):
+def configure_scatter_gather_patterns(
+    xml_root: Any, segment_length: int, gather_n_val: str, scatter_n_val: str
+) -> None:
     """Configure scatter-gather fan-in, fan-out, and offsets."""
     patterns = {
-        "downward": root.xpath(
+        "downward": xml_root.xpath(
             ".//scatter_gather_list/sg_pattern[@name='interposer_sg_downward']"
         ),
-        "upward": root.xpath(".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']"),
+        "upward": xml_root.xpath(
+            ".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']"
+        ),
     }
 
     for direction, sg_list in patterns.items():
@@ -61,9 +66,9 @@ def configure_scatter_gather_patterns(root, segment_length, gather_n_val, scatte
             sg_link[0].set("y_offset", str(offset_val))
 
 
-def configure_interdie_wires(root, segment_length, csv_num):
+def configure_interdie_wires(xml_root: Any, segment_length: int, csv_num: str) -> None:
     """Configure legal interposer cut wire ranges."""
-    up_wire = root.xpath(
+    up_wire = xml_root.xpath(
         ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']"
     )
     if up_wire:
@@ -71,7 +76,7 @@ def configure_interdie_wires(root, segment_length, csv_num):
         up_wire[0].set("offset_end", "-1")
         up_wire[0].set("num", csv_num)
 
-    down_wire = root.xpath(
+    down_wire = xml_root.xpath(
         ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_downward']"
     )
     if down_wire:
@@ -80,16 +85,22 @@ def configure_interdie_wires(root, segment_length, csv_num):
         down_wire[0].set("num", csv_num)
 
 
-def write_arch(tree, output_dir, arch_id, gather_n_val):
+def write_arch(xml_tree: Any, output_dir: str, arch_id: str, gather_n_val: str) -> None:
     """Write a generated architecture XML file."""
     output_filename = f"hecate_25d_{arch_id}_fanin_{gather_n_val}.xml"
     output_path = os.path.join(output_dir, output_filename)
 
-    tree.write(output_path, encoding="UTF-8", xml_declaration=True, pretty_print=True)
+    xml_tree.write(output_path, encoding="UTF-8", xml_declaration=True, pretty_print=True)
     print(f"Generated: {output_path}")
 
 
-def generate_archs_for_row(row, template_path, output_dir, parser, connection_sizes):
+def generate_archs_for_row(
+    row: Mapping[str, str],
+    template_path: str,
+    output_dir: str,
+    parser: Any,
+    connection_sizes: Sequence[Tuple[str, str]],
+) -> None:
     """Generate all Hecate interposer architecture variants for one CSV row."""
     arch_id = row["arch_id"]
     mux_name = row["mux_name"]
@@ -102,16 +113,18 @@ def generate_archs_for_row(row, template_path, output_dir, parser, connection_si
 
     for gather_n_val, scatter_n_val in connection_sizes:
         # Initialize a fresh XML tree from the template for each configuration
-        tree = etree.parse(template_path, parser)
-        root = tree.getroot()
+        xml_tree = etree.parse(template_path, parser)
+        xml_root = xml_tree.getroot()
 
-        configure_interposer_segment(root, segment_length, mux_name)
-        configure_scatter_gather_patterns(root, segment_length, gather_n_val, scatter_n_val)
-        configure_interdie_wires(root, segment_length, csv_num)
-        write_arch(tree, output_dir, arch_id, gather_n_val)
+        configure_interposer_segment(xml_root, segment_length, mux_name)
+        configure_scatter_gather_patterns(xml_root, segment_length, gather_n_val, scatter_n_val)
+        configure_interdie_wires(xml_root, segment_length, csv_num)
+        write_arch(xml_tree, output_dir, arch_id, gather_n_val)
 
 
-def generate_hecate_interposer_archs(csv_file, template_path, output_dir="hecate_25D"):
+def generate_hecate_interposer_archs(
+    csv_file: str, template_path: str, output_dir: str = "hecate_25D"
+) -> None:
     """
     Generates customized VPR architecture XML files by injecting varying scatter-gather
     and inter-die connectivity configurations into a base template XML.
