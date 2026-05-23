@@ -5,7 +5,88 @@ import re
 import os
 from lxml import etree
 
-# pylint: disable=c-extension-no-member, too-many-branches, too-many-locals
+# pylint: disable=c-extension-no-member
+
+
+def configure_interposer_segment(root, segment_length, mux_name):
+    """Configure the physical interposer segment properties."""
+    segment = root.xpath(".//segmentlist/segment[@name='int_wire']")
+    if not segment:
+        return
+
+    seg = segment[0]
+    seg.set("length", str(segment_length))
+
+    mux_tag = seg.find("mux")
+    if mux_tag is not None:
+        mux_tag.set("name", mux_name)
+
+    # Pattern logic: sb = L+1, cb = L
+    sb_tag = seg.xpath("./sb[@type='pattern']")
+    if sb_tag:
+        sb_tag[0].text = " ".join(["0"] * (segment_length + 1))
+
+    cb_tag = seg.xpath("./cb[@type='pattern']")
+    if cb_tag:
+        cb_tag[0].text = " ".join(["0"] * segment_length)
+
+
+def configure_scatter_gather_patterns(root, segment_length, gather_n_val, scatter_n_val):
+    """Configure scatter-gather fan-in, fan-out, and offsets."""
+    patterns = {
+        "downward": root.xpath(
+            ".//scatter_gather_list/sg_pattern[@name='interposer_sg_downward']"
+        ),
+        "upward": root.xpath(".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']"),
+    }
+
+    for direction, sg_list in patterns.items():
+        if not sg_list:
+            continue
+        sg = sg_list[0]
+
+        # Update num_conns for gather and scatter (3, 6, 12, 24, or 38)
+        for tag_name in ["gather", "scatter"]:
+            wireconn = sg.xpath(f"./{tag_name}/wireconn")
+            if wireconn:
+                if tag_name == "gather":
+                    wireconn[0].set("num_conns", gather_n_val)
+                else:
+                    wireconn[0].set("num_conns", scatter_n_val)
+
+        # Update the sg_link Y offsets depending on the interposer routing direction
+        sg_link = sg.xpath("./sg_link_list/sg_link")
+        if sg_link:
+            offset_val = -segment_length if direction == "downward" else segment_length
+            sg_link[0].set("y_offset", str(offset_val))
+
+
+def configure_interdie_wires(root, segment_length, csv_num):
+    """Configure legal interposer cut wire ranges."""
+    up_wire = root.xpath(
+        ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']"
+    )
+    if up_wire:
+        up_wire[0].set("offset_start", str(-(segment_length - 1)))
+        up_wire[0].set("offset_end", "-1")
+        up_wire[0].set("num", csv_num)
+
+    down_wire = root.xpath(
+        ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_downward']"
+    )
+    if down_wire:
+        down_wire[0].set("offset_start", "1")
+        down_wire[0].set("offset_end", str(segment_length - 1))
+        down_wire[0].set("num", csv_num)
+
+
+def write_arch(tree, output_dir, arch_id, gather_n_val):
+    """Write a generated architecture XML file."""
+    output_filename = f"hecate_25d_{arch_id}_fanin_{gather_n_val}.xml"
+    output_path = os.path.join(output_dir, output_filename)
+
+    tree.write(output_path, encoding="UTF-8", xml_declaration=True, pretty_print=True)
+    print(f"Generated: {output_path}")
 
 
 def generate_archs_for_row(row, template_path, output_dir, parser, connection_sizes):
@@ -24,79 +105,10 @@ def generate_archs_for_row(row, template_path, output_dir, parser, connection_si
         tree = etree.parse(template_path, parser)
         root = tree.getroot()
 
-        # Configure physical segment properties (e.g. length and driver mux name)
-        # for the inter-die wire.
-        segment = root.xpath(".//segmentlist/segment[@name='int_wire']")
-        if segment:
-            seg = segment[0]
-            seg.set("length", str(segment_length))
-
-            mux_tag = seg.find("mux")
-            if mux_tag is not None:
-                mux_tag.set("name", mux_name)
-
-            # Pattern logic: sb = L+1, cb = L
-            sb_tag = seg.xpath("./sb[@type='pattern']")
-            if sb_tag:
-                sb_tag[0].text = " ".join(["0"] * (segment_length + 1))
-
-            cb_tag = seg.xpath("./cb[@type='pattern']")
-            if cb_tag:
-                cb_tag[0].text = " ".join(["0"] * segment_length)
-
-        # Update scatter-gather pattern definitions which model the multi-die connections.
-        # This specifies the number of upward and downward incoming/outgoing connections.
-        patterns = {
-            "downward": root.xpath(
-                ".//scatter_gather_list/sg_pattern[@name='interposer_sg_downward']"
-            ),
-            "upward": root.xpath(".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']"),
-        }
-
-        for direction, sg_list in patterns.items():
-            if not sg_list:
-                continue
-            sg = sg_list[0]
-
-            # Update num_conns for gather and scatter (3, 6, 12, 24, or 38)
-            for tag_name in ["gather", "scatter"]:
-                wireconn = sg.xpath(f"./{tag_name}/wireconn")
-                if wireconn:
-                    if tag_name == "gather":
-                        wireconn[0].set("num_conns", gather_n_val)
-                    else:
-                        wireconn[0].set("num_conns", scatter_n_val)
-
-            # Update the sg_link Y offsets depending on the interposer routing direction
-            sg_link = sg.xpath("./sg_link_list/sg_link")
-            if sg_link:
-                offset_val = -segment_length if direction == "downward" else segment_length
-                sg_link[0].set("y_offset", str(offset_val))
-
-        # Adjust starting and ending coordinates for top-level interposer cut wires.
-        # These specify where interposer connections can legally form on the top level grid.
-        up_wire = root.xpath(
-            ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']"
-        )
-        if up_wire:
-            up_wire[0].set("offset_start", str(-(segment_length - 1)))
-            up_wire[0].set("offset_end", "-1")
-            up_wire[0].set("num", csv_num)
-
-        down_wire = root.xpath(
-            ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_downward']"
-        )
-        if down_wire:
-            down_wire[0].set("offset_start", "1")
-            down_wire[0].set("offset_end", str(segment_length - 1))
-            down_wire[0].set("num", csv_num)
-
-        # Export the fully customized architecture description to a new XML file
-        output_filename = f"hecate_25d_{arch_id}_fanin_{gather_n_val}.xml"
-        output_path = os.path.join(output_dir, output_filename)
-
-        tree.write(output_path, encoding="UTF-8", xml_declaration=True, pretty_print=True)
-        print(f"Generated: {output_path}")
+        configure_interposer_segment(root, segment_length, mux_name)
+        configure_scatter_gather_patterns(root, segment_length, gather_n_val, scatter_n_val)
+        configure_interdie_wires(root, segment_length, csv_num)
+        write_arch(tree, output_dir, arch_id, gather_n_val)
 
 
 def generate_hecate_interposer_archs(csv_file, template_path, output_dir="hecate_25D"):
