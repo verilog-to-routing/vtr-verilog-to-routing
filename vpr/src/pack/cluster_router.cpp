@@ -423,7 +423,10 @@ void ClusterRouter::hot_start_intra_lb_route_(
         // Skip if the net's terminals have changed since the last save — the
         // saved route tree no longer reaches the right pins.
         auto it = atom_net_to_inet.find(saved_lb_net.atom_net_id);
-        VTR_ASSERT(it != atom_net_to_inet.end());
+        // Skip if the atom net is not present in the current cluster. It may
+        // have been removed since the last save, making the saved route invalid.
+        if (it == atom_net_to_inet.end())
+            continue;
         size_t inet = it->second;
         if (intra_lb_nets_[inet].terminals != saved_lb_net.terminals)
             continue;
