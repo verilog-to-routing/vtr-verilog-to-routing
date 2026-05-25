@@ -14,7 +14,7 @@ Functional simulation is useful for:
 * Debugging unexpected circuit behaviour after implementation
 
 Unlike :ref:`timing simulation <timing_simulation_tutorial>`, functional simulation
-does not require a Standard Delay Format (SDF) file, only the
+does not require a Standard Delay Format (SDF) file; only the
 post-implementation Verilog netlist and VTR's primitive definitions are needed.
 
 .. note::
@@ -297,7 +297,8 @@ total count, and exits with a non-zero return code:
     1 test(s) FAILED.
     %Fatal: tb.sv:53: $fatal called
 
-Such an error would indicate a bug in VPR's implementation of the circuit,
+Such an error would indicate a bug in VPR's implementation of the circuit
+(assuming the input Verilog design and the testbench are coded correctly/match),
 which can then be investigated by examining the post-implementation netlist
 or running the full :ref:`timing simulation <timing_simulation_tutorial>`
 with waveform capture.
