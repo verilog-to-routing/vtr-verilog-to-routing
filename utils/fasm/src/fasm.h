@@ -9,18 +9,13 @@
 #define FASM_H
 
 #include <iostream>
-#include <list>
 #include <map>
 #include <ostream>
-#include <set>
-#include <sstream>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #include "netlist_walker.h"
-#include "netlist_writer.h"
 #include "lut.h"
 #include "parameters.h"
 #include "route_tree_fwd.h"
