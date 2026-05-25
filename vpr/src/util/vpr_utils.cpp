@@ -1968,7 +1968,6 @@ void apply_route_constraints(const UserRouteConstraints& route_constraints) {
     }
 }
 
-
 PortPinToBlockPinConverter::PortPinToBlockPinConverter() {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& types = device_ctx.physical_tile_types;
