@@ -1,0 +1,7 @@
+# Layer 5 visual-regression fixtures. The repo root .gitignore globally
+# ignores *.net / *.place / *.route as VPR-run artifacts; these checked-in
+# fixtures are intentional exceptions used by --analysis under
+# generate_goldens.sh / run_visual_regression.sh.
+!*.net
+!*.place
+!*.route
