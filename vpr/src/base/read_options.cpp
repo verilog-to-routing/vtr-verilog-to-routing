@@ -2316,7 +2316,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               "when many molecules are tried and rejected, since the cluster returns\n"
               "to a known-good state without re-routing nets that did not change.\n"
               "\n"
-              "Enabling this option does not affect circuit quality metrics.\n")
+              "Enabling this option should not significantly affect circuit quality\n"
+              "metrics like routed wirelength or critical path delay, though minor\n"
+              "variations are possible.\n")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
