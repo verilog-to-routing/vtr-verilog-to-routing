@@ -132,7 +132,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         t_grid_def grid_def;
         grid_def.name = device_grid_name;
         grid_def.layers.resize(1);
-        DeviceGrid test_device = DeviceGrid(grid_def, std::move(test_grid));
+        DeviceGrid test_device = DeviceGrid(grid_def, test_grid);
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -252,7 +252,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         t_grid_def grid_def;
         grid_def.name = device_grid_name;
         grid_def.layers.resize(1);
-        DeviceGrid test_device = DeviceGrid(grid_def, std::move(test_grid));
+        DeviceGrid test_device = DeviceGrid(grid_def, test_grid);
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -372,7 +372,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         t_grid_def grid_def;
         grid_def.name = device_grid_name;
         grid_def.layers.resize(1);
-        DeviceGrid test_device = DeviceGrid(grid_def, std::move(test_grid));
+        DeviceGrid test_device = DeviceGrid(grid_def, test_grid);
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -538,8 +538,6 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
         // this is similar to the user provided a config file
         temp_router = new t_router;
 
-        NocRouterId noc_router_id;
-
         for (int router_id = 1; router_id < 9; router_id++) {
             // we will have 6 logical routers that will take up the bottom and middle physical routers of the mesh
             temp_router->device_x_position = list_of_routers[router_id - 1].tile_centroid_x;
@@ -566,8 +564,6 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
         // start by creating all the logical routers
         // this is similar to the user provided a config file
         temp_router = new t_router;
-
-        NocRouterId noc_router_id;
 
         for (int router_id = 1; router_id < 9; router_id++) {
             // we will have 6 logical routers that will take up the bottom and middle physical routers of the mesh
@@ -941,7 +937,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         t_grid_def grid_def;
         grid_def.name = device_grid_name;
         grid_def.layers.resize(1);
-        device_ctx.grid = DeviceGrid(grid_def, std::move(test_grid));
+        device_ctx.grid = DeviceGrid(grid_def, test_grid);
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
@@ -995,7 +991,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         t_grid_def grid_def;
         grid_def.name = device_grid_name;
         grid_def.layers.resize(1);
-        device_ctx.grid = DeviceGrid(grid_def, std::move(test_grid));
+        device_ctx.grid = DeviceGrid(grid_def, test_grid);
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
@@ -1233,7 +1229,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         t_grid_def grid_def;
         grid_def.name = device_grid_name;
         grid_def.layers.resize(1);
-        device_ctx.grid = DeviceGrid(grid_def, std::move(test_grid));
+        device_ctx.grid = DeviceGrid(grid_def, test_grid);
 
         REQUIRE_NOTHROW(setup_noc(arch));
 

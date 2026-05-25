@@ -96,7 +96,6 @@ class CRRPatternMatcher {
                 // Find the matching closing bracket
                 size_t close_bracket = pattern.find(']', i);
                 if (close_bracket != std::string::npos) {
-                    std::string range = pattern.substr(i, close_bracket - i + 1);
                     regex_pattern += "([0-9]+)"; // Capture the number, validate range later
                     i = close_bracket;           // Skip to after the closing bracket
                 } else {

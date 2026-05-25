@@ -224,7 +224,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                     //
                     // The output SOURCE (from_pin) of a true head macro will:
                     //  * drive another block with the same direct connection
-                    if (from_src_or_sink == e_pin_type::DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
+                    if (from_src_or_sink == e_pin_type::DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID() && is_net_direct_connection(from_net_id, to_idirect, clb_nlist)) {
                         // Mark down that this is the first block in the macro
                         pl_macro_member_blk_num_of_this_blk[0] = blk_id;
                         pl_macro_idirect[num_macro] = to_idirect;
@@ -678,6 +678,14 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, co
 
     ClusterPinId net_sink = clb_nlist.net_pin(clb_net, 1);
     ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
+
+    if (sink_block_id == block_id) {
+        //net is connected back to the same block, should not be counted as a direct connection
+        VTR_LOG_WARN(
+            "Block '%s'have a direct connection to itself, this connection will not be counted as a direct connection to form a macro.\n",
+            clb_nlist.block_name(block_id).c_str());
+        return false;
+    }
 
     int sink_pin_index = clb_nlist.net_pin_logical_index(clb_net, 1);
 

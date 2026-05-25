@@ -27,11 +27,22 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <thread>
 #include "d_ary_heap.tpp"
 
+// Cache line size in bytes. Hardcoded to 64 since that is correct for all
+// x86/x86-64 CPUs (32B and 128B have never shipped). Apple Silicon uses 128B,
+// but VTR does not currently target it.
+//
+// The idiomatic C++17 alternative is std::hardware_destructive_interference_size
+// from <new>, which queries the target at compile time. However:
+//   1. GCC warns about it (-Winterference-size) unless the warning is suppressed
+//      with a #pragma GCC diagnostic, which we are willing to do.
+//   2. The interface is not available in GCC < 12 (e.g. GCC 11 on Ubuntu 22.04
+//      Jammy, one of our supported build environments), so it cannot be used
+//      portably until that toolchain is retired.
 #define CACHELINE 64
 
-// #define PERF 1
 #define MQ_IO_ENABLE_CLEAR_FOR_POP
 
 template<
@@ -48,7 +59,7 @@ class MultiQueueIO {
     // while using the MQ.
     static constexpr PrioType EMPTY_PRIO = std::numeric_limits<PrioType>::max();
 
-    struct PQContainer {
+    struct alignas(CACHELINE) PQContainer {
         uint64_t pushes = 0;
         uint64_t pops = 0;
         PQ pq;
@@ -61,8 +72,7 @@ class MultiQueueIO {
         }
         bool try_lock() { return queueLock.test_and_set(std::memory_order_acquire); }
         void unlock() { queueLock.clear(std::memory_order_release); }
-
-    } __attribute__((aligned(CACHELINE)));
+    };
 
     std::vector<
         PQContainer
@@ -98,42 +108,19 @@ class MultiQueueIO {
         assert((numQueues >= 2) && "numQueues must be set >= 2");
     }
 
-#ifdef PERF
-    uint64_t __attribute__((noinline)) ThreadLocalRandom() {
-#else
     uint64_t ThreadLocalRandom() {
-#endif
         // static thread_local std::mt19937_64 generator;
         // std::uniform_real_distribution<> distribution(min,max);
         // return distribution(generator);
         static uint64_t modMask = NUM_QUEUES - 1;
-        // On macOS, pthread_t is an opaque pointer type (not an integer), so it cannot
-        // be directly assigned to uint64_t. Use pthread_mach_thread_np() to obtain a
-        // numeric (Mach) thread ID instead.
-        // __APPLE__ checks for any Mac OS, __MACH__ checks it is unix-based (modern).
-#if defined(__APPLE__) && defined(__MACH__)
-        static thread_local pthread_t self_thread = pthread_self();
-        static thread_local uint64_t x = (uint64_t)pthread_mach_thread_np(self_thread);
-#else
-        static thread_local uint64_t x = pthread_self();
-#endif
+        static thread_local uint64_t x = std::hash<std::thread::id>{}(std::this_thread::get_id());
         uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
         z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
         z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
         return (z ^ (z >> 31)) & modMask;
     }
 
-#ifdef PERF
-    void __attribute__((noinline)) pushInt(uint64_t queue, PQElement item) {
-        queues[queue].pq.push(item);
-    }
-#endif
-
-#ifdef PERF
-    void __attribute__((noinline)) push(PQElement item) {
-#else
     inline void push(PQElement item) {
-#endif
         uint64_t queue;
         while (true) {
             queue = ThreadLocalRandom();
@@ -143,11 +130,7 @@ class MultiQueueIO {
         q.pushes++;
         if (q.pq.empty())
             numEmpty.fetch_sub(1, std::memory_order_relaxed);
-#ifdef PERF
-        pushInt(queue, item);
-#else
         q.pq.push(item);
-#endif
         q.min.store(
             q.pq.size() > 0
                 ? std::get<0>(q.pq.top())
@@ -156,11 +139,7 @@ class MultiQueueIO {
         q.unlock();
     }
 
-#ifdef PERF
-    void __attribute__((noinline)) pushBatch(uint64_t size, PQElement* items) {
-#else
     inline void pushBatch(uint64_t size, PQElement* items) {
-#endif
         uint64_t queue;
         while (true) {
             queue = ThreadLocalRandom();
@@ -171,11 +150,7 @@ class MultiQueueIO {
         if (q.pq.empty())
             numEmpty.fetch_sub(1, std::memory_order_relaxed);
         for (uint64_t i = 0; i < size; i++) {
-#ifdef PERF
-            pushInt(queue, items[i]);
-#else
             q.pq.push(items[i]);
-#endif
         }
         q.min.store(
             q.pq.size() > 0
@@ -188,11 +163,7 @@ class MultiQueueIO {
     // Simplified Termination detection idea from the 2021 MultiQueue paper:
     // Repeatedly try popping and stop when numIdle >= threadNum,
     // That is, stop when all threads agree that there are no more work
-#ifdef PERF
-    boost::optional<PQElement> __attribute__((noinline)) tryPop() {
-#else
     inline std::optional<PQElement> tryPop() {
-#endif
         auto item = pop();
         if (item) return item;
 
@@ -219,11 +190,7 @@ class MultiQueueIO {
     }
 #endif
 
-#ifdef PERF
-    boost::optional<PQElement> __attribute__((noinline)) pop() {
-#else
     inline std::optional<PQElement> pop() {
-#endif
         uint64_t poppingQueue = NUM_QUEUES;
         while (true) {
             // Pick the higher priority max of queue i and j
@@ -284,11 +251,7 @@ class MultiQueueIO {
         return {};
     }
 
-#ifdef PERF
-    boost::optional<uint64_t> __attribute__((noinline)) tryPopBatch(PQElement* ret) {
-#else
     inline std::optional<uint64_t> tryPopBatch(PQElement* ret) {
-#endif
         auto item = popBatch(ret);
         if (item) return item;
 
@@ -307,141 +270,124 @@ class MultiQueueIO {
         return item;
     }
 
-#ifdef PERF
-    void __attribute__((noinline)) popInt(uint64_t queue, PQElement* ret) {
-        auto& q = queues[queue];
-        *ret = q.pq.top();
-        q.pq.pop();
-    }
-#endif
-
-#ifdef PERF
-    boost::optional<uint64_t> __attribute__((noinline)) popBatch(PQElement* ret){
-#else
     inline std::optional<uint64_t> popBatch(PQElement* ret) {
-#endif
         uint64_t poppingQueue = NUM_QUEUES;
-    while (true) {
-        // Pick the higher priority max of queue i and j
-        uint64_t i = ThreadLocalRandom();
-        uint64_t j = ThreadLocalRandom();
-        while (j == i) {
-            j = ThreadLocalRandom();
-        }
+        while (true) {
+            // Pick the higher priority max of queue i and j
+            uint64_t i = ThreadLocalRandom();
+            uint64_t j = ThreadLocalRandom();
+            while (j == i) {
+                j = ThreadLocalRandom();
+            }
 
-        PrioType minI = queues[i].min.load(std::memory_order_acquire);
-        PrioType minJ = queues[j].min.load(std::memory_order_acquire);
+            PrioType minI = queues[i].min.load(std::memory_order_acquire);
+            PrioType minJ = queues[j].min.load(std::memory_order_acquire);
 
-        if (minI == EMPTY_PRIO && minJ == EMPTY_PRIO) {
-            uint64_t emptyQueues = numEmpty.load(std::memory_order_relaxed);
-            if (emptyQueues >= queues.size())
-                break;
-            else
+            if (minI == EMPTY_PRIO && minJ == EMPTY_PRIO) {
+                uint64_t emptyQueues = numEmpty.load(std::memory_order_relaxed);
+                if (emptyQueues >= queues.size())
+                    break;
+                else
+                    continue;
+            }
+
+            if (minI != EMPTY_PRIO && minJ != EMPTY_PRIO) {
+                poppingQueue = compare({minJ, 0}, {minI, 0}) ? i : j;
+            } else if (minJ == EMPTY_PRIO) {
+                poppingQueue = i;
+            } else {
+                poppingQueue = j;
+            }
+            if (queues[poppingQueue].try_lock()) continue;
+            auto& q = queues[poppingQueue];
+            if (q.pq.empty()) {
+                q.unlock();
                 continue;
-        }
+            }
 
-        if (minI != EMPTY_PRIO && minJ != EMPTY_PRIO) {
-            poppingQueue = compare({minJ, 0}, {minI, 0}) ? i : j;
-        } else if (minJ == EMPTY_PRIO) {
-            poppingQueue = i;
-        } else {
-            poppingQueue = j;
-        }
-        if (queues[poppingQueue].try_lock()) continue;
-        auto& q = queues[poppingQueue];
-        if (q.pq.empty()) {
-            q.unlock();
-            continue;
-        }
-
-        uint64_t num = 0;
-        for (num = 0; num < batchSize; num++) {
-            if (q.pq.empty()) break;
-#ifdef PERF
-            popInt(poppingQueue, &ret[num]);
-#else
+            uint64_t num = 0;
+            for (num = 0; num < batchSize; num++) {
+                if (q.pq.empty()) break;
                 ret[num] = q.pq.top();
                 q.pq.pop();
-#endif
+            }
+            q.pops += num;
+            if (q.pq.empty())
+                numEmpty.fetch_add(1, std::memory_order_relaxed);
+            q.min.store(
+                q.pq.size() > 0
+                    ? std::get<0>(q.pq.top())
+                    : EMPTY_PRIO,
+                std::memory_order_release);
+            q.unlock();
+            if (num == 0) continue;
+
+            return num;
         }
-        q.pops += num;
-        if (q.pq.empty())
-            numEmpty.fetch_add(1, std::memory_order_relaxed);
-        q.min.store(
-            q.pq.size() > 0
-                ? std::get<0>(q.pq.top())
-                : EMPTY_PRIO,
-            std::memory_order_release);
-        q.unlock();
-        if (num == 0) continue;
-
-        return num;
+        return {};
     }
-    return {};
-}
 
-inline uint64_t
-getQueueOccupancy() const {
-    uint64_t maxOccupancy = 0;
-    for (uint64_t i = 0; i < NUM_QUEUES; i++) {
-        maxOccupancy = std::max(maxOccupancy, queues[i].pq.size());
-    }
-    return maxOccupancy;
-}
-
-// Get the number of pushes to all queues.
-// Note: this is not lock protected.
-inline uint64_t getNumPushes() const {
-    uint64_t totalPushes = 0;
-    for (uint64_t i = 0; i < NUM_QUEUES; i++) {
-        totalPushes += queues[i].pushes;
-    }
-    return totalPushes;
-}
-
-// Get the number of pops to all queues.
-// Note: this is not lock protected.
-inline uint64_t getNumPops() const {
-    uint64_t totalPops = 0;
-    for (uint64_t i = 0; i < NUM_QUEUES; i++) {
-        totalPops += queues[i].pops;
-    }
-    return totalPops;
-}
-
-inline void stat() const {
-    std::cout << "total pushes " << getNumPushes() << "\n";
-    std::cout << "total pops " << getNumPops() << "\n";
-}
-
-// Note: this is only called at the end of algorithm as a
-// sanity check, therefore it is not lock protected.
-inline bool empty() const {
-    for (uint64_t i = 0; i < NUM_QUEUES; i++) {
-        if (!queues[i].pq.empty()) {
-            return false;
+    inline uint64_t
+    getQueueOccupancy() const {
+        uint64_t maxOccupancy = 0;
+        for (uint64_t i = 0; i < NUM_QUEUES; i++) {
+            maxOccupancy = std::max(maxOccupancy, queues[i].pq.size());
         }
+        return maxOccupancy;
     }
-    return true;
-}
 
-// Resets the MultiQueue to a state as if it was reinitialized.
-// This must be called before using the MQ again after using TypPop().
-// Note: this assumes the queues are already empty and unlocked.
-inline void reset() {
-    for (uint64_t i = 0; i < NUM_QUEUES; i++) {
-        assert(queues[i].pq.empty() && "reset() assumes empty queues");
-        assert((queues[i].queueLock.test(std::memory_order_relaxed) == 0)
-               && "reset() assumes unlocked queues");
-        queues[i].pushes = 0;
-        queues[i].pops = 0;
-        queues[i].min.store(EMPTY_PRIO, std::memory_order_relaxed);
+    // Get the number of pushes to all queues.
+    // Note: this is not lock protected.
+    inline uint64_t getNumPushes() const {
+        uint64_t totalPushes = 0;
+        for (uint64_t i = 0; i < NUM_QUEUES; i++) {
+            totalPushes += queues[i].pushes;
+        }
+        return totalPushes;
     }
-    numIdle.store(0, std::memory_order_relaxed);
-    numEmpty.store(NUM_QUEUES, std::memory_order_relaxed);
+
+    // Get the number of pops to all queues.
+    // Note: this is not lock protected.
+    inline uint64_t getNumPops() const {
+        uint64_t totalPops = 0;
+        for (uint64_t i = 0; i < NUM_QUEUES; i++) {
+            totalPops += queues[i].pops;
+        }
+        return totalPops;
+    }
+
+    inline void stat() const {
+        std::cout << "total pushes " << getNumPushes() << "\n";
+        std::cout << "total pops " << getNumPops() << "\n";
+    }
+
+    // Note: this is only called at the end of algorithm as a
+    // sanity check, therefore it is not lock protected.
+    inline bool empty() const {
+        for (uint64_t i = 0; i < NUM_QUEUES; i++) {
+            if (!queues[i].pq.empty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Resets the MultiQueue to a state as if it was reinitialized.
+    // This must be called before using the MQ again after using TypPop().
+    // Note: this assumes the queues are already empty and unlocked.
+    inline void reset() {
+        for (uint64_t i = 0; i < NUM_QUEUES; i++) {
+            assert(queues[i].pq.empty() && "reset() assumes empty queues");
+            assert((queues[i].queueLock.test(std::memory_order_relaxed) == 0)
+                   && "reset() assumes unlocked queues");
+            queues[i].pushes = 0;
+            queues[i].pops = 0;
+            queues[i].min.store(EMPTY_PRIO, std::memory_order_relaxed);
+        }
+        numIdle.store(0, std::memory_order_relaxed);
+        numEmpty.store(NUM_QUEUES, std::memory_order_relaxed);
 #ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
-    minPrioForPop.store(std::numeric_limits<PrioType>::max(), std::memory_order_relaxed);
+        minPrioForPop.store(std::numeric_limits<PrioType>::max(), std::memory_order_relaxed);
 #endif
-}
-}
-;
+    }
+};

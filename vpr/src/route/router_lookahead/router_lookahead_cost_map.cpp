@@ -1,4 +1,5 @@
 #include "router_lookahead_cost_map.h"
+#include <cstddef>
 
 #include "router_lookahead_map_utils.h"
 #include "globals.h"
@@ -108,7 +109,7 @@ static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, fl
  *
  * */
 util::Cost_Entry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y) const {
-    VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
+    VTR_ASSERT(from_seg_index >= 0 && static_cast<size_t>(from_seg_index) < offset_.size());
     const auto& cost_map = cost_map_[0][from_seg_index];
     // Check whether the cost map corresponding to the input segment is empty.
     // This can be due to an absence of samples during the lookahead generation.

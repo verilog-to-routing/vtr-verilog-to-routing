@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx/uxsdcxx.py /home/jrlin/Desktop/add_feature/vpr/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * Input file: /home/jrlin/Desktop/add_feature/vpr/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: 988c9a4fead6ee62edc771e511b794f2
+ * Cmdline: uxsdcxx.py ..\OpenFPGA\vtr-verilog-to-routing\vpr\src\base\vpr_constraints.xsd
+ * Input file: C:\Users\OscarPC\source\repos\OpenFPGA\vtr-verilog-to-routing\vpr\src\base\vpr_constraints.xsd
+ * md5sum of input file: f19701e568aa29dcebaba9f650acca07
  */
 
 #include <functional>
@@ -119,10 +119,17 @@ inline void write_vpr_constraints_xml(T& in, Context& context, std::ostream& os)
     in.finish_write();
 }
 
+#ifdef _MSC_VER
+typedef __declspec(align(1)) const uint32_t triehash_uu32;
+typedef __declspec(align(1)) const uint64_t triehash_uu64;
+#else
 typedef const uint32_t __attribute__((aligned(1))) triehash_uu32;
 typedef const uint64_t __attribute__((aligned(1))) triehash_uu64;
+#endif
+#ifndef _MSC_VER
 static_assert(alignof(triehash_uu32) == 1, "Unaligned 32-bit access not found.");
 static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.");
+#endif
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define onechar(c, s, l) (((uint64_t)(c)) << (s))
 #else

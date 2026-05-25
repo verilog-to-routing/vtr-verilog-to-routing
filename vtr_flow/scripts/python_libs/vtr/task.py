@@ -328,6 +328,7 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
             "constraints",
             "route_chan_width",
             "read_flat_place",
+            "net_file",
         ]
     )
 
@@ -800,6 +801,10 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     flat_placement_file = config.circuit_constraints[circuit]["read_flat_place"]
     if flat_placement_file is not None:
         cmd += ["--read_flat_place", flat_placement_file]
+    # Check if the circuit has a .net file to read.
+    net_file = config.circuit_constraints[circuit]["net_file"]
+    if net_file is not None:
+        cmd += ["--net_file", net_file]
 
 
 def resolve_vtr_source_file(config, filename, base_dir=""):

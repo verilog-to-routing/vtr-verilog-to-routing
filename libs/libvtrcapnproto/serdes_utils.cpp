@@ -2,8 +2,6 @@
 
 #include "capnp/serialize.h"
 #include <fcntl.h>
-#include <unistd.h>
-
 #include "vtr_error.h"
 #include "kj/filesystem.h"
 

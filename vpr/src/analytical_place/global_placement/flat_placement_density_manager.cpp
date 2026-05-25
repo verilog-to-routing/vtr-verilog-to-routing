@@ -177,7 +177,7 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                 // tile type..
                 float target_density = phy_ty_target_densities[tile_type->index];
                 bin_target_density_.push_back(target_density);
-                VTR_ASSERT(bin_target_density_[new_bin_id] = target_density);
+                VTR_ASSERT(bin_target_density_[new_bin_id] == target_density);
             }
         }
     }

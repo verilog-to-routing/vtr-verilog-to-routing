@@ -625,6 +625,7 @@ void setup_packer_opts(const t_options& Options,
     PackerOpts->timing_gain_weight = Options.timing_gain_weight;
     PackerOpts->connection_gain_weight = Options.connection_gain_weight;
     PackerOpts->pack_verbosity = Options.pack_verbosity;
+    PackerOpts->use_ram_mapper = Options.use_ram_mapper;
     PackerOpts->memoize_cluster_packings = Options.memoize_cluster_packings;
     PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
     PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
@@ -677,10 +678,15 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
 
     PlacerOpts->recompute_crit_iter = Options.recompute_crit_iter;
 
-    PlacerOpts->timing_tradeoff = Options.place_timing_tradeoff;
+    PlacerOpts->interposer_cost_factor = Options.place_interposer_cost_factor;
+    PlacerOpts->interposer_cong_factor = Options.place_interposer_cong_cost_factor;
+    PlacerOpts->interposer_cong_threshold = Options.place_interposer_cong_threshold;
+
     PlacerOpts->congestion_factor = Options.place_congestion_factor;
     PlacerOpts->congestion_rlim_trigger_ratio = Options.place_congestion_rlim_trigger_ratio;
     PlacerOpts->congestion_chan_util_threshold = Options.place_congestion_chan_util_threshold;
+
+    PlacerOpts->timing_tradeoff = Options.place_timing_tradeoff;
 
     // Depends on PlacerOpts->place_algorithm
     PlacerOpts->delay_offset = Options.place_delay_offset;

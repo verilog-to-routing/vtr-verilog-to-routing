@@ -272,14 +272,14 @@ struct PstConnection {
     /// @brief ID of the architectural pin driven by the connection.
     PstPinId sink_pin;
 
-    bool operator==(PstConnection const& rhs) const {
+    bool operator==(PstConnection const& rhs) const noexcept {
         return (this->source_pin == rhs.source_pin && this->sink_pin == rhs.sink_pin);
     }
 
     // Magnitude comparison of connections does not have a literal meaning, but
     // allows for connections to be consistently sorted so that element-wise
     // equality tests can be performed between lists of connections.
-    bool operator<(PstConnection const& rhs) const {
+    bool operator<(PstConnection const& rhs) const noexcept {
         return (this->source_pin != rhs.source_pin) ? this->source_pin < rhs.source_pin : this->sink_pin < rhs.sink_pin;
     }
 };

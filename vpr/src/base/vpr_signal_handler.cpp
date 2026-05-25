@@ -17,9 +17,13 @@
 #include "read_place.h"
 #include "read_route.h"
 
-#include <unistd.h>
-
 #include "string.h"
+#include <cstdio>  // for fwrite, stderr
+#include <cstring> // strlen
+
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#include "unistd.h" // Needed for STDERR_FILENO
+#endif
 
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
@@ -36,7 +40,14 @@ void checkpoint();
  * @param msg Message string to write.
  */
 static inline void safe_write(const char* msg) {
+#ifdef _WIN32 // Windows
+    // Windows does not support POSIX write() or STDERR_FILENO.
+    // Use fwrite() as a portable fallback for writing to stderr.
+    fwrite(msg, 1, strlen(msg), stderr);
+#else
+    // Use async-signal-safe POSIX write() when available.
     (void)!write(STDERR_FILENO, msg, strlen(msg));
+#endif
 }
 
 #ifdef VPR_USE_SIGACTION

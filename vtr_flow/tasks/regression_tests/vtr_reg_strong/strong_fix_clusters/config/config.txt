@@ -15,13 +15,13 @@ circuit_list_add=apex2.blif
 arch_list_add=fix_clusters_test_arch.xml
 
 # Parse info and how to parse
-parse_file=vpr_standard.txt
+parse_file=vpr_fixed_chan_width.txt
 
 # How to parse QoR info
-qor_parse_file=qor_standard.txt
+qor_parse_file=qor_fixed_chan_width.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params =-starting_stage vpr --fix_clusters ../../../../apex2_block_locations.place
+script_params =-starting_stage vpr --pack --place --route --route_chan_width 206  --fix_clusters ../../../../apex2_block_locations.place

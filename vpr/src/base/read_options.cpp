@@ -2310,6 +2310,28 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool, ParseOnOff>(args.use_ram_mapper, "--use_ram_premapper")
+        .help("Controls whether a separate RAM pre-mapping algorithm is invoked\n"
+              "before the main packing stage.\n"
+              "\n"
+              "When enabled, this algorithm decides which RAM slices are grouped\n"
+              "together to form a physical RAM (based on shared address and control\n"
+              "signals) and which physical RAM type in the architecture implements\n"
+              "each group. The type selection runs in two passes: an initial pass\n"
+              "that maps each group to minimize area, followed by a second pass\n"
+              "that remaps the most timing-critical groups to smaller, faster RAM\n"
+              "types when resources allow. The resulting groups guide RAM packing\n"
+              "and prioritize RAMs in the packing order, and in the analytical\n"
+              "placement flow global placement treats each physical RAM group as a\n"
+              "single moveable unit.\n"
+              "\n"
+              "When disabled, these mapping decisions are instead made by the\n"
+              "general heuristics within the main packing algorithm, and in the\n"
+              "analytical placement flow each RAM slice is treated as a single\n"
+              "moveable unit rather than being grouped.\n")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_grp = parser.add_argument_group("placement options");
 
     place_grp.add_argument(args.seed, "--seed")
@@ -2636,6 +2658,40 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_interposer_cost_factor, "--place_interposer_cost_factor")
+        .help("Factor to scale the interposer cost when calculating the total cost.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_interposer_cong_cost_factor, "--place_interposer_cong_cost_factor")
+        .help("Weighting factor for interposer congestion cost during placement. "
+              "Higher values prioritize avoiding interposer congestion over other placement costs. "
+              "When set to zero, interposer congestion modeling and optimization is disabled in the placement stage.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_interposer_cong_threshold, "--place_interposer_cong_threshold")
+        .help("Penalizes placements whose average interposer congestion exceeds this threshold. "
+              "Higher values reduce the likelihood of a penalty; very large values effectively disable threshold-based penalization.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
+        .help("Weighting factor for congestion cost during placement. "
+              "Higher values prioritize congestion avoidance over bounding box and timing costs. "
+              "When set to zero, congestion modeling and optimization is disabled in the placement stage.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_congestion_rlim_trigger_ratio, "--congestion_rlim_trigger_ratio")
+        .help("Enables congestion modeling when the ratio of the current range limit to the initial range limit falls below this threshold, "
+              "provided the congestion weighting factor is non-zero.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
+        .help("Penalizes nets in placement whose average routing channel utilization within their bounding boxes exceeds this threshold.");
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.place_timing_tradeoff, "--timing_tradeoff")
@@ -2644,22 +2700,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
-        .help("Weighting factor for congestion cost during placement. "
-              "Higher values prioritize congestion avoidance over bounding box and timing costs. "
-              "When set to zero, congestion modeling and optimization is disabled in the placement stage.")
-        .default_value("0.0")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_timing_grp.add_argument(args.place_congestion_rlim_trigger_ratio, "--congestion_rlim_trigger_ratio")
-        .help("Enables congestion modeling when the ratio of the current range limit to the initial range limit falls below this threshold, "
-              "provided the congestion weighting factor is non-zero.")
-        .default_value("1.0")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_timing_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
-        .help("Penalizes nets in placement whose average routing channel utilization within their bounding boxes exceeds this threshold.");
 
     place_timing_grp.add_argument(args.recompute_crit_iter, "--recompute_crit_iter")
         .help("Controls how many temperature updates occur between timing analysis during placement")

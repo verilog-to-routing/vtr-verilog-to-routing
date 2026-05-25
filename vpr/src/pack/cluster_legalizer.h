@@ -105,10 +105,13 @@ struct LegalizationCluster {
      *  @param cluster_type         The type of this cluster.
      *  @param cluster_mode         The mode of this cluster.
      *  @param lb_type_rr_graphs    The RR-graphs for each cluster type.
+     *  @param valid_feedback_pins  Pre-computed feedback-pin set for this type;
+     *                              owned by ClusterLegalizer, must outlive this cluster.
      */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
-                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs);
+                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                        const std::unordered_set<int>& valid_feedback_pins);
 
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
@@ -585,6 +588,10 @@ class ClusterLegalizer {
     ~ClusterLegalizer();
 
   private:
+    /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
+    ///        Called once by the constructor.
+    void init_feedback_pin_sets();
+
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
@@ -623,6 +630,10 @@ class ClusterLegalizer {
     /// TODO: This really should not be a pointer to a vector... I think this is
     ///       meant to be a vector of vectors...
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
+
+    /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
+    ///        Indexed by t_logical_block_type::index.
+    std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
