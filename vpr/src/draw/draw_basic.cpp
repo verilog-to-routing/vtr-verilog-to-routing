@@ -214,6 +214,8 @@ void draw_analytical_place(ezgl::renderer* g) {
     const PartialPlacement* ap_pp = draw_state->get_ap_partial_placement_ref();
     // The reference should be set in the beginning of analytial placement.
     VTR_ASSERT(ap_pp != nullptr);
+    if (ap_pp == nullptr)
+        return;
     for (const auto& [blk_id, x] : ap_pp->block_x_locs.pairs()) {
         double y = ap_pp->block_y_locs[blk_id];
 
