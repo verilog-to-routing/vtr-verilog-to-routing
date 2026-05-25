@@ -395,6 +395,13 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 if (sg_link.z_offset != 0
                     && (is_empty_type(grid.get_physical_type(gather_loc))
                         || is_empty_type(grid.get_physical_type(scatter_loc)))) {
+                    VTR_LOGV_WARN(device_model_warnings,
+                                  "Deliberately skipped inter-layer scatter-gather connections for pattern '%s' with SG link '%s' "
+                                  "at gather (layer=%i, x=%i, y=%i) and scatter (layer=%i, x=%i, y=%i) "
+                                  "to model TSV holes for power delivery\n",
+                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
+                                  gather_loc.layer_num, gather_loc.x, gather_loc.y,
+                                  scatter_loc.layer_num, scatter_loc.x, scatter_loc.y);
                     continue;
                 }
 
