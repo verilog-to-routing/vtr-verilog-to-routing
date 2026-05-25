@@ -221,6 +221,9 @@ Empty grid locations can be specified using the special block type ``EMPTY``.
 
 .. note:: All grid locations default to ``EMPTY`` unless otherwise specified.
 
+In multi-die devices, ``EMPTY`` tiles can also be used to model through-silicon via (TSV) holes reserved for power delivery.
+At these grid locations, VPR does not create inter-layer routing connections.
+
 .. _grid_expressions:
 
 Grid Location Expressions
@@ -2867,7 +2870,13 @@ The number of additional wires or muxes created by scatter-gather specifications
     Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
     These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
 
-When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
+When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks.
+
+.. note:: For inter-layer scatter-gather links (``z_offset`` != 0), VPR skips instantiation when either the gather or scatter endpoint is an ``EMPTY`` tile.
+    This models TSV holes reserved for power delivery, where inter-layer connectivity is not feasible.
+    As a result, some scatter-gather links specified by ``<sg_location>`` tags are ignored at those grid locations even though they match the specified region.
+
+An example is shown below:
 
     .. code-block:: xml
 
