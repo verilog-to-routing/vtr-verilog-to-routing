@@ -90,7 +90,6 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::ostream& os_;
 
       t_pb_graph_node *root_clb_ = nullptr;
-      bool current_blk_has_prefix_ = false;
       t_physical_tile_type_ptr physical_tile_ = nullptr;
       t_logical_block_type_ptr logical_block_ = nullptr;
       std::string blk_prefix_;
@@ -110,7 +109,6 @@ class FasmWriterVisitor : public NetlistVisitor {
       vtr::interned_string fasm_placeholders;
       vtr::interned_string fasm_type;
       vtr::interned_string fasm_mux;
-      bool is_flat_;
 };
 
 } // namespace fasm
