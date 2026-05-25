@@ -94,7 +94,8 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
     // get the hard router block id at the given grid location
     auto hard_router_block = grid_location_to_router_id.find(router_key);
     // verify whether a router hard block exists at this location
-    VTR_ASSERT(hard_router_block != grid_location_to_router_id.end());
+    if (hard_router_block == grid_location_to_router_id.end())
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No router hard block found at the given grid location.");
 
     return hard_router_block->second;
 }
