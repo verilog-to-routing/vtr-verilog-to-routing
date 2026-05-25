@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Layer 5 — Generate per-renderer golden images for visual regression testing.
 #
-# For each renderer in {rhi, immediate, deferred}, runs VPR twice (one
-# invocation for placement_done + routing_done overlays, one for
-# routing_initial congestion — same as run_visual_regression.sh) and saves
-# every named PNG from visual_cases.sh into golden/<renderer>/<case>.png.
+# For each renderer in {rhi, immediate, deferred}, runs VPR twice under
+# --analysis against the checked-in fixtures under vpr/test/gui/fixtures/
+# (clean .net/.place/.route for the placement+routing pass, congested
+# fixture for the routing_done congestion pass — same as
+# run_visual_regression.sh) and saves every named PNG from visual_cases.sh
+# into golden/<renderer>/<case>.png.
+#
+# Why --analysis: pack/place/route run in LOAD mode, so the rendered scenes
+# depend only on the on-disk fixture files, not on the host VPR version's
+# heuristics. Goldens stay valid across VPR upgrades.
 #
 # Also produces developer-debug triptychs under golden/tmp/, one per
 # non-rhi renderer per case:
@@ -78,15 +84,15 @@ for renderer in "${RENDERERS[@]}"; do
     R_TMPDIR="${GEN_TMPDIR}/${renderer}"
     mkdir -p "${R_TMPDIR}"
 
-    echo "--- VPR [${renderer}] run 1: placement + routing overlays"
-    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_TMPDIR}" \
+    echo "--- VPR [${renderer}] run 1: placement + routing overlays (clean fixture, --analysis)"
+    visual_run_pass_clean "${VPR}" "${ARCH}" "${BENCH}" "${R_TMPDIR}" \
         "${R_TMPDIR}/vpr_placement_routing.log" "${PLACEMENT_ROUTING_CMDS}" \
-        --pack --place --route --renderer "${renderer}"
+        --renderer "${renderer}"
 
-    echo "--- VPR [${renderer}] run 2: routing_initial congestion"
-    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_TMPDIR}" \
-        "${R_TMPDIR}/vpr_routing_initial.log" "${ROUTING_INITIAL_CMDS}" \
-        --pack --place --route --renderer "${renderer}"
+    echo "--- VPR [${renderer}] run 2: routing_done congestion (congested fixture, --analysis)"
+    visual_run_pass_congested "${VPR}" "${ARCH}" "${BENCH}" "${R_TMPDIR}" \
+        "${R_TMPDIR}/vpr_routing_done_congestion.log" "${ROUTING_DONE_CONGESTION_CMDS}" \
+        --renderer "${renderer}"
 done
 
 # --- Collect: every (renderer, case) pair must have produced a PNG -----------
@@ -115,7 +121,7 @@ if [[ ${#missing[@]} -gt 0 ]]; then
     echo "ERROR: ${#missing[@]} (renderer, case) pair(s) failed to produce a PNG. Check:"
     for renderer in "${RENDERERS[@]}"; do
         echo "    ${GEN_TMPDIR}/${renderer}/vpr_placement_routing.log"
-        echo "    ${GEN_TMPDIR}/${renderer}/vpr_routing_initial.log"
+        echo "    ${GEN_TMPDIR}/${renderer}/vpr_routing_done_congestion.log"
     done
     exit 1
 fi

@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Layer 5 — Visual Regression Test Runner
 #
-# For each renderer in {rhi, immediate, deferred}, runs VPR twice with the
-# shared graphics_commands sequences from visual_cases.sh (one invocation
-# for placement_done + routing_done overlays, one for routing_initial
-# congestion) — passing --renderer <renderer> explicitly each time — then
-# compares each emitted PNG against the matching per-renderer golden at
-# vpr/test/gui/golden/<renderer>/<case>.png using SSIM (compare_images.py).
+# For each renderer in {rhi, immediate, deferred}, runs VPR twice under
+# --analysis with the shared graphics_commands sequences from
+# visual_cases.sh (one invocation against the clean fixture for the
+# placement_done + routing_done overlays, one against the congested fixture
+# for the routing_done congestion overlays) — passing --renderer <renderer>
+# explicitly each time — then compares each emitted PNG against the
+# matching per-renderer golden at vpr/test/gui/golden/<renderer>/<case>.png
+# using SSIM (compare_images.py).
+#
+# Goldens stay valid across VPR versions because --analysis runs only the
+# analyzer (pack/place/route LOAD from disk), so different VPR heuristics
+# no longer shift block locations or wire trees.
 #
 # Matrix: ${#VISUAL_CASE_NAMES[@]} cases × 3 renderers = total comparisons.
 # Goldens are PER-RENDERER: each renderer is compared against its own
@@ -170,15 +176,15 @@ for renderer in "${RENDERERS[@]}"; do
     R_OUTDIR="${TEST_OUTDIR}/${renderer}"
     mkdir -p "${R_OUTDIR}/diff"
 
-    echo "--- VPR [${renderer}] run 1: placement + routing overlays"
-    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_OUTDIR}" \
+    echo "--- VPR [${renderer}] run 1: placement + routing overlays (clean fixture, --analysis)"
+    visual_run_pass_clean "${VPR}" "${ARCH}" "${BENCH}" "${R_OUTDIR}" \
         "${R_OUTDIR}/vpr_placement_routing.log" "${PLACEMENT_ROUTING_CMDS}" \
-        --pack --place --route --renderer "${renderer}"
+        --renderer "${renderer}"
 
-    echo "--- VPR [${renderer}] run 2: routing_initial congestion"
-    visual_run_pass "${VPR}" "${ARCH}" "${BENCH}" "${R_OUTDIR}" \
-        "${R_OUTDIR}/vpr_routing_initial.log" "${ROUTING_INITIAL_CMDS}" \
-        --pack --place --route --renderer "${renderer}"
+    echo "--- VPR [${renderer}] run 2: routing_done congestion (congested fixture, --analysis)"
+    visual_run_pass_congested "${VPR}" "${ARCH}" "${BENCH}" "${R_OUTDIR}" \
+        "${R_OUTDIR}/vpr_routing_done_congestion.log" "${ROUTING_DONE_CONGESTION_CMDS}" \
+        --renderer "${renderer}"
 done
 
 # --- Compare each (renderer, case) pair against its per-renderer golden ------
@@ -203,7 +209,7 @@ for renderer in "${RENDERERS[@]}"; do
         local_current="${R_OUTDIR}/${name}.png"
         if [[ ! -f "${local_current}" ]]; then
             echo "    FAIL: ${name}.png not produced by --renderer ${renderer}"
-            echo "    See: ${R_OUTDIR}/vpr_placement_routing.log, ${R_OUTDIR}/vpr_routing_initial.log"
+            echo "    See: ${R_OUTDIR}/vpr_placement_routing.log, ${R_OUTDIR}/vpr_routing_done_congestion.log"
             (( FAIL++ )) || true
             continue
         fi

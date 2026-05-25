@@ -976,6 +976,13 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
                   "Aborting program.\n",
                   num_errors);
     }
+
+    // Mirror the post-place barrier emitted by placement_log_printer when the
+    // placer ran (DO mode): scripted `wait_for_stage placement_done` callers
+    // need the same checkpoint under --analysis / --route LOAD paths.
+    notify_stage_complete(e_pic_type::PLACEMENT);
+    update_screen(ScreenUpdatePriority::MAJOR, "Placement loaded",
+                  e_pic_type::PLACEMENT, nullptr);
 }
 
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
