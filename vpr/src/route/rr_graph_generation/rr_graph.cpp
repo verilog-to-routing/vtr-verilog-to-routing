@@ -835,8 +835,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                                                       chan_details_x, chan_details_y,
                                                                                                       nodes_per_chan,
                                                                                                       switchpoint_rng,
-                                                                                                      interdie_3d_links,
-                                                                                                      device_model_warnings);
+                                                                                                      interdie_3d_links);
 
     // Check whether RR graph need to allocate new nodes for 3D connections.
     // To avoid wasting memory, the data structures are only allocated if we have more than one die in device grid.

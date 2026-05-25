@@ -121,6 +121,8 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
  */
 static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link);
 
+static constexpr int MAX_SG_FANIN_FANOUT_WARNINGS = 10;
+
 //                             //
 // Static Function Definitions //
 //                             //
@@ -327,8 +329,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
                                                                          vtr::RngContainer& rng,
-                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
-                                                                         bool device_model_warnings) {
+                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     // Storage for identifying source/destination channels of an SG link.
@@ -348,6 +349,9 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
     vtr::t_formula_data formula_data;
 
     std::vector<t_bottleneck_link> bottleneck_links;
+
+    int sg_warning_count = 0;
+    bool sg_warning_limit_notified = false;
 
     // Handle 3D storage: if we have a multi-layer device, we organize inter-layer links
     // spatially (by X,Y) for easier lookup during RR graph construction.
@@ -395,9 +399,9 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 if (sg_link.z_offset != 0
                     && (is_empty_type(grid.get_physical_type(gather_loc))
                         || is_empty_type(grid.get_physical_type(scatter_loc)))) {
-                    VTR_LOGV_WARN(device_model_warnings,
-                                  "Deliberately skipped inter-layer scatter-gather connections for pattern '%s' with SG link '%s' "
-                                  "at gather (layer=%i, x=%i, y=%i) and scatter (layer=%i, x=%i, y=%i) "
+                    VTR_LOGV_WARN(true,
+                                  "Deliberately skipped inter-layer SG connections for pattern '%s' with SG link '%s' "
+                                  "at gather (%i, %i, %i) and scatter (%i, %i, %i) "
                                   "to model TSV holes for power delivery\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   gather_loc.layer_num, gather_loc.x, gather_loc.y,
@@ -447,19 +451,24 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                 if (fwd_bottleneck_fanin == 0 || fwd_bottleneck_fanout == 0) {
 
-                    VTR_LOGV_WARN(device_model_warnings && fwd_bottleneck_fanin == 0,
+                    VTR_LOGV_WARN(fwd_bottleneck_fanin == 0 && sg_warning_count < MAX_SG_FANIN_FANOUT_WARNINGS && (++sg_warning_count),
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero gather fanin connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   gather_loc.layer_num, gather_loc.x, gather_loc.y,
                                   fwd_gather_wire_candidates.size());
 
-                    VTR_LOGV_WARN(device_model_warnings && fwd_bottleneck_fanout == 0,
+                    VTR_LOGV_WARN(fwd_bottleneck_fanout == 0 && sg_warning_count < MAX_SG_FANIN_FANOUT_WARNINGS && (++sg_warning_count),
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero scatter fanout connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   scatter_loc.layer_num, scatter_loc.x, scatter_loc.y,
                                   fwd_scatter_wire_candidates.size());
+
+                    VTR_LOGV_WARN(sg_warning_count >= MAX_SG_FANIN_FANOUT_WARNINGS && !sg_warning_limit_notified && (sg_warning_limit_notified = true),
+                                  "Additional similar scatter-gather warnings will not be printed "
+                                  "(only the first %i are shown)\n",
+                                  MAX_SG_FANIN_FANOUT_WARNINGS);
 
                     // continue;
                 }
