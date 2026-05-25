@@ -1011,6 +1011,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
         vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
         false, // --memoize_cluster_packings is not yet supported for flat-recon
+        vpr_setup_.PackerOpts.cluster_router_hot_start,
         arch_.models,
         vpr_setup_.PackerOpts.pack_verbosity);
 
@@ -1056,6 +1057,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                                        ClusterLegalizationStrategy::FULL,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
                                        vpr_setup_.PackerOpts.memoize_cluster_packings,
+                                       vpr_setup_.PackerOpts.cluster_router_hot_start,
                                        arch_.models,
                                        vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
