@@ -70,7 +70,8 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
                                    int num_seg_types,
                                    vtr::NdMatrix<int, 3>& Fc_zofs,
                                    t_rr_edge_info_set& rr_edges_to_create,
-                                   const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links);
+                                   const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                   bool device_model_warnings);
 
 /**
  * @brief Connects all OPINs of a grid tile to CHANZ nodes located at the same (x, y) coordinate.
