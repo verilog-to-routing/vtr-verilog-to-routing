@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 /**
  * @file
  * @brief The reading of vpr constraints is now done via uxsdcxx and the 'vpr_constraints.xsd' file.
