@@ -299,9 +299,9 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
             }
             vtr::free(pb_graph_node->child_pb_graph_nodes[i][j]);
         }
-        vtr::free(pb_graph_node->child_pb_graph_nodes[i]);
+        vtr::free((void *)pb_graph_node->child_pb_graph_nodes[i]);
     }
-    vtr::free(pb_graph_node->child_pb_graph_nodes);
+    vtr::free((void *)pb_graph_node->child_pb_graph_nodes);
 }
 
 static void free_pb_type(t_pb_type* pb_type) {
