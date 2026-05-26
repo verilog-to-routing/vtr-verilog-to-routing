@@ -913,7 +913,12 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             for (ipin = 0; ipin < num_local_opin; ipin++) {
                 //Pop the nodes off the heap. We get them from the heap so we
                 //reserve those pins with lowest congestion cost first.
-                VTR_ASSERT(heap->try_pop(heap_head_node));
+                if (!heap->try_pop(heap_head_node)) {
+                    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                    "Ran out of OPINs when reserving locally used pins "
+                                    "for block %d, class %d (needed %d, exhausted after %d).",
+                                    (int)blk_id, iclass, num_local_opin, ipin);
+                }
                 const RRNodeId& inode = heap_head_node.node;
 
                 VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::OPIN);

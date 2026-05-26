@@ -380,7 +380,7 @@ struct ArchReader {
         for (auto bel : site.getBels())
             if (str(bel.getName()) == bel_name)
                 return bel;
-        VTR_ASSERT_MSG(0, "Could not find the BEL reader!\n");
+        archfpga_throw(__FILE__, __LINE__, "Could not find the BEL reader!\n");
     }
 
     /** @brief Get the BEL pin reader given its name, site and corresponding BEL */
@@ -392,7 +392,7 @@ struct ArchReader {
             if (str(pin_reader.getName()) == pin_name)
                 return pin_reader;
         }
-        VTR_ASSERT_MSG(0, "Could not find the BEL pin reader!\n");
+        archfpga_throw(__FILE__, __LINE__, "Could not find the BEL pin reader!\n");
     }
 
     /** @brief Get the BEL name, with an optional deduplication suffix in case its name collides with the site name */

@@ -15,6 +15,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "data_frame_processor.h"
+#include "crr_pattern_matcher.h"
 
 namespace crrgenerator {
 
@@ -126,6 +127,11 @@ class SwitchBlockManager {
      * @brief Processor for reading and processing switch block template files.
      */
     DataFrameProcessor processor_;
+
+    /**
+     * @brief Pattern matcher with compiled regex cache.
+     */
+    CRRPatternMatcher pattern_matcher_;
 
     /**
      * @brief Verbosity level for logging messages
