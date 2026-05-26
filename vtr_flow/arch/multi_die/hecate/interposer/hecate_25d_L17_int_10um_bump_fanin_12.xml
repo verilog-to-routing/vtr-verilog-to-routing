@@ -5,7 +5,8 @@
     are Agilex-like [8] and the intra-die routing architecture is similar to Stratix IV [7].
     The inter-die routing architecture is routing-based and similar the Xilinx 7-Series.  The FPGA
     fabric is based on a 7nm fabric defined in [1], [2]. The architectures feature 10um microbump
-    and 5um hybrid-bonding pitches.
+    and 5um hybrid-bonding pitches. This architecture is also used by the generate_hecate_interposer_archs.py
+    script to generate an entire familty of 2.5D architectures with different inter-die connectivity.
 
     Delay models have been extracted using SPICE simulations (ASAP-7 7nm node for the active die
     and 45nm for the interposer based on the ITRS 2005 interconnect report).
@@ -44,6 +45,8 @@
     sharing the 60 input ports with the signals coming from the routing channels.
 
     The LAB has a 50% sparsely populated input crossbar.
+
+    All logic block output and input pins are located on the top and right sides, to avoid connectivity issues on interposer cutlines.
     
     ##############################
     DSP Slice
@@ -122,9 +125,10 @@
     ##############################
     Routing/Interconnect
     ##############################
-    The routing channel width is 300. Note that the channel width isn't specified directly in this arch file. 
-    Switch pattern calculations assume that value. During experiments, channel width can be specified using 
-    the command line switch `route_chan_width`.
+    All switch pattern delay and area calculations were done assuming a channel width of 300. Channel width
+    is not specified in the architecture files, so during experiments it can be specified using  the command-
+    line argument `route_chan_width`.
+
     The architecture uses unidirectional routing with wire segments of length 4 (260 out of 300 wires) and 
     length 16 (40 out of 300 wires). The length 16 wires do not directly connect to block pins and are only 
     accessible from the length 4 wires. Switches appear after every 4 blocks on the length 16 wires. 

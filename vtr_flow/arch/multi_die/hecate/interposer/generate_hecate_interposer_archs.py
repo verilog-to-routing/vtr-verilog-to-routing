@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-"""Generate Hecate interposer architecture variants from a CSV description."""
+"""Generate Hecate interposer architecture variants from a CSV description
+and the base 'hecate_25d_L17_int_10um_bump_fanin_12.xml' architecture."""
 
 import csv
 import re
@@ -42,9 +43,7 @@ def configure_scatter_gather_patterns(
         "downward": xml_root.xpath(
             ".//scatter_gather_list/sg_pattern[@name='interposer_sg_downward']"
         ),
-        "upward": xml_root.xpath(
-            ".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']"
-        ),
+        "upward": xml_root.xpath(".//scatter_gather_list/sg_pattern[@name='interposer_sg_upward']"),
     }
 
     for direction, sg_list in patterns.items():

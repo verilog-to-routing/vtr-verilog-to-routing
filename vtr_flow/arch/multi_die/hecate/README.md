@@ -2,14 +2,32 @@
 
 This directory contains architectures exploring 2.5D and 3D FPGA integration within the Verilog-to-Routing (VTR) flow.
 Some architectures are already in the folders, but due to the large number of total architectures we auto-generate the
-majority of them.
+architectures using the base architectures and parameters inside a csv file.
 
 ## How to generate the Hecate architectures
 Run the following command to generate the 2.5D Hecate architectures:
 
 ```bash
-python generate_25d_arch.py
+cd interposer
+python generate_hecate_interposer_archs.py
 ```
+
+### Interposer CSV and Generation Script
+
+The interposer architecture variants are generated from `interposer/int_connectivity.csv` and the template architecture
+`interposer/hecate_25d_L17_int_10um_bump_fanin_12.xml`. Each CSV row describes one interposer wire family and bump-pitch
+configuration:
+* `arch_id`: output architecture identifier, used in the generated filename
+  `hecate_25d_[arch_id]_fanin_[FANIN].xml`.
+* `wire_name`: interposer wire length label. The script extracts the number from this value, for example `L17` becomes a
+  segment length of 17 tiles.
+* `mux_name`: mux model name to assign to the `int_wire` segment in the generated XML.
+* `num`: number of inter-die wires to instantiate at each interposer cut for that bump pitch.
+
+`interposer/generate_hecate_interposer_archs.py` reads each CSV row, reloads the template XML, and updates the interposer
+segment length, mux name, scatter-gather offsets, and legal inter-die wire ranges. For every CSV row it also sweeps a fixed
+set of gather/scatter connection counts, producing one architecture per fan-in setting. This is how the compact CSV table
+expands into the full set of generated `hecate_25d_*_fanin_*.xml` architecture files.
 
 ## 1. FPGA Fabric
 
