@@ -62,7 +62,7 @@ jobs:
       - name: Install Requirements
         run: |
           ./install_apt_packages.sh
-          sudo apt-get install -y clang-tidy clang-tools
+          sudo apt-get install -y clang-tidy-19
 
       - name: Configure Build Database
         run: cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
