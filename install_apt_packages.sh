@@ -58,13 +58,6 @@ packages_to_install+=(
     libgl1-mesa-dri
 )
 
-# qt6-shadertools-dev is only available on Ubuntu Noble (24.04+); on
-# Jammy (22.04) it is missing from apt and the build instead relies on
-# the qtshadertools module installed by aqt (see VTR_QT_PREFIX path).
-if apt-cache show qt6-shadertools-dev >/dev/null 2>&1; then
-    packages_to_install+=(qt6-shadertools-dev)
-fi
-
 # Required for parsing SDC files (see LibSDCParse)
 packages_to_install+=(
     tcl-dev

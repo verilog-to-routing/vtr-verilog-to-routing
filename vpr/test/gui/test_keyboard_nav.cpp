@@ -82,7 +82,7 @@ extern ezgl::application* application;
 
 // act_on_key_press is non-static in draw.cpp (it's bound as the ezgl
 // dispatch callback) but does not appear in any header.
-void act_on_key_press(ezgl::application* app, QKeyEvent* event, const char* key_name);
+void act_on_key_press(ezgl::application* app, QKeyEvent* event, const std::string& key_name);
 
 namespace {
 

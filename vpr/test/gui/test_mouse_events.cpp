@@ -50,7 +50,7 @@
 
 // File-local callbacks in vpr/src/draw/draw.cpp — declared at TU scope without
 // `static`, so they have external linkage and are linkable here via libvpr.
-extern void act_on_key_press(ezgl::application* app, QKeyEvent* event, const char* key_name);
+extern void act_on_key_press(ezgl::application* app, QKeyEvent* event, const std::string& key_name);
 extern void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, double y);
 extern void act_on_mouse_move(ezgl::application* app, QMouseEvent* event, double x, double y);
 
