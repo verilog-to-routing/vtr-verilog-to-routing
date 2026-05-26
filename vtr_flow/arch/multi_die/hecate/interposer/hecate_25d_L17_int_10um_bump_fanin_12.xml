@@ -17,14 +17,14 @@
     Parameter | Value | Definition
     __________|_______|______________________________
     N         |    10 | Number of BLEs per cluster
-    W         |   300 | Channel width
+    W         |   320 | Channel width
     L         |  4,16 | Wire segment length
-    I         |    60 | Number of cluster inputs
+    I         |    40 | Number of cluster inputs
     O         |    40 | Number of cluster outputs
     K         |     6 | LUT size
     Fs        |     3 | Switch block flexibility
-    Fcin      |  0.15 | Cluster input flexibility
-    Fcout     |   0.1 | Cluster output flexibility
+    Fcin      |   0.2 | Cluster input flexibility
+    Fcout     | 0.025 | Cluster output flexibility
     Fclocal   |   0.5 | Local input crossbar population
 
     ##############################
@@ -40,9 +40,9 @@
     bits of addition per ALM. This architecture has a single carry chain that spans the 10 ALMs
     in the LAB.
 
-    The LAB (or Logic Cluster or CLB) has 60 inputs and 40 outputs. Two outputs of each ALM are fed 
+    The LAB (or Logic Cluster or CLB) has 40 inputs and 40 outputs. Two outputs of each ALM are fed 
     to the right and left LAB using direct links and are also fed back to the LAB as feedback connections 
-    sharing the 60 input ports with the signals coming from the routing channels.
+    sharing the 40 input ports with the signals coming from the routing channels.
 
     The LAB has a 50% sparsely populated input crossbar.
 
@@ -125,12 +125,12 @@
     ##############################
     Routing/Interconnect
     ##############################
-    All switch pattern delay and area calculations were done assuming a channel width of 300. Channel width
+    All switch pattern delay and area calculations were done assuming a channel width of 320. Channel width
     is not specified in the architecture files, so during experiments it can be specified using  the command-
     line argument `route_chan_width`.
 
-    The architecture uses unidirectional routing with wire segments of length 4 (260 out of 300 wires) and 
-    length 16 (40 out of 300 wires). The length 16 wires do not directly connect to block pins and are only 
+    The architecture uses unidirectional routing with wire segments of length 4 (280 out of 320 wires) and 
+    length 16 (40 out of 320 wires). The length 16 wires do not directly connect to block pins and are only 
     accessible from the length 4 wires. Switches appear after every 4 blocks on the length 16 wires. 
     The switch blocks use a custom switching pattern based on the Stratix-IV-like architecture used in the 
     Titan flow [7]. 
@@ -1621,88 +1621,22 @@
   </complexblocklist>
 
   <switchblocklist>
-    <!-- Stratix IV uses a uni-directional routing architecture with a Driver Input Mux (DIM) size of 12 (i.e.
-           each wire can be driven by one of 12 block/outputs or wires) for the L4s.
-           
-           In the Stratix IV architecture the long wires (L16 here) are accessible only from the short wires, 
-           and are not connected to the block pins (i.e. connection blocks). Furthermore, they only connect 
-           to switch blocks every 4 LABs (to avoid expensive deep via stacks).
-           We approximate the L16 DIM size as 40:1 (in reality it is a pair of 20:1 (?) muxes with a 2:1 swap mux
-           in front, which has nearly the same connectivity as a full 40:1).
 
-           L4 wires
-           ================
-           At a channel width of 300 there are 260 L4/L4prime wires. At an effective Fc_out of 0.075 
-           and 40 LAB outputs this yeilds:
+    <!--
+    Switch pattern
+    ==============
+    This switch block is based on the Wilton switch block (see Page 103 of Steve Wilton's PhD Thesis 
+    "Architecture and Algorithms for Field-Programmable Gate Arrays with Embedded Memory", 199
+         left-to-top: W - t
+         top-to-right: t + 1
+         right-to-bottom: 2*W - 2 - t
+         bottom-to-left: t + 1
+         left-to-right: t
+         top-to-bottom
+    Since Wilton assumed bidirection routing (while we use unidirectional routing),
+    we mirror the clock-wise turns to match the conter-clock-wise specification.
+    -->
 
-                40 * 2 = 80 outputs per channel  [2 LABs per-channel]
-
-                80 * 0.075 = 6 outputs drive each L4 wire [output connection block]
-
-           This leaves:
-
-                12 - 6 = 6 inputs to the DIMs from other routing wires [switch block]
-
-           Since L4s connect at every switch block, there are:
-
-                260 L16 wires per channel + direction which can drive wires at a particular switchblock
-                (via switchpoints 0, 1, 2, 3)
-
-           And for each direction (260 wires) only:
-
-               260 / 4 = 65 wires starting/ending per channel + direction at each switch block
-               (i.e. from each direction, north/south/east/west, there are 32 L4s starting, and 32 L4s ending; + 1 wire for the 65th)
-
-           Which we allocate as follows:
-
-                L4
-                =====
-                straight-through connection: 2 (from L4 or L16)
-                clock-wise turn            : 2 (from L4 or L16)
-                counter-clock-wise turn    : 2 (from L4 or L16)
-
-           L16 wires
-           =========
-           At a channel width of 300 there are 40 L16 wires (20 in each direction), which do not connect to the input/output connection blocks.
-           This leaves 40 inputs to the DIM to select from routing wires (long wires use larger DIMs to improve reachability,
-           the area cost is relatively small since they are so rare).
-
-           Since L16s only connect at every 4th switch block there are:
-
-                40 / 4 = 10 L16 wires per channel (5 in each direction) which can drive wires at a particular switchblock
-                (via switchpoints 0, 4, 8, 12)
-
-           And for each direction (20 wires) only:
-
-               40 / 16 = 2.25 => 2 wires starting/ending per channel + direction at each switch block
-               (i.e. from each direction, north/south/east/west, there is one L16 starting, and one L16 ending)
-           
-           We assign the 40 DIM inputs as follows:
-
-                L16
-                =====
-                straight-through connection:  3 (from L16)
-                straight-through connection: 11 (from L4)
-                clock-wise turn            :  3 (from L16)
-                clock-wise turn            : 10 (from L4)
-                counter clock-wise turn    :  3 (from L16)
-                counter clock-wise turn    : 10 (from L4)
-
-           Switch pattern
-           ==============
-           This switch block is based on the Wilton switch block (see Page 103 of Steve Wilton's PhD Thesis 
-           "Architecture and Algorithms for Field-Programmable Gate Arrays with Embedded Memory", 1997):
-
-                left-to-top: W - t
-                top-to-right: t + 1
-                right-to-bottom: 2*W - 2 - t
-                bottom-to-left: t + 1
-                left-to-right: t
-                top-to-bottom: t
-
-           Since Wilton assumed bidirection routing (while we use unidirectional routing),
-           we mirror the clock-wise turns to match the conter-clock-wise specification.
-           -->
     <switchblock name="wilton_turn_clockwise_core" type="unidir">
       <switchblock_location type="CORE"/>
       <switchfuncs>
