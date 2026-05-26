@@ -42,7 +42,7 @@
 
 static bool check_logical_block_location_constraint(const AtomBlockId blk_id, const t_pb* pb, int verbosity) {
     const auto& constraints = g_vpr_ctx.floorplanning().constraints;
-    const std::string logical_block_location = constraints.get_atom_logical_block_location(blk_id);
+    std::string logical_block_location = constraints.get_atom_logical_block_location(blk_id);
     if (logical_block_location.empty()) {
         return true;
     }

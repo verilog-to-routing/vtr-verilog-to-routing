@@ -143,7 +143,7 @@ class UserPlaceConstraints {
      *
      * Returns empty string when no location constraint was provided.
      */
-    const std::string get_atom_logical_block_location(AtomBlockId blk_id) const;
+    std::string get_atom_logical_block_location(AtomBlockId blk_id) const;
 
     /**
      * @brief Returns true if any atom has a logical_block_location constraint.
