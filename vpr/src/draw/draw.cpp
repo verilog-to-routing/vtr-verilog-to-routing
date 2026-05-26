@@ -87,7 +87,7 @@ static constexpr ezgl::color OLD_BLK_LOC_COLOR = blk_GOLD;
 static constexpr ezgl::color NEW_BLK_LOC_COLOR = blk_GREEN;
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
-void act_on_key_press(ezgl::application* /*app*/, QKeyEvent* event, const char* key_name);
+void act_on_key_press(ezgl::application* /*app*/, QKeyEvent* event, const std::string& key_name);
 void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, double y);
 void act_on_mouse_move(ezgl::application* app, QMouseEvent* event, double x, double y);
 
@@ -803,8 +803,7 @@ bool draw_if_net_highlighted(ParentNetId inet) {
  * At the moment, only does something if user is currently typing in searchBar and
  * hits enter, at which point it runs autocomplete
  */
-void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* key_name) {
-    std::string key(key_name);
+void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const std::string& key_name) {
     QLineEdit* searchBar = app->find_line_edit("TextInput");
     if (!searchBar) {
         return;
@@ -812,7 +811,7 @@ void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* 
     QString text(searchBar->text());
     t_draw_state* draw_state = get_draw_state_vars();
     if (searchBar->hasFocus()) {
-        if (key == "Return" || key == "Tab") {
+        if (key_name == "Return" || key_name == "Tab") {
             enable_autocomplete(app);
             searchBar->setCursorPosition(text.length());
             return;
@@ -823,7 +822,7 @@ void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const char* 
     } else {
         searchBar->setCompleter(nullptr);
     }
-    if (key == "Escape") {
+    if (key_name == "Escape") {
         deselect_all();
     }
 }
