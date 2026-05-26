@@ -374,7 +374,7 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].base_cost = 0.875 * delay_normalization_fac;
 
     auto rr_segment_counts = count_rr_segment_types(rr_graph, rr_indexed_data);
-    size_t total_segments = std::accumulate(rr_segment_counts.begin(), rr_segment_counts.end(), 0u);
+    size_t total_segments = std::accumulate(rr_segment_counts.begin(), rr_segment_counts.end(), 0ull);
 
     /* Load base costs for CHANX and CHANY segments */
     float max_length = 0;

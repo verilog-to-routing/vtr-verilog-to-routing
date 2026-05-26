@@ -371,7 +371,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *  15   |  X      X     X    X  | 1111
      */
   private:
-    virtual void init_side_map() final {
+    void init_side_map() {
         side_map_[0] = uxsd::enum_loc_side::UXSD_INVALID;
         side_map_[(1 << TOP)] = uxsd::enum_loc_side::TOP;
         side_map_[(1 << RIGHT)] = uxsd::enum_loc_side::RIGHT;
@@ -2186,7 +2186,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     RRGraphView* rr_graph_;
     vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
-    t_rr_node_indices* rr_node_indices_;
     std::string* loaded_rr_graph_filename_;
     std::vector<t_rr_rc_data>* rr_rc_data_;
 
