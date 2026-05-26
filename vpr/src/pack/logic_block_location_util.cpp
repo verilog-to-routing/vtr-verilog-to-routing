@@ -4,9 +4,7 @@
 #include <cctype>
 #include <utility>
 
-#include "pack_patterns.h"
-#include "physical_types.h"
-#include "vpr_utils.h"
+#include "vpr_error.h"
 
 enum class e_token_format {
     LOGICAL_LOCATION,
@@ -36,12 +34,25 @@ static t_logical_location_token parse_single_token(const std::string& token, e_t
     parsed.name = token.substr(0, lbr);
     size_t rbr = token.find(']', lbr + 1);
     if (rbr == std::string::npos) {
+        if (format == e_token_format::LOGICAL_LOCATION) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Invalid logical_block_location token '%s': missing ']' after '['",
+                            token.c_str());
+        }
         return parsed;
     }
 
     if (format == e_token_format::LOGICAL_LOCATION) {
-        int idx = try_parse_int(token.substr(lbr + 1, rbr - lbr - 1));
-        if (idx >= 0) {
+        const std::string bracket_content = token.substr(lbr + 1, rbr - lbr - 1);
+        if (!bracket_content.empty()) {
+            const int idx = try_parse_int(bracket_content);
+            if (idx < 0) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Invalid logical_block_location token '%s': "
+                                "expected non-negative integer in '[...]', got '%s'",
+                                token.c_str(),
+                                bracket_content.c_str());
+            }
             parsed.index = idx;
         }
 
