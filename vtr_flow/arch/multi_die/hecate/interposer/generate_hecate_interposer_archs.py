@@ -13,7 +13,22 @@ from lxml import etree
 
 
 def configure_interposer_segment(xml_root: Any, segment_length: int, mux_name: str) -> None:
-    """Configure the physical interposer segment properties."""
+    """Configure the physical interposer segment definition.
+
+    Updates the ``int_wire`` segment in the architecture XML so that its
+    length, mux name, switch-block pattern, and connection-block pattern match
+    the interposer wire described by the current CSV row.
+
+    Args:
+        xml_root: Root element of the parsed architecture XML tree.
+        segment_length: Length to assign to the ``int_wire`` segment.
+        mux_name: Name to assign to the segment's nested ``mux`` tag, when one
+            exists.
+
+    Returns:
+        None. The XML tree is modified in place. If no ``int_wire`` segment is
+        found, the function leaves the tree unchanged.
+    """
     segment = xml_root.xpath(".//segmentlist/segment[@name='int_wire']")
     if not segment:
         return
@@ -38,7 +53,25 @@ def configure_interposer_segment(xml_root: Any, segment_length: int, mux_name: s
 def configure_scatter_gather_patterns(
     xml_root: Any, segment_length: int, gather_n_val: str, scatter_n_val: str
 ) -> None:
-    """Configure scatter-gather fan-in, fan-out, and offsets."""
+    """Configure interposer scatter-gather connectivity patterns.
+
+    Updates the upward and downward interposer scatter-gather patterns so their
+    gather/scatter connection counts and scatter-gather link offsets match the
+    generated architecture variant.
+
+    Args:
+        xml_root: Root element of the parsed architecture XML tree.
+        segment_length: Interposer wire segment length. This determines the
+            signed ``y_offset`` used by each scatter-gather link.
+        gather_n_val: Number of gather connections to write to each matching
+            ``gather/wireconn`` tag.
+        scatter_n_val: Number of scatter connections to write to each matching
+            ``scatter/wireconn`` tag.
+
+    Returns:
+        None. The XML tree is modified in place. Missing scatter-gather
+        patterns or child tags are skipped.
+    """
     patterns = {
         "downward": xml_root.xpath(
             ".//scatter_gather_list/sg_pattern[@name='interposer_sg_downward']"
@@ -70,7 +103,28 @@ def configure_scatter_gather_patterns(
 def configure_interdie_wires(
     xml_root: Any, layout_xpath: str, segment_length: int, csv_num: str
 ) -> None:
-    """Configure legal interposer cut wire ranges."""
+    """Configure interposer cut definition for a layout.
+
+    Updates the upward and downward ``interdie_wire`` tags under the selected
+    layout's ``interposer_cut``. The layout is selected by XPath so the same
+    logic can be reused for both ``auto_layout`` and sibling ``fixed_layout``
+    tags.
+
+    Args:
+        xml_root: Root element of the parsed architecture XML tree.
+        layout_xpath: XPath selecting the layout element to update, such as
+            ``.//layout/auto_layout/`` or
+            ``.//layout/fixed_layout[@name='hecate_small']/``. A trailing slash
+            is optional.
+        segment_length: Interposer wire segment length. This determines the
+            offset values of the interdie_wire tag.
+        csv_num: Number of inter-die wires instantiated at each switchblock location.
+            Determines the 'num' value of the interdie_wire tag.
+
+    Returns:
+        None. The XML tree is modified in place. Missing upward or downward
+        ``interdie_wire`` tags are skipped.
+    """
     layout_xpath = layout_xpath.rstrip("/")
     up_wire = xml_root.xpath(
         f"{layout_xpath}/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']"
@@ -90,7 +144,25 @@ def configure_interdie_wires(
 
 
 def write_arch(xml_tree: Any, output_dir: str, arch_id: str, gather_n_val: str) -> None:
-    """Write a generated architecture XML file."""
+    """Write a generated architecture XML file to disk.
+
+    Builds the output filename from the architecture identifier and gather
+    fan-in value, then writes the XML tree with an XML declaration and pretty
+    formatting.
+
+    Args:
+        xml_tree: Parsed architecture XML tree to serialize.
+        output_dir: Directory where the generated architecture should be
+            written.
+        arch_id: Architecture identifier from the CSV row. This becomes part of
+            the generated filename.
+        gather_n_val: Gather fan-in value. This becomes the ``fanin`` suffix in
+            the generated filename.
+
+    Returns:
+        None. The XML file is written to ``output_dir`` and the generated path
+        is printed.
+    """
     output_filename = f"hecate_25d_{arch_id}_fanin_{gather_n_val}.xml"
     output_path = os.path.join(output_dir, output_filename)
 
@@ -105,7 +177,27 @@ def generate_archs_for_row(
     parser: Any,
     connection_sizes: Sequence[Tuple[str, str]],
 ) -> None:
-    """Generate all Hecate interposer architecture variants for one CSV row."""
+    """Generate all architecture variants described by one CSV row.
+
+    Extracts the interposer segment length and connectivity settings from a
+    CSV row, then generates one architecture file for each gather/scatter
+    connection-size pair. Each output starts from a fresh parse of the template
+    XML so variants do not inherit modifications from earlier iterations.
+
+    Args:
+        row: CSV row containing at least ``arch_id``, ``mux_name``,
+            ``wire_name``, and ``num`` fields.
+        template_path: Path to the base Hecate architecture XML template.
+        output_dir: Directory where generated architecture XML files should be
+            written.
+        parser: ``lxml.etree`` parser used to read the template while
+            preserving comments.
+        connection_sizes: Sequence of ``(gather_n_val, scatter_n_val)`` pairs
+            to generate for this row.
+
+    Returns:
+        None. Generated architecture files are written to ``output_dir``.
+    """
     arch_id = row["arch_id"]
     mux_name = row["mux_name"]
     wire_name = row["wire_name"]
@@ -132,9 +224,23 @@ def generate_archs_for_row(
 def generate_hecate_interposer_archs(
     csv_file: str, template_path: str, output_dir: str = "hecate_25D"
 ) -> None:
-    """
-    Generates customized VPR architecture XML files by injecting varying scatter-gather
-    and inter-die connectivity configurations into a base template XML.
+    """Generate Hecate interposer architecture XML variants.
+
+    Reads a CSV description of interposer wire configurations and applies each
+    row to a base Hecate architecture template. For each row, this function
+    emits variants for the configured gather/scatter fan-in and fan-out
+    exploration points.
+
+    Args:
+        csv_file: Path to the CSV file containing architecture variant inputs.
+        template_path: Path to the base Hecate architecture XML template.
+        output_dir: Directory where generated architecture XML files should be
+            written. Created if it does not already exist.
+
+    Returns:
+        None. Generated architecture files are written to ``output_dir``. If
+        ``template_path`` does not exist, an error is printed and no files are
+        generated.
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
