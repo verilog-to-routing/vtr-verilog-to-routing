@@ -1,4 +1,4 @@
-﻿#include "user_place_constraints.h"
+#include "user_place_constraints.h"
 #include <unordered_set>
 #include "physical_types.h"
 #include "vtr_assert.h"
