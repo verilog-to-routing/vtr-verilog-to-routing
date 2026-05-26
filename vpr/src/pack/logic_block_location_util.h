@@ -5,9 +5,7 @@
 #include <vector>
 
 #include "atom_netlist_fwd.h"
-
-struct t_pb_type;
-struct t_pack_patterns;
+#include "physical_types.h"
 
 struct t_logical_location_token {
     std::string name;
