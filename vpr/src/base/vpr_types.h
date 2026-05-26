@@ -799,6 +799,7 @@ struct t_packer_opts {
     int pack_verbosity;
     bool use_ram_mapper;
     bool memoize_cluster_packings;
+    bool cluster_router_hot_start;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;

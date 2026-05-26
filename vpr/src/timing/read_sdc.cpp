@@ -1389,7 +1389,8 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         auto it = object_to_net_id_.find(net_object_id);
-        VTR_ASSERT(it != object_to_net_id_.end());
+        if (it == object_to_net_id_.end())
+            VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find net object in object_to_net_id_ map.");
         return it->second;
     }
 
@@ -1420,7 +1421,8 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         auto it = object_to_clock_id_.find(clock_object_id);
-        VTR_ASSERT(it != object_to_clock_id_.end());
+        if (it == object_to_clock_id_.end())
+            VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find clock object in object_to_clock_id_ map.");
         return it->second;
     }
 
