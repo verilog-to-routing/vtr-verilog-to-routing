@@ -67,10 +67,13 @@ def configure_scatter_gather_patterns(
             sg_link[0].set("y_offset", str(offset_val))
 
 
-def configure_interdie_wires(xml_root: Any, segment_length: int, csv_num: str) -> None:
+def configure_interdie_wires(
+    xml_root: Any, layout_xpath: str, segment_length: int, csv_num: str
+) -> None:
     """Configure legal interposer cut wire ranges."""
+    layout_xpath = layout_xpath.rstrip("/")
     up_wire = xml_root.xpath(
-        ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']"
+        f"{layout_xpath}/interposer_cut/interdie_wire[@sg_name='interposer_sg_upward']"
     )
     if up_wire:
         up_wire[0].set("offset_start", str(-(segment_length - 1)))
@@ -78,7 +81,7 @@ def configure_interdie_wires(xml_root: Any, segment_length: int, csv_num: str) -
         up_wire[0].set("num", csv_num)
 
     down_wire = xml_root.xpath(
-        ".//layout/auto_layout/interposer_cut/interdie_wire[@sg_name='interposer_sg_downward']"
+        f"{layout_xpath}/interposer_cut/interdie_wire[@sg_name='interposer_sg_downward']"
     )
     if down_wire:
         down_wire[0].set("offset_start", "1")
@@ -119,7 +122,10 @@ def generate_archs_for_row(
 
         configure_interposer_segment(xml_root, segment_length, mux_name)
         configure_scatter_gather_patterns(xml_root, segment_length, gather_n_val, scatter_n_val)
-        configure_interdie_wires(xml_root, segment_length, csv_num)
+        configure_interdie_wires(xml_root, ".//layout/auto_layout/", segment_length, csv_num)
+        configure_interdie_wires(
+            xml_root, ".//layout/fixed_layout[@name='hecate_small']/", segment_length, csv_num
+        )
         write_arch(xml_tree, output_dir, arch_id, gather_n_val)
 
 
