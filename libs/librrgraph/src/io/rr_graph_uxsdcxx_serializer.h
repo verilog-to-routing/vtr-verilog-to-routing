@@ -3,8 +3,6 @@
 #include <cstddef>
 #include <vector>
 #include <cstring>
-#include <algorithm>
-#include <iostream>
 
 #include "physical_types.h"
 #include "rr_graph_uxsdcxx_interface.h"
@@ -18,7 +16,6 @@
 #include "rr_metadata.h"
 
 #include "check_rr_graph.h"
-#include "read_xml_arch_file.h"
 #include "librrgraph_types.h"
 
 #include "device_grid.h"

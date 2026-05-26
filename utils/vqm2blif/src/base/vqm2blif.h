@@ -31,10 +31,10 @@
 * THE SOFTWARE.
 * 			BACKGROUND
 *
-* VQM is an internal file format used by Altera® inside their development tool,
-* Quartus® II. It uses a subset of the Verilog description language, and the 
+* VQM is an internal file format used by Altera(R) inside their development tool,
+* Quartus(R) II. It uses a subset of the Verilog description language, and the 
 * circuit it describes is technology-mapped to one of their families of devices 
-* (e.g. Stratix® IV or Cyclone® II). These files can be outputted during normal
+* (e.g. Stratix(R) IV or Cyclone(R) II). These files can be outputted during normal
 * Quartus II operation, as detailed in Altera's QUIP documentation.
 *	-> For more, see: quip_tutorial.pdf
 *	-> Download QUIP at:
@@ -56,12 +56,10 @@
 //				INCLUDES
 //============================================================================================
 
+#include <string>
 #include "logic_types.h"
 #include "vqm2blif_util.h"
 #include "lutmask.h"
-#include "cleanup.h"
-#include "lut_recog.h"
-#include "preprocess.h"
 
 //============================================================================================
 //				DATA STRUCTURES

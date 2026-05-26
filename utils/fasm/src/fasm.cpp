@@ -21,7 +21,7 @@
 
 namespace fasm {
 
-FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool is_flat) : strings_(strings), os_(f),
+FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool /*is_flat*/) : strings_(strings), os_(f),
     pb_graph_pin_lookup_from_index_by_type_(g_vpr_ctx.device().logical_block_types),
     fasm_lut(strings->intern_string("fasm_lut")),
     fasm_features(strings->intern_string("fasm_features")),
@@ -29,8 +29,7 @@ FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostre
     fasm_prefix(strings->intern_string("fasm_prefix")),
     fasm_placeholders(strings->intern_string("fasm_placeholders")),
     fasm_type(strings->intern_string("fasm_type")),
-    fasm_mux(strings->intern_string("fasm_mux")),
-    is_flat_(is_flat){
+    fasm_mux(strings->intern_string("fasm_mux")) {
 }
 
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
