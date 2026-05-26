@@ -8,7 +8,7 @@
 * elaborate a VQM Primitive that represents a LUT into a corresponding BLIF ".names" structure.
 *
 *		BACKGROUND
-*	A primitive in a VQM file represents a block of hardware on an Altera® FPGA device that
+*	A primitive in a VQM file represents a block of hardware on an Altera(R) FPGA device that
 * has been instantiated, connected and configured to perform a certain function within the 
 * circuit. Each family of devices has a corresponding set of primitives that represent blocks
 * such as RAMs, DSP blocks, PLLs, or combinational logic elements. Additionally, each primitive 
@@ -26,7 +26,7 @@
 *	- The Primitive's CP
 *
 *		IMPLEMENTATION
-*	The current implementation supports both the Stratix® III and IV representation of a LUT
+*	The current implementation supports both the Stratix(R) III and IV representation of a LUT
 * in a VQM file. In order to expand this recognition, a user must do the following:
 *
 *	I.	Create a Configuration Profile Function that, given a t_node structure, can determine

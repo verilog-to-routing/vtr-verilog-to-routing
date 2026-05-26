@@ -344,12 +344,6 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
 void apply_route_constraints(const UserRouteConstraints& constraint);
 
 /**
- * @brief Iterate over all inter-layer switch types and return the minimum delay of them.
- * Useful for router lookahead to have some estimate of the cost of crossing a layer.
- */
-float get_min_cross_layer_delay();
-
-/**
  * @class PortPinToBlockPinConverter
  * @brief Maps the block pins indices for all block types to the corresponding port indices and port_pin indices.
  *
