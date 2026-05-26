@@ -7,7 +7,10 @@
  * for each location.
  */
 
+#include <optional>
 #include <string>
+
+#include "vpr_error.h"
 #include <string_view>
 #include <regex>
 #include <unordered_map>
@@ -22,10 +25,38 @@ namespace crrgenerator {
  * for each location.
  */
 class CRRPatternMatcher {
+  public:
+    // Pre-compile a pattern and store it in the cache. Call once per pattern at startup.
+    void register_pattern(const std::string& pattern) {
+        cache_.emplace(pattern, compile(pattern));
+    }
+
+    // Returns true if name matches pattern, using the pre-compiled cache.
+    // The pattern must have been registered via register_pattern() beforehand;
+    // an unregistered pattern raises a fatal error.
+    bool matches_pattern(const std::string& name, const std::string& pattern) const {
+        auto it = cache_.find(pattern);
+        if (it == cache_.end()) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Pattern '%s' was not registered before use\n", pattern.c_str());
+        }
+        if (!it->second.has_value()) return name == pattern;
+        return validate_regex_match(name, pattern, *it->second);
+    }
+
   private:
+    std::unordered_map<std::string, std::optional<std::regex>> cache_;
+
+    static std::optional<std::regex> compile(const std::string& pattern) {
+        if (pattern.find('*') == std::string::npos
+            && pattern.find('[') == std::string::npos
+            && pattern.find('\\') == std::string::npos) {
+            return std::nullopt;
+        }
+        return std::regex(pattern_to_regex(pattern));
+    }
+
     // Helper function to parse range [start:end:step] or comma-separated values [7,20]
     static bool matches_range(int value, const std::string& range_str) {
-        // Extract numbers from [start:end:step] or [7,20] format
         size_t start_pos = range_str.find('[');
         size_t end_pos = range_str.find(']');
         if (start_pos == std::string::npos || end_pos == std::string::npos) {
@@ -34,138 +65,100 @@ class CRRPatternMatcher {
 
         std::string range_content = range_str.substr(start_pos + 1, end_pos - start_pos - 1);
 
-        // Check if it's comma-separated values (e.g., [7,20])
         if (range_content.find(',') != std::string::npos) {
-            // Parse comma-separated values
             std::vector<int> values;
             size_t pos = 0;
             size_t comma_pos;
-
             while ((comma_pos = range_content.find(',', pos)) != std::string::npos) {
                 values.push_back(std::stoi(range_content.substr(pos, comma_pos - pos)));
                 pos = comma_pos + 1;
             }
             values.push_back(std::stoi(range_content.substr(pos)));
-
-            // Check if value is in the list
             return std::find(values.begin(), values.end(), value) != values.end();
-        }
-        // Check if it's range notation (e.g., [2:32:3])
-        else if (range_content.find(':') != std::string::npos) {
-            // Parse start:end:step
+        } else if (range_content.find(':') != std::string::npos) {
             std::vector<int> parts;
             size_t pos = 0;
             size_t colon_pos;
-
             while ((colon_pos = range_content.find(':', pos)) != std::string::npos) {
                 parts.push_back(std::stoi(range_content.substr(pos, colon_pos - pos)));
                 pos = colon_pos + 1;
             }
             parts.push_back(std::stoi(range_content.substr(pos)));
-
             if (parts.size() != 3) return false;
-
             int start = parts[0];
             int end = parts[1]; // end is NOT exclusive as per your specification
             int step = parts[2];
-
             if (step == 0) return false;
-
             if (value < start || value > end) return false;
             if ((value - start) % step != 0) return false;
-
             return true;
-        }
-        // Single value (e.g., [5])
-        else {
-            int single_value = std::stoi(range_content);
-            return value == single_value;
+        } else {
+            return value == std::stoi(range_content);
         }
     }
 
     // Convert pattern to regex, handling * and [start:end:step] ranges
     static std::string pattern_to_regex(const std::string& pattern) {
         std::string regex_pattern = "^";
-
         for (size_t i = 0; i < pattern.length(); ++i) {
             char c = pattern[i];
-
             if (c == '*') {
-                regex_pattern += "([0-9]+)"; // Capture group for numbers
+                regex_pattern += "([0-9]+)";
             } else if (c == '[') {
-                // Find the matching closing bracket
                 size_t close_bracket = pattern.find(']', i);
                 if (close_bracket != std::string::npos) {
-                    regex_pattern += "([0-9]+)"; // Capture the number, validate range later
-                    i = close_bracket;           // Skip to after the closing bracket
+                    regex_pattern += "([0-9]+)";
+                    i = close_bracket;
                 } else {
-                    regex_pattern += "\\["; // Literal bracket if no closing bracket found
+                    regex_pattern += "\\[";
                 }
             } else if (c == '\\' && i + 1 < pattern.length() && pattern[i + 1] == '*') {
-                // Handle escaped asterisk - treat as literal *
                 regex_pattern += "\\*";
-                ++i; // Skip the next character
+                ++i;
             } else {
-                // Escape regex special characters
                 if (c == '.' || c == '^' || c == '$' || c == '+' || c == '?' || c == '(' || c == ')' || c == '|' || c == '{' || c == '}') {
                     regex_pattern += "\\";
                 }
                 regex_pattern += c;
             }
         }
-
         regex_pattern += "$";
         return regex_pattern;
     }
 
-  public:
-    static bool matches_pattern(const std::string& name, const std::string& pattern) {
-        // Fast path for exact matches (no wildcards or ranges)
-        if (pattern.find('*') == std::string::npos && pattern.find('[') == std::string::npos && pattern.find('\\') == std::string::npos) {
-            return name == pattern;
-        }
-
-        // Compile regex for this pattern
-        std::string regex_str = pattern_to_regex(pattern);
-        std::regex compiled_regex(regex_str);
-
+    static bool validate_regex_match(const std::string& name,
+                                     const std::string& pattern,
+                                     const std::regex& compiled_regex) {
         std::smatch matches;
         if (!std::regex_match(name, matches, compiled_regex)) {
             return false;
         }
 
-        // Now validate any range constraints
         std::vector<std::string> captured_numbers;
         for (size_t i = 1; i < matches.size(); ++i) {
             captured_numbers.push_back(matches[i].str());
         }
 
-        // Parse pattern again to find ranges and validate them
         size_t capture_index = 0;
         for (size_t i = 0; i < pattern.length(); ++i) {
             char c = pattern[i];
-
             if (c == '*') {
-                // Simple wildcard, no validation needed
                 ++capture_index;
             } else if (c == '[') {
-                // Find the matching closing bracket
                 size_t close_bracket = pattern.find(']', i);
                 if (close_bracket != std::string::npos) {
                     std::string range = pattern.substr(i, close_bracket - i + 1);
-
                     if (capture_index < captured_numbers.size()) {
                         int captured_value = std::stoi(captured_numbers[capture_index]);
                         if (!matches_range(captured_value, range)) {
                             return false;
                         }
                     }
-
                     ++capture_index;
-                    i = close_bracket; // Skip to after the closing bracket
+                    i = close_bracket;
                 }
             } else if (c == '\\' && i + 1 < pattern.length() && pattern[i + 1] == '*') {
-                ++i; // Skip escaped asterisk
+                ++i;
             }
         }
 

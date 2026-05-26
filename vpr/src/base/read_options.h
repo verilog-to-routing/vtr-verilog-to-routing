@@ -130,6 +130,7 @@ struct t_options {
     argparse::ArgValue<int> pack_verbosity;
     argparse::ArgValue<bool> use_ram_mapper;
     argparse::ArgValue<bool> memoize_cluster_packings;
+    argparse::ArgValue<bool> cluster_router_hot_start;
 
     // Placement options
     argparse::ArgValue<int> seed;

@@ -278,6 +278,18 @@ jobs:
         make -j${{ steps.cpu-cores.outputs.count}}
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
+    - name: 'Test with VTR_ASSERT_LEVEL 0'
+      timeout-minutes: 120
+      if: success() || failure()
+      env:
+        CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ASSERT_LEVEL=0"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        rm -f build/CMakeCache.txt
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
     - name: 'Test with NO_GRAPHICS'
       timeout-minutes: 60
       if: success() || failure()
