@@ -243,7 +243,6 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
             }
-
         }
     }
 
@@ -1510,7 +1509,6 @@ t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
             if (congestion_modeling_started_) {
                 cost_terms.cong_cost += net_cong_cost_[net_id];
             }
-
         }
     }
 
@@ -1538,7 +1536,6 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
             proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
             cost_terms_delta.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
         }
-
     }
 }
 
