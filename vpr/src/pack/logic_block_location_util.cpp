@@ -1,6 +1,5 @@
 ﻿#include "logic_block_location_util.h"
 
-#include <algorithm>
 #include <cctype>
 #include <utility>
 
@@ -148,4 +147,66 @@ bool logical_block_location_matches_hierarchical_type(const std::string& logical
         }
     }
     return false;
+}
+
+namespace {
+
+/**
+ * @brief Returns true if logical_block_location matches any pb_graph_node in the hierarchy.
+ *
+ * Uses t_pb_graph_node::hierarchical_type_name() and logical_block_location_matches_hierarchical_type(),
+ * the same comparison used during packing against t_pb::hierarchical_type_name().
+ *
+ * Recursion follows the same child traversal pattern as load_pb_graph_pin_lookup_from_index_rec()
+ * in vpr_utils.cpp.
+ */
+bool location_matches_any_pb_graph_node(const t_pb_graph_node* node, const std::string& logical_block_location) {
+    if (logical_block_location_matches_hierarchical_type(logical_block_location, node->hierarchical_type_name())) {
+        return true;
+    }
+
+    if (node->is_primitive() || node->child_pb_graph_nodes == nullptr) {
+        return false;
+    }
+
+    for (int imode = 0; imode < node->pb_type->num_modes; ++imode) {
+        const t_mode& mode = node->pb_type->modes[imode];
+        for (int ipb_type = 0; ipb_type < mode.num_pb_type_children; ++ipb_type) {
+            for (int ipb = 0; ipb < mode.pb_type_children[ipb_type].num_pb; ++ipb) {
+                const t_pb_graph_node& child = node->child_pb_graph_nodes[imode][ipb_type][ipb];
+                if (location_matches_any_pb_graph_node(&child, logical_block_location)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+} // namespace
+
+void validate_logical_block_location(const std::string& logical_block_location,
+                                     const std::vector<t_logical_block_type>& logical_block_types) {
+    if (logical_block_location.empty()) {
+        return;
+    }
+
+    if (parse_logical_block_location_tokens(logical_block_location).empty()) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Invalid logical_block_location '%s': no valid path tokens",
+                        logical_block_location.c_str());
+    }
+
+    for (const t_logical_block_type& lb_type : logical_block_types) {
+        if (lb_type.is_empty() || lb_type.pb_graph_head == nullptr) {
+            continue;
+        }
+        if (location_matches_any_pb_graph_node(lb_type.pb_graph_head, logical_block_location)) {
+            return;
+        }
+    }
+
+    VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                    "Invalid logical_block_location '%s': path does not match any logical block type pb graph",
+                    logical_block_location.c_str());
 }

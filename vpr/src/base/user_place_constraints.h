@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /**
  * 
  * @brief This file defines the UserPlaceConstraints class used to store and read out data related to user-specified
@@ -132,8 +132,8 @@ class UserPlaceConstraints {
     /**
      * @brief Associate an atom with its logical_block_location constraint.
      *
-     * The cluster legalizer later resolves this location into concrete primitive
-     * matches.
+     * The path is parsed and validated against the architecture pb graphs when set.
+     * The cluster legalizer later matches this location against candidate pb hierarchies.
      */
     void set_atom_logical_block_location(AtomBlockId blk_id, const std::string& logical_block_location);
 

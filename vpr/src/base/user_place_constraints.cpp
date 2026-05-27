@@ -1,5 +1,7 @@
-#include "user_place_constraints.h"
+﻿#include "user_place_constraints.h"
 #include <unordered_set>
+#include "globals.h"
+#include "logic_block_location_util.h"
 #include "physical_types.h"
 #include "vtr_assert.h"
 
@@ -94,6 +96,9 @@ const std::unordered_set<t_logical_block_type_ptr>& UserPlaceConstraints::get_pa
 }
 
 void UserPlaceConstraints::set_atom_logical_block_location(AtomBlockId blk_id, const std::string& logical_block_location) {
+    if (!logical_block_location.empty()) {
+        validate_logical_block_location(logical_block_location, g_vpr_ctx.device().logical_block_types);
+    }
     atom_logical_block_locations_[blk_id] = logical_block_location;
 }
 
