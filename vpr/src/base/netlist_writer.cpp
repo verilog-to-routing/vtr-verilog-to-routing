@@ -515,7 +515,7 @@ class LatchInst : public Instance {
             VTR_ASSERT(false);
         return os;
     }
-    friend std::istream& operator>>(std::istream& is, Type& type) {
+    [[maybe_unused]] friend std::istream& operator>>(std::istream& is, Type& type) {
         std::string tok;
         is >> tok;
         if (tok == "re")
@@ -2634,8 +2634,6 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
     void print_primary_io(int depth) override {
         //Primary Inputs
         for (auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
-            //verilog_os_ << indent(depth + 1) << "input " << escape_verilog_identifier(*iter);
-            std::string range;
             if (portmap[*iter] > 0)
                 verilog_os_ << indent(depth + 1) << "input [" << portmap[*iter] << ":0] " << *iter;
             else
@@ -2648,7 +2646,6 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
 
         //Primary Outputs
         for (auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
-            std::string range;
             if (portmap[*iter] > 0)
                 verilog_os_ << indent(depth + 1) << "output [" << portmap[*iter] << ":0] " << *iter;
             else

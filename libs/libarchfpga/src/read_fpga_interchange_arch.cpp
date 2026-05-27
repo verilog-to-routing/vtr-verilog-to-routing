@@ -380,7 +380,7 @@ struct ArchReader {
         for (auto bel : site.getBels())
             if (str(bel.getName()) == bel_name)
                 return bel;
-        VTR_ASSERT_MSG(0, "Could not find the BEL reader!\n");
+        archfpga_throw(__FILE__, __LINE__, "Could not find the BEL reader!\n");
     }
 
     /** @brief Get the BEL pin reader given its name, site and corresponding BEL */
@@ -392,7 +392,7 @@ struct ArchReader {
             if (str(pin_reader.getName()) == pin_name)
                 return pin_reader;
         }
-        VTR_ASSERT_MSG(0, "Could not find the BEL pin reader!\n");
+        archfpga_throw(__FILE__, __LINE__, "Could not find the BEL pin reader!\n");
     }
 
     /** @brief Get the BEL name, with an optional deduplication suffix in case its name collides with the site name */
@@ -586,7 +586,6 @@ struct ArchReader {
                 // there must be a PAD with inout pin connected to other inout pins
                 for (auto pin : wire.getPins()) {
                     auto bel_pin = site.getBelPins()[pin];
-                    std::string bel_pin_name = str(bel_pin.getName());
 
                     auto bel = get_bel_reader(site, str(bel_pin.getBel()));
                     auto bel_name = get_bel_name(site, bel);
@@ -1739,7 +1738,7 @@ struct ArchReader {
                 pb_type->num_input_pins += is_input ? 1 : 0;
                 pb_type->num_output_pins += is_input ? 0 : 1;
 
-                auto port = get_generic_port(arch_, pb_type, dir, pin_name, /*string_model=*/"", num_pins);
+                auto port = get_generic_port(arch_, pb_type, dir, pin_name, /*model=*/"", num_pins);
                 ports[pin_count] = port;
                 port.index = pin_count++;
                 port.port_index_by_type = pins_dir_count++;
@@ -1854,9 +1853,8 @@ struct ArchReader {
         bool is_backward = direction == BACKWARD;
 
         for (const std::string& ep : ic_endpoints) {
-            auto parts = vtr::StringToken(ep).split(".");
-            auto bel = parts[0];
-            auto pin = parts[1];
+            std::vector<std::string> parts = vtr::StringToken(ep).split(".");
+            std::string bel = parts[0];
 
             if (bel == str(site.getName()))
                 return pps_map;

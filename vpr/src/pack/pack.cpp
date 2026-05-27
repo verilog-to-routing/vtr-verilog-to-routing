@@ -322,6 +322,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        packer_opts.enable_pin_feasibility_filter,
                                        packer_opts.memoize_cluster_packings,
+                                       packer_opts.cluster_router_hot_start,
                                        arch.models,
                                        packer_opts.pack_verbosity);
     // Construct the APPack Context.

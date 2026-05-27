@@ -56,7 +56,7 @@ std::unordered_map<int, RRSwitchId> pre_create_crr_switches(const int min_delay_
         return delay_to_switch_id;
     }
 
-    delay_to_switch_id.reserve(static_cast<size_t>(max_delay_ps - min_delay_ps + 1));
+    delay_to_switch_id.reserve(max_delay_ps - min_delay_ps + 1);
     for (int delay_ps = min_delay_ps; delay_ps <= max_delay_ps; ++delay_ps) {
         int sw_id = static_cast<int>(all_sw_inf.size());
         all_sw_inf.emplace(sw_id, create_crr_switch(delay_ps));
@@ -98,8 +98,8 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
             rr_switch_id = rr_node_driver_switches[connection.sink_node()];
         } else {
             auto it = delay_to_switch_id.find(delay_ps);
-            VTR_ASSERT_MSG(it != delay_to_switch_id.end(),
-                           "CRR connection delay was not pre-created in delay_to_switch_id map");
+            if (it == delay_to_switch_id.end())
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CRR connection delay was not pre-created in delay_to_switch_id map.");
             rr_switch_id = it->second;
         }
         VTR_ASSERT(rr_switch_id != RRSwitchId::INVALID());

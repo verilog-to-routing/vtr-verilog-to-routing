@@ -20,7 +20,7 @@ enum slack_allocated_type {
     BOTH
 };
 
-#define UNINITIALIZED_PATH_DELAY -2.
+#define UNINITIALIZED_PATH_DELAY (-2)
 class route_budgets {
   public:
     route_budgets(const Netlist<>& net_list, bool is_flat);

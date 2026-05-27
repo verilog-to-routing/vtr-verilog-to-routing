@@ -21,7 +21,7 @@
 
 namespace fasm {
 
-FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool is_flat) : strings_(strings), os_(f),
+FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool /*is_flat*/) : strings_(strings), os_(f),
     pb_graph_pin_lookup_from_index_by_type_(g_vpr_ctx.device().logical_block_types),
     fasm_lut(strings->intern_string("fasm_lut")),
     fasm_features(strings->intern_string("fasm_features")),
@@ -29,8 +29,7 @@ FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostre
     fasm_prefix(strings->intern_string("fasm_prefix")),
     fasm_placeholders(strings->intern_string("fasm_placeholders")),
     fasm_type(strings->intern_string("fasm_type")),
-    fasm_mux(strings->intern_string("fasm_mux")),
-    is_flat_(is_flat){
+    fasm_mux(strings->intern_string("fasm_mux")) {
 }
 
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
@@ -332,8 +331,8 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
       // Get the input pin of the LUT that feeds the wire. There should be one
       // and only one.
       const t_pb_graph_pin* wire_input_pin = get_wire_input_pin(pb_routes, pb_graph_node);
-      VTR_ASSERT_MSG(wire_input_pin != nullptr,
-                     "Wire found with no used input pins");
+      if (wire_input_pin == nullptr)
+          VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Wire found with no used input pins.");
 
       // Get the route going into this pin.
       const auto& route = pb_routes.at(wire_input_pin->pin_count_in_cluster);
@@ -341,6 +340,8 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
       // Find the lut definition for the parent of this wire.
       const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
       const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
+      if (lut_definition == nullptr)
+          VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Could not find LUT definition for wire's parent node.");
       VTR_ASSERT(lut_definition->num_inputs == num_inputs);
 
       // Create a wire implementation for the LUT.
@@ -506,7 +507,8 @@ const t_metadata_dict *FasmWriterVisitor::get_fasm_type(const t_pb_graph_node* p
 
   if(meta != nullptr) {
     auto* value = meta->one(fasm_type);
-    VTR_ASSERT(value != nullptr);
+    if (value == nullptr)
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Expected a metadata value for fasm_type but got none.");
     if(value->as_string().get(strings_) == target_type) {
       return meta;
     }

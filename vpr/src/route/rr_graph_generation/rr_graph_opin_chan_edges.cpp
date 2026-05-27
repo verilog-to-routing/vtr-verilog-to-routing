@@ -534,7 +534,8 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                 break;
                             }
                         }
-                        VTR_ASSERT(target_sub_tile != nullptr);
+                        if (target_sub_tile == nullptr)
+                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Could not find the sub-tile instance for the target capacity.");
                         if (relative_ipin >= target_sub_tile->num_phy_pins) continue;
 
                         // If this block has capacity > 1 then the pins of z position > 0 are offset

@@ -24,7 +24,7 @@ void OverrideDelayModel::compute(RouterDelayProfiler& route_profiler,
                                             longest_length,
                                             is_flat_);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, false);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, false);
 
     compute_override_delay_model_(route_profiler, router_opts);
 }
@@ -221,7 +221,7 @@ void OverrideDelayModel::read(const std::string& file) {
     auto model = reader.getRoot<VprOverrideDelayModel>();
     ToNdMatrix<4, VprFloatEntry, float>(&delays, model.getDelays(), toFloat);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, is_flat_);
 
     // Reading non-scalar capnproto fields is roughly equivalent to using
     // a std::vector of the field type.  Actual type is capnp::List<X>::Reader.

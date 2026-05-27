@@ -379,7 +379,7 @@ bool power_find_transistor_info(t_transistor_size_inf** lower,
     } else if (type == PMOS) {
         trans_info = &power_ctx.tech->PMOS_inf;
     } else {
-        VTR_ASSERT(0);
+        VPR_FATAL_ERROR(VPR_ERROR_POWER, "Unsupported transistor type.");
     }
 
     /* No transistor data exists */

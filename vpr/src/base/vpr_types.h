@@ -799,6 +799,7 @@ struct t_packer_opts {
     int pack_verbosity;
     bool use_ram_mapper;
     bool memoize_cluster_packings;
+    bool cluster_router_hot_start;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
@@ -999,14 +1000,24 @@ struct t_placer_opts {
     /// When in CRITICALITY_TIMING_PLACE mode, what is the tradeoff between timing and wiring costs.
     float timing_tradeoff;
 
-    /// Weight for how much congestion affects placement cost.
-    /// Higher means congestion is more important.
+    /// Unitless scaling for normalized routing congestion cost. Meant to be tuned at a similar level
+    /// as the wirelength versus timing balance set by \c timing_tradeoff, so congestion can be weighed against
+    /// those normalized terms.
     float congestion_factor;
     /// Start using congestion cost when (current rlim / initial rlim) drops below this value.
     float congestion_rlim_trigger_ratio;
     /// Nets with average channel usage (within their bounding box) above this threshold
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
+
+    /// Unitless scaling for interposer crossing cost after normalization. Tune like \c timing_tradeoff, which sets timing
+    /// versus wirelength emphasis: after normalization, similar numeric ranges apply so this term can be weighed against
+    /// those objectives. Zero disables. Additive in the total cost.
+    float interposer_cost_factor;
+    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
+    float interposer_cong_threshold;
+    /// Unitless scaling for interposer congestion after normalization. Comparable in tuning to \c congestion_factor.
+    float interposer_cong_factor;
 
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;

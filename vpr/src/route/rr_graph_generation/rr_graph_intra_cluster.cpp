@@ -222,7 +222,8 @@ static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical
         }
     }
 
-    VTR_ASSERT(found_sub_tile);
+    if (!found_sub_tile)
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Could not find the sub-tile instance that the cluster block is mapped to.");
     std::vector<int> pin_num_vec(cluster_sub_tile_inst_num_pins);
     // Pin numbers are assigned such that each instance’s tile-level pins
     // occupy a continuous range equal to the total number of tile-level pins for that instance.
