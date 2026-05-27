@@ -35,10 +35,10 @@ class LbHierPathParser {
     bool matches_hierarchical_type(const std::string& hierarchical_type_name) const;
 
     /**
-     * @brief Returns the first pb_graph_node in the hierarchy whose hierarchical_type_name()
-     *        matches the parsed constraint, or nullptr if none match.
+     * @brief Search the pb graph hierarchy for the first node whose hierarchical_type_name()
+     *        matches this constraint. Returns nullptr if no match is found.
      */
-    const t_pb_graph_node* target_lb(const t_pb_graph_node* node) const;
+    const t_pb_graph_node* find_matching_pb_graph_node(const t_pb_graph_node* root) const;
 
     /**
      * @brief Validate that this logical_block_location matches at least one pb graph

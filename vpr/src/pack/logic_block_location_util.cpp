@@ -34,25 +34,25 @@ bool LbHierPathParser::matches_hierarchical_type(const std::string& hierarchical
     return false;
 }
 
-const t_pb_graph_node* LbHierPathParser::target_lb(const t_pb_graph_node* node) const {
-    if (node == nullptr) {
+const t_pb_graph_node* LbHierPathParser::find_matching_pb_graph_node(const t_pb_graph_node* root) const {
+    if (root == nullptr) {
         return nullptr;
     }
-    if (matches_hierarchical_type(node->hierarchical_type_name())) {
-        return node;
+    if (matches_hierarchical_type(root->hierarchical_type_name())) {
+        return root;
     }
 
-    if (node->is_primitive() || node->child_pb_graph_nodes == nullptr) {
+    if (root->is_primitive() || root->child_pb_graph_nodes == nullptr) {
         return nullptr;
     }
 
-    for (int imode = 0; imode < node->pb_type->num_modes; ++imode) {
-        const t_mode& mode = node->pb_type->modes[imode];
+    for (int imode = 0; imode < root->pb_type->num_modes; ++imode) {
+        const t_mode& mode = root->pb_type->modes[imode];
         for (int ipb_type = 0; ipb_type < mode.num_pb_type_children; ++ipb_type) {
             for (int ipb = 0; ipb < mode.pb_type_children[ipb_type].num_pb; ++ipb) {
-                const t_pb_graph_node& child = node->child_pb_graph_nodes[imode][ipb_type][ipb];
-                if (const t_pb_graph_node* hit = target_lb(&child); hit) {
-                    return hit;
+                const t_pb_graph_node& child = root->child_pb_graph_nodes[imode][ipb_type][ipb];
+                if (const t_pb_graph_node* match = find_matching_pb_graph_node(&child); match) {
+                    return match;
                 }
             }
         }
@@ -76,7 +76,7 @@ void LbHierPathParser::validate_logical_block_types(const std::vector<t_logical_
         if (lb_type.is_empty() || lb_type.pb_graph_head == nullptr) {
             continue;
         }
-        if (target_lb(lb_type.pb_graph_head) != nullptr) {
+        if (find_matching_pb_graph_node(lb_type.pb_graph_head) != nullptr) {
             return;
         }
     }
