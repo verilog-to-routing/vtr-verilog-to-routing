@@ -352,7 +352,7 @@ static void print_model(FILE* echo, const t_model& model) {
         output_model_port = output_model_port->next;
     }
     int i = 0;
-    for(const t_pb_type* model_pb_type : model.pb_types) {
+    for (const t_pb_type* model_pb_type : model.pb_types) {
         fprintf(echo, "\tpb_type %d: \"%s\"\n", i, model_pb_type->name);
         i++;
     }
