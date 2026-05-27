@@ -389,7 +389,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 void check_models(t_arch* arch) {
     for (LogicalModelId model_id : arch->models.user_models()) {
         const t_model& model = arch->models.get_model(model_id);
-        if (model.pb_types == nullptr) {
+        if (model.pb_types.empty()) {
             archfpga_throw(get_arch_file_name(), 0,
                            "No pb_type found for model %s\n", model.name);
         }

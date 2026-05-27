@@ -22,6 +22,9 @@
 #include <vector>
 #include <string>
 
+//Forward declaration (needed by t_model)
+struct t_pb_type;  
+
 /**
  * @brief The type of the parallel axis.
  */
@@ -72,7 +75,7 @@ struct t_model {
     t_model_ports* outputs = nullptr;       ///< linked list of output ports
     void* instances = nullptr;              ///< TODO: Remove this. This is only used in the Parmys plugin and should be moved into there.
     int used = 0;                           ///< TODO: Remove this. This is only used in the Parmys plugin and should be moved into there.
-    vtr::t_linked_vptr* pb_types = nullptr; ///< Physical block types that implement this model
+    std::vector<t_pb_type*> pb_types;       ///< Physical block types that implement this model
     bool never_prune = false;               ///< Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist
 };
 
