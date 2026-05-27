@@ -337,24 +337,17 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         // Get the rise and fall edge for clock multipliers and dividers.
-        //  The source clock's rising edge may fall outside of the generated clock's
-        //  period (suppose this is a clock multiplier with a high multiple). Modulate
-        //  the rise edge. The generated rise-edge must occur at the same time as the source
-        //  at some point, so the modulo should be safe.
-        double generated_rise_edge = std::fmod(source_clock_cmd.rise_edge, generated_clock_period);
-        //  Since we can only multiply and divide the clock, the generated clock
-        //  can only have a 50% duty cycle. This is due to the generated clock being
-        //  relative to only the rising edge of the source clock.
+        // The rise edge is stored as-is, even if it falls outside the generated clock's period.
+        // Normalization is handled at the point of use in calculate_launch_to_capture_edge_times().
+        double generated_rise_edge = source_clock_cmd.rise_edge;
+        // Per SDC spec, if no duty cycle is specified, the generated clock defaults to 50%.
         double duty_cycle = 50.0;
-        //  Specifically for clock multiplication, SDC provides an ability to provide the
-        //  duty cycle.
+        // If a duty cycle was specified (only valid for multiplication, enforced above), use it.
         if (!std::isnan(cmd.duty_cycle)) {
             duty_cycle = cmd.duty_cycle;
         }
         double fall_offset = generated_clock_period * (duty_cycle / 100.0);
-        //  This is similarly modulo'd. It should be safe in VPR to have a falling edge
-        //  before a rising edge.
-        double generated_fall_edge = std::fmod(generated_rise_edge + fall_offset, generated_clock_period);
+        double generated_fall_edge = generated_rise_edge + fall_offset;
         //  If the clock is inverted, we swap the rising and falling edges.
         if (cmd.invert) {
             std::swap(generated_rise_edge, generated_fall_edge);
@@ -1131,13 +1124,12 @@ class SdcParseCallback : public sdcparse::Callback {
             int launch_rise_edge = static_cast<int>(launch_clock.rise_edge * CLOCK_SCALE);
             int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);
 
-            // The code below assumes that the rise edge occurs somewhere within the period of the
-            // clock. If the value is outside of the period, the calculation below may not be
-            // correct.
-            VTR_ASSERT_MSG(launch_rise_edge >= 0 && launch_rise_edge <= launch_period,
-                           "Launch clock rise edge expected to be within one period.");
-            VTR_ASSERT_MSG(capture_rise_edge >= 0 && capture_rise_edge <= capture_period,
-                           "Capture clock rise edge expected to be within one period.");
+            // Normalize rise edges to [0, period) to handle values the SDC parser may
+            // produce outside that range (e.g. from generated clocks with large phases).
+            // In practice rise edges should always be non-negative, but the double-modulo
+            // pattern ((x % n) + n) % n handles negative values safely just in case.
+            launch_rise_edge = ((launch_rise_edge % launch_period) + launch_period) % launch_period;
+            capture_rise_edge = ((capture_rise_edge % capture_period) + capture_period) % capture_period;
 
             //Find the LCM of the two periods. This determines how long it takes before
             //the pattern of the two clocks' edges starts repeating.

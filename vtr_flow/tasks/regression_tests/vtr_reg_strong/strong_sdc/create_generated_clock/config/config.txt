@@ -16,6 +16,7 @@ circuit_list_add=clock_multiplier_duty_cycle.blif
 circuit_list_add=multiclock_divide.blif
 circuit_list_add=multiclock_multiply.blif
 circuit_list_add=multiclock_multiply_invert.blif
+circuit_list_add=clock_multiplier_rise_outside_period.blif
 
 # Bind each circuit to its corresponding SDC file via circuit constraints.
 circuit_constraint_list_add=(clock_divider.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_divider.sdc)
@@ -25,6 +26,7 @@ circuit_constraint_list_add=(clock_multiplier_duty_cycle.blif, sdc_file=tasks/re
 circuit_constraint_list_add=(multiclock_divide.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/multiclock_divide.sdc)
 circuit_constraint_list_add=(multiclock_multiply.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/multiclock_multiply.sdc)
 circuit_constraint_list_add=(multiclock_multiply_invert.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/multiclock_multiply_invert.sdc)
+circuit_constraint_list_add=(clock_multiplier_rise_outside_period.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_multiplier_rise_outside_period.sdc)
 
 # Add architectures to list to sweep
 arch_list_add=k6_N10_mem32K_40nm.xml
