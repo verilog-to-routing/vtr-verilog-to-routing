@@ -23,6 +23,7 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vtr_time.h"
+#include "vtr_log.h"
 
 std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detailed_placer_type,
                                                      const BlkLocRegistry& curr_clustered_placement,
@@ -39,6 +40,8 @@ std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detail
                                                             clustered_netlist,
                                                             vpr_setup,
                                                             arch);
+        case e_ap_detailed_placer::DOISM:
+                return std::make_unique<DOISMDetailedPlacer>();
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized detailed placer type");
@@ -108,4 +111,9 @@ void AnnealerDetailedPlacer::optimize_placement() {
     // Since the placement was modified, need to resynchronize the pins in the
     // clusters.
     post_place_sync();
+}
+
+void DOISMDetailedPlacer::optimize_placement(){
+    vtr::ScopedStartFinishTimer timer("DOISM Detailed Placer");
+    VTR_LOG("called Athavan's DOISM placer.\n");
 }
