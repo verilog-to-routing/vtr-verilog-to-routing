@@ -40,6 +40,7 @@ class NdMatrixProxy {
         , offset_(offset)
         , start_(start) {}
 
+    NdMatrixProxy(const NdMatrixProxy&) = default;
     NdMatrixProxy& operator=(const NdMatrixProxy& other) = delete;
 
     ///@brief const [] operator
@@ -98,6 +99,7 @@ class NdMatrixProxy<T, 1> {
         , offset_(offset)
         , start_(start) {}
 
+    NdMatrixProxy(const NdMatrixProxy&) = default;
     NdMatrixProxy& operator=(const NdMatrixProxy& other) = delete;
 
     ///@brief const [] operator

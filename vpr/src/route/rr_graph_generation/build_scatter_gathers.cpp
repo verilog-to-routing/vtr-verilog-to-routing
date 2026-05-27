@@ -246,7 +246,7 @@ static void find_candidate_wires(const std::vector<t_chan_loc>& channels,
                         continue;
                     }
 
-                    candidates.push_back({chan_loc, chan_type, chan_side, {iwire, wire_switchpoint}});
+                    candidates.push_back({{chan_loc, chan_type, chan_side}, {iwire, wire_switchpoint}});
                 }
             }
         }

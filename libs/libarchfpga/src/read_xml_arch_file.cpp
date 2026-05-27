@@ -1734,14 +1734,14 @@ static void process_pb_type_port(pugi::xml_node Parent, t_port* port, e_power_es
 
         /* Check if LUT/FF port class is lut_in/D */
         if (port->parent_pb_type->class_type == LUT_CLASS) {
-            if ((!port->port_class) || strcmp("lut_in", port->port_class)) {
+            if ((!port->port_class) || (strcmp("lut_in", port->port_class) != 0)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                vtr::string_fmt("Inputs to LUT primitives must have a port class named "
                                                "as \"lut_in\".")
                                    .c_str());
             }
         } else if (port->parent_pb_type->class_type == LATCH_CLASS) {
-            if ((!port->port_class) || strcmp("D", port->port_class)) {
+            if ((!port->port_class) || (strcmp("D", port->port_class) != 0)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                vtr::string_fmt("Input to flipflop primitives must have a port class named "
                                                "as \"D\".")
@@ -1763,7 +1763,7 @@ static void process_pb_type_port(pugi::xml_node Parent, t_port* port, e_power_es
 
         /* Check if LUT/FF port class is lut_out/Q */
         if (port->parent_pb_type->class_type == LUT_CLASS) {
-            if ((!port->port_class) || strcmp("lut_out", port->port_class)) {
+            if ((!port->port_class) || (strcmp("lut_out", port->port_class) != 0)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                vtr::string_fmt("Output to LUT primitives must have a port class named "
                                                "as \"lut_in\".")
@@ -1778,7 +1778,7 @@ static void process_pb_type_port(pugi::xml_node Parent, t_port* port, e_power_es
                                    .c_str());
             }
         } else if (port->parent_pb_type->class_type == LATCH_CLASS) {
-            if ((!port->port_class) || strcmp("Q", port->port_class)) {
+            if ((!port->port_class) || (strcmp("Q", port->port_class) != 0)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                vtr::string_fmt("Output to flipflop primitives must have a port class named "
                                                "as \"D\".")
@@ -1804,7 +1804,7 @@ static void process_pb_type_port(pugi::xml_node Parent, t_port* port, e_power_es
         }
 
         if (port->parent_pb_type->class_type == LATCH_CLASS) {
-            if ((!port->port_class) || strcmp("clock", port->port_class)) {
+            if ((!port->port_class) || (strcmp("clock", port->port_class) != 0)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                vtr::string_fmt("Clock to flipflop primitives must have a port class named "
                                                "as \"clock\".")
