@@ -1,13 +1,14 @@
 ##############################################################################
-# Functional simulation task: 4-bit ripple-carry adder
+# Functional simulation task: 4-bit adder — pre-synthesized BLIF variants
 #
-# Runs the full VTR flow and then verifies the post-implementation netlist
-# against a Verilator testbench that exercises all 2^9 = 512 input vectors.
+# Verifies the post-P&R netlist of pre-synthesized BLIF circuits against the
+# same Verilator testbench used by the Verilog adder task (tb_adder_4bit.sv).
+# The flow enters VPR directly (-starting_stage vpr), bypassing Yosys and ABC.
 #
-# To add another circuit that implements the same interface, append another
-# circuit_list_add= line.  The same testbench will be reused for all circuits
-# listed here.  For circuits with a different interface, create a separate
-# task directory with its own testbench.
+# Purpose: smoke-test the Verilator functional simulation pipeline
+# independently of any HDL frontend.  One circuit uses only LUT primitives;
+# the other uses architecture carry-adder (.subckt adder) primitives.  Both
+# must produce exactly the same results as the Verilog implementations.
 ##############################################################################
 
 # Path to directory of circuits to use

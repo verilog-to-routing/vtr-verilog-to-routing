@@ -26,6 +26,15 @@ functionally equivalent, a single testbench can verify all of them.  Each
 implementation is listed as a separate `circuit_list_add` entry in the task
 config, and the same `testbench_file` is reused for every run.
 
+Circuit files may be Verilog (`.v`) or pre-synthesized BLIF (`.blif`).  BLIF
+circuits enter the VTR flow at the VPR stage (bypassing Yosys and ABC), making
+them front-end-independent smoke tests for the simulation pipeline.  Including
+BLIF variants alongside Verilog ones confirms that all implementations produce
+identical post-P&R results, and it locks in the infrastructure's ability to run
+functional simulation on pre-synthesized netlists, which is essential for
+future verification of benchmarks that are only distributed
+in BLIF format rather than HDL.
+
 ## Testbench conventions
 
 All testbenches must follow these conventions so that `run_func_sim_flow.py`

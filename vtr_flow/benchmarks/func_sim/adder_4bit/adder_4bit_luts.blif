@@ -1,4 +1,20 @@
-# Benchmark "top" written by ABC on Tue May 26 15:03:08 2026 
+# 4-bit adder pre-synthesized by ABC using LUT primitives only.
+#
+# This BLIF enters the VTR flow at the VPR stage (-starting_stage vpr),
+# bypassing Yosys and ABC entirely.  Its purpose is to smoke-test the
+# Verilator functional simulation pipeline independently of any HDL frontend:
+# if the post-P&R netlist produces correct results here, we know VPR and
+# Verilator are working correctly with standard LUT primitives regardless of
+# which synthesis tool produced the BLIF.
+#
+# This file implements the same top-level port interface as the Verilog
+# counterparts (adder_4bit.v, adder_4bit_sum_notation.v) so the shared
+# testbench tb_adder_4bit.sv verifies all four implementations identically.
+#
+# Having BLIF variants also locks in the infrastructure's ability to run
+# functional simulation directly on pre-synthesized netlists.
+#
+# Benchmark "top" written by ABC on Tue May 26 15:03:08 2026
 
 
 .model top 
