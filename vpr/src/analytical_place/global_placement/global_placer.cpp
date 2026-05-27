@@ -255,6 +255,29 @@ static void print_SimPL_status(size_t iteration,
 }
 
 /**
+ * @brief Queries the delay model at a single reference tile pair (grid center
+ *        to center+1) to get a representative delay-per-tile estimate.
+ *
+ * Used as a fallback when the delay model returns ROUTER_LOOKAHEAD_NO_PATH_SENTINEL
+ * for a driver/sink pair. Returns 0.0f if the reference point is also missing.
+ *
+ * TODO: It is possible that the tile at the center of the device has no possible
+ *       routes within one tile unit. We should have a more systematic way of
+ *       doing this. For now this is better than just returning 0.0.
+ */
+static float get_delay_per_tile(const PlaceDelayModel& place_delay_model) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    int cx = (int)grid.width() / 2;
+    int cy = (int)grid.height() / 2;
+    t_physical_tile_loc from_loc(cx, cy, 0);
+    t_physical_tile_loc to_loc(cx + 1, cy, 0);
+    float d = place_delay_model.delay(from_loc, 0, to_loc, 0);
+    if (d >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+        return 0.0f;
+    return d;
+}
+
+/**
  * @brief Helper method for updating the timing information in the pre-cluster
  *        timing manager using a flat placement as a hint for where the atoms
  *        will be placed.
@@ -314,6 +337,15 @@ static void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cl
                                               0 /*from_pin*/,
                                               sink_block_loc,
                                               0 /*to_pin*/);
+        // The delay model returns ROUTER_LOOKAHEAD_NO_PATH_SENTINEL when it
+        // has no entry for this driver/sink pair (a gap in the model). Use a
+        // distance-based estimate so the solver still sees timing pressure on
+        // these arcs rather than treating them as free (delay = 0).
+        if (delay >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
+            int manhattan_dist = std::abs(driver_block_loc.x - sink_block_loc.x)
+                                 + std::abs(driver_block_loc.y - sink_block_loc.y);
+            delay = manhattan_dist * get_delay_per_tile(place_delay_model);
+        }
 
         // Get the atom pin associated with this AP pin (i.e. the one the AP
         // netlist is modeling).

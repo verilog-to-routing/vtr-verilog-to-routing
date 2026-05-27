@@ -882,8 +882,8 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
         //The cost estimate should still be *extremely* large compared to a typical delay, and
         //so should ensure that the router de-prioritizes exploring this path, but does not
         //forbid the router from trying.
-        expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
-        expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+        expected_delay_cost = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
+        expected_cong_cost = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
     } else {
         //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
         //and then add the estimates from those wire types for the distance of interest.

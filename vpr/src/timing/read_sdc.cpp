@@ -956,19 +956,17 @@ class SdcParseCallback : public sdcparse::Callback {
     //Returns the setup constraint in seconds
     tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin = AtomPinId::INVALID()) const {
         //Calculate the period-based constraint, including the effect of multi-cycle paths
-        float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
+        float min_launch_to_capture_time = calculate_launch_to_capture_edge_times(launch_domain, capture_domain).setup;
 
         auto iter = sdc_clocks_.find(capture_domain);
         VTR_ASSERT(iter != sdc_clocks_.end());
         float capture_period = iter->second.period;
 
-        //The period based constraint is the minimum launch to capture edge time + the capture period * (extra_cycles)
+        // The period-based setup constraint is the base setup edge time plus extra capture cycles.
         //
-        // Since min_launch_to_capture_time is the minimum time to the first capture edge after a launch edge, it already
-        // implicitly includes one capture cycle. As a result we subtract 1 from the setup capture cycle value to determine
-        // how many extra capture cycles need to be added to the constraint.
-        //
-        // By default the setup capture cycle 1, specifying a capture 1 cycle after launch
+        // .setup is already the minimum time to the first capture edge after any launch edge, so it
+        // implicitly represents one capture cycle. extra_cycles is therefore (setup_mcp - 1): the
+        // default setup_mcp of 1 adds zero extra cycles, while a 2-cycle MCP adds one full period.
         int extra_cycles = setup_capture_cycle(launch_domain, capture_domain, to_pin) - 1;
         float period_based_setup_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
 
@@ -1018,23 +1016,20 @@ class SdcParseCallback : public sdcparse::Callback {
 
     //Returns the hold constraint in seconds
     tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain, AtomPinId to_pin = AtomPinId::INVALID()) const {
-        float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
+        // .hold is the maximum (hold_capture_edge - launch_edge) across all launch edges, where
+        // hold_capture_edge is one capture period before the nearest setup capture edge for each
+        // launch edge. See calculate_launch_to_capture_edge_times for the full algorithm.
+        float max_hold_launch_to_capture_time = calculate_launch_to_capture_edge_times(launch_domain, capture_domain).hold;
 
         auto iter = sdc_clocks_.find(capture_domain);
         VTR_ASSERT(iter != sdc_clocks_.end());
         float capture_period = iter->second.period;
 
-        //The period based constraint is the minimum launch to capture edge time + the capture period * extra_cycles
-        //
-        // Since min_launch_to_capture_time is the minimum time to the first capture edge *after* a launch edge, it already
-        // implicitly includes one capture cycle. As a result we subtract 1 from the hold capture cycle value to determine
-        // how many extra capture cycles need to be added to the constraint.
-        //
-        // For the default hold check is one cycle before the setup check
-        // For the default setup check (1) this means extra_cycles is -1 (i.e. the hold capture check occurs against
-        // the capture edge *before* the launch edge)
-        int extra_cycles = hold_capture_cycle(launch_domain, capture_domain, to_pin) - 1;
-        float period_based_hold_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
+        // The period-based hold constraint is the base hold edge time adjusted for MCP.
+        // hold_capture_cycle is 0 by default (use the default hold edge), and increases for
+        // multi-cycle paths — e.g. hold_capture_cycle=1 when setup MCP is 2.
+        int hold_cycle = hold_capture_cycle(launch_domain, capture_domain, to_pin);
+        float period_based_hold_constraint = max_hold_launch_to_capture_time + capture_period * hold_cycle;
 
         //By default the period-based constraint is the constraint
         float hold_constraint = period_based_hold_constraint;
@@ -1063,8 +1058,35 @@ class SdcParseCallback : public sdcparse::Callback {
         return tatum::Time(hold_constraint);
     }
 
-    //Determine the minimum time (in SDC units) between the edges of the launch and capture clocks
-    float calculate_min_launch_to_capture_edge_time(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+    //Return type for calculate_launch_to_capture_edge_times.
+    struct LaunchCaptureEdgeTimes {
+        float setup; //Min strictly-positive (capture_edge - launch_edge) across all pairs
+        float hold;  //Max (hold_capture_edge - launch_edge) across all launch edges, where
+                     //hold_capture_edge is one capture period before the nearest capture after each launch
+    };
+
+    //Determine the period-based setup and hold edge times (in SDC units) between the
+    //edges of the launch and capture clocks, returning both in a single pass.
+    //
+    // The edge arrays span one LCM window so the full repeating pattern is covered.
+    // For each launch edge, the nearest capture edge strictly after it is found by
+    // scanning the sorted capture_edges array and breaking at the first match.
+    //
+    // Setup (.setup): the minimum (capture_edge - launch_edge) across all launch edges.
+    // One global minimum suffices; the nearest capture edge per launch edge is already the
+    // smallest possible diff for that launch edge.
+    //
+    // Hold (.hold): the maximum (capture_edge - capture_period - launch_edge) across all
+    // launch edges, where (capture_edge - capture_period) is the hold capture edge — one
+    // period before the nearest setup capture. A per-launch-edge maximum is required because
+    // the tightest setup pair is not necessarily the tightest hold pair for phase-related or
+    // differently-periodic clocks.
+    //
+    // Example: launch period=6ns (rise 0ns), capture period=12ns (rise 0ns):
+    //   Launch=0ns -> nearest cap=12ns -> hold cap=0ns  -> setup=12ns, hold= 0ns
+    //   Launch=6ns -> nearest cap=12ns -> hold cap=0ns  -> setup= 6ns, hold=-6ns
+    //   Result: setup=min(12,6)=6ns,  hold=max(0,-6)=0ns.
+    LaunchCaptureEdgeTimes calculate_launch_to_capture_edge_times(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
         constexpr int CLOCK_SCALE = 1000;
 
         auto launch_iter = sdc_clocks_.find(launch_domain);
@@ -1078,23 +1100,16 @@ class SdcParseCallback : public sdcparse::Callback {
         VTR_ASSERT_MSG(launch_clock.period >= 0., "Clock period must be positive");
         VTR_ASSERT_MSG(capture_clock.period >= 0., "Clock period must be positive");
 
-        float constraint = std::numeric_limits<float>::quiet_NaN();
         if (vtr::isclose(launch_clock.period, capture_clock.period)
             && vtr::isclose(launch_clock.rise_edge, capture_clock.rise_edge)
             && vtr::isclose(launch_clock.fall_edge, capture_clock.fall_edge)) {
-            //The source and sink domains have the same period and edges, the constraint is the common clock period.
-
-            constraint = launch_clock.period;
-
+            //The source and sink domains have the same period and edges.
+            //The setup constraint is the common clock period; the hold constraint is 0.
+            return {float(launch_clock.period), 0.f};
         } else if (vtr::isclose(launch_clock.period, 0.0) || vtr::isclose(capture_clock.period, 0.0)) {
             //If either period is 0, the constraint is 0
-            constraint = 0.;
-
+            return {0.f, 0.f};
         } else {
-            /*
-             * Use edge counting to find the minimum launch to capture edge time
-             */
-
             //Multiply periods and edges by CLOCK_SCALE and round down to the nearest
             //integer, to avoid messy decimals.
             int launch_period = static_cast<int>(launch_clock.period * CLOCK_SCALE);
@@ -1103,50 +1118,55 @@ class SdcParseCallback : public sdcparse::Callback {
             int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);
 
             //Find the LCM of the two periods. This determines how long it takes before
-            //the pattern of the two clock's edges starts repeating.
+            //the pattern of the two clocks' edges starts repeating.
             int lcm_period = vtr::lcm(launch_period, capture_period);
 
-            //Create arrays of positive edges for each clock over one LCM clock period.
+            //Create arrays of edges for each clock over one LCM period.
 
-            //Launch edges
-            int launch_rise_time = launch_rise_edge;
+            //Launch edges (+1 extra to handle boundary launch edges).
             std::vector<int> launch_edges;
+            int launch_rise_time = launch_rise_edge;
             int num_launch_edges = lcm_period / launch_period + 1;
             for (int i = 0; i < num_launch_edges; ++i) {
                 launch_edges.push_back(launch_rise_time);
                 launch_rise_time += launch_period;
             }
 
-            //Capture edges
-            int capture_rise_time = capture_rise_edge;
-            int num_capture_edges = lcm_period / capture_period + 1;
+            //Capture edges (+2 extra to guarantee every launch edge in the window has at
+            //least one capture edge strictly after it; e.g. a launch at the last edge of
+            //the LCM window needs a capture edge one full capture period beyond it).
             std::vector<int> capture_edges;
+            int capture_rise_time = capture_rise_edge;
+            int num_capture_edges = lcm_period / capture_period + 2;
             for (int i = 0; i < num_capture_edges; ++i) {
                 capture_edges.push_back(capture_rise_time);
                 capture_rise_time += capture_period;
             }
 
-            //Compare every edge in source_edges with every edge in sink_edges.
-            //The lowest STRICTLY POSITIVE difference between a sink edge and a
-            //source edge yields the setup time constraint.
-            int scaled_constraint = std::numeric_limits<int>::max(); //Initialize to +inf, so any constraint will be less
+            //For each launch edge, find the nearest capture edge strictly after it.
+            //Since capture_edges is sorted, the first capture_edge > launch_edge is the nearest,
+            //so we break after finding it. That single nearest pair contributes:
+            //  - the minimum setup diff (capture_edge - launch_edge), and
+            //  - the hold diff for this launch edge (capture_edge - capture_period - launch_edge).
+            int scaled_setup = std::numeric_limits<int>::max();
+            int scaled_hold = std::numeric_limits<int>::min();
 
             for (int launch_edge : launch_edges) {
                 for (int capture_edge : capture_edges) {
-                    if (capture_edge >= launch_edge) { //Positive only
-                        int edge_diff = capture_edge - launch_edge;
-                        VTR_ASSERT(edge_diff >= 0.);
-
-                        scaled_constraint = std::min(scaled_constraint, edge_diff);
+                    if (capture_edge > launch_edge) {
+                        scaled_setup = std::min(scaled_setup, capture_edge - launch_edge);
+                        scaled_hold = std::max(scaled_hold, capture_edge - capture_period - launch_edge);
+                        // Break from inner loop only: min/max accumulate across launch edges in the outer loop
+                        break;
                     }
                 }
             }
 
-            //Rescale the constraint back to a float
-            constraint = float(scaled_constraint) / CLOCK_SCALE;
-        }
+            VTR_ASSERT(scaled_setup != std::numeric_limits<int>::max());
+            VTR_ASSERT(scaled_hold != std::numeric_limits<int>::min());
 
-        return constraint;
+            return {float(scaled_setup) / CLOCK_SCALE, float(scaled_hold) / CLOCK_SCALE};
+        }
     }
 
     //Returns the cycle number (after launch) where the setup check occurs
@@ -1369,7 +1389,8 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         auto it = object_to_net_id_.find(net_object_id);
-        VTR_ASSERT(it != object_to_net_id_.end());
+        if (it == object_to_net_id_.end())
+            VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find net object in object_to_net_id_ map.");
         return it->second;
     }
 
@@ -1400,7 +1421,8 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         auto it = object_to_clock_id_.find(clock_object_id);
-        VTR_ASSERT(it != object_to_clock_id_.end());
+        if (it == object_to_clock_id_.end())
+            VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find clock object in object_to_clock_id_ map.");
         return it->second;
     }
 
