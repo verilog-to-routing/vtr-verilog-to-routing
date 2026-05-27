@@ -15,8 +15,6 @@ struct t_logical_location_token {
  * @brief Parses a logical_block_location constraint string and supports matching against
  *        hierarchical type names (e.g. t_pb::hierarchical_type_name()).
  *
- * This is a code-structure refactor of the previous free-function implementation.
- * No behavioral changes are intended.
  */
 class LbHierPathParser {
   public:
@@ -43,8 +41,6 @@ class LbHierPathParser {
     /**
      * @brief Validate that this logical_block_location matches at least one pb graph
      *        among the provided logical_block_types.
-     *
-     * This is a code-structure refactor of the previous free function implementation.
      */
     void validate_logical_block_types(const std::vector<t_logical_block_type>& logical_block_types);
 
@@ -65,6 +61,4 @@ class LbHierPathParser {
     std::string logical_block_location_;
     std::vector<t_logical_location_token> want_tokens_;
 };
-
-// (formerly) validate_logical_block_location(...) is implemented as a member function now.
 
