@@ -5,12 +5,101 @@
 
 #include "vpr_error.h"
 
-enum class e_token_format {
-    LOGICAL_LOCATION,
-    HIERARCHICAL_TYPE,
-};
+LbHierPathParser::LbHierPathParser(const std::string& logical_block_location)
+    : logical_block_location_(logical_block_location) {}
 
-static int try_parse_int(const std::string& value) {
+int LbHierPathParser::parse() {
+    want_tokens_ = parse_segmented_tokens_impl(logical_block_location_, '.', TokenFormat::LOGICAL_LOCATION);
+    return static_cast<int>(want_tokens_.size());
+}
+
+bool LbHierPathParser::matches_hierarchical_type(const std::string& hierarchical_type_name) const {
+    const auto got_tokens = parse_segmented_tokens_impl(hierarchical_type_name, '/', TokenFormat::HIERARCHICAL_TYPE);
+    if (want_tokens_.empty() || got_tokens.empty() || want_tokens_.size() > got_tokens.size()) {
+        return false;
+    }
+
+    for (size_t start = 0; start + want_tokens_.size() <= got_tokens.size(); ++start) {
+        bool all_match = true;
+        for (size_t i = 0; i < want_tokens_.size(); ++i) {
+            if (!token_matches(want_tokens_[i], got_tokens[start + i])) {
+                all_match = false;
+                break;
+            }
+        }
+        if (all_match) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const t_pb_graph_node* LbHierPathParser::target_lb(const t_pb_graph_node* node) const {
+    if (node == nullptr) {
+        return nullptr;
+    }
+    if (matches_hierarchical_type(node->hierarchical_type_name())) {
+        return node;
+    }
+
+    if (node->is_primitive() || node->child_pb_graph_nodes == nullptr) {
+        return nullptr;
+    }
+
+    for (int imode = 0; imode < node->pb_type->num_modes; ++imode) {
+        const t_mode& mode = node->pb_type->modes[imode];
+        for (int ipb_type = 0; ipb_type < mode.num_pb_type_children; ++ipb_type) {
+            for (int ipb = 0; ipb < mode.pb_type_children[ipb_type].num_pb; ++ipb) {
+                const t_pb_graph_node& child = node->child_pb_graph_nodes[imode][ipb_type][ipb];
+                if (const t_pb_graph_node* hit = target_lb(&child); hit) {
+                    return hit;
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+void LbHierPathParser::validate_logical_block_types(const std::vector<t_logical_block_type>& logical_block_types) {
+    if (logical_block_location_.empty()) {
+        return;
+    }
+
+    if (parse() == 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Invalid logical_block_location '%s': no valid path tokens",
+                        logical_block_location_.c_str());
+    }
+
+    for (const t_logical_block_type& lb_type : logical_block_types) {
+        if (lb_type.is_empty() || lb_type.pb_graph_head == nullptr) {
+            continue;
+        }
+        if (target_lb(lb_type.pb_graph_head) != nullptr) {
+            return;
+        }
+    }
+
+    VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                    "Invalid logical_block_location '%s': path does not match any logical block type pb graph",
+                    logical_block_location_.c_str());
+}
+
+bool LbHierPathParser::token_matches(const t_logical_location_token& want, const t_logical_location_token& got) {
+    if (want.name != got.name) {
+        return false;
+    }
+    if (want.index >= 0 && got.index != want.index) {
+        return false;
+    }
+    if (!want.mode.empty() && got.mode != want.mode) {
+        return false;
+    }
+    return true;
+}
+
+int LbHierPathParser::try_parse_int_impl(const std::string& value) {
     if (value.empty()) {
         return -1;
     }
@@ -22,7 +111,7 @@ static int try_parse_int(const std::string& value) {
     return std::stoi(value);
 }
 
-static t_logical_location_token parse_single_token(const std::string& token, e_token_format format) {
+t_logical_location_token LbHierPathParser::parse_single_token_impl(const std::string& token, TokenFormat format) {
     t_logical_location_token parsed;
     size_t lbr = token.find('[');
     if (lbr == std::string::npos) {
@@ -33,7 +122,7 @@ static t_logical_location_token parse_single_token(const std::string& token, e_t
     parsed.name = token.substr(0, lbr);
     size_t rbr = token.find(']', lbr + 1);
     if (rbr == std::string::npos) {
-        if (format == e_token_format::LOGICAL_LOCATION) {
+        if (format == TokenFormat::LOGICAL_LOCATION) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Invalid logical_block_location token '%s': missing ']' after '['",
                             token.c_str());
@@ -41,10 +130,10 @@ static t_logical_location_token parse_single_token(const std::string& token, e_t
         return parsed;
     }
 
-    if (format == e_token_format::LOGICAL_LOCATION) {
+    if (format == TokenFormat::LOGICAL_LOCATION) {
         const std::string bracket_content = token.substr(lbr + 1, rbr - lbr - 1);
         if (!bracket_content.empty()) {
-            const int idx = try_parse_int(bracket_content);
+            const int idx = try_parse_int_impl(bracket_content);
             if (idx < 0) {
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
                                 "Invalid logical_block_location token '%s': "
@@ -64,7 +153,7 @@ static t_logical_location_token parse_single_token(const std::string& token, e_t
         }
     } else {
         std::string first_bracket = token.substr(lbr + 1, rbr - lbr - 1);
-        int idx = try_parse_int(first_bracket);
+        int idx = try_parse_int_impl(first_bracket);
         if (idx >= 0) {
             parsed.index = idx;
         } else if (!first_bracket.empty()) {
@@ -83,16 +172,16 @@ static t_logical_location_token parse_single_token(const std::string& token, e_t
     return parsed;
 }
 
-static std::vector<t_logical_location_token> parse_segmented_tokens(const std::string& input,
-                                                                    char separator,
-                                                                    e_token_format format) {
+std::vector<t_logical_location_token> LbHierPathParser::parse_segmented_tokens_impl(const std::string& input,
+                                                                                    char separator,
+                                                                                    TokenFormat format) {
     std::vector<t_logical_location_token> tokens;
     size_t start = 0;
     while (start < input.size()) {
         size_t end = input.find(separator, start);
         std::string token = input.substr(start, end == std::string::npos ? std::string::npos : end - start);
         if (!token.empty()) {
-            auto parsed = parse_single_token(token, format);
+            auto parsed = parse_single_token_impl(token, format);
             if (!parsed.name.empty()) {
                 tokens.push_back(std::move(parsed));
             }
@@ -105,108 +194,4 @@ static std::vector<t_logical_location_token> parse_segmented_tokens(const std::s
     return tokens;
 }
 
-std::vector<t_logical_location_token> parse_logical_block_location_tokens(const std::string& location) {
-    return parse_segmented_tokens(location, '.', e_token_format::LOGICAL_LOCATION);
-}
-
-std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const std::string& hierarchical_type) {
-    return parse_segmented_tokens(hierarchical_type, '/', e_token_format::HIERARCHICAL_TYPE);
-}
-
-bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got) {
-    if (want.name != got.name) {
-        return false;
-    }
-    if (want.index >= 0 && got.index != want.index) {
-        return false;
-    }
-    if (!want.mode.empty() && got.mode != want.mode) {
-        return false;
-    }
-    return true;
-}
-
-bool logical_block_location_matches_hierarchical_type(const std::string& logical_block_location,
-                                                      const std::string& hierarchical_type_name) {
-    auto want_tokens = parse_logical_block_location_tokens(logical_block_location);
-    auto got_tokens = parse_hierarchical_type_tokens(hierarchical_type_name);
-    if (want_tokens.empty() || got_tokens.empty() || want_tokens.size() > got_tokens.size()) {
-        return false;
-    }
-
-    for (size_t start = 0; start + want_tokens.size() <= got_tokens.size(); ++start) {
-        bool all_match = true;
-        for (size_t i = 0; i < want_tokens.size(); ++i) {
-            if (!token_matches(want_tokens[i], got_tokens[start + i])) {
-                all_match = false;
-                break;
-            }
-        }
-        if (all_match) {
-            return true;
-        }
-    }
-    return false;
-}
-
-namespace {
-
-/**
- * @brief Returns true if logical_block_location matches any pb_graph_node in the hierarchy.
- *
- * Uses t_pb_graph_node::hierarchical_type_name() and logical_block_location_matches_hierarchical_type(),
- * the same comparison used during packing against t_pb::hierarchical_type_name().
- *
- * Recursion follows the same child traversal pattern as load_pb_graph_pin_lookup_from_index_rec()
- * in vpr_utils.cpp.
- */
-bool location_matches_any_pb_graph_node(const t_pb_graph_node* node, const std::string& logical_block_location) {
-    if (logical_block_location_matches_hierarchical_type(logical_block_location, node->hierarchical_type_name())) {
-        return true;
-    }
-
-    if (node->is_primitive() || node->child_pb_graph_nodes == nullptr) {
-        return false;
-    }
-
-    for (int imode = 0; imode < node->pb_type->num_modes; ++imode) {
-        const t_mode& mode = node->pb_type->modes[imode];
-        for (int ipb_type = 0; ipb_type < mode.num_pb_type_children; ++ipb_type) {
-            for (int ipb = 0; ipb < mode.pb_type_children[ipb_type].num_pb; ++ipb) {
-                const t_pb_graph_node& child = node->child_pb_graph_nodes[imode][ipb_type][ipb];
-                if (location_matches_any_pb_graph_node(&child, logical_block_location)) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-} // namespace
-
-void validate_logical_block_location(const std::string& logical_block_location,
-                                     const std::vector<t_logical_block_type>& logical_block_types) {
-    if (logical_block_location.empty()) {
-        return;
-    }
-
-    if (parse_logical_block_location_tokens(logical_block_location).empty()) {
-        VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                        "Invalid logical_block_location '%s': no valid path tokens",
-                        logical_block_location.c_str());
-    }
-
-    for (const t_logical_block_type& lb_type : logical_block_types) {
-        if (lb_type.is_empty() || lb_type.pb_graph_head == nullptr) {
-            continue;
-        }
-        if (location_matches_any_pb_graph_node(lb_type.pb_graph_head, logical_block_location)) {
-            return;
-        }
-    }
-
-    VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                    "Invalid logical_block_location '%s': path does not match any logical block type pb graph",
-                    logical_block_location.c_str());
-}
+ 

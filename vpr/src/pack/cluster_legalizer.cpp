@@ -47,7 +47,9 @@ static bool check_logical_block_location_constraint(const AtomBlockId blk_id, co
     if (logical_block_location.empty()) {
         return true;
     }
-    if (logical_block_location_matches_hierarchical_type(logical_block_location, pb->hierarchical_type_name())) {
+    LbHierPathParser parser(logical_block_location);
+    parser.parse();
+    if (parser.matches_hierarchical_type(pb->hierarchical_type_name())) {
         return true;
     }
 

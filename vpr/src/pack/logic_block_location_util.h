@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "atom_netlist_fwd.h"
@@ -13,20 +11,60 @@ struct t_logical_location_token {
     std::string mode;
 };
 
-std::vector<t_logical_location_token> parse_logical_block_location_tokens(const std::string& location);
-std::vector<t_logical_location_token> parse_hierarchical_type_tokens(const std::string& hierarchical_type);
-
-bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got);
-bool logical_block_location_matches_hierarchical_type(const std::string& logical_block_location,
-                                                      const std::string& hierarchical_type_name);
-
 /**
- * @brief Parse and verify logical_block_location against the architecture pb graphs.
+ * @brief Parses a logical_block_location constraint string and supports matching against
+ *        hierarchical type names (e.g. t_pb::hierarchical_type_name()).
  *
- * Walks each t_logical_block_type pb graph and compares against
- * t_pb_graph_node::hierarchical_type_name() using logical_block_location_matches_hierarchical_type().
- * Fatal on invalid input.
+ * This is a code-structure refactor of the previous free-function implementation.
+ * No behavioral changes are intended.
  */
-void validate_logical_block_location(const std::string& logical_block_location,
-                                     const std::vector<t_logical_block_type>& logical_block_types);
+class LbHierPathParser {
+  public:
+    explicit LbHierPathParser(const std::string& logical_block_location);
+
+    /**
+     * @brief Parse the logical_block_location into internal tokens.
+     *
+     * @return Number of parsed tokens.
+     */
+    int parse();
+
+    /**
+     * @brief Returns true if the parsed constraint matches a hierarchical type name.
+     */
+    bool matches_hierarchical_type(const std::string& hierarchical_type_name) const;
+
+    /**
+     * @brief Returns the first pb_graph_node in the hierarchy whose hierarchical_type_name()
+     *        matches the parsed constraint, or nullptr if none match.
+     */
+    const t_pb_graph_node* target_lb(const t_pb_graph_node* node) const;
+
+    /**
+     * @brief Validate that this logical_block_location matches at least one pb graph
+     *        among the provided logical_block_types.
+     *
+     * This is a code-structure refactor of the previous free function implementation.
+     */
+    void validate_logical_block_types(const std::vector<t_logical_block_type>& logical_block_types);
+
+    enum class TokenFormat {
+        LOGICAL_LOCATION,
+        HIERARCHICAL_TYPE,
+    };
+
+    static bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got);
+    static std::vector<t_logical_location_token> parse_segmented_tokens_impl(const std::string& input,
+                                                                             char separator,
+                                                                             TokenFormat format);
+
+  private:
+    static int try_parse_int_impl(const std::string& value);
+    static t_logical_location_token parse_single_token_impl(const std::string& token, TokenFormat format);
+
+    std::string logical_block_location_;
+    std::vector<t_logical_location_token> want_tokens_;
+};
+
+// (formerly) validate_logical_block_location(...) is implemented as a member function now.
 
