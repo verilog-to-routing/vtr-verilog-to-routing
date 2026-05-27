@@ -1,9 +1,8 @@
-﻿#include "user_place_constraints.h"
+#include "user_place_constraints.h"
 #include <unordered_set>
-#include "globals.h"
-#include "logic_block_location_util.h"
 #include "physical_types.h"
 #include "vtr_assert.h"
+#include "logic_block_location_util.h"
 
 void UserPlaceConstraints::add_constrained_atom(AtomBlockId blk_id, PartitionId part_id) {
     auto got = constrained_atoms.find(blk_id);
