@@ -8,6 +8,10 @@
         "ignored_tasks": []
     },
     {
+        "name": "vtr_reg_func_sim",
+        "ignored_tasks": []
+    },
+    {
         "name": "parmys_reg_basic",
         "ignored_tasks": []
     },

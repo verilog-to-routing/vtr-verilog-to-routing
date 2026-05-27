@@ -383,6 +383,11 @@ jobs:
             name: 'Valgrind Memory',
             suite: 'vtr_reg_valgrind_small',
             extra_pkgs: 'valgrind'
+          },
+          {
+            name: 'Functional Simulation',
+            suite: 'vtr_reg_func_sim',
+            extra_pkgs: 'verilator'
           }
         ]
     name: 'R: ${{ matrix.name }}'

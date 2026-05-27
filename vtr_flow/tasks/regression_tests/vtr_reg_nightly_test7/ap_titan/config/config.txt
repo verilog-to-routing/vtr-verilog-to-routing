@@ -71,7 +71,7 @@ parse_file=vpr_titan.txt
 qor_parse_file=qor_vpr_titan.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_vpr_titan.txt
+pass_requirements_file=pass_requirements_ap_vpr_titan.txt
 
 # Pass the script params while writing the vpr constraints.
 #	WL DRIVEN

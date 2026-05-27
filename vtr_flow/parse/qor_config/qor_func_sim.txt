@@ -1,0 +1,3 @@
+vpr_status;output.txt;vpr_status=(.*)
+error;output.txt;error=(.*)
+vtr_flow_elapsed_time;vtr_flow.out;.* \(took (.*) seconds,.*\)
