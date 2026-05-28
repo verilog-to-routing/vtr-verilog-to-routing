@@ -431,6 +431,12 @@ void update_screen(ScreenUpdatePriority priority,
                 }
 
                 canvas->set_renderer_type(rt);
+
+                // Surface the renderer that actually got installed (which may
+                // differ from --renderer after the offscreen-QPA fallback
+                // above) so logs/tests can confirm the active backend.
+                VTR_LOG("EZGL: active renderer backend: %s\n",
+                        ezgl::renderer_type_name(rt));
             }
         } else {
             // TODO: will this ever be null?
