@@ -6,7 +6,7 @@
 circuits_dir=benchmarks/titan_blif/other_benchmarks/stratixiv
 
 # Path to directory of architectures to use
-archs_dir=arch/interposer/titan_interposer
+archs_dir=arch/multi_die/misc_interposer/titan_interposer
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing_interposer.xml
