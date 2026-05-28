@@ -1,0 +1,6 @@
+# Parse configuration for functional simulation tasks.
+# Only flow-level timing is captured; correctness is determined by the
+# simulation exit code rather than by metric thresholds.
+%include "common/vtr_flow.txt"
+
+%include "common/vpr.common.txt"

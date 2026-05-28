@@ -3,7 +3,8 @@
 #include "catch2/matchers/catch_matchers_all.hpp"
 
 // testing static functions so include whole source file it is in
-#include "read_xml_arch_file_noc_tag.cpp"
+// Need to turn off linter error for including a cpp file
+#include "read_xml_arch_file_noc_tag.cpp" // NOLINT
 
 // for comparing floats
 #include "vtr_math.h"

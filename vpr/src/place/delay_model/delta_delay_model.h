@@ -9,16 +9,12 @@
  */
 class DeltaDelayModel : public PlaceDelayModel {
   public:
-    DeltaDelayModel(float min_cross_layer_delay,
-                    bool is_flat)
-        : cross_layer_delay_(min_cross_layer_delay)
-        , is_flat_(is_flat) {}
+    DeltaDelayModel(bool is_flat)
+        : is_flat_(is_flat) {}
 
-    DeltaDelayModel(float min_cross_layer_delay,
-                    vtr::NdMatrix<float, 4> delta_delays,
+    DeltaDelayModel(vtr::NdMatrix<float, 4> delta_delays,
                     bool is_flat)
         : delays_(std::move(delta_delays))
-        , cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
 
     void compute(RouterDelayProfiler& router,
@@ -39,7 +35,6 @@ class DeltaDelayModel : public PlaceDelayModel {
 
   private:
     vtr::NdMatrix<float, 4> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
-    float cross_layer_delay_;
 
     /// Indicates whether the router is a two-stage or run-flat
     bool is_flat_;

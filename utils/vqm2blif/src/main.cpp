@@ -78,6 +78,7 @@
 *********************************************************************************************/
 
 #include "logic_types.h"
+#include "preprocess.h"
 #include "vqm2blif.h"
 #include "lut_stats.h"
 #include "vtr_error.h"
