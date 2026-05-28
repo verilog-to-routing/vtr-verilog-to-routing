@@ -6,11 +6,6 @@ pipeline under `QT_QPA_PLATFORM=offscreen` and asserts that the
 graphics-command parser, the offscreen Qt loader, and the VPR exit
 path remain non-regressed.
 
-Authority for this suite is
-`doc/src/dev/vpr_gui_test_implementation_plan.rst` §7.5; defects
-discovered while building it are recorded in
-`doc/src/dev/vpr_gui_defects_discovered.rst`.
-
 ## Tasks
 
 | Task                       | Purpose                                                      |
@@ -22,12 +17,10 @@ discovered while building it are recorded in
 | `gui_set_draw_block_text`  | Graphics-command parser accepts                              |
 |                            | `set_draw_block_text 1; exit 0`.                             |
 
-The `set_*` tasks **do not** assert on rendered output: DEF-009 in
-`vpr_gui_defects_discovered.rst` documents that those state setters
-are inert under `--disp off`. The tasks therefore guard parser
+The `set_*` tasks **do not** assert on rendered output — those state
+setters are inert under `--disp off`. The tasks therefore guard parser
 acceptance + clean exit only; rendered-output assertions live in
-Layer 5 (`vpr/test/gui/run_visual_regression.sh`) and will become
-meaningful once DEF-009 is fixed.
+Layer 5 (`vpr/test/gui/run_visual_regression.sh`).
 
 ## Running
 
@@ -51,8 +44,7 @@ output).
 Every `config.txt` pins `script_params_common=-start vpr ...` so VPR
 consumes the prepared `.blif` directly and the front-end (parmys/odin)
 is bypassed. This is required on macOS because `parmys.so` does not
-link with Apple `ld64` (DEF-008 in the discovered-defects log; see
-`vpr_gui_s0_validation.rst` §S0.3 for the link-failure signature).
+link with Apple `ld64`.
 
 ## Add a new task
 
@@ -64,9 +56,8 @@ link with Apple `ld64` (DEF-008 in the discovered-defects log; see
 4. The first run will produce a `golden_results.txt` under
    `<task>/config/`; review and commit it.
 
-## Out-of-scope (Session S10)
+## Out-of-scope
 
 `save_graphics`-based tasks (`gui_pack_place_save_png`,
-`gui_route_save_png`) are deferred to S10 because they are
-blocked by DEF-004 (see `vpr_gui_defect_log.rst`) and DEF-009
-(state setters inert; see discovered-defects log).
+`gui_route_save_png`) are deferred because the underlying state
+setters are inert under `--disp off`.

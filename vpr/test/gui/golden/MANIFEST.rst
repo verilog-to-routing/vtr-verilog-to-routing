@@ -5,8 +5,7 @@ This directory stores the reference (golden) PNG images for Layer 5 visual
 regression tests.  Each image is **2048 × 2048 px, 8-bit RGBA**, produced
 by VPR's ``save_graphics`` command under ``QT_QPA_PLATFORM=offscreen``.
 
-**Status:** Populated.  See :ref:`vpr_gui_defect_issues_log` for the
-governance policy on regenerating these images (DEF-009, DEF-010).
+**Status:** Populated.
 
 Layout
 ------

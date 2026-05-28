@@ -12,7 +12,5 @@ Developer Guide
     code_documentation
     tutorials/index
     coding_style
-    vpr_gui_complete_test_plan
-    vpr_gui_defect_issues_log
     ../SUPPORT
     ../LICENSE

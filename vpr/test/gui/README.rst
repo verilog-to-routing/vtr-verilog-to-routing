@@ -197,19 +197,3 @@ Files
      - Layer 5: golden image storage (see ``golden/MANIFEST.rst``)
    * - ``run_all_tests.sh``
      - Unified runner — orchestrates all layers
-
-Known Issues
-------------
-
-See ``doc/src/dev/vpr_gui_defect_log.rst`` for the full defect log.
-
-- **DEF-001** (Minor): ``QtGladeLoader`` ignores ``sensitive`` property
-- **DEF-002** (Major): ``QtGladeLoader`` calls ``std::exit(1)`` on file-open failure
-- **DEF-003** (Minor): ``g_return_if_fail``/``g_return_val_if_fail`` call ``std::exit(1)``
-- **DEF-004** (Critical): ``save_graphics``/``print_png`` crashes in Qt offscreen mode — blocks Layer 1 save tests and all Layer 5 tests
-
-Related Documents
------------------
-
-- Testing strategy: ``doc/src/dev/vpr_gui_testing_strategy.rst``
-- Defect log: ``doc/src/dev/vpr_gui_defect_log.rst``
