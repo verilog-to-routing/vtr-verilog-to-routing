@@ -193,5 +193,3 @@ std::vector<t_logical_location_token> LbHierPathParser::parse_segmented_tokens_i
     }
     return tokens;
 }
-
- 

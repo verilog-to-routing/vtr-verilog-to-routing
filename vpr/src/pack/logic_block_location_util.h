@@ -61,4 +61,3 @@ class LbHierPathParser {
     std::string logical_block_location_;
     std::vector<t_logical_location_token> want_tokens_;
 };
-
