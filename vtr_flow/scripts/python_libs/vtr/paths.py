@@ -1,5 +1,6 @@
 """Paths for different VTR flow executables and resources"""
 
+import os
 import pathlib
 
 # Path to the root repository directory
@@ -46,8 +47,12 @@ ace_exe_path = ace_path / "ace"
 ace_extract_clk_from_blif_script_path = ace_path / "scripts" / "extract_clk_from_blif.py"
 
 # VPR paths
+# VPR paths
 vpr_path = root_path / "vpr"
-vpr_exe_path = vpr_path / "vpr"
+if os.name == "nt":
+    vpr_exe_path = root_path / "build" / "vpr" / "vpr.exe"
+else:
+    vpr_exe_path = vpr_path / "vpr"
 
 # Flow scripts
 scripts_path = vtr_flow_path / "scripts"
