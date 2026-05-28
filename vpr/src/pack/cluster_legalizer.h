@@ -11,8 +11,10 @@
  * externally to the Packer in VPR.
  */
 
+#include <cstddef>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "cluster_legalizer_fwd.h"
@@ -34,6 +36,17 @@ class Prepacker;
 class LogicalModels;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
+class DirectConnectionLegality;
+
+/**
+ * @brief Result of the post-pack external <direct>-list legality check.
+ *
+ * `offending_nets` is the set of atom nets driven through a top-level OUT pin
+ * with Fc_out = 0 without a matching <direct> entry to one of the net's sinks.
+ */
+struct t_external_directs_legality_result {
+    std::unordered_set<AtomNetId> offending_nets;
+};
 
 /**
  * @brief Holds information to be shared between molecules that represent the
@@ -590,6 +603,11 @@ class ClusterLegalizer {
     inline AtomPBBimap& mutable_atom_pb_lookup() { return atom_pb_lookup_; }
 
     inline const IntraLbPbPinLookup& intra_lb_pb_pin_lookup() const { return intra_lb_pb_pin_lookup_; }
+
+    /// Runs the post-pack <direct>-list legality check. Must be called after
+    /// `finalize()`, since it reads `cluster.pb->pb_route` on every cluster.
+    t_external_directs_legality_result check_external_directs_legality(
+        const DirectConnectionLegality& direct_legality) const;
 
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
