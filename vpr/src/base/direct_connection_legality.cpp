@@ -22,7 +22,7 @@ int tile_pin_to_pb_pin_id(t_physical_tile_type_ptr tile,
     return pb_pin->pin_count_in_cluster;
 }
 
-}  // namespace
+} // namespace
 
 DirectConnectionLegality::DirectConnectionLegality(const std::vector<t_direct_inf>& directs) {
     const int delayless_switch = g_vpr_ctx.device().delayless_switch_idx;
@@ -65,8 +65,7 @@ DirectConnectionLegality::DirectConnectionLegality(const std::vector<t_direct_in
     }
 }
 
-bool DirectConnectionLegality::is_direct_legal(t_logical_block_type_ptr from_lb, int from_top_pin,
-                                               t_logical_block_type_ptr to_lb, int to_top_pin) const {
+bool DirectConnectionLegality::is_direct_legal(t_logical_block_type_ptr from_lb, int from_top_pin, t_logical_block_type_ptr to_lb, int to_top_pin) const {
     if (from_lb == nullptr || from_lb->index < 0
         || static_cast<size_t>(from_lb->index) >= forward_by_from_lb_.size()) {
         return false;

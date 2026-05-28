@@ -26,8 +26,7 @@ class DirectConnectionLegality {
     explicit DirectConnectionLegality(const std::vector<t_direct_inf>& directs);
 
     /// Returns true if the given source pin and sink pin are connected by a <direct>.
-    bool is_direct_legal(t_logical_block_type_ptr from_lb, int from_top_pin,
-                         t_logical_block_type_ptr to_lb, int to_top_pin) const;
+    bool is_direct_legal(t_logical_block_type_ptr from_lb, int from_top_pin, t_logical_block_type_ptr to_lb, int to_top_pin) const;
 
   private:
     /// [from_lb_index] -> { from_pin -> { (to_lb_index, to_pin), ... } }.
