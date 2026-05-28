@@ -2,13 +2,12 @@
 /**
  * @file
  * @brief Architecture-level lookup of the connectivity defined by the
- *        <directlist>, used by the packer's post-pack legality check.
+ *        <directlist>, used by the clustered netlist legality check.
  *
  * A top-level output pin with Fc_out = 0 can only reach a sink that is
- * wired to it by a <direct> entry. After packing, the cluster legalizer
- * uses this class to verify that every Fc_out = 0 pin chosen by the
- * intra-cluster router as a net's exit pin is backed by a matching
- * <direct> connection to that net's external sinks.
+ * wired to it by a <direct> entry. The clustered netlist checker uses this
+ * class to verify that every Fc_out = 0 pin chosen as a net's exit pin is
+ * backed by a matching <direct> connection to that net's external sinks.
  */
 
 #include <set>
