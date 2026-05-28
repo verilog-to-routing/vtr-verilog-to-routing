@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file
  * @author  Alex Singer
  * @date    September 2024
