@@ -12,6 +12,13 @@
 #include <utility>
 #include <vector>
 
+enum class e_interposer_net_cost_type {
+    /// Net cost is delta_x * #vertical_interposer_crossings + delta_y * #horizontal_interposer_crossings
+    CROSSING_COUNT_DELTA_POS,
+    /// Net cost is |delta_x - vertical_interposer_seg_length| + |delta_y - horizontal_interposer_seg_length|
+    DELTA_POS_SEGMENT_LENGTH,
+};
+
 class InterposerCostHandler {
   public:
     InterposerCostHandler() = delete;
@@ -47,6 +54,9 @@ class InterposerCostHandler {
     /// @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
     double compute_interposer_est_cong(bool compute_congestion_cost = true);
 
+    /// @brief Selects the formula used for the interposer crossing cost term.
+    void change_net_cost_type(e_interposer_net_cost_type new_type);
+
   private:
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
     double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const;
@@ -75,4 +85,6 @@ class InterposerCostHandler {
     vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
     /// Per-net interposer congestion cost (and temporary value during move evaluation).
     vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
+
+    e_interposer_net_cost_type cost_type_ = e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS;
 };
