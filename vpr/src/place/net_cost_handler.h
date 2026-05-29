@@ -146,6 +146,8 @@ class NetCostHandler {
     double get_total_wirelength_estimate() const;
 
     ///@brief Get the nets affected by the most recent proposed move.
+    /// Valid only after find_affected_nets_and_update_costs() has been called for the
+    /// current proposed move (e.g. within try_swap()).
     const std::vector<ClusterNetId>& affected_nets() const;
 
     /**
