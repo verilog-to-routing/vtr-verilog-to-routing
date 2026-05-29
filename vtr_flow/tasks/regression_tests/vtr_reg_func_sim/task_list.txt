@@ -1,0 +1,2 @@
+regression_tests/vtr_reg_func_sim/adder_4bit
+regression_tests/vtr_reg_func_sim/adder_4bit_blif

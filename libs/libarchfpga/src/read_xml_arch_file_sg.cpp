@@ -28,7 +28,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
         t_sg_link sg_link;
         sg_link.name = pugiutil::get_attribute(node, "name", loc_data).as_string();
 
-        std::string_view mux_name = pugiutil::get_attribute(node, "mux", loc_data).as_string();
+        std::string_view mux_name = pugiutil::get_attribute(node, "mux", loc_data, pugiutil::OPTIONAL).as_string();
         if (!mux_name.empty()) {
             int mux_index = find_switch_by_name(switches, mux_name);
             if (mux_index < 0) {

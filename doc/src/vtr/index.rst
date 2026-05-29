@@ -46,6 +46,7 @@ VTR also includes a set of benchmark designs known to work with the design flow.
    server_mode/index.rst
    tasks
    run_vtr_flow
+   run_func_sim_flow
    run_vtr_task
    parse_vtr_flow
    parse_vtr_task
