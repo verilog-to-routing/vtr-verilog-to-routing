@@ -6,6 +6,7 @@
 #include "vpr_context.h"
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
 InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
@@ -184,6 +185,18 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
 
     double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
     return cost;
+}
+
+void InterposerCostHandler::change_net_cost_type(e_interposer_net_cost_type new_type) {
+    if (cost_type_ == new_type) {
+        return;
+    }
+
+    cost_type_ = new_type;
+
+    if (interposer_cost_enabled_) {
+        recompute_costs();
+    }
 }
 
 double InterposerCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const {
