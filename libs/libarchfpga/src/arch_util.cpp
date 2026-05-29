@@ -789,7 +789,7 @@ void SyncModelsPbTypes_rec(t_arch* arch,
             /* TODO: Parse error checking - check if INPUT matches INPUT and OUTPUT matches OUTPUT (not yet done) */
             t_model_ports* model_port = model_match_prim.inputs;
             while (model_port && !found) {
-                if (strcmp(model_port->name, pb_type->ports[p].name) == 0) {
+                if (strcmp(model_port->name.c_str(), pb_type->ports[p].name) == 0) {
                     if (model_port->size < pb_type->ports[p].num_pins) {
                         model_port->size = pb_type->ports[p].num_pins;
                     }
@@ -814,7 +814,7 @@ void SyncModelsPbTypes_rec(t_arch* arch,
             }
             model_port = model_match_prim.outputs;
             while (model_port && !found) {
-                if (strcmp(model_port->name, pb_type->ports[p].name) == 0) {
+                if (strcmp(model_port->name.c_str(), pb_type->ports[p].name) == 0) {
                     if (model_port->size < pb_type->ports[p].num_pins) {
                         model_port->size = pb_type->ports[p].num_pins;
                     }

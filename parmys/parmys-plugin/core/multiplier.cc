@@ -549,7 +549,7 @@ void find_hard_multipliers()
     min_mult = configuration.min_hard_multiplier;
     for (LogicalModelId model_id : Arch.models.user_models()) {
         hard_multipliers = &Arch.models.get_model(model_id);
-        if (strcmp(hard_multipliers->name, "multiply") == 0) {
+        if (hard_multipliers->name == "multiply") {
             init_mult_distribution();
             return;
         } else {
@@ -647,7 +647,7 @@ void add_the_blackbox_for_mults_yosys(Yosys::Design *design)
     int hard_mult_inputs;
     t_multiplier *muls;
     t_model_ports *ports;
-    char *pa, *pb, *po;
+    const char *pa, *pb, *po;
 
     /* Check to make sure this target architecture has hard multipliers */
     if (hard_multipliers == NULL)
@@ -655,10 +655,10 @@ void add_the_blackbox_for_mults_yosys(Yosys::Design *design)
 
     /* Get the names of the ports for the multiplier */
     ports = hard_multipliers->inputs;
-    pb = ports->name;
+    pb = ports->name.c_str();
     ports = ports->next;
-    pa = ports->name;
-    po = hard_multipliers->outputs->name;
+    pa = ports->name.c_str();
+    po = hard_multipliers->outputs->name.c_str();
 
     /* find the multiplier devices in the tech library */
     muls = (t_multiplier *)(hard_multipliers->instances);
@@ -774,7 +774,7 @@ void define_mult_function_yosys(nnode_t *node, Yosys::Module *module, Yosys::Des
             oassert(net->num_driver_pins == 1);
             npin_t *driver_pin = net->driver_pins[0];
 
-            p = Yosys::stringf("%s[%d]", hard_multipliers->inputs->next->name, i);
+            p = Yosys::stringf("%s[%d]", hard_multipliers->inputs->next->name.c_str(), i);
 
             if (!driver_pin->name)
                 q = driver_pin->node->name;
@@ -788,7 +788,7 @@ void define_mult_function_yosys(nnode_t *node, Yosys::Module *module, Yosys::Des
 
             long index = flip ? i - node->input_port_sizes[1] : i - node->input_port_sizes[0];
 
-            p = Yosys::stringf("%s[%ld]", hard_multipliers->inputs->name, index);
+            p = Yosys::stringf("%s[%ld]", hard_multipliers->inputs->name.c_str(), index);
 
             if (!driver_pin->name)
                 q = driver_pin->node->name;
@@ -805,7 +805,7 @@ void define_mult_function_yosys(nnode_t *node, Yosys::Module *module, Yosys::Des
 
     for (int i = 0; i < node->num_output_pins; i++) {
         std::string p, q;
-        p = Yosys::stringf("%s[%d]", hard_multipliers->outputs->name, i);
+        p = Yosys::stringf("%s[%d]", hard_multipliers->outputs->name.c_str(), i);
         q = node->output_pins[i]->name;
 
         std::pair<Yosys::RTLIL::IdString, int> wp = wideports_split(p);

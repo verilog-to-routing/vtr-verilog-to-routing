@@ -142,7 +142,7 @@ static int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_
 
 static t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports* hard_block_model_port);
 
-static t_node_port_association* create_unconnected_node_port_association(char *port_name, int port_index, int wire_index);
+static t_node_port_association* create_unconnected_node_port_association(const char *port_name, int port_index, int wire_index);
 
 static void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_type_name,std::string curr_port_name, t_array_ref** curr_port_array, int* port_index);
 
@@ -642,7 +642,7 @@ static t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_mode
 {
     t_node_port_association* curr_hard_block_node_port = NULL;
     t_array_ref* port_array = NULL;
-    char* curr_hard_block_model_port_name = hard_block_model_port->name;
+    const char* curr_hard_block_model_port_name = hard_block_model_port->name.c_str();
     int port_size = hard_block_model_port->size;
 
     //create memory to store the port array
@@ -687,7 +687,7 @@ static t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_mode
  *                   associated with this port.
  * 
  */
-static t_node_port_association* create_unconnected_node_port_association(char *port_name, int port_index, int wire_index)
+static t_node_port_association* create_unconnected_node_port_association(const char *port_name, int port_index, int wire_index)
 {
     // allocate memory for the port
     t_node_port_association* curr_hard_block_node_port = NULL;

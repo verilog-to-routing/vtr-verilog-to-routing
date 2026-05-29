@@ -47,7 +47,7 @@ void register_hb_port_size(t_model_ports *hb_ports, int size)
 
 t_model_ports *get_model_port(t_model_ports *ports, const char *name)
 {
-    while (ports && strcmp(ports->name, name))
+    while (ports && strcmp(ports->name.c_str(), name))
         ports = ports->next;
 
     return ports;
@@ -64,7 +64,7 @@ void cache_hard_block_names()
     std::reverse(user_models.begin(), user_models.end());
     for (LogicalModelId model_id : user_models) {
         t_model* hard_blocks = &Arch.models.get_model(model_id);
-        int sc_spot = sc_add_string(hard_block_names, hard_blocks->name);
+        int sc_spot = sc_add_string(hard_block_names, hard_blocks->name.c_str());
         hard_block_names->data[sc_spot] = (void *)hard_blocks;
     }
 }
@@ -214,7 +214,7 @@ void output_hard_blocks_yosys(Yosys::Design *design)
         {
             // IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and
             // add_the_blackbox_for_mults)
-            if (strcmp(hard_blocks->name, "adder") == 0 || strcmp(hard_blocks->name, "multiply") == 0) {
+            if (hard_blocks->name == "adder" || hard_blocks->name == "multiply") {
                 break;
             }
 
@@ -236,7 +236,7 @@ void output_hard_blocks_yosys(Yosys::Design *design)
                     if (hb_ports->size == 1)
                         w_name = hb_ports->name;
                     else
-                        w_name = Yosys::stringf("%s[%d]", hb_ports->name, i);
+                        w_name = Yosys::stringf("%s[%d]", hb_ports->name.c_str(), i);
 
                     Yosys::RTLIL::Wire *wire = to_wire(w_name, module);
                     wire->port_input = true;
@@ -259,7 +259,7 @@ void output_hard_blocks_yosys(Yosys::Design *design)
                     if (hb_ports->size == 1)
                         w_name = hb_ports->name;
                     else
-                        w_name = Yosys::stringf("%s[%d]", hb_ports->name, i);
+                        w_name = Yosys::stringf("%s[%d]", hb_ports->name.c_str(), i);
 
                     Yosys::RTLIL::Wire *wire = to_wire(w_name, module);
                     wire->port_output = true;

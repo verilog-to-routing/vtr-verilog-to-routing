@@ -1190,7 +1190,7 @@ void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node,
 	for (int i = 0; i < node->number_of_ports; i++){
 		//search through the node's assigned port list to see 
 		//if the current port has been specified
-		if ((strcmp(to_be_mapped->name, node->array_of_ports[i]->port_name) == 0)
+		if ((strcmp(to_be_mapped->name.c_str(), node->array_of_ports[i]->port_name) == 0)
 			&& ((is_bus)? (index == node->array_of_ports[i]->port_index):(1))){
 			//match the name of the subcircuit port to one mentioned in the association
 			//match the index of the subcircuit port as well, if it's a bus.

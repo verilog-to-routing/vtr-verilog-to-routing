@@ -44,7 +44,7 @@ struct ParmysArchPass : public Pass {
         t_model_ports *input_port = hb->inputs;
         while (input_port) {
             for (int i = 0; i < input_port->size; i++) {
-                std::string w_name = stringf("%s[%d]", input_port->name, i);
+                std::string w_name = stringf("%s[%d]", input_port->name.c_str(), i);
                 RTLIL::Wire *wire = to_wire(w_name, module);
                 wire->port_input = true;
                 std::pair<RTLIL::IdString, int> wp = wideports_split(w_name);
@@ -60,7 +60,7 @@ struct ParmysArchPass : public Pass {
         t_model_ports *output_port = hb->outputs;
         while (output_port) {
             for (int i = 0; i < output_port->size; i++) {
-                std::string w_name = stringf("%s[%d]", output_port->name, i);
+                std::string w_name = stringf("%s[%d]", output_port->name.c_str(), i);
                 RTLIL::Wire *wire = to_wire(w_name, module);
                 wire->port_output = true;
                 std::pair<RTLIL::IdString, int> wp = wideports_split(w_name);
@@ -128,10 +128,10 @@ struct ParmysArchPass : public Pass {
             std::reverse(user_models.begin(), user_models.end());
             for (LogicalModelId model_id : user_models) {
                 t_model* hb = &arch.models.get_model(model_id);
-                if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") &&
-                    strcmp(hb->name, "adder")) {
+                if (hb->name != SINGLE_PORT_RAM_string && hb->name != DUAL_PORT_RAM_string && hb->name != "multiply" &&
+                    hb->name != "adder") {
                     add_hb_to_design(hb, design);
-                    log("Hard block added to the Design ---> `%s`\n", hb->name);
+                    log("Hard block added to the Design ---> `%s`\n", hb->name.c_str());
                 }
             }
 

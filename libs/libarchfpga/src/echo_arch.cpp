@@ -336,18 +336,18 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
 }
 
 static void print_model(FILE* echo, const t_model& model) {
-    fprintf(echo, "Model: \"%s\"\n", model.name);
+    fprintf(echo, "Model: \"%s\"\n", model.name.c_str());
     t_model_ports* input_model_port = model.inputs;
     while (input_model_port) {
         fprintf(echo, "\tInput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
-                input_model_port->name, input_model_port->size,
+                input_model_port->name.c_str(), input_model_port->size,
                 input_model_port->min_size);
         input_model_port = input_model_port->next;
     }
     t_model_ports* output_model_port = model.outputs;
     while (output_model_port) {
         fprintf(echo, "\tOutput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
-                output_model_port->name, output_model_port->size,
+                output_model_port->name.c_str(), output_model_port->size,
                 output_model_port->min_size);
         output_model_port = output_model_port->next;
     }

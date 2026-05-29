@@ -998,7 +998,7 @@ struct ArchReader {
             }
             t_model_ports* model_port = new t_model_ports;
             model_port->dir = dir;
-            model_port->name = vtr::strdup(str(port.getName()).c_str());
+            model_port->name = str(port.getName());
 
             // TODO: add parsing of clock port types when the interchange schema allows for it:
             //       https://github.com/chipsalliance/fpga-interchange-schema/issues/66
@@ -1006,15 +1006,15 @@ struct ArchReader {
             //Sanity checks
             if (model_port->is_clock == true && model_port->is_non_clock_global == true) {
                 archfpga_throw(arch_file_, __LINE__,
-                               "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name);
+                               "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name.c_str());
             }
-            if (model_port->name == nullptr) {
+            if (model_port->name.empty()) {
                 archfpga_throw(arch_file_, __LINE__,
                                "Model port is missing a name");
             }
             if (port_names.count(std::pair<std::string, enum PORTS>(model_port->name, dir)) && dir != INOUT_PORT) {
                 archfpga_throw(arch_file_, __LINE__,
-                               "Duplicate model port named '%s'", model_port->name);
+                               "Duplicate model port named '%s'", model_port->name.c_str());
             }
             if (dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
                 archfpga_throw(arch_file_, __LINE__,
@@ -2165,7 +2165,7 @@ struct ArchReader {
 
             t_model_ports* model_port = new t_model_ports;
             model_port->dir = OUT_PORT;
-            model_port->name = vtr::strdup(const_cell.second.c_str());
+            model_port->name = const_cell.second;
 
             model_port->min_size = 1;
             model_port->size = 1;

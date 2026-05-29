@@ -433,7 +433,7 @@ t_model_ports* find_port_in_architecture_model(const t_model& arch_model, t_node
     t_model_ports* arch_model_port = arch_model.inputs;
 
     //Until NULL or a matching port name
-    while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
+    while ((arch_model_port) && (strcmp(arch_model_port->name.c_str(), node_port->port_name) != 0)) {
         //Must be an input if in the inputs linked list
         VTR_ASSERT(arch_model_port->dir == IN_PORT); 
 
@@ -449,7 +449,7 @@ t_model_ports* find_port_in_architecture_model(const t_model& arch_model, t_node
         arch_model_port = arch_model.outputs;
 
         //Until NULL or a matching port name
-        while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
+        while ((arch_model_port) && (strcmp(arch_model_port->name.c_str(), node_port->port_name) != 0)) {
             //Must be an output if in the output linked list
             VTR_ASSERT(arch_model_port->dir == OUT_PORT); 
 

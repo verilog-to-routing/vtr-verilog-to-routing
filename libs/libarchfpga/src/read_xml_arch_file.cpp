@@ -2475,7 +2475,7 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
         //Process the attributes of each port
         for (pugi::xml_attribute attr : port.attributes()) {
             if (attr.name() == std::string("name")) {
-                model_port->name = vtr::strdup(attr.value());
+                model_port->name = std::string(attr.value());
 
             } else if (attr.name() == std::string("is_clock")) {
                 model_port->is_clock = attribute_to_bool(port, attr, loc_data);
@@ -2497,22 +2497,22 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
         //Sanity checks
         if (model_port->is_clock == true && model_port->is_non_clock_global == true) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
-                           vtr::string_fmt("Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name).c_str());
+                           "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name.c_str());
         }
 
-        if (model_port->name == nullptr) {
+        if (model_port->name.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
-                           vtr::string_fmt("Model port is missing a name").c_str());
+                           "Model port is missing a name");
         }
 
         if (port_names.contains(model_port->name)) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
-                           vtr::string_fmt("Duplicate model port named '%s'", model_port->name).c_str());
+                           "Duplicate model port named '%s'", model_port->name.c_str());
         }
 
         if (dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
-                           vtr::string_fmt("Model output ports can not have combinational sink ports").c_str());
+                           "Model output ports can not have combinational sink ports");
         }
 
         //Add the port

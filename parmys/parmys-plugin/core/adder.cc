@@ -104,7 +104,7 @@ void find_hard_adders()
     hard_adders = NULL;
     for (LogicalModelId model_id : Arch.models.user_models()) {
         hard_adders = &Arch.models.get_model(model_id);
-        if (strcmp(hard_adders->name, "adder") == 0) {
+        if (hard_adders->name == "adder") {
             init_add_distribution();
             return;
         } else {
@@ -201,7 +201,7 @@ void add_the_blackbox_for_adds_yosys(Yosys::Design *design)
     int hard_add_inputs, hard_add_outputs;
     t_adder *adds;
     t_model_ports *ports;
-    char *pa, *pb, *psumout, *pcin, *pcout;
+    const char *pa, *pb, *psumout, *pcin, *pcout;
 
     /* Check to make sure this target architecture has hard adders */
     if (hard_adders == NULL)
@@ -209,16 +209,16 @@ void add_the_blackbox_for_adds_yosys(Yosys::Design *design)
 
     /* Get the names of the ports for the adder */
     ports = hard_adders->inputs;
-    pcin = ports->name;
+    pcin = ports->name.c_str();
     ports = ports->next;
-    pb = ports->name;
+    pb = ports->name.c_str();
     ports = ports->next;
-    pa = ports->name;
+    pa = ports->name.c_str();
 
     ports = hard_adders->outputs;
-    psumout = ports->name;
+    psumout = ports->name.c_str();
     ports = ports->next;
-    pcout = ports->name;
+    pcout = ports->name.c_str();
 
     /* find the adder devices in the tech library */
     adds = (t_adder *)(hard_adders->instances);
@@ -315,19 +315,19 @@ void define_add_function_yosys(nnode_t *node, Yosys::Module *module, Yosys::Desi
         npin_t *driver_pin = node->input_pins[i]->net->driver_pins[0];
 
         if (i < node->input_port_sizes[0]) {
-            p = Yosys::stringf("%s[%d]", hard_adders->inputs->next->next->name, i);
+            p = Yosys::stringf("%s[%d]", hard_adders->inputs->next->next->name.c_str(), i);
             if (!driver_pin->name)
                 q = driver_pin->node->name;
             else
                 q = driver_pin->name;
         } else if (i >= node->input_port_sizes[0] && i < node->input_port_sizes[1] + node->input_port_sizes[0]) {
-            p = Yosys::stringf("%s[%d]", hard_adders->inputs->next->name, i - node->input_port_sizes[0]);
+            p = Yosys::stringf("%s[%d]", hard_adders->inputs->next->name.c_str(), i - node->input_port_sizes[0]);
             if (!driver_pin->name)
                 q = driver_pin->node->name;
             else
                 q = driver_pin->name;
         } else {
-            p = Yosys::stringf("%s[%d]", hard_adders->inputs->name, i - (node->input_port_sizes[0] + node->input_port_sizes[1]));
+            p = Yosys::stringf("%s[%d]", hard_adders->inputs->name.c_str(), i - (node->input_port_sizes[0] + node->input_port_sizes[1]));
             if (!driver_pin->name)
                 q = driver_pin->node->name;
             else
@@ -345,10 +345,10 @@ void define_add_function_yosys(nnode_t *node, Yosys::Module *module, Yosys::Desi
     for (int i = 0; i < node->num_output_pins; i++) {
         std::string p, q;
         if (i < node->output_port_sizes[0]) {
-            p = Yosys::stringf("%s[%d]", hard_adders->outputs->next->name, i);
+            p = Yosys::stringf("%s[%d]", hard_adders->outputs->next->name.c_str(), i);
             q = node->output_pins[i]->name;
         } else {
-            p = Yosys::stringf("%s[%d]", hard_adders->outputs->name, i - node->output_port_sizes[0]);
+            p = Yosys::stringf("%s[%d]", hard_adders->outputs->name.c_str(), i - node->output_port_sizes[0]);
             q = node->output_pins[i]->name;
         }
 

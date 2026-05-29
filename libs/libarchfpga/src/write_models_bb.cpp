@@ -93,19 +93,19 @@ void WriteModels_bb(const char* ArchFile,
  */
 void DeclareModel_bb(FILE* Echo, const t_model& model) {
     // module
-    fprintf(Echo, "module %s(\n", model.name);
+    fprintf(Echo, "module %s(\n", model.name.c_str());
 
     // input/output ports
     t_model_ports* input_port = model.inputs;
     while (input_port) {
-        fprintf(Echo, "\tinput\t[%d:0]\t%s,\n", input_port->size - 1, input_port->name);
+        fprintf(Echo, "\tinput\t[%d:0]\t%s,\n", input_port->size - 1, input_port->name.c_str());
         // move forward until the end of input ports' list
         input_port = input_port->next;
     }
 
     t_model_ports* output_port = model.outputs;
     while (output_port) {
-        fprintf(Echo, "\toutput\t[%d:0]\t%s,\n", output_port->size - 1, output_port->name);
+        fprintf(Echo, "\toutput\t[%d:0]\t%s,\n", output_port->size - 1, output_port->name.c_str());
         // move forward until the end of output ports' list
         output_port = output_port->next;
     }

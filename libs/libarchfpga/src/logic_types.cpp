@@ -148,7 +148,6 @@ void LogicalModels::free_model_data(t_model& model) {
 
     if (model.instances)
         vtr::free(model.instances);
-    vtr::free(model.name);
 }
 
 static void free_arch_model_ports(t_model_ports* model_ports) {
@@ -163,7 +162,6 @@ static t_model_ports* free_arch_model_port(t_model_ports* model_port) {
 
     t_model_ports* next_port = model_port->next;
 
-    vtr::free(model_port->name);
     delete model_port;
 
     return next_port;
