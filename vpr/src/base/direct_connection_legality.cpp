@@ -1,23 +1,38 @@
 #include "direct_connection_legality.h"
 
 #include <cstdlib>
+#include <tuple>
 
 #include "clb2clb_directs.h"
 #include "globals.h"
-#include "vtr_assert.h"
+#include "physical_types_util.h"
+#include "vpr_utils.h"
 
 namespace {
 
 /// Returns the pin_count_in_cluster of a physical tile pin on the given
 /// logical block, or -1 if the block doesn't expose that pin.
+///
+/// The tile pin is decoded to its sub-tile and sub-tile-relative pin, mapped to
+/// a root logical pin via tile_block_pin_directs_map, then resolved to a
+/// pb_graph pin through the block's pb_graph head. None of these depend on
+/// flat-routing-only structures.
 int tile_pin_to_pb_pin_id(t_physical_tile_type_ptr tile,
                           t_logical_block_type_ptr lb,
                           int phys_pin) {
-    auto outer = tile->on_tile_pin_num_to_pb_pin.find(phys_pin);
-    if (outer == tile->on_tile_pin_num_to_pb_pin.end()) return -1;
-    auto inner = outer->second.find(lb);
-    if (inner == outer->second.end()) return -1;
-    const t_pb_graph_pin* pb_pin = inner->second;
+    const t_sub_tile* sub_tile = std::get<0>(get_sub_tile_from_pin_physical_num(tile, phys_pin));
+    if (sub_tile == nullptr) return -1;
+
+    auto lb_it = tile->tile_block_pin_directs_map.find(lb->index);
+    if (lb_it == tile->tile_block_pin_directs_map.end()) return -1;
+    auto st_it = lb_it->second.find(sub_tile->index);
+    if (st_it == lb_it->second.end()) return -1;
+
+    int sub_tile_physical_pin = get_capacity_location_from_physical_pin(tile, phys_pin).second;
+    auto find_res = st_it->second.find(t_physical_pin(sub_tile_physical_pin));
+    if (find_res == st_it->second.inverse_end()) return -1;
+
+    const t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_pb_graph_node(lb->pb_graph_head, find_res->second.pin);
     if (pb_pin == nullptr) return -1;
     return pb_pin->pin_count_in_cluster;
 }
