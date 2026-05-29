@@ -299,6 +299,9 @@ struct DeviceContext : public Context {
      */
     vtr::NdMatrix<std::pair<int, int>, 2> vert_interposer_cut_bounds_;
 
+    vtr::NdMatrix<uint16_t, 2> horz_min_interposer_segment_length_;
+    vtr::NdMatrix<uint16_t, 2> vert_min_interposer_segment_length_;
+
     /// Stores the maximum channel segment width in each horizontal/vertical channel
     ChannelMetric<std::vector<int>> rr_chan_width;
 
