@@ -1023,6 +1023,8 @@ void PlacementAnnealer::start_quench() {
 
     // Revert the move limit to initial value.
     annealing_state_.move_lim = annealing_state_.move_lim_max;
+
+    interposer_cost_handler_->change_net_cost_type(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
 }
 
 std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> PlacementAnnealer::get_stats() const {

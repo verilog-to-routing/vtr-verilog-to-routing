@@ -4,6 +4,7 @@
 #include "device_grid.h"
 #include "globals.h"
 #include "vpr_context.h"
+#include "vtr_assert.h"
 
 #include <algorithm>
 #include <cmath>
@@ -173,18 +174,54 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
     const t_bb& bb = get_net_bb_(net_id, use_ts);
     const auto [num_horizontal_crossings, num_vertical_crossings] = count_bb_interposer_cut_crossings_(bb);
 
-    // Weight crossings by the normalized BB span orthogonal to the cut direction:
-    // - a horizontal cut spans X, so we scale by BB height / grid height
-    // - a vertical cut spans Y, so we scale by BB width / grid width
-    // Intuition: a tight BB that barely straddles a cut incurs less cost than a large BB that
-    // spans most of the die; placement is nudged to shrink the BB so a later move can
-    // pull the net off the interposer entirely.
-    // TODO: compare against a constant per-crossing cost and pick whichever gives better QoR.
-    const double bb_width_factor = double(bb.xmax - bb.xmin + 1) * inv_device_grid_width_;
-    const double bb_height_factor = double(bb.ymax - bb.ymin + 1) * inv_device_grid_height_;
+    if (cost_type_ == e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS) {
+        // Weight crossings by the normalized BB span orthogonal to the cut direction:
+        // - a horizontal cut spans X, so we scale by BB height / grid height
+        // - a vertical cut spans Y, so we scale by BB width / grid width
+        // Intuition: a tight BB that barely straddles a cut incurs less cost than a large BB that
+        // spans most of the die; placement is nudged to shrink the BB so a later move can
+        // pull the net off the interposer entirely.
+        // TODO: compare against a constant per-crossing cost and pick whichever gives better QoR.
+        const double bb_width_factor = double(bb.xmax - bb.xmin + 1) * inv_device_grid_width_;
+        const double bb_height_factor = double(bb.ymax - bb.ymin + 1) * inv_device_grid_height_;
 
-    double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
-    return cost;
+        double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
+        return cost;
+    } else {
+        VTR_ASSERT_SAFE(cost_type_ == e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
+
+        if (num_horizontal_crossings == 0 && num_vertical_crossings == 0) {
+            return 0;
+        }
+
+        const DeviceGrid& grid = g_vpr_ctx.device().grid;
+        const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+        const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+
+        double bb_width_factor = 0;
+        double bb_height_factor = 0;
+
+        for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+            const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+            for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
+                int cut_y = layer_h_cuts[i_cut];
+                if (cut_y >= bb.ymin && cut_y < bb.ymax) {
+                    bb_width_factor += (double)std::abs(g_vpr_ctx.device().horz_min_interposer_segment_length_[layer][i_cut] - (bb.ymax - bb.ymin)) * inv_device_grid_height_;
+                }
+            }
+
+            const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+            for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
+                int cut_x = layer_v_cuts[i_cut];
+                if (cut_x >= bb.xmin && cut_x < bb.xmax) {
+                    bb_height_factor += (double)std::abs(g_vpr_ctx.device().vert_min_interposer_segment_length_[layer][i_cut] - (bb.xmax - bb.xmin)) * inv_device_grid_width_;
+                }
+            }
+        }
+
+        double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
+        return cost;
+    }
 }
 
 void InterposerCostHandler::change_net_cost_type(e_interposer_net_cost_type new_type) {
