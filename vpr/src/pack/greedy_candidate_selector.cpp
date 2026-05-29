@@ -1196,6 +1196,10 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
 
         // Update the gain.
         gain *= gain_mult;
+
+        if (!g_vpr_ctx.device().grid.are_locs_on_same_die({(int)target_loc.x, (int)target_loc.y, (int)target_loc.layer}, cluster_tile_loc)) {
+            gain *= appack_options.inter_die_gain_multiplier;
+        }
     }
 
     return gain;
