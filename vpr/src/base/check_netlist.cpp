@@ -52,6 +52,9 @@ static bool is_sink_routed_within_cluster(const t_pb_routes& pb_route,
 struct t_external_directs_legality_violation {
     AtomNetId net_id;
     ClusterBlockId cluster_id;
+    const t_pb_graph_pin* out_pin;
+    ClusterBlockId sink_cluster_id;
+    const t_pb_graph_pin* sink_pin;
 };
 
 /*********************** Subroutine definitions *****************************/
@@ -282,6 +285,8 @@ static int check_external_directs_legality(const t_arch& arch) {
             if (!pin_has_fc_out_zero(cluster_type, out_pin_id)) continue;
 
             bool net_has_unsatisfied_sink = false;
+            ClusterBlockId offending_sink_cluster_id;
+            const t_pb_graph_pin* offending_sink_pin = nullptr;
             for (AtomPinId sink_atom_pin : atom_nlist.net_sinks(net_id)) {
                 AtomBlockId sink_blk = atom_nlist.pin_block(sink_atom_pin);
                 if (!sink_blk) continue;
@@ -309,6 +314,8 @@ static int check_external_directs_legality(const t_arch& arch) {
                                                        sink_cluster_pb->pb_graph_node,
                                                        sink_pb_pin->pin_count_in_cluster)) {
                         net_has_unsatisfied_sink = true;
+                        offending_sink_cluster_id = sink_cluster_id;
+                        offending_sink_pin = sink_pb_pin;
                         break;
                     }
                 } else {
@@ -319,21 +326,22 @@ static int check_external_directs_legality(const t_arch& arch) {
                         sink_cluster_pb->pb_route,
                         sink_cluster_pb->pb_graph_node,
                         sink_pb_pin->pin_count_in_cluster);
+                    if (cluster_ctx.clb_nlist.block_name(blk_id) == "top.u_dp.dsp_block_16_8_false_inst_0.mac_component^chainout~0"
+                        && cluster_ctx.clb_nlist.block_name(sink_cluster_id) == "top.u_dp.dsp_block_16_8_true_inst_2.mac_component^chainout~0") {
+                            VTR_LOG("HERE!");
+                    }
                     if (!direct_legality.is_direct_legal(cluster_type, out_pin_id,
                                                          sink_cluster_type, sink_top_in_pin)) {
                         net_has_unsatisfied_sink = true;
+                        offending_sink_cluster_id = sink_cluster_id;
+                        offending_sink_pin = sink_pb_pin;
                         break;
                     }
                 }
             }
 
             if (net_has_unsatisfied_sink) {
-                auto matching_violation = [net_id, blk_id](const t_external_directs_legality_violation& violation) {
-                    return violation.net_id == net_id && violation.cluster_id == blk_id;
-                };
-                if (std::find_if(violations.begin(), violations.end(), matching_violation) == violations.end()) {
-                    violations.push_back({net_id, blk_id});
-                }
+                violations.push_back({net_id, blk_id, pb_pin, offending_sink_cluster_id, offending_sink_pin});
             }
         }
     }
@@ -345,9 +353,12 @@ static int check_external_directs_legality(const t_arch& arch) {
                   "without a matching <direct> entry.\n",
                   violations.size());
     for (const t_external_directs_legality_violation& violation : violations) {
-        VTR_LOG_ERROR("    Offending net: %s, cluster: %s\n",
+        VTR_LOG_ERROR("    Offending net: %s, cluster: %s, Fc_out = 0 pin: %s, sink cluster: %s, sink pin: %s\n",
                       atom_nlist.net_name(violation.net_id).c_str(),
-                      cluster_ctx.clb_nlist.block_name(violation.cluster_id).c_str());
+                      cluster_ctx.clb_nlist.block_name(violation.cluster_id).c_str(),
+                      violation.out_pin->to_string().c_str(),
+                      cluster_ctx.clb_nlist.block_name(violation.sink_cluster_id).c_str(),
+                      violation.sink_pin->to_string().c_str());
     }
 
     return violations.size();
