@@ -175,6 +175,16 @@ add_executable(vpr ${EXEC_SOURCES})
 
 target_link_libraries(vpr libvpr)
 
+# Use jemalloc for ~5% better performance if enabled and we find it
+if(VPR_USE_JEMALLOC)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(JEMALLOC jemalloc)
+
+    if(JEMALLOC_FOUND)
+        target_link_libraries(vpr ${JEMALLOC_LIBRARIES})
+    endif()
+endif()
+
 
 #
 # Profile Guilded Optimization Configuration
