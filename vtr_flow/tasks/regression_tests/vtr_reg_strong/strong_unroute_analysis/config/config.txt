@@ -24,7 +24,7 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params_common = -starting_stage vpr --pack --place --route
+script_params_common = -starting_stage vpr --pack --place --route --analysis
 script_params_list_add = --route_chan_width 20              #Routeable implicit analysis (analysis metrics should be produced)
 script_params_list_add = --route_chan_width 20 --analysis   #Routeable explicit analysis (analysis metrics should be produced)
 script_params_list_add = --route_chan_width 8               #Unrouteable implicit analysis (no analysis metrics should be produced)
