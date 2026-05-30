@@ -18,20 +18,22 @@ InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
+    const size_t num_layers = grid.get_num_layers();
     VTR_ASSERT(grid.has_interposer_cuts());
+    VTR_ASSERT(interposer_cong_threshold_ >= 0. || interposer_cost_enabled_);
     VTR_ASSERT(get_net_bb_);
+
+    // TODO: the class seems to support multi-layer interposer cuts,
+    // but it has never been tested. Test this class with multi-layer interposer-based
+    // architectures and remove this assertion.
+    VTR_ASSERT(num_layers == 1);
 
     // Precompute 1/width and 1/height so interposer crossing cost can normalize BB spans with
     // multiplies instead of a divide per net (see get_net_interposer_cost_).
     inv_device_grid_width_ = 1.0 / static_cast<double>(grid.width());
     inv_device_grid_height_ = 1.0 / static_cast<double>(grid.height());
 
-    const size_t num_layers = grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
-
-    if (interposer_cost_enabled_ || interposer_cong_threshold_ > 0) {
-        VTR_ASSERT(num_layers == 1);
-    }
 
     if (interposer_cost_enabled_) {
         net_interposer_cost_.resize(num_nets, -1.);
