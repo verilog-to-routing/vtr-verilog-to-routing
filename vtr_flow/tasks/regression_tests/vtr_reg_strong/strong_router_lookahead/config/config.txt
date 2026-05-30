@@ -26,12 +26,12 @@ pass_requirements_file=pass_requirements_fixed_chan_width.txt
 # Script parameters
 script_params_common = -starting_stage vpr --route_chan_width 62 --seed 3
 # Non-AP
-script_params_list_add = --pack --place --route --router_lookahead classic
-script_params_list_add = --pack --place --route --router_lookahead map
-script_params_list_add = --pack --place --route --router_lookahead extended_map
-script_params_list_add = --pack --place --route --router_lookahead extended_map --reorder_rr_graph_nodes_algorithm random_shuffle
+script_params_list_add = --pack --place --route --analysis --router_lookahead classic
+script_params_list_add = --pack --place --route --analysis --router_lookahead map
+script_params_list_add = --pack --place --route --analysis --router_lookahead extended_map
+script_params_list_add = --pack --place --route --analysis --router_lookahead extended_map --reorder_rr_graph_nodes_algorithm random_shuffle
 # AP
-script_params_list_add = --analytical_place --route --router_lookahead classic
-script_params_list_add = --analytical_place --route --router_lookahead map
-script_params_list_add = --analytical_place --route --router_lookahead extended_map
-script_params_list_add = --analytical_place --route --router_lookahead extended_map --reorder_rr_graph_nodes_algorithm random_shuffle
+script_params_list_add = --analytical_place --route --analysis --router_lookahead classic
+script_params_list_add = --analytical_place --route --analysis --router_lookahead map
+script_params_list_add = --analytical_place --route --analysis --router_lookahead extended_map
+script_params_list_add = --analytical_place --route --analysis --router_lookahead extended_map --reorder_rr_graph_nodes_algorithm random_shuffle
