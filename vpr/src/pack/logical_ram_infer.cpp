@@ -306,7 +306,7 @@ vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram
                     continue;
                 }
 
-                // Stop exploring for this group after its full.
+                // Stop exploring for this group after it is full.
                 if (current_group.total_memory_slices >= tile_capacity) {
                     remaining_atoms.insert(remaining_atoms.end(), unmapped_atoms.begin() + atom_index, unmapped_atoms.end());
                     break;
