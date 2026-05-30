@@ -65,16 +65,20 @@ std::pair<double, double> InterposerCostHandler::recompute_costs() {
 
     std::pair<double, double> cost_terms;
     for (ClusterNetId net_id : clb_nlist.nets()) {
-        if (!clb_nlist.net_is_ignored(net_id)) {
-            if (interposer_cost_enabled_) {
-                net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
-                cost_terms.first += net_interposer_cost_[net_id];
-            }
+        if (clb_nlist.net_is_ignored(net_id)) {
+            continue;
+        }
 
-            if (interposer_cong_modeling_started_) {
-                net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
-                cost_terms.second += net_interposer_cong_cost_[net_id];
-            }
+        // Crossing and congestion costs are enabled independently; congestion starts once rlim
+        // falls below a threshold (see annealer). Separate ifs update only the active term(s).
+        if (interposer_cost_enabled_) {
+            net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
+            cost_terms.first += net_interposer_cost_[net_id];
+        }
+
+        if (interposer_cong_modeling_started_) {
+            net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
+            cost_terms.second += net_interposer_cong_cost_[net_id];
         }
     }
 
@@ -169,6 +173,10 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
     // Weight crossings by the normalized BB span orthogonal to the cut direction:
     // - a horizontal cut spans X, so we scale by BB height / grid height
     // - a vertical cut spans Y, so we scale by BB width / grid width
+    // Intuition: a tight BB that barely straddles a cut incurs less cost than a large BB that
+    // spans most of the die; placement is nudged to shrink the BB so a later move can
+    // pull the net off the interposer entirely.
+    // TODO: compare against a constant per-crossing cost and pick whichever gives better QoR.
     const double bb_width_factor = double(bb.xmax - bb.xmin + 1) * inv_device_grid_width_;
     const double bb_height_factor = double(bb.ymax - bb.ymin + 1) * inv_device_grid_height_;
 
