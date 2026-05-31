@@ -1,0 +1,41 @@
+# Two-clock circuit with an internal clock mux, used for testing
+# create_clock with set_clock_groups -logically_exclusive.
+#
+# clk_fast and clk_slow enter on separate primary input ports and are
+# routed to a .names clock mux. The mux output drives the flip-flop
+# clock pins, so both clock trees are physically present in the design
+# simultaneously — the mux merely selects which one propagates.
+#
+# Because VPR's clock auto-detection traces back through .names elements
+# to root primary inputs, clk_fast and clk_slow are the recognized clock
+# source pins. The two clocks are defined on those ports without -add
+# (different ports → no -add needed) and marked logically_exclusive.
+
+.model add_clock_logically_exclusive
+.inputs in1 in2 sel clk_fast clk_slow
+.outputs out1 out2
+
+# Clock mux: sel=0 selects clk_fast, sel=1 selects clk_slow.
+# Both clock trees are physically present in the fabric simultaneously.
+.names sel clk_fast clk_slow clk_mux_out
+0 1 - 1
+1 - 1 1
+
+.latch to_FFA FFA re clk_mux_out 0
+.latch to_FFB FFB re clk_mux_out 0
+
+# Combinational path from FFA output into FFB's data input, creating
+# a register-to-register timing path within each clock domain.
+.names FFA in2 to_FFB
+11 1
+
+.names in1 to_FFA
+1 1
+
+.names FFA out1
+1 1
+
+.names FFB out2
+1 1
+
+.end

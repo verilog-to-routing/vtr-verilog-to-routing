@@ -3,13 +3,22 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/blif/multiclock
+circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_clock/config
 
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
 # Add circuits to list to sweep
-circuit_list_add=multiclock.blif
+circuit_list_add=multiclock_sink_pin_targets.blif
+circuit_list_add=multiclock_sink_pin_targets_2.blif
+circuit_list_add=add_physically_exclusive.blif
+circuit_list_add=add_logically_exclusive.blif
+
+# Bind each circuit to its corresponding SDC file via circuit constraints.
+circuit_constraint_list_add=(multiclock_sink_pin_targets.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_clock/config/sink_pin_targets.sdc)
+circuit_constraint_list_add=(multiclock_sink_pin_targets_2.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_clock/config/sink_pin_targets_2.sdc)
+circuit_constraint_list_add=(add_physically_exclusive.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_clock/config/add_physically_exclusive.sdc)
+circuit_constraint_list_add=(add_logically_exclusive.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_clock/config/add_logically_exclusive.sdc)
 
 # Add architectures to list to sweep
 arch_list_add=k6_N10_mem32K_40nm.xml
@@ -25,5 +34,3 @@ pass_requirements_file=pass_requirements.txt
 
 # Script parameters
 script_params_common = -starting_stage vpr
-script_params_list_add = -sdc_file tasks/regression_tests/vtr_reg_strong/strong_sdc/create_clock/config/sink_pin_targets.sdc
-script_params_list_add = -sdc_file tasks/regression_tests/vtr_reg_strong/strong_sdc/create_clock/config/sink_pin_targets_2.sdc

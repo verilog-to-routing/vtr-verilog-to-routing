@@ -1,0 +1,30 @@
+# Simple single-clock circuit used for testing create_clock -add.
+# Two clocks are defined on the same source port with -add; both clocks
+# share one physical clock tree (e.g. a board-level mux selects the source
+# off-chip), but the timing analyzer treats them as separate domains.
+#
+# add_physically_exclusive.blif is a symlink to this file, paired with
+# add_physically_exclusive.sdc which uses -add + -physically_exclusive.
+
+.model add_clock_single_port
+.inputs in1 in2 clk
+.outputs out1 out2
+
+.latch to_FFA FFA re clk 0
+.latch to_FFB FFB re clk 0
+
+# Combinational path from FFA output back into FFB's data input, creating
+# a register-to-register timing path within the clock domain.
+.names FFA in2 to_FFB
+11 1
+
+.names in1 to_FFA
+1 1
+
+.names FFA out1
+1 1
+
+.names FFB out2
+1 1
+
+.end
