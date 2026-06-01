@@ -41,6 +41,31 @@
 #include "lazy_pop_unique_priority_queue.h"
 #include "logic_block_location_util.h"
 
+/**
+ * @brief Verify that clustering placed an atom at its constrained logical block location.
+ *
+ * Acts as a quality checker after the clustering algorithm proposes a primitive
+ * placement. The constraint string comes from the user constraints file
+ * (logical_block_location); the candidate path comes from @p pb->hierarchical_type_name(),
+ * which describes where that primitive sits in the packed pb hierarchy.
+ *
+ * The two strings use different surface syntax but encode the same fields (name, index,
+ * mode). LbHierPathParser parses the constraint with '.' separators and '{}' for mode,
+ * parses hierarchical_type_name() with '/' separators and '[]' for mode, then compares
+ * token-by-token (see matches_hierarchical_type()).
+ *
+ * Example (atom 'd' packing into a CLB), logged when verbosity > 3:
+ * - expected (constraint):  `clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]`
+ * - candidate (pb path):    `clb[0][default]/fle[3][n1_lut4]/ble4[0][default]/ff[0]`
+ *   -> fails because fle index 3 != constrained fle index 0 (same for fle[2], fle[1]).
+ * - a passing candidate must match every specified index/mode, e.g. fle[0] and {n1_lut4}.
+ *
+ * @param blk_id Atom being packed.
+ * @param pb Candidate primitive block from the proposed cluster mapping.
+ * @param verbosity Pack verbosity; mismatch details are logged when verbosity > 3.
+ *
+ * @return True if there is no constraint, or the candidate matches the constraint.
+ */
 static bool check_logical_block_location_constraint(const AtomBlockId blk_id, const t_pb* pb, int verbosity) {
     const auto& constraints = g_vpr_ctx.floorplanning().constraints;
     std::string logical_block_location = constraints.get_atom_logical_block_location(blk_id);
@@ -579,6 +604,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
             /* failed location feasibility check, revert pack */
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
         }
+        // Reject feasible pack candidates that violate logical_block_location constraints.
         if (block_pack_status == e_block_pack_status::BLK_PASSED
             && !check_logical_block_location_constraint(blk_id, pb, verbosity)) {
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
