@@ -1,7 +1,7 @@
 ##############################################################################
 # functional simulation: two clocks
-# 
-# both clocks are unrouted and are ideal
+#
+# route both clocks so vpr keeps clk_a and clk_b as separate top-level ports
 ##############################################################################
 
 circuits_dir=benchmarks/func_sim/dual_clock_counters
@@ -19,4 +19,4 @@ parse_file=func_sim.txt
 qor_parse_file=qor_func_sim.txt
 pass_requirements_file=pass_requirements_func_sim.txt
 
-script_params=--clock_modeling ideal
+script_params=--clock_modeling route --route_chan_width 60
