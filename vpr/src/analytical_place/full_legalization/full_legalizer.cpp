@@ -1369,16 +1369,30 @@ void FullLegalizer::update_drawing_data_structures() {
 }
 
 void FullLegalizer::recreate_device_if_needed() {
-    if (vpr_setup_.PackerOpts.device_layout != "auto")
-        return;
-
     const auto& device_ctx = g_vpr_ctx.device();
-    size_t old_width = device_ctx.grid.width();
-    size_t old_height = device_ctx.grid.height();
     // Capture before grid recreation: vpr_create_device_grid only writes
     // device_ctx.grid and does not touch the RR graph, so this flag remains
     // valid after the call.
     bool rr_graph_exists = !device_ctx.rr_graph.empty();
+
+    if (vpr_setup_.PackerOpts.device_layout != "auto") {
+        // If the device is fixed and the RR graph has not been generated
+        // yet, now is the time to generate it. Without this, the RR graph
+        // may not be generated in time for placement when timing analysis
+        // is not enabled.
+        if (!rr_graph_exists) {
+            // vpr_create_rr_graph takes t_vpr_setup& even though it only reads from it.
+            // TODO: This is not very clean to do this const cast, but the lifetime
+            //       of vpr_setup is the length of the whole program basically making
+            //       it global. We should probably hoist this device recreation outside
+            //       of the legalizer and into the flow.
+            vpr_create_rr_graph(const_cast<t_vpr_setup&>(vpr_setup_), arch_, vpr_setup_.PlacerOpts.place_chan_width, /*is_flat=*/false);
+        }
+        return;
+    }
+
+    size_t old_width = device_ctx.grid.width();
+    size_t old_height = device_ctx.grid.height();
 
     vpr_create_device_grid(vpr_setup_, arch_);
 
