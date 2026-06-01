@@ -70,7 +70,7 @@ struct t_model_ports {
  *        LogicalModels storage class below.
  */
 struct t_model {
-    std::string name;             ///< name of this logic model
+    std::string name;                 ///< name of this logic model
     t_model_ports* inputs = nullptr;  ///< linked list of input/clock ports
     t_model_ports* outputs = nullptr; ///< linked list of output ports
     void* instances = nullptr;        ///< TODO: Remove this. This is only used in the Parmys plugin and should be moved into there.
