@@ -630,7 +630,7 @@ int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomB
             VTR_LOGV(verbosity > 1, "Marking sequential pin '%s' as constant since all inputs to block '%s' (%s) are constant\n",
                      netlist.pin_name(output_pin).c_str(),
                      netlist.block_name(blk).c_str(),
-                     models.get_model(netlist.block_model(blk)).name);
+                     models.get_model(netlist.block_model(blk)).name.c_str());
             netlist.set_pin_is_constant(output_pin, true);
             ++num_pins_marked_constant;
         }
