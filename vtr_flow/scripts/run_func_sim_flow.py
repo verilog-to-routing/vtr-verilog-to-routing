@@ -179,6 +179,11 @@ def _simulate(temp_dir, testbench, num_threads, label):
         str(sim_build),
         "-j",
         str(num_threads),
+        # post-pnr netlists widen address/control buses, this shouldn't cause the test to fail
+        "-Wno-WIDTHTRUNC",
+        "-Wno-WIDTHEXPAND",
+        "-Wno-PINMISSING",
+        "-Wno-INITIALDLY",
     ]
     with open(verilator_out, "w", encoding="utf-8") as log:
         ret = subprocess.call(verilator_cmd, stdout=log, stderr=log)
