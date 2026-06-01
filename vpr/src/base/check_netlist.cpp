@@ -326,10 +326,6 @@ static int check_external_directs_legality(const t_arch& arch) {
                         sink_cluster_pb->pb_route,
                         sink_cluster_pb->pb_graph_node,
                         sink_pb_pin->pin_count_in_cluster);
-                    if (cluster_ctx.clb_nlist.block_name(blk_id) == "top.u_dp.dsp_block_16_8_false_inst_0.mac_component^chainout~0"
-                        && cluster_ctx.clb_nlist.block_name(sink_cluster_id) == "top.u_dp.dsp_block_16_8_true_inst_2.mac_component^chainout~0") {
-                            VTR_LOG("HERE!");
-                    }
                     if (!direct_legality.is_direct_legal(cluster_type, out_pin_id,
                                                          sink_cluster_type, sink_top_in_pin)) {
                         net_has_unsatisfied_sink = true;
