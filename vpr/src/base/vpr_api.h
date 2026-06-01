@@ -140,6 +140,9 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 ///@brief Create the device grid
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 
+/// @brief Write the final device grid to file if --write_device_grid was specified
+void vpr_write_device_grid_if_requested(const t_vpr_setup& vpr_setup);
+
 ///@brief Create routing graph at specified channel width
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width, bool is_flat);
 

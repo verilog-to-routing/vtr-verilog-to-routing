@@ -96,6 +96,7 @@
 #include "sync_netlists_to_routing_flat.h"
 
 #include "load_flat_place.h"
+#include "device_grid.h"
 
 #ifdef VPR_USE_TBB
 #define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
@@ -553,9 +554,20 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
+void vpr_write_device_grid_if_requested(const t_vpr_setup& vpr_setup) {
+    const std::string& path = vpr_setup.FileNameOpts.write_device_grid_file;
+    if (path.empty()) {
+        return;
+    }
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    device_ctx.grid.write_grid_file(path);
+    VTR_LOG("Wrote device grid to '%s'\n", path.c_str());
+}
+
 void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pack_only) {
     vtr::ScopedStartFinishTimer timer("Create Device");
     vpr_create_device_grid(vpr_setup, arch);
+    vpr_write_device_grid_if_requested(vpr_setup);
 
     vpr_setup_clock_networks(vpr_setup, arch);
 

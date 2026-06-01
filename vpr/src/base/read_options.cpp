@@ -1525,6 +1525,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         "   #Write routing-resource graph to a file\n"
         "   {prog} my_arch.xml my_circuit.blif --write_rr_graph my_rr_graph.xml\n"
         "\n"
+        "   #Write final device grid layout to a file\n"
+        "   {prog} my_arch.xml my_circuit.blif --write_device_grid my_device.grid\n"
+        "\n"
         "\n"
         "For additional documentation see: https://docs.verilogtorouting.org",
         "{prog}", parser.prog());
@@ -1885,6 +1888,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
         .help("Writes the routing resource graph to the specified file.")
         .metavar("RR_GRAPH_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_device_grid_file, "--write_device_grid")
+        .help("Writes the final device grid layout to the specified .grid file.")
+        .metavar("DEVICE_GRID_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")

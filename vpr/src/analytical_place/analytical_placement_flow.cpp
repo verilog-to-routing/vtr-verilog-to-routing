@@ -21,6 +21,7 @@
 #include "global_placer.h"
 #include "globals.h"
 #include "load_flat_place.h"
+#include "vpr_api.h"
 #include "netlist_fwd.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
@@ -321,6 +322,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     print_resource_usage();
     // Print the device utilization
     print_device_utilization(target_device_utilization);
+
+    vpr_write_device_grid_if_requested(vpr_setup);
 
     // Write out a flat placement file at the end of Full Legalization if the
     // option is specified.
