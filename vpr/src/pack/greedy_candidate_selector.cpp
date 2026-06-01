@@ -1199,8 +1199,9 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         // Update the gain.
         gain *= gain_mult;
 
-        // Multiply molecule gain by 'inter_die_gain_multiplier' if molecule is placed in a different location from the cluster
-        // With a default value of 0.1, this would penalize packing together molecules that are on different dice 
+        // Multiply molecule gain by 'inter_die_gain_multiplier' if the molecule is placed on
+        // a different interposer die from the cluster.
+        // With a default value of 0.1, this penalizes packing together molecules that are on different dice.
         if (grid.has_interposer_cuts()) {
             t_physical_tile_loc target_physical_loc = {(int)target_loc.x, (int)target_loc.y, (int)target_loc.layer};
             if (!grid.are_locs_on_same_die(target_physical_loc, cluster_tile_loc)) {

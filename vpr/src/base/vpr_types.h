@@ -1178,7 +1178,8 @@ struct t_ap_opts {
     /// Array of strings passed by the user to configure the unrelated clustering parameters used by APPack
     std::vector<std::string> appack_unrelated_clustering_args;
 
-    /// Multiplier applied to APPack candidate gains when the candidate is on a different die than the cluster.
+    /// Multiplier applied to APPack candidate gains when the candidate is on a
+    /// different die than the cluster in an interposer-based architecture.
     float appack_inter_die_gain_multiplier;
 
     /// The number of threads the AP flow can use.
