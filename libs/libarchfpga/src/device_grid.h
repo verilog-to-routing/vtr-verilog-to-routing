@@ -73,6 +73,16 @@ class DeviceGrid {
                vtr::NdMatrix<t_grid_tile, 3> grid,
                std::vector<t_logical_block_type_ptr> limiting_res);
 
+    /// @brief Construct a DeviceGrid by reading a .grid file.
+    /// @param grid_filepath Path to the .grid file.
+    /// @param physical_tile_types Tile types used to resolve tile names in the file.
+    DeviceGrid(const std::string& grid_filepath,
+               const std::vector<t_physical_tile_type_ptr>& physical_tile_types);
+
+    /// @brief Write this grid to a .grid file.
+    /// @param filepath Path to the output .grid file.
+    void write_grid_file(const std::string& filepath) const;
+
     const std::string& name() const { return name_; }
 
     ///@brief Return the number of layers(number of dies)
