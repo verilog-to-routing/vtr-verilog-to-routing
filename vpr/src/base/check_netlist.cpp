@@ -257,11 +257,11 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
 }
 
 static int check_external_directs_legality(const t_arch& arch) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomNetlist& atom_nlist = atom_ctx.netlist();
     const AtomLookup& atom_lookup = atom_ctx.lookup();
-    const DirectConnectionLegality direct_legality(arch.directs);
+    const DirectConnectionLegality direct_legality(arch.directs, g_vpr_ctx.device());
 
     std::vector<t_external_directs_legality_violation> violations;
 
@@ -416,6 +416,9 @@ static int find_top_level_input_pin_of_sink(const t_pb_routes& pb_route,
 static bool is_sink_routed_within_cluster(const t_pb_routes& pb_route,
                                           const t_pb_graph_node* pb_head,
                                           int sink_primitive_pin_id) {
+    // find_top_level_input_pin_of_sink returns >= 0 only when the sink's driver chain
+    // reaches a top-level input pin (i.e. the signal enters from outside). A negative
+    // result means the chain ends on an internal driver, so the sink is fed within the cluster.
     return find_top_level_input_pin_of_sink(pb_route, pb_head, sink_primitive_pin_id) < 0;
 }
 

@@ -4,8 +4,8 @@
 #include <tuple>
 
 #include "clb2clb_directs.h"
-#include "globals.h"
 #include "physical_types_util.h"
+#include "vpr_context.h"
 #include "vpr_utils.h"
 
 namespace {
@@ -31,12 +31,12 @@ int tile_pin_to_pb_pin_id(t_physical_tile_type_ptr tile,
 
 } // namespace
 
-DirectConnectionLegality::DirectConnectionLegality(const std::vector<t_direct_inf>& directs) {
-    const int delayless_switch = g_vpr_ctx.device().delayless_switch_idx;
+DirectConnectionLegality::DirectConnectionLegality(const std::vector<t_direct_inf>& directs, const DeviceContext& device_ctx) {
+    const int delayless_switch = device_ctx.delayless_switch_idx;
     std::vector<t_clb_to_clb_directs> clb_to_clb_directs =
         alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
 
-    forward_by_from_lb_.resize(g_vpr_ctx.device().logical_block_types.size());
+    forward_by_from_lb_.resize(device_ctx.logical_block_types.size());
 
     for (const t_clb_to_clb_directs& cd : clb_to_clb_directs) {
         if (cd.from_clb_type == nullptr || cd.to_clb_type == nullptr) continue;
