@@ -37,24 +37,32 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn);
 
 static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& intra_lb_pb_pini_lookup);
 
+/** @brief Checks Fc_out = 0 top-level OUT pins are only used by legal external <direct>s. */
 static int check_external_directs_legality(const t_arch& arch);
 
+/** @brief True if the given top-level OUT pin has Fc_out == 0 (no general-routing access). */
 static bool pin_has_fc_out_zero(t_logical_block_type_ptr lb, int pin_count_in_cluster);
 
+/**
+ * @brief Walks pb_route up from a primitive sink pin to the top-level IN pin it enters
+ * through, returning that pin's pin_count_in_cluster, or -1 if none is reached.
+ */
 static int find_top_level_input_pin_of_sink(const t_pb_routes& pb_route,
                                             const t_pb_graph_node* pb_head,
                                             int sink_primitive_pin_id);
 
+/** @brief True if the given sink pin is routed entirely within its cluster. */
 static bool is_sink_routed_within_cluster(const t_pb_routes& pb_route,
                                           const t_pb_graph_node* pb_head,
                                           int sink_primitive_pin_id);
 
+/** @brief A single illegal use of an Fc_out = 0 OUT pin: the source net/cluster/pin and the sink it couldn't legally reach. */
 struct t_external_directs_legality_violation {
-    AtomNetId net_id;
-    ClusterBlockId cluster_id;
-    const t_pb_graph_pin* out_pin;
-    ClusterBlockId sink_cluster_id;
-    const t_pb_graph_pin* sink_pin;
+    AtomNetId net_id;               ///< The offending source net.
+    ClusterBlockId cluster_id;      ///< Cluster driving the Fc_out = 0 OUT pin.
+    const t_pb_graph_pin* out_pin;  ///< The Fc_out = 0 top-level OUT pin.
+    ClusterBlockId sink_cluster_id; ///< Cluster of the sink that couldn't be reached legally.
+    const t_pb_graph_pin* sink_pin; ///< The sink pin within sink_cluster_id.
 };
 
 /*********************** Subroutine definitions *****************************/
@@ -250,7 +258,6 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
     return error;
 }
 
-/// @brief Checks that Fc_out = 0 top-level output pins are only used for legal external <direct> connections.
 static int check_external_directs_legality(const t_arch& arch) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -360,8 +367,6 @@ static int check_external_directs_legality(const t_arch& arch) {
     return violations.size();
 }
 
-/// True if the given top-level OUT pin has Fc_out == 0 (i.e. cannot reach
-/// the general routing network).
 static bool pin_has_fc_out_zero(t_logical_block_type_ptr lb, int pin_count_in_cluster) {
     // LIMITATION: only the first equivalent tile is considered. A logical
     // block placeable in multiple physical tiles with differing Fc is not
@@ -380,9 +385,6 @@ static bool pin_has_fc_out_zero(t_logical_block_type_ptr lb, int pin_count_in_cl
     return true;
 }
 
-/// Walks pb_route upward from a primitive sink pin and returns the
-/// pin_count_in_cluster of the top-level IN pin the net enters through,
-/// or -1 if the chain doesn't reach one.
 static int find_top_level_input_pin_of_sink(const t_pb_routes& pb_route,
                                             const t_pb_graph_node* pb_head,
                                             int sink_primitive_pin_id) {
@@ -413,7 +415,6 @@ static int find_top_level_input_pin_of_sink(const t_pb_routes& pb_route,
     return -1;
 }
 
-/// True if the given sink pin is routed entirely within its cluster
 static bool is_sink_routed_within_cluster(const t_pb_routes& pb_route,
                                           const t_pb_graph_node* pb_head,
                                           int sink_primitive_pin_id) {

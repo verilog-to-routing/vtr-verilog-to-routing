@@ -10,8 +10,8 @@
 
 namespace {
 
-/// Returns the pin_count_in_cluster of a sub-tile-relative pin on the given
-/// logical block, or -1 if the block doesn't expose that pin.
+/** @brief Returns the pin_count_in_cluster of a sub-tile-relative pin on the given
+ *  logical block, or -1 if the block doesn't expose that pin. */
 int tile_pin_to_pb_pin_id(t_physical_tile_type_ptr tile,
                           t_logical_block_type_ptr lb,
                           const t_sub_tile& sub_tile,
