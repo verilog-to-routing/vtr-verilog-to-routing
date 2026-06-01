@@ -10,26 +10,18 @@
 
 namespace {
 
-/// Returns the pin_count_in_cluster of a physical tile pin on the given
+/// Returns the pin_count_in_cluster of a sub-tile-relative pin on the given
 /// logical block, or -1 if the block doesn't expose that pin.
-///
-/// The tile pin is decoded to its sub-tile and sub-tile-relative pin, mapped to
-/// a root logical pin via tile_block_pin_directs_map, then resolved to a
-/// pb_graph pin through the block's pb_graph head. None of these depend on
-/// flat-routing-only structures.
 int tile_pin_to_pb_pin_id(t_physical_tile_type_ptr tile,
                           t_logical_block_type_ptr lb,
-                          int phys_pin) {
-    const t_sub_tile* sub_tile = std::get<0>(get_sub_tile_from_pin_physical_num(tile, phys_pin));
-    if (sub_tile == nullptr) return -1;
-
+                          const t_sub_tile& sub_tile,
+                          int sub_tile_relative_pin) {
     auto lb_it = tile->tile_block_pin_directs_map.find(lb->index);
     if (lb_it == tile->tile_block_pin_directs_map.end()) return -1;
-    auto st_it = lb_it->second.find(sub_tile->index);
+    auto st_it = lb_it->second.find(sub_tile.index);
     if (st_it == lb_it->second.end()) return -1;
 
-    int sub_tile_physical_pin = get_capacity_location_from_physical_pin(tile, phys_pin).second;
-    auto find_res = st_it->second.find(t_physical_pin(sub_tile_physical_pin));
+    auto find_res = st_it->second.find(t_physical_pin(sub_tile_relative_pin));
     if (find_res == st_it->second.inverse_end()) return -1;
 
     const t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_pb_graph_node(lb->pb_graph_head, find_res->second.pin);
@@ -56,26 +48,41 @@ DirectConnectionLegality::DirectConnectionLegality(const std::vector<t_direct_in
         const int from_step = (cd.from_clb_pin_start_index <= cd.from_clb_pin_end_index) ? 1 : -1;
         const int to_step = (cd.to_clb_pin_start_index <= cd.to_clb_pin_end_index) ? 1 : -1;
 
-        // LIMITATION: only the first equivalent logical block on each side is
-        // considered. Multi-equivalent_sites is not handled.
-        if (cd.from_clb_type->sub_tiles.empty() || cd.to_clb_type->sub_tiles.empty()) continue;
-        const auto& from_eq_sites = cd.from_clb_type->sub_tiles.front().equivalent_sites;
-        const auto& to_eq_sites = cd.to_clb_type->sub_tiles.front().equivalent_sites;
-        if (from_eq_sites.empty() || to_eq_sites.empty()) continue;
-        t_logical_block_type_ptr from_lb = from_eq_sites.front();
-        t_logical_block_type_ptr to_lb = to_eq_sites.front();
+        // from_sub_tiles holds the from-side capacity locations; the to-side
+        // ones are recovered the same way, keyed by the destination port name.
+        // Iterating these covers a logical block mapped to several sub-tiles.
+        const std::vector<int>& from_caps = cd.from_sub_tiles;
+        const std::vector<int> to_caps = find_sub_tile_indices_by_port_name(cd.to_clb_type, cd.to_port);
 
-        for (int k = 0; k < from_size; ++k) {
-            int from_phys = cd.from_clb_pin_start_index + k * from_step;
-            int to_phys = cd.to_clb_pin_start_index + k * to_step;
+        for (int from_cap : from_caps) {
+            const t_sub_tile* from_sub_tile = get_sub_tile_from_capacity_location(cd.from_clb_type, from_cap);
+            if (from_sub_tile == nullptr) continue;
 
-            int from_pin_id = tile_pin_to_pb_pin_id(cd.from_clb_type, from_lb, from_phys);
-            if (from_pin_id < 0) continue;
-            int to_pin_id = tile_pin_to_pb_pin_id(cd.to_clb_type, to_lb, to_phys);
-            if (to_pin_id < 0) continue;
+            for (int to_cap : to_caps) {
+                const t_sub_tile* to_sub_tile = get_sub_tile_from_capacity_location(cd.to_clb_type, to_cap);
+                if (to_sub_tile == nullptr) continue;
 
-            forward_by_from_lb_[from_lb->index][from_pin_id]
-                .emplace(to_lb->index, to_pin_id);
+                for (int k = 0; k < from_size; ++k) {
+                    int from_rel_pin = cd.from_clb_pin_start_index + k * from_step;
+                    int to_rel_pin = cd.to_clb_pin_start_index + k * to_step;
+
+                    // A sub-tile can host several equivalent logical blocks. The
+                    // <direct> applies to every (from_lb, to_lb) pairing that
+                    // exposes the referenced pins, so record an entry for each.
+                    for (t_logical_block_type_ptr from_lb : from_sub_tile->equivalent_sites) {
+                        int from_pin_id = tile_pin_to_pb_pin_id(cd.from_clb_type, from_lb, *from_sub_tile, from_rel_pin);
+                        if (from_pin_id < 0) continue;
+
+                        for (t_logical_block_type_ptr to_lb : to_sub_tile->equivalent_sites) {
+                            int to_pin_id = tile_pin_to_pb_pin_id(cd.to_clb_type, to_lb, *to_sub_tile, to_rel_pin);
+                            if (to_pin_id < 0) continue;
+
+                            forward_by_from_lb_[from_lb->index][from_pin_id]
+                                .emplace(to_lb->index, to_pin_id);
+                        }
+                    }
+                }
+            }
         }
     }
 }
