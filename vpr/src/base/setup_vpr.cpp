@@ -309,7 +309,6 @@ void SetupVPR(const t_options* options,
             packerOpts->doPacking = e_stage_action::LOAD;
             placerOpts->do_placement = e_stage_action::LOAD;
             routerOpts->doRouting = e_stage_action::DO;
-            analysisOpts->doAnalysis = ((options->do_analysis) ? e_stage_action::DO : e_stage_action::SKIP_IF_PRIOR_FAIL); //Always run analysis after routing
         }
 
         if (options->do_placement) {

@@ -13,6 +13,7 @@
 #include "place_util.h"
 #include "placer_state.h"
 #include "move_utils.h"
+#include "interposer_cost_handler.h"
 #include "noc_place_utils.h"
 #include "NetPinTimingInvalidator.h"
 #include "place_timing_update.h"
@@ -213,6 +214,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      const PlaceMacros& place_macros,
                                      t_placer_costs& costs,
                                      NetCostHandler& net_cost_handler,
+                                     std::optional<InterposerCostHandler>& interposer_cost_handler,
                                      std::optional<NocCostHandler>& noc_cost_handler,
                                      const t_noc_opts& noc_opts,
                                      vtr::RngContainer& rng,
@@ -230,6 +232,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , place_macros_(place_macros)
     , costs_(costs)
     , net_cost_handler_(net_cost_handler)
+    , interposer_cost_handler_(interposer_cost_handler)
     , noc_cost_handler_(noc_cost_handler)
     , noc_opts_(noc_opts)
     , rng_(rng)
@@ -604,6 +607,13 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
                                                               cost_terms_delta, timing_delta_c);
 
+        const bool update_interposer_costs = interposer_cost_handler_.has_value() && interposer_cost_handler_->has_active_cost_terms();
+        if (update_interposer_costs) {
+            const auto [interposer_cost_delta, interposer_cong_cost_delta] = interposer_cost_handler_->total_proposed_cost(net_cost_handler_.affected_nets());
+            cost_terms_delta.interposer_cost = interposer_cost_delta;
+            cost_terms_delta.interposer_cong_cost = interposer_cong_cost_delta;
+        }
+
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values.
@@ -620,9 +630,11 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            costs_.timing_cost_norm);
             delta_c = (1 - placer_opts_.timing_tradeoff) * cost_terms_delta.bb_cost * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
-                      + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm
-                      + placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                      + placer_opts_.interposer_cong_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+                      + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm;
+            if (update_interposer_costs) {
+                delta_c += placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
+                           + placer_opts_.interposer_cong_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+            }
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -664,6 +676,10 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            cost_terms_delta.bb_cost,
                            costs_.bb_cost_norm);
             delta_c = cost_terms_delta.bb_cost * costs_.bb_cost_norm;
+            if (update_interposer_costs) {
+                delta_c += placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
+                           + placer_opts_.interposer_cong_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+            }
         }
 
         NocCostTerms noc_delta_c; // change in NoC cost
@@ -690,8 +706,10 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             costs_.cost += delta_c;
             costs_.bb_cost += cost_terms_delta.bb_cost;
             costs_.congestion_cost += cost_terms_delta.cong_cost;
-            costs_.interposer_cost += cost_terms_delta.interposer_cost;
-            costs_.interposer_cong_cost += cost_terms_delta.interposer_cong_cost;
+            if (update_interposer_costs) {
+                costs_.interposer_cost += cost_terms_delta.interposer_cost;
+                costs_.interposer_cong_cost += cost_terms_delta.interposer_cong_cost;
+            }
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
 
@@ -715,6 +733,9 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
             // Update net cost functions and reset flags.
             net_cost_handler_.update_move_nets();
+            if (update_interposer_costs) {
+                interposer_cost_handler_->commit_costs(net_cost_handler_.affected_nets());
+            }
 
             // Update clb data structures since we kept the move.
             blk_loc_registry.commit_move_blocks(blocks_affected_);
@@ -854,7 +875,8 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
          && g_vpr_ctx.device().grid.has_interposer_cuts()
          && annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio)
         || interposer_cong_modeling_started_) {
-        costs_.interposer_cong_cost = net_cost_handler_.compute_interposer_est_cong_(/*compute_congestion_cost=*/true);
+        VTR_ASSERT_SAFE(interposer_cost_handler_.has_value());
+        costs_.interposer_cong_cost = interposer_cost_handler_->compute_interposer_est_cong(/*compute_congestion_cost=*/true);
         if (!interposer_cong_modeling_started_) {
             VTR_LOG("Interposer congestion modeling started.\n");
             interposer_cong_modeling_started_ = true;
@@ -930,6 +952,12 @@ void PlacementAnnealer::placement_inner_loop() {
         moves_since_cost_recompute_++;
         if (moves_since_cost_recompute_ > MAX_MOVES_BEFORE_RECOMPUTE) {
             net_cost_handler_.recompute_costs_from_scratch(delay_model_, criticalities_, costs_);
+
+            if (interposer_cost_handler_.has_value()) {
+                const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->total_committed_cost();
+                costs_.interposer_cost = interposer_cost;
+                costs_.interposer_cong_cost = interposer_cong_cost;
+            }
 
             if (noc_cost_handler_.has_value()) {
                 noc_cost_handler_->recompute_costs_from_scratch(noc_opts_, costs_);

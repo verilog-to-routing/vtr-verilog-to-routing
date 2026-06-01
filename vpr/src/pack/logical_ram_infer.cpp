@@ -248,6 +248,7 @@ const LogicalRamGroup& RamMapper::group(LogicalRamGroupId id) const {
 
 vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram_groups(const Prepacker& prepacker) const {
     vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> physical_groups;
+    const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
 
     for (LogicalRamGroupId logical_id : logical_ram_groups_.keys()) {
         const LogicalRamGroup& logical_group = logical_ram_groups_[logical_id];
@@ -257,29 +258,70 @@ vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram
 
         int tile_capacity = logical_group.candidate_capacity.at(logical_group.pre_assigned_type);
 
-        PhysicalRamGroup current_group;
-        current_group.logical_ram_group_id = logical_id;
-
         // Pack each logical RAM into as few physical RAMs of the type chosen
         // by the RAM mapper as possible. Atoms are packed into physical RAMs
         // in whatever order they are listed in the logical group, which might
         // tend to keep datapaths together (e.g. if data[0] and data[1] in a
         // wide bus are put in this data structure in order), but no direct
-        // attempt is made to ensure this happens.
-        for (AtomBlockId atom_id : logical_group.atoms) {
-            if (!atom_id)
-                continue;
-            if (current_group.total_memory_slices >= tile_capacity) {
-                physical_groups.push_back(current_group);
-                current_group = {logical_id, {}, {}, 0};
-            }
-            current_group.atoms.push_back(atom_id);
-            current_group.molecules.push_back(prepacker.get_atom_molecule(atom_id));
-            current_group.total_memory_slices++;
-        }
+        // attempt is made to ensure this happens. Atoms that are not compatible
+        // with the current group by partition group are skipped and retried in
+        // the next created group again.
+        std::vector<AtomBlockId> unmapped_atoms(logical_group.atoms.begin(), logical_group.atoms.end());
+        while (!unmapped_atoms.empty()) {
+            PhysicalRamGroup current_group;
+            current_group.logical_ram_group_id = logical_id;
+            std::vector<AtomBlockId> remaining_atoms;
+            remaining_atoms.reserve(unmapped_atoms.size());
 
-        if (!current_group.atoms.empty())
-            physical_groups.push_back(current_group);
+            for (size_t atom_index = 0; atom_index < unmapped_atoms.size(); ++atom_index) {
+                AtomBlockId atom_id = unmapped_atoms[atom_index];
+                if (!atom_id)
+                    continue;
+
+                PartitionId atom_partition_id = constraints.get_atom_partition(atom_id);
+
+                // Compute whether this atom is partition-compatible and what the new
+                // group intersection partition region would be if it is compatible.
+                bool pr_compatible;
+                PartitionRegion candidate_pr = current_group.intersection_pr;
+                if (!atom_partition_id.is_valid()) {
+                    // Unconstrained atoms are always partition-compatible.
+                    pr_compatible = true;
+                } else {
+                    const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_partition_id);
+                    if (current_group.intersection_pr.empty()) {
+                        // Group unconstrained so far; take atom's partition region.
+                        candidate_pr = atom_pr;
+                        pr_compatible = true;
+                    } else {
+                        // Find the intersection of atom's and current group's partition regions.
+                        candidate_pr = intersection(current_group.intersection_pr, atom_pr);
+                        pr_compatible = !candidate_pr.empty();
+                    }
+                }
+
+                // Skip this atom if not partition-compatible
+                if (!pr_compatible) {
+                    remaining_atoms.push_back(atom_id);
+                    continue;
+                }
+
+                // Stop exploring for this group after it is full.
+                if (current_group.total_memory_slices >= tile_capacity) {
+                    remaining_atoms.insert(remaining_atoms.end(), unmapped_atoms.begin() + atom_index, unmapped_atoms.end());
+                    break;
+                }
+
+                current_group.atoms.push_back(atom_id);
+                current_group.molecules.push_back(prepacker.get_atom_molecule(atom_id));
+                current_group.total_memory_slices++;
+                current_group.intersection_pr = candidate_pr;
+            }
+
+            if (!current_group.atoms.empty())
+                physical_groups.push_back(current_group);
+            unmapped_atoms = std::move(remaining_atoms);
+        }
     }
 
     return physical_groups;
