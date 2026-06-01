@@ -39,7 +39,7 @@ module tb;
 
     task automatic driveRead(input int addr);
         {raddr1, raddr0} = 2'(addr);
-        @(posedge clk);
+        repeat (2) @(posedge clk);
         #1;
         actual = {rd7, rd6, rd5, rd4, rd3, rd2, rd1, rd0};
     endtask
@@ -75,6 +75,7 @@ module tb;
         we = 1;
         @(posedge clk);
         we = 0;
+        repeat (2) @(posedge clk);
         #1;
         actual = {rd7, rd6, rd5, rd4, rd3, rd2, rd1, rd0};
         if (actual !== golden[1]) begin

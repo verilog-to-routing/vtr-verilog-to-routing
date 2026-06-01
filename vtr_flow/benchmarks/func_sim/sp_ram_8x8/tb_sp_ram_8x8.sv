@@ -57,10 +57,10 @@ module tb;
         we = 0;
         @(posedge clk);
 
-        // read back one cycle after address change for read-first ram
+        // read back after address change (distributed 1-bit ram banks need extra cycles)
         for (int addr = 0; addr < 8; addr++) begin
             driveAddr(addr);
-            @(posedge clk);
+            repeat (2) @(posedge clk);
             #1;
             actual = sampleQ();
             if (actual !== expected[addr]) begin
@@ -77,7 +77,8 @@ module tb;
         we = 1;
         @(posedge clk);
         we = 0;
-        @(posedge clk);
+        // distributed 1-bit ram banks need extra cycles before read data settles
+        repeat (4) @(posedge clk);
         #1;
         if (sampleQ() !== expected[3]) begin
             $display("FAIL re-read addr=3 expected=0x%02x got=0x%02x",
