@@ -20,7 +20,6 @@
 
 #include "device_size_estimate.h"
 
-#include <cstring>
 #include <queue>
 #include <unordered_set>
 
@@ -205,34 +204,39 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
 }
 
 /**
- * @brief Returns true if any output pin of `prim` can reach the `root`
- *        pb_graph_node via forward pb_graph edge traversal.
+ * @brief Returns true if any output pin of the given primitive can reach a
+ *        root block pin via forward pb_graph edge traversal.
  *
- * Used to detect primitives with no path to the block's external output pins
- * (e.g. OCT's inpad on Stratix 10, whose output connects only to an internal
- * pin and never reaches OCT's external core_out port).
+ * Used during type selection to skip candidate types where the primitive's
+ * output is entirely internal (e.g. OCT's inpad on Stratix 10, whose output
+ * feeds only oct_block.rzqin and never reaches OCT's external core_out port).
+ *
+ * @param prim  A primitive pb_graph_node (leaf node with a blif_model).
+ * @return      True if a forward path to a root block pin exists, false otherwise.
  */
-static bool prim_has_external_output(const t_pb_graph_node* prim,
-                                     const t_pb_graph_node* root) {
+static bool primitive_has_external_output(const t_pb_graph_node* prim) {
     std::unordered_set<const t_pb_graph_pin*> visited;
-    std::queue<const t_pb_graph_pin*> q;
+    std::queue<const t_pb_graph_pin*> bfs_queue;
 
-    for (int port = 0; port < prim->num_output_ports; port++) {
-        for (int pin = 0; pin < prim->num_output_pins[port]; pin++) {
-            q.push(&prim->output_pins[port][pin]);
+    for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
+        for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
+            bfs_queue.push(&prim->output_pins[port_idx][pin_idx]);
         }
     }
 
-    while (!q.empty()) {
-        const t_pb_graph_pin* pin = q.front();
-        q.pop();
-        if (!visited.insert(pin).second)
+    while (!bfs_queue.empty()) {
+        const t_pb_graph_pin* cur_pin = bfs_queue.front();
+        bfs_queue.pop();
+        if (visited.find(cur_pin) != visited.end())
             continue;
-        if (pin->parent_node == root)
+        visited.insert(cur_pin);
+
+        if (cur_pin->is_root_block_pin())
             return true;
-        for (t_pb_graph_edge* edge : pin->output_edges) {
-            for (int p = 0; p < edge->num_output_pins; p++) {
-                q.push(edge->output_pins[p]);
+
+        for (t_pb_graph_edge* edge : cur_pin->output_edges) {
+            for (int sink_idx = 0; sink_idx < edge->num_output_pins; sink_idx++) {
+                bfs_queue.push(edge->output_pins[sink_idx]);
             }
         }
     }
@@ -266,17 +270,16 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
 
         LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
 
-        // Find the first candidate type where the prim's output has a forward
-        // path to the block's external output pins. This rejects types like OCT
-        // on Stratix 10, whose ".input" inpad output connects only to an
-        // internal pin (oct_block.rzqin) with no path to OCT's external
-        // core_out port. If all types fail (e.g. outpad atoms with no pb_graph
-        // output pins), fall back to the first candidate as a safe default.
+        // Select the first candidate type whose primitive has a forward path to the
+        // complex block's external output pins. This filters out types like OCT on
+        // S10, where the inpad primitive connects only to internal pins, making it
+        // a poor basis for resource estimation. Falls back to the first candidate
+        // if none qualifies (e.g. outpad atoms with no output pins).
         t_logical_block_type_ptr mapped_type = nullptr;
         for (t_logical_block_type_ptr cand : primitive_candidate_block_types[root_model_id]) {
             std::vector<t_logical_block_type> candidate_logical_type = {*cand};
             const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, candidate_logical_type);
-            if (current_type_prim && prim_has_external_output(current_type_prim, cand->pb_graph_head)) {
+            if (current_type_prim && primitive_has_external_output(current_type_prim)) {
                 mapped_type = cand;
                 break;
             }
