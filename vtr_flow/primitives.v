@@ -160,8 +160,9 @@ module DFF #(
         $hold(posedge clock, D, "");
     endspecify
 
+    // verilator does not support non-blocking assignments in initial blocks
     initial begin
-        Q = INITIAL_VALUE;  // verilator does not support non-blocking assignments in initial blocks
+        Q = INITIAL_VALUE;
     end
 
     always@(posedge clock) begin
