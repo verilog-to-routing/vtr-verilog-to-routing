@@ -88,7 +88,7 @@
  * ```
  *
  * logical_pin_index_ does not contain unused pins, e.g. CLB has 6 pins (3 in, 3 out), where
- * pins 2 and 3 are unused. Therefore, if logical_pin_index_[92] = 5, logical_pin_index[90] = 1 (since pins 2 and 3 are not stored in logical_pin_index_).
+ * pins 2 and 3 are unused. Therefore, if logical_pin_index_[92] = 5, then logical_pin_index[90] = 1 (since pins 2 and 3 are not stored in logical_pin_index_).
  *
  *
  * Implementation
