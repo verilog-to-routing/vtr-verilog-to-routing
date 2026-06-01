@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 /**
  * 
  * @brief This file defines the UserPlaceConstraints class used to store and read out data related to user-specified
