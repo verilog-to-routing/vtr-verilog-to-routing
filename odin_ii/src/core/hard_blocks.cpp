@@ -59,7 +59,7 @@ void cache_hard_block_names() {
     hard_block_names = sc_new_string_cache();
     for (LogicalModelId model_id : Arch.models.user_models()) {
         t_model* hard_blocks = &Arch.models.get_model(model_id);
-        int sc_spot = sc_add_string(hard_block_names, hard_blocks->name);
+        int sc_spot = sc_add_string(hard_block_names, hard_blocks->name.c_str());
         hard_block_names->data[sc_spot] = (void*)hard_blocks;
     }
 }
@@ -211,11 +211,11 @@ void output_hard_blocks(FILE* out) {
         if (hard_blocks->used == 1) /* Hard Block is utilized */
         {
             //IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and add_the_blackbox_for_mults)
-            if (strcmp(hard_blocks->name, "adder") == 0 || strcmp(hard_blocks->name, "multiply") == 0) {
+            if (hard_blocks->name == "adder" || hard_blocks->name == "multiply") {
                 break;
             }
 
-            fprintf(out, "\n.model %s\n", hard_blocks->name);
+            fprintf(out, "\n.model %s\n", hard_blocks->name.c_str());
             count = fprintf(out, ".inputs");
             hb_ports = hard_blocks->inputs;
             while (hb_ports != NULL) {
@@ -287,7 +287,7 @@ int hard_block_port_size(t_model* hb, char* pname) {
      *  depending on the instance of the hard block. May want to extend
      *  this list of blocks in the future.
      */
-    if ((strcmp(hb->name, SINGLE_PORT_RAM_string) == 0) || (strcmp(hb->name, DUAL_PORT_RAM_string) == 0)) {
+    if ((strcmp(hb->name.c_str(), SINGLE_PORT_RAM_string) == 0) || (strcmp(hb->name.c_str(), DUAL_PORT_RAM_string) == 0)) {
         return -1;
     }
 
