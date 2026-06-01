@@ -315,7 +315,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
         }
 
         fprintf(f, "# Subckt %zu: %s\n", size_t(blk_id), netlist.block_name(blk_id).c_str());
-        fprintf(f, ".subckt %s \\\n", model.name);
+        fprintf(f, ".subckt %s \\\n", model.name.c_str());
         for (size_t i = 0; i < ports.size(); i++) {
             auto width = netlist.port_width(ports[i]);
             for (size_t j = 0; j < width; ++j) {
@@ -370,7 +370,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
     //The subckt models
     for (LogicalModelId model_id : subckt_models) {
         const t_model& model = models.get_model(model_id);
-        fprintf(f, ".model %s\n", model.name);
+        fprintf(f, ".model %s\n", model.name.c_str());
 
         fprintf(f, ".inputs");
         const t_model_ports* port = model.inputs;

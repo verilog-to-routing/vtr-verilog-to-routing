@@ -302,7 +302,7 @@ void find_hard_multipliers() {
     min_mult = configuration.min_hard_multiplier;
     for (LogicalModelId model_id : Arch.models.user_models()) {
         hard_multipliers = &Arch.models.get_model(model_id);
-        if (strcmp(hard_multipliers->name, "multiply") == 0) {
+        if (hard_multipliers->name == "multiply") {
             init_mult_distribution();
             return;
         } else {
