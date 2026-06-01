@@ -50,6 +50,13 @@ class LbHierPathParser {
     };
 
   private:
+    /**
+     * @brief User constraint path before parsing (e.g. `clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]`).
+     */
     std::string logical_block_location_;
+    /**
+     * @brief Parsed hierarchy levels ("want" tokens) from parse(); all matching compares these to candidate pb paths.
+     *        Empty until parse() is called.
+     */
     std::vector<t_logical_location_token> want_tokens_;
 };
