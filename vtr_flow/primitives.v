@@ -161,7 +161,7 @@ module DFF #(
     endspecify
 
     initial begin
-        Q <= INITIAL_VALUE;
+        Q = INITIAL_VALUE;  // verilator does not support non-blocking assignments in initial blocks
     end
 
     always@(posedge clock) begin
