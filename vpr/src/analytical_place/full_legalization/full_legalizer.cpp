@@ -1029,14 +1029,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // If auto device sizing is used, recreate the device grid after final
-    // clustering and before initial placement. The earlier grid was based on
-    // a pre-clustering estimate, but the required device size can change once
-    // the final clustering is known. Rebuilding the grid also invalidates the
-    // RR graph generated for the estimated device size as required.
-    if (vpr_setup_.PackerOpts.device_layout == "auto") {
-        vpr_create_device_grid(vpr_setup_, arch_);
-    }
+    recreate_device_if_needed();
 
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
@@ -1235,14 +1228,7 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // If auto device sizing is used, recreate the device grid after final
-    // clustering and before initial placement. The earlier grid was based on
-    // a pre-clustering estimate, but the required device size can change once
-    // the final clustering is known. Rebuilding the grid also invalidates the
-    // RR graph generated for the estimated device size as required.
-    if (vpr_setup_.PackerOpts.device_layout == "auto") {
-        vpr_create_device_grid(vpr_setup_, arch_);
-    }
+    recreate_device_if_needed();
 
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
@@ -1313,14 +1299,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
 
-    // If auto device sizing is used, recreate the device grid after final
-    // clustering and before initial placement. The earlier grid was based on
-    // a pre-clustering estimate, but the required device size can change once
-    // the final clustering is known. Rebuilding the grid also invalidates the
-    // RR graph generated for the estimated device size as required.
-    if (vpr_setup_.PackerOpts.device_layout == "auto") {
-        vpr_create_device_grid(vpr_setup_, arch_);
-    }
+    recreate_device_if_needed();
 
     // Setup NoCs
     // TODO: We have some flow divergence. When the device grid is created the
@@ -1387,4 +1366,35 @@ void FullLegalizer::update_drawing_data_structures() {
         get_draw_state_vars()->refresh_graphic_resources_after_cluster_change();
     }
 #endif
+}
+
+void FullLegalizer::recreate_device_if_needed() {
+    if (vpr_setup_.PackerOpts.device_layout != "auto")
+        return;
+
+    const auto& device_ctx = g_vpr_ctx.device();
+    size_t old_width = device_ctx.grid.width();
+    size_t old_height = device_ctx.grid.height();
+    // Capture before grid recreation: vpr_create_device_grid only writes
+    // device_ctx.grid and does not touch the RR graph, so this flag remains
+    // valid after the call.
+    bool rr_graph_exists = !device_ctx.rr_graph.empty();
+
+    vpr_create_device_grid(vpr_setup_, arch_);
+
+    // Build or rebuild the RR graph if needed. It must exist before placement.
+    // Rebuild only when the device size changed (to avoid the high cost of
+    // rebuilding unnecessarily on large architectures).
+    if (vpr_setup_.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+        bool device_size_changed = (device_ctx.grid.width() != old_width
+                                    || device_ctx.grid.height() != old_height);
+        if (!rr_graph_exists || device_size_changed) {
+            // vpr_create_rr_graph takes t_vpr_setup& even though it only reads from it.
+            // TODO: This is not very clean to do this const cast, but the lifetime
+            //       of vpr_setup is the length of the whole program basically making
+            //       it global. We should probably hoist this device recreation outside
+            //       of the legalizer and into the flow.
+            vpr_create_rr_graph(const_cast<t_vpr_setup&>(vpr_setup_), arch_, vpr_setup_.PlacerOpts.place_chan_width, /*is_flat=*/false);
+        }
+    }
 }

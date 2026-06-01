@@ -185,6 +185,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     // This returns the total number of tracks between channels 'low' and 'high',
     // including tracks in these channels.
     acc_chan_width_.x = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
+        VTR_ASSERT_SAFE_MSG(y < device_ctx.rr_chan_width.x.size(), "Prefix sum sample point should be within bounds.");
         int chan_x_width = device_ctx.rr_chan_width.x[y];
 
         // If the number of tracks in a channel is zero, two consecutive elements take the same
@@ -198,6 +199,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     });
 
     acc_chan_width_.y = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
+        VTR_ASSERT_SAFE_MSG(x < device_ctx.rr_chan_width.y.size(), "Prefix sum sample point should be within bounds.");
         int chan_y_width = device_ctx.rr_chan_width.y[x];
 
         // to avoid a division by zero

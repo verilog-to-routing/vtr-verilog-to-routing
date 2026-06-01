@@ -257,7 +257,6 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
     vtr::ScopedStartFinishTimer timer("Estimate Device Size");
     const std::string& device_layout = vpr_setup.PackerOpts.device_layout;
     const t_packer_opts& packer_opts = vpr_setup.PackerOpts;
-    bool is_ap = (vpr_setup.APOpts.doAP == e_stage_action::DO);
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     // If device size is fixed, create device grid without estimation.
@@ -284,10 +283,5 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
         VTR_LOG("FPGA size estimated to %zu x %zu: %zu grid tiles (%s)\n",
                 device_ctx.grid.width(), device_ctx.grid.height(),
                 num_grid_tiles, device_ctx.grid.name().c_str());
-    }
-
-    // Build the RR graph for AP flow to run global and detailed placement.
-    if (is_ap && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
-        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, /*is_flat=*/false);
     }
 }
