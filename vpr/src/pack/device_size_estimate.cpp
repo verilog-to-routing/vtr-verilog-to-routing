@@ -20,6 +20,8 @@
 
 #include "device_size_estimate.h"
 
+#include <cstring>
+#include <queue>
 #include <unordered_set>
 
 #include "cluster_placement.h"
@@ -202,6 +204,67 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
     return cluster_count;
 }
 
+/**
+ * @brief Returns the first primitive pb_graph_node within `node`'s hierarchy
+ *        whose blif_model matches `blif_model`, or nullptr if none found.
+ */
+static const t_pb_graph_node* find_prim_for_model(const t_pb_graph_node* node,
+                                                   const char* blif_model) {
+    if (node->pb_type->is_primitive()) {
+        if (node->pb_type->blif_model && std::strcmp(node->pb_type->blif_model, blif_model) == 0)
+            return node;
+        return nullptr;
+    }
+    for (int mode = 0; mode < node->pb_type->num_modes; mode++) {
+        int num_child_types = node->pb_type->modes[mode].num_pb_type_children;
+        for (int ct = 0; ct < num_child_types; ct++) {
+            int num_pb = node->pb_type->modes[mode].pb_type_children[ct].num_pb;
+            for (int pb = 0; pb < num_pb; pb++) {
+                const t_pb_graph_node* found = find_prim_for_model(
+                    &node->child_pb_graph_nodes[mode][ct][pb], blif_model);
+                if (found)
+                    return found;
+            }
+        }
+    }
+    return nullptr;
+}
+
+/**
+ * @brief Returns true if any output pin of `prim` can reach the `root`
+ *        pb_graph_node via forward pb_graph edge traversal.
+ *
+ * Used to detect primitives with no path to the block's external output pins
+ * (e.g. OCT's inpad on Stratix 10, whose output connects only to an internal
+ * pin and never reaches OCT's external core_out port).
+ */
+static bool prim_has_external_output(const t_pb_graph_node* prim,
+                                     const t_pb_graph_node* root) {
+    std::unordered_set<const t_pb_graph_pin*> visited;
+    std::queue<const t_pb_graph_pin*> q;
+
+    for (int port = 0; port < prim->num_output_ports; port++) {
+        for (int pin = 0; pin < prim->num_output_pins[port]; pin++) {
+            q.push(&prim->output_pins[port][pin]);
+        }
+    }
+
+    while (!q.empty()) {
+        const t_pb_graph_pin* pin = q.front();
+        q.pop();
+        if (!visited.insert(pin).second)
+            continue;
+        if (pin->parent_node == root)
+            return true;
+        for (t_pb_graph_edge* edge : pin->output_edges) {
+            for (int p = 0; p < edge->num_output_pins; p++) {
+                q.push(edge->output_pins[p]);
+            }
+        }
+    }
+    return false;
+}
+
 std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resource_requirement(const Prepacker& prepacker) {
     vtr::ScopedStartFinishTimer timer("Estimate Resource Requirement");
     const auto& atom_ctx = g_vpr_ctx.atom();
@@ -229,8 +292,31 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
 
         LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
 
-        // Select the first candidate logical block type.
-        t_logical_block_type_ptr candidate_type = primitive_candidate_block_types[root_model_id][0];
+        // Walk prim up to the root to find its block type.
+        const t_pb_graph_node* prim_root = prim;
+        while (!prim_root->is_root())
+            prim_root = prim_root->parent_pb_graph_node;
+
+        // Find the first candidate type where the prim's output has a forward
+        // path to the block's external output pins. This rejects types like OCT
+        // on Stratix 10, whose ".input" inpad output connects only to an
+        // internal pin (oct_block.rzqin) with no path to OCT's external
+        // core_out port. If all types fail (e.g. outpad atoms with no pb_graph
+        // output pins), fall back to the first candidate as a safe default.
+        t_logical_block_type_ptr candidate_type = nullptr;
+        for (t_logical_block_type_ptr type : primitive_candidate_block_types[root_model_id]) {
+            const t_pb_graph_node* type_prim = (type->pb_graph_head == prim_root)
+                                                   ? prim
+                                                   : find_prim_for_model(type->pb_graph_head,
+                                                                         prim->pb_type->blif_model);
+            if (type_prim && prim_has_external_output(type_prim, type->pb_graph_head)) {
+                candidate_type = type;
+                break;
+            }
+        }
+        if (!candidate_type)
+            candidate_type = primitive_candidate_block_types[root_model_id][0];
+
         logical_type_molecules[candidate_type].push_back(mol_id);
     }
 
