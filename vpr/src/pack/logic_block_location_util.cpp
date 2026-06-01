@@ -1,4 +1,4 @@
-﻿#include "logic_block_location_util.h"
+#include "logic_block_location_util.h"
 
 #include <cctype>
 #include <utility>
