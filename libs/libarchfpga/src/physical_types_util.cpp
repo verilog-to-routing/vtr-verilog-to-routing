@@ -887,6 +887,16 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical
     return std::make_tuple(target_sub_tile, target_sub_tile_cap);
 }
 
+const t_sub_tile* get_sub_tile_from_capacity_location(t_physical_tile_type_ptr physical_tile, int capacity_location) {
+    for (const t_sub_tile& sub_tile : physical_tile->sub_tiles) {
+        if (sub_tile.capacity.is_in_range(capacity_location)) {
+            return &sub_tile;
+        }
+    }
+
+    return nullptr;
+}
+
 t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num) {
     VTR_ASSERT(physical_num >= physical_tile->num_pins);
     const t_sub_tile* sub_tile;
