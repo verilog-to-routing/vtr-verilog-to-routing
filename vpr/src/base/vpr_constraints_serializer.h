@@ -243,6 +243,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         lb_type_name_pattern_ = name_pattern;
     }
+    
     virtual inline void set_add_logical_block_is_regex(const char* is_regex, void*& /*ctx*/) final {
         std::string val = is_regex;
         std::transform(val.begin(), val.end(), val.begin(),
