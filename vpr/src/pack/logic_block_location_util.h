@@ -49,15 +49,7 @@ class LbHierPathParser {
         HIERARCHICAL_TYPE,
     };
 
-    static bool token_matches(const t_logical_location_token& want, const t_logical_location_token& got);
-    static std::vector<t_logical_location_token> parse_segmented_tokens_impl(const std::string& input,
-                                                                             char separator,
-                                                                             TokenFormat format);
-
   private:
-    static int try_parse_int_impl(const std::string& value);
-    static t_logical_location_token parse_single_token_impl(const std::string& token, TokenFormat format);
-
     std::string logical_block_location_;
     std::vector<t_logical_location_token> want_tokens_;
 };
