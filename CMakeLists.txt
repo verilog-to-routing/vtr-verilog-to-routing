@@ -6,50 +6,6 @@ include(SupportCcache)
 project("VTR")
 
 #
-# macOS / Homebrew configuration
-#
-# On macOS, system-provided bison (2.3) and flex are outdated.
-# Homebrew installs newer versions in /opt/homebrew (Apple Silicon)
-# or /usr/local (Intel). We detect and prefer Homebrew's tools and
-# libraries automatically.
-#
-if(APPLE)
-    # Determine Homebrew prefix (works for both Apple Silicon and Intel)
-    execute_process(
-        COMMAND brew --prefix
-        OUTPUT_VARIABLE HOMEBREW_PREFIX
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    if(HOMEBREW_PREFIX)
-        message(STATUS "macOS: Homebrew detected at ${HOMEBREW_PREFIX}")
-
-        # Prefer Homebrew's bison and flex over the outdated system versions
-        if(NOT DEFINED BISON_EXECUTABLE)
-            set(BISON_EXECUTABLE "${HOMEBREW_PREFIX}/opt/bison/bin/bison" CACHE FILEPATH "Homebrew bison")
-        endif()
-        if(NOT DEFINED FLEX_EXECUTABLE)
-            set(FLEX_EXECUTABLE "${HOMEBREW_PREFIX}/opt/flex/bin/flex" CACHE FILEPATH "Homebrew flex")
-        endif()
-
-        # Add Homebrew Qt and library paths so find_package() can locate them.
-        # Homebrew splits Qt6 into separate packages (qtbase, qtsvg, etc.)
-        # so we must add each package's cmake dir to the prefix path.
-        list(PREPEND CMAKE_PREFIX_PATH
-            "${HOMEBREW_PREFIX}/opt/qtbase"
-            "${HOMEBREW_PREFIX}/opt/qtsvg"
-            "${HOMEBREW_PREFIX}"
-        )
-        # Qt6 component discovery also uses per-component _DIR variables
-        if(EXISTS "${HOMEBREW_PREFIX}/opt/qtsvg/lib/cmake/Qt6Svg")
-            set(Qt6Svg_DIR "${HOMEBREW_PREFIX}/opt/qtsvg/lib/cmake/Qt6Svg" CACHE PATH "Qt6Svg cmake dir")
-        endif()
-    else()
-        message(WARNING "macOS: Homebrew not found. Install from https://brew.sh")
-    endif()
-endif()
-
-#
 # VTR Build Options
 #
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -490,18 +446,10 @@ if (NOT VPR_USE_EZGL STREQUAL "off")
     if (NOT Qt6_FOUND AND NOT _vtr_qt_user_override)
         set(_vtr_qt_prefix "$ENV{VTR_QT_PREFIX}")
         if (NOT _vtr_qt_prefix)
-            if (APPLE)
-                set(_vtr_qt_prefix "/opt/homebrew/opt/qt" "/usr/local/opt/qt")
-            else()
-                set(_vtr_qt_prefix "${CMAKE_SOURCE_DIR}/qt6")
-            endif()
+            set(_vtr_qt_prefix "${CMAKE_SOURCE_DIR}/qt6")
         endif()
-        # aqt layout: <prefix>/<version>/gcc_64 ; Homebrew: <prefix> directly.
-        set(_vtr_qt_candidates "")
-        foreach(_p ${_vtr_qt_prefix})
-            file(GLOB _hits "${_p}/*/gcc_64" "${_p}")
-            list(APPEND _vtr_qt_candidates ${_hits})
-        endforeach()
+        # aqt layout: <prefix>/<version>/gcc_64.
+        file(GLOB _vtr_qt_candidates "${_vtr_qt_prefix}/*/gcc_64")
         list(SORT _vtr_qt_candidates)
         list(REVERSE _vtr_qt_candidates)   # newest version first
         foreach(_home ${_vtr_qt_candidates})
