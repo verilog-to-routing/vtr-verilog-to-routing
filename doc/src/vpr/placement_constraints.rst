@@ -84,10 +84,14 @@ Partitions, Atoms, Regions, and Logical Block Types
 			**Default:** ``false``
 
 		:opt_param logical_block_location:
-			Pins the atom to a specific spot inside a logic block during packing (for example, a particular FF or
-			LUT slice inside a CLB). Use the ``pb_type`` names from your architecture file. Write the path with
-			``.`` between levels, ``[index]`` for the instance number, and ``{mode}`` when a mode must be specified
-			(e.g. ``clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]``). Optional; omit if you only need a floorplan region.
+			Constrains the atom to a specified location inside a logic block (e.g. a particular FF or LUT
+			slice in a CLB) during packing. Path syntax:
+			``pb_type[index]`` at each level, levels separated by ``.``, and ``{mode_name}`` after a level when
+			that mode must be chosen (names come from the architecture file).
+
+			**Example:** ``logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"`` places the atom in
+			the first CLB's first FLE (using mode ``n1_lut4``), first BLE4, and first FF. Use with ``add_region`` to
+			also fix the CLB's location on the chip; omit this attribute if only a floorplan region is needed.
 
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
