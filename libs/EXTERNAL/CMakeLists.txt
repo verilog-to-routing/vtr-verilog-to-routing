@@ -8,26 +8,6 @@ add_subdirectory(libpugixml)
 
 #External libraries synchronized with 'git subtree'
 add_subdirectory(libargparse)
-
-# MinGW only: GNU ld is single-pass and ${TCL_LIBRARY} resolves to a
-# libtcl.dll.a import lib (an archive), so sdc_commands.a must precede it.
-if(MINGW)
-    set(_SDC_CML "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse/CMakeLists.txt")
-    file(READ "${_SDC_CML}" _sdc_cml_content)
-    set(_old "PRIVATE\n    \${TCL_LIBRARY}\n    sdc_commands")
-    set(_new "PRIVATE\n    sdc_commands\n    \${TCL_LIBRARY}")
-    if(_sdc_cml_content MATCHES "PRIVATE\n    \\\${TCL_LIBRARY}\n    sdc_commands")
-        string(REPLACE "${_old}" "${_new}" _sdc_cml_content "${_sdc_cml_content}")
-        file(WRITE "${_SDC_CML}" "${_sdc_cml_content}")
-        message(STATUS "Patched libsdcparse CMakeLists.txt: TCL/sdc_commands link order (MinGW single-pass ld)")
-    endif()
-    message(WARNING
-        "VTR is patching libsdcparse/CMakeLists.txt at configure time to fix "
-        "MinGW link order (sdc_commands must precede \${TCL_LIBRARY}). "
-        "TODO: upstream this to verilog-to-routing/libsdcparse and drop the "
-        "patch in libs/EXTERNAL/CMakeLists.txt.")
-endif()
-
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
