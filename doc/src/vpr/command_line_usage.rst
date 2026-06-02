@@ -1499,6 +1499,16 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``auto``
 
+.. option:: --appack_inter_die_gain_multiplier <float>
+
+   Multiplier applied to APPack candidate gains when the candidate's flat
+   placement location is on a different die than the current cluster location
+   in an interposer-based architecture. This option only applies when the
+   device grid has interposer cuts; it does not apply to candidates on a
+   different layer in a 3D architecture without interposer cuts.
+
+    **Default:** ``0.1``
+
 .. option:: --ap_high_fanout_threshold <int>
 
     Defines the threshold for high fanout nets within AP flow.

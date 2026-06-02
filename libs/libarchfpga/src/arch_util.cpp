@@ -782,10 +782,7 @@ void SyncModelsPbTypes_rec(t_arch* arch,
         t_model& model_match_prim = arch->models.get_model(model_match_prim_id);
 
         pb_type->model_id = model_match_prim_id;
-        vtr::t_linked_vptr* old = model_match_prim.pb_types;
-        model_match_prim.pb_types = new vtr::t_linked_vptr;
-        model_match_prim.pb_types->next = old;
-        model_match_prim.pb_types->data_vptr = pb_type;
+        model_match_prim.pb_types.emplace_back(pb_type);
 
         for (int p = 0; p < pb_type->num_ports; p++) {
             bool found = false;

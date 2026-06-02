@@ -380,7 +380,7 @@ struct NetlistReader {
                 vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1,
                           "Duplicate blocks named '%s' found in netlist."
                           " Existing block of type '%s' conflicts with subckt of type '%s'.",
-                          inst_name.c_str(), models_.get_model(conflicting_model).name, blk_model.name);
+                          inst_name.c_str(), models_.get_model(conflicting_model).name.c_str(), blk_model.name.c_str());
             }
 
             auto port_net_map = port_net_maps_.at(inst_idx);
@@ -470,7 +470,7 @@ struct NetlistReader {
         //No match
         vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1,
                   "Found no matching port '%s' on architecture model '%s'\n",
-                  name.c_str(), blk_model.name);
+                  name.c_str(), blk_model.name.c_str());
         return nullptr;
     }
 

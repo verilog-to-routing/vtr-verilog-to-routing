@@ -60,20 +60,14 @@ class NetCostHandler {
      * @param placer_state Contains information about block locations and net bounding boxes.
      * @param cube_bb True if the 3D cube bounding box should be used, false otherwise.
      * @param place_algorithm The placement algorithm in use (e.g. bounding-box only vs timing-driven).
-     * @param interposer_cost_enabled If true, adds the interposer crossing term that penalizes nets whose bounding boxes intersectinterposer cut lines.
-     * @param interposer_cong_threshold Floor on estimated interposer channel utilization (normalized routing demand vs capacity
-     *                                along each crossed cut). Only utilization above this contributes to `interposer_cong_cost`.
-     *                                A value of 0 skips allocating and updating that term.
      * @param congestion_chan_util_threshold Floor on estimated average routing-channel utilization within a net's bounding
      *                                       box for the routing congestion term (`cong_cost`): for each of the horizontal and
      *                                       vertical channel directions, only utilization above this adds to that net's congestion
-     *                                       penalty. It is independent of the interposer congestion threshold.
+     *                                       penalty.
      */
     NetCostHandler(PlacerState& placer_state,
                    bool cube_bb,
                    t_place_algorithm place_algorithm,
-                   bool interposer_cost_enabled,
-                   double interposer_cong_threshold,
                    double congestion_chan_util_threshold);
 
     /**
@@ -151,15 +145,10 @@ class NetCostHandler {
     ///@brief Get the total wirelength estimate of all nets.
     double get_total_wirelength_estimate() const;
 
-    ///@brief Get the number of nets crossing interposer cuts.
-    int get_num_nets_crossing_interposer_cuts() const;
-
-    /**
-     * @brief Compute estimated interposer congestion and optionally the total interposer congestion cost.
-     * @param compute_congestion_cost When true, compute total interposer congestion cost (sum over all nets).
-     * @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
-     */
-    double compute_interposer_est_cong_(bool compute_congestion_cost = true);
+    ///@brief Get the nets affected by the most recent proposed move.
+    /// Valid only after find_affected_nets_and_update_costs() has been called for the
+    /// current proposed move (e.g. within try_swap()).
+    const std::vector<ClusterNetId>& affected_nets() const;
 
     /**
      * @brief Estimates routing channel utilization and computes the congestion cost
@@ -185,10 +174,6 @@ class NetCostHandler {
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;
-    /// Enables interposer crossing cost term.
-    bool interposer_cost_enabled_;
-    /// Indicates whether interposer congestion modeling has been initialized/activated.
-    bool interposer_cong_modeling_started_;
     /// Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
     /// Determines whether the FPGA has multiple dies (layers)
@@ -198,11 +183,7 @@ class NetCostHandler {
 
     /// Contains some parameters that determine how the placement cost is computed.
     t_place_algorithm place_algorithm_;
-    double interposer_cong_threshold_;
     double congestion_chan_util_threshold_;
-    /// Reciprocals of device grid width and height for normalizing bounding-box spans (e.g. interposer crossing cost).
-    double inv_device_grid_width_;
-    double inv_device_grid_height_;
 
     /// Points to the proper method for computing BB/wirelength, congestion, and interposer cost terms (crossing + congestion) from scratch.
     std::function<std::pair<t_net_cost_terms, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
@@ -271,16 +252,6 @@ class NetCostHandler {
     vtr::Matrix<int> num_sink_pin_layer_;
 
     /**
-     * @brief Estimated interposer cut utilization, stored as 1D prefix sums for O(1) queries.
-     *
-     * Stores (estimated demand / capacity) per cut segment, then converted to prefix sums.
-     * Indexing is [layer][i_cut][coord_prefix]; the last dimension has length (N+1) (prefix[0]=0),
-     * so sum over ([a,b]) is prefix[b+1] - prefix[a].
-     */
-    vtr::NdMatrix<double, 3> horz_interposer_est_cong_;
-    vtr::NdMatrix<double, 3> vert_interposer_est_cong_;
-
-    /**
      * @brief In each of these vectors, there is one entry per cluster level net:
      * [0...cluster_ctx.clb_nlist.nets().size()-1].
      * net_cost and proposed_net_cost: Cost of a net, and a temporary cost of a net used during move assessment.
@@ -300,11 +271,6 @@ class NetCostHandler {
      */
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
-
-    /// Per-net interposer crossing cost (and temporary value during move evaluation).
-    vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
-    /// Per-net interposer congestion cost (and temporary value during move evaluation).
-    vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
     /**
      * @brief The congestion cost for each net is based on the extent to which its
@@ -631,20 +597,6 @@ class NetCostHandler {
     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
-     * @brief Compute the interposer crossing cost of a net from its bounding box.
-     * @param net_id ID of the net whose cost is requested.
-     * @param use_ts Use the proposed (ts) bounding box if true, otherwise the committed one.
-     * @return Interposer crossing cost of the net.
-     */
-    double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
-
-    /**
-     * @brief Count interposer cut lines in the BB interior.
-     * @return first: horizontal cuts (constant-y lines) straddled by the BB; second: vertical cuts (constant-x).
-     */
-    std::pair<int, int> count_bb_interposer_cut_crossings_(const t_bb& bb) const;
-
-    /**
      * @brief Calculate the congestion cost of net using its 3D bounding box.
      * @param net_id ID of the net whose cost is requested.
      * @param use_ts Specifies if the bounding box is retrieved from ts data structures
@@ -652,14 +604,6 @@ class NetCostHandler {
      * @return Congestion cost of the net
      */
     double get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts);
-
-    /**
-     * @brief Calculate the interposer congestion cost of a net using its bounding box.
-     * @param net_id ID of the net whose cost is requested.
-     * @param use_ts Use the proposed (ts) bounding box if true, otherwise the committed one.
-     * @return Interposer congestion cost of the net.
-     */
-    double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
      * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
@@ -724,6 +668,8 @@ class NetCostHandler {
     inline const t_bb& bb_num_on_edges(ClusterNetId net_id) const { return bb_num_on_edges_[net_id]; }
 
     inline const t_bb& bb_coords(ClusterNetId net_id) const { return bb_coords_[net_id]; }
+
+    inline const t_bb& cube_bb_coords(ClusterNetId net_id, bool use_ts) const { return use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id]; }
 
     /**
      * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. set the layer min and max
