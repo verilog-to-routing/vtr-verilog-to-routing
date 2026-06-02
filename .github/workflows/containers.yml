@@ -39,9 +39,8 @@ jobs:
 
       - name: 🧰 Repository Checkout
         uses: actions/checkout@v6
-
-      - name: Fetch submodules
-        run: git submodule update --init --recursive
+        with:
+          submodules: 'true'
   
       - name: 🔧 Generate image name
         id: generate
