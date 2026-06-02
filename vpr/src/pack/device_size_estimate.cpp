@@ -20,6 +20,7 @@
 
 #include "device_size_estimate.h"
 
+#include <queue>
 #include <unordered_set>
 
 #include "cluster_placement.h"
@@ -202,6 +203,46 @@ static size_t count_clusters_for_type(t_logical_block_type_ptr logical_type,
     return cluster_count;
 }
 
+/**
+ * @brief Returns true if any output pin of the given primitive can reach a
+ *        root block pin via forward pb_graph edge traversal.
+ *
+ * Used during type selection to skip candidate types where the primitive's
+ * output is entirely internal (e.g. OCT's inpad on Stratix 10, whose output
+ * feeds only oct_block.rzqin and never reaches OCT's external core_out port).
+ *
+ * @param prim  A primitive pb_graph_node (leaf node with a blif_model).
+ * @return      True if a forward path to a root block pin exists, false otherwise.
+ */
+static bool primitive_has_external_output(const t_pb_graph_node* prim) {
+    std::unordered_set<const t_pb_graph_pin*> visited;
+    std::queue<const t_pb_graph_pin*> bfs_queue;
+
+    for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
+        for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
+            bfs_queue.push(&prim->output_pins[port_idx][pin_idx]);
+        }
+    }
+
+    while (!bfs_queue.empty()) {
+        const t_pb_graph_pin* cur_pin = bfs_queue.front();
+        bfs_queue.pop();
+        if (visited.find(cur_pin) != visited.end())
+            continue;
+        visited.insert(cur_pin);
+
+        if (cur_pin->is_root_block_pin())
+            return true;
+
+        for (t_pb_graph_edge* edge : cur_pin->output_edges) {
+            for (int sink_idx = 0; sink_idx < edge->num_output_pins; sink_idx++) {
+                bfs_queue.push(edge->output_pins[sink_idx]);
+            }
+        }
+    }
+    return false;
+}
+
 std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resource_requirement(const Prepacker& prepacker) {
     vtr::ScopedStartFinishTimer timer("Estimate Resource Requirement");
     const auto& atom_ctx = g_vpr_ctx.atom();
@@ -229,9 +270,24 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
 
         LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
 
-        // Select the first candidate logical block type.
-        t_logical_block_type_ptr candidate_type = primitive_candidate_block_types[root_model_id][0];
-        logical_type_molecules[candidate_type].push_back(mol_id);
+        // Select the first candidate type whose primitive has a forward path to the
+        // complex block's external output pins. This filters out types like OCT on
+        // S10, where the inpad primitive connects only to internal pins, making it
+        // a poor basis for resource estimation. Falls back to the first candidate
+        // if none qualifies (e.g. outpad atoms with no output pins).
+        t_logical_block_type_ptr mapped_type = nullptr;
+        for (t_logical_block_type_ptr cand : primitive_candidate_block_types[root_model_id]) {
+            std::vector<t_logical_block_type> candidate_logical_type = {*cand};
+            const t_pb_graph_node* current_type_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(root_atom, candidate_logical_type);
+            if (current_type_prim && primitive_has_external_output(current_type_prim)) {
+                mapped_type = cand;
+                break;
+            }
+        }
+        if (!mapped_type)
+            mapped_type = primitive_candidate_block_types[root_model_id][0];
+
+        logical_type_molecules[mapped_type].push_back(mol_id);
     }
 
     // Estimate instance counts for non-RAM types using pin capacity and cluster placement.
