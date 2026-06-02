@@ -95,5 +95,5 @@ bool DirectConnectionLegality::is_direct_legal(t_logical_block_type_ptr from_lb,
     const auto& pin_map = forward_by_from_lb_[from_lb->index];
     auto pin_it = pin_map.find(from_top_pin);
     if (pin_it == pin_map.end()) return false;
-    return pin_it->second.count({to_lb->index, to_top_pin}) != 0;
+    return pin_it->second.contains({to_lb->index, to_top_pin});
 }
