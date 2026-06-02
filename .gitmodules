@@ -23,4 +23,3 @@
 [submodule "libs/EXTERNAL/libsdcparse"]
 	path = libs/EXTERNAL/libsdcparse
 	url = https://github.com/verilog-to-routing/libsdcparse.git
-	ignore = dirty
