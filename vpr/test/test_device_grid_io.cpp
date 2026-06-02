@@ -1,14 +1,19 @@
 #include "catch2/catch_test_macros.hpp"
 
 #include "device_grid.h"
+#include "globals.h"
 #include "interposer_types.h"
 #include "physical_types.h"
+#include "read_grid_file.h"
+#include "setup_grid.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
 
 #include <filesystem>
 #include <fstream>
+#include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace {
@@ -48,6 +53,28 @@ struct TestTileSet {
         physical_tile_types = {&clb, &io, &empty, &dsp};
     }
 };
+
+/// @brief Initialize g_vpr_ctx tile types required by create_device_grid() during round-trip tests.
+void init_test_device_context(const TestTileSet& tiles) {
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.physical_tile_types = {tiles.clb, tiles.io, tiles.empty, tiles.dsp};
+    for (t_physical_tile_type& type : device_ctx.physical_tile_types) {
+        if (type.name == "empty") {
+            device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
+            break;
+        }
+    }
+}
+
+/// @brief Look up a tile type pointer from g_vpr_ctx for num_instances() checks on loaded grids.
+t_physical_tile_type_ptr device_tile_type(const std::string& name) {
+    for (t_physical_tile_type& type : g_vpr_ctx.mutable_device().physical_tile_types) {
+        if (type.name == name) {
+            return &type;
+        }
+    }
+    return nullptr;
+}
 
 /// Place a tile at (x_anchor, y_anchor) and fill its width/height footprint with offsets.
 static void set_tile_at(vtr::NdMatrix<t_grid_tile, 3>& grid,
@@ -111,7 +138,7 @@ void require_grids_equivalent(const DeviceGrid& original, const DeviceGrid& load
     REQUIRE(original.get_vertical_interposer_cuts() == loaded.get_vertical_interposer_cuts());
 
     for (const t_physical_tile_loc& loc : original.all_locations()) {
-        REQUIRE(original.get_physical_type(loc) == loaded.get_physical_type(loc));
+        REQUIRE(original.get_physical_type(loc)->name == loaded.get_physical_type(loc)->name);
         REQUIRE(original.get_width_offset(loc) == loaded.get_width_offset(loc));
         REQUIRE(original.get_height_offset(loc) == loaded.get_height_offset(loc));
         REQUIRE(original.get_loc_die_id(loc) == loaded.get_loc_die_id(loc));
@@ -122,10 +149,73 @@ void require_grids_equivalent(const DeviceGrid& original, const DeviceGrid& load
     }
 }
 
-DeviceGrid round_trip_grid(const DeviceGrid& grid, const std::vector<t_physical_tile_type_ptr>& tile_types, const std::string& test_name) {
+void require_parsed_grid_def(const DeviceGrid& original, const t_grid_def& grid_def) {
+    REQUIRE(grid_def.grid_type == e_grid_def_type::FIXED);
+    REQUIRE(grid_def.name == original.name());
+    REQUIRE(grid_def.width == int(original.width()));
+    REQUIRE(grid_def.height == int(original.height()));
+    REQUIRE(grid_def.layers.size() == original.get_num_layers());
+
+    for (size_t layer = 0; layer < original.get_num_layers(); ++layer) {
+        const t_layer_def& layer_def = grid_def.layers[layer];
+
+        std::vector<int> horz_cuts;
+        std::vector<int> vert_cuts;
+        for (const t_interposer_cut_inf& cut : layer_def.interposer_cuts) {
+            if (cut.dim == e_interposer_cut_type::HORZ) {
+                horz_cuts.push_back(std::stoi(cut.loc));
+            } else {
+                vert_cuts.push_back(std::stoi(cut.loc));
+            }
+        }
+        REQUIRE(horz_cuts == original.get_horizontal_interposer_cuts()[layer]);
+        REQUIRE(vert_cuts == original.get_vertical_interposer_cuts()[layer]);
+
+        std::set<std::tuple<std::string, std::string, std::string, std::string, std::string, std::string, std::string>> parsed_root_tiles;
+        for (const t_grid_loc_def& loc_def : layer_def.loc_defs) {
+            parsed_root_tiles.insert({loc_def.block_type,
+                                      loc_def.x.start_expr,
+                                      loc_def.y.start_expr,
+                                      loc_def.x.end_expr,
+                                      loc_def.y.end_expr,
+                                      loc_def.x.incr_expr,
+                                      loc_def.x.repeat_expr});
+        }
+
+        std::set<std::tuple<std::string, std::string, std::string, std::string, std::string, std::string, std::string>> expected_root_tiles;
+        for (const t_physical_tile_loc& loc : original.all_locations()) {
+            if (loc.layer_num != int(layer)) {
+                continue;
+            }
+            if (!original.is_root_location(loc)) {
+                continue;
+            }
+            t_physical_tile_type_ptr type = original.get_physical_type(loc);
+            expected_root_tiles.insert({type->name,
+                                        std::to_string(loc.x),
+                                        std::to_string(loc.y),
+                                        std::to_string(loc.x + type->width - 1),
+                                        std::to_string(loc.y + type->height - 1),
+                                        std::to_string(type->width),
+                                        std::to_string(original.width())});
+        }
+        REQUIRE(parsed_root_tiles == expected_root_tiles);
+    }
+}
+
+DeviceGrid round_trip_grid(const DeviceGrid& grid,
+                           const std::vector<t_physical_tile_type_ptr>& tile_types,
+                           const std::string& test_name) {
     const std::filesystem::path filepath = temp_grid_path(test_name);
     grid.write_grid_file(filepath.string());
-    return DeviceGrid(filepath.string(), tile_types);
+
+    t_grid_def grid_def = read_grid_file(filepath.string(), tile_types);
+    require_parsed_grid_def(grid, grid_def);
+    const std::string layout_name = grid_def.name;
+    std::vector<t_grid_def> grid_layouts;
+    grid_layouts.push_back(std::move(grid_def));
+
+    return create_device_grid(layout_name, grid_layouts);
 }
 
 t_layer_def make_layer_with_cuts(const std::vector<std::pair<e_interposer_cut_type, std::string>>& cuts) {
@@ -143,6 +233,7 @@ t_layer_def make_layer_with_cuts(const std::vector<std::pair<e_interposer_cut_ty
 
 TEST_CASE("DeviceGrid 2D round-trip", "[device_grid_io]") {
     TestTileSet tiles;
+    init_test_device_context(tiles);
 
     const size_t grid_width = 10;
     const size_t grid_height = 10;
@@ -163,9 +254,9 @@ TEST_CASE("DeviceGrid 2D round-trip", "[device_grid_io]") {
 
     require_grids_equivalent(original, loaded);
 
-    REQUIRE(loaded.num_instances(&tiles.io, 0) == 4);
-    REQUIRE(loaded.num_instances(&tiles.dsp, 0) == 5);
-    REQUIRE(loaded.num_instances(&tiles.clb, 0) == 76);
+    REQUIRE(loaded.num_instances(device_tile_type("io"), 0) == 4);
+    REQUIRE(loaded.num_instances(device_tile_type("dsp"), 0) == 5);
+    REQUIRE(loaded.num_instances(device_tile_type("clb"), 0) == 76);
     REQUIRE(loaded.get_num_layers() == 1);
     REQUIRE_FALSE(loaded.has_interposer_cuts());
     REQUIRE(loaded.get_die_count() == 1);
@@ -173,6 +264,7 @@ TEST_CASE("DeviceGrid 2D round-trip", "[device_grid_io]") {
 
 TEST_CASE("DeviceGrid 3D round-trip without interposer cuts", "[device_grid_io]") {
     TestTileSet tiles;
+    init_test_device_context(tiles);
 
     const size_t grid_width = 8;
     const size_t grid_height = 8;
@@ -210,16 +302,17 @@ TEST_CASE("DeviceGrid 3D round-trip without interposer cuts", "[device_grid_io]"
     REQUIRE(loaded.get_num_layers() == 2);
     REQUIRE_FALSE(loaded.has_interposer_cuts());
     REQUIRE(loaded.get_die_count() == 2);
-    REQUIRE(loaded.num_instances(&tiles.clb, 0) == 44);
-    REQUIRE(loaded.num_instances(&tiles.io, 0) == 4);
-    REQUIRE(loaded.num_instances(&tiles.dsp, 0) == 4);
-    REQUIRE(loaded.num_instances(&tiles.clb, 1) == 16);
-    REQUIRE(loaded.num_instances(&tiles.io, 1) == 36);
-    REQUIRE(loaded.num_instances(&tiles.dsp, 1) == 3);
+    REQUIRE(loaded.num_instances(device_tile_type("clb"), 0) == 44);
+    REQUIRE(loaded.num_instances(device_tile_type("io"), 0) == 4);
+    REQUIRE(loaded.num_instances(device_tile_type("dsp"), 0) == 4);
+    REQUIRE(loaded.num_instances(device_tile_type("clb"), 1) == 16);
+    REQUIRE(loaded.num_instances(device_tile_type("io"), 1) == 36);
+    REQUIRE(loaded.num_instances(device_tile_type("dsp"), 1) == 3);
 }
 
 TEST_CASE("DeviceGrid 2.5D interposer round-trip", "[device_grid_io]") {
     TestTileSet tiles;
+    init_test_device_context(tiles);
 
     const size_t grid_width = 6;
     const size_t grid_height = 6;
@@ -253,6 +346,7 @@ TEST_CASE("DeviceGrid 2.5D interposer round-trip", "[device_grid_io]") {
 
 TEST_CASE("DeviceGrid 3D with interposer cuts round-trip", "[device_grid_io]") {
     TestTileSet tiles;
+    init_test_device_context(tiles);
 
     const size_t grid_width = 4;
     const size_t grid_height = 4;
@@ -286,6 +380,7 @@ TEST_CASE("DeviceGrid 3D with interposer cuts round-trip", "[device_grid_io]") {
 
 TEST_CASE("DeviceGrid unknown tile name is fatal", "[device_grid_io]") {
     TestTileSet tiles;
+    init_test_device_context(tiles);
 
     const std::filesystem::path filepath = temp_grid_path("unknown_tile");
     {
@@ -299,5 +394,5 @@ TEST_CASE("DeviceGrid unknown tile name is fatal", "[device_grid_io]") {
         out << "  0 0 unknown_tile 0 0\n";
     }
 
-    REQUIRE_THROWS_AS(DeviceGrid(filepath.string(), tiles.physical_tile_types), VprError);
+    REQUIRE_THROWS_AS(read_grid_file(filepath.string(), tiles.physical_tile_types), VprError);
 }
