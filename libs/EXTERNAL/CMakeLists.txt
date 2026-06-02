@@ -9,19 +9,6 @@ add_subdirectory(libpugixml)
 #External libraries synchronized with 'git subtree'
 add_subdirectory(libargparse)
 
-# Patch libsdcparse SWIG interface for SWIG 4.x compatibility:
-# $function was deprecated in SWIG 4.0 in favor of $action.
-# Patched in-place at configure time (idempotent). The submodule will
-# show as dirty in 'git status' — this is expected until upstream merges
-# the fix or we fork libsdcparse.
-set(_SDC_SWIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/libsdcparse/src/tcl/sdc_commands.i")
-file(READ "${_SDC_SWIG_FILE}" _sdc_swig_content)
-if(_sdc_swig_content MATCHES "\\$function;")
-    string(REPLACE "\$function;" "\$action;" _sdc_swig_content "${_sdc_swig_content}")
-    file(WRITE "${_SDC_SWIG_FILE}" "${_sdc_swig_content}")
-    message(STATUS "Patched libsdcparse sdc_commands.i: \$function -> \$action (SWIG 4.x compat)")
-endif()
-
 # MinGW only: GNU ld is single-pass and ${TCL_LIBRARY} resolves to a
 # libtcl.dll.a import lib (an archive), so sdc_commands.a must precede it.
 if(MINGW)
