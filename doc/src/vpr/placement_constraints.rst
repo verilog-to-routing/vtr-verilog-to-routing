@@ -175,5 +175,5 @@ inside the CLB:
 		<add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
 	</partition>
 
-Each ``<partition>`` must have a unique ``name``. ``logical_block_location`` paths use the ``pb_type``
+``logical_block_location`` paths use the ``pb_type``
 names from the architecture file (e.g. ``clb``, ``fle``, ``ble4``, ``ff``, ``lut4``).
