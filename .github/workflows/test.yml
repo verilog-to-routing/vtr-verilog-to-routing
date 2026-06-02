@@ -284,13 +284,12 @@ jobs:
       with:
         python-version: 3.12.3
 
-    # Plan §7.9 #2 — same install script as the local flow: apt deps plus the
-    # repo-local Qt6 SDK (no root) via dev/install_qt6_sdk.sh.
+    # Plan §7.9 #2 — same install script as the local flow.
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - name: Install Python Requirements (Layer 5 SSIM)
-      run: pip install scikit-image Pillow numpy
+    - name: Install CI test dependencies
+      run: ./dev/install_test_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -366,8 +365,8 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - name: Install Python Requirements (Layer 5 SSIM + gcovr)
-      run: pip install scikit-image Pillow numpy gcovr
+    - name: Install CI test dependencies
+      run: ./dev/install_test_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
