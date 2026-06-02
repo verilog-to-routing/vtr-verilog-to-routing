@@ -166,11 +166,11 @@ inside the CLB:
 
 .. code-block:: xml
 
-	<partition name="fix_ff_atom">
+	<partition name="fix_ff_atom_d">
 		<add_atom name_pattern="d" logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"/>
 		<add_region x_low="2" y_low="1" x_high="2" y_high="1"/>
 	</partition>
-	<partition name="fix_lut_atom">
+	<partition name="fix_lut_atom_c">
 		<add_atom name_pattern="c" logical_block_location="clb[0].fle[1]{n1_lut4}.ble4[0].lut4[0]"/>
 		<add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
 	</partition>
