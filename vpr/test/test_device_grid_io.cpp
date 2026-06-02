@@ -203,13 +203,11 @@ void require_parsed_grid_def(const DeviceGrid& original, const t_grid_def& grid_
     }
 }
 
-DeviceGrid round_trip_grid(const DeviceGrid& grid,
-                           const std::vector<t_physical_tile_type_ptr>& tile_types,
-                           const std::string& test_name) {
+DeviceGrid round_trip_grid(const DeviceGrid& grid, const std::string& test_name) {
     const std::filesystem::path filepath = temp_grid_path(test_name);
     grid.write_grid_file(filepath.string());
 
-    t_grid_def grid_def = read_grid_file(filepath.string(), tile_types);
+    t_grid_def grid_def = read_grid_file(filepath.string(), g_vpr_ctx.device().physical_tile_types);
     require_parsed_grid_def(grid, grid_def);
     const std::string layout_name = grid_def.name;
     std::vector<t_grid_def> grid_layouts;
@@ -250,7 +248,7 @@ TEST_CASE("DeviceGrid 2D round-trip", "[device_grid_io]") {
     set_tile_at(grid_matrix, 0, 6, 6, &tiles.dsp);
 
     DeviceGrid original = make_device_grid("grid_2d", std::move(grid_matrix));
-    DeviceGrid loaded = round_trip_grid(original, tiles.physical_tile_types, "2d");
+    DeviceGrid loaded = round_trip_grid(original, "2d");
 
     require_grids_equivalent(original, loaded);
 
@@ -295,7 +293,7 @@ TEST_CASE("DeviceGrid 3D round-trip without interposer cuts", "[device_grid_io]"
 
     std::vector<t_layer_def> layer_defs(num_layers);
     DeviceGrid original = make_device_grid("grid_3d", std::move(grid_matrix), std::move(layer_defs));
-    DeviceGrid loaded = round_trip_grid(original, tiles.physical_tile_types, "3d");
+    DeviceGrid loaded = round_trip_grid(original, "3d");
 
     require_grids_equivalent(original, loaded);
 
@@ -326,7 +324,7 @@ TEST_CASE("DeviceGrid 2.5D interposer round-trip", "[device_grid_io]") {
     }));
 
     DeviceGrid original = make_device_grid("grid_interposer", std::move(grid_matrix), std::move(layer_defs));
-    DeviceGrid loaded = round_trip_grid(original, tiles.physical_tile_types, "interposer_25d");
+    DeviceGrid loaded = round_trip_grid(original, "interposer_25d");
 
     require_grids_equivalent(original, loaded);
 
@@ -362,7 +360,7 @@ TEST_CASE("DeviceGrid 3D with interposer cuts round-trip", "[device_grid_io]") {
     layer_defs.emplace_back();
 
     DeviceGrid original = make_device_grid("grid_3d_interposer", std::move(grid_matrix), std::move(layer_defs));
-    DeviceGrid loaded = round_trip_grid(original, tiles.physical_tile_types, "3d_interposer");
+    DeviceGrid loaded = round_trip_grid(original, "3d_interposer");
 
     require_grids_equivalent(original, loaded);
 
@@ -394,5 +392,5 @@ TEST_CASE("DeviceGrid unknown tile name is fatal", "[device_grid_io]") {
         out << "  0 0 unknown_tile 0 0\n";
     }
 
-    REQUIRE_THROWS_AS(read_grid_file(filepath.string(), tiles.physical_tile_types), VprError);
+    REQUIRE_THROWS_AS(read_grid_file(filepath.string(), g_vpr_ctx.device().physical_tile_types), VprError);
 }

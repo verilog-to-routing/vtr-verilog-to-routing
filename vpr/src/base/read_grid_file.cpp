@@ -215,10 +215,10 @@ void populate_interposer_cuts(t_layer_def& layer_def,
 } // end of anonymous namespace grid_file_parsing
 
 t_grid_def read_grid_file(const std::string& grid_filepath,
-                          const std::vector<t_physical_tile_type_ptr>& physical_tile_types) {
+                          const std::vector<t_physical_tile_type>& physical_tile_types) {
     std::unordered_map<std::string, t_physical_tile_type_ptr> tile_type_map;
-    for (t_physical_tile_type_ptr tile_type : physical_tile_types) {
-        tile_type_map[tile_type->name] = tile_type;
+    for (const t_physical_tile_type& tile_type : physical_tile_types) {
+        tile_type_map[tile_type.name] = &tile_type;
     }
 
     std::ifstream in(grid_filepath);
