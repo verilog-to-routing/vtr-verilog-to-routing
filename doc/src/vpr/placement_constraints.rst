@@ -5,7 +5,7 @@ Placement Constraints
 
 VPR supports running flows with placement constraints. Placement constraints are set on primitives to lock them down to specified regions on the FPGA chip. For example, a user may use placement constraints to lock down pins to specific locations on the chip. Also, groups of primitives may be locked down to regions on the chip in CAD flows that use floorplanning or modular design, or to hand-place a timing critical piece.
 
-The placement constraints should be specified by the user using an XML constraints file format, as described in the section below. When VPR is run with placement constraints, both the packing and placement flows are performed in such a way that the constraints are respected. The packing stage does not pack any primitives together that have conflicting floorplan constraints. The placement stage considers the floorplan constraints when choosing a location for each clustered block during initial placement, and does not move any block outside of its constraint boundaries during place moves.
+The placement constraints should be specified by the user using an XML constraints file format, as described in the section below. When VPR is run with placement constraints, both the packing and placement flows are performed in such a way that the constraints are respected. The packing stage does not pack any primitives together that have conflicting floorplan constraints, and can optionally pin atoms to specific locations inside a clustered logic block (see ``logical_block_location`` below). The placement stage considers the floorplan constraints when choosing a location for each clustered block during initial placement, and does not move any block outside of its constraint boundaries during place moves.
 
 A Placement Constraints File Example
 ------------------------------------
@@ -83,6 +83,25 @@ Partitions, Atoms, Regions, and Logical Block Types
 			A boolean value indicating whether the ``name_pattern`` should be treated as a regular expression.
 			**Default:** ``false``
 
+		:opt_param logical_block_location:
+			A dot-separated path that pins the atom to a specific location inside the architecture's logic-block
+			hierarchy during packing. This is checked after the packer proposes a primitive placement: the atom is
+			accepted only if its internal hierarchy path matches the constraint.
+
+			**Syntax:** Each hierarchy level is written as ``pb_type[index]``, separated by ``.``. An optional mode
+			can be appended with curly braces, e.g. ``fle[0]{n1_lut4}``. Indices and modes in the constraint must
+			match the packed location; omitted index or mode fields are treated as wildcards.
+
+			**Example:** ``clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]`` constrains an atom to CLB instance 0, FLE 0 in
+			mode ``n1_lut4``, BLE4 instance 0, and FF instance 0. During packing, VPR compares this path to the
+			candidate primitive's ``hierarchical_type_name()`` (which uses ``/`` separators and ``[]`` for modes,
+			e.g. ``clb[0][default]/fle[0][n1_lut4]/ble4[0][default]/ff[0]``). The constraint may be shorter than
+			the full primitive path when lower-level primitives are implied (e.g. ending at ``lut4[0]`` while the
+			candidate path also includes a child ``lut`` primitive).
+
+			The constraint is validated when the constraints file is read (it must be consistent with the target
+			architecture). If unset, the atom has no intra-logic-block location constraint.
+
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
 		overlap with each other (in order to ease processing when loading in the file).
@@ -150,3 +169,23 @@ Partitions, Atoms, Regions, and Logical Block Types
 		**Use Case Example:** Architectures such as Stratix-IV contain multiple types of RAM blocks (e.g., M9K and M144K). This tag can be used to constrain certain RAM slices to specific RAM logical block types. For instance, if certain memory operations require the larger M144K blocks, you can add ``<add_logical_block name_pattern="M144K"/>`` to ensure those atoms are mapped only to the appropriate RAM block type.
 
 		**Note:** If no ``<add_logical_block>`` tags are specified for a partition, atoms in the partition are not constrained to any particular logical block type and can be mapped to any available type.
+
+Logical Block Location Example
+------------------------------
+
+The following example constrains two atoms to different CLB sites (``add_region``) and to different
+locations inside the CLB pb hierarchy (``logical_block_location``):
+
+.. code-block:: xml
+
+	<partition name="fix_ff_atom">
+		<add_atom name_pattern="d" logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"/>
+		<add_region x_low="2" y_low="1" x_high="2" y_high="1"/>
+	</partition>
+	<partition name="fix_lut_atom">
+		<add_atom name_pattern="c" logical_block_location="clb[0].fle[1]{n1_lut4}.ble4[0].lut4[0]"/>
+		<add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
+	</partition>
+
+Each ``<partition>`` must have a unique ``name``. ``logical_block_location`` paths use the ``pb_type``
+names from the architecture file (e.g. ``clb``, ``fle``, ``ble4``, ``ff``, ``lut4``).
