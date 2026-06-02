@@ -1396,6 +1396,8 @@ void FullLegalizer::recreate_device_if_needed() {
             vpr_create_rr_graph(const_cast<t_vpr_setup&>(vpr_setup_), arch_, vpr_setup_.PlacerOpts.place_chan_width, /*is_flat=*/false);
         }
 
+        // vpr_create_device_grid reports the final grid stats internally.
+        // Print it here to match that behaviour.
         report_device_grid_stats(device_ctx.grid);
         return;
     }
@@ -1420,6 +1422,4 @@ void FullLegalizer::recreate_device_if_needed() {
             vpr_create_rr_graph(const_cast<t_vpr_setup&>(vpr_setup_), arch_, vpr_setup_.PlacerOpts.place_chan_width, /*is_flat=*/false);
         }
     }
-
-    report_device_grid_stats(device_ctx.grid);
 }
