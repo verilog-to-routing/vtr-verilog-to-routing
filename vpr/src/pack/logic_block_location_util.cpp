@@ -237,4 +237,3 @@ void LbHierPathParser::validate_logical_block_types(const std::vector<t_logical_
                     "Invalid logical_block_location '%s': path does not match any logical block type pb graph",
                     logical_block_location_.c_str());
 }
-
