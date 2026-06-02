@@ -22,7 +22,10 @@ if (VPR_USE_EZGL STREQUAL "on")
 
     # Qt flow: enable CMAKE_AUTORCC so any .qrc added as a target source
     # is compiled automatically by rcc (same mechanism as libezgl).
-    find_package(Qt6 REQUIRED COMPONENTS Core)
+    # Version floor matches the root discovery (older Qt6 has QRhi bugs).
+    # QRhi is available since Qt 6.7, but even Qt 6.8 has bugs, so the floor
+    # is set higher. VTR_QT_MIN_VERSION is set in the top-level CMakeLists.
+    find_package(Qt6 ${VTR_QT_MIN_VERSION} REQUIRED COMPONENTS Core)
     set(CMAKE_AUTORCC ON)
     # Prevent Qt's 'emit' macro from conflicting with TBB headers
     add_definitions(-DQT_NO_EMIT)

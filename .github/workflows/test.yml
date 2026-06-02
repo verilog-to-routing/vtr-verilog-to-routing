@@ -32,8 +32,11 @@ concurrency:
 env:
   # default compiler for all non-compatibility tests
   MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
-  # Qt6 install location — CMake reads CMAKE_PREFIX_PATH from the environment
-  CMAKE_PREFIX_PATH: /opt/qt6/6.9.3/gcc_64
+  # The Qt6 SDK is provisioned into a repo-local prefix by
+  # install_apt_packages.sh / `make qt6sdk`. CMake discovers it and bakes its
+  # location into the binaries, so no
+  # CMAKE_PREFIX_PATH or runtime Qt env is needed anywhere — CI mirrors the
+  # plain `make` quick-start exactly.
 
 jobs:
   BuildVTR:
@@ -232,14 +235,10 @@ jobs:
 
     - name: Test
       env:
-        # libvpr links Qt6 when VPR_USE_EZGL=on; running test executables
-        # therefore needs the Qt 6.9.3 runtime that BuildVTR was linked
-        # against (installed via aqt to /opt/qt6/6.9.3/gcc_64). Without
-        # these the dynamic loader aborts before main() (test_fasm, etc.).
-        # CI=true is honoured by run_visual_regression.sh / test_save_graphics
-        # to skip image-comparison cases that require a real GL context.
-        LD_LIBRARY_PATH: /opt/qt6/6.9.3/gcc_64/lib
-        QT_PLUGIN_PATH: /opt/qt6/6.9.3/gcc_64/plugins
+        # No LD_LIBRARY_PATH / QT_PLUGIN_PATH needed: CMake bakes the Qt6 lib
+        # dir into the binaries' RPATH and Qt finds its plugins via the
+        # relocatable prefix. QT_QPA_PLATFORM=offscreen keeps Qt headless for any
+        # test that builds a QApplication directly (the vpr binary self-sets it).
         QT_QPA_PLATFORM: offscreen
       run: |
         cd build
@@ -262,27 +261,14 @@ jobs:
         ctest -j${{ steps.cpu-cores.outputs.count }} --output-on-failure -E '^test_fasm$'
 
 
-  # GUITests — Plan §7.9 — runs the full GUI test pyramid on
-  # ubuntu-24.04. A macos-14 matrix leg was originally enabled but
-  # currently fails inside libs/EXTERNAL/libezgl: Apple libc++ rejects
-  # aggregate-only types (Triangle, PosVertex, FillRectInstance,
-  # ThickLineInstance, DashedLineInstance, Chunk) via std::construct_at
-  # because the standard library invokes _Tp(args...) rather than
-  # _Tp{args...}. That is a libezgl portability bug, tracked
-  # separately, and is unrelated to this test-stack PR. Linux is
-  # sufficient for the §7.9 gate; the macOS leg will be re-added once
-  # the libezgl ctors land. Each leg builds with -DVPR_USE_EZGL=on
-  # (the BuildVTR artifact is configured without ezgl, so it is not
-  # reused here) so the local and CI command lines are identical:
+  # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
+  # Linux-only: VTR currently has no macOS CI.
+  # Builds with -DVPR_USE_EZGL=on so the local and CI command lines match:
   #
   #     make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
   GUITests:
-    name: 'T: GUI Tests (Layers 1+3+4+5) [${{ matrix.os }}]'
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04]
+    name: 'T: GUI Tests (Layers 1+3+4+5)'
+    runs-on: ubuntu-24.04
     steps:
 
     - uses: actions/checkout@v6
@@ -298,44 +284,23 @@ jobs:
       with:
         python-version: 3.12.3
 
-    # Plan §7.9 #3 — cache Homebrew so the macOS leg does not pay
-    # ~15 min Qt install on every run. Key is hashFiles(install_brew_packages.sh)
-    # so the cache invalidates whenever the install list changes.
-    - name: Cache Homebrew
-      if: runner.os == 'macOS'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/Library/Caches/Homebrew
-          /opt/homebrew/Cellar/qt
-          /opt/homebrew/Cellar/qt-svg
-        key: brew-${{ runner.os }}-qt6-${{ hashFiles('install_brew_packages.sh') }}
-
-    # Plan §7.9 #2 — same install scripts as the local flow. Linux uses
-    # apt + aqtinstall (Qt 6.9.3 → /opt/qt6), macOS uses Homebrew.
-    - name: Install dependencies (Linux)
-      if: runner.os == 'Linux'
+    # Plan §7.9 #2 — same install script as the local flow: apt deps plus the
+    # repo-local Qt6 SDK (no root) via dev/install_qt6_sdk.sh.
+    - name: Install dependencies
       run: ./install_apt_packages.sh
-
-    - name: Install dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: ./install_brew_packages.sh
 
     - name: Install Python Requirements (Layer 5 SSIM)
       run: pip install scikit-image Pillow numpy
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ${{ github.job }}-${{ matrix.os }}
+        key: ${{ github.job }}
 
     # Plan §7.9 #4 — local and CI command lines identical. Top-level
     # Makefile forwards `gui-tests` to the cmake-generated build dir.
-    # CMAKE_PREFIX_PATH inherits the workflow env on Linux (/opt/qt6);
-    # on macOS Homebrew sets it via brew --prefix qt.
     - name: Build GUI test binaries
       env:
         BUILD_TYPE: release
-        CMAKE_PREFIX_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/qt' || '/opt/qt6/6.9.3/gcc_64' }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make CMAKE_PARAMS="-DVPR_USE_EZGL=on" -j${{ steps.cpu-cores.outputs.count }}
@@ -346,8 +311,6 @@ jobs:
     #   Layer 4 — test_vpr_gui_interactive (S6 mouse/key dispatch)
     #   Layer 5 — test_vpr_gui_visual     (SSIM compare vs goldens)
     - name: Run GUI Test Layers 1 + 3 + 4 + 5
-      env:
-        CMAKE_PREFIX_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/qt' || '/opt/qt6/6.9.3/gcc_64' }}
       run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
 
     # Plan §8.2 PR-merge exit criterion: `./run_reg_test.py vtr_reg_gui`
@@ -367,7 +330,7 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: gui-tests-failure-logs-${{ matrix.os }}
+        name: gui-tests-failure-logs
         path: |
           build/vpr/test/gui/Testing/Temporary/
           /tmp/tmp.*
