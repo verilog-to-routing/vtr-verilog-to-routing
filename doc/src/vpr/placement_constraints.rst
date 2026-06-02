@@ -84,23 +84,10 @@ Partitions, Atoms, Regions, and Logical Block Types
 			**Default:** ``false``
 
 		:opt_param logical_block_location:
-			A dot-separated path that pins the atom to a specific location inside the architecture's logic-block
-			hierarchy during packing. This is checked after the packer proposes a primitive placement: the atom is
-			accepted only if its internal hierarchy path matches the constraint.
-
-			**Syntax:** Each hierarchy level is written as ``pb_type[index]``, separated by ``.``. An optional mode
-			can be appended with curly braces, e.g. ``fle[0]{n1_lut4}``. Indices and modes in the constraint must
-			match the packed location; omitted index or mode fields are treated as wildcards.
-
-			**Example:** ``clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]`` constrains an atom to CLB instance 0, FLE 0 in
-			mode ``n1_lut4``, BLE4 instance 0, and FF instance 0. During packing, VPR compares this path to the
-			candidate primitive's ``hierarchical_type_name()`` (which uses ``/`` separators and ``[]`` for modes,
-			e.g. ``clb[0][default]/fle[0][n1_lut4]/ble4[0][default]/ff[0]``). The constraint may be shorter than
-			the full primitive path when lower-level primitives are implied (e.g. ending at ``lut4[0]`` while the
-			candidate path also includes a child ``lut`` primitive).
-
-			The constraint is validated when the constraints file is read (it must be consistent with the target
-			architecture). If unset, the atom has no intra-logic-block location constraint.
+			Pins the atom to a specific spot inside a logic block during packing (for example, a particular FF or
+			LUT slice inside a CLB). Use the ``pb_type`` names from your architecture file. Write the path with
+			``.`` between levels, ``[index]`` for the instance number, and ``{mode}`` when a mode must be specified
+			(e.g. ``clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]``). Optional; omit if you only need a floorplan region.
 
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
@@ -170,11 +157,8 @@ Partitions, Atoms, Regions, and Logical Block Types
 
 		**Note:** If no ``<add_logical_block>`` tags are specified for a partition, atoms in the partition are not constrained to any particular logical block type and can be mapped to any available type.
 
-Logical Block Location Example
-------------------------------
-
-The following example constrains two atoms to different CLB sites (``add_region``) and to different
-locations inside the CLB pb hierarchy (``logical_block_location``):
+``logical_block_location`` can be combined with ``add_region`` to fix both the CLB site and the slice
+inside the CLB:
 
 .. code-block:: xml
 
