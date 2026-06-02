@@ -1528,6 +1528,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         "   #Write final device grid layout to a file\n"
         "   {prog} my_arch.xml my_circuit.blif --write_device_grid my_device.grid\n"
         "\n"
+        "   #Read device grid layout from a file\n"
+        "   {prog} my_arch.xml my_circuit.blif --read_device_grid my_device.grid\n"
+        "\n"
         "\n"
         "For additional documentation see: https://docs.verilogtorouting.org",
         "{prog}", parser.prog());
@@ -1890,9 +1893,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_device_grid_file, "--read_device_grid")
+        .help("Reads the device grid from the specified .grid file instead of "
+              "selecting a layout from the architecture file via --device. "
+              "Cannot be used together with --device.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.write_device_grid_file, "--write_device_grid")
         .help("Writes the final device grid layout to the specified .grid file.")
-        .metavar("DEVICE_GRID_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
@@ -3825,9 +3833,13 @@ void set_conditional_defaults(t_options& args) {
 }
 
 bool verify_args(const t_options& args) {
-    /*
-     * Check for conflicting parameters or dependencies where one parameter set requires another parameter to be included
-     */
+    // Check for conflicting parameters or dependencies where one parameter set requires another parameter to be included
+    if (args.read_device_grid_file.provenance() == Provenance::SPECIFIED
+        && args.device_layout.provenance() == Provenance::SPECIFIED) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--read_device_grid and --device cannot be used together.\n");
+    }
+
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
