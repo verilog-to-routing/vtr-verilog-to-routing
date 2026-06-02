@@ -1292,14 +1292,14 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         //       non-AP flow, but it will be close.
         vtr::ScopedStartFinishTimer timer("Packing");
         try_pack(vpr_setup_.PackerOpts,
-                vpr_setup_.AnalysisOpts,
-                vpr_setup_.APOpts,
-                arch_,
-                vpr_setup_.PackerRRGraph,
-                prepacker_,
-                pre_cluster_timing_manager_,
-                flat_placement_info,
-                ram_mapper_);
+                 vpr_setup_.AnalysisOpts,
+                 vpr_setup_.APOpts,
+                 arch_,
+                 vpr_setup_.PackerRRGraph,
+                 prepacker_,
+                 pre_cluster_timing_manager_,
+                 flat_placement_info,
+                 ram_mapper_);
     }
 
     // The Packer stores the clusters into a .net file. Load the packing file.
