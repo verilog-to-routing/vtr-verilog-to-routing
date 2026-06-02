@@ -514,7 +514,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification repeaty for block type '%s' must be at least"
                                 " the region height (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name.c_str(), region_height, xspec.repeat_expr.c_str(), repeaty);
+                                type->name.c_str(), region_height, yspec.repeat_expr.c_str(), repeaty);
             }
 
             size_t x_end = 0;
