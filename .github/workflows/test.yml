@@ -32,11 +32,10 @@ concurrency:
 env:
   # default compiler for all non-compatibility tests
   MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
-  # The Qt6 SDK is provisioned into a repo-local prefix by
-  # install_apt_packages.sh / `make qt6sdk`. CMake discovers it and bakes its
-  # location into the binaries, so no
-  # CMAKE_PREFIX_PATH or runtime Qt env is needed anywhere — CI mirrors the
-  # plain `make` quick-start exactly.
+  # install_build_deps.sh installs the apt packages and provisions a Qt6 SDK
+  # (>= the supported floor) via dev/install_qt6_sdk.sh. CMake discovers Qt and
+  # bakes its location into the binaries, so no CMAKE_PREFIX_PATH or runtime Qt
+  # env is needed anywhere.
 
 jobs:
   BuildVTR:
@@ -53,7 +52,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -99,7 +98,7 @@ jobs:
     #       that it can be compiled.
     - name: Install dependencies
       run: |
-        ./install_apt_packages.sh
+        ./install_build_deps.sh
         sudo apt-get update
         sudo apt-get install qtbase5-dev
 
@@ -155,7 +154,7 @@ jobs:
       #       these dependencies to perform a simple format.
     - name: Install dependencies
       if: ${{ matrix.all_vtr_pkgs == 'yes' }}
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     # TODO: This should be on the same version of Python as would be found on
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
@@ -221,7 +220,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v8
@@ -264,10 +263,7 @@ jobs:
 
     # Plan §7.9 #2 — same install script as the local flow.
     - name: Install dependencies
-      run: ./install_apt_packages.sh
-
-    - name: Provision Qt6 SDK (>=6.9.3)
-      run: make qt6sdk
+      run: ./install_build_deps.sh
 
     - name: Install CI test dependencies
       run: ./dev/install_test_deps.sh
@@ -344,10 +340,7 @@ jobs:
         python-version: 3.12.3
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
-
-    - name: Provision Qt6 SDK (>=6.9.3)
-      run: make qt6sdk
+      run: ./install_build_deps.sh
 
     - name: Install CI test dependencies
       run: ./dev/install_test_deps.sh
@@ -444,7 +437,7 @@ jobs:
       id: cpu-cores
 
     - name: 'Install dependencies'
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: 'Install Python Requirements'
       run: |
@@ -596,7 +589,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Extra Dependencies
       if: ${{ matrix.extra_pkgs != '' }}
@@ -685,7 +678,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Extra Dependencies
       if: ${{ matrix.extra_pkgs != '' }}
@@ -765,7 +758,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Python Requirements
       run: |
@@ -814,7 +807,7 @@ jobs:
         id: cpu-cores
 
       - name: Install dependencies
-        run: ./install_apt_packages.sh
+        run: ./install_build_deps.sh
 
       - name: Install Python Requirements
         run: |
@@ -855,7 +848,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Python Requirements
       run: |
@@ -897,7 +890,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v8
@@ -943,7 +936,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -975,7 +968,7 @@ jobs:
       id: cpu-cores
 
     - name: Install Dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:

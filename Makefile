@@ -69,16 +69,15 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 #All targets in this make file are always out of date.
 # This ensures that any make target requests are forwarded to
 # the generated makefile
-.PHONY: all distclean qt6sdk $(MAKECMDGOALS)
+.PHONY: all distclean $(MAKECMDGOALS)
 
 #For an 'all' build with BUILD_TYPE containing 'pgo' this will perform a 2-stage compilation
 #with profile guided optimization.
 #For a BUILD_TYPE without 'pgo', a single stage (non-pgo) compilation is performed.
 
-#Forward any targets that are not named 'distclean', 'clean' or 'qt6sdk' to the generated Makefile
+#Forward any targets that are not named 'distclean' or 'clean' to the generated Makefile
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),qt6sdk)
 all $(MAKECMDGOALS):
 ifneq ($(BUILD_DIR),build)
 	ln -sf $(BUILD_DIR) build
@@ -128,17 +127,8 @@ endif #BUILD_TYPE
 	#
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
-endif #qt6sdk
 endif #clean
 endif #distclean
-
-# Provision the Qt6 SDK used by the GUI build into a repo-local, user-writable
-# prefix (default <repo>/qt6) with no root. Handled here, BEFORE any cmake
-# configure, because configuring the GUI build needs Qt to already exist.
-# Override the location/version with VTR_QT_PREFIX / VTR_QT_VERSION.
-# Defined after the 'all' rule above so 'all' remains the default goal.
-qt6sdk:
-	@ $(SOURCE_DIR)/dev/install_qt6_sdk.sh
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: clean
