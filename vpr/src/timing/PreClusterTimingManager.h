@@ -138,6 +138,17 @@ class PreClusterTimingManager {
         return timing_info_;
     }
 
+    /**
+     * @brief Get the timing update type used when creating this manager object.
+     *
+     * This is useful since incremental timing updates require invalidation of
+     * edge delays which may be expensive. Having a flag like this allows you
+     * to only invalidate edge delays if needed.
+     */
+    e_timing_update_type get_timing_update_type() const {
+        return timing_update_type_;
+    }
+
   private:
     /// @brief A valid flag used to signify if the pre-cluster timing manager
     ///        class has been initialized or not. For example, if the flow is
@@ -157,4 +168,7 @@ class PreClusterTimingManager {
     ///        delay calculator can query them when Tatum performs a timing analysis.
     ///        Here, we use sink pins as unique identifiers for the the timing arc.
     vtr::vector<AtomPinId, float> timing_arc_delays_;
+
+    /// @brief The timing update type used in the construction of this class.
+    const e_timing_update_type timing_update_type_;
 };

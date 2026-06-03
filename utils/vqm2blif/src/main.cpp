@@ -78,6 +78,7 @@
 *********************************************************************************************/
 
 #include "logic_types.h"
+#include "preprocess.h"
 #include "vqm2blif.h"
 #include "lut_stats.h"
 #include "vtr_error.h"
@@ -326,7 +327,7 @@ int main(int argc, char* argv[])
     //        required when decomposing INOUT pins into input and output pins
 	cout << "\n>> Parsing architecture file " << arch_file << endl ;
     try {
-        xml_read_arch( arch_file.c_str(), false, &arch, physical_tile_types, logical_block_types);	//Architecture (XML) Parser call
+        xml_read_arch( arch_file.c_str(), false, &arch, physical_tile_types, logical_block_types, /*device_model_warnings=*/true);	//Architecture (XML) Parser call
     } catch (const vtr::VtrError& e) {
         cout << "Error at line " << e.line() << " in " << e.filename() << ": " << e.what() << endl;
         exit(1);
@@ -1805,12 +1806,10 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 	string pin_name;
     string indent = "    ";
 
-	int ports_dumped = 1;
-
     std::vector<std::string> port_strings;
 
 	while(temp_port){
-		for (int i = 0; i < temp_port->size; i++, ports_dumped++){
+		for (int i = 0; i < temp_port->size; i++){
 			//loop through a port's size
 			if (temp_port->size > 1){
 				//rename the port "name[i]"
@@ -1964,10 +1963,9 @@ void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, std::string in
  *	flag to indicate whether to print in DEBUG or BLIF format.
  */	
 	string temp_name;
-	int ports_dumped = 1;
 
 	while (port){	
-		for (int i = 0; i < port->size; i++, ports_dumped++){
+		for (int i = 0; i < port->size; i++){
 			temp_name = (string)port->name;
 
 			if (port->size > 1){	//append the index if necessary using the established convention

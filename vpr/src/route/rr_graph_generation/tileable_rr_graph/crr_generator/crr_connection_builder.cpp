@@ -6,6 +6,8 @@
 #include <cctype>
 #include <algorithm>
 
+#include "globals.h"
+#include "physical_types_util.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -25,6 +27,32 @@ static bool is_integer(const std::string& s) {
     return ec == std::errc() && ptr == s.data() + s.size();
 }
 
+/**
+ * @brief Builds the per-tile-type reverse map (pin_name -> pin_ptc) for every
+ *        physical tile type.
+ *
+ * The returned vector is indexed by t_physical_tile_type::index.
+ *
+ * Kept as a free helper so it can be invoked directly in the constructor's
+ * initializer list. The returned vector is a prvalue, so it is moved (not
+ * copied) into the member it initializes.
+ */
+static std::vector<std::unordered_map<std::string, int>>
+create_pin_name_to_ptc_cache(const std::vector<t_physical_tile_type>& physical_tile_types) {
+    std::vector<std::unordered_map<std::string, int>> pin_name_to_ptc_cache(physical_tile_types.size());
+
+    for (const t_physical_tile_type& tile_type : physical_tile_types) {
+        VTR_ASSERT(tile_type.index >= 0 && tile_type.index < static_cast<int>(physical_tile_types.size()));
+        std::unordered_map<std::string, int>& name_to_ptc = pin_name_to_ptc_cache[tile_type.index];
+        name_to_ptc.reserve(tile_type.num_pins);
+        for (int pin_ptc = 0; pin_ptc < tile_type.num_pins; ++pin_ptc) {
+            name_to_ptc.emplace(block_type_pin_index_to_name(&tile_type, pin_ptc, false), pin_ptc);
+        }
+    }
+
+    return pin_name_to_ptc_cache;
+}
+
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
                                            const NodeLookupManager& node_lookup,
                                            const SwitchBlockManager& sb_manager,
@@ -32,7 +60,8 @@ CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
     : rr_graph_(rr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager)
-    , verbosity_(verbosity) {}
+    , verbosity_(verbosity)
+    , pin_name_to_ptc_cache_(create_pin_name_to_ptc_cache(g_vpr_ctx.device().physical_tile_types)) {}
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
                                       int fpga_grid_y,
@@ -200,6 +229,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
 
         if (node_id != RRNodeId::INVALID()) {
             source_nodes[row] = node_id;
+        } else {
+            VTR_LOGV(verbosity_ > 1, "No node found for source at row %zu in tile (%d,%d)\n", row, x, y);
         }
 
         prev_seg_type = info.seg_type;
@@ -237,6 +268,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(i
 
         if (node_id != RRNodeId::INVALID()) {
             sink_nodes[col] = node_id;
+        } else {
+            VTR_LOGV(verbosity_ > 1, "No node found for sink at column %zu in tile (%d,%d)\n", col, x, y);
         }
 
         prev_seg_type = info.seg_type;
@@ -269,8 +302,12 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!index_cell.is_empty()) {
             info.seg_index = static_cast<int>(index_cell.as_int());
         }
-        if (!tap_cell.is_empty() && tap_cell.is_number()) {
-            info.tap = static_cast<int>(tap_cell.as_int());
+        if (!tap_cell.is_empty()) {
+            if (tap_cell.is_number()) {
+                info.tap = static_cast<int>(tap_cell.as_int());
+            } else {
+                info.pin_name = tap_cell.as_string();
+            }
         }
     } else {
         // Horizontal processing (columns)
@@ -291,14 +328,47 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!index_cell.is_empty()) {
             info.seg_index = static_cast<int>(index_cell.as_int());
         }
-        if (!tap_cell.is_empty() && tap_cell.is_number()) {
-            info.tap = static_cast<int>(tap_cell.as_int());
+        if (!tap_cell.is_empty()) {
+            if (tap_cell.is_number()) {
+                info.tap = static_cast<int>(tap_cell.as_int());
+            } else {
+                info.pin_name = tap_cell.as_string();
+            }
         } else {
             info.tap = 1;
         }
     }
 
     return info;
+}
+
+int CRRConnectionBuilder::resolve_pin_ptc(const SegmentInfo& info,
+                                          int x,
+                                          int y) const {
+    if (info.pin_name.empty()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No pin name is specified for segment index %d at (%d,%d)\n", info.seg_index, x, y);
+    }
+
+    // CRR Currently only supports 2D architectures. So, layer number 0 is assigned here
+    auto tile_type = g_vpr_ctx.device().grid.get_physical_type({x, y, 0});
+    if (tile_type == nullptr) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No tile type found while resolving pin '%s' at (%d,%d)\n",
+                        info.pin_name.c_str(), x, y);
+    }
+
+    const auto& name_to_ptc = pin_name_to_ptc_cache_.at(tile_type->index);
+    auto pin_it = name_to_ptc.find(info.pin_name);
+    if (pin_it != name_to_ptc.end()) {
+        return pin_it->second;
+    }
+
+    VTR_LOGV(verbosity_ > 0,
+             "Failed to resolve %s pin '%s' on tile type '%s' at (%d,%d); falling back to CSV index %d\n",
+             rr_node_typename[(info.side == e_sw_template_dir::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN],
+             info.pin_name.c_str(),
+             tile_type->name.c_str(),
+             x, y, info.seg_index);
+    return info.seg_index;
 }
 
 RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
@@ -308,8 +378,9 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
     VTR_ASSERT(info.side == e_sw_template_dir::OPIN || info.side == e_sw_template_dir::IPIN);
     e_rr_type node_type = (info.side == e_sw_template_dir::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
+    int pin_ptc = resolve_pin_ptc(info, x, y);
     NodeHash hash = std::make_tuple(node_type,
-                                    std::to_string(info.seg_index),
+                                    std::to_string(pin_ptc),
                                     x, x, y, y);
 
     auto col_it = col_nodes.find(hash);
@@ -322,7 +393,8 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
         return row_it->second;
     }
 
-    return RRNodeId::INVALID();
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find %s node for pin '%s' at (%d,%d)\n",
+                    rr_node_typename[node_type], info.pin_name.c_str(), x, y);
 }
 
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
@@ -384,9 +456,16 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
         return row_it->second;
     }
 
-    VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-             seg_sequence.c_str(), x_low, y_low, x_high, y_high);
-    return RRNodeId::INVALID();
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                    "Node not found: SB(%d,%d) side=%s seg_type=%s seg_index=%d tap=%d -> %s [%s] (%d,%d) -> (%d,%d)\n",
+                    x, y,
+                    template_side_name[info.side],
+                    info.seg_type.c_str(),
+                    info.seg_index,
+                    info.tap,
+                    seg_type_label.c_str(),
+                    seg_sequence.c_str(),
+                    x_low, y_low, x_high, y_high);
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,

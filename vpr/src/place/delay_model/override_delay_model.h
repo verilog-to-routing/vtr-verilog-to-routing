@@ -5,10 +5,8 @@
 
 class OverrideDelayModel : public PlaceDelayModel {
   public:
-    OverrideDelayModel(float min_cross_layer_delay,
-                       bool is_flat)
-        : cross_layer_delay_(min_cross_layer_delay)
-        , is_flat_(is_flat) {}
+    OverrideDelayModel(bool is_flat)
+        : is_flat_(is_flat) {}
 
     void compute(RouterDelayProfiler& route_profiler,
                  const t_placer_opts& placer_opts,
@@ -34,8 +32,6 @@ class OverrideDelayModel : public PlaceDelayModel {
 
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
-    /// Minimum delay of cross-layer connections
-    float cross_layer_delay_;
 
     /// Indicates whether the router is a two-stage or run-flat
     bool is_flat_;

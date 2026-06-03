@@ -1,4 +1,5 @@
 #include "router_lookahead_cost_map.h"
+#include <cstddef>
 
 #include "router_lookahead_map_utils.h"
 #include "globals.h"
@@ -108,7 +109,7 @@ static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, fl
  *
  * */
 util::Cost_Entry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y) const {
-    VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
+    VTR_ASSERT(from_seg_index >= 0 && static_cast<size_t>(from_seg_index) < offset_.size());
     const auto& cost_map = cost_map_[0][from_seg_index];
     // Check whether the cost map corresponding to the input segment is empty.
     // This can be due to an absence of samples during the lookahead generation.
@@ -168,7 +169,7 @@ float CostMap::get_penalty(vtr::NdMatrix<util::Cost_Entry, 2>& matrix) const {
 }
 
 // fills the holes in the cost map matrix
-void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty) {
+void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty, bool device_model_warnings) {
     // find missing cost entries and fill them in by copying a nearby cost entry
     std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
     bool couldnt_fill = false;
@@ -206,8 +207,9 @@ void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_ind
     }
 
     if (couldnt_fill) {
-        VTR_LOG_WARN("Couldn't fill holes in the cost matrix for %ld, %d x %d bounding box\n",
-                     seg_index, bounding_box_width, bounding_box_height);
+        VTR_LOGV_WARN(device_model_warnings,
+                      "Couldn't fill holes in the cost matrix for %ld, %d x %d bounding box\n",
+                      seg_index, bounding_box_width, bounding_box_height);
         for (unsigned y = 0; y < matrix.dim_size(1); y++) {
             for (unsigned x = 0; x < matrix.dim_size(0); x++) {
                 VTR_ASSERT(!matrix[x][y].valid());
@@ -217,7 +219,7 @@ void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_ind
 }
 
 // set the cost map for a segment type and chan type, filling holes
-void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs) {
+void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs, bool device_model_warnings) {
     // Calculate the bounding boxes
     // Bounding boxes are used to reduce the cost map size. They are generated based on the minimum
     // and maximum coordinates of the x/y delta delays obtained for each segment.
@@ -296,7 +298,7 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
         penalty_[0][seg] = delay_penalty;
 
         // Holes filling
-        this->fill_holes(matrix, seg, seg_bounds.width(), seg_bounds.height(), delay_penalty);
+        this->fill_holes(matrix, seg, seg_bounds.width(), seg_bounds.height(), delay_penalty, device_model_warnings);
     }
 }
 

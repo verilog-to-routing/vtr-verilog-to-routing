@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-""" This module is a wrapper around the scripts/python_libs/vtr,
-allowing the user to run one or more VTR tasks. """
+"""This module is a wrapper around the scripts/python_libs/vtr,
+allowing the user to run one or more VTR tasks."""
 
 import argparse
 import os
@@ -49,13 +49,10 @@ from vtr.error import VtrError, InspectError, CommandError
 def vtr_command_argparser(prog=None):
     """Argument parse for run_vtr_task"""
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
             Runs one or more VTR tasks.
-        """
-    )
-    epilog = textwrap.dedent(
-        """
+        """)
+    epilog = textwrap.dedent("""
         Examples
         --------
 
@@ -74,8 +71,7 @@ def vtr_command_argparser(prog=None):
         Exit Code
         ---------
             The exit code equals the number failures (i.e. exit code 0 indicates no failures).
-        """
-    )
+        """)
 
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -325,7 +321,7 @@ def run_tasks(args, configs) -> int:
             print("\nParsing test results...")
             if len(args.list_file) > 0:
                 print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
-            parse_tasks(configs, jobs, args.alt_tasks_dir)
+            parse_tasks(configs, jobs, args.alt_tasks_dir, args.j)
             print("Elapsed time: {}".format(format_elapsed_time(datetime.now() - start)))
 
         if args.create_golden:
@@ -364,7 +360,9 @@ def run_parallel(args, queued_jobs, run_dirs: dict) -> int:
     queued_procs = []
     queue = Manager().Queue()
     for job in queued_jobs:
-        queued_procs.append((queue, run_dirs, job, args.script))
+        # A config-level flow_script overrides the command-line -script default.
+        script = job.flow_script() or args.script
+        queued_procs.append((queue, run_dirs, job, script))
 
     # Queue of currently running subprocesses
     num_failed = 0

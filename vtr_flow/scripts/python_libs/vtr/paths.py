@@ -1,4 +1,4 @@
-""" Paths for different VTR flow executables and resources """
+"""Paths for different VTR flow executables and resources"""
 
 import pathlib
 

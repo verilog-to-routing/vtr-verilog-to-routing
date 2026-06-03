@@ -11,9 +11,11 @@
  * externally to the Packer in VPR.
  */
 
+#include <optional>
 #include <string>
 #include <vector>
 #include "atom_netlist_fwd.h"
+#include "cluster_legalizer_fwd.h"
 #include "cluster_router.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
@@ -25,17 +27,13 @@
 #include "vtr_vector_map.h"
 #include "atom_pb_bimap.h"
 #include "vpr_utils.h"
+#include "packing_signature_tree.h"
 
 // Forward declarations
 class Prepacker;
 class LogicalModels;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
-
-// A special ID to identify the legalization clusters. This is separate from the
-// ClusterBlockId since this legalizer is not necessarily tied to the Clustered
-// netlist, but is used as a sub-routine to it.
-typedef vtr::StrongId<struct legalization_cluster_id_tag, size_t> LegalizationClusterId;
 
 /**
  * @brief Holds information to be shared between molecules that represent the
@@ -104,13 +102,19 @@ struct LegalizationCluster {
     /**
      * @brief Constructor for the LegalizationCluster class.
      *
-     *  @param cluster_type         The type of this cluster.
-     *  @param cluster_mode         The mode of this cluster.
-     *  @param lb_type_rr_graphs    The RR-graphs for each cluster type.
+     *  @param cluster_type              The type of this cluster.
+     *  @param cluster_mode              The mode of this cluster.
+     *  @param lb_type_rr_graphs         The RR-graphs for each cluster type.
+     *  @param valid_feedback_pins       Pre-computed feedback-pin set for this type;
+     *                                   owned by ClusterLegalizer, must outlive this cluster.
+     *  @param enable_router_hot_start   Forwarded to ClusterRouter; enables hot-start
+     *                                   routing on each try_intra_lb_route call.
      */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
-                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs);
+                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                        const std::unordered_set<int>& valid_feedback_pins,
+                        bool enable_router_hot_start = false);
 
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
@@ -293,6 +297,11 @@ class ClusterLegalizer {
      *          performed.
      *  @param enable_pin_feasibility_filter
      *          A flag to turn on/off the check for pin usage feasibility.
+     *  @param memoize_cluster_packings
+     *          A flag to turn on/off the cluster memoization runtime optimization.
+     *  @param enable_cluster_router_hot_start
+     *          When true, each call to try_intra_lb_route seeds unchanged nets
+     *          from the last successful route before running pathfinder.
      *  @param models
      *  @param log_verbosity
      *          Controls how verbose the log messages will be within this class.
@@ -304,6 +313,8 @@ class ClusterLegalizer {
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
+                     bool memoize_cluster_packings,
+                     bool enable_cluster_router_hot_start,
                      const LogicalModels& models,
                      int log_verbosity);
 
@@ -394,6 +405,26 @@ class ClusterLegalizer {
      *  @return                 True if the cluster is legal, false otherwise.
      */
     bool check_cluster_legality(LegalizationClusterId cluster_id);
+
+    /*
+     * @brief Ensure that the cluster has a legal final routing.
+     *
+     * Checks that the cluster is routable. If it is routable, ensures that
+     * an up-to-date routing has been created and stored in the appropriate
+     * clustering data structures, creating one if not.
+     *
+     * For SKIP_INTRA_LB_ROUTE packing, this is the first time routing
+     * is run on the cluster and may fail. For detailed routing with the
+     * the PackingSignatureTree enabled, this function makes sure the cluster
+     * has a routing to pass to later stages since routing steps may have been
+     * skipped for cluster patterns where the legality was known from packing
+     * a previous cluster.
+     *
+     *  @param cluster_id       The ID of the cluster to ensure has a legal routing.
+     *
+     *  @return                 True if the cluster is routed and legal, false otherwise.
+     * */
+    bool ensure_legal_final_routing(LegalizationClusterId cluster_id);
 
     /*
      * @brief Cleans the cluster of unnecessary data, reducing the memory footprint.
@@ -564,6 +595,10 @@ class ClusterLegalizer {
     ~ClusterLegalizer();
 
   private:
+    /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
+    ///        Called once by the constructor.
+    void init_feedback_pin_sets();
+
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
@@ -603,6 +638,10 @@ class ClusterLegalizer {
     ///       meant to be a vector of vectors...
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
 
+    /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
+    ///        Indexed by t_logical_block_type::index.
+    std::vector<std::unordered_set<int>> valid_feedback_pins_by_type_;
+
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
 
@@ -615,6 +654,11 @@ class ClusterLegalizer {
     ///        routing). This reduces packing run-time. This matches the packer
     ///        option of the same name.
     bool enable_pin_feasibility_filter_;
+
+    /// @brief When true, each ClusterRouter seeds unchanged nets from the last
+    ///        successful route before running pathfinder (hot-start). Matches
+    ///        the --cluster_router_hot_start packer option.
+    bool enable_cluster_router_hot_start_;
 
     /// @brief Used to set the verbosity of log messages in the legalizer. Used
     ///        for debugging. When log_verbosity > 3, the legalizer will print
@@ -634,4 +678,26 @@ class ClusterLegalizer {
 
     /// @brief A lookup table for the pin mapping of the intra-lb pb pins.
     IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
+
+    /// @brief A structure for tracking and identifying cluster packing
+    ///        patterns that have been previously tested for routing
+    ///        feasibility. Cluster legality check results are memoized and
+    ///        reused to avoid repeating work.
+    std::optional<PackingSignatureTree> packing_signature_tree_;
 };
+
+/**
+ * @brief Check that the two atom blocks blk_id and sibling_blk_id (which should
+ *        both be memory slices) are feasible, in the sense that they have
+ *        precisely the same net connections (with the exception of nets in data
+ *        port classes).
+ *
+ * Note that this routine does not check pin feasibility against the cur_pb_type, so
+ * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
+ *
+ * @param blk_id          The atom block being checked for sibling feasibility.
+ * @param cur_pb_type     The primitive type to check net connections against.
+ * @param sibling_blk_id  The sibling atom to compare net connections with.
+ * @return                True if the two blocks are sibling-feasible.
+ */
+bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id);

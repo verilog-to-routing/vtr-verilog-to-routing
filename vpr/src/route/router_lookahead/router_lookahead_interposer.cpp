@@ -19,6 +19,26 @@
 #include "router_lookahead_interposer.h"
 
 /**
+ * @brief Internal struct used for returning the delay and congestion cost data of interposer cuts in helper functions.
+ * 
+ */
+struct t_interposer_cost_prefix_sums {
+    t_interposer_cost_prefix_sums(int num_layers) {
+        horizontal_delay_sum = std::vector<std::vector<float>>(num_layers);
+        horizontal_cong_sum = std::vector<std::vector<float>>(num_layers);
+
+        vertical_delay_sum = std::vector<std::vector<float>>(num_layers);
+        vertical_cong_sum = std::vector<std::vector<float>>(num_layers);
+    }
+
+    std::vector<std::vector<float>> horizontal_delay_sum;
+    std::vector<std::vector<float>> vertical_delay_sum;
+
+    std::vector<std::vector<float>> horizontal_cong_sum;
+    std::vector<std::vector<float>> vertical_cong_sum;
+};
+
+/**
  * @brief Compute the delay matrix for interposer delays. End result is a 2D matrix with an entry for each pair of DeviceDieIds.
  * Each element of the matrix represents the interposer delay of going from one die to another die.
  * For example, in a device with 2 interposer cuts with a delay of 5ns each, this function returns the following 3x3 matrix:
@@ -36,8 +56,16 @@
  */
 static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid,
                                                                                                    const RRGraphView& rr_graph,
-                                                                                                   const DeviceContext& device_ctx);
-
+                                                                                                   const DeviceContext& device_ctx,
+                                                                                                   float interposer_cut_base_cost_multiplier);
+/**
+ * @brief Computes prefix sums for delay and congestion cost of crossing interposer cuts
+ * 
+ * @return t_interposer_cost_prefix_sums Struct containing 4 prefix sums, for delay and congestion cost of horizontal and vertical cuts.
+ */
+static t_interposer_cost_prefix_sums compute_die_crossing_prefix_sums(const DeviceGrid& grid,
+                                                                      const RRGraphView& rr_graph,
+                                                                      const DeviceContext& device_ctx);
 /**
  * @brief Get all input edges of a given list of nodes. This function is expensive and works in O(n.logk)
  * with n being the total number of edges in the RR Graph and k being the number of nodes you want the input edges of.
@@ -46,10 +74,10 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
  */
 static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(const RRGraphView& rr_graph, std::vector<RRNodeId>& nodes);
 
-InterposerLookahead::InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx)
+InterposerLookahead::InterposerLookahead(const RRGraphView& rr_graph, const DeviceGrid& grid, const DeviceContext& device_ctx, float interposer_cut_base_cost_multiplier)
     : rr_graph_(rr_graph)
     , grid_(grid) {
-    auto [delay_matrix, cong_matrix] = compute_interposer_delay_matrix(grid, rr_graph, device_ctx);
+    auto [delay_matrix, cong_matrix] = compute_interposer_delay_matrix(grid, rr_graph, device_ctx, interposer_cut_base_cost_multiplier);
     die_to_die_delay_matrix_ = std::move(delay_matrix);
     die_to_die_cong_matrix_ = std::move(cong_matrix);
 }
@@ -61,8 +89,12 @@ std::pair<float, float> InterposerLookahead::get_interposer_lookahead_cost(RRNod
     auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
     auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
 
-    size_t to_die_index = static_cast<size_t>(grid_.get_loc_die_id({to_x, to_y, to_layer}));
-    size_t from_die_index = static_cast<size_t>(grid_.get_loc_die_id({from_x, from_y, from_layer}));
+    return get_interposer_lookahead_cost({from_x, from_y, from_layer}, {to_x, to_y, to_layer});
+}
+
+std::pair<float, float> InterposerLookahead::get_interposer_lookahead_cost(t_physical_tile_loc from_loc, t_physical_tile_loc to_loc) const {
+    size_t from_die_index = static_cast<size_t>(grid_.get_loc_die_id(from_loc));
+    size_t to_die_index = static_cast<size_t>(grid_.get_loc_die_id(to_loc));
 
     float interposer_delay = die_to_die_delay_matrix_[from_die_index][to_die_index];
     float interposer_cong = die_to_die_cong_matrix_[from_die_index][to_die_index];
@@ -86,14 +118,17 @@ static std::unordered_map<RRNodeId, std::vector<RREdgeId>> get_nodes_in_edges(co
     return node_in_edges;
 }
 
-static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid, const RRGraphView& rr_graph, const DeviceContext& device_ctx) {
-    vtr::ScopedStartFinishTimer timer("Computing interposer delay lookahead");
+static t_interposer_cost_prefix_sums compute_die_crossing_prefix_sums(const DeviceGrid& grid,
+                                                                      const RRGraphView& rr_graph,
+                                                                      const DeviceContext& device_ctx) {
+
     const auto [layer_size, device_width, device_height] = grid.dim_sizes();
     const std::vector<std::vector<int>>& horizontal_interposer_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_interposer_cuts = grid.get_vertical_interposer_cuts();
 
     /**
      * @brief Gets the minimum delay and congestion cost of a list of nodes along with their input edges.
+     * Used here to calculate the cost of crossing an interposer cut.
      */
     auto get_channel_min_delay = [&rr_graph, &device_ctx](const std::unordered_map<RRNodeId, std::vector<RREdgeId>>& node_in_edges) {
         float channel_delay = std::numeric_limits<float>::max();
@@ -113,25 +148,21 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
     };
 
     // Compute prefix sums for interposer delays and congestion costs along each axis.
+    // The cost of each cut is the minimum cost of all nodes that cross the cut.
     // By calculating the cumulative cost at each cut, we can determine the cost
     // between any two regions in O(1) time using the difference between their
     // prefix sum values.
-
-    std::vector<std::vector<float>> horizontal_delay_sum(layer_size);
-    std::vector<std::vector<float>> vertical_delay_sum(layer_size);
-
-    std::vector<std::vector<float>> horizontal_cong_sum(layer_size);
-    std::vector<std::vector<float>> vertical_cong_sum(layer_size);
+    t_interposer_cost_prefix_sums interposer_sums(layer_size);
 
     for (size_t layer_num = 0; layer_num < layer_size; layer_num++) {
         const std::vector<int>& layer_horizontal_interposer_cuts = horizontal_interposer_cuts[layer_num];
         const std::vector<int>& layer_vertical_interposer_cuts = vertical_interposer_cuts[layer_num];
 
-        horizontal_delay_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
-        vertical_delay_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
+        interposer_sums.horizontal_delay_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
+        interposer_sums.vertical_delay_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
 
-        horizontal_cong_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
-        vertical_cong_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
+        interposer_sums.horizontal_cong_sum[layer_num] = std::vector<float>(layer_vertical_interposer_cuts.size() + 1, 0);
+        interposer_sums.vertical_cong_sum[layer_num] = std::vector<float>(layer_horizontal_interposer_cuts.size() + 1, 0);
 
         // Calculate the vertical delay and congestion cost prefix sums
         for (size_t vertical_interposer_index = 0; vertical_interposer_index < layer_vertical_interposer_cuts.size(); vertical_interposer_index++) {
@@ -145,8 +176,8 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
             std::unordered_map<RRNodeId, std::vector<RREdgeId>> node_in_edges = get_nodes_in_edges(rr_graph, channel_nodes);
             auto [interposer_delay, interposer_cong_cost] = get_channel_min_delay(node_in_edges);
-            horizontal_delay_sum[layer_num][vertical_interposer_index + 1] = horizontal_delay_sum[layer_num][vertical_interposer_index] + interposer_delay;
-            horizontal_cong_sum[layer_num][vertical_interposer_index + 1] = horizontal_cong_sum[layer_num][vertical_interposer_index] + interposer_cong_cost;
+            interposer_sums.horizontal_delay_sum[layer_num][vertical_interposer_index + 1] = interposer_sums.horizontal_delay_sum[layer_num][vertical_interposer_index] + interposer_delay;
+            interposer_sums.horizontal_cong_sum[layer_num][vertical_interposer_index + 1] = interposer_sums.horizontal_cong_sum[layer_num][vertical_interposer_index] + interposer_cong_cost;
         }
 
         // Calculate the horizontal delay and congestion cost prefix sums
@@ -161,10 +192,21 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
 
             std::unordered_map<RRNodeId, std::vector<RREdgeId>> node_in_edges = get_nodes_in_edges(rr_graph, channel_nodes);
             auto [interposer_delay, interposer_cong_cost] = get_channel_min_delay(node_in_edges);
-            vertical_delay_sum[layer_num][horizontal_interposer_index + 1] = vertical_delay_sum[layer_num][horizontal_interposer_index] + interposer_delay;
-            vertical_cong_sum[layer_num][horizontal_interposer_index + 1] = vertical_cong_sum[layer_num][horizontal_interposer_index] + interposer_cong_cost;
+            interposer_sums.vertical_delay_sum[layer_num][horizontal_interposer_index + 1] = interposer_sums.vertical_delay_sum[layer_num][horizontal_interposer_index] + interposer_delay;
+            interposer_sums.vertical_cong_sum[layer_num][horizontal_interposer_index + 1] = interposer_sums.vertical_cong_sum[layer_num][horizontal_interposer_index] + interposer_cong_cost;
         }
     }
+
+    return interposer_sums;
+}
+
+static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid,
+                                                                                                   const RRGraphView& rr_graph,
+                                                                                                   const DeviceContext& device_ctx,
+                                                                                                   float interposer_cut_base_cost_multiplier) {
+    vtr::ScopedStartFinishTimer timer("Computing interposer lookahead");
+
+    t_interposer_cost_prefix_sums interposer_sums = compute_die_crossing_prefix_sums(grid, rr_graph, device_ctx);
 
     vtr::NdMatrix<float, 2> interposer_delay_matrix({grid.get_die_count(), grid.get_die_count()}, 0.0f);
     vtr::NdMatrix<float, 2> interposer_cong_matrix({grid.get_die_count(), grid.get_die_count()}, 0.0f);
@@ -186,11 +228,10 @@ static std::pair<vtr::NdMatrix<float, 2>, vtr::NdMatrix<float, 2>> compute_inter
             DeviceDieId second_die_id = grid.get_die_region_id(second_die_region);
 
             interposer_delay_matrix[(size_t)first_die_id][(size_t)second_die_id] =
-                get_die_crossing_cost(horizontal_delay_sum, vertical_delay_sum, first_die_region, second_die_region);
+                get_die_crossing_cost(interposer_sums.horizontal_delay_sum, interposer_sums.vertical_delay_sum, first_die_region, second_die_region);
 
-            // We multiply the base cost of an interposer crossing by a factor of 2. This tells the router that interposer wires are a rare and expensive resource.
             interposer_cong_matrix[(size_t)first_die_id][(size_t)second_die_id] =
-                2 * get_die_crossing_cost(horizontal_cong_sum, vertical_cong_sum, first_die_region, second_die_region);
+                interposer_cut_base_cost_multiplier * get_die_crossing_cost(interposer_sums.horizontal_cong_sum, interposer_sums.vertical_cong_sum, first_die_region, second_die_region);
         }
     }
 

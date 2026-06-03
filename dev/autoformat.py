@@ -7,7 +7,6 @@ import subprocess
 import sys
 import tempfile
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "Automated script for applying code reformatting. Automatically commits reformatting changes as 'VTR Robot' and adds them to .git-blame-ignore-revs (so they can be skipped with git hyper-blame). Should be run from the root of the source tree."
@@ -42,13 +41,11 @@ if __name__ == "__main__":
     if not args.skip_commit:
         # Commit the changes caused by `make format`
         with tempfile.NamedTemporaryFile("w") as msg:
-            msg.write(
-                """\
+            msg.write("""\
 🤖 - Automated code reformat.
 
 I'm an auto code reformatting bot. Beep boop...
-            """
-            )
+            """)
             msg.flush()
 
             subprocess.check_call(
@@ -63,20 +60,15 @@ I'm an auto code reformatting bot. Beep boop...
         now = datetime.datetime.utcnow().isoformat()
 
         with open(".git-blame-ignore-revs", "a+") as bf:
-            bf.write(
-                """\
+            bf.write("""\
 # Autoformat run on {}
 {}
-            """.format(
-                    now, format_hash
-                )
-            )
+            """.format(now, format_hash))
 
         subprocess.check_call("git add .git-blame-ignore-revs", shell=True)
 
         with tempfile.NamedTemporaryFile("w") as msg:
-            msg.write(
-                """\
+            msg.write("""\
 🤖 - Ignore automated code reformat in blame.
 
 Adding the reformatting change
@@ -84,10 +76,7 @@ Adding the reformatting change
 (which I just committed!) to the ignore list.
 
 I'm an auto code reformatting bot. Beep boop...
-            """.format(
-                    format_hash
-                )
-            )
+            """.format(format_hash))
             msg.flush()
 
             subprocess.check_call(

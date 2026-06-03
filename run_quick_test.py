@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""  Run the vtr_reg_basic regression test """
+"""Run the vtr_reg_basic regression test"""
 
 import argparse
 import subprocess

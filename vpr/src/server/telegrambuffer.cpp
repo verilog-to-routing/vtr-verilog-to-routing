@@ -51,8 +51,6 @@ void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& r
                     TelegramFramePtr telegram_frame_ptr = std::make_shared<TelegramFrame>();
                     telegram_frame_ptr->header = header;
                     telegram_frame_ptr->body = std::move(body);
-                    body.clear(); // post std::move safety step
-
                     result.push_back(telegram_frame_ptr);
                 } else {
                     m_errors.push_back("wrong checkSums " + std::to_string(actual_check_sum) + " for " + header.info() + " , drop this chunk");

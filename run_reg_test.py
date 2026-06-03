@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-    Module for running regression tests
+Module for running regression tests
 """
+
 from pathlib import Path
 import sys
 import argparse
@@ -9,7 +10,6 @@ import textwrap
 import subprocess
 from collections import OrderedDict
 from prettytable import PrettyTable
-
 
 # pylint: disable=wrong-import-position, import-error
 sys.path.insert(0, str(Path(__file__).resolve().parent / "vtr_flow/scripts/python_libs"))
@@ -24,13 +24,10 @@ BASIC_VERBOSITY = 1
 def vtr_command_argparser(prog=None):
     """Parses the arguments of run_reg_test"""
 
-    description = textwrap.dedent(
-        """
+    description = textwrap.dedent("""
                     Runs one or more VTR regression tests.
-                    """
-    )
-    epilog = textwrap.dedent(
-        """
+                    """)
+    epilog = textwrap.dedent("""
                 Examples
                 --------
 
@@ -46,8 +43,7 @@ def vtr_command_argparser(prog=None):
                     with 8 parallel workers:
 
                         %(prog)s vtr_reg_basic vtr_reg_strong -j8
-                """
-    )
+                """)
 
     parser = argparse.ArgumentParser(
         prog=prog,

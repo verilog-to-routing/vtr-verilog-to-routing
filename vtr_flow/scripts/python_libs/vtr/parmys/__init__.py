@@ -1,5 +1,5 @@
 """
-    init for the YOSYS module
+init for the YOSYS module
 """
 
 from .parmys import run

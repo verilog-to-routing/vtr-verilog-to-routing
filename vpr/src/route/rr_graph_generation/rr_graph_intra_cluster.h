@@ -25,4 +25,5 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                   float R_minW_pmos,
                                   RRGraphBuilder& rr_graph_builder,
                                   bool is_flat,
-                                  bool load_rr_graph);
+                                  bool load_rr_graph,
+                                  bool device_model_warnings);

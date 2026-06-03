@@ -2,6 +2,7 @@
 """
 Module to parse the vtr flow results.
 """
+
 import sys
 from pathlib import Path
 import glob

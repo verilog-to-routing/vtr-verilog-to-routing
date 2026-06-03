@@ -51,7 +51,9 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
                                                                           is_flat,
-                                                                          router_opts.route_verbosity);
+                                                                          router_opts.route_verbosity,
+                                                                          router_opts.device_model_warnings,
+                                                                          router_opts.router_lookahead_interposer_base_cut_multiplier);
 
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 
@@ -59,14 +61,13 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
 
     // now setup and compute the actual arrays
     std::unique_ptr<PlaceDelayModel> place_delay_model;
-    float min_cross_layer_delay = get_min_cross_layer_delay();
 
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
         place_delay_model = std::make_unique<SimpleDelayModel>();
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
-        place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
+        place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        place_delay_model = std::make_unique<OverrideDelayModel>(min_cross_layer_delay, is_flat);
+        place_delay_model = std::make_unique<OverrideDelayModel>(is_flat);
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }

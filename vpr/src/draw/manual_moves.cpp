@@ -105,7 +105,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     std::string block_id_string = gtk_entry_get_text((GtkEntry*)block_entry);
 
     if (string_is_a_number(block_id_string)) { //for block ID
-        block_id = std::atoi(block_id_string.c_str());
+        block_id = std::stoi(block_id_string);
     } else { //for block name
         block_id = size_t(cluster_ctx.clb_nlist.find_block(gtk_entry_get_text((GtkEntry*)block_entry)));
     }
@@ -115,10 +115,10 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     GtkWidget* layer_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 3);
     GtkWidget* subtile_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 4);
 
-    int x_location = std::atoi(gtk_entry_get_text((GtkEntry*)x_position_entry));
-    int y_location = std::atoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
-    int layer_location = std::atoi(gtk_entry_get_text((GtkEntry*)layer_position_entry));
-    int subtile_location = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
+    int x_location = std::stoi(gtk_entry_get_text((GtkEntry*)x_position_entry));
+    int y_location = std::stoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
+    int layer_location = std::stoi(gtk_entry_get_text((GtkEntry*)layer_position_entry));
+    int subtile_location = std::stoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
 
     if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)layer_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
         invalid_breakpoint_entry_window("Not all fields are complete");

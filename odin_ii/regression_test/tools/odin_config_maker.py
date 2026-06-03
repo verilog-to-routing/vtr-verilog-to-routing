@@ -13,7 +13,6 @@ from optparse import OptionParser
 from os.path import abspath
 from string import rstrip
 
-
 # import functions from custom modules
 from odin_script_util import isVerilog
 
@@ -23,7 +22,7 @@ def main(argv=None):
         argv = sys.argv
 
     parser = configOptParse()
-    (options, args) = parser.parse_args(argv)
+    options, args = parser.parse_args(argv)
 
     # Check our options for input errors
     if not options.arch:

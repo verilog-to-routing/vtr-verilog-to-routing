@@ -19,7 +19,7 @@ VTR can also produce [FASM](https://fasm.readthedocs.io/en/latest/) to program s
 | ------------------------------------ | ------------- |
 | <img src="https://verilogtorouting.org/img/des90_placement_macros.gif" width="350"/> | <img src="https://verilogtorouting.org/img/des90_cpd.gif" width="350"/> |
 
-| Logical Connections | Routing Utilziation |
+| Logical Connections | Routing Utilization |
 | ------------------- | ------------------- |
 | <img src="https://verilogtorouting.org/img/des90_nets.gif" width="350"/> | <img src="https://verilogtorouting.org/img/des90_routing_util.gif" width="350"/> |
 

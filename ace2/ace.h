@@ -1,11 +1,11 @@
 #ifndef __ACE_ACE_H__
 #define __ACE_ACE_H__
 
-#include <math.h>
-
 #include "base/abc/abc.h"
 
-#define bool	int
+#ifndef __cplusplus
+#  define bool int
+#endif
 #define TRUE 1
 #define FALSE 0
 

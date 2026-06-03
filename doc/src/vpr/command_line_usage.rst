@@ -226,7 +226,7 @@ General Options
     If this option is not specified it may be set from the ``VPR_NUM_WORKERS`` environment variable; otherwise the default is used.
 
     If this option is set to something other than 1, the following algorithms can be run in parallel:
-    
+
     * Timing Analysis
     * Routing (If routing algorithm is set to parallel or parallel_decomp; See :option:`--router_algorithm`)
     * Portions of analytical placement (If using the analytical placement flow and compiled VPR with Eigen enabled; See :option:`--analytical_place`)
@@ -766,12 +766,51 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``30``
 
+.. option:: --memoize_cluster_packings {on | off}
+
+    Enables memoization of previously seen clusters during packing.
+
+    This can significantly reduce runtime for architectures with complex or sparse logic block interconnects by skipping redundant intracluster routing calls made to test for cluster legality.
+    Architectures with simple logic block interconnects (i.e. those with full or regular crossbars) are likely to only see a marginal improvement, if any.
+    Enabling this option does not affect circuit quality metrics like routed wirelength or critical path delay.
+
+    Note: Use of this feature with ``--analytical_place`` is experimental. For now, ``--memoize_cluster_packings`` is unsupported if ``--ap_full_legalizer`` is set to ``flat-recon``, and will be ignored.
+
+    **Default:** ``off``
+
+.. option:: --cluster_router_hot_start {on | off}
+
+    Enables hot-starting of the intra-cluster router during packing.
+
+    When enabled, each call to the intra-cluster router seeds unchanged nets from the previous successful route before running pathfinder.
+    Nets whose terminals are unchanged and whose route trees are still valid under the current mode assignments are committed upfront, allowing pathfinder to skip them on its first iteration.
+    This can reduce router runtime when many candidate molecules are tried and rejected: after a failed molecule is removed, the cluster returns to a known-good state without re-routing nets that did not change.
+    Enabling this option should not significantly affect circuit quality metrics like routed wirelength or critical path delay, though minor variations are possible.
+
+    **Default:** ``off``
+
 .. option:: --pack_verbosity <int>
 
     Controls the verbosity of clustering output.
     Larger values produce more detailed output, which may be useful for debugging architecture packing problems.
 
     **Default:** ``2``
+
+.. option:: --use_ram_premapper {on | off}
+
+    Controls whether a separate RAM pre-mapping algorithm is invoked before the main packing stage.
+
+    When enabled, this algorithm decides which RAM slices are grouped together to form a physical RAM (based on shared
+    address and control signals) and which physical RAM type in the architecture implements each group. The type
+    selection runs in two passes: an initial pass that maps each group to minimize area, followed by a second pass that
+    remaps the most timing-critical groups to smaller, faster RAM types when resources allow. The resulting groups guide RAM
+    packing and prioritize RAMs in the packing order, and in the analytical placement flow global placement treats each
+    physical RAM group as a single moveable unit.
+
+    When disabled, these mapping decisions are instead made by the general heuristics within the main packing algorithm,
+    and in the analytical placement flow each RAM slice is treated as a single moveable unit rather than being grouped.
+
+    **Default:** ``on``
 
 .. option:: --write_block_usage <file>
 
@@ -1691,7 +1730,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     Fields in the report are:
 
     .. code-block:: none
-        
+
         netname         : The name assigned to the net in the atom netlist
         Fanout          : Net's fanout (number of sinks)
         bb_xmin         : X coordinate of the net's bounding box's bottom-left corner
@@ -1716,6 +1755,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     High values produce more detailed output, which can be useful for debugging or understanding the routing process.
 
     **Default**: ``1``
+
+.. option:: --device_model_warnings <on|off>
+
+    Show warnings related to architecture files, RR graph generation, and router lookahead.
+    These warnings are intended for VTR developers.
+    End users who are given fixed architecture and RR graph files can safely set this parameter to off.
+
+    **Default:** ``on``
 
 .. _timing_driven_router_options:
 
@@ -2015,6 +2062,13 @@ The following options are only valid when the router is in timing-driven mode (t
     .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
 
     **Default:** ``-2``
+
+.. option:: --router_lookahead_interposer_base_cut_multiplier
+    .. note:: This option only works affects the map router lookahead and devices that have interposer cuts
+    
+    A multiplier that's applied to the base cost of interposer wires for the router lookahead.
+
+    **Default:** ``2``
 
 .. _analysis_options:
 

@@ -99,8 +99,18 @@ void CheckSetup(const t_packer_opts& packer_opts,
                             "ap_high_fanout_threshold should be greater than 1");
         }
 
-        // TODO: Should we enforce that the size of the device is fixed. This
-        //       goes with ensuring that some blocks are fixed.
+        // Delta delay override model is not supported for AP.
+        if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
+            // NOTE: This is disabled for AP since this uses pins on the tile to
+            //       estimate delay; however, AP uses a flat placement.
+            // TODO: It may be possible for global placement to use one delay model
+            //       and detailed placement to use another. I do not know if there
+            //       will ever be a benefit to this; so for now it should be safe
+            //       to just error out here.
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Analytical placement does not support the delta_override model. "
+                            "Use either simple or delta instead.");
+        }
     }
 
     if (router_opts.doRouting != e_stage_action::SKIP) {

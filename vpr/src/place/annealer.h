@@ -17,6 +17,7 @@ struct t_placer_opts;
 enum class e_agent_state;
 
 class NocCostHandler;
+class InterposerCostHandler;
 class NetPinTimingInvalidator;
 class PlacerSetupSlacks;
 
@@ -105,7 +106,6 @@ class t_annealing_state {
      * @return True->continues the annealing. False->exits the annealing.
      */
     bool outer_loop_update(float success_rate,
-                           bool congestion_modeling_enabled,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts);
 
@@ -184,6 +184,7 @@ class PlacementAnnealer {
                       const PlaceMacros& place_macros,
                       t_placer_costs& costs,
                       NetCostHandler& net_cost_handler,
+                      std::optional<InterposerCostHandler>& interposer_cost_handler,
                       std::optional<NocCostHandler>& noc_cost_handler,
                       const t_noc_opts& noc_opts,
                       vtr::RngContainer& rng,
@@ -294,6 +295,8 @@ class PlacementAnnealer {
     t_placer_costs& costs_;
     /// Computes bounding box for each cluster net
     NetCostHandler& net_cost_handler_;
+    /// Computes interposer cost terms when the device has interposer cuts
+    std::optional<InterposerCostHandler>& interposer_cost_handler_;
     /// Computes NoC-related cost terms when NoC optimization are enabled
     std::optional<NocCostHandler>& noc_cost_handler_;
     /// Contains weighting factors for NoC-related cost terms
@@ -348,6 +351,8 @@ class PlacementAnnealer {
     bool quench_started_;
     /// Indicates whether routing congestion modeling has been started
     bool congestion_modeling_started_;
+    /// Indicates whether interposer congestion modeling has been started
+    bool interposer_cong_modeling_started_;
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();

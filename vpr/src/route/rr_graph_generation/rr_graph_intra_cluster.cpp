@@ -222,7 +222,8 @@ static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical
         }
     }
 
-    VTR_ASSERT(found_sub_tile);
+    if (!found_sub_tile)
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Could not find the sub-tile instance that the cluster block is mapped to.");
     std::vector<int> pin_num_vec(cluster_sub_tile_inst_num_pins);
     // Pin numbers are assigned such that each instance’s tile-level pins
     // occupy a continuous range equal to the total number of tile-level pins for that instance.
@@ -1059,7 +1060,8 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                   float R_minW_pmos,
                                   RRGraphBuilder& rr_graph_builder,
                                   bool is_flat,
-                                  bool load_rr_graph) {
+                                  bool load_rr_graph,
+                                  bool device_model_warnings) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -1116,5 +1118,6 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                    vib_grid,
                    device_ctx.chan_width,
                    graph_type,
-                   is_flat);
+                   is_flat,
+                   device_model_warnings);
 }

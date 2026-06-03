@@ -63,6 +63,99 @@ If a virtual clock is assigned using a create_clock command, it must be referenc
 
 .. warning:: If a netlist clock is not specified with a :sdc:command:`create_clock` command, paths to and from that clock domain will not be analysed.
 
+create_generated_clock
+----------------------
+
+Defines a derived clock based on an existing source clock.
+
+Generated clocks are used to describe clock signals created by internal design logic (such as clock dividers or multipliers). The frequency of the generated clock is defined by scaling the frequency of a master clock.
+
+A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architecture may contain PLL primitives which take in a source clock and produce a generated clock at a different frequency. The :sdc:command:`create_generated_clock` command informs the timing analyzer of the relationship between the PLL's output clock and its source clock.
+
+*Example Usage:*
+
+.. code-block:: tcl
+
+    # Create a master clock to generate the clocks relative to.
+    create_clock -period 6.0 -name master_clk [get_pins {div_clk.clk[0]}]
+
+    # Create a clock that is half the frequency of 'master_clk'
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -divide_by 2 [get_pins {div_clk.Q[0]}]
+
+    # Create a clock that is triple the frequency of 'master_clk' with a custom name
+    create_generated_clock -name fast_clk -source [get_pins {pll.ref[0]}] -multiply_by 3 [get_pins {pll.out[0]}]
+
+    # Create a divided clock that is phase-inverted relative to the source
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -divide_by 2 -invert [get_pins {div_clk.Q[0]}]
+
+    # Create a multiplied clock with a 30% duty cycle
+    create_generated_clock -source [get_ports clk] -multiply_by 3 -duty_cycle 30 [get_ports clk2]
+
+.. sdc:command:: create_generated_clock
+
+    .. sdc:option:: -name <string>
+
+        Specifies the name of the generated clock.
+
+        **Required:** No (Required if no targets are specified)
+
+    .. sdc:option:: -source <pin>
+
+        Specifies the pin or port in the design that serves as the master source for the generated clock.
+
+        **Required:** Yes
+
+    .. sdc:option:: -divide_by <integer>
+
+        Specifies the division factor applied to the source clock frequency.
+
+        For example, ``-divide_by 2`` increases the period by 2x (dividing the frequency in half).
+
+        **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
+
+    .. sdc:option:: -multiply_by <integer>
+
+        Specifies the multiplication factor applied to the source clock frequency.
+
+        For example, ``-multiply_by 2`` decreases the period by 2x (doubling the frequency).
+
+        **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
+
+    .. sdc:option:: -duty_cycle <float>
+
+        Specifies the duty cycle of the generated clock as a percentage (0-100).
+
+        For example, ``-duty_cycle 30`` produces a clock that is high for 30% of its period.
+        The default duty cycle is 50%.
+
+        **Required:** No
+
+        .. note:: ``-duty_cycle`` can only be used together with ``-multiply_by``.
+
+    .. sdc:option:: -invert
+
+        Swaps the rising and falling edges of the generated clock, producing a phase-inverted
+        version of what would otherwise be generated.
+
+        **Required:** No
+
+        .. note:: ``-invert`` can only be used together with ``-divide_by`` or ``-multiply_by``.
+
+    .. sdc:option:: <pin_list>
+
+        Specifies the netlist pins or ports where the generated clock is defined.
+
+        If none are specified, this is assumed to be a virtual clock.
+
+        **Required:** No
+
+.. note::
+
+    For routed clocks, the timing analysis of a generated clock currently only accounts for
+    routing delay from the generated clock's source pin to the destination flip-flop clock pin.
+    The routing delay from the master clock's source pin to the generated clock's source pin is
+    not yet included.
+
 
 set_clock_groups
 ----------------

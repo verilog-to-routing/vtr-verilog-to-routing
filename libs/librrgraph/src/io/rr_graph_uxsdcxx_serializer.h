@@ -1,9 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
 #include <cstring>
-#include <algorithm>
-#include <iostream>
 
 #include "physical_types.h"
 #include "rr_graph_uxsdcxx_interface.h"
@@ -17,7 +16,6 @@
 #include "rr_metadata.h"
 
 #include "check_rr_graph.h"
-#include "read_xml_arch_file.h"
 #include "librrgraph_types.h"
 
 #include "device_grid.h"
@@ -295,7 +293,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
         vtr::string_internment* strings,
         unsigned long schema_file_id,
-        bool is_flat)
+        bool is_flat,
+        bool device_model_warnings)
         : chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
         , rr_graph_builder_(rr_graph_builder)
@@ -321,7 +320,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , empty_(strings_->intern_string(""))
         , report_error_(nullptr)
         , schema_file_id_(schema_file_id)
-        , is_flat_(is_flat) {
+        , is_flat_(is_flat)
+        , device_model_warnings_(device_model_warnings) {
         // Initialize internal data
         init_side_map();
         init_segment_inf_xyz();
@@ -368,7 +368,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *  15   |  X      X     X    X  | 1111
      */
   private:
-    virtual void init_side_map() final {
+    void init_side_map() {
         side_map_[0] = uxsd::enum_loc_side::UXSD_INVALID;
         side_map_[(1 << TOP)] = uxsd::enum_loc_side::TOP;
         side_map_[(1 << RIGHT)] = uxsd::enum_loc_side::RIGHT;
@@ -537,7 +537,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         }
         if (!found_arch_name) {
-            VTR_LOG("Switch name '%s' found in RR graph input from file but not in the architecture file; creating it.\n", string_name.c_str());
+            VTR_LOG_DEBUG("Switch name '%s' found in RR graph input from file but not in the architecture file; creating it.\n", string_name.c_str());
         }
         sw->intra_tile = is_internal_sw;
         sw->name = string_name;
@@ -838,7 +838,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline int init_node_segment(int& inode, int segment_id) final {
         const auto& rr_graph = (*rr_graph_);
-        if (segment_id > (ssize_t)segment_inf_.size()) {
+        if (static_cast<size_t>(segment_id) > segment_inf_.size()) {
             report_error(
                 "Specified segment %d is larger than number of known segments %zu",
                 segment_inf_.size());
@@ -1108,7 +1108,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) final {
         size_t cur = walker.advance(n);
-        if ((ssize_t)cur != n) {
+        if (cur != static_cast<size_t>(n)) {
             report_error("Incorrect edge index %zu != %d", cur, n);
         }
         return &walker;
@@ -1158,7 +1158,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         rr_graph_builder_->mark_edges_as_rr_switch_ids();
         rr_graph_builder_->partition_edges();
 
-        for (int source_node = 0; source_node < (ssize_t)rr_nodes_->size(); ++source_node) {
+        for (size_t source_node = 0; source_node < rr_nodes_->size(); ++source_node) {
             int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
             for (int iconn = 0; iconn < num_edges; ++iconn) {
                 size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
@@ -1437,7 +1437,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::tie(tile, class_inf, std::ignore) = context;
         auto class_idx = class_inf - &tile->class_inf[0];
 
-        if (class_inf->num_pins != (ssize_t)size) {
+        if (static_cast<size_t>(class_inf->num_pins) != size) {
             report_error(
                 "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
                 size, class_inf->num_pins,
@@ -1565,7 +1565,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void preallocate_block_type_pin_class(std::pair<const t_physical_tile_type*, int>& context, size_t size) final {
         const t_physical_tile_type* tile = context.first;
-        if ((int)tile->class_inf.size() != (ssize_t)size) {
+        if (tile->class_inf.size() != size) {
             report_error("Architecture file does not match block type");
         }
     }
@@ -1828,7 +1828,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             *rr_indexed_data_,
             base_cost_type_,
             echo_enabled_,
-            echo_file_name_);
+            echo_file_name_,
+            device_model_warnings_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {
@@ -1848,7 +1849,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                            vib_grid_,
                            *chan_width_,
                            graph_type_,
-                           is_flat_);
+                           is_flat_,
+                           device_model_warnings_);
         }
     }
 
@@ -2181,7 +2183,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     RRGraphView* rr_graph_;
     vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
-    t_rr_node_indices* rr_node_indices_;
     std::string* loaded_rr_graph_filename_;
     std::vector<t_rr_rc_data>* rr_rc_data_;
 
@@ -2211,6 +2212,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const std::function<void(const char*)>* report_error_;
     unsigned long schema_file_id_;
     bool is_flat_;
+    bool device_model_warnings_;
 
     // Temporary data to check grid block types
     int curr_tmp_block_type_id;

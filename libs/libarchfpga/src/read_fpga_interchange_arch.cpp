@@ -276,12 +276,14 @@ struct ArchReader {
                Device::Reader& arch_reader,
                const char* arch_file,
                std::vector<t_physical_tile_type>& phys_types,
-               std::vector<t_logical_block_type>& logical_types)
+               std::vector<t_logical_block_type>& logical_types,
+               bool device_model_warnings)
         : arch_(arch)
         , arch_file_(arch_file)
         , ar_(arch_reader)
         , ptypes_(phys_types)
-        , ltypes_(logical_types) {
+        , ltypes_(logical_types)
+        , device_model_warnings_(device_model_warnings) {
         set_arch_file_name(arch_file);
 
         for (std::string str : ar_.getStrList()) {
@@ -325,6 +327,7 @@ struct ArchReader {
     Device::Reader& ar_;
     std::vector<t_physical_tile_type>& ptypes_;
     std::vector<t_logical_block_type>& ltypes_;
+    bool device_model_warnings_;
 
     t_default_fc_spec default_fc_;
 
@@ -377,7 +380,7 @@ struct ArchReader {
         for (auto bel : site.getBels())
             if (str(bel.getName()) == bel_name)
                 return bel;
-        VTR_ASSERT_MSG(0, "Could not find the BEL reader!\n");
+        archfpga_throw(__FILE__, __LINE__, "Could not find the BEL reader!\n");
     }
 
     /** @brief Get the BEL pin reader given its name, site and corresponding BEL */
@@ -389,7 +392,7 @@ struct ArchReader {
             if (str(pin_reader.getName()) == pin_name)
                 return pin_reader;
         }
-        VTR_ASSERT_MSG(0, "Could not find the BEL pin reader!\n");
+        archfpga_throw(__FILE__, __LINE__, "Could not find the BEL pin reader!\n");
     }
 
     /** @brief Get the BEL name, with an optional deduplication suffix in case its name collides with the site name */
@@ -583,7 +586,6 @@ struct ArchReader {
                 // there must be a PAD with inout pin connected to other inout pins
                 for (auto pin : wire.getPins()) {
                     auto bel_pin = site.getBelPins()[pin];
-                    std::string bel_pin_name = str(bel_pin.getName());
 
                     auto bel = get_bel_reader(site, str(bel_pin.getBel()));
                     auto bel_name = get_bel_name(site, bel);
@@ -964,7 +966,7 @@ struct ArchReader {
 
                     check_model_clocks(new_model, arch_file_, __LINE__);
                     check_model_combinational_sinks(new_model, arch_file_, __LINE__);
-                    warn_model_missing_timing(new_model, arch_file_, __LINE__);
+                    warn_model_missing_timing(new_model, arch_file_, __LINE__, device_model_warnings_);
                 } catch (ArchFpgaError& e) {
                     throw;
                 }
@@ -1736,7 +1738,7 @@ struct ArchReader {
                 pb_type->num_input_pins += is_input ? 1 : 0;
                 pb_type->num_output_pins += is_input ? 0 : 1;
 
-                auto port = get_generic_port(arch_, pb_type, dir, pin_name, /*string_model=*/"", num_pins);
+                auto port = get_generic_port(arch_, pb_type, dir, pin_name, /*model=*/"", num_pins);
                 ports[pin_count] = port;
                 port.index = pin_count++;
                 port.port_index_by_type = pins_dir_count++;
@@ -1851,9 +1853,8 @@ struct ArchReader {
         bool is_backward = direction == BACKWARD;
 
         for (const std::string& ep : ic_endpoints) {
-            auto parts = vtr::StringToken(ep).split(".");
-            auto bel = parts[0];
-            auto pin = parts[1];
+            std::vector<std::string> parts = vtr::StringToken(ep).split(".");
+            std::string bel = parts[0];
 
             if (bel == str(site.getName()))
                 return pps_map;
@@ -2489,7 +2490,8 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
                              const bool /*timing_enabled*/,
                              t_arch* arch,
                              std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                             std::vector<t_logical_block_type>& LogicalBlockTypes) {
+                             std::vector<t_logical_block_type>& LogicalBlockTypes,
+                             bool device_model_warnings) {
 #ifdef VTR_ENABLE_CAPNPROTO
     // Decompress GZipped capnproto device file
     gzFile file = gzopen(FPGAInterchangeDeviceFile, "r");
@@ -2529,7 +2531,7 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
     arch->architecture_id = vtr::secure_digest_file(FPGAInterchangeDeviceFile);
 
-    ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes);
+    ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes, device_model_warnings);
     reader.read_arch();
 #else  // VTR_ENABLE_CAPNPROTO
     // If CAPNPROTO is disabled, throw an error.
@@ -2537,6 +2539,7 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
     (void)arch;
     (void)PhysicalTileTypes;
     (void)LogicalBlockTypes;
+    (void)device_model_warnings;
     throw vtr::VtrError("Unable to read FPGA interchange if CAPNPROTO is not enabled", __FILE__, __LINE__);
 #endif // VTR_ENABLE_CAPNPROTO
 }

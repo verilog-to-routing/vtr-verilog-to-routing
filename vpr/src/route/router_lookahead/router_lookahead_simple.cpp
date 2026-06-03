@@ -62,8 +62,8 @@ std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId fr
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
-    float expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
-    float expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
+    float expected_delay_cost = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
+    float expected_cong_cost = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     util::Cost_Entry cost_entry(0, 0);

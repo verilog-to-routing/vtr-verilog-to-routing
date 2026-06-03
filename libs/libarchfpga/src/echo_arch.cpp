@@ -351,12 +351,9 @@ static void print_model(FILE* echo, const t_model& model) {
                 output_model_port->min_size);
         output_model_port = output_model_port->next;
     }
-    vtr::t_linked_vptr* cur_vptr = model.pb_types;
     int i = 0;
-    while (cur_vptr != nullptr) {
-        fprintf(echo, "\tpb_type %d: \"%s\"\n", i,
-                ((t_pb_type*)cur_vptr->data_vptr)->name);
-        cur_vptr = cur_vptr->next;
+    for (const t_pb_type* model_pb_type : model.pb_types) {
+        fprintf(echo, "\tpb_type %d: \"%s\"\n", i, model_pb_type->name);
         i++;
     }
 }

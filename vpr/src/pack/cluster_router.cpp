@@ -13,7 +13,9 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <map>
@@ -98,14 +100,30 @@ static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_n
  */
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t_lb_type_rr_node>& lb_rr_graph);
 
+/**
+ * @brief Returns true if every edge in the route tree is reachable under the
+ *        current mode assignments in lb_rr_node_stats.
+ *
+ * Used at hot-start time to decide whether a saved route tree can be reused
+ * without re-routing. An edge parent→child is valid only if child appears in
+ * lb_type_graph[parent].outedges[mode], where mode is the current forced mode
+ * of parent (defaulting to 0 when unconstrained).
+ */
+static bool is_route_mode_compatible(const t_lb_trace& rt,
+                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
+
 /*****************************************************************************************
  * Constructor/Destructor functions
  ******************************************************************************************/
 
 ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
-                             t_logical_block_type_ptr type) {
+                             t_logical_block_type_ptr type,
+                             const std::unordered_set<int>& valid_feedback_pins,
+                             bool enable_hot_start) {
     lb_type_graph_ = lb_type_graph;
     lb_type_ = type;
+    valid_feedback_pins_ = &valid_feedback_pins;
 
     size_t size = lb_type_graph->size();
     lb_rr_node_stats_.resize(size);
@@ -122,6 +140,7 @@ ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
 
     is_clean_ = false;
     is_valid_ = true;
+    enable_hot_start_ = enable_hot_start;
 }
 
 void ClusterRouter::clean_router_data() {
@@ -137,6 +156,30 @@ void ClusterRouter::clean_router_data() {
 
     is_clean_ = true;
     is_valid_ = false;
+}
+
+bool ClusterRouter::is_saved_route_valid() const {
+    // No saved route exists yet.
+    if (saved_lb_nets_.empty() || intra_lb_nets_.size() != saved_lb_nets_.size())
+        return false;
+
+    // Build a lookup from atom net ID to the terminals recorded in the saved route.
+    std::unordered_map<AtomNetId, const std::vector<int>*> saved_map;
+    saved_map.reserve(saved_lb_nets_.size());
+    for (const auto& net : saved_lb_nets_)
+        saved_map[net.atom_net_id] = &net.terminals;
+
+    // Every current net must appear in the saved route with identical terminals.
+    // Identical terminals means the saved route trees cover exactly the same
+    // physical pins, so the saved solution is still valid without re-routing.
+    for (const auto& net : intra_lb_nets_) {
+        auto it = saved_map.find(net.atom_net_id);
+        if (it == saved_map.end())
+            return false;
+        if (net.terminals != *it->second)
+            return false;
+    }
+    return true;
 }
 
 static bool route_has_conflict(const t_lb_trace& rt,
@@ -308,6 +351,17 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
                                       int verbosity) {
     bool is_impossible = false;
 
+    // Classify the current sink: is it an in-cluster sink, or the special
+    // "cluster-external sink" placeholder representing the signal leaving the cluster?
+    //
+    // The valid-cluster-exit-pin check during edge expansion applies ONLY for
+    // connections whose sink lives inside the cluster but whose path goes "out and
+    // back in" through inter-cluster routing (the feedback case). For a genuinely
+    // external sink (terminals[itarget] == ext_sink_inode), the signal is supposed
+    // to leave the cluster, so we do not impose the constraint.
+    const int ext_sink_inode = get_lb_type_rr_graph_ext_sink_index(lb_type_);
+    const bool target_is_internal_sink = (lb_net.terminals[itarget] != ext_sink_inode);
+
     do {
         if (pq_.empty()) {
             /* No connection possible */
@@ -344,9 +398,9 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
                 explored_node_tb_[exp_inode].prev_index = exp_node->prev_index;
                 if (exp_inode != lb_net.terminals[itarget]) {
                     if (!try_other_modes) {
-                        expand_node_(*exp_node, lb_net.terminals.size() - 1);
+                        expand_node_(*exp_node, lb_net.terminals.size() - 1, target_is_internal_sink);
                     } else {
-                        expand_node_all_modes_(*exp_node, lb_net.terminals.size() - 1);
+                        expand_node_all_modes_(*exp_node, lb_net.terminals.size() - 1, target_is_internal_sink);
                     }
                 }
             }
@@ -354,6 +408,37 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
     } while (exp_node->node_index != lb_net.terminals[itarget] && !is_impossible);
 
     return is_impossible;
+}
+
+void ClusterRouter::hot_start_intra_lb_route_(
+    std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
+    t_mode_selection_status* mode_status) {
+    // Build a lookup from atom net ID to intra-lb net index for fast access.
+    std::unordered_map<AtomNetId, size_t> atom_net_to_inet;
+    atom_net_to_inet.reserve(intra_lb_nets_.size());
+    for (size_t inet = 0; inet < intra_lb_nets_.size(); inet++)
+        atom_net_to_inet.insert({intra_lb_nets_[inet].atom_net_id, inet});
+
+    for (const auto& saved_lb_net : saved_lb_nets_) {
+        // Skip if the net's terminals have changed since the last save — the
+        // saved route tree no longer reaches the right pins.
+        auto it = atom_net_to_inet.find(saved_lb_net.atom_net_id);
+        // Skip if the atom net is not present in the current cluster. It may
+        // have been removed since the last save, making the saved route invalid.
+        if (it == atom_net_to_inet.end())
+            continue;
+        size_t inet = it->second;
+        if (intra_lb_nets_[inet].terminals != saved_lb_net.terminals)
+            continue;
+
+        // Skip if a mode change has invalidated this net's route tree.
+        if (!is_route_mode_compatible(saved_lb_net.rt_tree, *lb_type_graph_, lb_rr_node_stats_))
+            continue;
+
+        // Commit the saved route tree so pathfinder can skip this net.
+        commit_remove_rt_(saved_lb_net.rt_tree, RT_COMMIT, mode_map, mode_status);
+        intra_lb_nets_[inet].rt_tree = saved_lb_net.rt_tree;
+    }
 }
 
 bool ClusterRouter::try_intra_lb_route(int verbosity,
@@ -379,6 +464,11 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
     }
 
     std::unordered_map<const t_pb_graph_node*, const t_mode*> mode_map;
+
+    // Hot-start: seed previously-saved, still-valid route trees so that
+    // pathfinder can skip unchanged nets on its first iteration.
+    if (enable_hot_start_ && !saved_lb_nets_.empty())
+        hot_start_intra_lb_route_(mode_map, mode_status);
 
     /*	Iteratively remove congestion until a successful route is found.
      * Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinitely */
@@ -958,6 +1048,31 @@ static bool is_skip_route_net(const t_lb_trace& rt,
     return true;
 }
 
+static bool is_route_mode_compatible(const t_lb_trace& rt,
+                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats) {
+    int cur_node = rt.current_node;
+    int mode = lb_rr_node_stats[cur_node].mode;
+    if (mode == -1) mode = 0;
+
+    for (const auto& child : rt.next_nodes) {
+        // Verify the edge cur_node -> child.current_node exists in the current mode.
+        bool edge_exists = false;
+        if (mode < lb_type_graph[cur_node].num_modes) {
+            for (int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+                if (lb_type_graph[cur_node].outedges[mode][iedge].node_index == child.current_node) {
+                    edge_exists = true;
+                    break;
+                }
+            }
+        }
+        if (!edge_exists) return false;
+        if (!is_route_mode_compatible(child, lb_type_graph, lb_rr_node_stats))
+            return false;
+    }
+    return true;
+}
+
 void ClusterRouter::add_source_to_rt_(int inet) {
     VTR_ASSERT(intra_lb_nets_[inet].rt_tree.current_node == UNDEFINED);
     intra_lb_nets_[inet].rt_tree.current_node = intra_lb_nets_[inet].terminals[0];
@@ -992,9 +1107,26 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt
 void ClusterRouter::expand_edges_(int mode,
                                   int cur_inode,
                                   float cur_cost,
-                                  int net_fanout) {
+                                  int net_fanout,
+                                  bool target_is_internal_sink) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
     t_expansion_node enode;
+
+    // Block feedback routing through Fc_out == 0 top-level output pins: such a
+    // pin cannot drive any inter-cluster wire, so the signal cannot physically
+    // loop back to an in-cluster sink. Only applied when the target sink is
+    // inside this cluster; genuine external-sink targets are out of scope.
+    if (target_is_internal_sink) {
+        const t_pb_graph_pin* pb_pin = lb_type_graph[cur_inode].pb_graph_pin;
+        const bool is_top_level_output_pin = (pb_pin != nullptr
+                                              && pb_pin->port != nullptr
+                                              && pb_pin->port->type == OUT_PORT
+                                              && pb_pin->parent_node == lb_type_->pb_graph_head);
+        if (is_top_level_output_pin
+            && valid_feedback_pins_->count(cur_inode) == 0) {
+            return;
+        }
+    }
 
     for (int iedge = 0; iedge < lb_type_graph[cur_inode].num_fanout[mode]; iedge++) {
         /* Init new expansion node */
@@ -1040,7 +1172,9 @@ void ClusterRouter::expand_edges_(int mode,
     }
 }
 
-void ClusterRouter::expand_node_(const t_expansion_node& exp_node, int net_fanout) {
+void ClusterRouter::expand_node_(const t_expansion_node& exp_node,
+                                 int net_fanout,
+                                 bool target_is_internal_sink) {
     int cur_node = exp_node.node_index;
     float cur_cost = exp_node.cost;
     int mode = lb_rr_node_stats_[cur_node].mode;
@@ -1048,10 +1182,12 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node, int net_fanou
         mode = 0;
     }
 
-    expand_edges_(mode, cur_node, cur_cost, net_fanout);
+    expand_edges_(mode, cur_node, cur_cost, net_fanout, target_is_internal_sink);
 }
 
-void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node, int net_fanout) {
+void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node,
+                                           int net_fanout,
+                                           bool target_is_internal_sink) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     int cur_inode = exp_node.node_index;
@@ -1082,7 +1218,7 @@ void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node, int
             continue;
         }
 
-        expand_edges_(mode, cur_inode, cur_cost, net_fanout);
+        expand_edges_(mode, cur_inode, cur_cost, net_fanout, target_is_internal_sink);
     }
 }
 

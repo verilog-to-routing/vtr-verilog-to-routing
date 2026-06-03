@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "atom_pb_bimap.h"
@@ -253,22 +254,31 @@ class ClusterRouter {
      */
     ClusterRouter()
         : lb_type_graph_(nullptr)
+        , valid_feedback_pins_(nullptr)
         , explore_id_index_(0)
         , lb_type_(nullptr)
         , pres_con_fac_(0.0f)
         , is_clean_(true)
-        , is_valid_(false) {}
+        , is_valid_(false)
+        , enable_hot_start_(false) {}
 
     /**
      * @brief Constructor for the ClusterRouter.
      *
-     * Sets up the ClusterRouter for the given logical block type.
-     *
-     *  @param lb_type_graph    The RR graph for the given lb type.
-     *  @param type             The logical block type to route to.
+     *  @param lb_type_graph        The RR graph for the given lb type.
+     *  @param type                 The logical block type to route to.
+     *  @param valid_feedback_pins  Pre-computed set of top-level output pin
+     *                              indices with Fc_out > 0; owned by the
+     *                              caller and must outlive this router.
+     *  @param enable_hot_start     When true, each call to try_intra_lb_route
+     *                              seeds unchanged nets from the last successful
+     *                              route before running pathfinder, reducing
+     *                              the number of nets that need re-routing.
      */
     ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
-                  t_logical_block_type_ptr type);
+                  t_logical_block_type_ptr type,
+                  const std::unordered_set<int>& valid_feedback_pins,
+                  bool enable_hot_start = false);
 
     /**
      * @brief Add pins of netlist atom to current routing drivers/targets.
@@ -327,6 +337,21 @@ class ClusterRouter {
      * @return t_pb_routes An array [0..num_pb_graph_pins-1] for intra-logic block routing lookup.
      */
     t_pb_routes alloc_and_load_pb_route(const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
+
+    /**
+     * @brief Returns true if the saved route from the last successful
+     *        try_intra_lb_route is still valid for the current intra_lb_nets_.
+     *
+     * A saved route is valid when intra_lb_nets_ and saved_lb_nets_ contain
+     * exactly the same set of nets with exactly the same terminals. In that
+     * case the saved route trees constitute a proven, congestion-free solution
+     * for the current cluster state and no re-route is required.
+     *
+     * This is cheaper than re-running routing and covers the common case where
+     * a molecule that failed routing was removed, restoring the cluster to its
+     * last successfully-routed state.
+     */
+    bool is_saved_route_valid() const;
 
     /**
      * @brief Returns true if the router data has been cleaned.
@@ -409,11 +434,15 @@ class ClusterRouter {
      * @brief Explore the given node popped from the priority queue and explore
      *        its edges.
      *
-     *  @param exp_node     The node currently being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param exp_node                  The node currently being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True if the sink we are currently
+     *                                   routing toward lives inside this
+     *                                   cluster
      */
     void expand_node_(const t_expansion_node& exp_node,
-                      int net_fanout);
+                      int net_fanout,
+                      bool target_is_internal_sink);
 
     /**
      * @brief Explore the given node popped from the priority queue using all
@@ -422,25 +451,32 @@ class ClusterRouter {
      * This will explore every possible mode that the given node can be in and
      * explore their edges.
      *
-     *  @param exp_node     The node currently being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param exp_node                  The node currently being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True if the sink we are currently
+     *                                   routing toward lives inside this
+     *                                   cluster.
      */
     void expand_node_all_modes_(const t_expansion_node& exp_node,
-                                int net_fanout);
+                                int net_fanout,
+                                bool target_is_internal_sink);
 
     /**
      * @brief Explore all edges of an expansion node and insert connected nodes
      *        into the priority queue (i.e. connection routing).
      *
-     *  @param mode         The mode the node that is being explored is in.
-     *  @param cur_inode    The node that is being explored.
-     *  @param cur_cost     The cost of the node that is being explored.
-     *  @param net_fanout   The fanout of the net being routed.
+     *  @param mode                      The mode the node that is being explored is in.
+     *  @param cur_inode                 The node that is being explored.
+     *  @param cur_cost                  The cost of the node that is being explored.
+     *  @param net_fanout                The fanout of the net being routed.
+     *  @param target_is_internal_sink   True iff the sink is inside this cluster;
+     *                                   gates feedback through Fc_out==0 output pins.
      */
     void expand_edges_(int mode,
                        int cur_inode,
                        float cur_cost,
-                       int net_fanout);
+                       int net_fanout,
+                       bool target_is_internal_sink);
 
     /**
      * @brief Determine if a completed route is valid.
@@ -455,6 +491,22 @@ class ClusterRouter {
      *        lb_traceback.
      */
     void save_and_reset_lb_route_();
+
+    /**
+     * @brief Seed the current routing with route trees from the last successful
+     *        route (hot-start).
+     *
+     * For each saved net whose terminals are unchanged and whose route tree is
+     * still valid under the current mode assignments, commits the saved tree
+     * into intra_lb_nets_ so that the pathfinder loop can skip those nets on
+     * the first iteration via is_skip_route_net.
+     *
+     * @param mode_map    Mode map updated by commit_remove_rt_ as trees are committed.
+     * @param mode_status Mode-selection status updated by commit_remove_rt_.
+     */
+    void hot_start_intra_lb_route_(
+        std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
+        t_mode_selection_status* mode_status);
 
     /**
      * @brief Debugging function, used to print the description of the given
@@ -484,6 +536,10 @@ class ClusterRouter {
 
     /// @brief Pointer to physical intra-logic cluster_ctx.blocks type rr graph.
     std::vector<t_lb_type_rr_node>* lb_type_graph_;
+
+    /// @brief Top-level output pins with Fc_out > 0 for this block type; pointer
+    ///        into the map owned by ClusterLegalizer, valid for packing lifetime.
+    const std::unordered_set<int>* valid_feedback_pins_;
 
     // =========================================================================
     // Logical Netlist Info
@@ -544,6 +600,10 @@ class ClusterRouter {
     /// @brief Flag that indicates if this object has valid state or not. If the
     ///        router is invalid, none of the methods should be used.
     bool is_valid_;
+
+    /// @brief When true, try_intra_lb_route seeds unchanged nets from the last
+    ///        successful route before running pathfinder (hot-start).
+    bool enable_hot_start_;
 };
 
 /**

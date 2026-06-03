@@ -8,6 +8,10 @@
         "ignored_tasks": []
     },
     {
+        "name": "vtr_reg_func_sim",
+        "ignored_tasks": []
+    },
+    {
         "name": "parmys_reg_basic",
         "ignored_tasks": []
     },
@@ -29,6 +33,10 @@
             "strong_router_heap",
             "strong_verify_rr_graph_3d"
         ]
+    },
+    {
+        "name": "vtr_reg_parallel",
+        "ignored_tasks": []
     },
     {
         "name": "vtr_reg_strong_odin",

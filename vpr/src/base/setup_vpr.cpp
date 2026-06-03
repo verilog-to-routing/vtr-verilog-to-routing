@@ -22,7 +22,7 @@
 #include "read_options.h"
 #include "echo_files.h"
 #include "clock_modeling.h"
-#include "ShowSetup.h"
+#include "show_setup.h"
 
 #include "setup_vib_utils.h"
 
@@ -195,7 +195,8 @@ void SetupVPR(const t_options* options,
                               timingenabled,
                               arch,
                               device_ctx.physical_tile_types,
-                              device_ctx.logical_block_types);
+                              device_ctx.logical_block_types,
+                              options->device_model_warnings);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
@@ -203,7 +204,8 @@ void SetupVPR(const t_options* options,
                                         timingenabled,
                                         arch,
                                         device_ctx.physical_tile_types,
-                                        device_ctx.logical_block_types);
+                                        device_ctx.logical_block_types,
+                                        options->device_model_warnings);
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Invalid architecture format!");
@@ -307,7 +309,6 @@ void SetupVPR(const t_options* options,
             packerOpts->doPacking = e_stage_action::LOAD;
             placerOpts->do_placement = e_stage_action::LOAD;
             routerOpts->doRouting = e_stage_action::DO;
-            analysisOpts->doAnalysis = ((options->do_analysis) ? e_stage_action::DO : e_stage_action::SKIP_IF_PRIOR_FAIL); //Always run analysis after routing
         }
 
         if (options->do_placement) {
@@ -333,7 +334,7 @@ void SetupVPR(const t_options* options,
         }
     }
 
-    ShowSetup(*vpr_setup);
+    show_setup(*vpr_setup);
 
     // init global variables
     vtr::out_file_prefix = options->out_file_prefix;
@@ -487,6 +488,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
     RouterOpts->route_verbosity = Options.route_verbosity;
+    RouterOpts->device_model_warnings = Options.device_model_warnings;
 
     RouterOpts->full_stats = Options.full_stats;
 
@@ -528,6 +530,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->lookahead_type = Options.router_lookahead_type;
     RouterOpts->initial_acc_cost_chan_congestion_threshold = Options.router_initial_acc_cost_chan_congestion_threshold;
     RouterOpts->initial_acc_cost_chan_congestion_weight = Options.router_initial_acc_cost_chan_congestion_weight;
+    RouterOpts->router_lookahead_interposer_base_cut_multiplier = Options.router_lookahead_interposer_base_cut_multiplier;
 
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
@@ -621,6 +624,9 @@ void setup_packer_opts(const t_options& Options,
     PackerOpts->timing_gain_weight = Options.timing_gain_weight;
     PackerOpts->connection_gain_weight = Options.connection_gain_weight;
     PackerOpts->pack_verbosity = Options.pack_verbosity;
+    PackerOpts->use_ram_mapper = Options.use_ram_mapper;
+    PackerOpts->memoize_cluster_packings = Options.memoize_cluster_packings;
+    PackerOpts->cluster_router_hot_start = Options.cluster_router_hot_start;
     PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
     PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
     PackerOpts->target_external_pin_util = Options.target_external_pin_util;
@@ -672,10 +678,15 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
 
     PlacerOpts->recompute_crit_iter = Options.recompute_crit_iter;
 
-    PlacerOpts->timing_tradeoff = Options.place_timing_tradeoff;
+    PlacerOpts->interposer_cost_factor = Options.place_interposer_cost_factor;
+    PlacerOpts->interposer_cong_factor = Options.place_interposer_cong_cost_factor;
+    PlacerOpts->interposer_cong_threshold = Options.place_interposer_cong_threshold;
+
     PlacerOpts->congestion_factor = Options.place_congestion_factor;
     PlacerOpts->congestion_rlim_trigger_ratio = Options.place_congestion_rlim_trigger_ratio;
     PlacerOpts->congestion_chan_util_threshold = Options.place_congestion_chan_util_threshold;
+
+    PlacerOpts->timing_tradeoff = Options.place_timing_tradeoff;
 
     // Depends on PlacerOpts->place_algorithm
     PlacerOpts->delay_offset = Options.place_delay_offset;

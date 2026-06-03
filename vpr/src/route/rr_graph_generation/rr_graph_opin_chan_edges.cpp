@@ -541,7 +541,8 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                 break;
                             }
                         }
-                        VTR_ASSERT(target_sub_tile != nullptr);
+                        if (target_sub_tile == nullptr)
+                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Could not find the sub-tile instance for the target capacity.");
                         if (relative_ipin >= target_sub_tile->num_phy_pins) continue;
 
                         // If this block has capacity > 1 then the pins of z position > 0 are offset
@@ -667,7 +668,8 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                          e_directionality directionality,
                          int& num_edges,
                          int& rr_edges_before_directs,
-                         bool* Fc_clipped) {
+                         bool* Fc_clipped,
+                         bool device_model_warnings) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     e_3d_opin_connectivity_type opin_chanz_connectivity = g_vpr_ctx.device().arch->opin_chanz_connectivity_type;
@@ -728,7 +730,8 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                                                    seg_index_map,
                                                    num_seg_types,
                                                    rr_edges_to_create,
-                                                   interdie_3d_links[i][j]);
+                                                   interdie_3d_links[i][j],
+                                                   device_model_warnings);
                 }
 
                 // Create the actual OPIN->CHANX/CHANY edges
