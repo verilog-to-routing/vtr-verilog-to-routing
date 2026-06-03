@@ -266,6 +266,9 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
+    - name: Provision Qt6 SDK (>=6.9.3)
+      run: make qt6sdk
+
     - name: Install CI test dependencies
       run: ./dev/install_test_deps.sh
 
@@ -342,6 +345,9 @@ jobs:
 
     - name: Install dependencies
       run: ./install_apt_packages.sh
+
+    - name: Provision Qt6 SDK (>=6.9.3)
+      run: make qt6sdk
 
     - name: Install CI test dependencies
       run: ./dev/install_test_deps.sh
