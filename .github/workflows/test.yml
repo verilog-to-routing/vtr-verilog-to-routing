@@ -65,7 +65,7 @@ jobs:
     - name: Pack Build
       shell: bash
       run: |
-        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
+        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='cmake_install.cmake' build/
 
     - name: Store Build Artifact
       uses: actions/upload-artifact@v7
