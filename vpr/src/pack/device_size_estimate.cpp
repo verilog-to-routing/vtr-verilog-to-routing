@@ -27,10 +27,11 @@
 #include "cluster_util.h"
 #include "globals.h"
 #include "prepack.h"
+#include "pugixml.hpp"
 #include "setup_grid.h"
-#include "vpr_api.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vpr_error.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
@@ -307,6 +308,43 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
     return num_type_instances;
 }
 
+/**
+ * @brief Parses the <grid> section of an RR graph XML file to recover the
+ *        device grid dimensions without loading the full graph into memory.
+ *
+ * @return {width, height} of the device grid encoded in the RR graph file.
+ */
+static std::pair<size_t, size_t> read_rr_graph_grid_dims(const std::string& filename) {
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load_file(filename.c_str());
+    if (!result) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Failed to parse RR graph file '%s' to read grid dimensions: %s",
+                        filename.c_str(), result.description());
+    }
+
+    pugi::xml_node grid = doc.child("rr_graph").child("grid");
+    if (!grid) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "RR graph file '%s' is missing the <grid> element.",
+                        filename.c_str());
+    }
+
+    int max_x = -1, max_y = -1;
+    for (pugi::xml_node loc : grid.children("grid_loc")) {
+        max_x = std::max(max_x, loc.attribute("x").as_int());
+        max_y = std::max(max_y, loc.attribute("y").as_int());
+    }
+
+    if (max_x < 0 || max_y < 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "RR graph file '%s' has no <grid_loc> entries.",
+                        filename.c_str());
+    }
+
+    return {(size_t)(max_x + 1), (size_t)(max_y + 1)};
+}
+
 DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
                                          const t_arch& arch,
                                          const Prepacker& prepacker) {
@@ -315,6 +353,31 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
     const t_packer_opts& packer_opts = vpr_setup.PackerOpts;
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
+    // If RR graph is provided, use the device size from RR graph file.
+    bool rr_graph_provided = !vpr_setup.RoutingArch.read_rr_graph_filename.empty();
+    if (rr_graph_provided) {
+        VTR_LOG("Using the device size provided in RR graph.\n");
+        auto [width, height] = read_rr_graph_grid_dims(vpr_setup.RoutingArch.read_rr_graph_filename);
+        VTR_LOG("RR graph grid dimensions: %zu x %zu.\n", width, height);
+
+        if (device_layout != "auto") {
+            std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+            DeviceGrid fixed_grid = create_device_grid(device_layout, arch.grid_layouts,
+                                                       num_type_instances,
+                                                       packer_opts.target_device_utilization);
+            if (width != fixed_grid.width() || height != fixed_grid.height()) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Fixed device layout '%s' (width: %zu, height: %zu) does not match "
+                                "the RR graph grid dimensions (width: %zu, height: %zu).",
+                                device_layout.c_str(),
+                                fixed_grid.width(), fixed_grid.height(), width, height);
+            }
+        }
+
+        device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts, width, height);
+        return;
+    }
+
     // If device size is fixed, create device grid without estimation.
     if (device_layout != "auto") {
         VTR_LOG("Device is fixed to %s.\n", device_layout.c_str());
@@ -322,22 +385,23 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
         device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
                                              num_type_instances,
                                              packer_opts.target_device_utilization);
-    } else {
-        VTR_ASSERT(device_layout == "auto");
-        VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n", device_layout.c_str());
-
-        std::map<t_logical_block_type_ptr, size_t> num_type_instances = estimate_resource_requirement(prepacker);
-        VTR_LOG("Estimated resource requirements:\n");
-        for (auto& [type_ptr, count] : num_type_instances)
-            VTR_LOG("  %s: %zu requested instances\n", type_ptr->name.c_str(), count);
-
-        device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
-                                             num_type_instances,
-                                             packer_opts.target_device_utilization);
-
-        size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
-        VTR_LOG("FPGA size estimated to %zu x %zu: %zu grid tiles (%s)\n",
-                device_ctx.grid.width(), device_ctx.grid.height(),
-                num_grid_tiles, device_ctx.grid.name().c_str());
+        return;
     }
+
+    VTR_ASSERT(device_layout == "auto");
+    VTR_LOG("Device layout '%s' selected. Need to estimate device size.\n", device_layout.c_str());
+
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances = estimate_resource_requirement(prepacker);
+    VTR_LOG("Estimated resource requirements:\n");
+    for (auto& [type_ptr, count] : num_type_instances)
+        VTR_LOG("  %s: %zu requested instances\n", type_ptr->name.c_str(), count);
+
+    device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
+                                         num_type_instances,
+                                         packer_opts.target_device_utilization);
+
+    size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
+    VTR_LOG("FPGA size estimated to %zu x %zu: %zu grid tiles (%s)\n",
+            device_ctx.grid.width(), device_ctx.grid.height(),
+            num_grid_tiles, device_ctx.grid.name().c_str());
 }
