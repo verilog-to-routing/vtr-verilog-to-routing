@@ -1,3 +1,12 @@
+#!/bin/bash
+
+install_dev=false
+for arg in "$@"; do
+    if [ "$arg" = "--dev" ]; then
+        install_dev=true
+    fi
+done
+
 # Base packages to compile and run basic regression tests
 sudo dnf install --refresh -y \
     make \
@@ -49,3 +58,9 @@ sudo dnf install --refresh -y \
 # Required to run the analytical placement flow
 sudo dnf install --refresh -y \
     eigen3-devel
+
+if [ "$install_dev" = true ]; then
+    # required for functional simulation (run_func_sim_flow.py)
+    sudo dnf install --refresh -y \
+        verilator
+fi
