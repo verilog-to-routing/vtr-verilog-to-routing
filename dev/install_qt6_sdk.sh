@@ -1,11 +1,16 @@
 #!/bin/bash
 #
-# Provision the Qt6 SDK that VTR's GUI build links against, with NO root.
+# Ensure a Qt6 >= the supported floor is available for VTR's GUI build, with
+# NO root.
 #
 # Qt 6.9.3 is the minimum required version: earlier Qt6 releases have internal
 # bugs in the QRhi subsystem that cause rendering failures on our targets.
-# Ubuntu's apt typically ships an older Qt6, so this script installs a private
-# copy via `aqt` (aqtinstall) into a user-writable, repo-local prefix.
+#
+# Strategy:
+#   1. If the SYSTEM already provides Qt6 >= ${VTR_QT_VERSION} (e.g. installed
+#      via apt), do nothing — the system Qt is used.
+#   2. Otherwise install a private copy via `aqt` (aqtinstall) into a
+#      user-writable, repo-local prefix (no sudo).
 #
 # This is the single implementation shared by:
 #   * `make qt6sdk`            (the convenience target)
@@ -19,9 +24,12 @@
 #       writable by the current user — this script never uses sudo.
 #
 #   VTR_QT_VERSION=6.9.3
-#       Qt version to install. Default 6.9.3 (the supported floor).
+#       Minimum/target Qt version. Default 6.9.3 (the supported floor). A system
+#       Qt at or above this is accepted as-is; otherwise this exact version is
+#       provisioned via aqt.
 #
-# Idempotent: if the SDK is already present it does nothing.
+# Idempotent: if a suitable system Qt or the repo-local SDK is already present
+# it does nothing.
 
 set -e
 
@@ -35,7 +43,39 @@ QT_PREFIX="${VTR_QT_PREFIX:-${REPO_ROOT}/qt6}"
 QT_HOME="${QT_PREFIX}/${QT_VERSION}/gcc_64"
 
 # ---------------------------------------------------------------------------
-# Idempotency: already installed?
+# Prefer a system Qt6 >= ${QT_VERSION}: if one is installed, no aqt is needed.
+# ---------------------------------------------------------------------------
+# version_ge A B  ->  success (0) if A >= B
+version_ge() {
+    [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
+}
+
+# Best-effort detection of the system Qt6 version (X.Y.Z), tried in order:
+#   qmake6 on PATH -> Debian/Ubuntu qt6-base-dev package version -> pkg-config.
+detect_system_qt6() {
+    local v=""
+    if command -v qmake6 >/dev/null 2>&1; then
+        v="$(qmake6 -query QT_VERSION 2>/dev/null)"
+    fi
+    if [ -z "$v" ] && command -v dpkg-query >/dev/null 2>&1; then
+        v="$(dpkg-query -W -f='${Version}' qt6-base-dev 2>/dev/null \
+             | grep -oE '^[0-9]+(\.[0-9]+){1,2}' | head -n1)"
+    fi
+    if [ -z "$v" ] && command -v pkg-config >/dev/null 2>&1; then
+        v="$(pkg-config --modversion Qt6Core 2>/dev/null)"
+    fi
+    printf '%s' "$v"
+}
+
+SYS_QT_VERSION="$(detect_system_qt6)"
+if [ -n "${SYS_QT_VERSION}" ] && version_ge "${SYS_QT_VERSION}" "${QT_VERSION}"; then
+    echo "System Qt6 ${SYS_QT_VERSION} satisfies >= ${QT_VERSION} — using system Qt, skipping aqt."
+    exit 0
+fi
+echo "System Qt6 (${SYS_QT_VERSION:-none found}) does not satisfy >= ${QT_VERSION}; provisioning via aqt..."
+
+# ---------------------------------------------------------------------------
+# Idempotency: repo-local SDK already installed?
 # ---------------------------------------------------------------------------
 if [ -x "${QT_HOME}/bin/qmake" ]; then
     echo "Qt ${QT_VERSION} already present at ${QT_HOME} — nothing to do."
