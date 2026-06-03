@@ -262,8 +262,8 @@ struct ParseAPDetailedPlacer {
             conv_value.set_value(e_ap_detailed_placer::Identity);
         else if (str == "annealer")
             conv_value.set_value(e_ap_detailed_placer::Annealer);
-        else if (str == "doism")
-            conv_value.set_value(e_ap_detailed_placer::DOISM);
+        else if (str == "windowed_bi_matching")
+            conv_value.set_value(e_ap_detailed_placer::WindowedBiMatching);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_detailed_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -281,8 +281,8 @@ struct ParseAPDetailedPlacer {
             case e_ap_detailed_placer::Annealer:
                 conv_value.set_value("annealer");
                 break;
-            case e_ap_detailed_placer::DOISM:
-                conv_value.set_value("doism");
+            case e_ap_detailed_placer::WindowedBiMatching:
+                conv_value.set_value("windowed_bi_matching");
                 break;
             default:
                 VTR_ASSERT(false);
@@ -291,7 +291,7 @@ struct ParseAPDetailedPlacer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"none", "annealer", "doism"};
+        return {"none", "annealer", "windowed_bi_matching"};
     }
 };
 
@@ -2046,8 +2046,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls which Detailed Placer to use in the AP Flow.\n"
             " * none: Do not perform any detailed placement. i.e. the output of the full legalizer will be produced by the AP flow without modification.\n"
-            " * annealer: Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer.\n"
-            " * DOISM: Running Athavan's DOISM detailed placer.")
+            " * annealer: Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer.")
         .default_value("annealer")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

@@ -14,6 +14,7 @@
 #include "clustered_netlist_utils.h"
 #include "echo_files.h"
 #include "flat_placement_types.h"
+#include "windowed_bi_matching_dp.h"
 #include "globals.h"
 #include "physical_types.h"
 #include "place_and_route.h"
@@ -40,8 +41,8 @@ std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detail
                                                             clustered_netlist,
                                                             vpr_setup,
                                                             arch);
-        case e_ap_detailed_placer::DOISM:
-                return std::make_unique<DOISMDetailedPlacer>();
+        case e_ap_detailed_placer::WindowedBiMatching:
+            return std::make_unique<WindowedBiMatchingDetailedPlacer>();
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized detailed placer type");
@@ -111,9 +112,4 @@ void AnnealerDetailedPlacer::optimize_placement() {
     // Since the placement was modified, need to resynchronize the pins in the
     // clusters.
     post_place_sync();
-}
-
-void DOISMDetailedPlacer::optimize_placement(){
-    vtr::ScopedStartFinishTimer timer("DOISM Detailed Placer");
-    VTR_LOG("called Athavan's DOISM placer.\n");
 }

@@ -105,17 +105,3 @@ class AnnealerDetailedPlacer : public DetailedPlacer {
     /// @brief A lookup between CLB pins and atom pins.
     ClusteredPinAtomPinsLookup netlist_pin_lookup_;
 };
-
-
-/**
- * @brief DOISM detailed placer (Athavan)
- *
- * Currently: just logs that it was called
- */
-
- class DOISMDetailedPlacer : public DetailedPlacer {
-  public:
-    using DetailedPlacer::DetailedPlacer;
-
-    void optimize_placement() final;
-};
