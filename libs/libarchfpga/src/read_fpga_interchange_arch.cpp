@@ -1220,7 +1220,7 @@ struct ArchReader {
 
                 ic->input_string = istr;
                 ic->output_string = ostr;
-                ic->name = vtr::strdup(name.c_str());
+                ic->name = name;
             }
 
             // Output
@@ -1235,7 +1235,7 @@ struct ArchReader {
 
             ic->input_string = istr;
             ic->output_string = ostr;
-            ic->name = vtr::strdup(name.c_str());
+            ic->name = name;
         }
     }
 
@@ -1275,7 +1275,7 @@ struct ArchReader {
 
         ic->input_string = istr;
         ic->output_string = ostr;
-        ic->name = vtr::strdup(name.c_str());
+        ic->name = name;
 
         ic->type = COMPLETE_INTERC;
         ic->parent_mode = mode;
@@ -1331,7 +1331,7 @@ struct ArchReader {
 
         ic->input_string = istr;
         ic->output_string = ostr;
-        ic->name = vtr::strdup(name.c_str());
+        ic->name = name;
 
         // Output
         ic = &mode->interconnect[1];
@@ -1345,7 +1345,7 @@ struct ArchReader {
 
         ic->input_string = istr;
         ic->output_string = ostr;
-        ic->name = vtr::strdup(name.c_str());
+        ic->name = name;
     }
 
     /** @brief Generates the leaf pb types for the PAD type */
@@ -1451,25 +1451,28 @@ struct ArchReader {
         std::string ipad_ostr = std::string(pad->name) + std::string(".") + opin;
         std::string i_ic_name = std::string(ipad->name) + std::string("_") + std::string(pad->name);
 
-        auto o_ic = new t_interconnect[num_pins];
-        auto i_ic = new t_interconnect[num_pins];
+        //auto o_ic = new t_interconnect[num_pins];
+        //auto i_ic = new t_interconnect[num_pins];
 
-        o_ic->name = vtr::strdup(o_ic_name.c_str());
+        t_interconnect* o_ic = omode->interconnect;
+        t_interconnect* i_ic = imode->interconnect;
+
+        o_ic->name = o_ic_name;
         o_ic->type = DIRECT_INTERC;
         o_ic->parent_mode_index = 0;
         o_ic->parent_mode = omode;
         o_ic->input_string = opad_istr;
         o_ic->output_string = opad_ostr;
 
-        i_ic->name = vtr::strdup(i_ic_name.c_str());
+        i_ic->name = i_ic_name;
         i_ic->type = DIRECT_INTERC;
         i_ic->parent_mode_index = 0;
         i_ic->parent_mode = imode;
-        i_ic->input_string = ipad_istr.c_str();
-        i_ic->output_string = ipad_ostr.c_str();
+        i_ic->input_string = ipad_istr;
+        i_ic->output_string = ipad_ostr;
 
-        omode->interconnect[0] = *o_ic;
-        imode->interconnect[0] = *i_ic;
+        //omode->interconnect[0] = *o_ic;
+        //imode->interconnect[0] = *i_ic;
     }
 
     /** @brief Generates the leaf pb types for a generic intermediate block, with as many modes
@@ -1607,7 +1610,7 @@ struct ArchReader {
                 ic_name = istr + std::string("_") + ostr;
 
                 auto ic = &mode->interconnect[ic_count++];
-                ic->name = vtr::strdup(ic_name.c_str());
+                ic->name = ic_name;
                 ic->type = DIRECT_INTERC;
                 ic->parent_mode_index = idx;
                 ic->parent_mode = mode;
@@ -1663,7 +1666,7 @@ struct ArchReader {
         e_interconnect ic_type = pb_type->num_input_pins == 1 ? DIRECT_INTERC : MUX_INTERC;
 
         auto ic = &mode->interconnect[idx];
-        ic->name = vtr::strdup(ic_name.c_str());
+        ic->name = ic_name;
         ic->type = ic_type;
         ic->parent_mode_index = idx;
         ic->parent_mode = mode;
@@ -1786,7 +1789,7 @@ struct ArchReader {
             ic->parent_mode = mode;
 
             VTR_ASSERT(names.insert(ic_name).second);
-            ic->name = vtr::strdup(ic_name.c_str());
+            ic->name = ic_name;
             ic->input_string = input;
             ic->output_string = outputs_str;
         }
@@ -1883,7 +1886,7 @@ struct ArchReader {
                     for (int iic = 0; iic < parent_mode->num_interconnect; iic++) {
                         t_interconnect* other_ic = &parent_mode->interconnect[iic];
 
-                        if (std::string(ic->name) == std::string(other_ic->name))
+                        if (ic->name == other_ic->name)
                             continue;
 
                         std::string ic_to_find = bel + "." + pin_name;
@@ -2139,7 +2142,7 @@ struct ArchReader {
 
             auto ic = &mode->interconnect[count];
 
-            ic->name = vtr::strdup(ic_name.c_str());
+            ic->name = ic_name;
             ic->type = DIRECT_INTERC;
             ic->parent_mode_index = 0;
             ic->parent_mode = mode;
