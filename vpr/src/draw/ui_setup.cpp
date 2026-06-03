@@ -148,7 +148,8 @@ void routing_button_setup(ezgl::application* app) {
     setup_checkbox_button("ToggleRRCBox", app, &draw_state->draw_connection_box_edges);
     setup_checkbox_button("ToggleRRIntraClusterEdges", app, &draw_state->draw_intra_cluster_edges);
     setup_checkbox_button("ToggleHighlightRR", app, &draw_state->highlight_rr_edges);
-
+    setup_checkbox_button("ToggleDecluttering", app, &draw_state->enable_decluttering);
+    
     //Toggle Congestion
     GtkComboBoxText* toggle_congestion = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestion"));
     g_signal_connect(toggle_congestion, "changed", G_CALLBACK(toggle_cong_cbk), app);

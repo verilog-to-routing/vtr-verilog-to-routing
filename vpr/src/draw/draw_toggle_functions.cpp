@@ -101,6 +101,7 @@ void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
         gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), state);
     }
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleHighlightRR")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleDecluttering")), state);
 
     app->refresh_drawing();
 }
