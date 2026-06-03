@@ -268,7 +268,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             //Since this is unusual, warn the user
             VTR_LOGF_WARN(filename_.c_str(), lineno_,
                           "Subckt of type '%s' at %s:%d has no output pins, and has been named '%s'\n",
-                          blk_model.name, filename_.c_str(), lineno_, subckt_name.c_str());
+                          blk_model.name.c_str(), filename_.c_str(), lineno_, subckt_name.c_str());
         }
 
         //The name for every block should be unique, check that there is no name conflict
@@ -277,7 +277,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
                       "Duplicate blocks named '%s' found in netlist."
                       " Existing block of type '%s' conflicts with subckt of type '%s'.",
-                      subckt_name.c_str(), models_.get_model(conflicting_model).name, subckt_model.c_str());
+                      subckt_name.c_str(), models_.get_model(conflicting_model).name.c_str(), subckt_model.c_str());
         }
 
         //Create the block
@@ -478,7 +478,7 @@ struct BlifAllocCallback : public blifparse::Callback {
                         //Out of range
                         vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
                                   "Port '%s' on architecture model '%s' exceeds port width (%d bits)\n",
-                                  port_name.c_str(), blk_model.name, curr_port->size);
+                                  port_name.c_str(), blk_model.name.c_str(), curr_port->size);
                     }
                 }
                 curr_port = curr_port->next;
@@ -488,7 +488,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         //No match
         vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
                   "Found no matching port '%s' on architecture model '%s'\n",
-                  port_name.c_str(), blk_model.name);
+                  port_name.c_str(), blk_model.name.c_str());
         return nullptr;
     }
 

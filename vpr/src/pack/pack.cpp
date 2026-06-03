@@ -628,10 +628,7 @@ bool try_size_device_grid(const t_arch& arch,
     //Build the device
     auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
 
-    /*
-     *Report on the device
-     */
-    VTR_LOG("FPGA sized to %zu x %zu (%s)\n", grid.width(), grid.height(), grid.name().c_str());
+    report_device_grid_stats(grid);
 
     bool fits_on_device = true;
 

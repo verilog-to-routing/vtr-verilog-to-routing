@@ -27,7 +27,7 @@ struct t_vpr_setup;
  * grid that can accommodate them. For fixed device layouts, the grid is created
  * directly without estimation.
  *
- * Logical RAM groups (siblif-feasible memory atoms) computed during estimation
+ * Logical RAM groups (sibling-feasible memory atoms) computed during estimation
  * are exposed via ram_groups() so that RamMapper can reuse them and skip redundant work.
  */
 class DeviceSizeEstimator {

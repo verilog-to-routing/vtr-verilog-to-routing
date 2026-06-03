@@ -12,8 +12,6 @@ RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc
     net_cost_handler_ = std::make_unique<NetCostHandler>(*placer_state_,
                                                          /*cube_bb=*/true,
                                                          e_place_algorithm::BOUNDING_BOX_PLACE,
-                                                         /*interposer_cost_enabled=*/false,
-                                                         /*interposer_cong_threshold=*/0.,
                                                          /*congestion_chan_util_threshold=*/0.);
 }
 

@@ -1,0 +1,43 @@
+##############################################################################
+# Functional simulation task: 4-bit adder — pre-synthesized BLIF variants
+#
+# Verifies the post-P&R netlist of pre-synthesized BLIF circuits against the
+# same Verilator testbench used by the Verilog adder task (tb_adder_4bit.sv).
+# The flow enters VPR directly (-starting_stage vpr), bypassing Yosys and ABC.
+#
+# Purpose: smoke-test the Verilator functional simulation pipeline
+# independently of any HDL frontend.  One circuit uses only LUT primitives;
+# the other uses architecture carry-adder (.subckt adder) primitives.  Both
+# must produce exactly the same results as the Verilog implementations.
+##############################################################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/func_sim/adder_4bit
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Circuit(s) to test — all must implement the same top-level interface
+circuit_list_add=adder_4bit_luts.blif
+circuit_list_add=adder_4bit_carry_adder.blif
+
+# Architecture(s) to target
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Testbench used to verify every circuit listed above
+testbench_dir=benchmarks/func_sim/adder_4bit
+testbench_file=tb_adder_4bit.sv
+
+# Use the functional simulation flow script
+flow_script=run_func_sim_flow.py
+
+# Parse file — captures flow elapsed time only; pass/fail comes from exit code
+parse_file=func_sim.txt
+
+# QoR parse file — captures flow status and elapsed time
+qor_parse_file=qor_func_sim.txt
+
+# Pass requirements — only checks that the flow (VPR + simulation) succeeded
+pass_requirements_file=pass_requirements_func_sim.txt
+
+script_params=-starting_stage vpr --route_chan_width 40

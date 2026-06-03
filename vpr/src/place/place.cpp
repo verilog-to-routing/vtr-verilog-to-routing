@@ -108,7 +108,7 @@ void try_place(const Netlist<>& net_list,
 
     // Start measuring placement time. The measured execution time will be printed
     // when this object goes out of scope at the end of this function.
-    vtr::ScopedStartFinishTimer placement_timer("Placement");
+    vtr::ScopedStartFinishTimer placement_timer("SA Placement");
 
     // Enables fast look-up pb graph pins from block pin indices
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);

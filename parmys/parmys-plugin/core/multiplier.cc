@@ -549,7 +549,7 @@ void find_hard_multipliers()
     min_mult = configuration.min_hard_multiplier;
     for (LogicalModelId model_id : Arch.models.user_models()) {
         hard_multipliers = &Arch.models.get_model(model_id);
-        if (strcmp(hard_multipliers->name, "multiply") == 0) {
+        if (hard_multipliers->name == "multiply") {
             init_mult_distribution();
             return;
         } else {
@@ -1308,10 +1308,10 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
     diffout = hard_multipliers->outputs->size - sizeout;
 
     if (configuration.split_hard_multiplier == 1) {
-        t_linked_vptr *plist = hard_multipliers->pb_types;
-        while ((diffa + diffb) && plist) {
-            t_pb_type *physical = (t_pb_type *)(plist->data_vptr);
-            plist = plist->next;
+        for (const t_pb_type* physical : hard_multipliers->pb_types) {
+            if (diffa + diffb == 0) {
+                break;
+            }
             testa = physical->ports[0].num_pins;
             testb = physical->ports[1].num_pins;
             if ((testa >= sizea) && (testb >= sizeb) && ((testa - sizea + testb - sizeb) < (diffa + diffb))) {

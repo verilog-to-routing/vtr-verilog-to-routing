@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "atom_netlist_fwd.h"
+#include "partition_region.h"
 #include "physical_types.h"
 #include "PreClusterTimingManager.h"
 #include "prepack.h"
@@ -101,6 +102,8 @@ struct PhysicalRamGroup {
     std::vector<PackMoleculeId> molecules;
     /// Total memory slices consumed by the atoms in this group.
     int total_memory_slices = 0;
+    /// Intersection of partition regions of atoms in this physical RAM group.
+    PartitionRegion intersection_pr;
 };
 
 /**

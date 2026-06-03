@@ -2128,6 +2128,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.appack_inter_die_gain_multiplier, "--appack_inter_die_gain_multiplier")
+        .help(
+            "Multiplier applied to APPack candidate gains when the candidate's "
+            "flat placement location is on a different die than the current "
+            "cluster location in an interposer-based architecture. This does "
+            "not apply to candidates on a different layer in a 3D architecture "
+            "without interposer cuts.")
+        .default_value("0.1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "

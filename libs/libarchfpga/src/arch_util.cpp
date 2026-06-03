@@ -299,9 +299,9 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
             }
             vtr::free(pb_graph_node->child_pb_graph_nodes[i][j]);
         }
-        vtr::free(pb_graph_node->child_pb_graph_nodes[i]);
+        vtr::free((void*)pb_graph_node->child_pb_graph_nodes[i]);
     }
-    vtr::free(pb_graph_node->child_pb_graph_nodes);
+    vtr::free((void*)pb_graph_node->child_pb_graph_nodes);
 }
 
 static void free_pb_type(t_pb_type* pb_type) {
@@ -782,10 +782,7 @@ void SyncModelsPbTypes_rec(t_arch* arch,
         t_model& model_match_prim = arch->models.get_model(model_match_prim_id);
 
         pb_type->model_id = model_match_prim_id;
-        vtr::t_linked_vptr* old = model_match_prim.pb_types;
-        model_match_prim.pb_types = new vtr::t_linked_vptr;
-        model_match_prim.pb_types->next = old;
-        model_match_prim.pb_types->data_vptr = pb_type;
+        model_match_prim.pb_types.emplace_back(pb_type);
 
         for (int p = 0; p < pb_type->num_ports; p++) {
             bool found = false;

@@ -93,7 +93,7 @@ void WriteModels_bb(const char* ArchFile,
  */
 void DeclareModel_bb(FILE* Echo, const t_model& model) {
     // module
-    fprintf(Echo, "module %s(\n", model.name);
+    fprintf(Echo, "module %s(\n", model.name.c_str());
 
     // input/output ports
     t_model_ports* input_port = model.inputs;

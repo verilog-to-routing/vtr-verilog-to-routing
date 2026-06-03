@@ -1,0 +1,39 @@
+# Same circuit structure as clock_divider.blif; used to test the -invert flag
+# on create_generated_clock. The generated clock (div_clk.Q[0]) is divided by 2
+# and inverted via SDC.
+
+.model clock_divider_invert
+.inputs in1 in2 in3 clk
+.outputs out1 out2 out3
+
+.latch div_clk_inv div_clk re clk 0
+
+.names div_clk div_clk_inv
+0 1
+
+.latch to_FFA FFA re clk 0
+.latch to_FFC FFC re clk 0
+.latch to_FFD FFD re div_clk 0
+.latch to_FFB FFB re div_clk 0
+
+.names FFA FFB to_FFC
+11 1
+.names FFA FFB to_FFD
+11 1
+
+.names in1 to_FFA
+1 1
+
+.names in2 to_FFB
+1 1
+
+.names FFC out1
+1 1
+
+.names FFD out2
+1 1
+
+.names in3 out3
+1 1
+
+.end

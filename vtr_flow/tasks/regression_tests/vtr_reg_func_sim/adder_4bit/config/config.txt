@@ -1,0 +1,44 @@
+##############################################################################
+# Functional simulation task: 4-bit ripple-carry adder
+#
+# Runs the full VTR flow and then verifies the post-implementation netlist
+# against a Verilator testbench that exercises all 2^9 = 512 input vectors.
+#
+# To add another circuit that implements the same interface, append another
+# circuit_list_add= line.  The same testbench will be reused for all circuits
+# listed here.  For circuits with a different interface, create a separate
+# task directory with its own testbench.
+##############################################################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/func_sim/adder_4bit
+
+# Path to directory of architectures to use
+archs_dir=arch
+
+# Circuit(s) to test — all must implement the same top-level interface
+circuit_list_add=adder_4bit.v
+circuit_list_add=adder_4bit_sum_notation.v
+
+# Architecture(s) to target
+arch_list_add=timing/k6_frac_N10_40nm.xml
+arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
+arch_list_add=COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
+
+# Testbench used to verify every circuit listed above
+testbench_dir=benchmarks/func_sim/adder_4bit
+testbench_file=tb_adder_4bit.sv
+
+# Use the functional simulation flow script
+flow_script=run_func_sim_flow.py
+
+# Parse file — captures flow elapsed time only; pass/fail comes from exit code
+parse_file=func_sim.txt
+
+# QoR parse file — captures flow status and elapsed time
+qor_parse_file=qor_func_sim.txt
+
+# Pass requirements — only checks that the flow (VPR + simulation) succeeded
+pass_requirements_file=pass_requirements_func_sim.txt
+
+script_params=--route_chan_width 40
