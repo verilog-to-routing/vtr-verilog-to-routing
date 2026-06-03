@@ -57,13 +57,6 @@ endif
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
-#Detect number of CPU cores for parallel build suggestions
-ifeq ($(UNAME_S),Darwin)
-    NUM_CORES := $(shell sysctl -n hw.ncpu 2>/dev/null || echo 1)
-else
-    NUM_CORES := $(shell nproc 2>/dev/null || echo 1)
-endif
-
 SOURCE_DIR := $(PWD)
 BUILD_DIR ?= build
 
