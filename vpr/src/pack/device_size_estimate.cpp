@@ -20,6 +20,7 @@
 
 #include "device_size_estimate.h"
 
+#include <limits>
 #include <queue>
 #include <unordered_set>
 
@@ -35,6 +36,13 @@
 #include "vtr_log.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
+#include "vtr_util.h"
+
+#ifdef VTR_ENABLE_CAPNPROTO
+#    include "mmap_file.h"
+#    include "rr_graph_uxsdcxx_capnp.h"
+#    include <capnp/message.h>
+#endif
 
 /**
  * @brief Attempts to place a molecule into the current cluster.
@@ -309,36 +317,55 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
 }
 
 /**
- * @brief Parses the <grid> section of an RR graph XML file to recover the
- *        device grid dimensions without loading the full graph into memory.
+ * @brief Reads device grid dimensions from an RR graph file (.xml or .bin)
+ *        without loading the full graph into memory.
  *
  * @return {width, height} of the device grid encoded in the RR graph file.
  */
 static std::pair<size_t, size_t> read_rr_graph_grid_dims(const std::string& filename) {
-    pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(filename.c_str());
-    if (!result) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "Failed to parse RR graph file '%s' to read grid dimensions: %s",
-                        filename.c_str(), result.description());
-    }
-
-    pugi::xml_node grid = doc.child("rr_graph").child("grid");
-    if (!grid) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "RR graph file '%s' is missing the <grid> element.",
-                        filename.c_str());
-    }
-
     int max_x = -1, max_y = -1;
-    for (pugi::xml_node loc : grid.children("grid_loc")) {
-        max_x = std::max(max_x, loc.attribute("x").as_int());
-        max_y = std::max(max_y, loc.attribute("y").as_int());
+
+    if (vtr::check_file_name_extension(filename, ".xml")) {
+        pugi::xml_document doc;
+        pugi::xml_parse_result result = doc.load_file(filename.c_str());
+        if (!result) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Failed to parse RR graph file '%s' to read grid dimensions: %s",
+                            filename.c_str(), result.description());
+        }
+
+        pugi::xml_node grid = doc.child("rr_graph").child("grid");
+        if (!grid) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "RR graph file '%s' is missing the <grid> element.",
+                            filename.c_str());
+        }
+
+        for (pugi::xml_node loc : grid.children("grid_loc")) {
+            max_x = std::max(max_x, loc.attribute("x").as_int());
+            max_y = std::max(max_y, loc.attribute("y").as_int());
+        }
+#ifdef VTR_ENABLE_CAPNPROTO
+    } else if (vtr::check_file_name_extension(filename, ".bin")) {
+        MmapFile f(filename.c_str());
+        ::capnp::ReaderOptions opts;
+        opts.traversalLimitInWords = std::numeric_limits<uint64_t>::max();
+        ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
+        auto rr_graph = reader.getRoot<ucap::RrGraph>();
+        for (auto loc : rr_graph.getGrid().getGridLocs()) {
+            max_x = std::max(max_x, (int)loc.getX());
+            max_y = std::max(max_y, (int)loc.getY());
+        }
+#endif
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "RR graph file '%s' has an unrecognized extension. Expected .xml or .bin.",
+                        filename.c_str());
     }
 
     if (max_x < 0 || max_y < 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "RR graph file '%s' has no <grid_loc> entries.",
+                        "RR graph file '%s' has no grid_loc entries.",
                         filename.c_str());
     }
 
