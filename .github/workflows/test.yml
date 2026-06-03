@@ -234,31 +234,9 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
-      env:
-        # No LD_LIBRARY_PATH / QT_PLUGIN_PATH needed: CMake bakes the Qt6 lib
-        # dir into the binaries' RPATH and Qt finds its plugins via the
-        # relocatable prefix. QT_QPA_PLATFORM=offscreen keeps Qt headless for any
-        # test that builds a QApplication directly (the vpr binary self-sets it).
-        QT_QPA_PLATFORM: offscreen
       run: |
         cd build
-        # Use ctest --output-on-failure so any abort in test_fasm /
-        # test_vpr is captured in the workflow log instead of being
-        # buried in build/Testing/Temporary/LastTest.log (which is not
-        # uploaded as an artifact for this job).
-        #
-        # test_fasm is excluded (-E) because its `fasm_integration_test`
-        # case trips a pre-existing VTR_ASSERT_SAFE_MSG (level 3) in
-        # libs/libarchfpga/src/physical_types.cpp:419 grid_layout()
-        # ("Device layout not found.") — introduced upstream by
-        # f0b8ffdc4 ("call convert_interposer_cuts_to_sg_patterns() in
-        # RR graph generation"). The failure is unrelated to the GUI
-        # work in this PR and must be fixed in the libarchfpga grid
-        # layout lookup. The earlier qt_layer baseline silently passed
-        # this step because ctest reported "No tests were found!!!";
-        # our test-discovery fix in vpr/test/gui/CMakeLists.txt makes
-        # the latent assertion visible.
-        ctest -j${{ steps.cpu-cores.outputs.count }} --output-on-failure -E '^test_fasm$'
+        make test -j${{ steps.cpu-cores.outputs.count }}
 
 
   # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
