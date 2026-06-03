@@ -760,3 +760,9 @@ static void check_grid(const DeviceGrid& grid) {
 size_t count_grid_tiles(const DeviceGrid& grid) {
     return grid.get_num_layers() * grid.width() * grid.height();
 }
+
+void report_device_grid_stats(const DeviceGrid& grid) {
+    size_t num_grid_tiles = count_grid_tiles(grid);
+    VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n",
+            grid.width(), grid.height(), num_grid_tiles, grid.name().c_str());
+}
