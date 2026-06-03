@@ -401,7 +401,10 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
             }
         }
 
+        // Fix the device grid to the size implied by rr graph to prevent
+        // resizing during and after packing.
         device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts, width, height);
+        device_ctx.grid.set_fixed_by_rr_graph(true);
         return;
     }
 
