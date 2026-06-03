@@ -9,7 +9,6 @@
 #include "rr_types.h"
 #include "scatter_gather_types.h"
 #include "switchblock_scatter_gather_common_utils.h"
-#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_expr_eval.h"
 #include "vtr_random.h"
@@ -394,11 +393,10 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
-                // Empty tiles within the device are used to model TSV holes for power delivery.
-                // No CHANZ connection can be created where these holes are located.
+                // TSV hole tiles model power-delivery openings; no CHANZ connection there.
                 if (sg_link.z_offset != 0
-                    && (is_empty_type(grid.get_physical_type(gather_loc))
-                        || is_empty_type(grid.get_physical_type(scatter_loc)))) {
+                    && (grid.get_physical_type(gather_loc)->name == "tsv_hole"
+                        || grid.get_physical_type(scatter_loc)->name == "tsv_hole")) {
                     VTR_LOGV_WARN(true,
                                   "Deliberately skipped inter-layer SG connections for pattern '%s' with SG link '%s' "
                                   "at gather (%i, %i, %i) and scatter (%i, %i, %i) "
