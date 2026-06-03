@@ -1288,23 +1288,24 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          mutable_atom_pb_lookup());
         }
 
-        // If we're using the pin feasibility filter, we need to add the candidate molecule to
-        // cluster.molecules. We use this flag to control the cleanup in case of failure.
+        // This flag controls the pop_back cleanup of cluster.molecules in case of subsequent failure.
         bool candidate_molecule_added_to_cluster = false;
 
-        if (enable_pin_feasibility_filter_ && block_pack_status == e_block_pack_status::BLK_PASSED) {
-            // try_update_lookahead_pins_used needs the candidate molecule to be in cluster.molecules.
+        if (block_pack_status == e_block_pack_status::BLK_PASSED) {
             cluster.molecules.push_back(molecule_id);
             candidate_molecule_added_to_cluster = true;
 
-            // Check if pin usage is feasible for the current packing assignment
-            reset_lookahead_pins_used(cluster.pb);
-            try_update_lookahead_pins_used(cluster, prepacker_, atom_cluster_, atom_pb_lookup());
-            if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
-                VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
-                block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
-            } else {
-                VTR_LOGV(log_verbosity_ > 3, "\t\t\tPin Feasibility: Passed pin feasibility filter\n");
+            if (enable_pin_feasibility_filter_) {
+                // try_update_lookahead_pins_used requires the candidate molecule to
+                // already be in cluster.molecules, which is satisfied by the push above.
+                reset_lookahead_pins_used(cluster.pb);
+                try_update_lookahead_pins_used(cluster, prepacker_, atom_cluster_, atom_pb_lookup());
+                if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
+                    VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
+                    block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
+                } else {
+                    VTR_LOGV(log_verbosity_ > 3, "\t\t\tPin Feasibility: Passed pin feasibility filter\n");
+                }
             }
         }
 

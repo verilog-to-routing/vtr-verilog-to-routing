@@ -22,6 +22,9 @@
 #include <vector>
 #include <string>
 
+//Forward declaration (needed by t_model)
+struct t_pb_type;
+
 /**
  * @brief The type of the parallel axis.
  */
@@ -67,13 +70,13 @@ struct t_model_ports {
  *        LogicalModels storage class below.
  */
 struct t_model {
-    char* name = nullptr;                   ///< name of this logic model
-    t_model_ports* inputs = nullptr;        ///< linked list of input/clock ports
-    t_model_ports* outputs = nullptr;       ///< linked list of output ports
-    void* instances = nullptr;              ///< TODO: Remove this. This is only used in the Parmys plugin and should be moved into there.
-    int used = 0;                           ///< TODO: Remove this. This is only used in the Parmys plugin and should be moved into there.
-    vtr::t_linked_vptr* pb_types = nullptr; ///< Physical block types that implement this model
-    bool never_prune = false;               ///< Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist
+    std::string name;                 ///< name of this logic model
+    t_model_ports* inputs = nullptr;  ///< linked list of input/clock ports
+    t_model_ports* outputs = nullptr; ///< linked list of output ports
+    void* instances = nullptr;        ///< TODO: Remove this. This is only used in the Parmys plugin and should be moved into there.
+    int used = 0;                     ///< TODO: Remove this. This is only used in the Parmys plugin and should be moved into there.
+    std::vector<t_pb_type*> pb_types; ///< Physical block types that implement this model
+    bool never_prune = false;         ///< Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist
 };
 
 // A unique ID that represents a logical model in the architecture.
@@ -200,7 +203,7 @@ class LogicalModels {
                        "A model with the given name already exists");
         // Create the new model.
         t_model new_model;
-        new_model.name = vtr::strdup(model_name.c_str());
+        new_model.name = model_name;
 
         // Create the new model's ID
         LogicalModelId new_model_id = LogicalModelId(logical_model_ids_.size());

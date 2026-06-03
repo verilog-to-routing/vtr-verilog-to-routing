@@ -24,7 +24,7 @@ bool check_model_clocks(const t_model& model, const char* file, uint32_t line) {
             if (!port->clock.empty() && !clocks.count(port->clock)) {
                 archfpga_throw(file, line,
                                "No matching clock port '%s' on model '%s', required for port '%s'",
-                               port->clock.c_str(), model.name, port->name);
+                               port->clock.c_str(), model.name.c_str(), port->name);
             }
         }
     }
@@ -37,7 +37,7 @@ bool check_model_combinational_sinks(const t_model& model, const char* file, uin
         if (!port->combinational_sink_ports.empty()) {
             archfpga_throw(file, line,
                            "Model '%s' output port '%s' can not have combinational sink ports",
-                           model.name, port->name);
+                           model.name.c_str(), port->name);
         }
     }
 
@@ -53,7 +53,7 @@ bool check_model_combinational_sinks(const t_model& model, const char* file, uin
             if (!output_ports.count(sink_port_name)) {
                 archfpga_throw(file, line,
                                "Model '%s' input port '%s' can not be combinationally connected to '%s' (not an output port of the model)",
-                               model.name, port->name, sink_port_name.c_str());
+                               model.name.c_str(), port->name, sink_port_name.c_str());
             }
 
             //Check that any output combinational sinks are not clocks
@@ -63,7 +63,7 @@ bool check_model_combinational_sinks(const t_model& model, const char* file, uin
                 archfpga_throw(file, line,
                                "Model '%s' output port '%s' can not be both: a clock source (is_clock=\"%d\"),"
                                " and combinationally connected to input port '%s' (acting as a clock buffer).",
-                               model.name, sink_port->name, sink_port->is_clock, port->name);
+                               model.name.c_str(), sink_port->name, sink_port->is_clock, port->name);
             }
         }
     }
@@ -81,7 +81,7 @@ void warn_model_missing_timing(const t_model& model, const char* file, uint32_t 
         ) {
             if (device_model_warnings) {
                 VTR_LOGF_WARN(file, line,
-                              "Model '%s' input port '%s' has no timing specification (no clock specified to create a sequential input port, not combinationally connected to any outputs, not a clock input)\n", model.name, port->name);
+                              "Model '%s' input port '%s' has no timing specification (no clock specified to create a sequential input port, not combinationally connected to any outputs, not a clock input)\n", model.name.c_str(), port->name);
             }
         }
 
@@ -95,7 +95,7 @@ void warn_model_missing_timing(const t_model& model, const char* file, uint32_t 
         ) {
             if (device_model_warnings) {
                 VTR_LOGF_WARN(file, line,
-                              "Model '%s' output port '%s' has no timing specification (no clock specified to create a sequential output port, not combinationally connected to any inputs, not a clock output)\n", model.name, port->name);
+                              "Model '%s' output port '%s' has no timing specification (no clock specified to create a sequential output port, not combinationally connected to any inputs, not a clock output)\n", model.name.c_str(), port->name);
             }
         }
     }
@@ -200,13 +200,13 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                             archfpga_throw(get_arch_file_name(), annotation.line_num,
                                            "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
                                            " no clock but timing annotation specifies '%s'",
-                                           annot_port.port_name().c_str(), model.name, annot_clock.port_name().c_str());
+                                           annot_port.port_name().c_str(), model.name.c_str(), annot_clock.port_name().c_str());
                         }
                         if (model_port->clock != annot_clock.port_name()) {
                             archfpga_throw(get_arch_file_name(), annotation.line_num,
                                            "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
                                            " clock as '%s' but timing annotation specifies '%s'",
-                                           annot_port.port_name().c_str(), model.name, model_clock.c_str(), annot_clock.port_name().c_str());
+                                           annot_port.port_name().c_str(), model.name.c_str(), model_clock.c_str(), annot_clock.port_name().c_str());
                         }
                     }
                 }
@@ -242,7 +242,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                             archfpga_throw(get_arch_file_name(), annotation.line_num,
                                            "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
                                            " specifies combinational connection to port '%s' but the connection does not exist in the model",
-                                           model_port->name, model.name, annot_out.port_name().c_str());
+                                           model_port->name, model.name.c_str(), annot_out.port_name().c_str());
                         }
                     }
                 }
@@ -389,9 +389,9 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 void check_models(t_arch* arch) {
     for (LogicalModelId model_id : arch->models.user_models()) {
         const t_model& model = arch->models.get_model(model_id);
-        if (model.pb_types == nullptr) {
+        if (model.pb_types.empty()) {
             archfpga_throw(get_arch_file_name(), 0,
-                           "No pb_type found for model %s\n", model.name);
+                           "No pb_type found for model %s\n", model.name.c_str());
         }
 
         int clk_count, input_count, output_count;
@@ -408,7 +408,7 @@ void check_models(t_arch* arch) {
                         break;
                     default:
                         archfpga_throw(get_arch_file_name(), 0,
-                                       "Port %s of model %s, has an unrecognized type %s\n", port->name, model.name);
+                                       "Port %s of model %s, has an unrecognized type %s\n", port->name, model.name.c_str());
                 }
 
                 port->index = index;

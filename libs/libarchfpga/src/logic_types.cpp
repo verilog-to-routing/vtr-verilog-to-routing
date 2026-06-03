@@ -144,16 +144,10 @@ void LogicalModels::free_model_data(t_model& model) {
     free_arch_model_ports(model.inputs);
     free_arch_model_ports(model.outputs);
 
-    vtr::t_linked_vptr* vptr = model.pb_types;
-    while (vptr) {
-        vtr::t_linked_vptr* vptr_prev = vptr;
-        vptr = vptr->next;
-        delete vptr_prev;
-    }
+    std::vector<t_pb_type*>().swap(model.pb_types);
 
     if (model.instances)
         vtr::free(model.instances);
-    vtr::free(model.name);
 }
 
 static void free_arch_model_ports(t_model_ports* model_ports) {

@@ -911,7 +911,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         t_pb_graph_node* best = get_expected_lowest_cost_primitive_for_atom_block(blk_id, logical_block_types);
         if (!best) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
-                            models.get_model(atom_nlist.block_model(blk_id)).name);
+                            models.get_model(atom_nlist.block_model(blk_id)).name.c_str());
         }
 
         VTR_ASSERT_SAFE(nullptr != best);
