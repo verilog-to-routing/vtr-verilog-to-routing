@@ -84,6 +84,9 @@ static float get_router_expansion_cost(const t_rr_node_route_inf& node_inf,
                                        e_draw_router_expansion_cost draw_router_expansion_cost);
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
+static double get_zoom_scale(ezgl::renderer* g);
+//static bool is_cluttered(double zoom_level);
+
 static void draw_main_canvas(ezgl::renderer* g);
 
 /**
@@ -177,6 +180,21 @@ void init_graphics_state(bool show_graphics_val,
 }
 
 #ifndef NO_GRAPHICS
+static double get_zoom_scale(ezgl::renderer* g) {
+    double world_width = g->get_visible_world().width();
+    double screen_width = g->get_visible_screen().width();
+    return screen_width / world_width;
+}
+
+/*
+bool is_cluttered(double zoom_level) {
+    //double tile_width = get_draw_coords_vars()->get_tile_width();
+    //double max_chan_width = g_vpr_ctx.device().chan_width.max;
+    return zoom_level < 1;
+    //return zoom_level * tile_width < max_chan_width;
+}
+*/
+
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -189,6 +207,12 @@ static void draw_main_canvas(ezgl::renderer* g) {
         draw_internal_draw_subblk(g);
 
         if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
+            draw_state->zoom_scale = get_zoom_scale(g);
+            if(draw_state->enable_decluttering) {
+                draw_state->declutter_channel_nodes = draw_state->zoom_scale < 1;
+            } else {
+                draw_state->declutter_channel_nodes = false;
+            }
 
             draw_rr(g);
 
