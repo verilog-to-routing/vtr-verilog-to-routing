@@ -65,7 +65,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
         if (ntracks < 1) {
             continue;
         }
-        /* Avoid divide by 0 if ntracks */
+        // Avoid divide by 0 if ntracks
         const bool longline = segment_inf[i].longline;
         const int length = (longline) ? max_len : segment_inf[i].length;
 
