@@ -293,11 +293,9 @@ jobs:
     # vtr_flow/tasks/regression_tests/vtr_reg_gui/.
     - name: Run vtr_reg_gui regression suite
       run: |
-        # install_apt_packages.sh provisions a project-local venv with
-        # the test harness's Python deps (prettytable, pandas, ...).
-        # Without sourcing it the system python lacks prettytable and
-        # run_reg_test.py crashes on import.
-        source .venv/bin/activate
+        # run_reg_test.py needs the flow harness Python deps (prettytable,
+        # pandas, lxml, ...); install them into the setup-python environment.
+        pip install -r requirements.txt
         ./run_reg_test.py vtr_reg_gui -show_failures
 
     - name: Upload failure logs
