@@ -320,7 +320,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
  * @brief Reads device grid dimensions from an RR graph file (.xml or .bin)
  *        without loading the full graph into memory.
  *
- * TODO: The grid width and height can be explicitely stored in the rr graph
+ * TODO: The grid width and height can be explicitly stored in the rr graph
  *       file. That would be a more cleaner solution instead of inferring
  *       the dimension from the grid locations as in this function.
  * 
