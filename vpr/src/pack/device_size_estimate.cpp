@@ -39,9 +39,9 @@
 #include "vtr_util.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "mmap_file.h"
-#    include "rr_graph_uxsdcxx_capnp.h"
-#    include <capnp/message.h>
+#include "mmap_file.h"
+#include "rr_graph_uxsdcxx_capnp.h"
+#include <capnp/message.h>
 #endif
 
 /**
