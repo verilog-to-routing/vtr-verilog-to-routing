@@ -914,7 +914,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     vpr_load_packing(vpr_setup_, arch_);
 
     // Verify the packing
-    check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
+    check_netlist(vpr_setup_.PackerOpts.pack_verbosity, arch_);
     write_clustered_netlist_stats(vpr_setup_.FileNameOpts.write_block_usage);
 }
 
@@ -1141,7 +1141,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Verify the packing and print some info
-    check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
+    check_netlist(vpr_setup_.PackerOpts.pack_verbosity, arch_);
     write_clustered_netlist_stats(vpr_setup_.FileNameOpts.write_block_usage);
     print_pb_type_count(clb_nlist);
 }
@@ -1284,16 +1284,23 @@ void APPack::legalize(const PartialPlacement& p_placement) {
         }
     }
 
-    // Run the Packer stage with the flat placement as a hint.
-    try_pack(vpr_setup_.PackerOpts,
-             vpr_setup_.AnalysisOpts,
-             vpr_setup_.APOpts,
-             arch_,
-             vpr_setup_.PackerRRGraph,
-             prepacker_,
-             pre_cluster_timing_manager_,
-             flat_placement_info,
-             ram_mapper_);
+    {
+        // Run the Packer stage with the flat placement as a hint.
+        // NOTE: We add a timer here to allow the task parser to find
+        //       a "pack_time" equivalent for the AP flow. This is not
+        //       a direct one-to-one comparison the pack_time for the
+        //       non-AP flow, but it will be close.
+        vtr::ScopedStartFinishTimer timer("Packing");
+        try_pack(vpr_setup_.PackerOpts,
+                 vpr_setup_.AnalysisOpts,
+                 vpr_setup_.APOpts,
+                 arch_,
+                 vpr_setup_.PackerRRGraph,
+                 prepacker_,
+                 pre_cluster_timing_manager_,
+                 flat_placement_info,
+                 ram_mapper_);
+    }
 
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
@@ -1388,6 +1395,10 @@ void FullLegalizer::recreate_device_if_needed() {
             //       of the legalizer and into the flow.
             vpr_create_rr_graph(const_cast<t_vpr_setup&>(vpr_setup_), arch_, vpr_setup_.PlacerOpts.place_chan_width, /*is_flat=*/false);
         }
+
+        // vpr_create_device_grid reports the final grid stats internally.
+        // Print it here to match that behaviour.
+        report_device_grid_stats(device_ctx.grid);
         return;
     }
 
