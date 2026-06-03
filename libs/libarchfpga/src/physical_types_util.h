@@ -325,6 +325,15 @@ int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 /** get information given pin physical number **/
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
+/**
+ * @brief Returns the sub-tile (within 'physical_tile') that owns the given
+ * capacity location, or nullptr if no sub-tile covers that location.
+ *
+ * A capacity location identifies one sub-tile instance (a sub-tile with capacity > 1
+ * has one location per instance).
+ */
+const t_sub_tile* get_sub_tile_from_capacity_location(t_physical_tile_type_ptr physical_tile, int capacity_location);
+
 t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
