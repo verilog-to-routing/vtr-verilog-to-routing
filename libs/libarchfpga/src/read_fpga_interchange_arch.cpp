@@ -1451,9 +1451,6 @@ struct ArchReader {
         std::string ipad_ostr = std::string(pad->name) + std::string(".") + opin;
         std::string i_ic_name = std::string(ipad->name) + std::string("_") + std::string(pad->name);
 
-        //auto o_ic = new t_interconnect[num_pins];
-        //auto i_ic = new t_interconnect[num_pins];
-
         t_interconnect* o_ic = omode->interconnect;
         t_interconnect* i_ic = imode->interconnect;
 
@@ -1470,9 +1467,6 @@ struct ArchReader {
         i_ic->parent_mode = imode;
         i_ic->input_string = ipad_istr;
         i_ic->output_string = ipad_ostr;
-
-        //omode->interconnect[0] = *o_ic;
-        //imode->interconnect[0] = *i_ic;
     }
 
     /** @brief Generates the leaf pb types for a generic intermediate block, with as many modes
