@@ -369,10 +369,6 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
                                                             layer, gsb_coord, perimeter_cb);
 
-            t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
-            t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
-            t_track2track_map sb_conn;      /* [0..from_gsb_side][0..chan_width-1][track_indices] */
-
             if (build_crr_edges) {
                 /* When CRR edges are built, all GSB connections (including input
                  * and output pin connections) come from the CRR template. */
@@ -385,21 +381,21 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                     route_verbosity);
             } else {
                 /* adapt the track_to_ipin_lookup for the GSB nodes */
-                track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+                t_track2pin_map track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
 
                 /* adapt the opin_to_track_map for the GSB nodes */
-                opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+                t_pin2track_map opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
 
                 /* adapt the switch_block_conn for the GSB nodes */
-                sb_conn = build_gsb_track_to_track_map(rr_graph,
-                                                       rr_gsb,
-                                                       sb_type,
-                                                       Fs,
-                                                       sb_subtype,
-                                                       sub_fs,
-                                                       concat_wire,
-                                                       wire_opposite_side,
-                                                       segment_inf);
+                t_track2track_map sb_conn = build_gsb_track_to_track_map(rr_graph,
+                                                                         rr_gsb,
+                                                                         sb_type,
+                                                                         Fs,
+                                                                         sb_subtype,
+                                                                         sub_fs,
+                                                                         concat_wire,
+                                                                         wire_opposite_side,
+                                                                         segment_inf);
 
                 /* Build edges for a GSB */
                 build_edges_for_one_tileable_rr_gsb(rr_graph_builder,
