@@ -239,7 +239,6 @@ jobs:
 
 
   # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
-  # Linux-only: VTR currently has no macOS CI.
   # Builds with -DVPR_USE_EZGL=on so the local and CI command lines match:
   #
   #     make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
@@ -261,7 +260,6 @@ jobs:
       with:
         python-version: 3.12.3
 
-    # Plan §7.9 #2 — same install script as the local flow.
     - name: Install dependencies
       run: ./install_build_deps.sh
 
