@@ -71,13 +71,6 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 # the generated makefile
 .PHONY: all distclean qt6sdk $(MAKECMDGOALS)
 
-# Provision the Qt6 SDK used by the GUI build into a repo-local, user-writable
-# prefix (default <repo>/qt6) with no root. Handled here, BEFORE any cmake
-# configure, because configuring the GUI build needs Qt to already exist.
-# Override the location/version with VTR_QT_PREFIX / VTR_QT_VERSION.
-qt6sdk:
-	@ $(SOURCE_DIR)/dev/install_qt6_sdk.sh
-
 #For an 'all' build with BUILD_TYPE containing 'pgo' this will perform a 2-stage compilation
 #with profile guided optimization.
 #For a BUILD_TYPE without 'pgo', a single stage (non-pgo) compilation is performed.
@@ -138,6 +131,14 @@ endif #BUILD_TYPE
 endif #qt6sdk
 endif #clean
 endif #distclean
+
+# Provision the Qt6 SDK used by the GUI build into a repo-local, user-writable
+# prefix (default <repo>/qt6) with no root. Handled here, BEFORE any cmake
+# configure, because configuring the GUI build needs Qt to already exist.
+# Override the location/version with VTR_QT_PREFIX / VTR_QT_VERSION.
+# Defined after the 'all' rule above so 'all' remains the default goal.
+qt6sdk:
+	@ $(SOURCE_DIR)/dev/install_qt6_sdk.sh
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: clean
