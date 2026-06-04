@@ -15,7 +15,7 @@
 /// @param seg                Segment coordinate along the channel.
 /// @param track              Routing track index within the channel.
 /// @param seg_details        Per-track segment details for the channel.
-/// @param seg_dimension_cuts Interposer cut positions along the channel dimension.
+/// @param seg_dimension_cuts Positions where interposer cuts split the routing channel.
 bool is_cblock(const int chan,
                const int seg,
                const int track,
@@ -32,8 +32,9 @@ bool is_cblock(const int chan,
 /// @param sb_seg          Switch-block grid coordinate along the routing
 ///                        channel (same axis as wire_seg).
 /// @param track           Routing track index within the channel.
-/// @param seg_details     Per-track segment details for the channel.
-/// @param directionality  Routing wires' directionality (bidirectional or unidirectional).
+/// @param seg_details        Per-track segment details for the channel.
+/// @param directionality     Routing wires' directionality (bidirectional or unidirectional).
+/// @param seg_dimension_cuts Positions where interposer cuts split the routing channel.
 bool is_sblock(const int chan,
                int wire_seg,
                const int sb_seg,
@@ -45,12 +46,17 @@ bool is_sblock(const int chan,
 /**
  * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
  *
- * This routine scans all routing tracks within a channel segment (specified by
- * 'chan_num' and 'seg_num') and collects the track indices corresponding to
- * valid mux endpoints that can be driven by OPINs in that channel segment.
- * The resulting list of eligible tracks is returned in natural (increasing) track order.
+ * This routine scans all routing tracks within a channel segment and collects the
+ * track indices corresponding to valid mux endpoints that can be driven by OPINs at
+ * that coordinate. The resulting list of eligible tracks is returned in natural
+ * (increasing) track order.
  *
- * @details If @p seg_type_index is UNDEFINED, all segment types are considered.
+ * @param chan_num            Routing channel index.
+ * @param seg_num             Segment coordinate along the channel.
+ * @param seg_details         Per-track segment details for the channel.
+ * @param seg_type_index      Segment type index (seg_details[track].index()) to
+ *                            consider; UNDEFINED includes all segment types.
+ * @param seg_dimension_cuts  Positions where interposer cuts split the routing channel.
  */
 void label_wire_muxes(const int chan_num,
                       const int seg_num,
