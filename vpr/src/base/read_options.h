@@ -306,8 +306,6 @@ struct t_options {
     /* CRR options */
     argparse::ArgValue<std::string> sb_maps;
     argparse::ArgValue<std::string> sb_templates;
-    argparse::ArgValue<bool> preserve_input_pin_connections;
-    argparse::ArgValue<bool> preserve_output_pin_connections;
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
     argparse::ArgValue<std::string> sb_count_dir;

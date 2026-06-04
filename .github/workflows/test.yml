@@ -67,10 +67,14 @@ jobs:
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make -j${{ steps.cpu-cores.outputs.count}}
 
+    # Here we pack the build to store it as a build artifact. We exclude specific files
+    # to keep the build artifact reasonably low (to speed up file download times in the
+    # CI). Beyond the executables, some files need to be kept such as CTestTestFile.cmake
+    # files which are used by the unit tests CI run.
     - name: Pack Build
       shell: bash
       run: |
-        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
+        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='cmake_install.cmake' build/
 
     - name: Store Build Artifact
       uses: actions/upload-artifact@v7
@@ -115,10 +119,11 @@ jobs:
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make -j${{ steps.cpu-cores.outputs.count}}
 
+    # We pack the build similar to the default release build.
     - name: Pack Build
       shell: bash
       run: |
-        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
+        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='cmake_install.cmake' build/
 
     - name: Store Build Artifact
       uses: actions/upload-artifact@v7

@@ -774,8 +774,6 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
 static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
     crr_opts.sb_maps = Options.sb_maps;
     crr_opts.sb_templates = Options.sb_templates;
-    crr_opts.preserve_input_pin_connections = Options.preserve_input_pin_connections;
-    crr_opts.preserve_output_pin_connections = Options.preserve_output_pin_connections;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
     crr_opts.sb_count_dir = Options.sb_count_dir;

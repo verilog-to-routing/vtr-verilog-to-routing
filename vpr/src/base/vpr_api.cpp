@@ -419,11 +419,7 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) 
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
         device_ctx.grid = create_device_grid(l.name, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
-        /*
-         *Report on the device
-         */
-        size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
-        VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
+        report_device_grid_stats(device_ctx.grid);
 
         std::string title("\nResource usage for device layout " + l.name + "...\n");
         VTR_LOG(title.c_str());
@@ -624,11 +620,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
                    "Number of layers should be less than MAX_NUM_LAYERS. "
                    "If you need more layers, please increase the value of MAX_NUM_LAYERS in vpr_types.h");
 
-    /*
-     *Report on the device
-     */
-    size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
-    VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
+    report_device_grid_stats(device_ctx.grid);
 }
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
