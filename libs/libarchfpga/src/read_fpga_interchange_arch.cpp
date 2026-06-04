@@ -2117,7 +2117,7 @@ struct ArchReader {
             ic->parent_mode_index = 0;
             ic->parent_mode = mode;
             ic->input_string = leaf_name + "." + const_cell.second;
-            ic->output_string = const_block_ + "." + const_cell.first + "_" + const_cell.second; 
+            ic->output_string = const_block_ + "." + const_cell.first + "_" + const_cell.second;
 
             count++;
         }
