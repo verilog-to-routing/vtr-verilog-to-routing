@@ -148,7 +148,6 @@ void LogicalModels::free_model_data(t_model& model) {
 
     if (model.instances)
         vtr::free(model.instances);
-    vtr::free(model.name);
 }
 
 static void free_arch_model_ports(t_model_ports* model_ports) {

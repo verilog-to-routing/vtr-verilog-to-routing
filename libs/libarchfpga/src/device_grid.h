@@ -109,6 +109,11 @@ class DeviceGrid {
      */
     const std::vector<t_logical_block_type_ptr>& limiting_resources() const { return limiting_resources_; }
 
+    ///@brief Returns true if the grid dimensions are fixed by an externally provided RR graph.
+    bool fixed_by_rr_graph() const { return fixed_by_rr_graph_; }
+    ///@brief Marks the grid as fixed by an externally provided RR graph, preventing resizing.
+    void set_fixed_by_rr_graph(bool val) { fixed_by_rr_graph_ = val; }
+
     ///@brief Return the t_physical_tile_type_ptr at the specified location
     inline t_physical_tile_type_ptr get_physical_type(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].type;
@@ -123,6 +128,17 @@ class DeviceGrid {
     inline int get_height_offset(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].height_offset;
     }
+
+    ///@brief Returns true if the given location is within the bounds of the device grid (valid layer, x, and y).
+    inline bool is_valid_tile_loc(const t_physical_tile_loc& tile_loc) const {
+        return tile_loc.layer_num >= 0
+               && tile_loc.layer_num < (int)get_num_layers()
+               && tile_loc.x >= 0
+               && tile_loc.x < (int)width()
+               && tile_loc.y >= 0
+               && tile_loc.y < (int)height();
+    }
+
     ///@brief Returns true if the given location is the root location (bottom left corner) of a tile.
     inline bool is_root_location(const t_physical_tile_loc& tile_loc) const {
         return get_width_offset(tile_loc) == 0 && get_height_offset(tile_loc) == 0;
@@ -381,4 +397,9 @@ class DeviceGrid {
 
     /// @brief True if the device has any interposer cuts. Cached for speed.
     bool has_interposer_cuts_;
+
+    /// @brief True if the grid dimensions are fixed by an externally provided RR graph.
+    /// When set, device grid creator returns this grid unchanged rather than
+    /// resizing from resource counts, preventing both expansion and shrinkage.
+    bool fixed_by_rr_graph_ = false;
 };

@@ -602,6 +602,7 @@ static void setup_ap_opts(const t_options& options,
     apOpts.ap_partial_legalizer_target_density = options.ap_partial_legalizer_target_density.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.appack_unrelated_clustering_args = options.appack_unrelated_clustering_args.value();
+    apOpts.appack_inter_die_gain_multiplier = options.appack_inter_die_gain_multiplier.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
@@ -771,8 +772,6 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
 static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
     crr_opts.sb_maps = Options.sb_maps;
     crr_opts.sb_templates = Options.sb_templates;
-    crr_opts.preserve_input_pin_connections = Options.preserve_input_pin_connections;
-    crr_opts.preserve_output_pin_connections = Options.preserve_output_pin_connections;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
     crr_opts.sb_count_dir = Options.sb_count_dir;
