@@ -2687,20 +2687,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_interposer_cost_factor, "--place_interposer_cost_factor")
         .help("Factor to scale the interposer cost when calculating the total cost.")
-        .default_value("0.0")
+        .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_interposer_cong_cost_factor, "--place_interposer_cong_cost_factor")
         .help("Weighting factor for interposer congestion cost during placement. "
               "Higher values prioritize avoiding interposer congestion over other placement costs. "
               "When set to zero, interposer congestion modeling and optimization is disabled in the placement stage.")
-        .default_value("0.0")
+        .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_interposer_cong_threshold, "--place_interposer_cong_threshold")
         .help("Penalizes placements whose average interposer congestion exceeds this threshold. "
               "Higher values reduce the likelihood of a penalty; very large values effectively disable threshold-based penalization.")
-        .default_value("0.0")
+        .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
