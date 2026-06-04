@@ -1,5 +1,4 @@
 #include <cstring>
-#include <format>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -695,7 +694,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
         } else {
             for (int j = 0; j < num_pb; j++) {
                 /* Anything that is not data must be an input */
-                mem_pb_type->modes[0].interconnect[i_inter].name = std::format("direct{}_{}", i_inter, j);
+                mem_pb_type->modes[0].interconnect[i_inter].name = vtr::string_fmt("direct%d_%d", i_inter, j);
                 mem_pb_type->modes[0].interconnect[i_inter].infer_annotations = true;
 
                 if (mem_pb_type->ports[i].type == IN_PORT) {
