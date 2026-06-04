@@ -162,8 +162,8 @@ Logical Block Location
 
 Some designs must place primitives at fixed FPGA sites **and** at fixed slices inside a logic block, for example to meet timing to an external interface. Use two ``<add_atom>`` attributes together:
 
-* **``add_region``** — which logic block site on the chip (``x_low``, ``y_low``, ...).
-* **``logical_block_location``** — which slice inside that block (from the architecture ``pb_type`` hierarchy).
+* **add_region** — which logic block site on the chip (``x_low``, ``y_low``, ...).
+* **logical_block_location** — which slice inside that block (from the architecture ``pb_type`` hierarchy).
 
 .. figure:: ../Images/logical_block_location_fpga_interface.png
     :align: center
@@ -176,18 +176,18 @@ Some designs must place primitives at fixed FPGA sites **and** at fixed slices i
     :width: 60%
 
     For each CLB placed by ``add_region``, ``logical_block_location`` picks the slice inside it—for example,
-    CLB at (2, 1): FLE 0 and an FF; CLB at (2, 2): FLE 3 and a LUT4.
+    CLB at (2, 1): FLE 2 and an FF; CLB at (2, 2): FLE 3 and a LUT.
 
-**Syntax:** ``pb_type[index]`` per level, separated by ``.``; use ``{mode_name}`` when needed. The first level (e.g. ``clb``)
-may omit the index (``clb.fle[0]...`` equals ``clb[0].fle[0]...``). Deeper levels should include indices when you need a
-specific slice.
+.. note::
+   The first level (e.g. ``clb``) may omit the index: ``clb.fle[0]...`` is equivalent to ``clb[0].fle[0]...``.
+   Deeper levels should include indices when you need a specific slice.
 
-**Example** (two CLBs, two slices):
+**Example** :
 
 .. code-block:: xml
 
 	<partition name="fix_ff_atom_d">
-		<add_atom name_pattern="d" logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"/>
+		<add_atom name_pattern="d" logical_block_location="clb[0].fle[2]{n1_lut4}.ble4[0].ff[0]"/>
 		<add_region x_low="2" y_low="1" x_high="2" y_high="1"/>
 	</partition>
 	<partition name="fix_lut_atom_c">
