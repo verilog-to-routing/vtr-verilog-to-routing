@@ -247,6 +247,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             "wire.eblif",
             "--route_chan_width",
             "100",
+            "--device",
+            "test",
         };
         vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
                 &options, &vpr_setup, &arch);
@@ -312,6 +314,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         "100",
         "--read_rr_graph",
         kRrGraphFile,
+        "--device",
+        "test",
     };
 
     vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
