@@ -160,24 +160,23 @@ Partitions, Atoms, Regions, and Logical Block Types
 Logical Block Location
 ----------------------
 
-Some designs must place primitives at fixed FPGA sites **and** at fixed slices inside a logic block (CLB, RAM, DSP, etc.),
-for example to meet timing to an external interface. Use two ``<add_atom>`` attributes together:
+Some designs must place primitives at fixed FPGA sites **and** at fixed slices inside a logic block, for example to meet timing to an external interface. Use two ``<add_atom>`` attributes together:
 
-* **``add_region``** — which tile on the chip (``x_low``, ``y_low``, ...).
+* **``add_region``** — which logic block site on the chip (``x_low``, ``y_low``, ...).
 * **``logical_block_location``** — which slice inside that block (from the architecture ``pb_type`` hierarchy).
 
 .. figure:: ../Images/logical_block_location_fpga_interface.png
     :align: center
     :width: 75%
 
-    Chip placement: ``add_region`` fixes the CLB site; atoms connect to logic outside the FPGA.
+    FPGA floorplan: interfacing atoms (LUT and FF) are constrained to specific CLB sites and connected to external logic.
 
 .. figure:: ../Images/logical_block_location_clb_hierarchy.png
     :align: center
     :width: 60%
 
-    Inside the CLB: ``logical_block_location`` picks the FLE and primitive—for example, at (2, 1) FLE 0 + FF;
-    at (2, 2) FLE 3 + LUT4.
+    For each CLB placed by ``add_region``, ``logical_block_location`` picks the slice inside it—for example,
+    CLB at (2, 1): FLE 0 and an FF; CLB at (2, 2): FLE 3 and a LUT4.
 
 **Syntax:** ``pb_type[index]`` per level, separated by ``.``; use ``{mode_name}`` when needed. The first level (e.g. ``clb``)
 may omit the index (``clb.fle[0]...`` equals ``clb[0].fle[0]...``). Deeper levels should include indices when you need a
