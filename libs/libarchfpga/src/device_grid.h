@@ -109,6 +109,11 @@ class DeviceGrid {
      */
     const std::vector<t_logical_block_type_ptr>& limiting_resources() const { return limiting_resources_; }
 
+    ///@brief Returns true if the grid dimensions are fixed by an externally provided RR graph.
+    bool fixed_by_rr_graph() const { return fixed_by_rr_graph_; }
+    ///@brief Marks the grid as fixed by an externally provided RR graph, preventing resizing.
+    void set_fixed_by_rr_graph(bool val) { fixed_by_rr_graph_ = val; }
+
     ///@brief Return the t_physical_tile_type_ptr at the specified location
     inline t_physical_tile_type_ptr get_physical_type(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].type;
@@ -392,4 +397,9 @@ class DeviceGrid {
 
     /// @brief True if the device has any interposer cuts. Cached for speed.
     bool has_interposer_cuts_;
+
+    /// @brief True if the grid dimensions are fixed by an externally provided RR graph.
+    /// When set, device grid creator returns this grid unchanged rather than
+    /// resizing from resource counts, preventing both expansion and shrinkage.
+    bool fixed_by_rr_graph_ = false;
 };
