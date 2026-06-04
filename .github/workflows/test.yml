@@ -32,8 +32,10 @@ concurrency:
 env:
   # default compiler for all non-compatibility tests
   MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
-  # Qt6 install location — CMake reads CMAKE_PREFIX_PATH from the environment
-  CMAKE_PREFIX_PATH: /opt/qt6/6.9.3/gcc_64
+  # install_build_deps.sh installs the apt packages and provisions a Qt6 SDK
+  # (>= the supported floor) via dev/install_qt6_sdk.sh. CMake discovers Qt and
+  # bakes its location into the binaries, so no CMAKE_PREFIX_PATH or runtime Qt
+  # env is needed anywhere.
 
 jobs:
   BuildVTR:
@@ -50,7 +52,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -68,7 +70,7 @@ jobs:
     - name: Pack Build
       shell: bash
       run: |
-        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='cmake_install.cmake' build/
+        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
       uses: actions/upload-artifact@v7
@@ -96,7 +98,7 @@ jobs:
     #       that it can be compiled.
     - name: Install dependencies
       run: |
-        ./install_apt_packages.sh
+        ./install_build_deps.sh
         sudo apt-get update
         sudo apt-get install qtbase5-dev
 
@@ -116,7 +118,7 @@ jobs:
     - name: Pack Build
       shell: bash
       run: |
-        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='cmake_install.cmake' build/
+        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
       uses: actions/upload-artifact@v7
@@ -152,7 +154,7 @@ jobs:
       #       these dependencies to perform a simple format.
     - name: Install dependencies
       if: ${{ matrix.all_vtr_pkgs == 'yes' }}
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     # TODO: This should be on the same version of Python as would be found on
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
@@ -218,7 +220,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v8
@@ -231,58 +233,18 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
-      env:
-        # libvpr links Qt6 when VPR_USE_EZGL=on; running test executables
-        # therefore needs the Qt 6.9.3 runtime that BuildVTR was linked
-        # against (installed via aqt to /opt/qt6/6.9.3/gcc_64). Without
-        # these the dynamic loader aborts before main() (test_fasm, etc.).
-        # CI=true is honoured by run_visual_regression.sh / test_save_graphics
-        # to skip image-comparison cases that require a real GL context.
-        LD_LIBRARY_PATH: /opt/qt6/6.9.3/gcc_64/lib
-        QT_PLUGIN_PATH: /opt/qt6/6.9.3/gcc_64/plugins
-        QT_QPA_PLATFORM: offscreen
       run: |
         cd build
-        # Use ctest --output-on-failure so any abort in test_fasm /
-        # test_vpr is captured in the workflow log instead of being
-        # buried in build/Testing/Temporary/LastTest.log (which is not
-        # uploaded as an artifact for this job).
-        #
-        # test_fasm is excluded (-E) because its `fasm_integration_test`
-        # case trips a pre-existing VTR_ASSERT_SAFE_MSG (level 3) in
-        # libs/libarchfpga/src/physical_types.cpp:419 grid_layout()
-        # ("Device layout not found.") — introduced upstream by
-        # f0b8ffdc4 ("call convert_interposer_cuts_to_sg_patterns() in
-        # RR graph generation"). The failure is unrelated to the GUI
-        # work in this PR and must be fixed in the libarchfpga grid
-        # layout lookup. The earlier qt_layer baseline silently passed
-        # this step because ctest reported "No tests were found!!!";
-        # our test-discovery fix in vpr/test/gui/CMakeLists.txt makes
-        # the latent assertion visible.
-        ctest -j${{ steps.cpu-cores.outputs.count }} --output-on-failure -E '^test_fasm$'
+        make test -j${{ steps.cpu-cores.outputs.count }}
 
 
-  # GUITests — Plan §7.9 — runs the full GUI test pyramid on
-  # ubuntu-24.04. A macos-14 matrix leg was originally enabled but
-  # currently fails inside libs/EXTERNAL/libezgl: Apple libc++ rejects
-  # aggregate-only types (Triangle, PosVertex, FillRectInstance,
-  # ThickLineInstance, DashedLineInstance, Chunk) via std::construct_at
-  # because the standard library invokes _Tp(args...) rather than
-  # _Tp{args...}. That is a libezgl portability bug, tracked
-  # separately, and is unrelated to this test-stack PR. Linux is
-  # sufficient for the §7.9 gate; the macOS leg will be re-added once
-  # the libezgl ctors land. Each leg builds with -DVPR_USE_EZGL=on
-  # (the BuildVTR artifact is configured without ezgl, so it is not
-  # reused here) so the local and CI command lines are identical:
+  # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
+  # Builds with -DVPR_USE_EZGL=on so the local and CI command lines match:
   #
   #     make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
   GUITests:
-    name: 'T: GUI Tests (Layers 1+3+4+5) [${{ matrix.os }}]'
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04]
+    name: 'T: GUI Tests (Layers 1+3+4+5)'
+    runs-on: ubuntu-24.04
     steps:
 
     - uses: actions/checkout@v6
@@ -298,44 +260,21 @@ jobs:
       with:
         python-version: 3.12.3
 
-    # Plan §7.9 #3 — cache Homebrew so the macOS leg does not pay
-    # ~15 min Qt install on every run. Key is hashFiles(install_brew_packages.sh)
-    # so the cache invalidates whenever the install list changes.
-    - name: Cache Homebrew
-      if: runner.os == 'macOS'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/Library/Caches/Homebrew
-          /opt/homebrew/Cellar/qt
-          /opt/homebrew/Cellar/qt-svg
-        key: brew-${{ runner.os }}-qt6-${{ hashFiles('install_brew_packages.sh') }}
+    - name: Install dependencies
+      run: ./install_build_deps.sh
 
-    # Plan §7.9 #2 — same install scripts as the local flow. Linux uses
-    # apt + aqtinstall (Qt 6.9.3 → /opt/qt6), macOS uses Homebrew.
-    - name: Install dependencies (Linux)
-      if: runner.os == 'Linux'
-      run: ./install_apt_packages.sh
-
-    - name: Install dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: ./install_brew_packages.sh
-
-    - name: Install Python Requirements (Layer 5 SSIM)
-      run: pip install scikit-image Pillow numpy
+    - name: Install CI test dependencies
+      run: ./dev/install_test_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ${{ github.job }}-${{ matrix.os }}
+        key: ${{ github.job }}
 
     # Plan §7.9 #4 — local and CI command lines identical. Top-level
     # Makefile forwards `gui-tests` to the cmake-generated build dir.
-    # CMAKE_PREFIX_PATH inherits the workflow env on Linux (/opt/qt6);
-    # on macOS Homebrew sets it via brew --prefix qt.
     - name: Build GUI test binaries
       env:
         BUILD_TYPE: release
-        CMAKE_PREFIX_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/qt' || '/opt/qt6/6.9.3/gcc_64' }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make CMAKE_PARAMS="-DVPR_USE_EZGL=on" -j${{ steps.cpu-cores.outputs.count }}
@@ -346,8 +285,6 @@ jobs:
     #   Layer 4 — test_vpr_gui_interactive (S6 mouse/key dispatch)
     #   Layer 5 — test_vpr_gui_visual     (SSIM compare vs goldens)
     - name: Run GUI Test Layers 1 + 3 + 4 + 5
-      env:
-        CMAKE_PREFIX_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/qt' || '/opt/qt6/6.9.3/gcc_64' }}
       run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
 
     # Plan §8.2 PR-merge exit criterion: `./run_reg_test.py vtr_reg_gui`
@@ -356,18 +293,16 @@ jobs:
     # vtr_flow/tasks/regression_tests/vtr_reg_gui/.
     - name: Run vtr_reg_gui regression suite
       run: |
-        # install_apt_packages.sh provisions a project-local venv with
-        # the test harness's Python deps (prettytable, pandas, ...).
-        # Without sourcing it the system python lacks prettytable and
-        # run_reg_test.py crashes on import.
-        source .venv/bin/activate
+        # run_reg_test.py needs the flow harness Python deps (prettytable,
+        # pandas, lxml, ...); install them into the setup-python environment.
+        pip install -r requirements.txt
         ./run_reg_test.py vtr_reg_gui -show_failures
 
     - name: Upload failure logs
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: gui-tests-failure-logs-${{ matrix.os }}
+        name: gui-tests-failure-logs
         path: |
           build/vpr/test/gui/Testing/Temporary/
           /tmp/tmp.*
@@ -401,10 +336,10 @@ jobs:
         python-version: 3.12.3
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
-    - name: Install Python Requirements (Layer 5 SSIM + gcovr)
-      run: pip install scikit-image Pillow numpy gcovr
+    - name: Install CI test dependencies
+      run: ./dev/install_test_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -498,7 +433,7 @@ jobs:
       id: cpu-cores
 
     - name: 'Install dependencies'
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: 'Install Python Requirements'
       run: |
@@ -650,7 +585,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Extra Dependencies
       if: ${{ matrix.extra_pkgs != '' }}
@@ -739,7 +674,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Extra Dependencies
       if: ${{ matrix.extra_pkgs != '' }}
@@ -796,7 +731,7 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on -DVPR_USE_EZGL=off',
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           }
           #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
@@ -819,7 +754,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Python Requirements
       run: |
@@ -868,7 +803,7 @@ jobs:
         id: cpu-cores
 
       - name: Install dependencies
-        run: ./install_apt_packages.sh
+        run: ./install_build_deps.sh
 
       - name: Install Python Requirements
         run: |
@@ -909,7 +844,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Install Python Requirements
       run: |
@@ -951,7 +886,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v8
@@ -997,7 +932,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -1029,7 +964,7 @@ jobs:
       id: cpu-cores
 
     - name: Install Dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:

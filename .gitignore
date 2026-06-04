@@ -15,6 +15,11 @@ build
 build_cov
 
 #
+# Repo-local Qt6 SDK provisioned by install_build_deps.sh / dev/install_qt6_sdk.sh
+#
+/qt6/
+
+#
 #VTR Flow/Tasks
 #
 vtr_flow/tasks/**/run[0-9]*

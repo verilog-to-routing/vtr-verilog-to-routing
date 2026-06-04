@@ -6,50 +6,6 @@ include(SupportCcache)
 project("VTR")
 
 #
-# macOS / Homebrew configuration
-#
-# On macOS, system-provided bison (2.3) and flex are outdated.
-# Homebrew installs newer versions in /opt/homebrew (Apple Silicon)
-# or /usr/local (Intel). We detect and prefer Homebrew's tools and
-# libraries automatically.
-#
-if(APPLE)
-    # Determine Homebrew prefix (works for both Apple Silicon and Intel)
-    execute_process(
-        COMMAND brew --prefix
-        OUTPUT_VARIABLE HOMEBREW_PREFIX
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    if(HOMEBREW_PREFIX)
-        message(STATUS "macOS: Homebrew detected at ${HOMEBREW_PREFIX}")
-
-        # Prefer Homebrew's bison and flex over the outdated system versions
-        if(NOT DEFINED BISON_EXECUTABLE)
-            set(BISON_EXECUTABLE "${HOMEBREW_PREFIX}/opt/bison/bin/bison" CACHE FILEPATH "Homebrew bison")
-        endif()
-        if(NOT DEFINED FLEX_EXECUTABLE)
-            set(FLEX_EXECUTABLE "${HOMEBREW_PREFIX}/opt/flex/bin/flex" CACHE FILEPATH "Homebrew flex")
-        endif()
-
-        # Add Homebrew Qt and library paths so find_package() can locate them.
-        # Homebrew splits Qt6 into separate packages (qtbase, qtsvg, etc.)
-        # so we must add each package's cmake dir to the prefix path.
-        list(PREPEND CMAKE_PREFIX_PATH
-            "${HOMEBREW_PREFIX}/opt/qtbase"
-            "${HOMEBREW_PREFIX}/opt/qtsvg"
-            "${HOMEBREW_PREFIX}"
-        )
-        # Qt6 component discovery also uses per-component _DIR variables
-        if(EXISTS "${HOMEBREW_PREFIX}/opt/qtsvg/lib/cmake/Qt6Svg")
-            set(Qt6Svg_DIR "${HOMEBREW_PREFIX}/opt/qtsvg/lib/cmake/Qt6Svg" CACHE PATH "Qt6Svg cmake dir")
-        endif()
-    else()
-        message(WARNING "macOS: Homebrew not found. Install from https://brew.sh")
-    endif()
-endif()
-
-#
 # VTR Build Options
 #
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -457,21 +413,88 @@ enable_testing()
 set(READLINE_FOUND FALSE)
 
 
-# set VPR_USE_EZGL in the root of VTR to decide whether to add
-# subdirectory of graphics library, which prevents users
-# without gtk/x11 libraries installed to build. VPR_USE_EZGL is
-# being used in both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
+# ===========================================================================
+# Qt6 discovery for the VPR GUI (EZGL).
 #
-# check if Qt6 is available and turn on/off graphics
-if (VPR_USE_EZGL STREQUAL "auto")
-    find_package(Qt6 QUIET COMPONENTS Core Gui Widgets)
+# Goal: a plain `make` finds Qt6 and the resulting binaries/tests run with NO
+# Qt environment variables (no LD_LIBRARY_PATH / QT_PLUGIN_PATH / QT6_HOME).
+#
+# Strategy:
+#   * Require Qt >= 6.9.3. QRhi is available since Qt 6.7, but even Qt 6.8 has
+#     rendering bugs, so the floor is set higher.
+#   * Prefer a SYSTEM Qt on the loader's default search path -> no RPATH needed
+#     and the binaries stay relocatable.
+#   * Otherwise fall back to a repo-local SDK from `make qt6sdk`
+#     (default <repo>/qt6, override with VTR_QT_PREFIX) and bake its lib dir
+#     into RPATH so the binaries still run with no env.
+#   * An explicit user CMAKE_PREFIX_PATH / Qt6_DIR always wins; RPATH is baked
+#     only when the chosen Qt lib dir is outside the default search path.
+# ===========================================================================
+set(VTR_QT_MIN_VERSION 6.9.3)
 
-    if(Qt6_FOUND)
+if (NOT VPR_USE_EZGL STREQUAL "off")
+    set(_vtr_qt_user_override OFF)
+    if (DEFINED Qt6_DIR OR DEFINED ENV{Qt6_DIR} OR DEFINED ENV{CMAKE_PREFIX_PATH})
+        set(_vtr_qt_user_override ON)
+    endif()
+
+    # 1) System-first probe (honors any user override via env/cache).
+    find_package(Qt6 ${VTR_QT_MIN_VERSION} QUIET COMPONENTS Core Gui Widgets)
+
+    # 2) Fall back to the repo-local SDK if no suitable Qt is on the system and
+    #    the user has not pointed us somewhere explicitly.
+    if (NOT Qt6_FOUND AND NOT _vtr_qt_user_override)
+        set(_vtr_qt_prefix "$ENV{VTR_QT_PREFIX}")
+        if (NOT _vtr_qt_prefix)
+            set(_vtr_qt_prefix "${CMAKE_SOURCE_DIR}/qt6")
+        endif()
+        # aqt layout: <prefix>/<version>/gcc_64.
+        file(GLOB _vtr_qt_candidates "${_vtr_qt_prefix}/*/gcc_64")
+        list(SORT _vtr_qt_candidates)
+        list(REVERSE _vtr_qt_candidates)   # newest version first
+        foreach(_home ${_vtr_qt_candidates})
+            if (EXISTS "${_home}/lib/cmake/Qt6")
+                list(PREPEND CMAKE_PREFIX_PATH "${_home}")
+                message(STATUS "VTR: using repo-local Qt6 SDK at ${_home}")
+                break()
+            endif()
+        endforeach()
+        find_package(Qt6 ${VTR_QT_MIN_VERSION} QUIET COMPONENTS Core Gui Widgets)
+    endif()
+endif()
+
+# Resolve VPR_USE_EZGL (auto -> on/off) from whether a suitable Qt was found.
+# VPR_USE_EZGL decides whether the graphics subdirectory is added; it is read by
+# both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
+if (VPR_USE_EZGL STREQUAL "auto")
+    if (Qt6_FOUND)
         set(VPR_USE_EZGL "on")
-        message(STATUS "VPR Graphics: Enabled (Qt6 found)")
+        message(STATUS "VPR Graphics: Enabled (Qt6 ${Qt6_VERSION} found)")
     else()
         set(VPR_USE_EZGL "off")
-        message(STATUS "VPR Graphics: Disabled (Qt6 not found, install Qt6 base dev packages)")
+        message(STATUS "VPR Graphics: Disabled (no Qt6 >= ${VTR_QT_MIN_VERSION}; run `make qt6sdk` or install a system Qt6)")
+    endif()
+endif()
+
+# Graphics explicitly requested but no suitable Qt -> fail loudly.
+if (VPR_USE_EZGL STREQUAL "on" AND NOT Qt6_FOUND)
+    message(FATAL_ERROR
+        "VPR_USE_EZGL=on but Qt6 >= ${VTR_QT_MIN_VERSION} was not found. "
+        "Run `make qt6sdk` to provision a repo-local Qt SDK, install a system "
+        "Qt6 >= ${VTR_QT_MIN_VERSION}, or pass -DCMAKE_PREFIX_PATH=<qt-prefix>.")
+endif()
+
+# Custom Mode: bake the Qt lib dir into RPATH so binaries run with no env.
+# Skipped for a system Qt (already on the default loader search path).
+if (Qt6_FOUND AND VPR_USE_EZGL STREQUAL "on")
+    # Qt6_DIR is <prefix>/lib/cmake/Qt6 -> its grandparent is the Qt lib dir.
+    get_filename_component(_qt_libdir "${Qt6_DIR}/../.." ABSOLUTE)
+    if (_qt_libdir MATCHES "^/usr/" OR _qt_libdir MATCHES "^/lib/")
+        message(STATUS "VTR: system Qt6 at ${_qt_libdir} (no RPATH baking)")
+    else()
+        list(APPEND CMAKE_BUILD_RPATH "${_qt_libdir}")
+        list(APPEND CMAKE_INSTALL_RPATH "${_qt_libdir}")
+        message(STATUS "VTR: baking custom Qt6 lib dir into RPATH: ${_qt_libdir}")
     endif()
 endif()
 

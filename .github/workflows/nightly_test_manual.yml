@@ -157,7 +157,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: ./install_build_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
