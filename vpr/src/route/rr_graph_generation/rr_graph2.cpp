@@ -438,7 +438,7 @@ void load_sblock_pattern_lookup(const int i,
             continue;
         }
 
-        // Figure out the channel and segment for a certain direction 
+        // Figure out the channel and segment for a certain direction
         bool vert = ((side == TOP) || (side == BOTTOM));
         bool pos_dir = ((side == TOP) || (side == RIGHT));
         int chan_len = (vert ? grid.height() : grid.width()) - 2; //-2 for no perim channels
@@ -451,7 +451,7 @@ void load_sblock_pattern_lookup(const int i,
             continue;
 
         // Figure out all the tracks on a side that are ending and the
-        // ones that are passing through and have a SB. 
+        // ones that are passing through and have a SB.
         enum Direction end_dir = (pos_dir ? Direction::DEC : Direction::INC);
 
         // Different channel widths have different seg_details
@@ -464,7 +464,7 @@ void load_sblock_pattern_lookup(const int i,
                              num_ending_wires[side],
                              cuts);
 
-        // Figure out all the tracks on a side that are starting. 
+        // Figure out all the tracks on a side that are starting.
         int dummy;
         enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
         label_wire_muxes(chan, seg,
@@ -474,11 +474,11 @@ void load_sblock_pattern_lookup(const int i,
     }
 
     for (e_side to_side : TOTAL_2D_SIDES) {
-        // Can't do anything if no muxes on this side. 
+        // Can't do anything if no muxes on this side.
         if (num_wire_muxes[to_side] == 0)
             continue;
 
-        // Figure out side rotations 
+        // Figure out side rotations
         VTR_ASSERT((TOP == 0) && (RIGHT == 1) && (BOTTOM == 2) && (LEFT == 3));
         int side_cw = (to_side + 1) % 4;
         int side_opp = (to_side + 2) % 4;
@@ -669,7 +669,7 @@ static void label_incoming_wires(const int chan_num,
     int num_passing = 0;
     for (int pass = 0; pass < 2; ++pass) {
         for (int itrack = 0; itrack < max_chan_width; ++itrack) {
-            // Skip tracks that are undefined 
+            // Skip tracks that are undefined
             if (seg_details[itrack].length() == 0) {
                 continue;
             }
@@ -678,18 +678,18 @@ static void label_incoming_wires(const int chan_num,
                 int start = get_seg_start(seg_details, itrack, chan_num, seg_num, seg_dimension_cuts);
                 int end = get_seg_end(seg_details, itrack, start, chan_num, max_len, seg_dimension_cuts);
 
-                // Determine if we are a wire endpoint 
+                // Determine if we are a wire endpoint
                 bool is_endpoint = (seg_num == end);
                 if (Direction::DEC == seg_details[itrack].direction()) {
                     is_endpoint = (seg_num == start);
                 }
 
-                // Determine if we have a sblock on the wire 
+                // Determine if we have a sblock on the wire
                 bool sblock_exists = is_sblock(chan_num, seg_num, sb_seg, itrack,
                                                seg_details, UNI_DIRECTIONAL, seg_dimension_cuts);
 
                 switch (pass) {
-                    // On first pass, only load ending wire labels. 
+                    // On first pass, only load ending wire labels.
                     case 0:
                         if (is_endpoint) {
                             labels[itrack] = num_ending;
@@ -698,7 +698,7 @@ static void label_incoming_wires(const int chan_num,
                         break;
 
                     // On second pass, load the passing wire labels. They
-                    // will follow after the ending wire labels. 
+                    // will follow after the ending wire labels.
                     case 1:
                         if (!is_endpoint && sblock_exists) {
                             labels[itrack] = num_ending + num_passing;
