@@ -160,10 +160,14 @@ Partitions, Atoms, Regions, and Logical Block Types
 Logical Block Location
 ----------------------
 
-Some designs must place primitives at fixed FPGA sites **and** at fixed slices inside a logic block, for example to meet timing to an external interface. Use two ``<add_atom>`` attributes together:
+Some designs must place primitives at fixed FPGA sites **and** at fixed slices inside a logic block, for example to meet timing to an external interface (:numref:`fpga_interface`).
 
-* **add_region** — which logic block site on the chip (``x_low``, ``y_low``, ...).
-* **logical_block_location** — which slice inside that block (from the architecture ``pb_type`` hierarchy).
+In each ``<partition>``, use:
+
+* ``<add_region>`` — which logic block site on the chip (``x_low``, ``y_low``, ...).
+* ``logical_block_location`` on ``<add_atom>`` — which slice inside that block (from the architecture ``pb_type`` hierarchy).
+
+.. _fpga_interface:
 
 .. figure:: ../Images/logical_block_location_fpga_interface.png
     :align: center
@@ -182,7 +186,7 @@ Some designs must place primitives at fixed FPGA sites **and** at fixed slices i
    The first level (e.g. ``clb``) may omit the index: ``clb.fle[0]...`` is equivalent to ``clb[0].fle[0]...``.
    Deeper levels should include indices when you need a specific slice.
 
-**Example** :
+**Example:**
 
 .. code-block:: xml
 
