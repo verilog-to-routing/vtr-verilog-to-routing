@@ -29,4 +29,6 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_chain.txt
 
 # Script parameters
-script_params=-min_hard_mult_size 10
+script_params_common = -min_hard_mult_size 10 -relax_w_factor 1.4
+script_params_list_add = --pack --place --route
+script_params_list_add = --analytical_place --route

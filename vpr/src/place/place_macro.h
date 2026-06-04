@@ -146,20 +146,26 @@ class PlaceMacros {
   public:
     /**
      * @brief Allocates and loads the placement macros.
-     * @details The following steps are taken in this methodL
-     * (1) First, go through all the block types and mark down the pins that could possibly
-     * be part of a placement macros.
-     * (2) Then, go through the netlist of all the pins marked in (1) to find out all the
-     * heads of the placement macros using criteria depending on the type of placement
-     * macros. For carry chains, the heads of the placement macros are blocks with
-     * carry_in's not connected to any nets (OPEN) while the carry_out's connected to the
-     * netlist with only 1 SINK.
-     * (3) Traverse from the heads to the tails of the placement macros and load the
-     * information in the t_pl_macro data structure. Similar to (2), tails are identified
-     * with criteria depending on the type of placement macros. For carry chains, the
-     * tails are blocks with carry_out's not connected to any nets (OPEN) while the
-     * carry_in's is connected to the netlist which has only 1 SINK.
-     * @param directs
+     * @details Two kinds of placement macros are detected:
+     *
+     * (A) Carry-chain macros — blocks that both drive and receive the same direct
+     *     connection. Detection proceeds in three steps:
+     *   (1) Mark all tile pins that could participate in a direct connection.
+     *   (2) Identify chain heads: blocks whose RECEIVER pin for a direct is unconnected
+     *       (or connected to a constant net) while their DRIVER pin for the same direct
+     *       drives exactly one other block.
+     *   (3) Walk from each head toward the chain tail, collecting all members. The
+     *       per-member placement offset is i * direct_step_vector (member index i).
+     *
+     * (B) Pure-source macros — blocks that only DRIVE a direct connection and have no
+     *     corresponding RECEIVER pin for that direct (e.g. a multiplier driving a memory
+     *     block through a sub-tile direct). These are detected after step (3) above by
+     *     scanning all remaining un-macro'd blocks. Because get_physical_pin always maps
+     *     to the first capacity instance (cap_idx=0), the receiver's physical pin is used
+     *     to determine the correct direct when the driver sub_tile has capacity > 1.
+     *     Per-member offsets are pre-computed in find_all_the_macro_ and stored verbatim.
+     *
+     * @param directs  All direct connections declared in the architecture.
      */
     PlaceMacros(const std::vector<t_direct_inf>& directs,
                 const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -220,16 +226,32 @@ class PlaceMacros {
      */
     vtr::vector_map<ClusterBlockId, int> imacro_from_iblk_;
 
-    ///@brief Stores all the placement macros (usually carry chains).
+    ///@brief Stores all the placement macros (carry chains and pure-source macros).
     std::vector<t_pl_macro> pl_macros_;
 
   private:
+    /**
+     * @brief Detects all placement macros in the netlist and populates the output arrays.
+     *
+     * For each macro found, sets:
+     *   pl_macro_idirect[i]     — index into directs[] for carry-chain macros, or
+     *                             UNDEFINED (-1) for pure-source macros.
+     *   pl_macro_num_members[i] — number of cluster blocks in the macro.
+     *   pl_macro_member_blk_num[i][j] — ClusterBlockId of the j-th member.
+     *   pl_macro_member_offsets[i][j] — placement offset of the j-th member relative to
+     *                             the macro head. Populated only for pure-source macros;
+     *                             carry-chain offsets are derived by the caller.
+     *
+     * @return The total number of macros found.
+     */
     int find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                             const AtomNetlist& atom_nlist,
                             const AtomLookup& atom_lookup,
+                            const std::vector<t_direct_inf>& directs,
                             std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
-                            std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+                            std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num,
+                            std::vector<std::vector<t_pl_offset>>& pl_macro_member_offsets);
 
     void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
                                           const ClusteredNetlist& clb_nlist);
