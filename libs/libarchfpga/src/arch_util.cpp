@@ -1,4 +1,5 @@
 #include <cstring>
+#include <format>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -529,7 +530,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     }
     lut_pb_type->modes[0].num_interconnect = 1;
     lut_pb_type->modes[0].interconnect = new t_interconnect[1];
-    lut_pb_type->modes[0].interconnect[0].name = vtr::string_fmt("complete:%s", lut_pb_type->name);
+    lut_pb_type->modes[0].interconnect[0].name = "complete:" + std::string(lut_pb_type->name);
     lut_pb_type->modes[0].interconnect[0].type = COMPLETE_INTERC;
     lut_pb_type->modes[0].interconnect[0].input_string = vtr::string_fmt("%s.%s", lut_pb_type->name, in_port->name);
     lut_pb_type->modes[0].interconnect[0].output_string = vtr::string_fmt("%s.%s", lut_pb_type->name, out_port->name);
@@ -572,7 +573,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     /* Process interconnect */
     lut_pb_type->modes[1].num_interconnect = 2;
     lut_pb_type->modes[1].interconnect = new t_interconnect[lut_pb_type->modes[1].num_interconnect];
-    lut_pb_type->modes[1].interconnect[0].name = vtr::string_fmt("direct:%s", lut_pb_type->name);
+    lut_pb_type->modes[1].interconnect[0].name = "direct:" + std::string(lut_pb_type->name);
     lut_pb_type->modes[1].interconnect[0].type = DIRECT_INTERC;
     lut_pb_type->modes[1].interconnect[0].input_string = vtr::string_fmt("%s.%s", lut_pb_type->name, in_port->name);
     lut_pb_type->modes[1].interconnect[0].output_string = default_name + '.' + in_port->name;
@@ -582,7 +583,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     lut_pb_type->modes[1].interconnect[0].parent_mode = &lut_pb_type->modes[1];
     lut_pb_type->modes[1].interconnect[0].interconnect_power = new t_interconnect_power();
 
-    lut_pb_type->modes[1].interconnect[1].name = vtr::string_fmt("direct:%s", lut_pb_type->name);
+    lut_pb_type->modes[1].interconnect[1].name = "direct:" + std::string(lut_pb_type->name);
     lut_pb_type->modes[1].interconnect[1].type = DIRECT_INTERC;
     lut_pb_type->modes[1].interconnect[1].input_string = vtr::string_fmt("%s.%s", default_name.c_str(), out_port->name);
     lut_pb_type->modes[1].interconnect[1].output_string = vtr::string_fmt("%s.%s", lut_pb_type->name, out_port->name);
@@ -670,7 +671,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
         if (mem_pb_type->ports[i].port_class != nullptr
             && strstr(mem_pb_type->ports[i].port_class, "data")
                    == mem_pb_type->ports[i].port_class) {
-            mem_pb_type->modes[0].interconnect[i_inter].name = vtr::string_fmt("direct%d", i_inter);
+            mem_pb_type->modes[0].interconnect[i_inter].name = "direct:" + std::to_string(i_inter);
             mem_pb_type->modes[0].interconnect[i_inter].infer_annotations = true;
 
             if (mem_pb_type->ports[i].type == IN_PORT) {
@@ -694,7 +695,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
         } else {
             for (int j = 0; j < num_pb; j++) {
                 /* Anything that is not data must be an input */
-                mem_pb_type->modes[0].interconnect[i_inter].name = vtr::string_fmt("direct%d_%d", i_inter, j);
+                mem_pb_type->modes[0].interconnect[i_inter].name = std::format("direct{}_{}", i_inter, j);
                 mem_pb_type->modes[0].interconnect[i_inter].infer_annotations = true;
 
                 if (mem_pb_type->ports[i].type == IN_PORT) {
