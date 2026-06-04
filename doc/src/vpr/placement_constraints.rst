@@ -160,8 +160,7 @@ Partitions, Atoms, Regions, and Logical Block Types
 Logical Block Location
 ----------------------
 
-Some designs need interfacing logic (LUTs, FFs) placed at **fixed sites** on the FPGA and at **fixed slices inside a CLB**,
-so that paths to external circuits meet tight timing budgets (for example, a known delay to an off-chip interface).
+Some designs need primitives placed at **fixed sites** on the FPGA and at **fixed locations inside a logic block**, so that paths to external circuits meet tight timing budgets.
 
 .. figure:: ../Images/logical_block_location_fpga_interface.png
     :align: center
@@ -174,16 +173,20 @@ so that paths to external circuits meet tight timing budgets (for example, a kno
     :align: center
     :width: 60%
 
-    Inside a CLB: each FLE contains a LUT and an FF. ``logical_block_location`` selects the FLE index and primitive
-    (e.g. ``CLB[2][2].FLE[3].LUT`` or ``CLB[2][1].FLE[2].FF``).
+    For the logic block at the location set by ``add_region``, ``logical_block_location`` selects the slice inside it.
+    Example for a CLB: FLE 0 + FF, or FLE 3 + LUT4.
 
-**Syntax:** Use ``pb_type`` names from the architecture file. Write ``pb_type[index]`` at each level, separate levels with ``.``,
-and add ``{mode_name}`` when a mode must be specified.
+Use **both** attributes when you need a fixed placement:
 
-**Example:** ``logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"`` packs the atom into the first CLB's first FLE
-(mode ``n1_lut4``), first BLE4, and first FF. Combine with ``add_region`` to also fix the CLB's (x, y) on the chip.
+* **``add_region``** — which logic block on the chip (``x_low``, ``y_low``, etc.).
+* **``logical_block_location``** — which level inside that block (``pb_type`` names and indices from the architecture file).
 
-**Constraints file example** — two atoms at different CLB sites and different slices inside each CLB:
+**Syntax:** ``pb_type[index]`` at each level, separated by ``.``; add ``{mode_name}`` when required. The path must match
+the hierarchy in your architecture (CLB, RAM, or other block types). For the **first** level (e.g. ``clb``), the index is
+optional: ``clb.fle[0]...`` and ``clb[0].fle[0]...`` are equivalent. Lower levels (e.g. ``fle[0]``, ``ble4[0]``) should
+include indices when you need a specific slice.
+
+**CLB example** (two atoms: different chip sites and different slices inside each CLB):
 
 .. code-block:: xml
 
@@ -192,6 +195,6 @@ and add ``{mode_name}`` when a mode must be specified.
 		<add_region x_low="2" y_low="1" x_high="2" y_high="1"/>
 	</partition>
 	<partition name="fix_lut_atom_c">
-		<add_atom name_pattern="c" logical_block_location="clb[0].fle[1]{n1_lut4}.ble4[0].lut4[0]"/>
+		<add_atom name_pattern="c" logical_block_location="clb[0].fle[3]{n1_lut4}.ble4[0].lut4[0]"/>
 		<add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
 	</partition>
