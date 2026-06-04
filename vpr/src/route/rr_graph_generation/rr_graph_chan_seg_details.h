@@ -49,7 +49,8 @@ std::vector<int> get_seg_track_counts(int num_sets,
 const std::vector<int>& get_chan_interposer_cuts(e_rr_type chan_type);
 
 /// @brief Returns the channel segment number at which a given track
-//         at a given channel segment number started.
+///        at a given channel segment number started (e.g. starting x-coordinate
+///        for CHANX wires).
 ///        When interposer cuts are present (seg_dimension_cuts is non-empty),
 ///        wires going through a cut are split at the cut position.
 int get_seg_start(const t_chan_seg_details* seg_details,
