@@ -24,7 +24,7 @@ constexpr short UN_SET = -1;
  *
  * @param chan_num       Routing channel index.
  * @param seg_num        Segment index along the routing channel.
- * @param sb_seg         Switch-block coordinate along the orthogonal axis.
+ * @param sb_seg         Switch-block coordinate along the routing channel (same axis as seg_num).
  * @param dir            Direction of wires treated as incoming at this location.
  * @param seg_details    Per-track segment details for the channel.
  * @param max_len        Maximum length of the channel.

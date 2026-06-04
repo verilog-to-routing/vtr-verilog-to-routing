@@ -22,6 +22,18 @@ bool is_cblock(const int chan,
                const t_chan_seg_details* seg_details,
                const std::vector<int>& seg_dimension_cuts);
 
+/// @brief Check if a track connects to a switch block at a given location.
+///
+/// Maps (@p wire_seg, @p sb_seg) to an offset along the wire and checks the
+/// wire's switch-block pattern via @c seg_details[track].sb().
+///
+/// @param chan            Routing channel index.
+/// @param wire_seg        Segment coordinate along the routing channel.
+/// @param sb_seg          Switch-block grid coordinate along the routing
+///                        channel (same axis as wire_seg).
+/// @param track           Routing track index within the channel.
+/// @param seg_details     Per-track segment details for the channel.
+/// @param directionality  Routing wires' directionality (bidirectional or unidirectional).
 bool is_sblock(const int chan,
                int wire_seg,
                const int sb_seg,
