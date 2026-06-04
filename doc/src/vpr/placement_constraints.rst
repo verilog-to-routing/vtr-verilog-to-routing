@@ -160,33 +160,30 @@ Partitions, Atoms, Regions, and Logical Block Types
 Logical Block Location
 ----------------------
 
-Some designs need primitives placed at **fixed sites** on the FPGA and at **fixed locations inside a logic block**, so that paths to external circuits meet tight timing budgets.
+Some designs must place primitives at fixed FPGA sites **and** at fixed slices inside a logic block (CLB, RAM, DSP, etc.),
+for example to meet timing to an external interface. Use two ``<add_atom>`` attributes together:
+
+* **``add_region``** — which tile on the chip (``x_low``, ``y_low``, ...).
+* **``logical_block_location``** — which slice inside that block (from the architecture ``pb_type`` hierarchy).
 
 .. figure:: ../Images/logical_block_location_fpga_interface.png
     :align: center
     :width: 75%
 
-    FPGA floorplan: interfacing atoms (LUT and FF) are constrained to specific CLB sites and connected to external logic.
-    ``add_region`` fixes which CLB tile on the chip is used.
+    Chip placement: ``add_region`` fixes the CLB site; atoms connect to logic outside the FPGA.
 
 .. figure:: ../Images/logical_block_location_clb_hierarchy.png
     :align: center
     :width: 60%
 
-    For the logic block at the location set by ``add_region``, ``logical_block_location`` selects the slice inside it.
-    Example for a CLB: FLE 0 + FF, or FLE 3 + LUT4.
+    Inside the CLB: ``logical_block_location`` picks the FLE and primitive—for example, at (2, 1) FLE 0 + FF;
+    at (2, 2) FLE 3 + LUT4.
 
-Use **both** attributes when you need a fixed placement:
+**Syntax:** ``pb_type[index]`` per level, separated by ``.``; use ``{mode_name}`` when needed. The first level (e.g. ``clb``)
+may omit the index (``clb.fle[0]...`` equals ``clb[0].fle[0]...``). Deeper levels should include indices when you need a
+specific slice.
 
-* **``add_region``** — which logic block on the chip (``x_low``, ``y_low``, etc.).
-* **``logical_block_location``** — which level inside that block (``pb_type`` names and indices from the architecture file).
-
-**Syntax:** ``pb_type[index]`` at each level, separated by ``.``; add ``{mode_name}`` when required. The path must match
-the hierarchy in your architecture (CLB, RAM, or other block types). For the **first** level (e.g. ``clb``), the index is
-optional: ``clb.fle[0]...`` and ``clb[0].fle[0]...`` are equivalent. Lower levels (e.g. ``fle[0]``, ``ble4[0]``) should
-include indices when you need a specific slice.
-
-**CLB example** (two atoms: different chip sites and different slices inside each CLB):
+**Example** (two CLBs, two slices):
 
 .. code-block:: xml
 
