@@ -7,13 +7,29 @@
 
 /// Allocates and loads the chan_details data structure, a 2D array of
 /// seg_details structures. This array is used to handle unique seg_details
-/// (ie. channel segments) for each horizontal and vertical channel.
+/// (ie. channel segments) for each horizontal and vertical channel segment.
 void alloc_and_load_chan_details(const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details_x,
                                  const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y);
 
+/// @brief Allocates and populates per-track segment metadata for one routing channel axis.
+///
+/// Builds a vector of @c t_seg_details (one entry per routing track) from architecture
+/// segment definitions. Track counts per segment type follow the frequency distribution in
+/// @p segment_inf. For each track, the function sets length,longline flag, staggered start offset,
+/// connection-box and switch-box patterns, R/C, architecture switch indices, and wire direction.
+///
+/// When @p use_full_seg_groups is true, tracks are assigned in multiples of segment length,
+/// and @p max_chan_width may be adjusted to the actual number of tracks allocated.
+///
+/// @param max_chan_width In: desired channel width; out: actual width after track assignment.
+/// @param max_len Maximum segment length (grid dimension along this axis, used for longlines).
+/// @param segment_inf Architecture segment types (frequency, length, cb/sb patterns, etc.).
+/// @param use_full_seg_groups If true, assign tracks in full segment-length groups.
+/// @param directionality BI_DIRECTIONAL or UNI_DIRECTIONAL routing of segment wires.
+/// @return Per-track @c t_seg_details for horizontal (CHANX) or vertical (CHANY) channels.
 std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
                                                       const std::vector<t_segment_inf>& segment_inf,
