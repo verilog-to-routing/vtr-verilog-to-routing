@@ -84,14 +84,8 @@ Partitions, Atoms, Regions, and Logical Block Types
 			**Default:** ``false``
 
 		:opt_param logical_block_location:
-			Constrains the atom to a specified location inside a logic block (e.g. a particular FF or LUT
-			slice in a CLB) during packing. Path syntax:
-			``pb_type[index]`` at each level, levels separated by ``.``, and ``{mode_name}`` after a level when
-			that mode must be chosen (names come from the architecture file).
-
-			**Example:** ``logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"`` places the atom in
-			the first CLB's first FLE (using mode ``n1_lut4``), first BLE4, and first FF. Use with ``add_region`` to
-			also fix the CLB's location on the chip; omit this attribute if only a floorplan region is needed.
+			Constrains the atom to a specified location inside a logic block during packing.
+			See :ref:`logical_block_location` for syntax, examples, and figures.
 
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
@@ -161,8 +155,35 @@ Partitions, Atoms, Regions, and Logical Block Types
 
 		**Note:** If no ``<add_logical_block>`` tags are specified for a partition, atoms in the partition are not constrained to any particular logical block type and can be mapped to any available type.
 
-``logical_block_location`` can be combined with ``add_region`` to fix both the CLB site and the slice
-inside the CLB:
+.. _logical_block_location:
+
+Logical Block Location
+----------------------
+
+Some designs need interfacing logic (LUTs, FFs) placed at **fixed sites** on the FPGA and at **fixed slices inside a CLB**,
+so that paths to external circuits meet tight timing budgets (for example, a known delay to an off-chip interface).
+
+.. figure:: ../Images/logical_block_location_fpga_interface.png
+    :align: center
+    :width: 75%
+
+    FPGA floorplan: interfacing atoms (LUT and FF) are constrained to specific CLB sites and connected to external logic.
+    ``add_region`` fixes which CLB tile on the chip is used.
+
+.. figure:: ../Images/logical_block_location_clb_hierarchy.png
+    :align: center
+    :width: 60%
+
+    Inside a CLB: each FLE contains a LUT and an FF. ``logical_block_location`` selects the FLE index and primitive
+    (e.g. ``CLB[2][2].FLE[3].LUT`` or ``CLB[2][1].FLE[2].FF``).
+
+**Syntax:** Use ``pb_type`` names from the architecture file. Write ``pb_type[index]`` at each level, separate levels with ``.``,
+and add ``{mode_name}`` when a mode must be specified.
+
+**Example:** ``logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"`` packs the atom into the first CLB's first FLE
+(mode ``n1_lut4``), first BLE4, and first FF. Combine with ``add_region`` to also fix the CLB's (x, y) on the chip.
+
+**Constraints file example** — two atoms at different CLB sites and different slices inside each CLB:
 
 .. code-block:: xml
 
@@ -174,6 +195,3 @@ inside the CLB:
 		<add_atom name_pattern="c" logical_block_location="clb[0].fle[1]{n1_lut4}.ble4[0].lut4[0]"/>
 		<add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
 	</partition>
-
-``logical_block_location`` paths use the ``pb_type``
-names from the architecture file (e.g. ``clb``, ``fle``, ``ble4``, ``ff``, ``lut4``).
