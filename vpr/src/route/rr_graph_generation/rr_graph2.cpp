@@ -60,7 +60,12 @@ void dump_seg_details(t_seg_details* seg_details,
 
 /******************** Subroutine definitions *******************************/
 
-bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details, const std::vector<int>& seg_dimension_cuts) {
+bool is_cblock(const int chan,
+               const int seg,
+               const int track,
+               const t_chan_seg_details* seg_details,
+               const std::vector<int>& seg_dimension_cuts) {
+    // Get the length of the segment
     int length = seg_details[track].length();
 
     // Make sure they gave us correct start
@@ -71,7 +76,7 @@ bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_
     VTR_ASSERT(ofs >= 0);
     VTR_ASSERT(ofs < length);
 
-    /* If unidir segment that is going backwards, we need to flip the ofs */
+    // If unidir segment that is going backwards, we need to flip the ofs
     if (Direction::DEC == seg_details[track].direction()) {
         ofs = (length - 1) - ofs;
     }

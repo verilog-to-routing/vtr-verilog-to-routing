@@ -6,6 +6,16 @@
 #include "rr_types.h"
 #include "device_grid.h"
 
+/// @brief Check if a track drives a connection block at a given location.
+///
+/// Maps (@p chan, @p seg) to an offset along the wire containing that
+/// location and checks the wire's connection-block pattern via @c seg_details[track].cb().
+///
+/// @param chan               Routing channel index.
+/// @param seg                Segment coordinate along the channel.
+/// @param track              Routing track index within the channel.
+/// @param seg_details        Per-track segment details for the channel.
+/// @param seg_dimension_cuts Interposer cut positions along the channel dimension.
 bool is_cblock(const int chan,
                const int seg,
                const int track,
