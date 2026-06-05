@@ -85,7 +85,6 @@ static float get_router_expansion_cost(const t_rr_node_route_inf& node_inf,
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static double get_zoom_scale(ezgl::renderer* g);
-//static bool is_cluttered(double zoom_level);
 
 static void draw_main_canvas(ezgl::renderer* g);
 
@@ -180,6 +179,7 @@ void init_graphics_state(bool show_graphics_val,
 }
 
 #ifndef NO_GRAPHICS
+// Helper for calculating draw_state->zoom_scale
 static double get_zoom_scale(ezgl::renderer* g) {
     double world_width = g->get_visible_world().width();
     double screen_width = g->get_visible_screen().width();
@@ -199,9 +199,12 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
         if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
             draw_state->zoom_scale = get_zoom_scale(g);
+            // Update whether to declutter RR nodes
             if (draw_state->enable_decluttering) {
+                // If zoom scale is lower than the threshold, need to declutter RR nodes
                 draw_state->declutter_rr = draw_state->zoom_scale < draw_state->min_pixel_per_node;
             } else {
+                // Currently this will never be called, since the boolean hasn't been wired to a UI button
                 draw_state->declutter_rr = false;
             }
 
