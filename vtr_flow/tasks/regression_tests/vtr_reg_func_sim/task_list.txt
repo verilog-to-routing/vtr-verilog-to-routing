@@ -1,3 +1,5 @@
+# these testcases are commented out as they are know failures.
+# see https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/3595 info.
 regression_tests/vtr_reg_func_sim/adder_4bit
 regression_tests/vtr_reg_func_sim/adder_4bit_blif
 regression_tests/vtr_reg_func_sim/seq_fsm_detect
