@@ -268,6 +268,15 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
+    # Cache the repo-local Qt6 SDK so aqt only downloads it on a cache miss
+    # (first run / when ensure_qt6_sdk.sh changes). On a hit, the next step is a
+    # near-instant no-op thanks to the script's idempotency check.
+    - name: Cache Qt6 SDK
+      uses: actions/cache@v4
+      with:
+        path: qt6
+        key: qt6-sdk-${{ runner.os }}-${{ hashFiles('dev/ensure_qt6_sdk.sh') }}
+
     - name: Provision Qt6 SDK (>=6.9.3)
       run: ./dev/ensure_qt6_sdk.sh
 
@@ -345,6 +354,15 @@ jobs:
 
     - name: Install dependencies
       run: ./install_apt_packages.sh
+
+    # Cache the repo-local Qt6 SDK so aqt only downloads it on a cache miss
+    # (first run / when ensure_qt6_sdk.sh changes). On a hit, the next step is a
+    # near-instant no-op thanks to the script's idempotency check.
+    - name: Cache Qt6 SDK
+      uses: actions/cache@v4
+      with:
+        path: qt6
+        key: qt6-sdk-${{ runner.os }}-${{ hashFiles('dev/ensure_qt6_sdk.sh') }}
 
     - name: Provision Qt6 SDK (>=6.9.3)
       run: ./dev/ensure_qt6_sdk.sh

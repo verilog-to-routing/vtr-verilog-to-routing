@@ -18,10 +18,9 @@ sudo dnf install --refresh -y \
     swig
 
 # Required for graphics
-# Qt6 (Core/Gui/Widgets via qt6-qtbase-devel, which also provides qmake6/moc/
-# uic/rcc and the CMake config) plus its GL / xkb runtime deps.
+# GL/EGL/xkb runtime that the Qt6 GUI links against; the Qt6 SDK itself is
+# provisioned separately by dev/ensure_qt6_sdk.sh.
 sudo dnf install --refresh -y \
-    qt6-qtbase-devel \
     libxkbcommon-devel \
     mesa-libGL-devel \
     mesa-libEGL-devel \
