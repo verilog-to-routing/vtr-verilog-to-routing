@@ -215,16 +215,18 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         return false;
     }
 
+    // The user cannot select any nodes if RR drawing is turned off
     if (!draw_state->show_rr) {
         application.refresh_drawing();
+        // Return true here to indicate that we processed the click, even though we didn't highlight anything
         return true;
     }
 
+    // The user cannot select channel nodes if they are turned off or decluttered
     if ((!draw_state->draw_channel_nodes || draw_state->declutter_rr) && (rr_graph.node_type(hit_node) == e_rr_type::CHANX || rr_graph.node_type(hit_node) == e_rr_type::CHANY)) {
         application.refresh_drawing();
         return true;
     }
-        
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 

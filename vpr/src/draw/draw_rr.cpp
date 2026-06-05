@@ -80,7 +80,7 @@ void draw_rr(ezgl::renderer* g) {
         }
 
         if (!node_highlighted) {
-            // Draw channel nodes if enabled
+            // Draw channel nodes if enabled and not clutterd
             if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && (!draw_state->draw_channel_nodes || draw_state->declutter_rr)) {
                 continue;
             }
