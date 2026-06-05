@@ -41,6 +41,9 @@ static int try_parse_int_impl(const std::string& value) {
  *   `clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]`
  * - `TokenFormat::HIERARCHICAL_TYPE`:
  *   `clb[0][default]/fle[3][n1_lut4]/ble4[0][default]/ff[0]`
+ *   `[default]` is the implicit pb_mode name when a pb_type has no explicit `<mode>` in the
+ *   architecture; user constraints omit `{...}` at such levels (wildcard), and only specify
+ *   `{mode}` when pinning an explicit mode (e.g. `{n1_lut4}` on fle).
  *
  * @param token Input token without path separators.
  * @param format Token syntax interpretation mode.
