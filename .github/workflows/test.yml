@@ -958,3 +958,27 @@ jobs:
           cd build
           cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} -S .. -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF -DWGET="${{ env.CURL_PATH }}" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build . --parallel ${{ steps.cpu-cores.outputs.count }}
+
+      - name: MCNC Test
+        shell: powershell
+        run: |
+          echo "==== install python dependencies ===="
+          python -m pip install -r requirements.txt
+          
+          echo "==== Run mcnc test ===="
+          python vtr_flow\scripts\run_vtr_task.py `
+            regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc `
+            -j 1 `
+            -script run_vtr_flow.py `
+            -show_failures `
+            -short_task_names `
+            -s -start vpr
+            
+      - name: Upload MCNC regression logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-msvc-vpr-reg-mcnc-logs
+          path: |
+            vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/*.out
+            vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/parse_results*.txt
