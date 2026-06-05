@@ -103,24 +103,14 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
 NetCostHandler::NetCostHandler(PlacerState& placer_state,
                                bool cube_bb,
                                t_place_algorithm place_algorithm,
-                               bool interposer_cost_enabled,
-                               double interposer_cong_threshold,
                                double congestion_chan_util_threshold)
     : congestion_modeling_started_(false)
-    , interposer_cost_enabled_(interposer_cost_enabled)
-    , interposer_cong_modeling_started_(false)
     , cube_bb_(cube_bb)
     , placer_state_(placer_state)
     , place_algorithm_(place_algorithm)
-    , interposer_cong_threshold_(interposer_cong_threshold)
     , congestion_chan_util_threshold_(congestion_chan_util_threshold) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
-
-    // Precompute 1/width and 1/height so interposer crossing cost can normalize BB spans with
-    // multiplies instead of a divide per net (see get_net_interposer_cost_).
-    inv_device_grid_width_ = 1.0 / static_cast<double>(grid.width());
-    inv_device_grid_height_ = 1.0 / static_cast<double>(grid.height());
 
     const size_t num_layers = grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
@@ -162,31 +152,6 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
     net_cost_.resize(num_nets, -1.);
     proposed_net_cost_.resize(num_nets, -1.);
 
-    if (interposer_cost_enabled_) {
-        VTR_ASSERT(cube_bb_ && !is_multi_layer_);
-        net_interposer_cost_.resize(num_nets, -1.);
-        proposed_net_interposer_cost_.resize(num_nets, -1.);
-
-        VTR_ASSERT(std::ranges::is_sorted(grid.get_horizontal_interposer_cuts()));
-        VTR_ASSERT(std::ranges::is_sorted(grid.get_vertical_interposer_cuts()));
-    }
-
-    if (interposer_cong_threshold_ > 0) {
-        VTR_ASSERT(cube_bb_ && !is_multi_layer_);
-
-        net_interposer_cong_cost_.resize(num_nets, -1.);
-        proposed_net_interposer_cong_cost_.resize(num_nets, -1.);
-
-        // Interposer cut locations can vary by layer, so allocate using the maximum cut count across layers.
-        size_t max_h_cuts = 0, max_v_cuts = 0;
-        for (size_t layer = 0; layer < num_layers; layer++) {
-            max_h_cuts = std::max(max_h_cuts, grid.get_horizontal_interposer_cuts()[layer].size());
-            max_v_cuts = std::max(max_v_cuts, grid.get_vertical_interposer_cuts()[layer].size());
-        }
-        horz_interposer_est_cong_.resize({num_layers, max_h_cuts, grid.width() + 1}, 0.);
-        vert_interposer_est_cong_.resize({num_layers, max_v_cuts, grid.height() + 1}, 0.);
-    }
-
     // Used to store costs for moves not yet made and to indicate when a net's
     // cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
     // been recomputed.
@@ -220,6 +185,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     // This returns the total number of tracks between channels 'low' and 'high',
     // including tracks in these channels.
     acc_chan_width_.x = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
+        VTR_ASSERT_SAFE_MSG(y < device_ctx.rr_chan_width.x.size(), "Prefix sum sample point should be within bounds.");
         int chan_x_width = device_ctx.rr_chan_width.x[y];
 
         // If the number of tracks in a channel is zero, two consecutive elements take the same
@@ -233,6 +199,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     });
 
     acc_chan_width_.y = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
+        VTR_ASSERT_SAFE_MSG(x < device_ctx.rr_chan_width.y.size(), "Prefix sum sample point should be within bounds.");
         int chan_y_width = device_ctx.rr_chan_width.y[x];
 
         // to avoid a division by zero
@@ -277,16 +244,6 @@ std::pair<t_net_cost_terms, double> NetCostHandler::comp_cube_bb_cong_cost_(e_co
             cost_terms.bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
-            }
-
-            if (interposer_cost_enabled_) {
-                net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/false);
-                cost_terms.interposer_cost += net_interposer_cost_[net_id];
-            }
-
-            if (interposer_cong_modeling_started_) {
-                net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
-                cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
             }
         }
     }
@@ -1419,51 +1376,6 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     return ncost;
 }
 
-std::pair<int, int> NetCostHandler::count_bb_interposer_cut_crossings_(const t_bb& bb) const {
-    const DeviceGrid& grid = g_vpr_ctx.device().grid;
-    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
-    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
-
-    int num_horizontal_crossings = 0;
-    int num_vertical_crossings = 0;
-
-    for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
-        const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
-        for (int cut_y : layer_h_cuts) {
-            if (cut_y >= bb.ymin && cut_y < bb.ymax) {
-                num_horizontal_crossings++;
-            }
-        }
-
-        const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
-        for (int cut_x : layer_v_cuts) {
-            if (cut_x >= bb.xmin && cut_x < bb.xmax) {
-                num_vertical_crossings++;
-            }
-        }
-    }
-
-    return {num_horizontal_crossings, num_vertical_crossings};
-}
-
-double NetCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const {
-    // This routine is O(total interposer cut lines): every cut is checked against the net BB.
-    // If we support devices with many dice, consider a refactor (e.g. interval queries)
-    // so cost updates do not scale linearly with cut count.
-
-    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
-    const auto [num_horizontal_crossings, num_vertical_crossings] = count_bb_interposer_cut_crossings_(bb);
-
-    // Weight crossings by the normalized BB span orthogonal to the cut direction:
-    // - a horizontal cut spans X, so we scale by BB height / grid height
-    // - a vertical cut spans Y, so we scale by BB width / grid width
-    const double bb_width_factor = double(bb.xmax - bb.xmin + 1) * inv_device_grid_width_;
-    const double bb_height_factor = double(bb.ymax - bb.ymin + 1) * inv_device_grid_height_;
-
-    double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
-    return cost;
-}
-
 double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
     VTR_ASSERT_SAFE(congestion_modeling_started_);
     const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
@@ -1474,48 +1386,6 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     float y_chan_cong = (y_chan_util < threshold) ? 0.0f : y_chan_util - threshold;
 
     return x_chan_cong + y_chan_cong;
-}
-
-double NetCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) {
-    const DeviceGrid& grid = g_vpr_ctx.device().grid;
-    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
-
-    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
-    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
-
-    const float threshold = interposer_cong_threshold_;
-    double cost = 0.;
-
-    for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
-        // Horizontal cuts: net crosses if cut_y is in [bb.ymin, bb.ymax).
-        // Bounding box for that cut is x in [bb.xmin, bb.xmax]; congestion is stored as prefix sum along x.
-        const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
-        for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
-            int cut_y = layer_h_cuts[i_cut];
-            if (cut_y >= bb.ymin && cut_y < bb.ymax) {
-                int count_x = bb.xmax - bb.xmin + 1;
-                double sum = horz_interposer_est_cong_[layer][i_cut][bb.xmax + 1] - horz_interposer_est_cong_[layer][i_cut][bb.xmin];
-                double avg = sum / count_x;
-
-                cost += std::max(0.0, avg - threshold);
-            }
-        }
-
-        // Vertical cuts: net crosses if cut_x is in [bb.xmin, bb.xmax).
-        // Bounding box for that cut is y in [bb.ymin, bb.ymax]; congestion is stored as prefix sum along y.
-        const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
-        for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
-            int cut_x = layer_v_cuts[i_cut];
-            if (cut_x >= bb.xmin && cut_x < bb.xmax) {
-                int count_y = bb.ymax - bb.ymin + 1;
-                double sum = vert_interposer_est_cong_[layer][i_cut][bb.ymax + 1] - vert_interposer_est_cong_[layer][i_cut][bb.ymin];
-                double avg = sum / count_y;
-                cost += std::max(0.0, avg - threshold);
-            }
-        }
-    }
-
-    return cost;
 }
 
 double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts) {
@@ -1641,14 +1511,6 @@ t_net_cost_terms NetCostHandler::recompute_bb_cong_cost_() {
             if (congestion_modeling_started_) {
                 cost_terms.cong_cost += net_cong_cost_[net_id];
             }
-
-            if (interposer_cost_enabled_) {
-                cost_terms.interposer_cost += net_interposer_cost_[net_id];
-            }
-
-            if (interposer_cong_modeling_started_) {
-                cost_terms.interposer_cong_cost += net_interposer_cong_cost_[net_id];
-            }
         }
     }
 
@@ -1675,16 +1537,6 @@ void NetCostHandler::set_bb_delta_cost_(t_net_cost_terms& cost_terms_delta) {
         if (congestion_modeling_started_) {
             proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
             cost_terms_delta.cong_cost += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
-        }
-
-        if (interposer_cost_enabled_) {
-            proposed_net_interposer_cost_[net_id] = get_net_interposer_cost_(net_id, /*use_ts=*/true);
-            cost_terms_delta.interposer_cost += proposed_net_interposer_cost_[net_id] - net_interposer_cost_[net_id];
-        }
-
-        if (interposer_cong_modeling_started_) {
-            proposed_net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/true);
-            cost_terms_delta.interposer_cong_cost += proposed_net_interposer_cong_cost_[net_id] - net_interposer_cong_cost_[net_id];
         }
     }
 }
@@ -1755,16 +1607,6 @@ void NetCostHandler::update_move_nets() {
             proposed_net_cong_cost_[net_id] = -1;
         }
 
-        if (interposer_cost_enabled_) {
-            net_interposer_cost_[net_id] = proposed_net_interposer_cost_[net_id];
-            proposed_net_interposer_cost_[net_id] = -1;
-        }
-
-        if (interposer_cong_modeling_started_) {
-            net_interposer_cong_cost_[net_id] = proposed_net_interposer_cong_cost_[net_id];
-            proposed_net_interposer_cong_cost_[net_id] = -1;
-        }
-
         bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }
@@ -1809,20 +1651,6 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         costs.congestion_cost = 0.;
     }
 
-    if (interposer_cost_enabled_) {
-        check_and_print_cost(new_cost_terms.interposer_cost, costs.interposer_cost, "interposer_cost");
-        costs.interposer_cost = new_cost_terms.interposer_cost;
-    } else {
-        costs.interposer_cost = 0.;
-    }
-
-    if (interposer_cong_modeling_started_ && new_cost_terms.interposer_cong_cost > MIN_EXPECTED_CONG_COST) {
-        check_and_print_cost(new_cost_terms.interposer_cong_cost, costs.interposer_cong_cost, "interposer_cong_cost");
-        costs.interposer_cong_cost = new_cost_terms.interposer_cong_cost;
-    } else {
-        costs.interposer_cong_cost = 0.;
-    }
-
     if (place_algorithm_.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, placer_state_, &new_timing_cost);
@@ -1851,152 +1679,8 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     return estimated_wirelength;
 }
 
-int NetCostHandler::get_num_nets_crossing_interposer_cuts() const {
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    int num_nets_crossing_interposer_cuts = 0;
-
-    for (ClusterNetId net_id : clb_nlist.nets()) {
-        if (!clb_nlist.net_is_ignored(net_id)) {
-            const auto [num_h_cuts, num_v_cuts] = count_bb_interposer_cut_crossings_(bb_coords_[net_id]);
-            if (num_h_cuts > 0 || num_v_cuts > 0) {
-                num_nets_crossing_interposer_cuts++;
-            }
-        }
-    }
-
-    return num_nets_crossing_interposer_cuts;
-}
-
-double NetCostHandler::compute_interposer_est_cong_(bool compute_congestion_cost) {
-    // Predict interposer channel utilization along each cut and store it for fast range queries, then optionally
-    // refresh per-net interposer congestion for all nets.
-    //
-    // (1) For every net, spread a unit of wire demand across coordinates along each cut that lies inside the net BB.
-    // (2) Divide by precomputed interposer capacity at each coordinate to get demand/capacity ratio.
-    // (3) Convert to prefix sums along the cut line so get_net_cube_interposer_cong_cost_ can average
-    // utilization over a net span in O(1).
-    // (4) If requested, fill net_interposer_cong_cost_ per net and return the total across the design.
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const DeviceGrid& grid = device_ctx.grid;
-    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
-
-    const size_t num_layers = grid.get_num_layers();
-    const size_t grid_width = grid.width();
-    const size_t grid_height = grid.height();
-
-    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
-    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
-
-    horz_interposer_est_cong_.fill(0.);
-    vert_interposer_est_cong_.fill(0.);
-
-    // (1) Consider one unit of wire demand per net for each cut; split it evenly along the BB extent parallel to each crossed cut
-    for (ClusterNetId net_id : clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            continue;
-        }
-
-        const t_bb& bb = bb_coords_[net_id];
-
-        for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
-
-            const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
-            for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
-                int cut_y = layer_h_cuts[i_cut];
-                if (cut_y >= bb.ymin && cut_y < bb.ymax) {
-                    const double contribution = 1.0 / (bb.xmax - bb.xmin + 1);
-                    for (int x = bb.xmin; x <= bb.xmax; x++) {
-                        horz_interposer_est_cong_[layer][i_cut][x] += contribution;
-                    }
-                }
-            }
-
-            const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
-            for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
-                int cut_x = layer_v_cuts[i_cut];
-                if (cut_x >= bb.xmin && cut_x < bb.xmax) {
-                    const double contribution = 1.0 / (bb.ymax - bb.ymin + 1);
-                    for (int y = bb.ymin; y <= bb.ymax; y++) {
-                        vert_interposer_est_cong_[layer][i_cut][y] += contribution;
-                    }
-                }
-            }
-        }
-    }
-
-    const vtr::NdMatrix<int, 3>& horz_interposer_capacity = device_ctx.horz_interposer_capacity_;
-    const vtr::NdMatrix<int, 3>& vert_interposer_capacity = device_ctx.vert_interposer_capacity_;
-    // (2) Turn accumulated demand into utilization: divide by per-coordinate capacity from the RR graph
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
-            for (size_t x = 0; x < grid_width; x++) {
-                int avail = horz_interposer_capacity[layer][i_cut][x];
-                if (avail > 0) {
-                    horz_interposer_est_cong_[layer][i_cut][x] /= avail;
-                } else {
-                    horz_interposer_est_cong_[layer][i_cut][x] = 1.;
-                }
-            }
-        }
-    }
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        for (size_t i_cut = 0; i_cut < vertical_cuts[layer].size(); i_cut++) {
-            for (size_t y = 0; y < grid_height; y++) {
-                int avail = vert_interposer_capacity[layer][i_cut][y];
-                if (avail > 0) {
-                    vert_interposer_est_cong_[layer][i_cut][y] /= avail;
-                } else {
-                    vert_interposer_est_cong_[layer][i_cut][y] = 1.;
-                }
-            }
-        }
-    }
-
-    // (3) Prefix sums along each cut: after this, position i holds sum(util[0..i-1]) and index N holds total;
-    // range sum over [a,b] is prefix[b+1] - prefix[a] (see get_net_cube_interposer_cong_cost_).
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        for (size_t i_cut = 0; i_cut < horizontal_cuts[layer].size(); i_cut++) {
-            double running_sum = 0.;
-            for (size_t x = 0; x < grid_width; ++x) {
-                double val = horz_interposer_est_cong_[layer][i_cut][x];
-                horz_interposer_est_cong_[layer][i_cut][x] = running_sum;
-                running_sum += val;
-            }
-
-            horz_interposer_est_cong_[layer][i_cut][grid_width] = running_sum;
-        }
-    }
-
-    for (size_t layer = 0; layer < num_layers; ++layer) {
-        for (size_t i_cut = 0; i_cut < vertical_cuts[layer].size(); i_cut++) {
-            double running_sum = 0.;
-            for (size_t y = 0; y < grid_height; ++y) {
-                double val = vert_interposer_est_cong_[layer][i_cut][y];
-                vert_interposer_est_cong_[layer][i_cut][y] = running_sum;
-                running_sum += val;
-            }
-
-            vert_interposer_est_cong_[layer][i_cut][grid_height] = running_sum;
-        }
-    }
-
-    interposer_cong_modeling_started_ = true;
-
-    double total_interposer_cong_cost = 0.;
-    // (4) Optionally compute each net's congestion penalty and return the total.
-    if (compute_congestion_cost) {
-        for (ClusterNetId net_id : clb_nlist.nets()) {
-            if (clb_nlist.net_is_ignored(net_id)) {
-                continue;
-            }
-
-            net_interposer_cong_cost_[net_id] = get_net_cube_interposer_cong_cost_(net_id, /*use_ts=*/false);
-            total_interposer_cong_cost += net_interposer_cong_cost_[net_id];
-        }
-    }
-    return total_interposer_cong_cost;
+const std::vector<ClusterNetId>& NetCostHandler::affected_nets() const {
+    return ts_nets_to_update_;
 }
 
 double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {

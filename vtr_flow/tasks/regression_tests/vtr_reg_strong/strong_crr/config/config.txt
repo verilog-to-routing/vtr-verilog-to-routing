@@ -23,5 +23,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
-script_params=-track_memory_usage -starting_stage vpr --device vtr_extra_small --route_chan_width 200 --sb_maps ../../../../config/CSV_SB_MAPS.yml --sb_templates ../../../../config/csv_annotated_sw --annotated_rr_graph on --preserve_input_pin_connections on --preserve_output_pin_connections on
+script_params=-track_memory_usage -starting_stage vpr --device vtr_extra_small --route_chan_width 200 --sb_maps ../../../../config/CSV_SB_MAPS.yml --sb_templates ../../../../config/csv_annotated_sw --annotated_rr_graph on
 

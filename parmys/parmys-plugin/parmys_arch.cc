@@ -128,10 +128,10 @@ struct ParmysArchPass : public Pass {
             std::reverse(user_models.begin(), user_models.end());
             for (LogicalModelId model_id : user_models) {
                 t_model* hb = &arch.models.get_model(model_id);
-                if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") &&
-                    strcmp(hb->name, "adder")) {
+                if (strcmp(hb->name.c_str(), SINGLE_PORT_RAM_string) && strcmp(hb->name.c_str(), DUAL_PORT_RAM_string) && strcmp(hb->name.c_str(), "multiply") &&
+                    strcmp(hb->name.c_str(), "adder")) {
                     add_hb_to_design(hb, design);
-                    log("Hard block added to the Design ---> `%s`\n", hb->name);
+                    log("Hard block added to the Design ---> `%s`\n", hb->name.c_str());
                 }
             }
 
