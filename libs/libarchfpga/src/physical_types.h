@@ -1111,7 +1111,7 @@ struct t_pin_to_pin_annotation {
  */
 struct t_interconnect {
     e_interconnect type;
-    char* name;
+    std::string name;
 
     std::string input_string;
     std::string output_string;
@@ -1131,7 +1131,6 @@ struct t_interconnect {
 
     t_interconnect() {
         type = (e_interconnect)0;
-        name = nullptr;
         infer_annotations = false;
         line_num = 0;
         parent_mode_index = 0;
