@@ -970,9 +970,28 @@ jobs:
           echo "==== Activate python virtual environment ===="
           .\myenv\Scripts\Activate.ps1
 
-          echo "==== install python dependencies ===="
+          echo "==== Add runtime DLL directories to PATH ===="
+          $dllPaths = @(
+            "${{ github.workspace }}\build\vpr",
+            "${{ github.workspace }}\build\libs",
+            "${{ github.workspace }}\build\libs\EXTERNAL",
+            "${{ github.workspace }}\vcpkg_installed\x64-windows-release\bin",
+            "C:\Program Files\Tcl\bin"
+          ) | Where-Object { $_ -and (Test-Path $_) }
+
+          $env:PATH = ($dllPaths -join ";") + ";" + $env:PATH
+
+          echo "==== PATH DLL dirs ===="
+          $dllPaths | ForEach-Object { echo $_ }
+
+          echo "==== Install python dependencies ===="
+          python -m pip install --upgrade pip
+          python -m pip install "setuptools<81"
           python -m pip install -r requirements.txt
-          
+
+          echo "==== VPR dependencies ===="
+          dumpbin /DEPENDENTS .\build\vpr\vpr.exe
+
           echo "==== Run mcnc test ===="
           python vtr_flow\scripts\run_vtr_task.py `
             regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc `
