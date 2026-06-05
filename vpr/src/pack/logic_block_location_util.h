@@ -18,9 +18,9 @@
  *   - {name: "ff",   index: 0, mode: ""}
  */
 struct t_logical_location_token {
-    std::string name;  //pb_type name at this hierarchy level
-    int index = -1;    //instance index from [...]; -1 if omitted 
-    std::string mode;  //architecture mode from {...}; empty if omitted
+    std::string name;  ///< pb_type name at this hierarchy level
+    int index = -1;    ///< instance index from [...]; -1 if omitted 
+    std::string mode;  ///< architecture mode from {...}; empty if omitted
 };
 
 /**
@@ -56,9 +56,14 @@ class LbHierPathParser {
      */
     void validate_logical_block_types(const std::vector<t_logical_block_type>& logical_block_types);
 
+    /**
+     * @brief Syntax used when parsing a '.'- or '/'-separated hierarchy path into tokens.
+     */
     enum class TokenFormat {
-        LOGICAL_LOCATION,
-        HIERARCHICAL_TYPE,
+        LOGICAL_LOCATION,  ///< User constraint format: '.'-separated, index in [...], mode in {...}
+                           ///< e.g. "clb[0].fle[2]{n1_lut4}.ble4[0].ff[0]"
+        HIERARCHICAL_TYPE, ///< t_pb::hierarchical_type_name() format: '/'-separated, index and mode in [...]
+                           ///< e.g. "clb[0][default]/fle[2][n1_lut4]/ble4[0][default]/ff[0]"
     };
 
   private:
