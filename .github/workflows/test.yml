@@ -33,7 +33,7 @@ env:
   # default compiler for all non-compatibility tests
   MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
   # install_build_deps.sh installs the apt packages and provisions a Qt6 SDK
-  # (>= the supported floor) via dev/install_qt6_sdk.sh. CMake discovers Qt and
+  # (>= the supported floor) via dev/ensure_qt6_sdk.sh. CMake discovers Qt and
   # bakes its location into the binaries, so no CMAKE_PREFIX_PATH or runtime Qt
   # env is needed anywhere.
 

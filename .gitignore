@@ -15,7 +15,7 @@ build
 build_cov
 
 #
-# Repo-local Qt6 SDK provisioned by install_build_deps.sh / dev/install_qt6_sdk.sh
+# Repo-local Qt6 SDK provisioned by install_build_deps.sh / dev/ensure_qt6_sdk.sh
 #
 /qt6/
 
