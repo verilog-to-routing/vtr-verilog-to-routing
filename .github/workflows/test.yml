@@ -959,9 +959,17 @@ jobs:
           cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} -S .. -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF -DWGET="${{ env.CURL_PATH }}" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build . --parallel ${{ steps.cpu-cores.outputs.count }}
 
-      - name: MCNC Test
+      - name: Create Python virtual environment
         shell: powershell
         run: |
+          python -m venv myenv
+
+      - name: MCNC regression test
+        shell: powershell
+        run: |
+          echo "==== Activate python virtual environment ===="
+          .\myenv\Scripts\Activate.ps1
+
           echo "==== install python dependencies ===="
           python -m pip install -r requirements.txt
           
