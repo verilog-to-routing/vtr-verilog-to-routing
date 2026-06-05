@@ -314,7 +314,6 @@ static void adjust_chan_details(const t_chan_width& nodes_per_chan,
             if (chan_details_x[x][y][0].length() > 0) {
                 continue;
             }
-                
 
             adjust_seg_details(x, y, nodes_per_chan,
                                chan_details_x, e_parallel_axis::X_AXIS);
