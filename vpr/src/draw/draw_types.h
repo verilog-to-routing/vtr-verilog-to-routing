@@ -183,9 +183,10 @@ struct t_draw_state {
     ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
+    static constexpr double min_pixel_per_node = 1.5;
     double zoom_scale = 1.0;
-    bool enable_decluttering = false;
-    bool declutter_channel_nodes = false;
+    bool enable_decluttering = true;
+    bool declutter_rr = false;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;

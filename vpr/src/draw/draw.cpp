@@ -186,15 +186,6 @@ static double get_zoom_scale(ezgl::renderer* g) {
     return screen_width / world_width;
 }
 
-/*
-bool is_cluttered(double zoom_level) {
-    //double tile_width = get_draw_coords_vars()->get_tile_width();
-    //double max_chan_width = g_vpr_ctx.device().chan_width.max;
-    return zoom_level < 1;
-    //return zoom_level * tile_width < max_chan_width;
-}
-*/
-
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -208,10 +199,10 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
         if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
             draw_state->zoom_scale = get_zoom_scale(g);
-            if(draw_state->enable_decluttering) {
-                draw_state->declutter_channel_nodes = draw_state->zoom_scale < 1;
+            if (draw_state->enable_decluttering) {
+                draw_state->declutter_rr = draw_state->zoom_scale < draw_state->min_pixel_per_node;
             } else {
-                draw_state->declutter_channel_nodes = false;
+                draw_state->declutter_rr = false;
             }
 
             draw_rr(g);
