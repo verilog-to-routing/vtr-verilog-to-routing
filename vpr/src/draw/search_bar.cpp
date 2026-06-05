@@ -215,11 +215,16 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         return false;
     }
 
-    if (!draw_state->show_rr)
+    if (!draw_state->show_rr) {
+        application.refresh_drawing();
         return true;
+    }
 
-    if ((!draw_state->draw_channel_nodes || draw_state->declutter_rr) && (rr_graph.node_type(hit_node) == e_rr_type::CHANX || rr_graph.node_type(hit_node) == e_rr_type::CHANY))
+    if ((!draw_state->draw_channel_nodes || draw_state->declutter_rr) && (rr_graph.node_type(hit_node) == e_rr_type::CHANX || rr_graph.node_type(hit_node) == e_rr_type::CHANY)) {
+        application.refresh_drawing();
         return true;
+    }
+        
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
