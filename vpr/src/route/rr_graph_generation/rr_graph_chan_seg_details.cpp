@@ -285,6 +285,8 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
                 p_seg_details[i].set_seg_end(seg_end);
                 p_seg_details[i].set_length(seg_end - seg_start + 1);
 
+                // seg_details is sized to x_max/y_max, but channel width may vary by
+                // location; mark tracks beyond this channel's width as absent (length 0).
                 if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
                     if (i >= nodes_per_chan.x_list[y]) {
                         p_seg_details[i].set_length(0);
@@ -309,8 +311,10 @@ static void adjust_chan_details(const t_chan_width& nodes_per_chan,
         for (size_t x = 0; x <= grid.width() - 2; ++x) { // -2 for no perim channels
 
             // Ignore any non-obstructed channel seg_detail structures
-            if (chan_details_x[x][y][0].length() > 0)
+            if (chan_details_x[x][y][0].length() > 0) {
                 continue;
+            }
+                
 
             adjust_seg_details(x, y, nodes_per_chan,
                                chan_details_x, e_parallel_axis::X_AXIS);
@@ -396,6 +400,7 @@ const std::vector<int>& get_chan_interposer_cuts(e_rr_type chan_type) {
 
     VTR_ASSERT(!grid.has_interposer_cuts() || grid.get_num_layers() == 1);
 
+    // Hard-coded to layer 0: only 1-layer devices with interposer cuts are supported for now.
     const std::vector<int>& cuts_by_layer = (chan_type == e_rr_type::CHANX)
                                                 ? grid.get_vertical_interposer_cuts()[0]
                                                 : grid.get_horizontal_interposer_cuts()[0];
@@ -433,9 +438,10 @@ int get_seg_start(const t_chan_seg_details* seg_details,
         }
     }
 
-    // A cut at position c means positions <= c and positions > c are on different
-    // sides of the interposer. If any cut lies between seg_start and seg_num
-    // (i.e., seg_start <= c < seg_num), the wire must start after the cut.
+    // seg_num is the channel segment coordinate being evaluated (not the wire start).
+    // A cut at c splits the channel: positions <= c and > c are on opposite sides.
+    // If a cut lies between the natural start and seg_num (seg_start <= c < seg_num),
+    // we've crossed the cut, so the effective start is c + 1.
     for (int c : seg_dimension_cuts) {
         if (c >= seg_start && c < seg_num) {
             seg_start = c + 1;
