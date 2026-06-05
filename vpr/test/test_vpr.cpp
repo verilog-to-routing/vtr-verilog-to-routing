@@ -89,7 +89,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
                     REQUIRE(mode->interconnect != nullptr);
 
                     for (int iint = 0; iint < mode->num_interconnect; ++iint) {
-                        if (strcmp("inpad", mode->interconnect[iint].name) == 0) {
+                        if (mode->interconnect[iint].name == "inpad") {
                             found_direct = true;
                             REQUIRE(mode->interconnect[iint].meta.has(interconnect_str));
                             auto* interconnect_value = mode->interconnect[iint].meta.one(interconnect_str);

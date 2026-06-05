@@ -1872,14 +1872,14 @@ static void process_interconnect(vtr::string_internment& strings,
             mode->interconnect[interconnect_idx].output_string = prop;
 
             prop = get_attribute(cur, "name", loc_data).value();
-            mode->interconnect[interconnect_idx].name = vtr::strdup(prop);
+            mode->interconnect[interconnect_idx].name = prop;
             mode->interconnect[interconnect_idx].meta = process_meta_data(strings, cur, loc_data);
 
             auto [_, success] = interconnect_names.insert(mode->interconnect[interconnect_idx].name);
             if (!success) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                vtr::string_fmt("Duplicate interconnect name: '%s' in mode: '%s'.\n",
-                                               mode->interconnect[interconnect_idx].name, mode->name)
+                                               mode->interconnect[interconnect_idx].name.c_str(), mode->name)
                                    .c_str());
             }
 
