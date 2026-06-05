@@ -63,8 +63,10 @@ void draw_rr(ezgl::renderer* g) {
                                                                                               DEFAULT_RR_NODE_COLOR};
 
     // Draw edges first, then nodes, so that nodes (and their muxes) are rendered on top of edges.
-    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        draw_rr_edges(inode, g);
+    if (!draw_state->declutter_rr) {
+        for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
+            draw_rr_edges(inode, g);
+        }
     }
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
@@ -79,7 +81,7 @@ void draw_rr(ezgl::renderer* g) {
 
         if (!node_highlighted) {
             // Draw channel nodes if enabled
-            if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && (!draw_state->draw_channel_nodes || draw_state->declutter_channel_nodes)) {
+            if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && (!draw_state->draw_channel_nodes || draw_state->declutter_rr)) {
                 continue;
             }
 
