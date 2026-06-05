@@ -12,7 +12,7 @@
 #   2. Otherwise install a private copy via `aqt` (aqtinstall) into a
 #      user-writable, repo-local prefix (no sudo).
 #
-# Invoked by install_build_deps.sh (after the apt packages are installed).
+# Invoked by the CI graphics jobs and the Dockerfile, after install_apt_packages.sh.
 #
 # Configuration (environment variables):
 #
