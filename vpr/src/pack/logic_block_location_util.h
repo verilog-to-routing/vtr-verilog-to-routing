@@ -5,10 +5,22 @@
 #include "atom_netlist_fwd.h"
 #include "physical_types.h"
 
+/**
+ * @brief One hierarchy step parsed from a logical_block_location constraint string.
+ *
+ * LbHierPathParser splits the '.'-separated path into a vector of these tokens.
+ * Each step is block_name[instance_index] with an optional {mode_name} suffix.
+ *
+ * Example: "clb[0].fle[2]{n1_lut4}.ble4[0].ff[0]" parses to:
+ *   - {name: "clb",  index: 0, mode: ""}
+ *   - {name: "fle",  index: 2, mode: "n1_lut4"}
+ *   - {name: "ble4", index: 0, mode: ""}
+ *   - {name: "ff",   index: 0, mode: ""}
+ */
 struct t_logical_location_token {
-    std::string name;
-    int index = -1;
-    std::string mode;
+    std::string name;  //pb_type name at this hierarchy level
+    int index = -1;    //instance index from [...]; -1 if omitted 
+    std::string mode;  //architecture mode from {...}; empty if omitted
 };
 
 /**
