@@ -333,8 +333,21 @@ jobs:
   # local flow uses; the wrapper script swallows DEF-010 (visual
   # regression) so gcovr always emits its report and the regression
   # gate (35 % line / 22 % branch — see DEF-014) is what gates this job.
+  #
+  # DISABLED (if: false): this job is a separate debug + coverage-instrumented
+  # full rebuild of VTR in its own build tree (no ccache reuse from the release
+  # legs), so it takes ~1 hour per run — by far the most expensive job here for
+  # the weakest signal (a coarse coverage floor set below an already-low
+  # baseline). It is not upstream and nothing depends on it; the GUI is still
+  # functionally exercised by the GUITests job. To conserve CI resources we
+  # disable it rather than delete it. The `gui-coverage` make target remains for
+  # local/on-demand runs:
+  #   make CMAKE_PARAMS="-DVPR_USE_EZGL=on -DVTR_ENABLE_COVERAGE=on" gui-coverage
+  # Re-enable here (or move to the nightly workflow) if a per-PR coverage gate is
+  # wanted again.
   GUICoverage:
     name: 'T: GUI Coverage (Linux, gcovr regression gate)'
+    if: false
     runs-on: ubuntu-24.04
     needs: [GUITests]
     steps:
