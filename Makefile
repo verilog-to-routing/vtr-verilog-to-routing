@@ -69,15 +69,17 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 #All targets in this make file are always out of date.
 # This ensures that any make target requests are forwarded to
 # the generated makefile
-.PHONY: all distclean $(MAKECMDGOALS)
+.PHONY: all distclean ensure-gui ensure-headless $(MAKECMDGOALS)
 
 #For an 'all' build with BUILD_TYPE containing 'pgo' this will perform a 2-stage compilation
 #with profile guided optimization.
 #For a BUILD_TYPE without 'pgo', a single stage (non-pgo) compilation is performed.
 
-#Forward any targets that are not named 'distclean' or 'clean' to the generated Makefile
+#Forward any targets that are not named 'distclean', 'clean', 'ensure-gui' or 'ensure-headless' to the generated Makefile
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),ensure-gui)
+ifneq ($(MAKECMDGOALS),ensure-headless)
 all $(MAKECMDGOALS):
 ifneq ($(BUILD_DIR),build)
 	ln -sf $(BUILD_DIR) build
@@ -127,8 +129,27 @@ endif #BUILD_TYPE
 	#
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+endif #ensure-headless
+endif #ensure-gui
 endif #clean
 endif #distclean
+
+#Build vpr WITH graphics. Provision a Qt6 SDK (>= the supported floor) first,
+#honoring ensure_qt6_sdk.sh's exit code (make aborts if it fails); then
+#configure with VPR_USE_EZGL=on and build vpr.
+#Defined after the 'all' rule so 'all' stays the default goal.
+ensure-gui:
+	@ $(SOURCE_DIR)/dev/ensure_qt6_sdk.sh
+	@ mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_USE_EZGL=on $(SOURCE_DIR)
+	@+$(MAKE) -C $(BUILD_DIR) vpr
+
+#Build vpr WITHOUT graphics (headless). Configure with VPR_USE_EZGL=off
+#and build vpr; no Qt SDK is needed.
+ensure-headless:
+	@ mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_USE_EZGL=off $(SOURCE_DIR)
+	@+$(MAKE) -C $(BUILD_DIR) vpr
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: clean
