@@ -12,9 +12,7 @@
 #   2. Otherwise install a private copy via `aqt` (aqtinstall) into a
 #      user-writable, repo-local prefix (no sudo).
 #
-# This is the single implementation shared by:
-#   * `make qt6sdk`            (the convenience target)
-#   * install_apt_packages.sh  (the dependency installer, when system Qt is old)
+# Invoked by install_build_deps.sh (after the apt packages are installed).
 #
 # Configuration (environment variables):
 #
@@ -50,21 +48,17 @@ version_ge() {
     [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
 }
 
-# Best-effort detection of the system Qt6 version (X.Y.Z), tried in order:
-#   qmake6 on PATH -> Debian/Ubuntu qt6-base-dev package version -> pkg-config.
+# Detect a system Qt6 version (X.Y.Z) that CMake's find_package(Qt6) would
+# actually use. We rely ONLY on the apt package qt6-base-dev, because it
+# installs the Qt6 CMake config into /usr — a default find_package() search
+# path. We deliberately do NOT consult `qmake6` or `pkg-config`: a qmake6 on
+# PATH (or a tools-only / non-default install) can report a Qt that
+# find_package() cannot find, which would make us wrongly skip aqt and leave
+# the build unable to locate Qt6.
 detect_system_qt6() {
-    local v=""
-    if command -v qmake6 >/dev/null 2>&1; then
-        v="$(qmake6 -query QT_VERSION 2>/dev/null)"
-    fi
-    if [ -z "$v" ] && command -v dpkg-query >/dev/null 2>&1; then
-        v="$(dpkg-query -W -f='${Version}' qt6-base-dev 2>/dev/null \
-             | grep -oE '^[0-9]+(\.[0-9]+){1,2}' | head -n1)"
-    fi
-    if [ -z "$v" ] && command -v pkg-config >/dev/null 2>&1; then
-        v="$(pkg-config --modversion Qt6Core 2>/dev/null)"
-    fi
-    printf '%s' "$v"
+    command -v dpkg-query >/dev/null 2>&1 || return 0
+    dpkg-query -W -f='${Version}' qt6-base-dev 2>/dev/null \
+        | grep -oE '^[0-9]+(\.[0-9]+){1,2}' | head -n1
 }
 
 SYS_QT_VERSION="$(detect_system_qt6)"
