@@ -53,6 +53,16 @@ ifeq ($(VERBOSE),1)
 override CMAKE_PARAMS := -DVTR_ENABLE_VERBOSE=on ${CMAKE_PARAMS}
 endif
 
+#`make ensure-gui` / `make ensure-headless` set VTR_GRAPHICS to force the
+#graphics option. They delegate to the normal build rule below, so the PGO /
+#build-dir / cmake handling is inherited rather than duplicated.
+ifeq ($(VTR_GRAPHICS),on)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DVPR_USE_EZGL=on
+endif
+ifeq ($(VTR_GRAPHICS),off)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DVPR_USE_EZGL=off
+endif
+
 # -s : Suppresses makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
@@ -135,21 +145,16 @@ endif #clean
 endif #distclean
 
 #Build vpr WITH graphics. Provision a Qt6 SDK (>= the supported floor) first,
-#honoring ensure_qt6_sdk.sh's exit code (make aborts if it fails); then
-#configure with VPR_USE_EZGL=on and build vpr.
-#Defined after the 'all' rule so 'all' stays the default goal.
+#honoring ensure_qt6_sdk.sh's exit code (make aborts if it fails), then delegate
+#to the normal build with graphics forced on. Defined after the 'all' rule so
+#'all' stays the default goal.
 ensure-gui:
 	@ $(SOURCE_DIR)/dev/ensure_qt6_sdk.sh
-	@ mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_USE_EZGL=on $(SOURCE_DIR)
-	@+$(MAKE) -C $(BUILD_DIR) vpr
+	@+$(MAKE) vpr VTR_GRAPHICS=on
 
-#Build vpr WITHOUT graphics (headless). Configure with VPR_USE_EZGL=off
-#and build vpr; no Qt SDK is needed.
+#Build vpr WITHOUT graphics (headless); no Qt SDK is needed.
 ensure-headless:
-	@ mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) -DVPR_USE_EZGL=off $(SOURCE_DIR)
-	@+$(MAKE) -C $(BUILD_DIR) vpr
+	@+$(MAKE) vpr VTR_GRAPHICS=off
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: clean
