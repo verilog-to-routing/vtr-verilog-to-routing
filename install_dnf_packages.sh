@@ -18,9 +18,15 @@ sudo dnf install --refresh -y \
     swig
 
 # Required for graphics
+# Qt6 (Core/Gui/Widgets via qt6-qtbase-devel, which also provides qmake6/moc/
+# uic/rcc and the CMake config) plus its GL / xkb runtime deps.
 sudo dnf install --refresh -y \
-    gtk3-devel \
-    libX11
+    qt6-qtbase-devel \
+    libxkbcommon-devel \
+    mesa-libGL-devel \
+    mesa-libEGL-devel \
+    libglvnd-opengl \
+    mesa-dri-drivers
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
 sudo dnf install --refresh -y \
