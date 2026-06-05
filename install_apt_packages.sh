@@ -53,11 +53,6 @@ packages_to_install+=(
     zlib1g-dev
 )
 
-# required for functional simulation (run_func_sim_flow.py)
-packages_to_install+=(
-    verilator
-)
-
 # Required for code formatting
 # NOTE: clang-format-18 may only be found on specific distributions. Only
 #       install it if the distribution has this version of clang format.
