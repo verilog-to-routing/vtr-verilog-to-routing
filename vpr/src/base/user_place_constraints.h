@@ -161,7 +161,15 @@ class UserPlaceConstraints {
     std::unordered_map<AtomBlockId, PartitionId> constrained_atoms;
 
     /**
-     * Store optional per-atom logical_block_location strings.
+     * Store optional per-atom logical_block_location strings. (used during cluster legalization).
+     *
+     * Format: '.'-separated path through the architecture block hierarchy.
+     *         Each step is block_name[index]; use {mode} when that step has modes (e.g. "fle[2]{n1_lut4}").
+     *
+     * Example: "clb[0].fle[2]{n1_lut4}.ble4[0].ff[0]"
+     *   - clb[0]: block name "clb"
+     *   - fle[2]{n1_lut4}: block name "fle", instance 2, architecture mode n1_lut4
+     *   - ble4[0].ff[0]: via block "ble4" instance 0, pack into flip-flop "ff" instance 0
      */
     std::unordered_map<AtomBlockId, std::string> atom_logical_block_locations_;
 
