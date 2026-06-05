@@ -26,9 +26,9 @@ packages_to_install+=(
 )
 
 # Required for graphics
+# GL/EGL/xkb runtime that the Qt6 GUI links against; the Qt6 SDK itself is
+# provisioned separately by dev/ensure_qt6_sdk.sh.
 packages_to_install+=(
-    qt6-base-dev
-    qt6-base-dev-tools
     libxkbcommon-dev
     libgl-dev
     libegl-dev

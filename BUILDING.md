@@ -45,6 +45,33 @@ For parallel builds (recommended):
 
     make -j$(nproc)
 
+### Graphics (GUI)
+
+VPR has an optional Qt6-based graphical interface. A plain `make` builds the GUI
+**only if a suitable Qt6 (>= 6.9.3) is installed on the system**; otherwise VPR
+is built headless. The 6.9.3 floor exists because earlier Qt6 releases have QRhi
+rendering bugs.
+
+If your system Qt6 is missing or older than 6.9.3, you can install a local copy
+(no root required) with:
+
+    ./dev/ensure_qt6_sdk.sh
+
+> **Note:** `ensure_qt6_sdk.sh` is a temporary measure. From Ubuntu 26.04 onward
+> the system Qt6 will satisfy the >= 6.9.3 requirement, so the system Qt will be
+> used directly and `ensure_qt6_sdk.sh` will become obsolete.
+
+Two convenience targets make the choice explicit:
+
+    make ensure-gui        # build vpr WITH the GUI
+    make ensure-headless   # build vpr WITHOUT the GUI
+
+- `make ensure-gui` first runs `dev/ensure_qt6_sdk.sh` (provisioning a Qt6 SDK
+  if the system one is missing/too old, and aborting the build if that fails),
+  then configures with graphics enabled and builds `vpr`.
+- `make ensure-headless` configures with graphics disabled and builds `vpr`; no
+  Qt is required.
+
 ### Supported Platforms
 
 The complete VTR flow has been tested on:

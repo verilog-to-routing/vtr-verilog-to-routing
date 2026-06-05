@@ -424,9 +424,9 @@ set(READLINE_FOUND FALSE)
 #     rendering bugs, so the floor is set higher.
 #   * Prefer a SYSTEM Qt on the loader's default search path -> no RPATH needed
 #     and the binaries stay relocatable.
-#   * Otherwise fall back to a repo-local SDK from `make qt6sdk`
-#     (default <repo>/qt6, override with VTR_QT_PREFIX) and bake its lib dir
-#     into RPATH so the binaries still run with no env.
+#   * Otherwise fall back to a repo-local SDK provisioned by
+#     ./dev/ensure_qt6_sdk.sh (default <repo>/qt6, override with VTR_QT_PREFIX)
+#     and bake its lib dir into RPATH so the binaries still run with no env.
 #   * An explicit user CMAKE_PREFIX_PATH / Qt6_DIR always wins; RPATH is baked
 #     only when the chosen Qt lib dir is outside the default search path.
 # ===========================================================================
@@ -472,7 +472,7 @@ if (VPR_USE_EZGL STREQUAL "auto")
         message(STATUS "VPR Graphics: Enabled (Qt6 ${Qt6_VERSION} found)")
     else()
         set(VPR_USE_EZGL "off")
-        message(STATUS "VPR Graphics: Disabled (no Qt6 >= ${VTR_QT_MIN_VERSION}; run `make qt6sdk` or install a system Qt6)")
+        message(STATUS "VPR Graphics: Disabled (no Qt6 >= ${VTR_QT_MIN_VERSION}; run ./dev/ensure_qt6_sdk.sh or install a system Qt6 if its version >= ${VTR_QT_MIN_VERSION})")
     endif()
 endif()
 
@@ -480,8 +480,8 @@ endif()
 if (VPR_USE_EZGL STREQUAL "on" AND NOT Qt6_FOUND)
     message(FATAL_ERROR
         "VPR_USE_EZGL=on but Qt6 >= ${VTR_QT_MIN_VERSION} was not found. "
-        "Run `make qt6sdk` to provision a repo-local Qt SDK, install a system "
-        "Qt6 >= ${VTR_QT_MIN_VERSION}, or pass -DCMAKE_PREFIX_PATH=<qt-prefix>.")
+        "Run ./dev/ensure_qt6_sdk.sh to provision a repo-local Qt SDK, install a "
+        "system Qt6 >= ${VTR_QT_MIN_VERSION}, or pass -DCMAKE_PREFIX_PATH=<qt-prefix>.")
 endif()
 
 # Custom Mode: bake the Qt lib dir into RPATH so binaries run with no env.
