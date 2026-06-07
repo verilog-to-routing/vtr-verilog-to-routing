@@ -3,6 +3,8 @@
 //  - countB increments on each rising edge of clk_b (reset clears it)
 //  - output is {countB, countA} on single-bit pins o7..o0
 //  - clk_b domain is a submodule so yosys/vpr keep both clock pins on top
+// clk_b must be a submodule otherwise parmys will optimize the clock out of the post-synthesis design
+// see issue https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/3582 for further detail
 module clk_b_domain (
     input  clk_b,
     input  rst,
