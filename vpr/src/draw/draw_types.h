@@ -180,19 +180,20 @@ struct PartialPlacement;
  * when running graphics commands.)
  */
 struct t_draw_state {
-    ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
+    /// @brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
-    ///@brief 1 pixel per channel node is the threshold at which the nodes blend into a solid color. 1.5 is a more relaxed bar.
-    static constexpr double min_pixel_per_node = 1.5;
-
-    ///@brief The ratio between pixels and world units spanning the screen width.
-    double zoom_scale = 1.0;
-
-    ///@brief Currently always true, but will be wired to a UI button later on
+    /**
+     * @brief This enables level of detail drawing
+     * 
+     * (e.g. stop drawing RR nodes, dynamically reduce number of block internals
+     *  and critical path delays when zoomed out).
+     * 
+     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
+     */
     bool enable_decluttering = true;
 
-    ///@brief Whether to declutter RR nodes
+    ///@brief This dynamically sets whether to stop drawing RR nodes based on the current zoom level.
     bool declutter_rr = false;
 
     ///@brief Whether to draw nets or not
