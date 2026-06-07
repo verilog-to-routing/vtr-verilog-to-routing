@@ -1,2 +1,10 @@
+# these testcases are commented out as they are know failures.
+# see https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/3595 info.
 regression_tests/vtr_reg_func_sim/adder_4bit
 regression_tests/vtr_reg_func_sim/adder_4bit_blif
+regression_tests/vtr_reg_func_sim/seq_fsm_detect
+#regression_tests/vtr_reg_func_sim/sp_ram_8x8
+#regression_tests/vtr_reg_func_sim/regfile_4x8
+regression_tests/vtr_reg_func_sim/mult_8x8
+#regression_tests/vtr_reg_func_sim/dual_clock_counters
+regression_tests/vtr_reg_func_sim/shift_reg_routed

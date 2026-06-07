@@ -9,7 +9,11 @@
     },
     {
         "name": "vtr_reg_func_sim",
-        "ignored_tasks": []
+        "ignored_tasks": [
+            "sp_ram_8x8",
+            "regfile_4x8",
+            "dual_clock_counters"
+        ]
     },
     {
         "name": "parmys_reg_basic",
