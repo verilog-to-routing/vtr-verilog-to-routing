@@ -243,7 +243,7 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
         }
         VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
 
-        char* name = prev_pin->output_edges[prev_edge]->interconnect->name;
+        const char* name = prev_pin->output_edges[prev_edge]->interconnect->name.c_str();
         if (prev_pin->port->parent_pb_type->depth
             >= cur_pin->port->parent_pb_type->depth) {
             /* Connections from siblings or children should have an explicit index, connections from parent does not need an explicit index */
@@ -303,7 +303,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
                                             "Differing modes for block.  Got %s previously and %s for edge %d (interconnect %s).",
                                             mode->name, pb_type->modes[mode_of_edge].name,
                                             port_index,
-                                            edge->interconnect->name);
+                                            edge->interconnect->name.c_str());
                         }
                         VTR_ASSERT(mode == nullptr || &pb_type->modes[mode_of_edge] == mode);
                         mode = &pb_type->modes[mode_of_edge];
