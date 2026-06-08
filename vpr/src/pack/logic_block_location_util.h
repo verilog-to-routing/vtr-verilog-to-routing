@@ -18,9 +18,9 @@
  *   - {name: "ff",   index: 0, mode: ""}
  */
 struct t_logical_location_token {
-    std::string name;  ///< pb_type name at this hierarchy level
-    int index = -1;    ///< instance index from [...]; -1 if omitted 
-    std::string mode;  ///< architecture mode from {...}; empty if omitted
+    std::string name; ///< pb_type name at this hierarchy level
+    int index = -1;   ///< instance index from [...]; -1 if omitted
+    std::string mode; ///< architecture mode from {...}; empty if omitted
 };
 
 /**
