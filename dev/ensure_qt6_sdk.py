@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     std::sscanf(qVersion(), "%d.%d.%d", &maj, &min, &pat);
     const long runtime = maj * 10000L + min * 100L + pat;
     if (runtime < QT_FLOOR_INT) {
-        std::fprintf(stderr, "runtime Qt %s is below required floor\\n", qVersion());
+        qWarning("runtime Qt %s is below required floor", qVersion());
         return 2;
     }
     return 0;
