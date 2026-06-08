@@ -44,4 +44,5 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          const RRGSB& rr_gsb,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
                          const std::unordered_map<int, RRSwitchId>& delay_to_switch_id,
-                         const int verbosity);
+                         const int verbosity,
+                         e_gsb_version gsb_version);

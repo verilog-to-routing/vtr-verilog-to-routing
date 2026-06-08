@@ -73,7 +73,8 @@ void CRRConnectionBuilder::initialize(int fpga_grid_x,
 }
 
 std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(size_t x,
-                                                                             size_t y) const {
+                                                                             size_t y,
+                                                                             e_gsb_version gsb_version) const {
     // Find matching switch block pattern
     std::string pattern = sb_manager_.find_matching_pattern(x, y);
     if (pattern.empty()) {
@@ -101,8 +102,8 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
     const auto& row_nodes = node_lookup_.get_row_nodes(y);
 
     // Get vertical and horizontal nodes
-    auto source_nodes = get_tile_source_nodes(x, y, *df, col_nodes, row_nodes);
-    auto sink_nodes = get_tile_sink_nodes(x, y, *df, col_nodes, row_nodes);
+    auto source_nodes = get_tile_source_nodes(x, y, *df, col_nodes, row_nodes, gsb_version);
+    auto sink_nodes = get_tile_sink_nodes(x, y, *df, col_nodes, row_nodes, gsb_version);
 
     // Build connections by iterating over the switch block dataframe
     auto tile_connections = build_connections_from_dataframe(*df, source_nodes, sink_nodes, sw_block_file_name);
@@ -179,8 +180,8 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
     return connections;
 }
 
-std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y) const {
-    std::vector<Connection> tile_connections = build_connections_for_location(tile_x, tile_y);
+std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y, e_gsb_version gsb_version) const {
+    std::vector<Connection> tile_connections = build_connections_for_location(tile_x, tile_y, gsb_version);
 
     return tile_connections;
 }
@@ -189,7 +190,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
                                                                                  int y,
                                                                                  const DataFrame& df,
                                                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
+                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
+                                                                                 e_gsb_version gsb_version) const {
     std::unordered_map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -207,7 +209,7 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
             node_id = process_opin_ipin_node(info, x, y, col_nodes, row_nodes);
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
             node_id = process_channel_node(info, x, y, col_nodes, row_nodes, prev_seg_index,
-                                           prev_side, prev_seg_type, prev_ptc_number, true);
+                                           prev_side, prev_seg_type, prev_ptc_number, true, gsb_version);
         }
 
         if (node_id != RRNodeId::INVALID()) {
@@ -227,7 +229,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(i
                                                                                int y,
                                                                                const DataFrame& df,
                                                                                const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
+                                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
+                                                                               e_gsb_version gsb_version) const {
     std::unordered_map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -246,7 +249,7 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(i
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
             node_id = process_channel_node(info, x, y, col_nodes, row_nodes, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number,
-                                           false);
+                                           false, gsb_version);
         }
 
         if (node_id != RRNodeId::INVALID()) {
@@ -389,7 +392,8 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
                                                     e_sw_template_dir& prev_side,
                                                     std::string& prev_seg_type,
                                                     int& prev_ptc_number,
-                                                    bool is_vertical) const {
+                                                    bool is_vertical,
+                                                    e_gsb_version gsb_version) const {
     int seg_length = std::stoi(
         info.seg_type.substr(1)); // Extract number from "L1", "L4", etc.
 
@@ -409,7 +413,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     int x_low, x_high, y_low, y_high;
     int physical_length, truncated;
     calculate_segment_coordinates(info, x, y, x_low, x_high, y_low, y_high,
-                                  physical_length, truncated, is_vertical);
+                                  physical_length, truncated, is_vertical, gsb_version);
 
     // Calculate starting PTC point
     int seg_index = (info.seg_index - 1) * seg_length * 2;
@@ -460,7 +464,8 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                                                          int& y_high,
                                                          int& physical_length,
                                                          int& truncated,
-                                                         bool is_vertical) const {
+                                                         bool is_vertical,
+                                                         e_gsb_version gsb_version) const {
     int seg_length = std::stoi(info.seg_type.substr(1));
     int tap = info.tap;
 
@@ -468,8 +473,13 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     if (is_vertical) {
         switch (info.side) {
             case e_sw_template_dir::LEFT:
-                x_high = x + (seg_length - tap);
-                x_low = x - (tap - 1);
+                if (gsb_version == e_gsb_version::GSB_V2) {
+                    x_high = x + (seg_length - tap - 1);
+                    x_low = x - tap;
+                } else {
+                    x_high = x + (seg_length - tap);
+                    x_low = x - (tap - 1);
+                }
                 y_high = y;
                 y_low = y;
                 break;
@@ -488,8 +498,13 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
             case e_sw_template_dir::BOTTOM:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length - tap;
-                y_low = y - tap + 1;
+                if (gsb_version == e_gsb_version::GSB_V2) {
+                    y_high = y + (seg_length - tap - 1);
+                    y_low = y - tap;
+                } else {
+                    y_high = y + seg_length - tap;
+                    y_low = y - tap + 1;
+                }
                 break;
             default:
                 x_high = x;
@@ -507,16 +522,26 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                 y_low = y;
                 break;
             case e_sw_template_dir::RIGHT:
-                x_high = x + seg_length;
-                x_low = x + 1;
+                if (gsb_version == e_gsb_version::GSB_V2) {
+                    x_high = x + seg_length - 1;
+                    x_low = x;
+                } else {
+                    x_high = x + seg_length;
+                    x_low = x + 1;
+                }
                 y_high = y;
                 y_low = y;
                 break;
             case e_sw_template_dir::TOP:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length;
-                y_low = y + 1;
+                if (gsb_version == e_gsb_version::GSB_V2) {
+                    y_high = y + seg_length - 1;
+                    y_low = y;
+                } else {
+                    y_high = y + seg_length;
+                    y_low = y + 1;
+                }
                 break;
             case e_sw_template_dir::BOTTOM:
                 x_high = x;

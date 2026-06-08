@@ -94,8 +94,7 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
                                                const int& x,
                                                const int& y,
                                                const e_rr_type& rr_type,
-                                               const e_side& side,
-                                               bool include_clock) {
+                                               const e_side& side) {
     std::vector<RRNodeId> indices;
 
     VTR_ASSERT(rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN);
@@ -115,11 +114,8 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
 
     for (int pin = 0; pin < device_grid.get_physical_type(tile_loc)->num_pins; ++pin) {
         /* Skip those pins have been ignored during rr_graph build-up */
-        if (true == device_grid.get_physical_type(tile_loc)->is_ignored_pin[pin]) {
-            /* If specified, force to include all the clock pins */
-            if (!include_clock || std::find(device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().begin(), device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end(), pin) == device_grid.get_physical_type(tile_loc)->get_clock_pins_indices().end()) {
-                continue;
-            }
+        if (device_grid.get_physical_type(tile_loc)->is_ignored_pin[pin]) {
+            continue;
         }
         if (false == device_grid.get_physical_type(tile_loc)->pinloc[width_offset][height_offset][side][pin]) {
             /* Not the pin on this side, we skip */

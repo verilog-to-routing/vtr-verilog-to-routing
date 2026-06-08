@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "physical_types.h"
+#include "vpr_types.h"
 #include "crr_connection_builder.h"
 
 /**
@@ -80,7 +81,8 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          const RRGSB& rr_gsb,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
                          const std::unordered_map<int, RRSwitchId>& delay_to_switch_id,
-                         const int /*verbosity*/) {
+                         const int /*verbosity*/,
+                         e_gsb_version gsb_version) {
     if (g_vpr_ctx.device().grid.get_num_layers() != 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CRR only supports 2D architectures (num_layers must be 1)\n");
     }
@@ -88,7 +90,7 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
     size_t gsb_x = rr_gsb.get_sb_x();
     size_t gsb_y = rr_gsb.get_sb_y();
 
-    std::vector<crrgenerator::Connection> gsb_connections = connection_builder.get_tile_connections(gsb_x, gsb_y);
+    std::vector<crrgenerator::Connection> gsb_connections = connection_builder.get_tile_connections(gsb_x, gsb_y, gsb_version);
     for (const auto& connection : gsb_connections) {
         RRSwitchId rr_switch_id;
         int delay_ps = connection.delay_ps();

@@ -76,7 +76,8 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
                               const std::vector<t_segment_inf>& segment_inf_x,
                               const std::vector<t_segment_inf>& segment_inf_y,
                               const bool& perimeter_cb,
-                              const RRSwitchId& delayless_switch);
+                              const RRSwitchId& delayless_switch,
+                              e_gsb_version gsb_version);
 
 void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   RRGraphBuilder& rr_graph_builder,
