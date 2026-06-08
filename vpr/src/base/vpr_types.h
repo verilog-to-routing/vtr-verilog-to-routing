@@ -1409,9 +1409,12 @@ struct t_analysis_opts {
     bool skip_sync_clustering_and_routing_results;
 };
 
+/**
+ * @brief Version of the Generic Switch Block (GSB).
+ */
 enum class e_gsb_version {
-    GSB_V1 = 1,
-    GSB_V2 = 2,
+    GSB_V1,
+    GSB_V2,
 };
 
 /// Stores CRR specific options

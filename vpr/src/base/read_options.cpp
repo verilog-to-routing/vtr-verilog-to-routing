@@ -1514,9 +1514,12 @@ struct ParseGsbVersion {
         ConvertedValue<std::string> conv_value;
         if (val == e_gsb_version::GSB_V1)
             conv_value.set_value("1");
-        else {
-            VTR_ASSERT(val == e_gsb_version::GSB_V2);
+        else if (val == e_gsb_version::GSB_V2)
             conv_value.set_value("2");
+        else {
+            std::stringstream msg;
+            msg << "Unrecognized e_gsb_version value: " << static_cast<int>(val);
+            conv_value.set_error(msg.str());
         }
         return conv_value;
     }
