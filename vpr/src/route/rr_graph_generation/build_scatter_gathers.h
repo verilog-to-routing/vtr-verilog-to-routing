@@ -57,6 +57,7 @@ struct t_bottleneck_link {
  * @param nodes_per_chan Channel width data.
  * @param rng Random number generator used to shuffle wire candidates.
  * @param interdie_3d_links Output: matrix storing inter-die (3D) bottleneck links.
+ * @param route_verbosity Controls verbose routing diagnostics.
  * @return Vector of non-3d bottleneck links.
  */
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
@@ -69,6 +70,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_width& nodes_per_chan,
                                                                          vtr::RngContainer& rng,
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                                                         const int route_verbosity,
                                                                          bool device_model_warnings);
 
 /**
