@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# if --dev is specified, also install packages needed by vtr developers (e.g. verilator
+# for functional simulation). otherwise only install packages needed to run vtr.
 install_dev=false
 for arg in "$@"; do
     if [ "$arg" = "--dev" ]; then
