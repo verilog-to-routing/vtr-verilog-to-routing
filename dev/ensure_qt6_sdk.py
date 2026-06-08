@@ -26,6 +26,10 @@
 #       Qt at or above this is accepted as-is; otherwise this exact version is
 #       provisioned via aqt.
 #
+# Platform support: Linux only. On Windows (native win32 or MSYS2/Cygwin) the
+# script stops with instructions to install Qt6 manually — automatic
+# provisioning there is not implemented yet (see is_windows()/main()).
+#
 # This is a 1:1 port of ensure_qt6_sdk.sh and is kept behaviourally identical.
 #
 # Idempotent + self-healing: if a suitable system Qt is present it does nothing.
@@ -57,6 +61,17 @@ def have(cmd):
     return shutil.which(cmd) is not None
 
 
+def is_windows():
+    """True on any Windows Python: native win32, or MSYS2/Cygwin builds.
+
+    Native CPython reports os.name == 'nt' / sys.platform == 'win32'; Python
+    built for MSYS2 or Cygwin reports 'msys' / 'cygwin' but still runs on
+    Windows. None of these match this script's Linux assumptions (aqt
+    linux_gcc_64, .so libraries, LD_LIBRARY_PATH).
+    """
+    return os.name == "nt" or sys.platform.startswith(("win", "msys", "cygwin"))
+
+
 def version_tuple(ver):
     """'6.9.3' -> (6, 9, 3); missing components default to 0."""
     parts = (ver.split(".") + ["0", "0", "0"])[:3]
@@ -75,22 +90,30 @@ def version_to_int(ver):
 
 
 # Detect a system Qt6 version (X.Y.Z) that CMake's find_package(Qt6) would
-# actually use. We rely ONLY on the apt package qt6-base-dev, because it
-# installs the Qt6 CMake config into /usr — a default find_package() search
-# path. We deliberately do NOT consult `qmake6` or `pkg-config`: a qmake6 on
-# PATH (or a tools-only / non-default install) can report a Qt that
-# find_package() cannot find, which would make us wrongly skip aqt and leave
-# the build unable to locate Qt6.
-def detect_system_qt6():
-    if not have("dpkg-query"):
-        return ""
+# actually use. We rely ONLY on the distro -devel package that ships the Qt6
+# CMake config into a default find_package() search path: qt6-base-dev on
+# Debian/Ubuntu (dpkg), qt6-qtbase-devel on Fedora/RHEL (rpm). We deliberately
+# do NOT consult `qmake6` or `pkg-config`: a qmake6 on PATH (or a tools-only /
+# non-default install) can report a Qt that find_package() cannot find, which
+# would make us wrongly skip aqt and leave the build unable to locate Qt6.
+def _query_version(cmd):
+    """Run a package-query command; return its stdout, or '' on failure."""
     try:
-        out = subprocess.run(
-            ["dpkg-query", "-W", "-f=${Version}", "qt6-base-dev"],
-            capture_output=True,
-            text=True,
-        ).stdout
+        return subprocess.run(cmd, capture_output=True, text=True).stdout
     except OSError:
+        return ""
+
+
+def detect_system_qt6():
+    if have("dpkg-query"):
+        # Debian/Ubuntu: qt6-base-dev installs the Qt6 CMake config under /usr.
+        out = _query_version(
+            ["dpkg-query", "-W", "-f=${Version}", "qt6-base-dev"])
+    elif have("rpm"):
+        # Fedora/RHEL: qt6-qtbase-devel installs the Qt6 CMake config under /usr.
+        out = _query_version(
+            ["rpm", "-q", "--qf", "%{VERSION}", "qt6-qtbase-devel"])
+    else:
         return ""
     match = re.match(r"[0-9]+(\.[0-9]+){1,2}", out)
     return match.group(0) if match else ""
@@ -199,6 +222,25 @@ def validate_qt_sdk(qthome):
 
 
 def main():
+    # -----------------------------------------------------------------------
+    # Windows: not supported yet (placeholder). Everything below assumes a Linux
+    # SDK (aqt linux_gcc_64, .so libraries, LD_LIBRARY_PATH, the offscreen
+    # plugin). A Windows implementation would provision the win64_msvc/mingw SDK
+    # with a different layout and must run under *native win32* Python — NOT the
+    # Python bundled in an MSYS2/Cygwin environment. Until then, set up Qt6
+    # manually and point CMAKE_PREFIX_PATH at it.
+    # -----------------------------------------------------------------------
+    if is_windows():
+        print("ensure_qt6_sdk: automatic Qt6 provisioning is not supported on "
+              "Windows yet.", file=sys.stderr)
+        print("Install Qt6 >= {} manually (e.g. the official Qt installer or "
+              "aqt) and point CMAKE_PREFIX_PATH at it.".format(QT_VERSION),
+              file=sys.stderr)
+        print("Note: a future Windows implementation must use native win32 "
+              "Python, not the Python inside an MSYS2/Cygwin environment.",
+              file=sys.stderr)
+        return 1
+
     # -----------------------------------------------------------------------
     # Prefer a system Qt6 >= QT_VERSION: if one is installed, no aqt is needed.
     # -----------------------------------------------------------------------
