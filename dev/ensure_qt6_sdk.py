@@ -62,13 +62,7 @@ def have(cmd):
 
 
 def is_windows():
-    """True on any Windows Python: native win32, or MSYS2/Cygwin builds.
-
-    Native CPython reports os.name == 'nt' / sys.platform == 'win32'; Python
-    built for MSYS2 or Cygwin reports 'msys' / 'cygwin' but still runs on
-    Windows. None of these match this script's Linux assumptions (aqt
-    linux_gcc_64, .so libraries, LD_LIBRARY_PATH).
-    """
+    """True on any Windows Python: native win32, or MSYS2/Cygwin builds."""
     return os.name == "nt" or sys.platform.startswith(("win", "msys", "cygwin"))
 
 
@@ -81,12 +75,6 @@ def version_tuple(ver):
 def version_ge(a, b):
     """True if version a >= version b."""
     return version_tuple(a) >= version_tuple(b)
-
-
-def version_to_int(ver):
-    """Encode the required floor (e.g. 6.9.3 -> 60903)."""
-    major, minor, patch = version_tuple(ver)
-    return major * 10000 + minor * 100 + patch
 
 
 # Detect a system Qt6 version (X.Y.Z) that CMake's find_package(Qt6) would
@@ -128,30 +116,28 @@ def qt_smoke_test(qthome):
         print("  smoke test skipped ('make' not found)")
         return True
 
-    # Encode the required floor (e.g. 6.9.3 -> 60903) so the program can compare
-    # the *runtime* Qt version (qVersion()) against it and fail if it is older.
-    floor_int = version_to_int(QT_VERSION)
-
+    # The required floor (e.g. "6.9.3") is baked straight into the source, and
+    # the program compares the *runtime* Qt version (qVersion()) against it with
+    # Qt's QVersionNumber, failing if it is older.
     smoke_cpp = """\
 #include <QApplication>
 #include <QLabel>
+#include <QVersionNumber>
 #include <QtGlobal>
-#include <cstdio>
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     QLabel label(QStringLiteral("ok"));
     label.show();
-    // Verify the runtime Qt meets the build floor passed in via QT_FLOOR_INT.
-    int maj = 0, min = 0, pat = 0;
-    std::sscanf(qVersion(), "%d.%d.%d", &maj, &min, &pat);
-    const long runtime = maj * 10000L + min * 100L + pat;
-    if (runtime < QT_FLOOR_INT) {
+    // Verify the runtime Qt meets the build floor.
+    const QVersionNumber runtime = QVersionNumber::fromString(QString::fromLatin1(qVersion()));
+    const QVersionNumber floor = QVersionNumber::fromString(QStringLiteral("__QT_VERSION__"));
+    if (runtime < floor) {
         qWarning("runtime Qt %s is below required floor", qVersion());
         return 2;
     }
     return 0;
 }
-"""
+""".replace("__QT_VERSION__", QT_VERSION)
     smoke_pro = """\
 QT += core gui widgets
 CONFIG += console c++17
@@ -167,8 +153,7 @@ SOURCES += smoke.cpp
             f.write(smoke_pro)
 
         built = subprocess.run(
-            [os.path.join(qthome, "bin", "qmake"),
-             "DEFINES+=QT_FLOOR_INT={}".format(floor_int), "smoke.pro"],
+            [os.path.join(qthome, "bin", "qmake"), "smoke.pro"],
             cwd=tmp, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         ).returncode == 0
         if built:
