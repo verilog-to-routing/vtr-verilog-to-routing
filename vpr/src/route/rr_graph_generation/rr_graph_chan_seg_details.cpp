@@ -23,6 +23,18 @@ static void adjust_chan_details(const t_chan_width& nodes_per_chan,
                                 t_chan_details& chan_details_x,
                                 t_chan_details& chan_details_y);
 
+/// @brief Truncates neighboring wire spans around an obstructed channel segment location.
+///
+/// Called when the channel segment at (x, y) has no wires. Clips seg_end on channel segments
+/// on the negative side of the obstruction and advances seg_start on channel segments on the
+/// positive side, propagating along each track until no wire span crosses the obstruction.
+///
+/// @param x Grid x-coordinate of the obstructed channel segment.
+/// @param y Grid y-coordinate of the obstructed channel segment.
+/// @param nodes_per_chan Per-location channel widths.
+/// @param chan_details Channel segment details to update.
+/// @param seg_parallel_axis Axis of the channel segments being adjusted (X_AXIS for CHANX,
+///                          Y_AXIS for CHANY).
 static void adjust_seg_details(const int x,
                                const int y,
                                const t_chan_width& nodes_per_chan,
@@ -364,6 +376,8 @@ static void adjust_seg_details(const int x,
                                const e_parallel_axis seg_parallel_axis) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
+    // Channel at (x, y) is obstructed (no wires). seg_index is its coordinate
+    // along the wire direction (x for CHANX, y for CHANY).
     int seg_index = (seg_parallel_axis == e_parallel_axis::X_AXIS ? x : y);
     int max_chan_width = 0;
     if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
@@ -375,12 +389,17 @@ static void adjust_seg_details(const int x,
         max_chan_width = nodes_per_chan.max;
     }
 
+    // Truncate wires on the negative side of the obstruction (left for CHANX,
+    // below for CHANY) whose span reaches into or past seg_index.
     for (int track = 0; track < max_chan_width; ++track) {
+        // Start with the channel immediately before the obstruction.
         int lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? x - 1 : x);
         int ly = (seg_parallel_axis == e_parallel_axis::X_AXIS ? y : y - 1);
         if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
             continue;
 
+        // Clip seg_end to just before the obstruction, then walk further negative
+        // along the same track while the wire chain still spans the obstruction.
         while (chan_details[lx][ly][track].seg_end() >= seg_index) {
             chan_details[lx][ly][track].set_seg_end(seg_index - 1);
             lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? lx - 1 : lx);
@@ -390,12 +409,17 @@ static void adjust_seg_details(const int x,
         }
     }
 
+    // Advance wire start points on the positive side of the obstruction (right
+    // for CHANX, above for CHANY) that begin at or before seg_index.
     for (int track = 0; track < max_chan_width; ++track) {
+        // Start with the channel immediately after the obstruction.
         size_t lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? x + 1 : x);
         size_t ly = (seg_parallel_axis == e_parallel_axis::X_AXIS ? y : y + 1);
         if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
             continue;
 
+        // Move seg_start to just past the obstruction, then walk further positive
+        // along the same track while the wire chain still begins at/before seg_index.
         while (chan_details[lx][ly][track].seg_start() <= seg_index) {
             chan_details[lx][ly][track].set_seg_start(seg_index + 1);
             lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? lx + 1 : lx);
