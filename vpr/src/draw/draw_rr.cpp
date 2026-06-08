@@ -278,13 +278,21 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         e_edge_type edge_type = EDGE_TYPE_MAP.at({from_type, to_type});
 
         // Determine whether to draw the edge based on user options
+
+        // If decluttering is on, don't draw any edges.
         if (draw_state->declutter_rr) {
             draw_edge = false;
-        } else if ((edge_type == e_edge_type::PIN_TO_OPIN || edge_type == e_edge_type::PIN_TO_IPIN) && !draw_state->draw_intra_cluster_edges) {
+        }
+        // PIN_TO_OPIN and OPIN_TO_OPIN edges are intra-cluster edges, so don't draw if the intra-cluster edges option is disabled.
+        else if ((edge_type == e_edge_type::PIN_TO_OPIN || edge_type == e_edge_type::PIN_TO_IPIN) && !draw_state->draw_intra_cluster_edges) {
             draw_edge = false;
-        } else if ((edge_type == e_edge_type::OPIN_TO_CHAN || edge_type == e_edge_type::CHAN_TO_IPIN) && !draw_state->draw_connection_box_edges) {
+        }
+        // OPIN_TO_CHAN and CHAN_TO_IPIN edges are connection box edges, so don't draw if the connection box edges option is disabled.
+        else if ((edge_type == e_edge_type::OPIN_TO_CHAN || edge_type == e_edge_type::CHAN_TO_IPIN) && !draw_state->draw_connection_box_edges) {
             draw_edge = false;
-        } else if (edge_type == e_edge_type::CHAN_TO_CHAN && !draw_state->draw_switch_box_edges) {
+        }
+        // CHAN_TO_CHAN edges are switch box edges, so don't draw if the switch box edges option is disabled.
+        else if (edge_type == e_edge_type::CHAN_TO_CHAN && !draw_state->draw_switch_box_edges) {
             draw_edge = false;
         }
         // Special case for direct connections between output pins and input pins of clb.
