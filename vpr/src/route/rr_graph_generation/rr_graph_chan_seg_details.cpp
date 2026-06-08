@@ -3,9 +3,21 @@
 #include "rr_graph_type.h"
 #include "globals.h"
 
+/// @brief Initializes per-location channel segment details for one routing axis.
+///
+/// Builds a 3D t_chan_details array (grid x, grid y, track) by copying the per-track
+/// @p seg_details template into every channel location. For each track at each (x, y),
+/// computes segment start/end coordinates, then clamps them at interposer cut boundaries.
+/// Tracks beyond the channel width at a given location are marked absent (length 0).
+///
+/// @param nodes_per_chan Per-location CHANX/CHANY widths (x_list and y_list).
+/// @param seg_details Per-track segment metadata template (one entry per routing track)
+/// @param seg_parallel_axis Axis of the channels being initialized (X_AXIS for CHANX,
+///                          Y_AXIS for CHANY).
+/// @return Channel segment details for every grid location and track on the given axis
 static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
                                         const std::vector<t_seg_details>& seg_details,
-                                        const e_parallel_axis seg_details_type);
+                                        const e_parallel_axis seg_parallel_axis);
 
 static void adjust_chan_details(const t_chan_width& nodes_per_chan,
                                 t_chan_details& chan_details_x,
