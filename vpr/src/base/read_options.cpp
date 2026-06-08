@@ -10,6 +10,7 @@
 #include "vtr_log.h"
 #include "vtr_path.h"
 #include "vtr_util.h"
+#include <filesystem>
 #include <string>
 
 using argparse::ConvertedValue;
@@ -1492,6 +1493,37 @@ struct ParsePostSynthNetlistUnconnOutputHandling {
 
     std::vector<std::string> default_choices() {
         return {"unconnected", "nets"};
+    }
+};
+
+struct ParseGsbVersion {
+    ConvertedValue<e_gsb_version> from_str(const std::string& str) {
+        ConvertedValue<e_gsb_version> conv_value;
+        if (str == "1")
+            conv_value.set_value(e_gsb_version::GSB_V1);
+        else if (str == "2")
+            conv_value.set_value(e_gsb_version::GSB_V2);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_gsb_version (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_gsb_version val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_gsb_version::GSB_V1)
+            conv_value.set_value("1");
+        else {
+            VTR_ASSERT(val == e_gsb_version::GSB_V2);
+            conv_value.set_value("2");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"1", "2"};
     }
 };
 
@@ -3455,6 +3487,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
         .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
         .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<e_gsb_version, ParseGsbVersion>(args.gsb_version, "--gsb_version")
+        .help("Specifies which GSB version should be used for CRR switch block templates. Valid values are 1 or 2.")
+        .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");
