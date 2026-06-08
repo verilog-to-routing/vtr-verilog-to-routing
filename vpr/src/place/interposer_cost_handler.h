@@ -55,7 +55,7 @@ class InterposerCostHandler {
     double compute_interposer_est_cong(bool compute_congestion_cost = true);
 
     /// @brief Selects the formula used for the interposer crossing cost term.
-    std::pair<double, double> change_net_cost_type(e_interposer_net_cost_type new_type);
+    void change_net_cost_type(e_interposer_net_cost_type new_type);
 
   private:
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;

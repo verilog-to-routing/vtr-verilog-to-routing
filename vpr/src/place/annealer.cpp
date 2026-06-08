@@ -990,6 +990,10 @@ void PlacementAnnealer::placement_inner_loop() {
         if (placer_opts_.place_algorithm.is_timing_driven() && placer_opts_.place_agent_multistate && agent_state_ == e_agent_state::EARLY_IN_THE_ANNEAL) {
             if (annealing_state_.alpha < 0.85 && annealing_state_.alpha > 0.6) {
                 agent_state_ = e_agent_state::LATE_IN_THE_ANNEAL;
+                interposer_cost_handler_->change_net_cost_type(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
+                auto [new_interposer_cost, new_interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
+                costs_.interposer_cost = new_interposer_cost;
+                costs_.interposer_cong_cost = new_interposer_cong_cost;
                 VTR_LOG("Agent's 2nd state: \n");
             }
         }
@@ -1024,9 +1028,7 @@ void PlacementAnnealer::start_quench() {
     // Revert the move limit to initial value.
     annealing_state_.move_lim = annealing_state_.move_lim_max;
 
-    auto [new_interposer_cost, new_interposer_cong_cost] = interposer_cost_handler_->change_net_cost_type(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
-    costs_.interposer_cost = new_interposer_cost;
-    costs_.interposer_cong_cost = new_interposer_cong_cost;
+    // interposer_cost_handler_->change_net_cost_type(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
 }
 
 std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> PlacementAnnealer::get_stats() const {
