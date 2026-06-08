@@ -100,7 +100,7 @@
         <fill type="clb" priority="100"/>
 
         <!-- PW -->
-        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+        <col type="tsv_hole" startx="6" starty="5" repeatx="13" incry="12" priority="103"/>
 
         <!-- GND -->
         <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
