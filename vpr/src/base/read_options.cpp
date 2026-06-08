@@ -10,7 +10,6 @@
 #include "vtr_log.h"
 #include "vtr_path.h"
 #include "vtr_util.h"
-#include <filesystem>
 #include <string>
 
 using argparse::ConvertedValue;
