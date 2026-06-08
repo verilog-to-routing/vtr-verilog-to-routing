@@ -1,9 +1,12 @@
 #include "interposer_cost_handler.h"
 
+#include "blk_loc_registry.h"
 #include "clustered_netlist.h"
+#include "clustered_netlist_fwd.h"
 #include "device_grid.h"
 #include "globals.h"
 #include "vpr_context.h"
+#include "vpr_types.h"
 #include "vtr_assert.h"
 
 #include <algorithm>
@@ -12,10 +15,12 @@
 
 InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
                                              double interposer_cong_threshold,
+                                             const BlkLocRegistry& blk_loc_registry,
                                              std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb)
     : interposer_cost_enabled_(interposer_cost_enabled)
     , interposer_cong_modeling_started_(false)
     , interposer_cong_threshold_(interposer_cong_threshold)
+    , blk_loc_registry_(blk_loc_registry)
     , get_net_bb_(std::move(get_net_bb)) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
@@ -201,20 +206,48 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
         double bb_width_factor = 0;
         double bb_height_factor = 0;
 
-        for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
-            const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
-            for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
-                int cut_y = layer_h_cuts[i_cut];
-                if (cut_y >= bb.ymin && cut_y < bb.ymax) {
-                    bb_height_factor += std::abs((double)g_vpr_ctx.device().horz_min_interposer_segment_length_[layer][i_cut] - (double)(bb.ymax - bb.ymin)) * inv_device_grid_height_;
-                }
-            }
+        const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+        ClusterPinId net_source_pin = clb_nlist.net_pin(net_id, 0);
+        VTR_ASSERT(net_source_pin);
+        t_physical_tile_loc source_pin_loc = blk_loc_registry_.get_coordinate_of_pin(net_source_pin);
 
-            const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
-            for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
-                int cut_x = layer_v_cuts[i_cut];
-                if (cut_x >= bb.xmin && cut_x < bb.xmax) {
-                    bb_width_factor += std::abs((double)g_vpr_ctx.device().vert_min_interposer_segment_length_[layer][i_cut] - (double)(bb.xmax - bb.xmin)) * inv_device_grid_width_;
+        for (ClusterPinId net_sink_pin : clb_nlist.net_sinks(net_id)) {
+            t_physical_tile_loc sink_pin_loc = blk_loc_registry_.get_coordinate_of_pin(net_sink_pin);
+
+            for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+                if (source_pin_loc.layer_num != sink_pin_loc.layer_num || source_pin_loc.layer_num != layer) {
+                    continue;
+                }
+
+                const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+                int affected_connections = 0;
+                for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
+                    int cut_y = layer_h_cuts[i_cut];
+                    int y_min = std::min(source_pin_loc.y, sink_pin_loc.y);
+                    int y_max = std::max(source_pin_loc.y, sink_pin_loc.y);
+
+                    if (cut_y >= y_min && cut_y < y_max) {
+                        bb_height_factor += std::abs((double)g_vpr_ctx.device().horz_min_interposer_segment_length_[layer][i_cut] - (double)(y_max - y_min + 1)) * inv_device_grid_height_;
+                        affected_connections++;
+                    }
+                }
+                if (affected_connections > 0) {
+                    bb_height_factor /= affected_connections;
+                }
+                const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+                affected_connections = 0;
+                for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
+                    int cut_x = layer_v_cuts[i_cut];
+                    int x_min = std::min(source_pin_loc.x, sink_pin_loc.x);
+                    int x_max = std::max(source_pin_loc.x, sink_pin_loc.x);
+
+                    if (cut_x >= x_min && cut_x < x_max) {
+                        affected_connections++;
+                        bb_width_factor += std::abs((double)g_vpr_ctx.device().vert_min_interposer_segment_length_[layer][i_cut] - (double)(x_max - x_min + 1)) * inv_device_grid_width_;
+                    }
+                }
+                if (affected_connections > 0) {
+                    bb_width_factor /= affected_connections;
                 }
             }
         }

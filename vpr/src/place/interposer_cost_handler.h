@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+class BlkLocRegistry;
+
 enum class e_interposer_net_cost_type {
     /// Net cost is delta_x * #vertical_interposer_crossings + delta_y * #horizontal_interposer_crossings
     CROSSING_COUNT_DELTA_POS,
@@ -29,6 +31,7 @@ class InterposerCostHandler {
 
     InterposerCostHandler(bool interposer_cost_enabled,
                           double interposer_cong_threshold,
+                          const BlkLocRegistry& blk_loc_registry,
                           std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb);
 
     /// @brief Returns true when at least one interposer cost term is activated.
@@ -71,6 +74,8 @@ class InterposerCostHandler {
     /// Reciprocals of device grid width and height for normalizing bounding-box spans.
     double inv_device_grid_width_;
     double inv_device_grid_height_;
+    /// Placement locations and physical pin mappings for clustered blocks.
+    const BlkLocRegistry& blk_loc_registry_;
     /// Fetches committed/proposed BB state owned by NetCostHandler.
     std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb_;
 

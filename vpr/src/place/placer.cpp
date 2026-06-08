@@ -72,6 +72,7 @@ Placer::Placer(const Netlist<>& net_list,
     if (device_ctx.grid.has_interposer_cuts()) {
         interposer_cost_handler_.emplace(placer_opts.interposer_cost_factor > 0.,
                                          placer_opts.interposer_cong_threshold,
+                                         placer_state_.blk_loc_registry(),
                                          [this](ClusterNetId net_id, bool use_ts) -> const t_bb& {
                                              return net_cost_handler_.cube_bb_coords(net_id, use_ts);
                                          });
