@@ -19,6 +19,8 @@ static t_chan_details init_chan_details(const t_chan_width& nodes_per_chan,
                                         const std::vector<t_seg_details>& seg_details,
                                         const e_parallel_axis seg_parallel_axis);
 
+/// @brief Adjusts CHANX and CHANY wire spans around obstructed channel locations.
+/// Scans the grid for channels segments with no wires and calls adjust_seg_details() for each.
 static void adjust_chan_details(const t_chan_width& nodes_per_chan,
                                 t_chan_details& chan_details_x,
                                 t_chan_details& chan_details_y);
