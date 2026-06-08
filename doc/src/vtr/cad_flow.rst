@@ -14,7 +14,9 @@ In the standard VTR Flow (:numref:`fig_vtr_cad_flow`), :ref:`parmys` converts a 
 Next, the :ref:`abc`  synthesis package is used to perform technology-independent logic optimization, and technology-maps the circuit into LUTs :cite:`abc_cite,pistorius_benchmarking_method_fpga_synthesis,cho_priority_cuts`.
 The output of ABC is a :ref:`.blif format <blif_format>` netlist of LUTs, flip flops, and blackboxes.
 
-:ref:`vpr` then packs this netlist into more coarse-grained logic blocks, places and then routes the circuit :cite:`betz_arch_cad,betz_phd,betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,betz_cluster_based_logic_blocks,marquardt_timing_driven_packing,marquardt_timing_driven_placement,betz_automatic_generation_of_fpga_routing`.
+:ref:`vpr` then maps this netlist onto the FPGA via packing, placement, routing, and analysis :cite:`betz_arch_cad,betz_phd,betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,betz_cluster_based_logic_blocks,marquardt_timing_driven_packing,marquardt_timing_driven_placement,betz_automatic_generation_of_fpga_routing`.
+By default VPR uses the **analytical placement flow**, which performs integrated packing and placement followed by routing and analysis.
+The traditional sequential pack → place → route flow is also available via ``--pack --place --route --analysis`` (see :ref:`stage_options`).
 Generating :ref:`output files <vpr_file_formats>` for each stage.
 VPR will analyze the resulting implementation, producing various statistics such as the minimum number of tracks per channel required to successfully route, the total wirelength, circuit speed, area and power.
 VPR can also produce a post-implementation netlist for simulation and formal verification.

@@ -1,14 +1,46 @@
 Basic flow
 ==========
 
-The Place and Route process in VPR consists of several steps:
+VPR supports two implementation flows:
 
-- Packing (combines primitives into complex blocks)
-- Placement (places complex blocks within the FPGA grid)
-- Routing (determines interconnections between blocks)
-- Analysis (analyzes the implementation)
+**Analytical placement flow (default)**
+    An integrated packing and analytical placement algorithm runs first, using primitive-level
+    information to jointly optimize clustering and placement. Routing and analysis follow.
+    This is the default when no stage flags are given::
 
-Each of these steps provides additional configuration options that can be used to customize the whole process.
+        vpr <architecture> <circuit>
+
+**Traditional sequential flow (legacy)**
+    Packing, placement, routing, and analysis run as separate sequential stages.
+    This flow must be requested explicitly::
+
+        vpr <architecture> <circuit> --pack --place --route --analysis
+
+The individual stages are:
+
+- **Analytical Placement** — integrated packing and placement using primitive-level information to jointly optimize clustering and placement *(default flow)*
+- **Packing** — combines primitives into complex blocks *(traditional flow)*
+- **Placement** — places complex blocks within the FPGA grid *(traditional flow)*
+- **Routing** — determines interconnections between blocks
+- **Analysis** — analyzes the implementation
+
+The sections below describe each stage in detail.
+
+Analytical Placement
+--------------------
+
+The analytical placement flow is the default in VPR.
+It uses an integrated packing and placement algorithm that jointly optimizes clustering and placement using information from the primitive level.
+Because packing and placement are solved together, this flow can produce better quality results than running them as separate sequential stages.
+
+The analytical placement flow is invoked automatically when no stage flags are given::
+
+    vpr <architecture> <circuit>
+
+It replaces the separate :option:`--pack` and :option:`--place` stages; the :option:`--route`
+and :option:`--analysis` stages follow as normal.
+
+.. seealso:: See :ref:`analytical_placement_options` for configuration options specific to this flow.
 
 Packing
 -------
@@ -17,6 +49,12 @@ The packing algorithm tries to combine primitive netlist blocks (e.g. LUTs, FFs)
 The results from the packing process are written into a ``.net`` file.
 It contains a description of complex blocks with their inputs, outputs, used clocks and relations to other signals.
 It can be useful in analyzing how VPR packs primitives together.
+
+.. note::
+
+    Packing is a standalone stage used only in the traditional flow (:option:`--pack`).
+    The analytical placement flow performs packing and placement together and does not use
+    the :option:`--pack` or :option:`--place` flags.
 
 A detailed description of the ``.net`` file format can be found in the :ref:`vpr_pack_file` section.
 
