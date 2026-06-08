@@ -1,0 +1,281 @@
+#!/usr/bin/env python3
+#
+# Ensure a Qt6 >= the supported floor is available for VTR's GUI build, with
+# NO root.
+#
+# Qt 6.9.3 is the minimum required version: earlier Qt6 releases have internal
+# bugs in the QRhi subsystem that cause rendering failures on our targets.
+#
+# Strategy:
+#   1. If the SYSTEM already provides Qt6 >= VTR_QT_VERSION (e.g. installed
+#      via apt), do nothing — the system Qt is used.
+#   2. Otherwise install a private copy via `aqt` (aqtinstall) into a
+#      user-writable, repo-local prefix (no sudo).
+#
+# Invoked by the CI graphics jobs and the Dockerfile, after install_apt_packages.sh.
+#
+# Configuration (environment variables):
+#
+#   VTR_QT_PREFIX=/path/to/qt-install-root
+#       Install root. Default: "<repo>/qt6". aqt installs the SDK under
+#       "${VTR_QT_PREFIX}/<version>/gcc_64". The prefix (or its parent) must be
+#       writable by the current user — this script never uses sudo.
+#
+#   VTR_QT_VERSION=6.9.3
+#       Minimum/target Qt version. Default 6.9.3 (the supported floor). A system
+#       Qt at or above this is accepted as-is; otherwise this exact version is
+#       provisioned via aqt.
+#
+# This is a 1:1 port of ensure_qt6_sdk.sh and is kept behaviourally identical.
+#
+# Idempotent + self-healing: if a suitable system Qt is present it does nothing.
+# A pre-existing repo-local SDK is validated (key files present AND a tiny Qt
+# Widgets app builds, links, and runs against it); if that passes it does
+# nothing, otherwise the stale/partial SDK is removed and a clean copy is
+# installed and re-validated.
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import venv
+
+QT_VERSION = os.environ.get("VTR_QT_VERSION", "6.9.3")
+
+# Repo root is the parent of this script's dev/ directory.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(SCRIPT_DIR)
+
+QT_PREFIX = os.environ.get("VTR_QT_PREFIX", os.path.join(REPO_ROOT, "qt6"))
+QT_HOME = os.path.join(QT_PREFIX, QT_VERSION, "gcc_64")
+
+
+def have(cmd):
+    """True if an executable named cmd is on PATH (like `command -v`)."""
+    return shutil.which(cmd) is not None
+
+
+def version_tuple(ver):
+    """'6.9.3' -> (6, 9, 3); missing components default to 0."""
+    parts = (ver.split(".") + ["0", "0", "0"])[:3]
+    return tuple(int(p) for p in parts)
+
+
+def version_ge(a, b):
+    """True if version a >= version b."""
+    return version_tuple(a) >= version_tuple(b)
+
+
+def version_to_int(ver):
+    """Encode the required floor (e.g. 6.9.3 -> 60903)."""
+    major, minor, patch = version_tuple(ver)
+    return major * 10000 + minor * 100 + patch
+
+
+# Detect a system Qt6 version (X.Y.Z) that CMake's find_package(Qt6) would
+# actually use. We rely ONLY on the apt package qt6-base-dev, because it
+# installs the Qt6 CMake config into /usr — a default find_package() search
+# path. We deliberately do NOT consult `qmake6` or `pkg-config`: a qmake6 on
+# PATH (or a tools-only / non-default install) can report a Qt that
+# find_package() cannot find, which would make us wrongly skip aqt and leave
+# the build unable to locate Qt6.
+def detect_system_qt6():
+    if not have("dpkg-query"):
+        return ""
+    try:
+        out = subprocess.run(
+            ["dpkg-query", "-W", "-f=${Version}", "qt6-base-dev"],
+            capture_output=True,
+            text=True,
+        ).stdout
+    except OSError:
+        return ""
+    match = re.match(r"[0-9]+(\.[0-9]+){1,2}", out)
+    return match.group(0) if match else ""
+
+
+# Build + link + run a tiny Qt Widgets app against the given Qt home. Returns
+# True on success, False if it fails to build, link, or run. Skipped (treated as
+# OK) when no C++ toolchain is available, so a missing compiler does not trigger
+# a reinstall.
+def qt_smoke_test(qthome):
+    if not have("make"):
+        print("  smoke test skipped ('make' not found)")
+        return True
+
+    # Encode the required floor (e.g. 6.9.3 -> 60903) so the program can compare
+    # the *runtime* Qt version (qVersion()) against it and fail if it is older.
+    floor_int = version_to_int(QT_VERSION)
+
+    smoke_cpp = """\
+#include <QApplication>
+#include <QLabel>
+#include <QtGlobal>
+#include <cstdio>
+int main(int argc, char **argv) {
+    QApplication app(argc, argv);
+    QLabel label(QStringLiteral("ok"));
+    label.show();
+    // Verify the runtime Qt meets the build floor passed in via QT_FLOOR_INT.
+    int maj = 0, min = 0, pat = 0;
+    std::sscanf(qVersion(), "%d.%d.%d", &maj, &min, &pat);
+    const long runtime = maj * 10000L + min * 100L + pat;
+    if (runtime < QT_FLOOR_INT) {
+        std::fprintf(stderr, "runtime Qt %s is below required floor\\n", qVersion());
+        return 2;
+    }
+    return 0;
+}
+"""
+    smoke_pro = """\
+QT += core gui widgets
+CONFIG += console c++17
+CONFIG -= app_bundle
+TARGET = smoke
+SOURCES += smoke.cpp
+"""
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with open(os.path.join(tmp, "smoke.cpp"), "w") as f:
+            f.write(smoke_cpp)
+        with open(os.path.join(tmp, "smoke.pro"), "w") as f:
+            f.write(smoke_pro)
+
+        built = subprocess.run(
+            [os.path.join(qthome, "bin", "qmake"),
+             "DEFINES+=QT_FLOOR_INT={}".format(floor_int), "smoke.pro"],
+            cwd=tmp, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        ).returncode == 0
+        if built:
+            built = subprocess.run(
+                ["make"], cwd=tmp,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            ).returncode == 0
+        if not built:
+            print("  smoke test FAILED to build/link against {}".format(qthome))
+            return False
+
+        # Run headless: the offscreen platform plugin needs no display/X server.
+        env = dict(os.environ)
+        env["QT_QPA_PLATFORM"] = "offscreen"
+        ld = os.path.join(qthome, "lib")
+        if env.get("LD_LIBRARY_PATH"):
+            ld = ld + ":" + env["LD_LIBRARY_PATH"]
+        env["LD_LIBRARY_PATH"] = ld
+        rc = subprocess.run(
+            [os.path.join(tmp, "smoke")], env=env,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        ).returncode
+
+    if rc == 2:
+        print("  smoke test ran but runtime Qt is below the {} floor".format(QT_VERSION))
+        return False
+    if rc != 0:
+        print("  smoke test built but FAILED to run (exit {})".format(rc))
+        return False
+    return True
+
+
+# Validate the Qt SDK at qthome: required Core/Gui/Widgets/ShaderTools libs, the
+# Qt6 CMake config, and the offscreen plugin must exist, then the runtime smoke
+# test.
+def validate_qt_sdk(qthome):
+    required = [
+        "bin/qmake",
+        "lib/libQt6Core.so",
+        "lib/libQt6Gui.so",
+        "lib/libQt6Widgets.so",
+        "lib/libQt6ShaderTools.so",
+        "lib/cmake/Qt6/Qt6Config.cmake",
+        "plugins/platforms/libqoffscreen.so",
+    ]
+    for rel in required:
+        if not os.path.exists(os.path.join(qthome, rel)):
+            print("  missing {}".format(rel))
+            return False
+    return qt_smoke_test(qthome)
+
+
+def main():
+    # -----------------------------------------------------------------------
+    # Prefer a system Qt6 >= QT_VERSION: if one is installed, no aqt is needed.
+    # -----------------------------------------------------------------------
+    sys_qt_version = detect_system_qt6()
+    if sys_qt_version and version_ge(sys_qt_version, QT_VERSION):
+        print("System Qt6 {} satisfies >= {} — using system Qt, skipping aqt.".format(
+            sys_qt_version, QT_VERSION))
+        return 0
+    print("System Qt6 ({}) does not satisfy >= {}; provisioning via aqt...".format(
+        sys_qt_version or "none found", QT_VERSION))
+
+    # -----------------------------------------------------------------------
+    # Idempotency + self-heal: if a repo-local SDK is already present, validate
+    # it. If valid, we are done. If it fails validation, remove the
+    # stale/partial SDK (when non-empty) so a clean copy is installed below.
+    # -----------------------------------------------------------------------
+    qmake = os.path.join(QT_HOME, "bin", "qmake")
+    if os.path.isfile(qmake) and os.access(qmake, os.X_OK):
+        print("Found existing repo-local Qt at {}; validating...".format(QT_HOME))
+        if validate_qt_sdk(QT_HOME):
+            print("Repo-local Qt {} validated — nothing to do.".format(QT_VERSION))
+            return 0
+        print("Repo-local Qt at {} failed validation.".format(QT_HOME))
+        if os.path.isdir(QT_HOME) and os.listdir(QT_HOME):
+            print("Removing {} to install a clean Qt {}...".format(QT_HOME, QT_VERSION))
+            shutil.rmtree(QT_HOME, ignore_errors=True)
+
+    # -----------------------------------------------------------------------
+    # Root-free precondition: the install root must be user-writable.
+    # -----------------------------------------------------------------------
+    try:
+        os.makedirs(QT_PREFIX, exist_ok=True)
+    except OSError:
+        pass
+    if not os.access(QT_PREFIX, os.W_OK):
+        print("ERROR: {} is not writable by {}.".format(
+            QT_PREFIX, os.environ.get("USER", "the current user")), file=sys.stderr)
+        print("       This script does not use sudo. Choose a writable location via",
+              file=sys.stderr)
+        print("       VTR_QT_PREFIX=/some/writable/dir, or fix the permissions.",
+              file=sys.stderr)
+        return 1
+
+    # -----------------------------------------------------------------------
+    # aqtinstall in an isolated venv (kept beside the SDK, never on PATH so it
+    # cannot collide with the project venv). The "*/gcc_64" CMake glob ignores it.
+    # -----------------------------------------------------------------------
+    # aqtinstall is pinned to 3.3.0 for reproducible Qt installs across machines.
+    aqt_version = os.environ.get("VTR_AQT_VERSION", "3.3.0")
+    aqt_venv = os.path.join(QT_PREFIX, "aqt-venv")
+    aqt = os.path.join(aqt_venv, "bin", "aqt")
+    pip = os.path.join(aqt_venv, "bin", "pip")
+    if not (os.path.isfile(aqt) and os.access(aqt, os.X_OK)):
+        print("Installing aqtinstall=={} into {}...".format(aqt_version, aqt_venv))
+        venv.create(aqt_venv, with_pip=True)
+        subprocess.run([pip, "install", "--upgrade", "pip"], check=True)
+        subprocess.run([pip, "install", "aqtinstall=={}".format(aqt_version)], check=True)
+
+    # -----------------------------------------------------------------------
+    # Install Qt. qtshadertools is required by the QRhi shader pipeline.
+    # -----------------------------------------------------------------------
+    print("Installing Qt {} into {} via aqt (no sudo)...".format(QT_VERSION, QT_PREFIX))
+    subprocess.run(
+        [aqt, "install-qt", "linux", "desktop", QT_VERSION, "linux_gcc_64",
+         "--outputdir", QT_PREFIX, "--modules", "qtshadertools"],
+        check=True,
+    )
+
+    # Verify the freshly installed SDK the same way (build + link + run).
+    print("Validating freshly installed Qt {}...".format(QT_VERSION))
+    if not validate_qt_sdk(QT_HOME):
+        print("ERROR: Qt {} at {} failed validation after install.".format(
+            QT_VERSION, QT_HOME), file=sys.stderr)
+        return 1
+    print("Qt {} installed and validated at {}".format(QT_VERSION, QT_HOME))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
