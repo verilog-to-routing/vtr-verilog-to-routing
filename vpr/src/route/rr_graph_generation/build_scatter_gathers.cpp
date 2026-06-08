@@ -122,6 +122,15 @@ static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const 
 
 static constexpr int MAX_SG_FANIN_FANOUT_WARNINGS = 10;
 
+/// @brief Returns true if the switchblock at loc is configured as FULL or TURNS.
+static bool has_full_or_turns_switchblock(const DeviceGrid& grid, const t_physical_tile_loc& loc) {
+    t_physical_tile_type_ptr tile_type = grid.get_physical_type(loc);
+    int width_offset = grid.get_width_offset(loc);
+    int height_offset = grid.get_height_offset(loc);
+    e_sb_type sb_type = tile_type->switchblock_locations[width_offset][height_offset];
+    return sb_type == e_sb_type::FULL || sb_type == e_sb_type::TURNS;
+}
+
 //                             //
 // Static Function Definitions //
 //                             //
@@ -393,14 +402,13 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
-                // TSV hole tiles model power-delivery openings; no CHANZ connection there.
+                // Tiles with FULL or TURNS switchblocks block inter-layer SG links.
                 if (sg_link.z_offset != 0
-                    && (grid.get_physical_type(gather_loc)->name == "tsv_hole"
-                        || grid.get_physical_type(scatter_loc)->name == "tsv_hole")) {
+                    && (has_full_or_turns_switchblock(grid, gather_loc) || has_full_or_turns_switchblock(grid, scatter_loc))) {
                     VTR_LOGV_WARN(true,
                                   "Deliberately skipped inter-layer SG connections for pattern '%s' with SG link '%s' "
                                   "at gather (%i, %i, %i) and scatter (%i, %i, %i) "
-                                  "to model TSV holes for power delivery\n",
+                                  "due to FULL or TURNS switchblock at gather or scatter location\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   gather_loc.layer_num, gather_loc.x, gather_loc.y,
                                   scatter_loc.layer_num, scatter_loc.x, scatter_loc.y);
