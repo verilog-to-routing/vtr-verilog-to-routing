@@ -345,7 +345,8 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
         crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
                                                                                       *node_lookup,
                                                                                       *sb_manager,
-                                                                                      route_verbosity);
+                                                                                      route_verbosity,
+                                                                                      crr_opts.gsb_version);
         crr_connection_builder->initialize(grids.width(),
                                            grids.height(),
                                            crr_opts.annotated_rr_graph);
@@ -381,8 +382,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                     rr_gsb,
                                     *crr_connection_builder,
                                     delay_to_switch_id,
-                                    route_verbosity,
-                                    crr_opts.gsb_version);
+                                    route_verbosity);
             } else {
                 /* adapt the track_to_ipin_lookup for the GSB nodes */
                 t_track2pin_map track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);

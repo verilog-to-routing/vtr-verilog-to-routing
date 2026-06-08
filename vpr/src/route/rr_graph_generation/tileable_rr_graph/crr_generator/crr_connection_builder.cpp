@@ -56,11 +56,13 @@ create_pin_name_to_ptc_cache(const std::vector<t_physical_tile_type>& physical_t
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
                                            const NodeLookupManager& node_lookup,
                                            const SwitchBlockManager& sb_manager,
-                                           const int verbosity)
+                                           const int verbosity,
+                                           e_gsb_version gsb_version)
     : rr_graph_(rr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager)
     , verbosity_(verbosity)
+    , gsb_version_(gsb_version)
     , pin_name_to_ptc_cache_(create_pin_name_to_ptc_cache(g_vpr_ctx.device().physical_tile_types)) {}
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
@@ -73,8 +75,7 @@ void CRRConnectionBuilder::initialize(int fpga_grid_x,
 }
 
 std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(size_t x,
-                                                                             size_t y,
-                                                                             e_gsb_version gsb_version) const {
+                                                                             size_t y) const {
     // Find matching switch block pattern
     std::string pattern = sb_manager_.find_matching_pattern(x, y);
     if (pattern.empty()) {
@@ -102,8 +103,8 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
     const auto& row_nodes = node_lookup_.get_row_nodes(y);
 
     // Get vertical and horizontal nodes
-    auto source_nodes = get_tile_source_nodes(x, y, *df, col_nodes, row_nodes, gsb_version);
-    auto sink_nodes = get_tile_sink_nodes(x, y, *df, col_nodes, row_nodes, gsb_version);
+    auto source_nodes = get_tile_source_nodes(x, y, *df, col_nodes, row_nodes);
+    auto sink_nodes = get_tile_sink_nodes(x, y, *df, col_nodes, row_nodes);
 
     // Build connections by iterating over the switch block dataframe
     auto tile_connections = build_connections_from_dataframe(*df, source_nodes, sink_nodes, sw_block_file_name);
@@ -180,8 +181,8 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
     return connections;
 }
 
-std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y, e_gsb_version gsb_version) const {
-    std::vector<Connection> tile_connections = build_connections_for_location(tile_x, tile_y, gsb_version);
+std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y) const {
+    std::vector<Connection> tile_connections = build_connections_for_location(tile_x, tile_y);
 
     return tile_connections;
 }
@@ -190,8 +191,7 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
                                                                                  int y,
                                                                                  const DataFrame& df,
                                                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
-                                                                                 e_gsb_version gsb_version) const {
+                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
     std::unordered_map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -209,7 +209,7 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
             node_id = process_opin_ipin_node(info, x, y, col_nodes, row_nodes);
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
             node_id = process_channel_node(info, x, y, col_nodes, row_nodes, prev_seg_index,
-                                           prev_side, prev_seg_type, prev_ptc_number, true, gsb_version);
+                                           prev_side, prev_seg_type, prev_ptc_number, true);
         }
 
         if (node_id != RRNodeId::INVALID()) {
@@ -229,8 +229,7 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(i
                                                                                int y,
                                                                                const DataFrame& df,
                                                                                const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
-                                                                               e_gsb_version gsb_version) const {
+                                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
     std::unordered_map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -249,7 +248,7 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(i
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
             node_id = process_channel_node(info, x, y, col_nodes, row_nodes, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number,
-                                           false, gsb_version);
+                                           false);
         }
 
         if (node_id != RRNodeId::INVALID()) {
@@ -392,8 +391,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
                                                     e_sw_template_dir& prev_side,
                                                     std::string& prev_seg_type,
                                                     int& prev_ptc_number,
-                                                    bool is_vertical,
-                                                    e_gsb_version gsb_version) const {
+                                                    bool is_vertical) const {
     int seg_length = std::stoi(
         info.seg_type.substr(1)); // Extract number from "L1", "L4", etc.
 
@@ -413,7 +411,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     int x_low, x_high, y_low, y_high;
     int physical_length, truncated;
     calculate_segment_coordinates(info, x, y, x_low, x_high, y_low, y_high,
-                                  physical_length, truncated, is_vertical, gsb_version);
+                                  physical_length, truncated, is_vertical);
 
     // Calculate starting PTC point
     int seg_index = (info.seg_index - 1) * seg_length * 2;
@@ -464,8 +462,7 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                                                          int& y_high,
                                                          int& physical_length,
                                                          int& truncated,
-                                                         bool is_vertical,
-                                                         e_gsb_version gsb_version) const {
+                                                         bool is_vertical) const {
     int seg_length = std::stoi(info.seg_type.substr(1));
     int tap = info.tap;
 
@@ -473,7 +470,7 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     if (is_vertical) {
         switch (info.side) {
             case e_sw_template_dir::LEFT:
-                if (gsb_version == e_gsb_version::GSB_V2) {
+                if (gsb_version_ == e_gsb_version::GSB_V2) {
                     x_high = x + (seg_length - tap - 1);
                     x_low = x - tap;
                 } else {
@@ -498,7 +495,7 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
             case e_sw_template_dir::BOTTOM:
                 x_high = x;
                 x_low = x;
-                if (gsb_version == e_gsb_version::GSB_V2) {
+                if (gsb_version_ == e_gsb_version::GSB_V2) {
                     y_high = y + (seg_length - tap - 1);
                     y_low = y - tap;
                 } else {
@@ -522,7 +519,7 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                 y_low = y;
                 break;
             case e_sw_template_dir::RIGHT:
-                if (gsb_version == e_gsb_version::GSB_V2) {
+                if (gsb_version_ == e_gsb_version::GSB_V2) {
                     x_high = x + seg_length - 1;
                     x_low = x;
                 } else {
@@ -535,7 +532,7 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
             case e_sw_template_dir::TOP:
                 x_high = x;
                 x_low = x;
-                if (gsb_version == e_gsb_version::GSB_V2) {
+                if (gsb_version_ == e_gsb_version::GSB_V2) {
                     y_high = y + seg_length - 1;
                     y_low = y;
                 } else {

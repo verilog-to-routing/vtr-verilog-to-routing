@@ -28,7 +28,8 @@ class CRRConnectionBuilder {
     CRRConnectionBuilder(const RRGraphView& rr_graph,
                          const NodeLookupManager& node_lookup,
                          const SwitchBlockManager& sb_manager,
-                         const int verbosity);
+                         const int verbosity,
+                         e_gsb_version gsb_version);
 
     /**
      * @brief Initialize the connection builder
@@ -46,7 +47,7 @@ class CRRConnectionBuilder {
      * @param tile_y Tile y coordinate
      * @return Vector of connections
      */
-    std::vector<Connection> get_tile_connections(size_t tile_x, size_t tile_y, e_gsb_version gsb_version) const;
+    std::vector<Connection> get_tile_connections(size_t tile_x, size_t tile_y) const;
 
   private:
     // Info from config
@@ -59,11 +60,11 @@ class CRRConnectionBuilder {
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
     int verbosity_;
+    e_gsb_version gsb_version_;
 
     // Connection building methods
     std::vector<Connection> build_connections_for_location(size_t x,
-                                                           size_t y,
-                                                           e_gsb_version gsb_version) const;
+                                                           size_t y) const;
 
     /**
      * @brief Iterates over the switch block dataframe cells and creates connections
@@ -84,15 +85,13 @@ class CRRConnectionBuilder {
                                                                int y,
                                                                const DataFrame& df,
                                                                const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
-                                                               e_gsb_version gsb_version) const;
+                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
     std::unordered_map<size_t, RRNodeId> get_tile_sink_nodes(int x,
                                                              int y,
                                                              const DataFrame& df,
                                                              const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
-                                                             e_gsb_version gsb_version) const;
+                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
     // PTC sequence calculation
     std::string get_ptc_sequence(int seg_index,
@@ -158,8 +157,7 @@ class CRRConnectionBuilder {
                                   e_sw_template_dir& prev_side,
                                   std::string& prev_seg_type,
                                   int& prev_ptc_number,
-                                  bool is_vertical,
-                                  e_gsb_version gsb_version) const;
+                                  bool is_vertical) const;
 
     // Coordinate and direction calculations
     void calculate_segment_coordinates(const SegmentInfo& info,
@@ -171,8 +169,7 @@ class CRRConnectionBuilder {
                                        int& y_high,
                                        int& physical_length,
                                        int& truncated,
-                                       bool is_vertical,
-                                       e_gsb_version gsb_version) const;
+                                       bool is_vertical) const;
 
     Direction get_direction_for_side(e_sw_template_dir side, bool is_vertical) const;
     std::string get_segment_type_label(e_sw_template_dir side) const;
