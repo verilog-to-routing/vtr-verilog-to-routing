@@ -10,6 +10,7 @@
 
 #include "rr_graph_view.h"
 #include "physical_types.h"
+#include "vpr_types.h"
 
 #include "crr_common.h"
 #include "data_frame_processor.h"
@@ -27,7 +28,8 @@ class CRRConnectionBuilder {
     CRRConnectionBuilder(const RRGraphView& rr_graph,
                          const NodeLookupManager& node_lookup,
                          const SwitchBlockManager& sb_manager,
-                         const int verbosity);
+                         const int verbosity,
+                         e_gsb_version gsb_version);
 
     /**
      * @brief Initialize the connection builder
@@ -37,8 +39,6 @@ class CRRConnectionBuilder {
      */
     void initialize(int fpga_grid_x,
                     int fpga_grid_y,
-                    bool preserve_ipin_connections,
-                    bool preserve_opin_connections,
                     bool is_annotated);
 
     /**
@@ -53,8 +53,6 @@ class CRRConnectionBuilder {
     // Info from config
     int fpga_grid_x_;
     int fpga_grid_y_;
-    bool preserve_ipin_connections_;
-    bool preserve_opin_connections_;
     bool is_annotated_;
 
     // Dependencies
@@ -62,6 +60,7 @@ class CRRConnectionBuilder {
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
     int verbosity_;
+    e_gsb_version gsb_version_;
 
     // Connection building methods
     std::vector<Connection> build_connections_for_location(size_t x,
@@ -72,8 +71,8 @@ class CRRConnectionBuilder {
      *        between matched source and sink routing nodes.
      *
      * For each non-empty cell in the dataframe, looks up the corresponding source
-     * and sink nodes, applies IPIN/OPIN preservation filters, computes the connection
-     * delay, and emits a Connection with the appropriate direction and switch template ID.
+     * and sink nodes, computes the connection delay, and emits a Connection with the
+     * appropriate direction and switch template ID.
      */
     std::vector<Connection> build_connections_from_dataframe(
         const DataFrame& df,

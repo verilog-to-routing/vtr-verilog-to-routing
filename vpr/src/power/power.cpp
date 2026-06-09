@@ -1485,7 +1485,7 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 						"<%s name=\"%s\" P=\"%.4g\" P_parent=\"%.3g\" P_total=\"%.3g\" P_dyn=\"%.3g\"/>\n",
 						interconnect_type_name(
 								type->modes[mode_idx].interconnect[interc_idx].type),
-						type->modes[mode_idx].interconnect[interc_idx].name,
+						type->modes[mode_idx].interconnect[interc_idx].name.c_str(),
 						interc_power, interc_power / interc_total_power * 100,
 						interc_power / total_power * 100,
 						type->modes[mode_idx].interconnect[interc_idx].interconnect_power->power_usage.dynamic
@@ -1659,7 +1659,7 @@ static void power_print_breakdown_pb_rec(FILE* fp, t_pb_type* pb_type, int inden
                         // no power - skip
                     } else {
                         power_print_breakdown_entry(fp, child_indent + 1,
-                                                    POWER_BREAKDOWN_ENTRY_TYPE_INTERC, interc->name,
+                                                    POWER_BREAKDOWN_ENTRY_TYPE_INTERC, interc->name.c_str(),
                                                     power_sum_usage(&interc->interconnect_power->power_usage),
                                                     total_power,
                                                     power_perc_dynamic(&interc->interconnect_power->power_usage),
