@@ -39,7 +39,7 @@ static constexpr float FRACTION_TEXT_PADDING = 0.01;
 
 // The minimum permissible ratio of a drawing instance's area over screen area (both in the world coordinates),
 // below which the drawing instance should be decluttered (hidden). This value was tested and determined through experimentation.
-static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.0007;
+static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.0008;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -410,7 +410,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
     double visible_world_area = g->get_visible_world().area();
     // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
-    // becuase it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
+    // because it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
     if (abs_bbox_area / visible_world_area < MIN_SCREEN_AREA_COVERAGE) {
         return;
     }
