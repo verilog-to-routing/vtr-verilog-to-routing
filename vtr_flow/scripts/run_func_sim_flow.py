@@ -134,8 +134,9 @@ def _format_detail(start, vtr_output):
         else "took {}".format(format_elapsed_time(elapsed))
     )
 
+
 # this is unused, func sim only needs this if the post-pnr netlist calls module subtract
-# synthesis does not emit subtract instances and so remains unused. when synthesis does 
+# synthesis does not emit subtract instances and so remains unused. when synthesis does
 # emit subtract instances, turn on _ENABLE_SUBTRACT_PRIMITIVE_PATCH in run_func_sim_flow.py
 _ENABLE_SUBTRACT_PRIMITIVE_PATCH = False
 
