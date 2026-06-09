@@ -156,9 +156,9 @@ class SdcParseCallback : public sdcparse::Callback {
     void create_clock(const sdcparse::CreateClock& cmd) override {
         num_commands_++;
 
-        if (cmd.add) {
+        if (cmd.add && cmd.name.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-add option not supported for create_clock");
+                      "-add requires -name for create_clock");
         }
 
         if (cmd.is_virtual) {
@@ -588,9 +588,29 @@ class SdcParseCallback : public sdcparse::Callback {
     void set_clock_groups(const sdcparse::SetClockGroups& cmd) override {
         num_commands_++;
 
-        if (cmd.type != sdcparse::ClockGroupsType::ASYNCHRONOUS) {
+        // The three clock-group relationship types differ in how they affect SI/crosstalk
+        // analysis, but are identical from a pure timing (STA) standpoint; in all three
+        // cases, no setup/hold paths are analyzed between clocks in different groups:
+        //
+        //   -physically_exclusive: only one clock can exist in the design at a time
+        //       (e.g. a board-level mux selects among several clock sources). Neither
+        //       STA nor SI is performed between the groups.
+        //
+        //   -logically_exclusive: an internal mux selects among the clocks, so paths
+        //       between groups are false paths. Both clock trees are physically present
+        //       simultaneously, so SI/crosstalk between the groups is still possible.
+        //
+        //   -asynchronous: all clocks coexist and propagate through the design but have
+        //       no defined phase relationship. Paths between groups are not timed, but
+        //       SI/crosstalk is still possible.
+        //
+        // VPR does not model SI/crosstalk, so all three types are implemented identically:
+        // timing analysis is disabled between every pair of clocks in different groups.
+        if (cmd.type != sdcparse::ClockGroupsType::ASYNCHRONOUS
+            && cmd.type != sdcparse::ClockGroupsType::PHYSICALLY_EXCLUSIVE
+            && cmd.type != sdcparse::ClockGroupsType::LOGICALLY_EXCLUSIVE) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "set_clock_groups only supports -asynchronous groups");
+                      "set_clock_groups only supports -asynchronous, -physically_exclusive, and -logically_exclusive groups");
         }
 
         for (const auto& clock_group : cmd.clock_groups) {

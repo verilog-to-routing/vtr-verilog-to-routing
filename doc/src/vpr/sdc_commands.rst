@@ -15,14 +15,27 @@ Netlist clocks can be referred to using regular expressions, while the virtual c
 
 .. code-block:: tcl
 
-    #Create a netlist clock
+    # Create a netlist clock
     create_clock -period <float> <netlist clock list or regexes>
 
-    #Create a virtual clock
+    # Create a virtual clock
     create_clock -period <float> -name <virtual clock name>
 
-    #Create a netlist clock with custom waveform/duty-cycle
+    # Create a netlist clock with custom waveform/duty-cycle
     create_clock -period <float> -waveform {rising_edge falling_edge} <netlist clock list or regexes>
+
+    # Add a second clock on the same pin (e.g. physically-exclusive clocks driven by a board-level mux).
+    # Only one clock physically enters the chip at a time, so use -physically_exclusive.
+    create_clock -period <float> -name clk_a <pin>
+    create_clock -period <float> -name clk_b -add <pin>
+    set_clock_groups -physically_exclusive -group {clk_a} -group {clk_b}
+
+    # Add a second clock on the output of an internal clock mux inside the FPGA design.
+    # Both clock trees are physically present in the fabric simultaneously (the mux just
+    # selects which one propagates), so use -logically_exclusive.
+    create_clock -period <float> -name clk_fast <mux_out_pin>
+    create_clock -period <float> -name clk_slow -add <mux_out_pin>
+    set_clock_groups -logically_exclusive -group {clk_fast} -group {clk_slow}
 
 
 Omitting the waveform creates a clock with a rising edge at 0 and a falling edge at the half period, and is equivalent to using ``-waveform {0 <period/2>}``.
@@ -49,7 +62,23 @@ If a virtual clock is assigned using a create_clock command, it must be referenc
 
     .. sdc:option:: -name <string>
 
-        Creates a virtual clock with the specified name.
+        Specifies the clock name.
+        Required when defining a virtual clock or when using :sdc:option:`-add`.
+
+        **Required:** No
+
+    .. sdc:option:: -add
+
+        Adds a new clock definition on a source pin that already has a clock.
+        This is used to model multiple clocks that can appear on the same pin at different
+        times (e.g. a board-level mux selecting among several clock sources).
+
+        :sdc:option:`-name` is required when using ``-add`` to distinguish each clock on
+        the same source.
+
+        ``-add`` does **not** implicitly make the clocks asynchronous or exclusive.
+        Use :sdc:command:`set_clock_groups` to specify the relationship between clocks
+        that share a source pin.
 
         **Required:** No
 
@@ -227,7 +256,7 @@ set_clock_groups
 Specifies the relationship between groups of clocks.
 May be used with netlist or virtual clocks in any combination.
 
-Since VPR supports only the :sdc:option:`-exclusive` option, a :sdc:command:`set_clock_groups` constraint is equivalent to a :sdc:command:`set_false_path` constraint (see below) between each clock in one group and each clock in another.
+A :sdc:command:`set_clock_groups` constraint disables timing analysis between each clock in one group and each clock in another, making it equivalent to a bidirectional :sdc:command:`set_false_path` for each cross-group clock pair.
 
 For example, the following sets of commands are equivalent:
 
@@ -235,7 +264,7 @@ For example, the following sets of commands are equivalent:
 
     #Do not analyze any timing paths between clk and clk2, or between
     #clk and clk3
-    set_clock_groups -exclusive -group {clk} -group {clk2 clk3}
+    set_clock_groups -asynchronous -group {clk} -group {clk2 clk3}
 
 and
 
@@ -246,14 +275,43 @@ and
 
 .. sdc:command:: set_clock_groups
 
-    .. sdc:option:: -exclusive
+    .. sdc:option:: -asynchronous
 
-        Indicates that paths between clock groups should not be analyzed.
+        Indicates that the clocks in different groups have no defined phase relationship and
+        paths between them should not be analyzed.
+        Use this when clocks coexist in the design but are driven by independent sources.
 
-        **Required:** Yes
+        **Required:** Yes (one of ``-asynchronous``, ``-physically_exclusive``, or ``-logically_exclusive``)
 
-        .. note:: VPR currently only supports exclusive clock groups
+        .. note::
 
+            The older ``-exclusive`` option is a deprecated alias for ``-asynchronous``.
+            It is still accepted but a deprecation warning is produced; use ``-asynchronous`` instead.
+
+    .. sdc:option:: -physically_exclusive
+
+        Indicates that only one clock in each group can exist in the design at a time
+        (e.g. a board-level mux selects among several clock sources).
+        Paths between groups are not analyzed.
+
+        **Required:** Yes (one of ``-asynchronous``, ``-physically_exclusive``, or ``-logically_exclusive``)
+
+    .. sdc:option:: -logically_exclusive
+
+        Indicates that an internal mux selects among the clocks, so paths between groups are
+        false paths. Both clock trees are physically present simultaneously.
+        Paths between groups are not analyzed.
+
+        **Required:** Yes (one of ``-asynchronous``, ``-physically_exclusive``, or ``-logically_exclusive``)
+
+    .. note::
+
+        The three relationship types differ in whether signal-integrity (SI) / crosstalk
+        analysis applies between groups: ``-physically_exclusive`` implies no SI (clocks
+        never coexist), while ``-logically_exclusive`` and ``-asynchronous`` may have SI
+        because both clock trees are simultaneously present. VPR does not model SI, so all
+        three types are treated identically; timing analysis is disabled between every pair
+        of clocks in different groups.
 
     .. sdc:option:: -group {<clock list or regexes>}
 
@@ -667,7 +725,7 @@ Same as :ref:`sdc_example_A`, but with paths between clock domains cut.  Separat
 
     create_clock -period 2 clk
     create_clock -period 3 clk2
-    set_clock_groups -exclusive -group {clk} -group {clk2}
+    set_clock_groups -asynchronous -group {clk} -group {clk2}
 
 
 .. _sdc_example_C:
@@ -682,7 +740,7 @@ This is the same as the multi-clock default, but with custom period constraints.
     create_clock -period 2 clk
     create_clock -period 3 clk2
     create_clock -period 3.5 -name virtual_io_clock
-    set_clock_groups -exclusive -group {clk} -group {clk2}
+    set_clock_groups -asynchronous -group {clk} -group {clk2}
     set_input_delay -clock virtual_io_clock -max 0 [get_ports {*}]
     set_output_delay -clock virtual_io_clock -max 0 [get_ports {*}]
 
@@ -716,7 +774,7 @@ Sample using many supported SDC commands.  Inputs and outputs are constrained on
     create_clock -period 2 clk2
     create_clock -period 1 -name input_clk
     create_clock -period 0 -name output_clk
-    set_clock_groups -exclusive -group input_clk -group clk2
+    set_clock_groups -asynchronous -group input_clk -group clk2
     set_false_path -from [get_clocks {clk}] -to [get_clocks {output_clk}]
     set_max_delay 17 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
     set_multicycle_path -setup -from [get_clocks {clk}] -to [get_clocks {clk2}] 3
@@ -737,7 +795,7 @@ Sample using all remaining SDC commands.
     create_clock -period 0 -name output_clk
     set_clock_latency -source 1.0 [get_clocks{clk}] 
     #if neither early nor late is specified then the latency applies to early paths
-    set_clock_groups -exclusive -group input_clk -group clk2
+    set_clock_groups -asynchronous -group input_clk -group clk2
     set_false_path -from [get_clocks{clk}] -to [get_clocks{output_clk}]
     set_input_delay -clock input_clk -max 0.5 [get_ports{in1 in2 in3}]
     set_output_delay -clock output_clk -min 1 [get_ports{out*}]
