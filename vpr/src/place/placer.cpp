@@ -23,6 +23,7 @@
 #include "place_checkpoint.h"
 #include "tatum/echo_writer.hpp"
 #include "vtr_math.h"
+#include "vtr_circular_buffer.h"
 
 #ifndef NO_GRAPHICS
 #include "draw_global.h"
@@ -355,6 +356,11 @@ void Placer::place() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     bool analytic_place_enabled = false;
 
+    vtr::circular_buffer<double> interposer_net_cost_history;
+    if (interposer_cost_handler_) {
+        interposer_net_cost_history = vtr::circular_buffer<double>(10);
+    }
+
     if (!analytic_place_enabled && !quench_only_) {
         // Table header
         log_printer_.print_place_status_header();
@@ -378,6 +384,18 @@ void Placer::place() {
 
             // do a complete inner loop iteration
             annealer_->placement_inner_loop();
+
+            if (interposer_cost_handler_ && interposer_cost_handler_->has_active_cost_terms()) {
+                interposer_net_cost_history.push_back(costs_.interposer_cost);
+
+                double avg_interposer_net_cost = 0;
+                for (double int_cost : interposer_net_cost_history) {
+                    avg_interposer_net_cost += int_cost;
+                }
+                avg_interposer_net_cost /= interposer_net_cost_history.size();
+
+                
+            }
 
             log_printer_.print_place_status(temperature_timer.elapsed_sec());
 
