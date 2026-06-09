@@ -837,6 +837,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                                                       nodes_per_chan,
                                                                                                       switchpoint_rng,
                                                                                                       interdie_3d_links,
+                                                                                                      route_verbosity,
                                                                                                       device_model_warnings);
 
     // Check whether RR graph need to allocate new nodes for 3D connections.
