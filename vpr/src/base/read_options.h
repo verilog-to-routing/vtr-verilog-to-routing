@@ -108,6 +108,7 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> ap_partial_legalizer_target_density;
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<std::vector<std::string>> appack_unrelated_clustering_args;
+    argparse::ArgValue<float> appack_inter_die_gain_multiplier;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
@@ -304,11 +305,10 @@ struct t_options {
     /* CRR options */
     argparse::ArgValue<std::string> sb_maps;
     argparse::ArgValue<std::string> sb_templates;
-    argparse::ArgValue<bool> preserve_input_pin_connections;
-    argparse::ArgValue<bool> preserve_output_pin_connections;
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
     argparse::ArgValue<std::string> sb_count_dir;
+    argparse::ArgValue<e_gsb_version> gsb_version;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

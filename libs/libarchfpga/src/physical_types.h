@@ -587,8 +587,14 @@ struct t_physical_tile_type {
     // vector of the different types of sub tiles allowed for the physical tile.
     std::vector<t_sub_tile> sub_tiles;
 
-    /* Unordered map indexed by the logical block index.
-     * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
+    /* Maps a logical block's pins to their sub-tile-relative physical pins.
+     * tile_block_pin_directs_map[logical block index][sub tile index]
+     *     -> bimap<logical block pin, sub-tile-relative physical pin>
+     * The stored physical pin is relative to capacity instance 0 of the sub-tile.
+     * To get the absolute tile pin for a given capacity location, add the
+     * sub-tile base offset (pins of all preceding sub-tiles) and the
+     * capacity-instance offset (pins-per-instance * (capacity - capacity.low));
+     * see get_physical_pin_from_capacity_location(). */
     std::unordered_map<int, std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>>> tile_block_pin_directs_map;
 
     // TODO: Remove is_input_type / is_output_type as part of
@@ -1105,7 +1111,7 @@ struct t_pin_to_pin_annotation {
  */
 struct t_interconnect {
     e_interconnect type;
-    char* name;
+    std::string name;
 
     std::string input_string;
     std::string output_string;
@@ -1125,7 +1131,6 @@ struct t_interconnect {
 
     t_interconnect() {
         type = (e_interconnect)0;
-        name = nullptr;
         infer_annotations = false;
         line_num = 0;
         parent_mode_index = 0;

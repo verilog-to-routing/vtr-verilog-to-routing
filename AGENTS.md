@@ -32,6 +32,8 @@ make          # full build
 make -j8 vpr  # specific target with parallel jobs
 ```
 
+Do not rebuild after every individual edit. Batch related changes and build once you reach a natural checkpoint (e.g., a self-contained change is complete and ready for review).
+
 See `doc/agents/build.md` for debug builds, CMake options, and build speed tips.
 
 ## Python Environment

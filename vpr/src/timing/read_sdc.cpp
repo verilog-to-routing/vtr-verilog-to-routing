@@ -237,14 +237,34 @@ class SdcParseCallback : public sdcparse::Callback {
                       "-add option not supported for create_generated_clock");
         }
 
-        if (!cmd.edges.empty()) {
+        if (!cmd.edge_shift.empty() && cmd.edges.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-edges option not supported for create_generated_clock");
+                      "-edge_shift requires -edges for create_generated_clock");
         }
 
-        if (!cmd.edge_shift.empty()) {
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-edge_shift option not supported for create_generated_clock");
+        if (!cmd.edges.empty()) {
+            if (cmd.edges.size() != 3) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-edges must contain exactly 3 edge indices for create_generated_clock");
+            }
+            if (!cmd.edge_shift.empty() && cmd.edge_shift.size() != cmd.edges.size()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-edge_shift must contain the same number of values as -edges for create_generated_clock");
+            }
+            for (double edge : cmd.edges) {
+                if (edge != std::floor(edge)) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "-edges values must be integers for create_generated_clock");
+                }
+                if (edge < 1.0) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "-edges indices are 1-based; index must be >= 1 for create_generated_clock");
+                }
+            }
+            if (!(cmd.edges[0] < cmd.edges[1] && cmd.edges[1] < cmd.edges[2])) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-edges must be strictly increasing for create_generated_clock");
+            }
         }
 
         if (cmd.sources.empty()) {
@@ -252,9 +272,9 @@ class SdcParseCallback : public sdcparse::Callback {
                       "-source is required for create_generated_clock");
         }
 
-        if (cmd.divide_by == sdcparse::UNINITIALIZED_INT && cmd.multiply_by == sdcparse::UNINITIALIZED_INT) {
+        if (cmd.edges.empty() && cmd.divide_by == sdcparse::UNINITIALIZED_INT && cmd.multiply_by == sdcparse::UNINITIALIZED_INT) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "Either -divide_by or -multiply_by is required for create_generated_clock");
+                      "One of -divide_by, -multiply_by, or -edges is required for create_generated_clock");
         }
         if ((cmd.divide_by != sdcparse::UNINITIALIZED_INT && cmd.divide_by <= 0) || (cmd.multiply_by != sdcparse::UNINITIALIZED_INT && cmd.multiply_by <= 0)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -262,6 +282,10 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         if (cmd.invert) {
+            if (!cmd.edges.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-invert cannot be combined with -edges for create_generated_clock");
+            }
             if (cmd.divide_by == sdcparse::UNINITIALIZED_INT && cmd.multiply_by == sdcparse::UNINITIALIZED_INT) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                           "-invert can only be used for clock multiplication and division.");
@@ -324,33 +348,68 @@ class SdcParseCallback : public sdcparse::Callback {
         VTR_ASSERT(sdc_clocks_.contains(source_domain_id));
         const sdcparse::CreateClock& source_clock_cmd = sdc_clocks_[source_domain_id];
 
-        // Get the generated clock period.
+        // Get the generated clock period and rise/fall edges.
         double source_clock_period = source_clock_cmd.period;
-        double generated_clock_period = sdcparse::UNINITIALIZED_FLOAT;
-        if (cmd.divide_by != sdcparse::UNINITIALIZED_INT) {
-            // Dividing the frequency means multiplying the period.
-            generated_clock_period = source_clock_period * static_cast<double>(cmd.divide_by);
-        } else {
-            VTR_ASSERT(cmd.multiply_by != sdcparse::UNINITIALIZED_INT);
-            // Similarly, multiplying the frequency means dividing the period.
-            generated_clock_period = source_clock_period / static_cast<double>(cmd.multiply_by);
-        }
+        double generated_clock_period;
+        double generated_rise_edge;
+        double generated_fall_edge;
 
-        // Get the rise and fall edge for clock multipliers and dividers.
-        // The rise edge is stored as-is, even if it falls outside the generated clock's period.
-        // Normalization is handled at the point of use in calculate_launch_to_capture_edge_times().
-        double generated_rise_edge = source_clock_cmd.rise_edge;
-        // Per SDC spec, if no duty cycle is specified, the generated clock defaults to 50%.
-        double duty_cycle = 50.0;
-        // If a duty cycle was specified (only valid for multiplication, enforced above), use it.
-        if (!std::isnan(cmd.duty_cycle)) {
-            duty_cycle = cmd.duty_cycle;
-        }
-        double fall_offset = generated_clock_period * (duty_cycle / 100.0);
-        double generated_fall_edge = generated_rise_edge + fall_offset;
-        //  If the clock is inverted, we swap the rising and falling edges.
-        if (cmd.invert) {
-            std::swap(generated_rise_edge, generated_fall_edge);
+        if (!cmd.edges.empty()) {
+            // Edges mode: convert 1-based master clock edge indices to absolute times,
+            // optionally apply per-edge shifts, then derive the waveform.
+            //
+            // Edge index n maps to the master clock timeline:
+            //   odd  n → source_rise_edge + ((n-1)/2) * source_period  (rising edge)
+            //   even n → source_fall_edge + ((n-1)/2) * source_period  (falling edge)
+            auto edge_index_to_time = [&](double edge_idx) -> double {
+                int n = static_cast<int>(edge_idx);
+                int cycle = (n - 1) / 2;
+                return (n % 2 == 1 ? source_clock_cmd.rise_edge : source_clock_cmd.fall_edge)
+                       + cycle * source_clock_period;
+            };
+
+            double shift0 = cmd.edge_shift.empty() ? 0.0 : cmd.edge_shift[0];
+            double shift1 = cmd.edge_shift.empty() ? 0.0 : cmd.edge_shift[1];
+            double shift2 = cmd.edge_shift.empty() ? 0.0 : cmd.edge_shift[2];
+
+            double t0 = edge_index_to_time(cmd.edges[0]) + shift0;
+            double t1 = edge_index_to_time(cmd.edges[1]) + shift1;
+            double t2 = edge_index_to_time(cmd.edges[2]) + shift2;
+
+            generated_rise_edge = t0;
+            generated_fall_edge = t1;
+            generated_clock_period = t2 - t0;
+
+            if (generated_clock_period <= 0.0) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Generated clock period derived from -edges must be strictly positive");
+            }
+        } else {
+            if (cmd.divide_by != sdcparse::UNINITIALIZED_INT) {
+                // Dividing the frequency means multiplying the period.
+                generated_clock_period = source_clock_period * static_cast<double>(cmd.divide_by);
+            } else {
+                VTR_ASSERT(cmd.multiply_by != sdcparse::UNINITIALIZED_INT);
+                // Similarly, multiplying the frequency means dividing the period.
+                generated_clock_period = source_clock_period / static_cast<double>(cmd.multiply_by);
+            }
+
+            // Get the rise and fall edge for clock multipliers and dividers.
+            // The rise edge is stored as-is, even if it falls outside the generated clock's period.
+            // Normalization is handled at the point of use in calculate_launch_to_capture_edge_times().
+            generated_rise_edge = source_clock_cmd.rise_edge;
+            // Per SDC spec, if no duty cycle is specified, the generated clock defaults to 50%.
+            double duty_cycle = 50.0;
+            // If a duty cycle was specified (only valid for multiplication, enforced above), use it.
+            if (!std::isnan(cmd.duty_cycle)) {
+                duty_cycle = cmd.duty_cycle;
+            }
+            double fall_offset = generated_clock_period * (duty_cycle / 100.0);
+            generated_fall_edge = generated_rise_edge + fall_offset;
+            // If the clock is inverted, we swap the rising and falling edges.
+            if (cmd.invert) {
+                std::swap(generated_rise_edge, generated_fall_edge);
+            }
         }
 
         if (is_virtual) {
