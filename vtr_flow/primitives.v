@@ -220,6 +220,32 @@ module adder #(
    
 endmodule
    
+// this is unused, func sim only needs this if the post-pnr netlist calls module subtract
+// synthesis does not emit subtract instances and so remains unused. when synthesis does 
+// emit subtract instances, turn on _ENABLE_SUBTRACT_PRIMITIVE_PATCH in run_func_sim_flow.py
+module subtract #(
+    parameter WIDTH = 1
+) (
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    input cin,
+    output cout,
+    output [WIDTH-1:0] diff
+);
+
+    specify
+        (a*>diff)="";
+        (b*>diff)="";
+        (cin*>diff)="";
+        (a*>cout)="";
+        (b*>cout)="";
+        (cin=>cout)="";
+    endspecify
+
+    assign {cout, diff} = a - b - cin;
+
+endmodule
+
 //nxn multiplier module
 module multiply #(
     //The width of input signals

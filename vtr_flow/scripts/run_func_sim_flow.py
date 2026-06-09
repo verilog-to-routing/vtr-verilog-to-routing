@@ -134,6 +134,25 @@ def _format_detail(start, vtr_output):
         else "took {}".format(format_elapsed_time(elapsed))
     )
 
+# this is unused, func sim only needs this if the post-pnr netlist calls module subtract
+# synthesis does not emit subtract instances and so remains unused. when synthesis does 
+# emit subtract instances, turn on _ENABLE_SUBTRACT_PRIMITIVE_PATCH in run_func_sim_flow.py
+_ENABLE_SUBTRACT_PRIMITIVE_PATCH = False
+
+
+def _patch_subtract_primitive_for_sim(netlist_path, testbench_path):
+    """swap synthesized subtract subckts to primitives.v subtract once abc/vpr emit them."""
+    if not _ENABLE_SUBTRACT_PRIMITIVE_PATCH:
+        return
+
+    testbench_name = Path(testbench_path).name
+    if testbench_name not in ("tb_sub_4bit.sv", "tb_addsub_4bit.sv"):
+        return
+
+    # placeholder until abc/vpr emit a stable subtract subckt name to rewrite here
+    _ = netlist_path.read_text(encoding="utf-8")
+
+
 # TODO: this should be modified to be more centralized and generalized so that this
 # workaround is not needed. it will remove the need for a custom patch for every new primitive.
 def _prepare_netlist_for_sim(netlist_path, testbench_path):
