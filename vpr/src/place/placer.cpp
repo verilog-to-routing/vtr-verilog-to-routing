@@ -285,6 +285,7 @@ int Placer::check_placement_costs_() {
     int error = 0;
 
     constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
+    constexpr double MIN_EXPECTED_INT_COST = 1.e-6;
 
     auto [cost_terms_check, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
     if (interposer_cost_handler_.has_value()) {
@@ -316,7 +317,12 @@ int Placer::check_placement_costs_() {
         error++;
     }
 
-    if (!vtr::isclose(cost_terms_check.interposer_cost, costs_.interposer_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
+    // Similar logic to congestion cost. In case of a small circuit on a large device,
+    // it's possible to have zero interposer cost so we need to handle
+    // tiny numerical differences.
+    if (!((std::fabs(cost_terms_check.interposer_cost) < MIN_EXPECTED_INT_COST
+           && std::fabs(costs_.interposer_cost) < MIN_EXPECTED_INT_COST)
+          || vtr::isclose(cost_terms_check.interposer_cost, costs_.interposer_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
         VTR_LOG_ERROR(
             "interposer_cost_check: %g and interposer_cost: %g differ in check_place.\n",
             cost_terms_check.interposer_cost, costs_.interposer_cost);
