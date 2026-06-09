@@ -57,7 +57,10 @@ struct t_bottleneck_link {
  * @param nodes_per_chan Channel width data.
  * @param rng Random number generator used to shuffle wire candidates.
  * @param interdie_3d_links Output: matrix storing inter-die (3D) bottleneck links.
- * @param route_verbosity Controls verbose routing diagnostics.
+ * @param route_verbosity Controls verbosity of scatter-gather warnings.
+ * If route_verbosity > 1, we warn when a sg instantiation does not have any fan-in
+ * or fan-out candidates. Since this is expected on device edges, we don't warn
+ * by default.
  * @return Vector of non-3d bottleneck links.
  */
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
