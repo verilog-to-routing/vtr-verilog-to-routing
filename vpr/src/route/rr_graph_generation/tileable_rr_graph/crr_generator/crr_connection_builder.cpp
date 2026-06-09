@@ -56,12 +56,18 @@ create_pin_name_to_ptc_cache(const std::vector<t_physical_tile_type>& physical_t
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
                                            const NodeLookupManager& node_lookup,
                                            const SwitchBlockManager& sb_manager,
-                                           const int verbosity)
+                                           const int verbosity,
+                                           e_gsb_version gsb_version)
     : rr_graph_(rr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager)
     , verbosity_(verbosity)
-    , pin_name_to_ptc_cache_(create_pin_name_to_ptc_cache(g_vpr_ctx.device().physical_tile_types)) {}
+    , gsb_version_(gsb_version)
+    , pin_name_to_ptc_cache_(create_pin_name_to_ptc_cache(g_vpr_ctx.device().physical_tile_types)) {
+    if (gsb_version_ != e_gsb_version::GSB_V1 && gsb_version_ != e_gsb_version::GSB_V2) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized GSB version: %d\n", static_cast<int>(gsb_version_));
+    }
+}
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
                                       int fpga_grid_y,
@@ -464,12 +470,14 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     int seg_length = std::stoi(info.seg_type.substr(1));
     int tap = info.tap;
 
-    // Calculate initial coordinates based on side
+    // V1 uses 1-indexed segment coordinates; V2 uses 0-indexed.
+    int coord_offset = (gsb_version_ == e_gsb_version::GSB_V1) ? 1 : 0;
+
     if (is_vertical) {
         switch (info.side) {
             case e_sw_template_dir::LEFT:
-                x_high = x + (seg_length - tap);
-                x_low = x - (tap - 1);
+                x_high = x + seg_length - tap - 1 + coord_offset;
+                x_low = x - tap + coord_offset;
                 y_high = y;
                 y_low = y;
                 break;
@@ -488,8 +496,8 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
             case e_sw_template_dir::BOTTOM:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length - tap;
-                y_low = y - tap + 1;
+                y_high = y + seg_length - tap - 1 + coord_offset;
+                y_low = y - tap + coord_offset;
                 break;
             default:
                 x_high = x;
@@ -507,16 +515,16 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                 y_low = y;
                 break;
             case e_sw_template_dir::RIGHT:
-                x_high = x + seg_length;
-                x_low = x + 1;
+                x_high = x + seg_length - 1 + coord_offset;
+                x_low = x + coord_offset;
                 y_high = y;
                 y_low = y;
                 break;
             case e_sw_template_dir::TOP:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length;
-                y_low = y + 1;
+                y_high = y + seg_length - 1 + coord_offset;
+                y_low = y + coord_offset;
                 break;
             case e_sw_template_dir::BOTTOM:
                 x_high = x;
