@@ -35,7 +35,11 @@
 #include "draw_triangle.h"
 
 // Vertical padding (as a fraction of tile height) added to leave space for text inside internal logic blocks
-constexpr float FRACTION_TEXT_PADDING = 0.01;
+static constexpr float FRACTION_TEXT_PADDING = 0.01;
+
+// The minimum permissible ratio of a drawing instance's area over screen area (both in the world coordinates),
+// below which the drawing instance should be decluttered (hidden). This value was tested and determined through experimentation.
+static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.0007;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -400,15 +404,14 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         return;
     }
 
-    // The ratio between pixels and world units spanning the screen width.
-    double pixels_per_world_unit = get_pixels_per_world_unit(g);
-    // Get the number of pixels spanned by the width and height of the bounding box, respectively.
-    double abs_bbox_width_pixels = abs_bbox.width() * pixels_per_world_unit;
-    double abs_bbox_height_pixels = abs_bbox.height() * pixels_per_world_unit;
-    // If the area of the block's bounding box is less than 800 pixels, don't draw the block.
-    // This is a method of decluttering, and 800 was chosen as a threshold through experimentation.
-    // Note: since this function handles sub-blocks only, the drawing of top-level blocks will not be affected.
-    if (abs_bbox_width_pixels * abs_bbox_height_pixels < 800) {
+    // Calculate the bounding box's area in the world coordinates.
+    double abs_bbox_area = abs_bbox.width() * abs_bbox.height();
+    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
+    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
+    double visible_world_area = g->get_visible_world().area();
+    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
+    // becuase it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
+    if (abs_bbox_area / visible_world_area < MIN_SCREEN_AREA_COVERAGE) {
         return;
     }
 

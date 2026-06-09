@@ -34,8 +34,13 @@
 #define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 
 //The arrow head position for turning/straight-thru connections in a switch box
-constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
-constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
+static constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
+static constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
+
+// This value is used to help determine when decluttering should be on. Every channel node is drawn 1 pixel wide always and
+// placed parallel to each other. If we allocate exactly 1 pixel for each channel node, they will be blended into a solid color.
+// Therefore, 1.5 is a more relaxed bar, where the extra serves as spacing between the channel nodes.
+static constexpr double min_pixel_per_chan_node = 1.5;
 
 /* Draws the routing resources that exist in the FPGA, if the user wants
  * them drawn.
@@ -52,8 +57,6 @@ void draw_rr(ezgl::renderer* g) {
     // The ratio between pixels and world units spanning the screen width. Used to determine when decluttering should occur.
     double pixel_per_world_unit = get_pixels_per_world_unit(g);
     if (draw_state->enable_decluttering) {
-        // 1 pixel per channel node is the threshold at which the nodes are blended into a solid color. 1.5 is a more relaxed bar.
-        constexpr double min_pixel_per_chan_node = 1.5;
         // If pixel_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
         draw_state->declutter_rr = pixel_per_world_unit < min_pixel_per_chan_node;
     } else {
