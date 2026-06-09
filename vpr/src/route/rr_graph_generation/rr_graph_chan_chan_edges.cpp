@@ -516,7 +516,7 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
             }
 
             num_conn += short_same_ptc_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
-                                                           to_type, from_rr_node, rr_edges_to_create);
+                                                         to_type, from_rr_node, rr_edges_to_create);
             continue;
         }
 
