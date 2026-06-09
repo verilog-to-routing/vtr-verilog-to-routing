@@ -58,10 +58,10 @@
     <tile name="tsv_hole" height="2" width="2" area="0">
       <switchblock_locations pattern="custom">
         <!-- electrical shorts -->
-        <sb_loc type="straight" xoffset="0" yoffset="0" switch_override="electrical_short"/>
-        <sb_loc type="straight" xoffset="0" yoffset="1" switch_override="electrical_short"/>
-        <sb_loc type="straight" xoffset="1" yoffset="0" switch_override="electrical_short"/>
-        <sb_loc type="straight" xoffset="1" yoffset="1" switch_override="electrical_short"/>
+        <sb_loc type="straight_short" xoffset="0" yoffset="0"/>
+        <sb_loc type="straight_short" xoffset="0" yoffset="1"/>
+        <sb_loc type="straight_short" xoffset="1" yoffset="0"/>
+        <sb_loc type="straight_short" xoffset="1" yoffset="1"/>
       </switchblock_locations>
       <sub_tile name="tsv_hole">
         <equivalent_sites>
@@ -131,8 +131,6 @@
     <!--switch type for connecting two dices-->
     <switch type="mux" name="inter_die_ipin_cblock" R="1055.232544" Cout="0." Cin="0.000000e+00" Tdel="8.045000e-11" mux_trans_size="0.983352" buf_size="auto"/>
     <switch type="mux" name="segz_driver" R="450" Cin="0.60e-15" Cout="4.82e-15" Tdel="59e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
-    <!--switch type for electrically shorting two wires-->
-    <switch type="short" name="electrical_short" R="0" Cin="0" Tdel="0"/>
   </switchlist>
   <segmentlist>
     <segment name="L1" freq="1.000000" length="1" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
