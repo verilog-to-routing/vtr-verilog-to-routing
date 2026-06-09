@@ -201,7 +201,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                         //
                         //Note: We assume that this period constraint has been resolved by edge counting for this
                         //domain pair. Note that it does not include the effect of clock uncertainty, which is handled
-                        //when the caputre tag is converted into a data-arrival tag.
+                        //when the capture tag is converted into a data-arrival tag.
                         //
                         //Also note that this is the default clock constraint. If there is a different per capture node
                         //constraint this is also handled when setting the required time.
