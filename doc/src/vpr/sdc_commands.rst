@@ -91,6 +91,27 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
     # Create a multiplied clock with a 30% duty cycle
     create_generated_clock -source [get_ports clk] -multiply_by 3 -duty_cycle 30 [get_ports clk2]
 
+    # Create a divide-by-2 clock using explicit master clock edge indices.
+    # Edge 1 (1st rise) -> 0 ns, edge 3 (2nd rise) -> 6 ns, edge 5 (3rd rise) -> 12 ns.
+    # Generated clock: rise=0 ns, fall=6 ns, period=12 ns. Equivalent to -divide_by 2.
+    create_generated_clock -source [get_ports clk] -edges {1 3 5} [get_ports clk2]
+
+    # Create a clock with a non-standard 25% duty cycle using mixed edge indices.
+    # -edges {1 2 5} cannot be expressed with -divide_by or -multiply_by alone.
+    # Edge 1 (1st rise) -> 0 ns, edge 2 (1st fall) -> 3 ns, edge 5 (3rd rise) -> 12 ns.
+    # Generated clock: rise=0 ns, fall=3 ns, period=12 ns.
+    create_generated_clock -source [get_ports clk] -edges {1 2 5} [get_ports clk2]
+
+    # Apply per-edge time shifts to the -edges waveform.
+    # Shifts each edge time by 0.5 ns, phase-offsetting the generated clock.
+    # Generated clock: rise=0.5 ns, fall=6.5 ns, period=12 ns.
+    create_generated_clock -source [get_ports clk] -edges {1 3 5} -edge_shift {0.5 0.5 0.5} [get_ports clk2]
+
+    # Use an asymmetric -edge_shift to independently nudge the fall edge.
+    # Edge 1 -> 0 ns, edge 3 -> 6-1=5 ns, edge 5 -> 12 ns.
+    # Generated clock: rise=0 ns, fall=5 ns, period=12 ns (~41.7% duty cycle).
+    create_generated_clock -source [get_ports clk] -edges {1 3 5} -edge_shift {0.0 -1.0 0.0} [get_ports clk2]
+
 .. sdc:command:: create_generated_clock
 
     .. sdc:option:: -name <string>
@@ -111,7 +132,7 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         For example, ``-divide_by 2`` increases the period by 2x (dividing the frequency in half).
 
-        **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, or ``-edges``)
 
     .. sdc:option:: -multiply_by <integer>
 
@@ -119,7 +140,7 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         For example, ``-multiply_by 2`` decreases the period by 2x (doubling the frequency).
 
-        **Required:** No (Must use one of ``-divide_by`` or ``-multiply_by``)
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, or ``-edges``)
 
     .. sdc:option:: -duty_cycle <float>
 
@@ -140,6 +161,50 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
         **Required:** No
 
         .. note:: ``-invert`` can only be used together with ``-divide_by`` or ``-multiply_by``.
+
+    .. sdc:option:: -edges <edge_list>
+
+        Specifies the generated clock waveform by listing exactly three master clock edge indices.
+        This is an alternative to ``-divide_by`` and ``-multiply_by`` that can express arbitrary
+        periods and duty cycles, including those that cannot be described by a simple integer ratio.
+
+        Edge indices are 1-based positive integers counted from the start of the master clock
+        waveform: odd indices refer to rising edges and even indices refer to falling edges of the
+        master clock. For a master clock with rise time :math:`t_r` and fall time :math:`t_f`:
+
+        - Index 1: :math:`t_r` (1st rising edge)
+        - Index 2: :math:`t_f` (1st falling edge)
+        - Index 3: :math:`t_r + T` (2nd rising edge)
+        - Index 4: :math:`t_f + T` (2nd falling edge)
+        - Index :math:`n`: :math:`t_r + \lfloor(n-1)/2\rfloor \cdot T` if :math:`n` is odd, else :math:`t_f + \lfloor(n-1)/2\rfloor \cdot T`
+
+        The three indices define the generated clock as follows:
+
+        - ``edges[0]``: time of the generated clock's first rising edge
+        - ``edges[1]``: time of the generated clock's first falling edge
+        - ``edges[2]``: time of the generated clock's second rising edge (determines the period)
+
+        The generated clock period is ``time(edges[2]) - time(edges[0])``.
+
+        Indices must be strictly increasing positive integers.
+
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, or ``-edges``)
+
+        .. note:: ``-edges`` cannot be combined with ``-divide_by``, ``-multiply_by``, or ``-invert``.
+
+    .. sdc:option:: -edge_shift <shift_list>
+
+        Specifies a per-edge time offset (in the same units as the master clock period, typically
+        nanoseconds) applied to each of the three edges defined by ``-edges``. The list must
+        contain exactly three values corresponding positionally to the three edge indices.
+        Positive values shift an edge later in time; negative values shift it earlier.
+
+        This can be used to model phase offsets or asymmetric duty cycle adjustments that cannot
+        be expressed by ``-edges`` alone.
+
+        **Required:** No
+
+        .. note:: ``-edge_shift`` requires ``-edges`` to also be specified.
 
     .. sdc:option:: <pin_list>
 
