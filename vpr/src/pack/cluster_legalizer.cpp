@@ -57,8 +57,7 @@
  * Example (atom 'd' packing into a CLB), logged when verbosity > 3:
  * - expected (constraint):  `clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]`
  * - candidate (pb path):    `clb[0][default]/fle[3][n1_lut4]/ble4[0][default]/ff[0]`
- *   `[default]` is the implicit pb_mode at levels with no explicit architecture mode; constraints
- *   need not write `{default}` there—omit `{...}` to match any mode, including default.
+ *   `[default]` is the implicit pb_mode at levels with no explicit architecture mode;  User constraints need not write `{default}`; they can omit `{...}` to match any mode, including default.
  *   -> fails because fle index 3 != constrained fle index 0 (same for fle[2], fle[1]).
  * - a passing candidate must match every specified index/mode, e.g. fle[0] and {n1_lut4}.
  *
