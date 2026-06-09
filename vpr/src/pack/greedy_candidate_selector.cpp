@@ -1454,11 +1454,11 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         //       since they should be closer.
         if (node_loc.x >= 1)
             search_queue.push({node_loc.x - 1, node_loc.y, node_loc.layer_num});
-        if (node_loc.x <= (int)appack_unrelated_clustering_data_.dim_size(0) - 2)
+        if (node_loc.x <= (int)flat_grid_width - 2)
             search_queue.push({node_loc.x + 1, node_loc.y, node_loc.layer_num});
         if (node_loc.y >= 1)
             search_queue.push({node_loc.x, node_loc.y - 1, node_loc.layer_num});
-        if (node_loc.y <= (int)appack_unrelated_clustering_data_.dim_size(1) - 2)
+        if (node_loc.y <= (int)flat_grid_height - 2)
             search_queue.push({node_loc.x, node_loc.y + 1, node_loc.layer_num});
 
         // Pop the position off the queue.
