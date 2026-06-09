@@ -49,6 +49,18 @@ void draw_rr(ezgl::renderer* g) {
         return;
     }
 
+    // The ratio between pixels and world units spanning the screen width. Used to determine when decluttering should occur.
+    double pixel_per_world_unit = get_pixels_per_world_unit(g);
+    if (draw_state->enable_decluttering) {
+        // 1 pixel per channel node is the threshold at which the nodes are blended into a solid color. 1.5 is a more relaxed bar.
+        constexpr double min_pixel_per_chan_node = 1.5;
+        // If pixel_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
+        draw_state->declutter_rr = pixel_per_world_unit < min_pixel_per_chan_node;
+    } else {
+        // Currently this branch will never be called, since enable_decluttering hasn't been wired to a UI button.
+        draw_state->declutter_rr = false;
+    }
+
     g->set_line_dash(ezgl::line_dash::none);
 
     // Node colors by types
