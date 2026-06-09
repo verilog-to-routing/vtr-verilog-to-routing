@@ -239,6 +239,37 @@ module multiply #(
 
 endmodule // mult
 
+// signed variant for dsp blocks exercised by mult_8x8_signed func_sim
+module multiply_signed #(
+    parameter WIDTH = 1
+) (
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    output [2*WIDTH-1:0] out
+);
+
+    specify
+        (a *> out) = "";
+        (b *> out) = "";
+    endspecify
+
+    // vpr maps 8x8 operands into width-9 dsp ports with an unused msb (often 1'bx)
+    wire signed [WIDTH-1:0] aExt;
+    wire signed [WIDTH-1:0] bExt;
+    generate
+        if (WIDTH > 2) begin : genSignExt
+            assign aExt = {{1{a[WIDTH - 2]}}, a[WIDTH - 2:0]};
+            assign bExt = {{1{b[WIDTH - 2]}}, b[WIDTH - 2:0]};
+        end else begin : genNoExt
+            assign aExt = a;
+            assign bExt = b;
+        end
+    endgenerate
+
+    assign out = $signed(aExt) * $signed(bExt);
+
+endmodule
+
 //single_port_ram module
 (* keep_hierarchy *)
 module single_port_ram #(

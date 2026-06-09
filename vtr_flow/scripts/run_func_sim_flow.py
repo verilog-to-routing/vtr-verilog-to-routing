@@ -134,6 +134,24 @@ def _format_detail(start, vtr_output):
         else "took {}".format(format_elapsed_time(elapsed))
     )
 
+# TODO: this should be modified to be more centralized and generalized so that this
+# workaround is not needed. it will remove the need for a custom patch for every new primitive.
+def _prepare_netlist_for_sim(netlist_path, testbench_path):
+    """
+    patch post-pnr netlist before verilator when a testcase needs non-default
+    primitive behaviour (e.g. signed dsp multiply).
+    """
+    _patch_subtract_primitive_for_sim(netlist_path, testbench_path)
+
+    testbench_name = Path(testbench_path).name
+    if testbench_name != "tb_mult_8x8_signed.sv":
+        return
+
+    text = netlist_path.read_text(encoding="utf-8")
+    patched = text.replace("multiply #(", "multiply_signed #(")
+    if patched != text:
+        netlist_path.write_text(patched, encoding="utf-8")
+
 
 def _simulate(temp_dir, testbench, num_threads, label):
     """Locate the post-synthesis netlist, compile with Verilator, and run the simulation.
@@ -160,6 +178,7 @@ def _simulate(temp_dir, testbench, num_threads, label):
         )
         return 1, None
     netlist = matches[0]
+    _prepare_netlist_for_sim(netlist, testbench)
 
     primitives = paths.root_path / "vtr_flow" / "primitives.v"
     sim_build = Path(temp_dir) / "sim_build"

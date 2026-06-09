@@ -20,4 +20,4 @@ parse_file=func_sim.txt
 qor_parse_file=qor_func_sim.txt
 pass_requirements_file=pass_requirements_func_sim.txt
 
-script_params=--route_chan_width 40
+script_params=--route_chan_width 60
