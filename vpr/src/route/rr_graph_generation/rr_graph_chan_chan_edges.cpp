@@ -887,15 +887,13 @@ static int get_unidir_short_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     }
     VTR_ASSERT(iswitch != UNDEFINED);
 
-    rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch, false);
-    int count = 1;
-
     if (device_ctx.arch_switch_inf[iswitch].directionality() == BI_DIRECTIONAL) {
-        rr_edges_to_create.emplace_back(to_node, from_rr_node, iswitch, false);
-        ++count;
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Bidirectional switches are not supported for short switch block connections");
     }
 
-    return count;
+    rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch, false);
+    return 1;
 }
 
 static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
