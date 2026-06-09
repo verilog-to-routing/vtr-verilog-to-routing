@@ -1,0 +1,23 @@
+##############################################################################
+# functional simulation: registered 8x8 signed multiply
+#
+# goal here is to test signed DSP and multiplication hard blocks
+##############################################################################
+
+circuits_dir=benchmarks/func_sim/mult_8x8_signed
+archs_dir=arch
+
+circuit_list_add=mult_8x8_signed.v
+
+arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
+arch_list_add=COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
+
+testbench_dir=benchmarks/func_sim/mult_8x8_signed
+testbench_file=tb_mult_8x8_signed.sv
+
+flow_script=run_func_sim_flow.py
+parse_file=func_sim.txt
+qor_parse_file=qor_func_sim.txt
+pass_requirements_file=pass_requirements_func_sim.txt
+
+script_params=--route_chan_width 40
