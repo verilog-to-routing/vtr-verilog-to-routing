@@ -154,7 +154,7 @@ def _patch_subtract_primitive_for_sim(netlist_path, testbench_path):
     _ = netlist_path.read_text(encoding="utf-8")
 
 
-# TODO: this should be modified to be more centralized and generalized so that this
+# this should be modified to be more centralized and generalized so that this
 # workaround is not needed. it will remove the need for a custom patch for every new primitive.
 def _prepare_netlist_for_sim(netlist_path, testbench_path):
     """
