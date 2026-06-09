@@ -137,14 +137,15 @@ static std::pair<int, bool> should_create_switchblock(int layer_num,
                                                       e_rr_type from_chan_type,
                                                       e_rr_type to_chan_type);
 
-static int get_unidir_short_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
-                                              int layer,
-                                              int track,
-                                              int to_chan,
-                                              int to_seg,
-                                              e_rr_type to_type,
-                                              RRNodeId from_rr_node,
-                                              t_rr_edge_info_set& rr_edges_to_create);
+/// @brief Adds a delayless connection from from_rr_node to the same-ptc track in the destination channel segment.
+static int short_same_ptc_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                            int layer,
+                                            int track,
+                                            int to_chan,
+                                            int to_seg,
+                                            e_rr_type to_type,
+                                            RRNodeId from_rr_node,
+                                            t_rr_edge_info_set& rr_edges_to_create);
 
 static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         int layer,
@@ -514,7 +515,7 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
 
-            num_conn += get_unidir_short_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
+            num_conn += short_same_ptc_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
                                                            to_type, from_rr_node, rr_edges_to_create);
             continue;
         }
@@ -858,14 +859,14 @@ static std::pair<int, bool> should_create_switchblock(int layer_num, int from_ch
     return {NO_SWITCH, false};
 }
 
-static int get_unidir_short_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
-                                              int layer,
-                                              int track,
-                                              int to_chan,
-                                              int to_seg,
-                                              e_rr_type to_type,
-                                              RRNodeId from_rr_node,
-                                              t_rr_edge_info_set& rr_edges_to_create) {
+static int short_same_ptc_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                            int layer,
+                                            int track,
+                                            int to_chan,
+                                            int to_seg,
+                                            e_rr_type to_type,
+                                            RRNodeId from_rr_node,
+                                            t_rr_edge_info_set& rr_edges_to_create) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     int to_x = (e_rr_type::CHANX == to_type ? to_seg : to_chan);

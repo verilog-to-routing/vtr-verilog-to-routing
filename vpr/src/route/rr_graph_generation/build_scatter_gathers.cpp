@@ -120,6 +120,7 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
  */
 static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link);
 
+/// @brief Returns true if switchblock_locations at loc is a short SB type.
 static bool is_short_switchblock_at_loc(const DeviceGrid& grid, const t_physical_tile_loc& loc);
 
 static constexpr int MAX_SG_FANIN_FANOUT_WARNINGS = 10;
