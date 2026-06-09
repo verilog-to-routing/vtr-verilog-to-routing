@@ -57,6 +57,8 @@ class InterposerCostHandler {
     /// @brief Selects the formula used for the interposer crossing cost term.
     void change_net_cost_type(e_interposer_net_cost_type new_type);
 
+    e_interposer_net_cost_type get_net_cost_type() {return cost_type_;}
+
   private:
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
     double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const;
