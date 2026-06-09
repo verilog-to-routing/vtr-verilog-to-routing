@@ -11,7 +11,7 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 # Install and cleanup is done in one command to minimize the build cache size
 RUN apt-get update -qq \
 # Extract package names from install_apt_packages.sh
-    && sed '/sudo/d' install_apt_packages.sh | sed '/#/d' | sed '/packages_to_install/d' | sed '/)/d' | sed '/if\s.*then$/d' | sed '/else$/d' | sed '/fi$/d' | sed '/echo\s/d' | sed 's/ \\//g' | sed '/^$/d' | sed '/^[[:space:]]*$/d' | sed 's/\s//g' \
+    && sed '/sudo/d' install_apt_packages.sh | sed '/#/d' | sed '/packages_to_install/d' | sed '/)/d' | sed '/if\s.*then$/d' | sed '/else$/d' | sed '/fi$/d' | sed '/echo\s/d' | sed '/install_dev/d' | sed '/for /d' | sed '/^done$/d' | sed 's/ \\//g' | sed '/^$/d' | sed '/^[[:space:]]*$/d' | sed 's/\s//g' \
 # Install packages
     | xargs apt-get -y install --no-install-recommends \
 # Additional packages not listed in install_apt_packages.sh
@@ -20,6 +20,7 @@ RUN apt-get update -qq \
     ninja-build \
     python3-pip \
     time \
+    verilator \
 # Install python packages
     && pip install -r requirements.txt \
 # Cleanup

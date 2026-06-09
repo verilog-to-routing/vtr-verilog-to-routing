@@ -1,6 +1,13 @@
-# This is the same model structure as multiclock.blif; however,
-# the second clock is a generated clock which is a basic clock
-# dividor.
+# Canonical single-clock circuit with an internal clock divider.
+# clk drives flip-flops directly; div_clk (the Q output of a latch clocked by
+# clk) is a divided-by-2 clock used by a second set of flip-flops.
+#
+# This file is the shared circuit for all tests that need this topology.
+# Several other .blif files in this directory are symlinks to this file —
+# each paired with a different .sdc file to test a distinct SDC constraint.
+# The .model name below does not need to match the symlink name; VPR uses
+# the port and pin names (clk, div_clk) for constraint matching, not the
+# model name.
 
 .model clock_divider
 .inputs in1 in2 in3 clk
