@@ -408,10 +408,10 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     double abs_bbox_area = abs_bbox.width() * abs_bbox.height();
     // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
     // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
-    double visible_world_area = g->get_visible_world().area();
+    double screen_area = g->get_visible_world().area();
     // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
     // because it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
-    if (abs_bbox_area / visible_world_area < MIN_SCREEN_AREA_COVERAGE) {
+    if (abs_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
         return;
     }
 
