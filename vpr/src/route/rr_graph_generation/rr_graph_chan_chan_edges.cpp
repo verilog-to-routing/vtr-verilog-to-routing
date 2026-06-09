@@ -143,8 +143,6 @@ static int get_unidir_short_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                               int to_chan,
                                               int to_seg,
                                               e_rr_type to_type,
-                                              int switch_override,
-                                              const t_chan_seg_details* seg_details,
                                               RRNodeId from_rr_node,
                                               t_rr_edge_info_set& rr_edges_to_create);
 
@@ -517,8 +515,7 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
             }
 
             num_conn += get_unidir_short_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
-                                                           to_type, switch_override, to_seg_details,
-                                                           from_rr_node, rr_edges_to_create);
+                                                           to_type, from_rr_node, rr_edges_to_create);
             continue;
         }
 
@@ -867,8 +864,6 @@ static int get_unidir_short_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                               int to_chan,
                                               int to_seg,
                                               e_rr_type to_type,
-                                              int switch_override,
-                                              const t_chan_seg_details* seg_details,
                                               RRNodeId from_rr_node,
                                               t_rr_edge_info_set& rr_edges_to_create) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -881,16 +876,8 @@ static int get_unidir_short_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         return 0;
     }
 
-    int iswitch = seg_details[track].arch_wire_switch();
-    if (should_apply_switch_override(switch_override)) {
-        iswitch = switch_override;
-    }
+    int iswitch = device_ctx.delayless_switch_idx;
     VTR_ASSERT(iswitch != UNDEFINED);
-
-    if (device_ctx.arch_switch_inf[iswitch].directionality() == BI_DIRECTIONAL) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Bidirectional switches are not supported for short switch block connections");
-    }
 
     rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch, false);
     return 1;
