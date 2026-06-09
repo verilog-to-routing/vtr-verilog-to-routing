@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vpr_types.h"
+
 #include "vtr_geometry.h"
 
 #include "rr_chan.h"
@@ -44,9 +46,10 @@
  * num_conf_bits: number of configuration bits this switch block requires
  *******************************************************************/
 class RRGSB {
-  public:    /* Constructors */
-    RRGSB(); /* Default constructor */
-  public:    /* Accessors */
+  public: /* Constructors */
+    explicit RRGSB(e_gsb_version gsb_version);
+
+  public: /* Accessors */
     /* Get the number of sides of this SB */
     size_t get_num_sides() const;
 
@@ -225,4 +228,7 @@ class RRGSB {
 
     /* MUX Nodes Data */
     std::vector<RRNodeId> mux_node_;
+
+    /* gsb version */
+    e_gsb_version gsb_version_;
 };

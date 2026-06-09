@@ -777,6 +777,7 @@ static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
     crr_opts.sb_count_dir = Options.sb_count_dir;
+    crr_opts.gsb_version = Options.gsb_version;
 }
 
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
