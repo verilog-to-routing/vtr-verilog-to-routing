@@ -24,10 +24,33 @@ If you cloned the repository, you will need to set up the git submodules (if you
     > git submodule init
     > git submodule update
 
-VTR requires several system and Python packages to build and run the flow. Ubuntu users can install the required system packages using the provided script or the command below. This setup works on Ubuntu 18.04, 20.04, 22.04, and 24.04, but note that some packages (such as ``clang-format-18``) are only available by default on Ubuntu 24.04. On older versions, this package will not be installed unless you manually add the appropriate LLVM APT repository.
+VTR requires several system and Python packages to build and run the flow.
+On Ubuntu and Debian systems, install the packages required by VTR using the command below. 
 
-To install ``clang-format-18`` on older Ubuntu versions (e.g., 20.04 or 22.04), you must add the LLVM repository manually. Note that this tool is only required if you want to run ``make format`` to automatically fix formatting issues in the code. It is not necessary for building or running VPR.
+.. note:: Developers planning to modify VTR should add the --dev option so extra packages for code formatting and functional verification are added.
 
+.. code-block:: bash
+
+    > ./install_apt_packages.sh     # add --dev if you plan to modify VTR code
+
+Fedora and RHEL users instead use the command below to install the required system packages.
+
+.. code-block:: bash
+
+    > ./install_dnf_packages.sh     # add --dev if you plan to modify VTR code
+
+Next install the required Python packages (optionally within a new Python virtual environment):
+
+.. code-block:: bash
+
+    > make env                          # optional: install python virtual environment
+    > source .venv/bin/activate         # optional: activate python virtual environment
+    > pip install -r requirements.txt   # install python packages (in virtual environment if prior commands run, system wide otherwise)
+
+.. note:: Developers who wish to modify VTR and are working on older Ubuntu versions (e.g. 20.04 or 22.04) must add  ``clang-format-18`` manually using the commands below. Note that this tool is only required if you want to run ``make format`` to automatically fix formatting issues in the code; it is not necessary for building or running VPR. 
+
+First add the LLVM APT repository to your system:
+ 
 .. code-block:: bash
 
    sudo apt install wget gnupg lsb-release
@@ -40,24 +63,6 @@ After that, you can install ``clang-format-18`` using:
 .. code-block:: bash
 
    sudo apt install clang-format-18
-
-.. code-block:: bash
-
-    > ./install_apt_packages.sh
-
-Fedora and RHEL users may use the following command to install the required system packages.
-
-.. code-block:: bash
-
-    > ./install_dnf_packages.sh
-
-Then, to install the required Python packages (optionally within a new Python virtual environment):
-
-.. code-block:: bash
-
-    > make env                          # optional: install python virtual environment
-    > source .venv/bin/activate         # optional: activate python virtual environment
-    > pip install -r requirements.txt   # install python packages (in virtual environment if prior commands run, system wide otherwise)
 
 
 Build VTR
