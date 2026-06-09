@@ -280,6 +280,9 @@ struct DeviceContext : public Context {
 
     bool rr_graph_is_flat = false;
 
+    /// @brief Version of the Generic Switch Block used to build the tileable RR graph.
+    e_gsb_version gsb_version;
+
     // Clock Networks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
