@@ -1,6 +1,6 @@
 // 4-bit subtractor with borrow in and borrow out
 //  - computes {cout, s3, s2, s1, s0} = a - b - cin
-//  - single-bit ports so post-implementation netlist port names match the testbench
+//  - uses a single-step ripple for subtraction
 module top (
     input  cin,
     input  a0, a1, a2, a3,
@@ -8,12 +8,17 @@ module top (
     output s0, s1, s2, s3,
     output cout
 );
-    wire [3:0] a;
-    wire [3:0] b;
-    wire [4:0] diff;
+    wire borrow0, borrow1, borrow2;
 
-    assign a = {a3, a2, a1, a0};
-    assign b = {b3, b2, b1, b0};
-    assign diff = {1'b0, a} - {1'b0, b} - cin;
-    assign {cout, s3, s2, s1, s0} = diff;
+    assign s0 = a0 ^ b0 ^ cin;
+    assign borrow0 = (~a0 & b0) | (~a0 & cin) | (b0 & cin);
+
+    assign s1 = a1 ^ b1 ^ borrow0;
+    assign borrow1 = (~a1 & b1) | (~a1 & borrow0) | (b1 & borrow0);
+
+    assign s2 = a2 ^ b2 ^ borrow1;
+    assign borrow2 = (~a2 & b2) | (~a2 & borrow1) | (b2 & borrow1);
+
+    assign s3 = a3 ^ b3 ^ borrow2;
+    assign cout = (~a3 & b3) | (~a3 & borrow2) | (b3 & borrow2);
 endmodule
