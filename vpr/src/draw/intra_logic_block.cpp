@@ -400,6 +400,18 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         return;
     }
 
+    // The ratio between pixels and world units spanning the screen width.
+    double pixels_per_world_unit = get_pixels_per_world_unit(g);
+    // Get the number of pixels spanned by the width and height of the bounding box, respectively.
+    double abs_bbox_width_pixels = abs_bbox.width() * pixels_per_world_unit;
+    double abs_bbox_height_pixels = abs_bbox.height() * pixels_per_world_unit;
+    // If the area of the block's bounding box is less than 800 pixels, don't draw the block.
+    // This is a method of decluttering, and 800 was chosen as a threshold through experimentation.
+    // Note: since this function handles sub-blocks only, the drawing of top-level blocks will not be affected.
+    if (abs_bbox_width_pixels * abs_bbox_height_pixels < 800) {
+        return;
+    }
+
     // first draw box
 
     if (pb->name != nullptr) {
@@ -468,12 +480,14 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         // else (ie. has children, and isn't at the lowest displayed level)
         // just label its type, and put it up at the top so we can see it
         if (draw_state->draw_block_text) {
+            // draw_coords->get_tile_height() * FRACTION_TEXT_PADDING represents the vertical padding from the block's ceiling.
+            // We double this value when calculating the height of the text box, because the same amount of padding is needed to reach the block's floor from the text.
             g->draw_text(
                 ezgl::point2d(abs_bbox.center_x(),
                               abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
                 pb_display_text.c_str(),
                 abs_bbox.width(),
-                abs_bbox.height());
+                draw_coords->get_tile_height() * FRACTION_TEXT_PADDING * 2);
         }
     }
 

@@ -93,6 +93,13 @@ const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;
 
 const float WIRE_DRAWING_WIDTH = 0.5;
 
+/**
+ * @brief Calculate the ratio between pixels and world units spanning the screen width.
+ * 
+ * @return Returns the ratio described above, which will be used to determine when decluttering should occur.
+ */
+double get_pixels_per_world_unit(ezgl::renderer* g);
+
 /* Find the edge between two rr nodes */
 t_edge_size find_edge(RRNodeId prev_inode, RRNodeId inode);
 
