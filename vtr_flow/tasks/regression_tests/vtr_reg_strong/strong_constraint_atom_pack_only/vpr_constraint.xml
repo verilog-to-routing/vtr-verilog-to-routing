@@ -1,0 +1,10 @@
+<vpr_constraints tool_name="vpr">
+   <partition_list>
+       <partition name="fix_pb_mapping_loc_d">
+            <add_atom name_pattern="d" logical_block_location="clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]"/>
+       </partition>
+       <partition name="fix_pb_mapping_loc_c">
+            <add_atom name_pattern="c" logical_block_location="clb[0].fle[3]{n1_lut4}.ble4[0].lut4[0]"/>
+       </partition>
+   </partition_list>
+</vpr_constraints>

@@ -242,6 +242,22 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
  *
  *  @return The number of errors in the clustering floorplanning.
  */
+
+/**
+ * @brief Returns true if an atom is constrained to a region on the FPGA chip.
+ *
+ * True when the atom's partition has at least one add_region (non-empty PartitionRegion).
+ * False when the atom is unconstrained, or has only logical_block_location with no add_region
+ * (pack-only constraint: controls packing inside a logic block, not chip placement).
+ */
+static bool atom_has_floorplan_constraint(const UserPlaceConstraints& constraints, AtomBlockId atom_blk_id) {
+    PartitionId part_id = constraints.get_atom_partition(atom_blk_id);
+    if (!part_id.is_valid()) {
+        return false;
+    }
+    return !constraints.get_partition_pr(part_id).empty();
+}
+
 static unsigned check_clustering_floorplanning_consistency(
     const ClusteredNetlist& clb_nlist,
     const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
@@ -265,8 +281,7 @@ static unsigned check_clustering_floorplanning_consistency(
             // If the cluster is unconstrained, make sure all the atoms it
             // contains are unconstrained.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
-                if (atom_part_id.is_valid()) {
+                if (atom_has_floorplan_constraint(constraints, atom_blk_id)) {
                     VTR_LOG_ERROR(
                         "Cluster block %zu is unconstrained but contains "
                         "constrained atom block %zu.\n",
@@ -279,8 +294,7 @@ static unsigned check_clustering_floorplanning_consistency(
             // At least one of the atoms in the cluster must be constrained.
             bool an_atom_is_constrained = false;
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
-                if (atom_part_id.is_valid()) {
+                if (atom_has_floorplan_constraint(constraints, atom_blk_id)) {
                     an_atom_is_constrained = true;
                     break;
                 }
@@ -297,8 +311,8 @@ static unsigned check_clustering_floorplanning_consistency(
             // exist.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
                 PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
-                // If the atom is not constrained, continue.
-                if (!atom_part_id.is_valid())
+                // If the atom has no floorplan constraint, continue.
+                if (!atom_has_floorplan_constraint(constraints, atom_blk_id))
                     continue;
                 // Check if an intersection exists between the atom's PR and the
                 // cluster's PR.
@@ -327,8 +341,8 @@ static unsigned check_clustering_floorplanning_consistency(
             PartitionRegion calc_cluster_pr;
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
                 PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
-                // If the atom is not constrained, continue.
-                if (!atom_part_id.is_valid())
+                // If the atom has no floorplan constraint, continue.
+                if (!atom_has_floorplan_constraint(constraints, atom_blk_id))
                     continue;
                 // Get the intersection of the atom's PR and the intersection of
                 // all atom PRs that came before.

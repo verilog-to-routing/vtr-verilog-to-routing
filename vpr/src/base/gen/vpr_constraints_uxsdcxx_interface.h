@@ -58,10 +58,13 @@ class VprConstraintsBase {
      * <xs:complexType name="add_atom">
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      *   <xs:attribute name="is_regex" type="xs:string" default="false" />
+     *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
      * </xs:complexType>
      */
     virtual inline const char* get_add_atom_is_regex(typename ContextTypes::AddAtomReadContext& ctx) = 0;
     virtual inline void set_add_atom_is_regex(const char* is_regex, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
+    virtual inline const char* get_add_atom_logical_block_location(typename ContextTypes::AddAtomReadContext& ctx) = 0;
+    virtual inline void set_add_atom_logical_block_location(const char* logical_block_location, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
     virtual inline const char* get_add_atom_name_pattern(typename ContextTypes::AddAtomReadContext& ctx) = 0;
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
 
