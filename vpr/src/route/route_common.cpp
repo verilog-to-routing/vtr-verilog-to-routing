@@ -80,8 +80,10 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
 static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
 
 /**
- * @brief Expand a net route bounding box so any crossed interposer cut includes
- *        all rr_node coordinates that can legally cross that cut.
+ * @brief If a bounding box crosses an interposer cut, expand it to
+ * at minimum span the bounds defined in device_ctx.[horz/vert]_interposer_cut_bounds_.
+ * Doing this ensures that die crossing nets can be succcesfully routed in the
+ * bounding box (in valid architectures).
  */
 static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device_ctx,
                                                      t_bb& bb);
@@ -711,14 +713,15 @@ static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device
     const vtr::NdMatrix<std::pair<int, int>, 2>& horizontal_cut_bounds = device_ctx.horz_interposer_cut_bounds_;
     const vtr::NdMatrix<std::pair<int, int>, 2>& vertical_cut_bounds = device_ctx.vert_interposer_cut_bounds_;
 
-    VTR_ASSERT(horizontal_cut_bounds.dim_size(0) == horizontal_cuts.size());
-    VTR_ASSERT(vertical_cut_bounds.dim_size(0) == vertical_cuts.size());
+    VTR_ASSERT_SAFE(horizontal_cut_bounds.dim_size(0) == horizontal_cuts.size());
+    VTR_ASSERT_SAFE(vertical_cut_bounds.dim_size(0) == vertical_cuts.size());
 
     const t_bb original_bb = bb;
     for (int layer = original_bb.layer_min; layer <= original_bb.layer_max; layer++) {
         VTR_ASSERT(horizontal_cut_bounds.dim_size(1) >= horizontal_cuts[layer].size());
         for (size_t cut_idx = 0; cut_idx < horizontal_cuts[layer].size(); cut_idx++) {
             int cut_y = horizontal_cuts[layer][cut_idx];
+            // bounding box crosses horizontal_cuts[layer][cut_idx] at y = cut_y
             if (cut_y >= original_bb.ymin && cut_y < original_bb.ymax) {
                 const std::pair<int, int>& cut_bounds = horizontal_cut_bounds[layer][cut_idx];
                 bb.ymin = std::min(bb.ymin, cut_bounds.first);
@@ -729,6 +732,7 @@ static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device
         VTR_ASSERT(vertical_cut_bounds.dim_size(1) >= vertical_cuts[layer].size());
         for (size_t cut_idx = 0; cut_idx < vertical_cuts[layer].size(); cut_idx++) {
             int cut_x = vertical_cuts[layer][cut_idx];
+            // bounding box crosses vertical_cuts[layer][cut_idx] at x = cut_x
             if (cut_x >= original_bb.xmin && cut_x < original_bb.xmax) {
                 const std::pair<int, int>& cut_bounds = vertical_cut_bounds[layer][cut_idx];
                 bb.xmin = std::min(bb.xmin, cut_bounds.first);
