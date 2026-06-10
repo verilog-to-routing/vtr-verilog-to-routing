@@ -486,7 +486,10 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     std::string pb_display_text(pb_type->name);
     std::string pb_type_name(pb_type->name);
 
-    if (!pb->is_primitive()) {
+    if (pb_type->depth == 0 && !at_least_one_children_pb_drawn) {
+        const t_pl_loc& loc = block_locs[clb_index].loc;
+        pb_display_text += vtr::string_fmt(" (%d,%d)", loc.x, loc.y);
+    } else if (!pb->is_primitive()) {
         // Format for non-primitives: <block_type_name>[<placement_index>]:<mode_name>
         std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
         pb_display_text += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
@@ -511,7 +514,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         if (draw_state->draw_block_text) {
             g->draw_text(
                 abs_bbox.center(),
-                pb_display_text.c_str(),
+                pb_display_text,
                 abs_bbox.width(),
                 abs_bbox.height());
         }
@@ -525,7 +528,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             g->draw_text(
                 ezgl::point2d(abs_bbox.center_x(),
                               abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
-                pb_display_text.c_str(),
+                pb_display_text,
                 abs_bbox.width(),
                 draw_coords->get_tile_height() * FRACTION_TEXT_PADDING * 2);
         }
