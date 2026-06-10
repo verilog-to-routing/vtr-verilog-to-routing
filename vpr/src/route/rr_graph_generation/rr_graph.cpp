@@ -311,7 +311,7 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
  * @param rr_graph   Input RR graph to be analyzed.
  */
 static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_ctx,
-                                                   const RRGraphView& rr_graph);
+                                                         const RRGraphView& rr_graph);
 
 /**
  * @brief Calculates the routing channel width at each grid location.
@@ -1044,7 +1044,7 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
 }
 
 static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_ctx,
-                                                   const RRGraphView& rr_graph) {
+                                                         const RRGraphView& rr_graph) {
     const DeviceGrid& grid = device_ctx.grid;
     // No interposer cuts on this device; nothing to populate.
     if (!grid.has_interposer_cuts()) {
