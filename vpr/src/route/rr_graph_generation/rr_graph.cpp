@@ -294,19 +294,23 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph);
 
 /**
- * @brief Build per-cut interposer crossing-capacity tables from the RR graph.
+ * @brief Build per-cut interposer-related tables from the RR graph.
  *
  * Architectures with interposer cut lines need a fast way to know how much routing capacity
  * crosses each cut at every coordinate along the cut. Placement and interposer congestion
  * estimation consume these tables; computing them here (once, next to channel-width init)
  * keeps that logic out of the hot path.
  *
+ * In addition, the router needs to know the bounds of interposer wires that cross each
+ * cut in order to correctly set up the router's bounding box. That information is also
+ * computed in this function.
+ *
  * @param device_ctx Writable device context; fills horz_interposer_capacity_,
  *                   vert_interposer_capacity_, horz_interposer_cut_bounds_, and
  *                   vert_interposer_cut_bounds_ when the grid defines interposer cuts.
- * @param rr_graph   RR graph whose CHANX/CHANY segment capacities are summed per cut.
+ * @param rr_graph   Input RR graph to be analyzed.
  */
-static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
+static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_ctx,
                                                    const RRGraphView& rr_graph);
 
 /**
@@ -1039,7 +1043,7 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
     return delayless_switch;
 }
 
-static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
+static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_ctx,
                                                    const RRGraphView& rr_graph) {
     const DeviceGrid& grid = device_ctx.grid;
     // No interposer cuts on this device; nothing to populate.
@@ -1170,7 +1174,7 @@ static void alloc_and_init_channel_width() {
         chan_width_list.y[loc.x] = std::max(chan_width.y[loc.layer_num][loc.x][loc.y], chan_width_list.y[loc.x]);
     }
 
-    init_interposer_capacity_from_rr_graph(mutable_device_ctx, rr_graph);
+    init_interposer_per_cut_tables_from_rr_graph(mutable_device_ctx, rr_graph);
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
