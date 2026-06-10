@@ -125,12 +125,19 @@ static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
                               int wire_to_ipin_switch,
                               e_directionality directionality);
 
-//Returns how the switch type for the switch block at the specified location should be created
-//  from_chan_coord: The horizontal or vertical channel index (i.e. x-coord for CHANY, y-coord for CHANX)
-//  from_seg_coord: The horizontal or vertical location along the channel (i.e. y-coord for CHANY, x-coord for CHANX)
-//  from_chan_type: The from channel type
-//  to_chan_type: The to channel type
-//  Returns {switch_override, is_short_connection}
+/// @brief Determines whether channel-to-channel connectivity should be created at a grid intersection.
+///
+/// Looks up the physical tile at the intersection of from_chan_coord and from_seg_coord and checks
+/// whether its switchblock_locations type permits a connection from from_chan_type to to_chan_type.
+///
+/// @param from_chan_coord Channel index.
+/// @param from_seg_coord Position along the channel where the SB is evaluated (x for CHANX, y for CHANY).
+/// @param from_chan_type Source channel type (CHANX or CHANY).
+/// @param to_chan_type Destination channel type (CHANX or CHANY).
+/// @return {switch_override, is_short_connection} where:
+///   - switch_override: NO_SWITCH (-1) if no connectivity should be created for this from/to pair;
+///   - is_short_connection: if true, create a delayless same-ptc straight-through edge instead of
+///     full SB fanout.
 static std::pair<int, bool> should_create_switchblock(int layer_num,
                                                       int from_chan_coord,
                                                       int from_seg_coord,
@@ -810,7 +817,11 @@ static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
     return num_conn;
 }
 
-static std::pair<int, bool> should_create_switchblock(int layer_num, int from_chan_coord, int from_seg_coord, e_rr_type from_chan_type, e_rr_type to_chan_type) {
+static std::pair<int, bool> should_create_switchblock(int layer_num,
+                                                      int from_chan_coord,
+                                                      int from_seg_coord,
+                                                      e_rr_type from_chan_type,
+                                                      e_rr_type to_chan_type) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     // Convert the chan/seg indices to real x/y coordinates
