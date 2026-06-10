@@ -823,12 +823,14 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     VTR_ASSERT(rr_graph.node_xlow(driver_rr) <= rr_graph.node_xhigh(driver_rr));
     VTR_ASSERT(rr_graph.node_ylow(driver_rr) <= rr_graph.node_yhigh(driver_rr));
 
-    int xmin = rr_graph.node_xlow(driver_rr);
-    int ymin = rr_graph.node_ylow(driver_rr);
-    int xmax = rr_graph.node_xhigh(driver_rr);
-    int ymax = rr_graph.node_yhigh(driver_rr);
-    int layer_min = rr_graph.node_layer_low(driver_rr);
-    int layer_max = rr_graph.node_layer_high(driver_rr);
+    t_bb bb;
+
+    bb.xmin = rr_graph.node_xlow(driver_rr);
+    bb.ymin = rr_graph.node_ylow(driver_rr);
+    bb.xmax = rr_graph.node_xhigh(driver_rr);
+    bb.ymax = rr_graph.node_yhigh(driver_rr);
+    bb.layer_min = rr_graph.node_layer_low(driver_rr);
+    bb.layer_max = rr_graph.node_layer_high(driver_rr);
 
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
@@ -845,25 +847,17 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
                                                               rr_graph.node_ylow(sink_rr),
                                                               rr_graph.node_layer_low(sink_rr)});
 
-        xmin = std::min<int>(xmin, tile_bb.xmin());
-        xmax = std::max<int>(xmax, tile_bb.xmax());
-        ymin = std::min<int>(ymin, tile_bb.ymin());
-        ymax = std::max<int>(ymax, tile_bb.ymax());
-        layer_min = std::min<int>(layer_min, rr_graph.node_layer_low(sink_rr));
-        layer_max = std::max<int>(layer_max, rr_graph.node_layer_high(sink_rr));
+        bb.xmin = std::min<int>(bb.xmin, tile_bb.xmin());
+        bb.xmax = std::max<int>(bb.xmax, tile_bb.xmax());
+        bb.ymin = std::min<int>(bb.ymin, tile_bb.ymin());
+        bb.ymax = std::max<int>(bb.ymax, tile_bb.ymax());
+        bb.layer_min = std::min<int>(bb.layer_min, rr_graph.node_layer_low(sink_rr));
+        bb.layer_max = std::max<int>(bb.layer_max, rr_graph.node_layer_high(sink_rr));
     }
 
     // Want the channels on all 4 sides to be usable, even if bb_factor = 0.
-    xmin -= 1;
-    ymin -= 1;
-
-    t_bb bb;
-    bb.xmin = xmin;
-    bb.xmax = xmax;
-    bb.ymin = ymin;
-    bb.ymax = ymax;
-    bb.layer_min = layer_min;
-    bb.layer_max = layer_max;
+    bb.xmin -= 1;
+    bb.ymin -= 1;
 
     expand_route_bb_to_interposer_cut_bounds(device_ctx, bb);
 

@@ -282,6 +282,10 @@ struct DeviceContext : public Context {
      * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
      * `DeviceGrid::get_horizontal_interposer_cuts()[layer]`.
      * The pair stores `{min_y, max_y}` of all `CHANY` rr_nodes that cross the cut.
+     * i.e. the smallest y of any rr_node that crosses a cut, and the largest y of
+     * any rr node that crosses the cut. These values will normally come from different wires;
+     * e.g. with length 10 interposer wires you'd expect to get min_y to be 9 below the cut
+     * and max_y to be 9 avove the cut.
      */
     vtr::NdMatrix<std::pair<int, int>, 2> horz_interposer_cut_bounds_;
 
@@ -291,6 +295,7 @@ struct DeviceContext : public Context {
      * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
      * `DeviceGrid::get_vertical_interposer_cuts()[layer]`.
      * The pair stores `{min_x, max_x}` of all `CHANX` rr_nodes that cross the cut.
+     * This is similar to horz_interposer_cut_bounds_, but for vertical interposer cuts and wires.
      */
     vtr::NdMatrix<std::pair<int, int>, 2> vert_interposer_cut_bounds_;
 
