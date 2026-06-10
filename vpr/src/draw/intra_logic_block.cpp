@@ -39,7 +39,7 @@ static constexpr float FRACTION_TEXT_PADDING = 0.01;
 
 // The minimum permissible ratio of a drawing instance's area over screen area (both in the world coordinates),
 // below which the drawing instance should be decluttered (hidden). This value was tested and determined through experimentation.
-static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.0008;
+static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.003;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -84,7 +84,7 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
 
 #ifndef NO_GRAPHICS
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
+static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g);
 #endif /* NO_GRAPHICS */
@@ -385,7 +385,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
  * each click on the "Blk Internal" button, a new level is shown.
  */
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
+static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
@@ -401,7 +401,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
     // if we've gone too far, don't draw anything
     if (pb_type->depth > draw_state->show_blk_internal) {
-        return;
+        return false;
     }
 
     // Calculate the bounding box's area in the world coordinates.
@@ -412,7 +412,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
     // because it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
     if (abs_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
-        return;
+        return false;
     }
 
     // first draw box
@@ -445,6 +445,43 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->draw_rectangle(abs_bbox);
     }
 
+    // now recurse on the child pbs.
+    bool at_least_one_children_pb_drawn = false;
+    // return if no children, or this is an unusused pb,
+    // or if going down will be too far down (this one is redundant, but for optimazition)
+    if (pb->child_pbs != nullptr && pb->name != nullptr
+        && pb_type->depth < draw_state->show_blk_internal) {
+        bool current_children_pb_drawn = false;
+        int num_child_types = pb->get_num_child_types();
+        for (int i = 0; i < num_child_types; ++i) {
+            if (pb->child_pbs[i] == nullptr) {
+                continue;
+            }
+
+            int num_pb = pb->get_num_children_of_type(i);
+            for (int j = 0; j < num_pb; ++j) {
+                t_pb* child_pb = &pb->child_pbs[i][j];
+
+                VTR_ASSERT(child_pb != nullptr);
+
+                t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
+
+                if (pb_child_type == nullptr) {
+                    continue;
+                }
+
+                // now recurse
+                current_children_pb_drawn = draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
+
+                if (current_children_pb_drawn) {
+                    at_least_one_children_pb_drawn = true;
+                }
+            }
+        }
+    }
+
+    
+
     // Display text for each physical block.
     std::string pb_display_text(pb_type->name);
     std::string pb_type_name(pb_type->name);
@@ -467,7 +504,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     g->set_font_size(16);
-    if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
+    if (!at_least_one_children_pb_drawn) {
         // If this pb is at the lowest displayed level, or has no more children, then
         // label it in the center with its type and name
 
@@ -493,38 +530,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
                 draw_coords->get_tile_height() * FRACTION_TEXT_PADDING * 2);
         }
     }
-
-    // now recurse on the child pbs.
-
-    // return if no children, or this is an unusused pb,
-    // or if going down will be too far down (this one is redundant, but for optimazition)
-    if (pb->child_pbs == nullptr || pb->name == nullptr
-        || pb_type->depth == draw_state->show_blk_internal) {
-        return;
-    }
-
-    int num_child_types = pb->get_num_child_types();
-    for (int i = 0; i < num_child_types; ++i) {
-        if (pb->child_pbs[i] == nullptr) {
-            continue;
-        }
-
-        int num_pb = pb->get_num_children_of_type(i);
-        for (int j = 0; j < num_pb; ++j) {
-            t_pb* child_pb = &pb->child_pbs[i][j];
-
-            VTR_ASSERT(child_pb != nullptr);
-
-            t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
-
-            if (pb_child_type == nullptr) {
-                continue;
-            }
-
-            // now recurse
-            draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
-        }
-    }
+    return true;
 }
 
 void draw_selected_pb_flylines(ezgl::renderer* g) {
