@@ -471,8 +471,9 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   scatter_loc.layer_num, scatter_loc.x, scatter_loc.y,
                                   fwd_scatter_wire_candidates.size());
-
-                    continue;
+                    // Although the link doesn't seem to have any fan-in or fan-out connections,
+                    // we still create the link. It may connect to IPIN/OPIN nodes.
+                    // continue;
                 }
 
                 formula_data.clear();
