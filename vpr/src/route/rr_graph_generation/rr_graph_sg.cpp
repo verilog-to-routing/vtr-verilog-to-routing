@@ -60,7 +60,7 @@ static std::pair<RRNodeId, short> next_chanz_node_for_seg(const std::array<t_phy
 
     VTR_ASSERT_SAFE(!nodes0.empty() || !nodes1.empty());
 
-    // If an adjacent switch block is tsv_hole, no CHANZ is created there; use the other block.
+    // If only one adjacent switch block has CHANZ candidates for this segment, use it.
     if (nodes0.empty()) {
         int& offset1 = Fc_zofs[sb_locs[1].x][sb_locs[1].y][seg_index];
         const int idx = offset1++;
