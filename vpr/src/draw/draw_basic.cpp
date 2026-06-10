@@ -161,14 +161,13 @@ void draw_place(ezgl::renderer* g) {
                         if (bnum) {
                             const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
                             g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
-                                     name, abs_clb_bbox.width(), abs_clb_bbox.height());
+                                         name, abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
 
                         // Draw text for block type so that user knows what block
                         std::string block_type_loc = type->name;
                         block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
                         g->draw_text(center, block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
-                        
                     }
                 }
             }

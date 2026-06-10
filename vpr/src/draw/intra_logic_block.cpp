@@ -428,17 +428,6 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         return false;
     }
 
-    // Calculate the bounding box's area in the world coordinates.
-    double abs_bbox_area = abs_bbox.width() * abs_bbox.height();
-    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
-    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
-    double screen_area = g->get_visible_world().area();
-    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
-    // because it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
-    if (abs_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
-        return false;
-    }
-
     // first draw box
     if (pb->name != nullptr) {
         // If block is used, draw it in colour with solid border.
@@ -469,12 +458,12 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     // Now recurse on the child pbs.
-    // Note: we make the recursive function calls before drawing text, 
+    // Note: we make the recursive function calls before drawing text,
     // becuase the text position depends on whether or not the children blocks were drawn.
     // So, the overall drawing order is: mother-box -> child-box -> (recursion) -> child-text -> mother-text.
 
     bool at_least_one_child_pb_drawn = false;
-    
+
     // Only when the current block has valid chidren blocks and the block internal depth
     // does not exceed the limit do we keep recursing.
     if (pb->child_pbs != nullptr && pb->name != nullptr && pb_type->depth < draw_state->show_blk_internal) {
@@ -506,8 +495,6 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             }
         }
     }
-
-    
 
     // Display text for each physical block.
     std::string pb_display_text(pb_type->name);
