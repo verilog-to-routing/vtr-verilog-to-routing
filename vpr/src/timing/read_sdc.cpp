@@ -232,14 +232,9 @@ class SdcParseCallback : public sdcparse::Callback {
         num_commands_++;
 
         // Check that the arguments to the command are valid.
-        if (cmd.add) {
+        if (cmd.add && cmd.name.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-add option not supported for create_generated_clock");
-        }
-
-        if (cmd.master_clock.is_valid()) {
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-master_clock option not supported for create_generated_clock");
+                      "-add requires -name for create_generated_clock");
         }
 
         if (!std::isnan(cmd.phase)) {
@@ -346,18 +341,37 @@ class SdcParseCallback : public sdcparse::Callback {
         AtomPinId source_clock_pin = source_clock_pins.begin()->first;
         tatum::NodeId source_clock_tnode = get_clock_source(source_clock_pin);
         tatum::DomainId source_domain_id;
-        for (tatum::DomainId domain_id : tc_.clock_domains()) {
-            if (tc_.clock_domain_source_node(domain_id) == source_clock_tnode) {
-                if (source_domain_id.is_valid()) {
-                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                              "create_generated_clock source pin matches multiple clocks.");
+        if (cmd.master_clock.is_valid()) {
+            // -master_clock disambiguates which domain to derive from when multiple
+            // clocks share the source pin (e.g. create_clock -add was used on it).
+            auto it = object_to_clock_id_.find(cmd.master_clock);
+            if (it == object_to_clock_id_.end()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Cannot find -master_clock for create_generated_clock. "
+                          "Make sure it has been created using create_clock.");
+            }
+            source_domain_id = it->second;
+            if (tc_.clock_domain_source_node(source_domain_id) != source_clock_tnode) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-master_clock does not originate at the specified -source pin "
+                          "for create_generated_clock.");
+            }
+        } else {
+            for (tatum::DomainId domain_id : tc_.clock_domains()) {
+                if (tc_.clock_domain_source_node(domain_id) == source_clock_tnode) {
+                    if (source_domain_id.is_valid()) {
+                        vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                                  "create_generated_clock source pin matches multiple clocks; "
+                                  "use -master_clock to specify which one.");
+                    }
+                    source_domain_id = domain_id;
                 }
-                source_domain_id = domain_id;
             }
         }
         if (!source_domain_id.is_valid()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "Cannot find source clock for create_generated_clock. Make sure that the source clock has been created using create_clock.");
+                      "Cannot find source clock for create_generated_clock. "
+                      "Make sure that the source clock has been created using create_clock.");
         }
         //  Find the command that created this clock.
         VTR_ASSERT(sdc_clocks_.contains(source_domain_id));
