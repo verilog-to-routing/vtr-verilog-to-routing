@@ -141,13 +141,37 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
     # Generated clock: rise=0 ns, fall=5 ns, period=12 ns (~41.7% duty cycle).
     create_generated_clock -source [get_ports clk] -edges {1 3 5} -edge_shift {0.0 -1.0 0.0} [get_ports clk2]
 
+    # Create a phase-shifted copy of the master clock on a second port.
+    # -phase 90 shifts all edges by 90/360 * 10 ns = 2.5 ns. Period is unchanged.
+    # Generated clock: rise=2.5 ns, fall=7.5 ns, period=10 ns.
+    create_clock -period 10.0 -name master_clk [get_ports {clk}]
+    create_generated_clock -source [get_ports {clk}] -phase 90 [get_ports {clk2}]
+
+    # Create a divided clock with a fixed time offset applied to the waveform.
+    # -divide_by 2 gives period=12 ns; -offset 3.0 shifts both edges by 3 ns.
+    # Generated clock: rise=3 ns, fall=9 ns, period=12 ns.
+    create_clock -period 6.0 -name master_clk [get_ports {clk}]
+    create_generated_clock -source [get_ports {clk}] -divide_by 2 -offset 3.0 [get_ports {clk2}]
+
+    # Add a second generated clock on the same target pin, each derived from a different
+    # master clock. The source pin carries two physically-exclusive clocks (clk_a and clk_b)
+    # defined with create_clock -add. -master_clock selects which one each generated clock
+    # is derived from. -add on the second create_generated_clock allows both to coexist on
+    # the same target pin.
+    create_clock -period 5.0 -name clk_a [get_pins {div_clk.clk[0]}]
+    create_clock -period 10.0 -name clk_b -add [get_pins {div_clk.clk[0]}]
+    set_clock_groups -physically_exclusive -group {clk_a} -group {clk_b}
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -master_clock clk_a -divide_by 2 -name gen_clk_a [get_pins {div_clk.Q[0]}]
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -master_clock clk_b -divide_by 2 -name gen_clk_b -add [get_pins {div_clk.Q[0]}]
+    set_clock_groups -physically_exclusive -group {gen_clk_a} -group {gen_clk_b}
+
 .. sdc:command:: create_generated_clock
 
     .. sdc:option:: -name <string>
 
         Specifies the name of the generated clock.
 
-        **Required:** No (Required if no targets are specified)
+        **Required:** No (Required if no targets are specified, or when using :sdc:option:`-add`)
 
     .. sdc:option:: -source <pin>
 
@@ -161,7 +185,7 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         For example, ``-divide_by 2`` increases the period by 2x (dividing the frequency in half).
 
-        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, or ``-edges``)
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, ``-edges``, ``-phase``, or ``-offset``)
 
     .. sdc:option:: -multiply_by <integer>
 
@@ -169,7 +193,7 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         For example, ``-multiply_by 2`` decreases the period by 2x (doubling the frequency).
 
-        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, or ``-edges``)
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, ``-edges``, ``-phase``, or ``-offset``)
 
     .. sdc:option:: -duty_cycle <float>
 
@@ -189,7 +213,7 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         **Required:** No
 
-        .. note:: ``-invert`` can only be used together with ``-divide_by`` or ``-multiply_by``.
+        .. note:: ``-invert`` can only be used together with ``-divide_by``, ``-multiply_by``, ``-phase``, or ``-offset``.
 
     .. sdc:option:: -edges <edge_list>
 
@@ -217,9 +241,9 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
 
         Indices must be strictly increasing positive integers.
 
-        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, or ``-edges``)
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, ``-edges``, ``-phase``, or ``-offset``)
 
-        .. note:: ``-edges`` cannot be combined with ``-divide_by``, ``-multiply_by``, or ``-invert``.
+        .. note:: ``-edges`` cannot be combined with ``-divide_by``, ``-multiply_by``, ``-invert``, ``-phase``, or ``-offset``.
 
     .. sdc:option:: -edge_shift <shift_list>
 
@@ -234,6 +258,74 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
         **Required:** No
 
         .. note:: ``-edge_shift`` requires ``-edges`` to also be specified.
+
+    .. sdc:option:: -phase <float>
+
+        Shifts all edges of the generated clock waveform by a fixed phase expressed in degrees
+        relative to the master clock period. Positive values shift edges later in time.
+
+        For example, ``-phase 90`` on a 10 ns master clock shifts both the rising and falling
+        edges by :math:`90 / 360 \times 10\,\text{ns} = 2.5\,\text{ns}`.
+
+        When used alone (without ``-divide_by`` or ``-multiply_by``), the generated clock has the
+        same period and duty cycle as the master; only the waveform position is shifted.
+        When combined with ``-divide_by`` or ``-multiply_by``, the phase shift is applied after
+        the period scaling.
+
+        ``-phase`` and ``-offset`` are mutually exclusive.
+
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, ``-edges``, ``-phase``, or ``-offset``)
+
+        .. note:: ``-phase`` cannot be combined with ``-edges``.
+
+    .. sdc:option:: -offset <float>
+
+        Shifts all edges of the generated clock waveform by a fixed time in nanoseconds.
+        Positive values shift edges later in time.
+
+        For example, ``-offset 2.0`` shifts both the rising and falling edges of the generated
+        clock by 2 ns regardless of the clock period.
+
+        When used alone (without ``-divide_by`` or ``-multiply_by``), the generated clock has the
+        same period and duty cycle as the master; only the waveform position is shifted.
+        When combined with ``-divide_by`` or ``-multiply_by``, the offset is applied after
+        the period scaling.
+
+        ``-phase`` and ``-offset`` are mutually exclusive.
+
+        **Required:** No (Must use one of ``-divide_by``, ``-multiply_by``, ``-edges``, ``-phase``, or ``-offset``)
+
+        .. note:: ``-offset`` cannot be combined with ``-edges``.
+
+    .. sdc:option:: -add
+
+        Adds a new generated clock definition on a target pin that already has a generated clock.
+        This is used to associate multiple generated clocks with the same target, for example when
+        the source pin carries physically-exclusive clocks (defined with :sdc:command:`create_clock`
+        ``-add``) and each one produces a separately-named generated clock on the same output.
+
+        :sdc:option:`-name` is required when using ``-add`` to distinguish each generated clock on
+        the same target.
+
+        ``-add`` does **not** implicitly make the clocks asynchronous or exclusive.
+        Use :sdc:command:`set_clock_groups` to specify the relationship between the generated clocks.
+
+        **Required:** No
+
+    .. sdc:option:: -master_clock <clock_name>
+
+        Specifies which master clock domain the generated clock is derived from when the
+        :sdc:option:`-source` pin carries multiple clock domains (i.e. when
+        :sdc:command:`create_clock` ``-add`` was used on that pin).
+
+        Without ``-master_clock``, VPR requires the source pin to have exactly one clock domain.
+        When the source has multiple domains, ``-master_clock`` must be provided to disambiguate
+        which one this generated clock tracks.
+
+        The value must be the name of a clock previously defined with :sdc:command:`create_clock`,
+        and it must originate at the same pin specified by :sdc:option:`-source`.
+
+        **Required:** No (Required when the source pin carries more than one clock domain)
 
     .. sdc:option:: <pin_list>
 
