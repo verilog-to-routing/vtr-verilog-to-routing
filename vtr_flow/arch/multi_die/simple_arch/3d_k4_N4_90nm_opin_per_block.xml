@@ -57,7 +57,9 @@
     </tile>
     <tile name="tsv_hole" height="2" width="2" area="0">
       <switchblock_locations pattern="custom">
-        <!-- electrical shorts -->
+        <!-- TSV areas cannot contain transistors, but routing wires can pass through.
+             Use straight_short (delayless same-ptc pass-through) instead of regular
+             switch blocks, which include transistors. -->
         <sb_loc type="straight_short" xoffset="0" yoffset="0"/>
         <sb_loc type="straight_short" xoffset="0" yoffset="1"/>
         <sb_loc type="straight_short" xoffset="1" yoffset="0"/>
