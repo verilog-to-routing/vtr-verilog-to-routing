@@ -6,6 +6,9 @@
 #include "netlist_fwd.h"
 #include "tatum/TimingConstraints.hpp"
 
+// tatum::TimingGraph is forward-declared via tatum/TimingGraphFwd.hpp (included by TimingConstraints.hpp)
+namespace tatum { class DelayCalculator; }
+
 #include "histogram.h"
 #include "tatum/analyzers/HoldTimingAnalyzer.hpp"
 #include "tatum/analyzers/SetupTimingAnalyzer.hpp"
@@ -115,6 +118,18 @@ float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, cons
 float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_req,
                                const std::map<DomainPair, float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags);
+
+/*
+ * Generated clock source latency
+ */
+
+// For each generated clock domain in tc, compute and set the source latency
+// equal to the routing delay from the master clock source to the generated
+// clock's source node (clock-tree routing + clk-to-Q of the generating FF).
+// Must be called before every Tatum STA run when routing delays may have changed.
+void update_generated_clock_source_latencies(tatum::TimingConstraints& tc,
+                                             const tatum::TimingGraph& tg,
+                                             const tatum::DelayCalculator& dc);
 
 /*
  * Debug
