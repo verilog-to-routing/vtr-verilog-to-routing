@@ -116,3 +116,25 @@ TEST_CASE("Circular buffer supports non-default-constructible move-only values",
     REQUIRE(buffer.front().value == 2);
     REQUIRE(buffer.back().value == 3);
 }
+
+TEST_CASE("Calculating a moving average using circular buffer", "[vtr_circular_buffer]") {
+    auto get_average = [](auto circ_buffer) {
+        double avg = 0;
+        for (double elem : circ_buffer) {
+            avg += elem;
+        }
+        avg /= circ_buffer.size();
+
+        return avg;
+    };
+
+    vtr::circular_buffer<double> buffer(3, {1.0, 2.0, 3.0});
+
+    REQUIRE(get_average(buffer) == ((1.0 + 2.0 + 3.0) / 3));
+
+    buffer.push_back(3.0);
+    REQUIRE(get_average(buffer) == ((2.0 + 3.0 + 3.0) / 3));
+
+    buffer.push_back(1.0);
+    REQUIRE(get_average(buffer) == ((3.0 + 3.0 + 1.0) / 3));
+}
