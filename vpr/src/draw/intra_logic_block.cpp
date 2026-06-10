@@ -459,12 +459,12 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
     // Now recurse on the child pbs.
     // Note: we make the recursive function calls before drawing text,
-    // becuase the text position depends on whether or not the children blocks were drawn.
+    // because the text position depends on whether or not the children blocks were drawn.
     // So, the overall drawing order is: mother-box -> child-box -> (recursion) -> child-text -> mother-text.
 
     bool at_least_one_child_pb_drawn = false;
 
-    // Only when the current block has valid chidren blocks and the block internal depth
+    // Only when the current block has valid children blocks and the block internal depth
     // does not exceed the limit do we keep recursing.
     if (pb->child_pbs != nullptr && pb->name != nullptr && pb_type->depth < draw_state->show_blk_internal) {
         int num_child_types = pb->get_num_child_types();
