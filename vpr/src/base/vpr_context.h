@@ -285,7 +285,7 @@ struct DeviceContext : public Context {
      * i.e. the smallest y of any rr_node that crosses a cut, and the largest y of
      * any rr node that crosses the cut. These values will normally come from different wires;
      * e.g. with length 10 interposer wires you'd expect to get min_y to be 9 below the cut
-     * and max_y to be 9 avove the cut.
+     * and max_y to be 9 above the cut.
      */
     vtr::NdMatrix<std::pair<int, int>, 2> horz_interposer_cut_bounds_;
 
