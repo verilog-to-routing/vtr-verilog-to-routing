@@ -775,9 +775,15 @@ static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, Devic
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
     crr_opts.sb_count_dir = Options.sb_count_dir;
-    crr_opts.gsb_version = Options.gsb_version;
 
-    device_ctx.gsb_version = Options.gsb_version;
+    // If the user did not explicitly set a GSB version, infer the default:
+    // use GSB_V1 when sb_maps is provided (CRR flow), otherwise NOT_CRR.
+    e_gsb_version gsb_version = Options.gsb_version;
+    if (gsb_version == e_gsb_version::NOT_CRR && !Options.sb_maps.value().empty()) {
+        gsb_version = e_gsb_version::GSB_V1;
+    }
+    crr_opts.gsb_version = gsb_version;
+    device_ctx.gsb_version = gsb_version;
 }
 
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
