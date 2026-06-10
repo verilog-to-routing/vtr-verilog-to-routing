@@ -284,8 +284,12 @@ void Placer::check_place_() {
 int Placer::check_placement_costs_() {
     int error = 0;
 
-    constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
-    constexpr double MIN_EXPECTED_INT_COST = 1.e-6;
+    // The interposer and congestion cost could potentially be zero, so we need to use
+    // an absolute tolerance when comparing these costs to handle potential floating-point
+    // round-off issues. For other cost terms, we can use a relative tolerance since these
+    // costs should never be zero.
+    constexpr double PLACE_CONGESTION_COST_ABS_TOLERANCE = 1.e-6;
+    constexpr double PLACE_INTERPOSER_COST_ABS_TOLERANCE = 1.e-6;
 
     auto [cost_terms_check, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
     if (interposer_cost_handler_.has_value()) {
@@ -308,9 +312,7 @@ int Placer::check_placement_costs_() {
     // We treat both values as equivalent whenthey are below this threshold.
     // We only apply this to congestion cost and interposer congestion cost because
     // other cost terms are never zero.
-    if (!((std::fabs(cost_terms_check.cong_cost) < MIN_EXPECTED_CONG_COST
-           && std::fabs(costs_.congestion_cost) < MIN_EXPECTED_CONG_COST)
-          || vtr::isclose(cost_terms_check.cong_cost, costs_.congestion_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
+    if (!vtr::isclose(cost_terms_check.cong_cost, costs_.congestion_cost, PL_INCREMENTAL_COST_TOLERANCE, PLACE_CONGESTION_COST_ABS_TOLERANCE)) {
         VTR_LOG_ERROR(
             "cong_cost_check: %g and congestion_cost: %g differ in check_place.\n",
             cost_terms_check.cong_cost, costs_.congestion_cost);
@@ -320,9 +322,7 @@ int Placer::check_placement_costs_() {
     // Similar logic to congestion cost. In case of a small circuit on a large device,
     // it's possible to have zero interposer cost so we need to handle
     // tiny numerical differences.
-    if (!((std::fabs(cost_terms_check.interposer_cost) < MIN_EXPECTED_INT_COST
-           && std::fabs(costs_.interposer_cost) < MIN_EXPECTED_INT_COST)
-          || vtr::isclose(cost_terms_check.interposer_cost, costs_.interposer_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
+    if (!vtr::isclose(cost_terms_check.interposer_cost, costs_.interposer_cost, PL_INCREMENTAL_COST_TOLERANCE, PLACE_INTERPOSER_COST_ABS_TOLERANCE)) {
         VTR_LOG_ERROR(
             "interposer_cost_check: %g and interposer_cost: %g differ in check_place.\n",
             cost_terms_check.interposer_cost, costs_.interposer_cost);
@@ -330,9 +330,7 @@ int Placer::check_placement_costs_() {
     }
 
     // Similar logic to congestion cost.
-    if (!((std::fabs(cost_terms_check.interposer_cong_cost) < MIN_EXPECTED_CONG_COST
-           && std::fabs(costs_.interposer_cong_cost) < MIN_EXPECTED_CONG_COST)
-          || vtr::isclose(cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
+    if (!vtr::isclose(cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost, PL_INCREMENTAL_COST_TOLERANCE, PLACE_CONGESTION_COST_ABS_TOLERANCE)) {
         VTR_LOG_ERROR(
             "interposer_cong_cost_check: %g and interposer_cong_cost: %g differ in check_place.\n",
             cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost);
