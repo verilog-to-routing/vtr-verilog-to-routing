@@ -65,7 +65,8 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
  */
 static int get_num_child_blocks(const t_mode& mode);
 /**
- * @brief A helper function for draw_internal_load_coords. 
+ * @brief A helper function for draw_internal_load_coords.
+ * 
  * Calculates the coordinates of a internal block and stores its bounding box inside global variables. 
  * The calculated width and height of the block are also assigned to the pointers blk_width and blk_height.
  * @param type_descrip_index The index of the logical block type.
@@ -84,6 +85,22 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
 
 #ifndef NO_GRAPHICS
+/**
+ * @brief Helper subroutine to recursively draw sub-blocks.
+ *
+ * This function traverses through the pb_graph which a netlist block can map to,
+ * and draws each sub-block inside its parent block. A dynamic level of detail check is also implemented to
+ * determine whether the drawing should actually take place. The mother block recursively calls this function on
+ * its children, and uses the returned boolean to determine if its children were drawn inside itself, in which case
+ * the mother block's name needs to be drawn at the top. Otherwise, its name can be safely drawn in the center.
+ *
+ * @param clb_index ID of the clustered block containing pb.
+ * @param pb Block to draw.
+ * @param parent_bbox Absolute bounding box of the parent block. For the root block, it is an empty rectangle at the origin.
+ * @param type Logical block type of the containing clustered block.
+ * @param g Main renderer.
+ * @return True if this block is drawn; false if it is hidden by the block internal depth or the decluttering method.
+ */
 static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g);
@@ -381,10 +398,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 }
 
 #ifndef NO_GRAPHICS
-/* Helper subroutine to draw all sub-blocks. This function traverses through the pb_graph
- * which a netlist block can map to, and draws each sub-block inside its parent block. With
- * each click on the "Blk Internal" button, a new level is shown.
- */
 static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -416,7 +429,6 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     // first draw box
-
     if (pb->name != nullptr) {
         // If block is used, draw it in colour with solid border.
         g->set_line_dash(ezgl::line_dash::none);
@@ -445,14 +457,18 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->draw_rectangle(abs_bbox);
     }
 
-    // now recurse on the child pbs.
-    bool at_least_one_children_pb_drawn = false;
-    // return if no children, or this is an unusused pb,
-    // or if going down will be too far down (this one is redundant, but for optimazition)
-    if (pb->child_pbs != nullptr && pb->name != nullptr
-        && pb_type->depth < draw_state->show_blk_internal) {
-        bool current_children_pb_drawn = false;
+    // Now recurse on the child pbs.
+    // Note: we make the recursive function calls before drawing text, 
+    // becuase the text position depends on whether or not the children blocks were drawn.
+    // So, the overall drawing order is: mother-box -> child-box -> (recursion) -> child-text -> mother-text.
+
+    bool at_least_one_child_pb_drawn = false;
+    
+    // Only when the current block has valid chidren blocks and the block internal depth
+    // does not exceed the limit do we keep recursing.
+    if (pb->child_pbs != nullptr && pb->name != nullptr && pb_type->depth < draw_state->show_blk_internal) {
         int num_child_types = pb->get_num_child_types();
+        bool current_child_pb_drawn = false;
         for (int i = 0; i < num_child_types; ++i) {
             if (pb->child_pbs[i] == nullptr) {
                 continue;
@@ -470,11 +486,11 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
                     continue;
                 }
 
-                // now recurse
-                current_children_pb_drawn = draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
+                // Now recurse. The return value will indicate if this child block is actually drawn or not.
+                current_child_pb_drawn = draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
 
-                if (current_children_pb_drawn) {
-                    at_least_one_children_pb_drawn = true;
+                if (current_child_pb_drawn) {
+                    at_least_one_child_pb_drawn = true;
                 }
             }
         }
@@ -486,9 +502,16 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     std::string pb_display_text(pb_type->name);
     std::string pb_type_name(pb_type->name);
 
-    if (pb_type->depth == 0 && !at_least_one_children_pb_drawn) {
+    // This is a special case: blocks that correspond to pb_type->depth == 0 are essentially the top-level clustered blocks,
+    // and in each drawing cycle they are already drawn in draw_place() in draw_basic.cpp. The reason why they appear here again is that,
+    // the naming convention for clustered blocks has been historically different between the two functions, and we want to
+    // use the one in this function to overdraw the other when level of detail is on. To ensure consistency,
+    // when level of detail is off (!at_least_one_child_pb_drawn), we will still use the naming convention in draw_place().
+    if (pb_type->depth == 0 && !at_least_one_child_pb_drawn) {
         const t_pl_loc& loc = block_locs[clb_index].loc;
+        // loc.x and loc.y are the x and y coordinates of the containing subtile.
         pb_display_text += vtr::string_fmt(" (%d,%d)", loc.x, loc.y);
+
     } else if (!pb->is_primitive()) {
         // Format for non-primitives: <block_type_name>[<placement_index>]:<mode_name>
         std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
@@ -507,10 +530,8 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     g->set_font_size(16);
-    if (!at_least_one_children_pb_drawn) {
-        // If this pb is at the lowest displayed level, or has no more children, then
-        // label it in the center with its type and name
-
+    if (!at_least_one_child_pb_drawn) {
+        // If no child block was drawn, we can safely draw the text in the middle
         if (draw_state->draw_block_text) {
             g->draw_text(
                 abs_bbox.center(),
@@ -520,7 +541,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         }
 
     } else {
-        // else (ie. has children, and isn't at the lowest displayed level)
+        // Else (ie. at least one child block was drawn inside)
         // just label its type, and put it up at the top so we can see it
         if (draw_state->draw_block_text) {
             // draw_coords->get_tile_height() * FRACTION_TEXT_PADDING represents the vertical padding from the block's ceiling.
