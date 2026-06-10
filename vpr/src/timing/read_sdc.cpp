@@ -237,6 +237,21 @@ class SdcParseCallback : public sdcparse::Callback {
                       "-add option not supported for create_generated_clock");
         }
 
+        if (cmd.master_clock.is_valid()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-master_clock option not supported for create_generated_clock");
+        }
+
+        if (!std::isnan(cmd.phase)) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-phase option not supported for create_generated_clock");
+        }
+
+        if (!std::isnan(cmd.offset)) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-offset option not supported for create_generated_clock");
+        }
+
         if (!cmd.edge_shift.empty() && cmd.edges.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "-edge_shift requires -edges for create_generated_clock");
