@@ -405,6 +405,7 @@ void Placer::place() {
 
                 if (max_percent_diff_from_avg > 0.005
                     && interposer_cost_handler_->get_net_cost_type() != e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH) {
+                    VTR_LOG("Changed interposer net cost model.\n");
                     interposer_cost_handler_->change_net_cost_type(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
                     const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
                     costs_.interposer_cost = interposer_cost;
