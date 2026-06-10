@@ -16,6 +16,7 @@
 #include "vtr_vector.h"
 
 #include <ranges>
+#include <utility>
 
 #if defined(VPR_USE_TBB)
 #include <tbb/parallel_for_each.h>
@@ -77,6 +78,13 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
                                                            bool is_flat);
 
 static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
+
+/**
+ * @brief Expand a net route bounding box so any crossed interposer cut includes
+ *        all rr_node coordinates that can legally cross that cut.
+ */
+static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device_ctx,
+                                                     t_bb& bb);
 
 /**
  * @brief Computes the initial `acc_cost` for the given RR node by checking
@@ -691,6 +699,45 @@ static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num,
     return classes_in_same_block(physical_tile, first_class_ptc_num, second_class_ptc_num, is_flat);
 }
 
+static void expand_route_bb_to_interposer_cut_bounds(const DeviceContext& device_ctx,
+                                                     t_bb& bb) {
+    const DeviceGrid& grid = device_ctx.grid;
+    if (!grid.has_interposer_cuts()) {
+        return;
+    }
+
+    const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+    const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+    const vtr::NdMatrix<std::pair<int, int>, 2>& horizontal_cut_bounds = device_ctx.horz_interposer_cut_bounds_;
+    const vtr::NdMatrix<std::pair<int, int>, 2>& vertical_cut_bounds = device_ctx.vert_interposer_cut_bounds_;
+
+    VTR_ASSERT(horizontal_cut_bounds.dim_size(0) == horizontal_cuts.size());
+    VTR_ASSERT(vertical_cut_bounds.dim_size(0) == vertical_cuts.size());
+
+    const t_bb original_bb = bb;
+    for (int layer = original_bb.layer_min; layer <= original_bb.layer_max; layer++) {
+        VTR_ASSERT(horizontal_cut_bounds.dim_size(1) >= horizontal_cuts[layer].size());
+        for (size_t cut_idx = 0; cut_idx < horizontal_cuts[layer].size(); cut_idx++) {
+            int cut_y = horizontal_cuts[layer][cut_idx];
+            if (cut_y >= original_bb.ymin && cut_y < original_bb.ymax) {
+                const std::pair<int, int>& cut_bounds = horizontal_cut_bounds[layer][cut_idx];
+                bb.ymin = std::min(bb.ymin, cut_bounds.first);
+                bb.ymax = std::max(bb.ymax, cut_bounds.second);
+            }
+        }
+
+        VTR_ASSERT(vertical_cut_bounds.dim_size(1) >= vertical_cuts[layer].size());
+        for (size_t cut_idx = 0; cut_idx < vertical_cuts[layer].size(); cut_idx++) {
+            int cut_x = vertical_cuts[layer][cut_idx];
+            if (cut_x >= original_bb.xmin && cut_x < original_bb.xmax) {
+                const std::pair<int, int>& cut_bounds = vertical_cut_bounds[layer][cut_idx];
+                bb.xmin = std::min(bb.xmin, cut_bounds.first);
+                bb.xmax = std::max(bb.xmax, cut_bounds.second);
+            }
+        }
+    }
+}
+
 vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
                                              int bb_factor) {
     vtr::vector<ParentNetId, t_bb> route_bb;
@@ -806,16 +853,21 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     xmin -= 1;
     ymin -= 1;
 
-    // Expand the net bounding box by bb_factor, then clip to the physical chip area.
-
     t_bb bb;
-
-    bb.xmin = std::max<int>(xmin - bb_factor, 0);
-    bb.xmax = std::min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-    bb.ymin = std::max<int>(ymin - bb_factor, 0);
-    bb.ymax = std::min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+    bb.xmin = xmin;
+    bb.xmax = xmax;
+    bb.ymin = ymin;
+    bb.ymax = ymax;
     bb.layer_min = layer_min;
     bb.layer_max = layer_max;
+
+    expand_route_bb_to_interposer_cut_bounds(device_ctx, bb);
+
+    // Expand the net bounding box by bb_factor, then clip to the physical chip area.
+    bb.xmin = std::max<int>(bb.xmin - bb_factor, 0);
+    bb.xmax = std::min<int>(bb.xmax + bb_factor, device_ctx.grid.width() - 1);
+    bb.ymin = std::max<int>(bb.ymin - bb_factor, 0);
+    bb.ymax = std::min<int>(bb.ymax + bb_factor, device_ctx.grid.height() - 1);
 
     return bb;
 }

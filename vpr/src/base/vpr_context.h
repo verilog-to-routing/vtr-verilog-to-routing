@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <utility>
 
 #include "flat_placement_types.h"
 #include "physical_types.h"
@@ -274,6 +275,24 @@ struct DeviceContext : public Context {
      * Values are accumulated from the capacities of `CHANX` rr_nodes which cross the cut.
      */
     vtr::NdMatrix<int, 3> vert_interposer_capacity_;
+
+    /**
+     * @brief Min/max x coordinate of routing wires that cross each horizontal interposer cut.
+     *
+     * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_horizontal_interposer_cuts()[layer]`.
+     * The pair stores `{min_x, max_x}` of `CHANY` rr_nodes crossing the cut.
+     */
+    vtr::NdMatrix<std::pair<int, int>, 2> horz_interposer_cut_bounds_;
+
+    /**
+     * @brief Min/max y coordinate of routing wires that cross each vertical interposer cut.
+     *
+     * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_vertical_interposer_cuts()[layer]`.
+     * The pair stores `{min_y, max_y}` of `CHANX` rr_nodes crossing the cut.
+     */
+    vtr::NdMatrix<std::pair<int, int>, 2> vert_interposer_cut_bounds_;
 
     /// Stores the maximum channel segment width in each horizontal/vertical channel
     ChannelMetric<std::vector<int>> rr_chan_width;
