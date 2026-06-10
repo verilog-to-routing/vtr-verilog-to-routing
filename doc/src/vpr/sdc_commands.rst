@@ -141,13 +141,25 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
     # Generated clock: rise=0 ns, fall=5 ns, period=12 ns (~41.7% duty cycle).
     create_generated_clock -source [get_ports clk] -edges {1 3 5} -edge_shift {0.0 -1.0 0.0} [get_ports clk2]
 
+    # Add a second generated clock on the same target pin, each derived from a different
+    # master clock. The source pin carries two physically-exclusive clocks (clk_a and clk_b)
+    # defined with create_clock -add. -master_clock selects which one each generated clock
+    # is derived from. -add on the second create_generated_clock allows both to coexist on
+    # the same target pin.
+    create_clock -period 5.0 -name clk_a [get_pins {div_clk.clk[0]}]
+    create_clock -period 10.0 -name clk_b -add [get_pins {div_clk.clk[0]}]
+    set_clock_groups -physically_exclusive -group {clk_a} -group {clk_b}
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -master_clock clk_a -divide_by 2 -name gen_clk_a [get_pins {div_clk.Q[0]}]
+    create_generated_clock -source [get_pins {div_clk.clk[0]}] -master_clock clk_b -divide_by 2 -name gen_clk_b -add [get_pins {div_clk.Q[0]}]
+    set_clock_groups -physically_exclusive -group {gen_clk_a} -group {gen_clk_b}
+
 .. sdc:command:: create_generated_clock
 
     .. sdc:option:: -name <string>
 
         Specifies the name of the generated clock.
 
-        **Required:** No (Required if no targets are specified)
+        **Required:** No (Required if no targets are specified, or when using :sdc:option:`-add`)
 
     .. sdc:option:: -source <pin>
 
@@ -234,6 +246,36 @@ A common use-case for generated clocks is PLLs (Phase-Locked Loops). An architec
         **Required:** No
 
         .. note:: ``-edge_shift`` requires ``-edges`` to also be specified.
+
+    .. sdc:option:: -add
+
+        Adds a new generated clock definition on a target pin that already has a generated clock.
+        This is used to associate multiple generated clocks with the same target, for example when
+        the source pin carries physically-exclusive clocks (defined with :sdc:command:`create_clock`
+        ``-add``) and each one produces a separately-named generated clock on the same output.
+
+        :sdc:option:`-name` is required when using ``-add`` to distinguish each generated clock on
+        the same target.
+
+        ``-add`` does **not** implicitly make the clocks asynchronous or exclusive.
+        Use :sdc:command:`set_clock_groups` to specify the relationship between the generated clocks.
+
+        **Required:** No
+
+    .. sdc:option:: -master_clock <clock_name>
+
+        Specifies which master clock domain the generated clock is derived from when the
+        :sdc:option:`-source` pin carries multiple clock domains (i.e. when
+        :sdc:command:`create_clock` ``-add`` was used on that pin).
+
+        Without ``-master_clock``, VPR requires the source pin to have exactly one clock domain.
+        When the source has multiple domains, ``-master_clock`` must be provided to disambiguate
+        which one this generated clock tracks.
+
+        The value must be the name of a clock previously defined with :sdc:command:`create_clock`,
+        and it must originate at the same pin specified by :sdc:option:`-source`.
+
+        **Required:** No (Required when the source pin carries more than one clock domain)
 
     .. sdc:option:: <pin_list>
 
