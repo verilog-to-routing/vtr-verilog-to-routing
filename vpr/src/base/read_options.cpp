@@ -1650,7 +1650,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off");
 
     gfx_grp.add_argument(args.graphics_renderer, "--renderer")
-        .help("Select the rendering backend used by the graphics window")
+        .help(
+            "Select the rendering backend used by the graphics window.\n"
+            "   * rhi:       GPU hardware rendering. Gives the highest\n"
+            "                performance but requires a GPU (uses VRAM),\n"
+            "                and uses the most RAM.\n"
+            "   * deferred:  SW renderer (no GPU). Like 'immediate' but\n"
+            "                batches draw calls, giving the next highest\n"
+            "                performance at the cost of more RAM.\n"
+            "   * immediate: SW renderer (no GPU). The most compatible path\n"
+            "                (CPU-only QPainter, no batching); lowest\n"
+            "                performance and lowest memory use.")
         .default_value("rhi")
         .choices({"immediate", "deferred", "rhi"})
         .show_in(argparse::ShowIn::HELP_ONLY);
