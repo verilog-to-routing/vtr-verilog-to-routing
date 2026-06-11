@@ -319,7 +319,8 @@ struct t_draw_state {
     /// single parse is sufficient.
     std::vector<std::vector<std::string>> parsed_graphics_cmds;
 
-    ///@brief Cursor into `parsed_graphics_cmds`. Persists across
+    ///@brief Index of the next command to run in `parsed_graphics_cmds` (an
+    /// index into the outer vector, i.e. the command index). Persists across
     /// run_graphics_commands() invocations so that `wait_for_stage` barriers
     /// can split a script across multiple update_screen() calls.
     size_t graphics_cmd_cursor = 0;
