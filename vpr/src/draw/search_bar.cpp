@@ -224,13 +224,13 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     }
 
     if (!draw_state->draw_channel_nodes && (rr_graph.node_type(hit_node) == e_rr_type::CHANX || rr_graph.node_type(hit_node) == e_rr_type::CHANY)) {
-        application.refresh_drawing();
+        application->refresh_drawing();
         // Return true here to indicate that we processed the click, even though we didn't highlight anything.
         return true;
     }
 
     if (!draw_state->draw_inter_cluster_pins && is_inter_cluster_node(rr_graph, hit_node) && (rr_graph.node_type(hit_node) == e_rr_type::IPIN || rr_graph.node_type(hit_node) == e_rr_type::OPIN)) {
-        application.refresh_drawing();
+        application->refresh_drawing();
         return true;
     }
 
