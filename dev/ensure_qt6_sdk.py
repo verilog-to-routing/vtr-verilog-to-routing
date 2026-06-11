@@ -1,42 +1,41 @@
 #!/usr/bin/env python3
-#
-# Ensure a Qt6 >= the supported floor is available for VTR's GUI build, with
-# NO root.
-#
-# Qt 6.9.3 is the minimum required version: earlier Qt6 releases have internal
-# bugs in the QRhi subsystem that cause rendering failures on our targets.
-#
-# Strategy:
-#   1. If the SYSTEM already provides Qt6 >= VTR_QT_VERSION (e.g. installed
-#      via apt), do nothing — the system Qt is used.
-#   2. Otherwise install a private copy via `aqt` (aqtinstall) into a
-#      user-writable, repo-local prefix (no sudo).
-#
-# Invoked by the CI graphics jobs and the Dockerfile, after install_apt_packages.sh.
-#
-# Configuration (environment variables):
-#
-#   VTR_QT_PREFIX=/path/to/qt-install-root
-#       Install root. Default: "<repo>/qt6". aqt installs the SDK under
-#       "${VTR_QT_PREFIX}/<version>/gcc_64". The prefix (or its parent) must be
-#       writable by the current user — this script never uses sudo.
-#
-#   VTR_QT_VERSION=6.9.3
-#       Minimum/target Qt version. Default 6.9.3 (the supported floor). A system
-#       Qt at or above this is accepted as-is; otherwise this exact version is
-#       provisioned via aqt.
-#
-# Platform support: Linux only. On Windows (native win32 or MSYS2/Cygwin) the
-# script stops with instructions to install Qt6 manually — automatic
-# provisioning there is not implemented yet (see is_windows()/main()).
-#
-# This is a 1:1 port of ensure_qt6_sdk.sh and is kept behaviourally identical.
-#
-# Idempotent + self-healing: if a suitable system Qt is present it does nothing.
-# A pre-existing repo-local SDK is validated (key files present AND a tiny Qt
-# Widgets app builds, links, and runs against it); if that passes it does
-# nothing, otherwise the stale/partial SDK is removed and a clean copy is
-# installed and re-validated.
+"""Ensure a Qt6 >= the supported floor is available for VTR's GUI build, no root.
+
+Qt 6.9.3 is the minimum required version: earlier Qt6 releases have internal
+bugs in the QRhi subsystem that cause rendering failures on our targets.
+
+Strategy:
+  1. If the SYSTEM already provides Qt6 >= VTR_QT_VERSION (e.g. installed via
+     apt), do nothing — the system Qt is used.
+  2. Otherwise install a private copy via `aqt` (aqtinstall) into a
+     user-writable, repo-local prefix (no sudo).
+
+Invoked by the CI graphics jobs and the Dockerfile, after install_apt_packages.sh.
+
+Configuration (environment variables):
+
+  VTR_QT_PREFIX=/path/to/qt-install-root
+      Install root. Default: "<repo>/qt6". aqt installs the SDK under
+      "${VTR_QT_PREFIX}/<version>/gcc_64". The prefix (or its parent) must be
+      writable by the current user — this script never uses sudo.
+
+  VTR_QT_VERSION=6.9.3
+      Minimum/target Qt version. Default 6.9.3 (the supported floor). A system
+      Qt at or above this is accepted as-is; otherwise this exact version is
+      provisioned via aqt.
+
+Platform support: Linux only. On Windows (native win32 or MSYS2/Cygwin) the
+script stops with instructions to install Qt6 manually — automatic provisioning
+there is not implemented yet (see is_windows()/main()).
+
+This is a 1:1 port of ensure_qt6_sdk.sh and is kept behaviourally identical.
+
+Idempotent + self-healing: if a suitable system Qt is present it does nothing.
+A pre-existing repo-local SDK is validated (key files present AND a tiny Qt
+Widgets app builds, links, and runs against it); if that passes it does nothing,
+otherwise the stale/partial SDK is removed and a clean copy is installed and
+re-validated.
+"""
 
 import os
 import re
@@ -72,9 +71,9 @@ def version_tuple(ver):
     return tuple(int(p) for p in parts)
 
 
-def version_ge(a, b):
-    """True if version a >= version b."""
-    return version_tuple(a) >= version_tuple(b)
+def version_ge(ver_a, ver_b):
+    """True if version ver_a >= version ver_b."""
+    return version_tuple(ver_a) >= version_tuple(ver_b)
 
 
 # Detect a system Qt6 version (X.Y.Z) that CMake's find_package(Qt6) would
@@ -87,12 +86,14 @@ def version_ge(a, b):
 def _query_version(cmd):
     """Run a package-query command; return its stdout, or '' on failure."""
     try:
-        return subprocess.run(cmd, capture_output=True, text=True).stdout
+        return subprocess.run(
+            cmd, capture_output=True, text=True, check=False).stdout
     except OSError:
         return ""
 
 
 def detect_system_qt6():
+    """Return the system Qt6 version (X.Y.Z) find_package(Qt6) would use, or ''."""
     if have("dpkg-query"):
         # Debian/Ubuntu: qt6-base-dev installs the Qt6 CMake config under /usr.
         out = _query_version(
@@ -112,6 +113,7 @@ def detect_system_qt6():
 # OK) when no C++ toolchain is available, so a missing compiler does not trigger
 # a reinstall.
 def qt_smoke_test(qthome):
+    """Build, link, and run a tiny Qt Widgets app against qthome; True on success."""
     if not have("make"):
         print("  smoke test skipped ('make' not found)")
         return True
@@ -155,11 +157,13 @@ SOURCES += smoke.cpp
         built = subprocess.run(
             [os.path.join(qthome, "bin", "qmake"), "smoke.pro"],
             cwd=tmp, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            check=False,
         ).returncode == 0
         if built:
             built = subprocess.run(
                 ["make"], cwd=tmp,
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                check=False,
             ).returncode == 0
         if not built:
             print("  smoke test FAILED to build/link against {}".format(qthome))
@@ -175,6 +179,7 @@ SOURCES += smoke.cpp
         rc = subprocess.run(
             [os.path.join(tmp, "smoke")], env=env,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            check=False,
         ).returncode
 
     if rc == 2:
@@ -190,6 +195,7 @@ SOURCES += smoke.cpp
 # Qt6 CMake config, and the offscreen plugin must exist, then the runtime smoke
 # test.
 def validate_qt_sdk(qthome):
+    """True if qthome has the required Qt6 files and passes the runtime smoke test."""
     required = [
         "bin/qmake",
         "lib/libQt6Core.so",
@@ -207,6 +213,7 @@ def validate_qt_sdk(qthome):
 
 
 def main():
+    """Ensure a suitable Qt6 is available; return a process exit code."""
     # -----------------------------------------------------------------------
     # Windows: not supported yet (placeholder). Everything below assumes a Linux
     # SDK (aqt linux_gcc_64, .so libraries, LD_LIBRARY_PATH, the offscreen
