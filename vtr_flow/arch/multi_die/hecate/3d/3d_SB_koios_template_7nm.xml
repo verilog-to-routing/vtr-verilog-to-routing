@@ -210,6 +210,25 @@
         </pinlocations>
       </sub_tile>
     </tile>
+    <tile name="tsv_hole" height="2" width="2" area="0">
+      <switchblock_locations pattern="custom">
+        <!-- TSV areas cannot contain transistors, but routing wires can pass through.
+             Use straight_short (delayless same-ptc pass-through) instead of regular
+             switch blocks, which include transistors. -->
+        <sb_loc type="straight_short" xoffset="0" yoffset="0"/>
+        <sb_loc type="straight_short" xoffset="0" yoffset="1"/>
+        <sb_loc type="straight_short" xoffset="1" yoffset="0"/>
+        <sb_loc type="straight_short" xoffset="1" yoffset="1"/>
+      </switchblock_locations>
+      <sub_tile name="tsv_hole">
+        <equivalent_sites>
+          <site pb_type="tsv_hole"/>
+        </equivalent_sites>
+        <input name="I" num_pins="1"/>
+        <output name="O" num_pins="1"/>
+        <fc in_type="abs" in_val="0" out_type="abs" out_val="0"/>
+      </sub_tile>
+    </tile>
   </tiles>
   <!-- ODIN II specific config ends -->
   <layout>
@@ -230,10 +249,10 @@
         <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
 
         <!-- PW -->
-        <col type="EMPTY" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
-        
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+
         <!-- GND -->
-        <col type="EMPTY" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
 
       </layer>
       <layer die="1">
@@ -1378,6 +1397,11 @@
     </pb_type>
     <!-- Define fracturable memory end -->
 
+    <pb_type name="tsv_hole">
+      <input name="I" num_pins="1"/>
+      <output name="O" num_pins="1"/>
+      <interconnect/>
+    </pb_type>
   </complexblocklist>
 
   <switchblocklist>
