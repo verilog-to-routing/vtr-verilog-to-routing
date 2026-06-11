@@ -323,7 +323,7 @@ struct t_draw_state {
     /// index into the outer vector, i.e. the command index). Persists across
     /// run_graphics_commands() invocations so that `wait_for_stage` barriers
     /// can split a script across multiple update_screen() calls.
-    size_t graphics_cmd_cursor = 0;
+    size_t graphics_cmd_index = 0;
 
     ///@brief Rendering backend: "immediate", "deferred", or "rhi"
     std::string renderer_type = "rhi";

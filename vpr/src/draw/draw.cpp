@@ -1438,7 +1438,7 @@ static void run_graphics_commands(const std::string& commands) {
     // A very simple command interpreter for scripting graphics.
     //
     // The parsed command list and the script cursor live on draw_state
-    // (parsed_graphics_cmds / graphics_cmd_cursor) so that `wait_for_stage`
+    // (parsed_graphics_cmds / graphics_cmd_index) so that `wait_for_stage`
     // barriers can split a script across multiple update_screen() invocations
     // (e.g. half at placement, half at routing). On each call, processing
     // resumes at the cursor and stops either at a wait-barrier whose stage
@@ -1455,8 +1455,8 @@ static void run_graphics_commands(const std::string& commands) {
 
     t_draw_state backup_draw_state = *draw_state;
 
-    while (draw_state->graphics_cmd_cursor < draw_state->parsed_graphics_cmds.size()) {
-        auto& cmd = draw_state->parsed_graphics_cmds[draw_state->graphics_cmd_cursor];
+    while (draw_state->graphics_cmd_index < draw_state->parsed_graphics_cmds.size()) {
+        auto& cmd = draw_state->parsed_graphics_cmds[draw_state->graphics_cmd_index];
         VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
 
         for (auto& item : cmd) {
@@ -1483,12 +1483,12 @@ static void run_graphics_commands(const std::string& commands) {
                 // Revert any draw-state mutations made by commands earlier in
                 // this script run, but keep the script bookkeeping (cursor +
                 // parse cache) so the next update_screen() resumes here.
-                size_t saved_cursor = draw_state->graphics_cmd_cursor;
+                size_t saved_index = draw_state->graphics_cmd_index;
                 *draw_state = backup_draw_state;
-                draw_state->graphics_cmd_cursor = saved_cursor;
+                draw_state->graphics_cmd_index = saved_index;
                 return;
             }
-            ++draw_state->graphics_cmd_cursor;
+            ++draw_state->graphics_cmd_index;
             continue;
         }
 
@@ -1605,7 +1605,7 @@ static void run_graphics_commands(const std::string& commands) {
             pending_graphics_exit_code = vtr::atoi(cmd[1]);
             VTR_LOG("Graphics-command 'exit %d' deferred until next render checkpoint.\n",
                     pending_graphics_exit_code);
-            ++draw_state->graphics_cmd_cursor;
+            ++draw_state->graphics_cmd_index;
             break;
         } else {
             VPR_ERROR(VPR_ERROR_DRAW,
@@ -1613,15 +1613,15 @@ static void run_graphics_commands(const std::string& commands) {
                                       cmd[0].c_str())
                           .c_str());
         }
-        ++draw_state->graphics_cmd_cursor;
+        ++draw_state->graphics_cmd_index;
     }
 
     // Restore user-controllable draw state, but keep the script cursor at
     // end-of-script so subsequent update_screen() calls are no-ops rather
     // than re-running the whole script.
-    size_t saved_cursor = draw_state->graphics_cmd_cursor;
+    size_t saved_index = draw_state->graphics_cmd_index;
     *draw_state = backup_draw_state;
-    draw_state->graphics_cmd_cursor = saved_cursor;
+    draw_state->graphics_cmd_index = saved_index;
 
     //Advance the sequence number
     ++draw_state->sequence_number;
