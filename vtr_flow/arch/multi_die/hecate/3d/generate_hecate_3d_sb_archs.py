@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-"""Generate Koios 3D switch-block architecture variants from a CSV description
+"""Generate Hecate 3D switch-block architecture variants from a CSV description
 and the base 'hecate_3d_sb_template.xml' architecture."""
 
 import csv
@@ -241,7 +241,7 @@ def _build_locations(
 
 
 def build_scatter_gather_section(row: Mapping[str, str]) -> str:
-    """Build the scatter_gather_list XML section for one Koios variant."""
+    """Build the scatter_gather_list XML section for one Hecate 3D variant."""
     pitch_um = row["pitch_um"]
     connectivity = row["connectivity"]
     clb_num = float(row["clb_num"])
@@ -299,15 +299,15 @@ def _replace_xml_section(template_text: str, start_tag: str, end_tag: str, new_c
     return template_text[:start_idx] + new_content + template_text[end_idx:]
 
 
-def generate_koios_arch_for_row(row: Mapping[str, str], template_text: str, output_dir: str) -> None:
-    """Generate one Koios 3D switch-block architecture variant."""
+def generate_hecate_arch_for_row(row: Mapping[str, str], template_text: str, output_dir: str) -> None:
+    """Generate one Hecate 3D switch-block architecture variant."""
     variant_id = row["variant_id"]
     scatter_gather_section = build_scatter_gather_section(row)
     arch_text = _replace_xml_section(
         template_text, SCATTER_GATHER_START, SCATTER_GATHER_END, scatter_gather_section
     )
 
-    output_filename = f"3d_SB_koios_{variant_id}_7nm.xml"
+    output_filename = f"hecate_3d_sb_{variant_id}_7nm.xml"
     output_path = os.path.join(output_dir, output_filename)
 
     with open(output_path, "w", encoding="utf-8") as output_file:
@@ -316,10 +316,10 @@ def generate_koios_arch_for_row(row: Mapping[str, str], template_text: str, outp
     print(f"Generated: {output_path}")
 
 
-def generate_koios_3d_sb_archs(
+def generate_hecate_3d_sb_archs(
     csv_file: str, template_path: str, output_dir: str = "hecate_3D"
 ) -> None:
-    """Generate Koios 3D switch-block architecture XML variants."""
+    """Generate Hecate 3D switch-block architecture XML variants."""
     if not os.path.exists(template_path):
         print(f"Error: Template {template_path} not found.")
         return
@@ -333,8 +333,8 @@ def generate_koios_3d_sb_archs(
     with open(csv_file, mode="r", newline="", encoding="utf-8") as csv_handle:
         reader = csv.DictReader(csv_handle)
         for row in reader:
-            generate_koios_arch_for_row(row, template_text, output_dir)
+            generate_hecate_arch_for_row(row, template_text, output_dir)
 
 
 if __name__ == "__main__":
-    generate_koios_3d_sb_archs("hecate_3d_sb_connectivity.csv", "hecate_3d_sb_template.xml")
+    generate_hecate_3d_sb_archs("hecate_3d_sb_connectivity.csv", "hecate_3d_sb_template.xml")
