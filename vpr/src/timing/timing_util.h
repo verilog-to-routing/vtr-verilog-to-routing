@@ -7,7 +7,9 @@
 #include "tatum/TimingConstraints.hpp"
 
 // tatum::TimingGraph is forward-declared via tatum/TimingGraphFwd.hpp (included by TimingConstraints.hpp)
-namespace tatum { class DelayCalculator; }
+namespace tatum {
+class DelayCalculator;
+}
 
 #include "histogram.h"
 #include "tatum/analyzers/HoldTimingAnalyzer.hpp"
