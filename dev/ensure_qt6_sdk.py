@@ -60,6 +60,24 @@ def have(cmd):
     return shutil.which(cmd) is not None
 
 
+def aqt_runs(aqt_path):
+    """True if the aqt binary exists and actually executes in this environment.
+
+    A venv created by a different Python (e.g. carried between a host and a
+    container) leaves a `bin/aqt` whose shebang interpreter no longer exists, so
+    a mere isfile()/X_OK check is not enough — we must try to run it.
+    """
+    if not (os.path.isfile(aqt_path) and os.access(aqt_path, os.X_OK)):
+        return False
+    try:
+        return subprocess.run(
+            [aqt_path, "--help"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+        ).returncode == 0
+    except OSError:
+        return False
+
+
 def is_windows():
     """True on any Windows Python: native win32, or MSYS2/Cygwin builds."""
     return os.name == "nt" or sys.platform.startswith(("win", "msys", "cygwin"))
@@ -186,6 +204,8 @@ SOURCES += smoke.cpp
         with open(os.path.join(tmp, "smoke.pro"), "w") as f:
             f.write(smoke_pro)
 
+        print("  building a Qt sample (Core/Gui/Widgets/Xml/Svg/QRhi) ... ",
+              end="", flush=True)
         built = (
             subprocess.run(
                 [os.path.join(qthome, "bin", "qmake"), "smoke.pro"],
@@ -208,10 +228,14 @@ SOURCES += smoke.cpp
                 == 0
             )
         if not built:
+            print("FAILED")
             print("  ensure_qt6_sdk smoke test FAILED to build/link against {}".format(qthome))
             return False
+        print("OK")
 
         # Run headless: the offscreen platform plugin needs no display/X server.
+        print("  running the sample headless and checking Qt >= {} ... ".format(QT_VERSION),
+              end="", flush=True)
         env = dict(os.environ)
         env["QT_QPA_PLATFORM"] = "offscreen"
         ld = os.path.join(qthome, "lib")
@@ -235,11 +259,14 @@ SOURCES += smoke.cpp
         5: "the private Qt QRhi API (Qt6::GuiPrivate) is not usable",
     }
     if rc in smoke_failures:
+        print("FAILED")
         print("  ensure_qt6_sdk smoke test ran but {}".format(smoke_failures[rc]))
         return False
     if rc != 0:
+        print("FAILED")
         print("  ensure_qt6_sdk smoke test built but FAILED to run (exit {})".format(rc))
         return False
+    print("OK")
     return True
 
 
@@ -259,9 +286,12 @@ def validate_qt_sdk(qthome):
         "lib/cmake/Qt6/Qt6Config.cmake",
         "plugins/platforms/libqoffscreen.so",
     ]
+    print("  checking required libraries and plugins:")
     for rel in required:
-        if not os.path.exists(os.path.join(qthome, rel)):
-            print("  ensure_qt6_sdk: missing {}".format(rel))
+        if os.path.exists(os.path.join(qthome, rel)):
+            print("    {} ... OK".format(rel))
+        else:
+            print("    {} ... MISSING".format(rel))
             return False
     return qt_smoke_test(qthome)
 
@@ -304,11 +334,14 @@ def main():
             )
         )
         return 0
-    print(
-        "System Qt6 ({}) does not satisfy >= {}; provisioning via aqt...".format(
-            sys_qt_version or "none found", QT_VERSION
+    if sys_qt_version:
+        print(
+            "System Qt6 {0} does not satisfy >= {1}; provisioning Qt {1} via aqt...".format(
+                sys_qt_version, QT_VERSION
+            )
         )
-    )
+    else:
+        print("No system Qt6 found; provisioning Qt {} via aqt...".format(QT_VERSION))
 
     # -----------------------------------------------------------------------
     # Idempotency + self-heal: if a repo-local SDK is already present, validate
@@ -354,12 +387,18 @@ def main():
     aqt_version = os.environ.get("VTR_AQT_VERSION", "3.3.0")
     aqt_venv = os.path.join(QT_PREFIX, "aqt-venv")
     aqt = os.path.join(aqt_venv, "bin", "aqt")
-    pip = os.path.join(aqt_venv, "bin", "pip")
-    if not (os.path.isfile(aqt) and os.access(aqt, os.X_OK)):
+    venv_python = os.path.join(aqt_venv, "bin", "python")
+    if not aqt_runs(aqt):
+        # Build the venv fresh: clear=True wipes a stale/broken one (e.g. left
+        # by a different Python) so we never reuse a venv aqt can't run from.
         print("Installing aqtinstall=={} into {}...".format(aqt_version, aqt_venv))
-        venv.create(aqt_venv, with_pip=True)
-        subprocess.run([pip, "install", "--upgrade", "pip"], check=True)
-        subprocess.run([pip, "install", "aqtinstall=={}".format(aqt_version)], check=True)
+        venv.create(aqt_venv, with_pip=True, clear=True)
+        # Use the bundled pip via `python -m pip`, and do NOT self-upgrade pip:
+        # upgrading pip in place deletes its vendored CA bundle and the next pip
+        # call fails with "Could not find a suitable TLS CA certificate bundle".
+        subprocess.run(
+            [venv_python, "-m", "pip", "install", "aqtinstall=={}".format(aqt_version)],
+            check=True)
 
     # -----------------------------------------------------------------------
     # Install Qt. qtshadertools is required by the QRhi shader pipeline.
