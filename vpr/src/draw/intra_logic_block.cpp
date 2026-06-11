@@ -90,8 +90,8 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
  *
  * This function traverses through the pb_graph which a netlist block can map to,
  * and draws each sub-block inside its parent block (any pb block owing children block(s) in the pb_graph,
- * not necessarily the root block). A level of detail (LoD, to determine whether the current block
- * should be drawn or not) check is also implemented. The parent block recursively calls this function on its children,
+ * not necessarily the root block). A level of detail check (to determine whether the current block
+ * should be drawn or not) is also implemented. The parent block recursively calls this function on its children,
  * and uses the returned boolean to determine if its children were drawn inside itself, in which case
  * the parent block's name needs to be drawn at the top. Otherwise, its name can be safely drawn in the center.
  *
