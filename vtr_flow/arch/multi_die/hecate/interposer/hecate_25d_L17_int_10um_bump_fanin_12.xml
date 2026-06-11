@@ -293,9 +293,7 @@
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
-        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
-          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
-        </fc>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
         <pinlocations pattern="custom">
           <loc side="left">io.inpad io.outpad io.clock</loc>
           <loc side="top">io.inpad io.outpad io.clock</loc>
@@ -324,9 +322,7 @@
         <output name="O9" num_pins="2" equivalent="full"/>
         <output name="O10" num_pins="2" equivalent="full"/>
         <clock name="clk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.025">
-          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
-        </fc>
+        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.025"/>
         <!-- Two sided connectivity CLB architecture--> 
         <pinlocations pattern="custom">
           <loc side="right">clb.I1 clb.I3 clb.clk clb.O1 clb.O2 clb.O3 clb.O4 clb.O5</loc>
@@ -355,8 +351,6 @@
           <fc_override port_name="chainout" fc_type="frac" fc_val="0"/>
           <fc_override port_name="scanin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="scanout" fc_type="frac" fc_val="0"/>
-
-          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
         </fc>
         <pinlocations pattern="custom">
             <loc side="top">dsp_top.chainin dsp_top.scanin dsp_top.dsp_I1 dsp_top.reset dsp_top.result[73:37]</loc>
@@ -378,7 +372,6 @@
       <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
           <fc_override fc_type="frac" fc_val="0" port_name="clk"/>
-          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
         </fc>  
         <pinlocations pattern="custom">
           <loc side="top"> memory.addr1[0] memory.addr1[8] memory.addr2[5] memory.data[2] memory.data[10] memory.data[18] memory.data[26] memory.data[34] memory.clk memory.addr1[1] memory.addr1[9] memory.addr2[6] memory.data[3] memory.data[11] memory.data[19] memory.data[27] memory.data[35] memory.out[0] memory.out[8] memory.out[16] memory.out[24] memory.out[32] memory.out[1] memory.out[9] memory.out[17] memory.out[25] memory.out[33] memory.addr1[6] memory.addr2[3] memory.data[0] memory.data[8] memory.data[16] memory.data[24] memory.data[32] memory.we1 memory.addr1[7] memory.addr2[4] memory.data[1] memory.data[9] memory.data[17] memory.data[25] memory.data[33] memory.we2 memory.out[6] memory.out[14] memory.out[22] memory.out[30] memory.out[38] memory.out[7] memory.out[15] memory.out[23] memory.out[31] memory.out[39]</loc>
