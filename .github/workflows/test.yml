@@ -275,8 +275,8 @@ jobs:
     - name: Provision Qt6 SDK (>=6.9.3)
       run: ./dev/ensure_qt6_sdk.sh
 
-    - name: Install CI test dependencies
-      run: ./dev/install_test_deps.sh
+    - name: Install GUI test dependencies
+      run: ./dev/install_gui_test_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -374,8 +374,8 @@ jobs:
     - name: Provision Qt6 SDK (>=6.9.3)
       run: ./dev/ensure_qt6_sdk.sh
 
-    - name: Install CI test dependencies
-      run: ./dev/install_test_deps.sh
+    - name: Install GUI test dependencies
+      run: ./dev/install_gui_test_deps.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
