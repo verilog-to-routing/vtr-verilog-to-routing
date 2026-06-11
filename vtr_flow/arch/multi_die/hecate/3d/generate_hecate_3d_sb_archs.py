@@ -337,4 +337,4 @@ def generate_koios_3d_sb_archs(
 
 
 if __name__ == "__main__":
-    generate_koios_3d_sb_archs("koios_sb_connectivity.csv", "hecate_3d_sb_template.xml")
+    generate_koios_3d_sb_archs("hecate_3d_sb_connectivity.csv", "hecate_3d_sb_template.xml")
