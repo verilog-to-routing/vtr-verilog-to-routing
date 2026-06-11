@@ -30,11 +30,6 @@ installed by ``ensure_qt6_sdk.sh`` (no root required)::
 
     > ./dev/ensure_qt6_sdk.sh
 
-Two convenience targets make the choice explicit::
-
-    > make ensure-gui        # build vpr WITH the GUI (runs ensure_qt6_sdk.sh first)
-    > make ensure-headless   # build vpr WITHOUT the GUI
-
 During configuration the build reports whether graphics were enabled. If a
 suitable Qt6 is found::
 
@@ -51,6 +46,11 @@ Otherwise (and VPR is built without graphics)::
     shader baker) packages::
 
         > sudo apt-get install qt6-base-dev qt6-base-private-dev qt6-svg-dev qt6-shadertools-dev
+
+Two convenience targets make the choice explicit::
+
+    > make ensure-gui        # build vpr WITH the GUI (runs ensure_qt6_sdk.sh first)
+    > make ensure-headless   # build vpr WITHOUT the GUI
 
 .. seealso:: :doc:`Building VTR </BUILDING>` for the full build instructions.
 
