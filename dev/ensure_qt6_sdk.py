@@ -112,10 +112,15 @@ def aqt_runs(aqt_path):
     if not (os.path.isfile(aqt_path) and os.access(aqt_path, os.X_OK)):
         return False
     try:
-        return subprocess.run(
-            [aqt_path, "--help"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
-        ).returncode == 0
+        return (
+            subprocess.run(
+                [aqt_path, "--help"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            ).returncode
+            == 0
+        )
     except OSError:
         return False
 
@@ -246,8 +251,7 @@ SOURCES += smoke.cpp
         with open(os.path.join(tmp, "smoke.pro"), "w") as f:
             f.write(smoke_pro)
 
-        print("  building a Qt sample (Core/Gui/Widgets/Xml/Svg/QRhi) ... ",
-              end="", flush=True)
+        print("  building a Qt sample (Core/Gui/Widgets/Xml/Svg/QRhi) ... ", end="", flush=True)
         built = (
             subprocess.run(
                 [os.path.join(qthome, "bin", "qmake"), "smoke.pro"],
@@ -276,8 +280,11 @@ SOURCES += smoke.cpp
         print("OK")
 
         # Run headless: the offscreen platform plugin needs no display/X server.
-        print("  running the sample headless and checking Qt >= {} ... ".format(QT_VERSION),
-              end="", flush=True)
+        print(
+            "  running the sample headless and checking Qt >= {} ... ".format(QT_VERSION),
+            end="",
+            flush=True,
+        )
         env = dict(os.environ)
         env["QT_QPA_PLATFORM"] = "offscreen"
         ld = os.path.join(qthome, "lib")
@@ -442,8 +449,8 @@ def main():
         # upgrading pip in place deletes its vendored CA bundle and the next pip
         # call fails with "Could not find a suitable TLS CA certificate bundle".
         subprocess.run(
-            [venv_python, "-m", "pip", "install", "aqtinstall=={}".format(aqt_version)],
-            check=True)
+            [venv_python, "-m", "pip", "install", "aqtinstall=={}".format(aqt_version)], check=True
+        )
 
     # -----------------------------------------------------------------------
     # Install Qt. qtshadertools is required by the QRhi shader pipeline.
