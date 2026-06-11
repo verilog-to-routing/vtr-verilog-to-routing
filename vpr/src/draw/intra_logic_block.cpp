@@ -89,10 +89,11 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
  * @brief Helper subroutine to recursively draw sub-blocks.
  *
  * This function traverses through the pb_graph which a netlist block can map to,
- * and draws each sub-block inside its parent block. A dynamic level of detail check is also implemented to
- * determine whether the drawing should actually take place. The mother block recursively calls this function on
- * its children, and uses the returned boolean to determine if its children were drawn inside itself, in which case
- * the mother block's name needs to be drawn at the top. Otherwise, its name can be safely drawn in the center.
+ * and draws each sub-block inside its parent block (any pb block owing children block(s) in the pb_graph,
+ * not necessarily the root block). A level of detail (LoD, to determine whether the current block
+ * should be drawn or not) check is also implemented. The parent block recursively calls this function on its children,
+ * and uses the returned boolean to determine if its children were drawn inside itself, in which case
+ * the parent block's name needs to be drawn at the top. Otherwise, its name can be safely drawn in the center.
  *
  * @param clb_index ID of the clustered block containing pb.
  * @param pb Block to draw.
@@ -460,7 +461,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     // Now recurse on the child pbs.
     // Note: we make the recursive function calls before drawing text,
     // because the text position depends on whether or not the children blocks were drawn.
-    // So, the overall drawing order is: mother-box -> child-box -> (recursion) -> child-text -> mother-text.
+    // So, the overall drawing order is: parent-box -> child-box -> (further recursion) -> child-text -> parent-text.
 
     bool at_least_one_child_pb_drawn = false;
 
@@ -501,10 +502,12 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     std::string pb_type_name(pb_type->name);
 
     // This is a special case: blocks that correspond to pb_type->depth == 0 are essentially the top-level clustered blocks,
-    // and in each drawing cycle they are already drawn in draw_place() in draw_basic.cpp. The reason why they appear here again is that,
-    // the naming convention for clustered blocks has been historically different between the two functions, and we want to
-    // use the one in this function to overdraw the other when level of detail is on. To ensure consistency,
-    // when level of detail is off (!at_least_one_child_pb_drawn), we will still use the naming convention in draw_place().
+    // and in each drawing cycle they are already drawn in draw_place() in draw_basic.cpp. The reason of that is,
+    // draw_internal_pb() is not called anymore when we zoom out too much. However, the naming convention for clustered blocks
+    // has been historically different between the two functions, and when level of detail is on (the children of clustered blocks
+    // are drawn), we will use the naming convention specified under the else if statement below. And when level of detail
+    // is off (!at_least_one_child_pb_drawn), we will still use the naming convention originated from draw_place()
+    // to ensure consistency. That one is specified under the if statement just below.
     if (pb_type->depth == 0 && !at_least_one_child_pb_drawn) {
         const t_pl_loc& loc = block_locs[clb_index].loc;
         // loc.x and loc.y are the x and y coordinates of the containing subtile.

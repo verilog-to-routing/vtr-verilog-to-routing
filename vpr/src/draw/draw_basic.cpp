@@ -160,6 +160,8 @@ void draw_place(ezgl::renderer* g) {
                         // Draw text if the space has parts of the netlist
                         if (bnum) {
                             const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+                            // The drawing position is offset from the block center to avoid being overlapped with
+                            // another text drawn inside the same block (see below).
                             g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
                                          name, abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
