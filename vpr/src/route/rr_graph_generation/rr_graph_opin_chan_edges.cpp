@@ -719,7 +719,8 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                                                       num_seg_types,
                                                       Fc_zofs,
                                                       rr_edges_to_create,
-                                                      interdie_3d_links);
+                                                      interdie_3d_links,
+                                                      device_model_warnings);
                     }
                 }
 
