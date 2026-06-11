@@ -16,10 +16,6 @@ def _mux_name(pitch_um: str, connectivity: str) -> str:
     return f"{prefix}_{pitch_um}um"
 
 
-def _wireconn_num_conns(connectivity: str) -> str:
-    return "16" if connectivity == "bidir" else "32"
-
-
 def _split_conn_num(num: float) -> tuple[int, bool]:
     """Split a per-direction count into its integer and optional 0.5 fractional parts."""
     integer_part = int(num)
@@ -253,20 +249,21 @@ def build_scatter_gather_section(row: Mapping[str, str]) -> str:
     assert mem_num * 2 == int(mem_num * 2), f"mem_num * 2 must be an integer, got {mem_num}"
 
     mux_name = _mux_name(pitch_um, connectivity)
-    wireconn_num = _wireconn_num_conns(connectivity)
+    fanin = row["fanin"]
+    fanout = row["fanout"]
 
     lines = [
         SCATTER_GATHER_START,
         f'{_indent(2)}<sg_pattern name="3d_sb_sg_10um_dir" type="{connectivity}">',
         f"{_indent(3)}<gather>",
         (
-            f'{_indent(4)}<wireconn num_conns="{wireconn_num}" from_type="L4" '
+            f'{_indent(4)}<wireconn num_conns="{fanin}" from_type="L4" '
             'from_switchpoint="0,1,2,3" side="rltb"/>'
         ),
         f"{_indent(3)}</gather>",
         f"{_indent(3)}<scatter>",
         (
-            f'{_indent(4)}<wireconn num_conns="{wireconn_num}" to_type="L4" '
+            f'{_indent(4)}<wireconn num_conns="{fanout}" to_type="L4" '
             'to_switchpoint="0" side="rtlb"/>'
         ),
         f"{_indent(3)}</scatter>",
@@ -307,7 +304,7 @@ def generate_hecate_arch_for_row(row: Mapping[str, str], template_text: str, out
         template_text, SCATTER_GATHER_START, SCATTER_GATHER_END, scatter_gather_section
     )
 
-    output_filename = f"hecate_3d_sb_{variant_id}_7nm.xml"
+    output_filename = (f"hecate_3d_sb_{variant_id}_fanin_{row['fanin']}_fanout_{row['fanout']}_7nm.xml")
     output_path = os.path.join(output_dir, output_filename)
 
     with open(output_path, "w", encoding="utf-8") as output_file:

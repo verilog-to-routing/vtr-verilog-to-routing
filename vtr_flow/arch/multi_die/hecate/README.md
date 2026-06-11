@@ -73,21 +73,21 @@ Variants explore different pitches and fanin/fanouts:
 * **Architecture Variations:** The architectures differ in:
   * **Pitch:** Lower pitch allows more inter-layer connections per block.
   * **Directionality:** Bidirectional/unidirectional.
+  * **Fan-in/Fan-out:** The number of wires driving/being driven by each inter-layer connection.
 * **Architecture Naming Scheme:**
-  - `hecate_3d_sb_[PITCH]um_[DIRECTIONALITY]_7nm.xml`
-  - `hecate_3d_sb_[PITCH]um_reduced_[DIRECTIONALITY]_7nm.xml` (10µm reduced variants)
-  - [PITCH]: bump pitch in µm (5, 10, or 25)
-  - [DIRECTIONALITY]: `bidir` or `unidir`
+  - `hecate_3d_sb_[variant_id]_fanin_[FANIN]_fanout_[FANOUT]_7nm.xml`
+
 
 ### 3D CSV and Generation Script
 
 The 3D switch-block architecture variants are generated from `3d/hecate_3d_sb_connectivity.csv` and the
 template architecture `3d/hecate_3d_sb_template.xml`. Each CSV row describes one variant:
 
-* `variant_id`: output architecture identifier, used in the generated filename
-  `hecate_3d_sb_[variant_id]_7nm.xml`.
+* `variant_id`: output architecture identifier.
 * `pitch_um`: bump pitch in µm (5, 10, or 25).
 * `connectivity`: inter-die link directionality (`bidir` or `unidir`).
+* `fanin`: The number of wires that drive each inter-layer connection.
+* `fanout`: The number of wires that are driven by each inter-layer connection.
 * `clb_num`, `dsp_num`, `mem_num`: inter-layer connection counts per block type and per
   direction (`L_UP` and `L_DOWN`). Each value times two must be an integer.
 
