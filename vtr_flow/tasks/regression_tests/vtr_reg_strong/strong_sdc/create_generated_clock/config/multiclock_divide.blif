@@ -1,5 +1,13 @@
-# Two-clock circuit where clk2 is constrained via SDC as a generated clock
-# using divide_by 2 on an external port clock.
+# Canonical two-clock circuit with both clocks as external input ports.
+# clk and clk2 each drive their own set of flip-flops; no internal clock
+# generation is present — the relationship between the clocks is defined
+# entirely by the SDC constraints.
+#
+# This file is the shared circuit for all tests that need this topology.
+# Several other .blif files in this directory are symlinks to this file —
+# each paired with a different .sdc file to test a distinct SDC constraint.
+# The .model name below does not need to match the symlink name; VPR uses
+# the port names (clk, clk2) for constraint matching, not the model name.
 
 .model multiclock_divide
 .inputs in1 in2 in3 clk clk2

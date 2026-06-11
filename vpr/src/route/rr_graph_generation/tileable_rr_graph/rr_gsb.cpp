@@ -17,18 +17,13 @@
  * Constructors
  ***********************************************************************/
 /* Constructor for an empty object */
-RRGSB::RRGSB()
-    : coordinate_(size_t(-1), size_t(-1)) {
-    /* Set a clean start! */
-    coordinate_.set(0, 0);
-
+RRGSB::RRGSB(e_gsb_version gsb_version)
+    : coordinate_(0, 0)
+    , gsb_version_(gsb_version) {
     chan_node_.clear();
     chan_node_direction_.clear();
-
     ipin_node_.clear();
-
     opin_node_.clear();
-
     mux_node_.clear();
 }
 
@@ -447,17 +442,22 @@ bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
         return false; /* This is an ending point */
     }
 
-    /* Reach here it means that this will be a passing wire,
-     * we should be able to find the node on the opposite side of the GSB!
-     */
-    if (true != is_sb_node_exist_opposite_side(rr_graph, track_node, node_side)) {
-        VTR_LOG("Cannot find a node on the opposite side to GSB[%lu][%lu] track node[%lu] at %s!\nDetailed node information:\n",
-                get_x(), get_y(), track_id, TOTAL_2D_SIDE_STRINGS[node_side]);
-        VTR_LOG("Node type: %s\n", rr_graph.node_type_string(track_node));
-        VTR_LOG("Node coordinate: %s\n", rr_graph.node_coordinate_to_string(track_node).c_str());
-        VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(track_node));
+    // Reach here it means that this will be a passing wire.
+    // For GSBv2, passing wires can enter from any side, especially in edge or corner SBs.
+    if (e_gsb_version::GSB_V2 != gsb_version_) {
+        if (!is_sb_node_exist_opposite_side(rr_graph, track_node, node_side)) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Cannot find a node on the opposite side to GSB[%lu][%lu] "
+                            "track node[%lu] at %s!\n"
+                            "Node type: %s\n"
+                            "Node coordinate: %s\n"
+                            "Node ptc: %d\n",
+                            get_x(), get_y(), track_id, TOTAL_2D_SIDE_STRINGS[node_side],
+                            rr_graph.node_type_string(track_node),
+                            rr_graph.node_coordinate_to_string(track_node).c_str(),
+                            rr_graph.node_ptc_num(track_node));
+        }
     }
-    VTR_ASSERT(true == is_sb_node_exist_opposite_side(rr_graph, track_node, node_side));
 
     return true;
 }
@@ -585,6 +585,11 @@ vtr::Point<size_t> RRGSB::get_side_block_coordinate(const e_side& side) const {
     SideManager side_manager(side);
     VTR_ASSERT(side_manager.validate());
     vtr::Point<size_t> ret(get_sb_x(), get_sb_y());
+
+    if (e_gsb_version::GSB_V2 == gsb_version_) {
+        /* For GSB v2, the side block coordinate is the same as the SB coordinate */
+        return ret;
+    }
 
     switch (side_manager.get_side()) {
         case TOP:

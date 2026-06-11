@@ -35,7 +35,11 @@
 #include "draw_triangle.h"
 
 // Vertical padding (as a fraction of tile height) added to leave space for text inside internal logic blocks
-constexpr float FRACTION_TEXT_PADDING = 0.01;
+static constexpr float FRACTION_TEXT_PADDING = 0.01;
+
+// The minimum permissible ratio of a drawing instance's area over screen area (both in the world coordinates),
+// below which the drawing instance should be decluttered (hidden). This value was tested and determined through experimentation.
+static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.0008;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -400,6 +404,17 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         return;
     }
 
+    // Calculate the bounding box's area in the world coordinates.
+    double abs_bbox_area = abs_bbox.width() * abs_bbox.height();
+    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
+    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
+    double screen_area = g->get_visible_world().area();
+    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
+    // because it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
+    if (abs_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
+        return;
+    }
+
     // first draw box
 
     if (pb->name != nullptr) {
@@ -468,12 +483,14 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         // else (ie. has children, and isn't at the lowest displayed level)
         // just label its type, and put it up at the top so we can see it
         if (draw_state->draw_block_text) {
+            // draw_coords->get_tile_height() * FRACTION_TEXT_PADDING represents the vertical padding from the block's ceiling.
+            // We double this value when calculating the height of the text box, because the same amount of padding is needed to reach the block's floor from the text.
             g->draw_text(
                 ezgl::point2d(abs_bbox.center_x(),
                               abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
                 pb_display_text.c_str(),
                 abs_bbox.width(),
-                abs_bbox.height());
+                draw_coords->get_tile_height() * FRACTION_TEXT_PADDING * 2);
         }
     }
 

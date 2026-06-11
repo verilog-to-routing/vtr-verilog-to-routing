@@ -1,0 +1,22 @@
+##############################################################################
+# functional simulation: two clocks
+#
+# route both clocks so vpr keeps clk_a and clk_b as separate top-level ports
+##############################################################################
+
+circuits_dir=benchmarks/func_sim/dual_clock_counters
+archs_dir=arch/timing
+
+circuit_list_add=dual_clock_counters.v
+
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
+
+testbench_dir=benchmarks/func_sim/dual_clock_counters
+testbench_file=tb_dual_clock_counters.sv
+
+flow_script=run_func_sim_flow.py
+parse_file=func_sim.txt
+qor_parse_file=qor_func_sim.txt
+pass_requirements_file=pass_requirements_func_sim.txt
+
+script_params=--clock_modeling route --route_chan_width 60

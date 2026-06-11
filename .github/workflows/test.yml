@@ -1166,3 +1166,43 @@ jobs:
           cd build
           cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} -S .. -B . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF -DWGET="${{ env.CURL_PATH }}" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build . --parallel ${{ steps.cpu-cores.outputs.count }}
+
+      - name: Create Python virtual environment
+        shell: powershell
+        run: |
+          python -m venv myenv
+
+      - name: MCNC Regression Test
+        shell: powershell
+        run: |
+          echo "==== Activate python virtual environment ===="
+          .\myenv\Scripts\Activate.ps1
+
+          echo "==== Add runtime DLL directories to PATH ===="
+          $dllPaths = @(
+            "${{ github.workspace }}\vcpkg_installed\x64-windows-release\bin",
+            "C:\Program Files\Tcl\bin"
+          ) | Where-Object { $_ -and (Test-Path $_) }
+
+          $env:PATH = ($dllPaths -join ";") + ";" + $env:PATH
+
+          echo "==== Install python dependencies ===="
+          python -m pip install -r requirements.txt
+
+          echo "==== Run MCNC reg test ===="
+          python vtr_flow\scripts\run_vtr_task.py `
+            regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc `
+            -j 1 `
+            -script run_vtr_flow.py `
+            -show_failures `
+            -short_task_names `
+            -s -start vpr
+            
+      - name: Upload MCNC regression logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-msvc-vpr-reg-mcnc-logs
+          path: |
+            vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/*.out
+            vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/vpr_reg_mcnc/**/parse_results*.txt

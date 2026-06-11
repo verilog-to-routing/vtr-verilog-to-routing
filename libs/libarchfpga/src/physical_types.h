@@ -461,14 +461,17 @@ struct t_default_fc_spec {
     float out_value;                //Output Fc value
 };
 
+/// @brief Types of switch block connectivity patterns.
 enum class e_sb_type {
-    NONE,       //No SB at this location
-    HORIZONTAL, //Horizontal straight-through connections
-    VERTICAL,   //Vertical straight-through connections
-    TURNS,      //Turning connections only
-    STRAIGHT,   //Straight-through connections (i.e. vertical + horizontal)
-    FULL        //Full SB at this location (i.e. turns + straight)
-
+    NONE,             ///< No SB at this location
+    HORIZONTAL,       ///< Horizontal straight-through connections
+    VERTICAL,         ///< Vertical straight-through connections
+    TURNS,            ///< Turning connections only
+    STRAIGHT,         ///< Straight-through connections (i.e. vertical + horizontal)
+    FULL,             ///< Full SB at this location (i.e. turns + straight)
+    HORIZONTAL_SHORT, ///< Horizontal straight-through short connections (same ptc only)
+    VERTICAL_SHORT,   ///< Vertical straight-through short connections (same ptc only)
+    STRAIGHT_SHORT    ///< Straight-through short connections (same ptc only)
 };
 
 /* Describes the type for a physical tile
@@ -1111,7 +1114,7 @@ struct t_pin_to_pin_annotation {
  */
 struct t_interconnect {
     e_interconnect type;
-    char* name;
+    std::string name;
 
     std::string input_string;
     std::string output_string;
@@ -1131,7 +1134,6 @@ struct t_interconnect {
 
     t_interconnect() {
         type = (e_interconnect)0;
-        name = nullptr;
         infer_annotations = false;
         line_num = 0;
         parent_mode_index = 0;

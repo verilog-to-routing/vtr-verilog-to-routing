@@ -1,0 +1,12 @@
+<vpr_constraints tool_name="vpr">
+   <partition_list>
+       <partition name="lut_fle2_n1_lut4">
+            <add_atom name_pattern="c" logical_block_location="clb[0].fle[2]{n1_lut4}.ble4[0].lut4[0]"/>
+            <add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
+       </partition>
+       <partition name="ff_fle3_n2_lut3">
+            <add_atom name_pattern="d" logical_block_location="clb[0].fle[3]{n2_lut3}.lut3inter[0].ble3[0].ff[0]"/>
+            <add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
+       </partition>
+   </partition_list>
+</vpr_constraints>

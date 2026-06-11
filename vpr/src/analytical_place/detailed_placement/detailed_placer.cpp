@@ -14,6 +14,7 @@
 #include "clustered_netlist_utils.h"
 #include "echo_files.h"
 #include "flat_placement_types.h"
+#include "windowed_bi_matching_dp.h"
 #include "globals.h"
 #include "physical_types.h"
 #include "place_and_route.h"
@@ -23,6 +24,7 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vtr_time.h"
+#include "vtr_log.h"
 
 std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detailed_placer_type,
                                                      const BlkLocRegistry& curr_clustered_placement,
@@ -39,6 +41,8 @@ std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detail
                                                             clustered_netlist,
                                                             vpr_setup,
                                                             arch);
+        case e_ap_detailed_placer::WindowedBiMatching:
+            return std::make_unique<WindowedBiMatchingDetailedPlacer>();
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized detailed placer type");

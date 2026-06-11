@@ -10,6 +10,7 @@
 
 #include "rr_graph_view.h"
 #include "physical_types.h"
+#include "vpr_types.h"
 
 #include "crr_common.h"
 #include "data_frame_processor.h"
@@ -27,7 +28,8 @@ class CRRConnectionBuilder {
     CRRConnectionBuilder(const RRGraphView& rr_graph,
                          const NodeLookupManager& node_lookup,
                          const SwitchBlockManager& sb_manager,
-                         const int verbosity);
+                         const int verbosity,
+                         e_gsb_version gsb_version);
 
     /**
      * @brief Initialize the connection builder
@@ -58,6 +60,7 @@ class CRRConnectionBuilder {
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
     int verbosity_;
+    e_gsb_version gsb_version_;
 
     // Connection building methods
     std::vector<Connection> build_connections_for_location(size_t x,

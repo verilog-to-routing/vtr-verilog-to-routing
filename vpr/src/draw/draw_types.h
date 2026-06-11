@@ -180,8 +180,21 @@ struct PartialPlacement;
  * when running graphics commands.)
  */
 struct t_draw_state {
-    ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
+    /// @brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
+
+    /**
+     * @brief This enables level of detail drawing
+     * 
+     * (e.g. stop drawing RR nodes, dynamically reduce number of block internals
+     *  and critical path delays when zoomed out).
+     * 
+     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
+     */
+    bool enable_decluttering = true;
+
+    ///@brief This dynamically sets whether to stop drawing RR nodes based on the current zoom level.
+    bool declutter_rr = false;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;
