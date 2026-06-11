@@ -139,8 +139,9 @@ static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.")
 /* Tokens for attribute and node names. */
 
 enum class atok_t_add_atom { IS_REGEX,
+                             LOGICAL_BLOCK_LOCATION,
                              NAME_PATTERN };
-constexpr const char* atok_lookup_t_add_atom[] = {"is_regex", "name_pattern"};
+constexpr const char* atok_lookup_t_add_atom[] = {"is_regex", "logical_block_location", "name_pattern"};
 
 enum class atok_t_add_region { LAYER_HIGH,
                                LAYER_LOW,
@@ -197,6 +198,39 @@ inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<v
                     switch (*((triehash_uu32*)&in[8])) {
                         case onechar('t', 0, 32) | onechar('e', 8, 32) | onechar('r', 16, 32) | onechar('n', 24, 32):
                             return atok_t_add_atom::NAME_PATTERN;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 22:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('l', 0, 64) | onechar('o', 8, 64) | onechar('g', 16, 64) | onechar('i', 24, 64) | onechar('c', 32, 64) | onechar('a', 40, 64) | onechar('l', 48, 64) | onechar('_', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('b', 0, 64) | onechar('l', 8, 64) | onechar('o', 16, 64) | onechar('c', 24, 64) | onechar('k', 32, 64) | onechar('_', 40, 64) | onechar('l', 48, 64) | onechar('o', 56, 64):
+                            switch (*((triehash_uu32*)&in[16])) {
+                                case onechar('c', 0, 32) | onechar('a', 8, 32) | onechar('t', 16, 32) | onechar('i', 24, 32):
+                                    switch (in[20]) {
+                                        case onechar('o', 0, 8):
+                                            switch (in[21]) {
+                                                case onechar('n', 0, 8):
+                                                    return atok_t_add_atom::LOGICAL_BLOCK_LOCATION;
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
                             break;
                         default:
                             break;
@@ -811,6 +845,9 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
             case atok_t_add_atom::IS_REGEX:
                 out.set_add_atom_is_regex(attr.value(), context);
                 break;
+            case atok_t_add_atom::LOGICAL_BLOCK_LOCATION:
+                out.set_add_atom_logical_block_location(attr.value(), context);
+                break;
             case atok_t_add_atom::NAME_PATTERN:
                 out.set_add_atom_name_pattern(attr.value(), context);
                 break;
@@ -1203,6 +1240,8 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
             auto child_context = in.get_partition_add_atom(i, context);
             os << "<add_atom";
             os << " is_regex=\"" << in.get_add_atom_is_regex(child_context) << "\"";
+            if ((bool)in.get_add_atom_logical_block_location(child_context))
+                os << " logical_block_location=\"" << in.get_add_atom_logical_block_location(child_context) << "\"";
             os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
             os << "/>\n";
         }

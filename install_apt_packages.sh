@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# if --dev is specified, also install packages needed by vtr developers (e.g. verilator
+# for functional simulation). otherwise only install packages needed to run vtr.
+install_dev=false
+for arg in "$@"; do
+    if [ "$arg" = "--dev" ]; then
+        install_dev=true
+    fi
+done
+
 # Base packages to compile and run basic regression tests
 packages_to_install=(
     make
@@ -59,6 +68,13 @@ packages_to_install+=(
     zlib1g-dev
 )
 
+if [[ "$install_dev" == true ]]; then
+    # required for functional simulation (run_func_sim_flow.py)
+    packages_to_install+=(
+        verilator
+    )
+fi
+
 # Required for code formatting
 # NOTE: clang-format-18 may only be found on specific distributions. Only
 #       install it if the distribution has this version of clang format.
@@ -72,4 +88,3 @@ fi
 
 sudo apt-get update
 sudo apt-get install -y "${packages_to_install[@]}"
-

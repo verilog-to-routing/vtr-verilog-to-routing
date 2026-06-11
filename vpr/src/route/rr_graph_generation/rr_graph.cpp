@@ -39,6 +39,7 @@
 #include "rr_graph_sg.h"
 #include "rr_graph_interposer.h"
 #include "rr_graph_timing_params.h"
+#include "rr_graph_chan_seg_details.h"
 #include "check_rr_graph.h"
 #include "echo_files.h"
 #include "build_switchblocks.h"
@@ -662,7 +663,7 @@ static void build_rr_graph(e_graph_type graph_type,
     t_chan_details chan_details_x;
     t_chan_details chan_details_y;
 
-    alloc_and_load_chan_details(grid, nodes_per_chan,
+    alloc_and_load_chan_details(nodes_per_chan,
                                 seg_details_x, seg_details_y,
                                 chan_details_x, chan_details_y);
 
@@ -836,6 +837,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                                                       nodes_per_chan,
                                                                                                       switchpoint_rng,
                                                                                                       interdie_3d_links,
+                                                                                                      route_verbosity,
                                                                                                       device_model_warnings);
 
     // Check whether RR graph need to allocate new nodes for 3D connections.

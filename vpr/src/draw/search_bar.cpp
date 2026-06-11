@@ -211,9 +211,10 @@ void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
 
 bool highlight_rr_nodes(RRNodeId hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    //TODO: fixed sized char array may cause overflow.
-    char message[250] = "";
+    std::string message = "";
 
     if (!hit_node) {
         application->update_message(draw_state->default_message);
@@ -222,7 +223,16 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         return false;
     }
 
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    if (!draw_state->draw_channel_nodes && (rr_graph.node_type(hit_node) == e_rr_type::CHANX || rr_graph.node_type(hit_node) == e_rr_type::CHANY)) {
+        application.refresh_drawing();
+        // Return true here to indicate that we processed the click, even though we didn't highlight anything.
+        return true;
+    }
+
+    if (!draw_state->draw_inter_cluster_pins && is_inter_cluster_node(rr_graph, hit_node) && (rr_graph.node_type(hit_node) == e_rr_type::IPIN || rr_graph.node_type(hit_node) == e_rr_type::OPIN)) {
+        application.refresh_drawing();
+        return true;
+    }
 
     // Highlight neighboring non_configurable nodes in magenta as well
     std::set<RRNodeId> nodes = draw_expand_non_configurable_rr_nodes(hit_node);
@@ -246,7 +256,7 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
 
     //Show info about *only* hit node to graphics
     std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
-    sprintf(message, "Selected %s", info.c_str());
+    message = "Selected " + info;
     rr_highlight_message = message;
 
     if (draw_state->show_nets) {

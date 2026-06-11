@@ -139,7 +139,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                  segment_inf_x,
                                  segment_inf_y,
                                  perimeter_cb,
-                                 delayless_switch);
+                                 delayless_switch,
+                                 crr_opts.gsb_version);
     } else {
         build_rr_graph_regular_edges(rr_graph,
                                      rr_graph_builder,
@@ -207,7 +208,8 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
                               const std::vector<t_segment_inf>& segment_inf_x,
                               const std::vector<t_segment_inf>& segment_inf_y,
                               const bool& perimeter_cb,
-                              const RRSwitchId& delayless_switch) {
+                              const RRSwitchId& delayless_switch,
+                              e_gsb_version gsb_version) {
     /* Create map from mux name to index */
 
     size_t num_edges_to_create = 0;
@@ -233,7 +235,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
             /* Create a GSB object */
             const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord, perimeter_cb);
+                                                            layer, gsb_coord, perimeter_cb, gsb_version);
 
             t_vib_map vib_map;
             vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, gsb_coord);
@@ -255,7 +257,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
         /* Create a GSB object */
         const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                         device_chan_width, segment_inf_x, segment_inf_y,
-                                                        layer, gsb_coord, perimeter_cb);
+                                                        layer, gsb_coord, perimeter_cb, gsb_version);
 
         t_vib_map vib_map;
         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord);
@@ -280,7 +282,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
         /* Create a GSB object */
         const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                         device_chan_width, segment_inf_x, segment_inf_y,
-                                                        layer, gsb_coord, perimeter_cb);
+                                                        layer, gsb_coord, perimeter_cb, gsb_version);
 
         t_vib_map vib_map;
         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord);
@@ -343,7 +345,8 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
         crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
                                                                                       *node_lookup,
                                                                                       *sb_manager,
-                                                                                      route_verbosity);
+                                                                                      route_verbosity,
+                                                                                      crr_opts.gsb_version);
         crr_connection_builder->initialize(grids.width(),
                                            grids.height(),
                                            crr_opts.annotated_rr_graph);
@@ -367,7 +370,8 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             /* Create a GSB object */
             const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord, perimeter_cb);
+                                                            layer, gsb_coord, perimeter_cb,
+                                                            crr_opts.gsb_version);
 
             if (build_crr_edges) {
                 /* When CRR edges are built, all GSB connections (including input

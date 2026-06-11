@@ -1,0 +1,21 @@
+##############################################################################
+# functional simulation: 4x8 dual-port register file
+#
+# goal here is to test for SRAM
+# we read on port 1 and write on port 2
+##############################################################################
+
+circuits_dir=benchmarks/func_sim/regfile_4x8
+archs_dir=arch
+
+circuit_list_add=regfile_4x8.v
+
+arch_list_add=timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+testbench_dir=benchmarks/func_sim/regfile_4x8
+testbench_file=tb_regfile_4x8.sv
+
+flow_script=run_func_sim_flow.py
+parse_file=func_sim.txt
+qor_parse_file=qor_func_sim.txt
+pass_requirements_file=pass_requirements_func_sim.txt
