@@ -1369,12 +1369,18 @@ static void set_force_pause() {
     draw_state->forced_pause = true;
 }
 
+// The enums below are the integer argument values accepted by the
+// --graphics_commands graphics-script commands (e.g. `set_nets <int>`,
+// `set_cpd <int>`, `set_congestion <int>`).
+
+// Argument values for the `set_nets` graphics-script command.
 enum e_set_nets_arg : int {
     SET_NETS_OFF = 0,
     SET_NETS_FLYLINES = 1,
     SET_NETS_ROUTED = 2,
 };
 
+// Argument bits for the `set_cpd` graphics-script command (a bitmask).
 enum e_set_cpd_arg_bits : int {
     SET_CPD_OFF = 0,
     SET_CPD_FLYLINES = 1 << 0,
@@ -1382,6 +1388,7 @@ enum e_set_cpd_arg_bits : int {
     SET_CPD_ROUTING = 1 << 2,
 };
 
+// Argument values for the `set_congestion` graphics-script command.
 enum e_set_congestion_arg : int {
     SET_CONGESTION_OFF = 0,
     SET_CONGESTION_NODES = 1,
