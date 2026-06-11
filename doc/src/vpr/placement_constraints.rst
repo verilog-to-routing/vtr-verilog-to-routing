@@ -5,7 +5,7 @@ Placement Constraints
 
 VPR supports running flows with placement constraints. Placement constraints are set on primitives to lock them down to specified regions on the FPGA chip. For example, a user may use placement constraints to lock down pins to specific locations on the chip. Also, groups of primitives may be locked down to regions on the chip in CAD flows that use floorplanning or modular design, or to hand-place a timing critical piece.
 
-The placement constraints should be specified by the user using an XML constraints file format, as described in the section below. When VPR is run with placement constraints, both the packing and placement flows are performed in such a way that the constraints are respected. The packing stage does not pack any primitives together that have conflicting floorplan constraints. The placement stage considers the floorplan constraints when choosing a location for each clustered block during initial placement, and does not move any block outside of its constraint boundaries during place moves.
+The placement constraints should be specified by the user using an XML constraints file format, as described in the section below. When VPR is run with placement constraints, both the packing and placement flows are performed in such a way that the constraints are respected. The packing stage does not pack any primitives together that have conflicting floorplan constraints, and can optionally pin atoms to specific locations inside a clustered logic block (see ``logical_block_location`` below). The placement stage considers the floorplan constraints when choosing a location for each clustered block during initial placement, and does not move any block outside of its constraint boundaries during place moves.
 
 A Placement Constraints File Example
 ------------------------------------
@@ -83,6 +83,10 @@ Partitions, Atoms, Regions, and Logical Block Types
 			A boolean value indicating whether the ``name_pattern`` should be treated as a regular expression.
 			**Default:** ``false``
 
+		:opt_param logical_block_location:
+			Constrains the atom to a specified location inside a logic block during packing.
+			See :ref:`logical_block_location` for syntax, examples, and figures.
+
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
 		overlap with each other (in order to ease processing when loading in the file).
@@ -150,3 +154,47 @@ Partitions, Atoms, Regions, and Logical Block Types
 		**Use Case Example:** Architectures such as Stratix-IV contain multiple types of RAM blocks (e.g., M9K and M144K). This tag can be used to constrain certain RAM slices to specific RAM logical block types. For instance, if certain memory operations require the larger M144K blocks, you can add ``<add_logical_block name_pattern="M144K"/>`` to ensure those atoms are mapped only to the appropriate RAM block type.
 
 		**Note:** If no ``<add_logical_block>`` tags are specified for a partition, atoms in the partition are not constrained to any particular logical block type and can be mapped to any available type.
+
+.. _logical_block_location:
+
+Logical Block Location
+----------------------
+
+Some designs must place primitives at fixed FPGA sites **and** at fixed slices inside a logic block, for example to meet timing to an external interface (:numref:`fpga_interface`).
+
+In each ``<partition>``, use:
+
+* ``<add_region>`` — which logic block site on the chip (``x_low``, ``y_low``, ...).
+* ``logical_block_location`` on ``<add_atom>`` — which slice inside that block (from the architecture ``pb_type`` hierarchy).
+
+.. _fpga_interface:
+
+.. figure:: ../Images/logical_block_location_fpga_interface.png
+    :align: center
+    :width: 75%
+
+    FPGA floorplan: interfacing atoms (LUT and FF) are constrained to specific CLB sites and connected to external logic.
+
+.. figure:: ../Images/logical_block_location_clb_hierarchy.png
+    :align: center
+    :width: 60%
+
+    For each CLB placed by ``add_region``, ``logical_block_location`` picks the slice inside it—for example,
+    CLB at (2, 1): FLE 2 and an FF; CLB at (2, 2): FLE 3 and a LUT.
+
+.. note::
+   The first level (e.g. ``clb``) may omit the index: ``clb.fle[0]...`` is equivalent to ``clb[0].fle[0]...``.
+   Deeper levels should include indices when you need a specific slice.
+
+**Example:**
+
+.. code-block:: xml
+
+	<partition name="fix_ff_atom_d">
+		<add_atom name_pattern="d" logical_block_location="clb[0].fle[2]{n1_lut4}.ble4[0].ff[0]"/>
+		<add_region x_low="2" y_low="1" x_high="2" y_high="1"/>
+	</partition>
+	<partition name="fix_lut_atom_c">
+		<add_atom name_pattern="c" logical_block_location="clb[0].fle[3]{n1_lut4}.ble4[0].lut4[0]"/>
+		<add_region x_low="2" y_low="2" x_high="2" y_high="2"/>
+	</partition>

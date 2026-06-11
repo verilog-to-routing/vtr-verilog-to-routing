@@ -1413,6 +1413,7 @@ struct t_analysis_opts {
  * @brief Version of the Generic Switch Block (GSB).
  */
 enum class e_gsb_version {
+    NOT_CRR, ///< Default for non-CRR architectures
     GSB_V1,
     GSB_V2,
 };

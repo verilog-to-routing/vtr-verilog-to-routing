@@ -85,7 +85,7 @@ static void setup_switches(const t_arch& arch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
 
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
-static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts);
+static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
 /**
@@ -179,7 +179,7 @@ void SetupVPR(const t_options* options,
     setup_anneal_sched(*options, &placerOpts->anneal_sched);
     setup_router_opts(*options, routerOpts);
     setup_analysis_opts(*options, *analysisOpts);
-    setup_crr_opts(*options, *crrOpts);
+    setup_crr_opts(*options, *crrOpts, device_ctx);
     setup_power_opts(*options, powerOpts, arch);
     setup_noc_opts(*options, nocOpts);
     setup_server_opts(*options, serverOpts);
@@ -771,13 +771,21 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
     analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
 }
 
-static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
+static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx) {
     crr_opts.sb_maps = Options.sb_maps;
     crr_opts.sb_templates = Options.sb_templates;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
     crr_opts.sb_count_dir = Options.sb_count_dir;
-    crr_opts.gsb_version = Options.gsb_version;
+
+    // If the user did not explicitly set a GSB version, infer the default:
+    // use GSB_V1 when sb_maps is provided (CRR flow), otherwise NOT_CRR.
+    e_gsb_version gsb_version = Options.gsb_version;
+    if (gsb_version == e_gsb_version::NOT_CRR && !Options.sb_maps.value().empty()) {
+        gsb_version = e_gsb_version::GSB_V1;
+    }
+    crr_opts.gsb_version = gsb_version;
+    device_ctx.gsb_version = gsb_version;
 }
 
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

@@ -84,13 +84,6 @@ static float get_router_expansion_cost(const t_rr_node_route_inf& node_inf,
                                        e_draw_router_expansion_cost draw_router_expansion_cost);
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
-/**
- * @brief Calculate the ratio between pixels and world units spanning the screen width.
- * 
- * @return Returns the ratio described above, which will be used to determine when decluttering should occur.
- */
-static double get_pixels_per_world_unit(ezgl::renderer* g);
-
 static void draw_main_canvas(ezgl::renderer* g);
 
 /**
@@ -184,23 +177,11 @@ void init_graphics_state(bool show_graphics_val,
 }
 
 #ifndef NO_GRAPHICS
-static double get_pixels_per_world_unit(ezgl::renderer* g) {
-    double world_width = g->get_visible_world().width();
-    double screen_width = g->get_visible_screen().width();
-    // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
-    // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
-    // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
-    // returned by this function is below 1, it means that the channel nodes are blended together and should be decluttered.
-    return screen_width / world_width;
-}
 
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
-
-    // The ratio between pixels and world units spanning the screen width. Used to determine when decluttering should occur.
-    double pixel_per_world_unit = get_pixels_per_world_unit(g);
 
     if (draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT) {
         draw_interposer_cuts(g);
@@ -210,15 +191,6 @@ static void draw_main_canvas(ezgl::renderer* g) {
         draw_internal_draw_subblk(g);
 
         if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
-            if (draw_state->enable_decluttering) {
-                // 1 pixel per channel node is the threshold at which the nodes are blended into a solid color. 1.5 is a more relaxed bar.
-                constexpr double min_pixel_per_chan_node = 1.5;
-                // If pixel_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
-                draw_state->declutter_rr = pixel_per_world_unit < min_pixel_per_chan_node;
-            } else {
-                // Currently this branch will never be called, since enable_decluttering hasn't been wired to a UI button.
-                draw_state->declutter_rr = false;
-            }
 
             draw_rr(g);
 
@@ -614,6 +586,16 @@ void set_initial_world_ap() {
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
+}
+
+double get_pixels_per_world_unit(ezgl::renderer* g) {
+    double world_width = g->get_visible_world().width();
+    double screen_width = g->get_visible_screen().width();
+    // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
+    // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
+    // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
+    // returned by this function is below 1, it means that the channel nodes are blended together and should be decluttered.
+    return screen_width / world_width;
 }
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {

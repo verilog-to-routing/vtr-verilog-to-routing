@@ -1498,7 +1498,9 @@ struct ParsePostSynthNetlistUnconnOutputHandling {
 struct ParseGsbVersion {
     ConvertedValue<e_gsb_version> from_str(const std::string& str) {
         ConvertedValue<e_gsb_version> conv_value;
-        if (str == "1")
+        if (str == "none")
+            conv_value.set_value(e_gsb_version::NOT_CRR);
+        else if (str == "1")
             conv_value.set_value(e_gsb_version::GSB_V1);
         else if (str == "2")
             conv_value.set_value(e_gsb_version::GSB_V2);
@@ -1512,7 +1514,9 @@ struct ParseGsbVersion {
 
     ConvertedValue<std::string> to_str(e_gsb_version val) {
         ConvertedValue<std::string> conv_value;
-        if (val == e_gsb_version::GSB_V1)
+        if (val == e_gsb_version::NOT_CRR)
+            conv_value.set_value("none");
+        else if (val == e_gsb_version::GSB_V1)
             conv_value.set_value("1");
         else if (val == e_gsb_version::GSB_V2)
             conv_value.set_value("2");
@@ -1525,7 +1529,7 @@ struct ParseGsbVersion {
     }
 
     std::vector<std::string> default_choices() {
-        return {"1", "2"};
+        return {"none", "1", "2"};
     }
 };
 
@@ -3492,8 +3496,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     crr_grp.add_argument<e_gsb_version, ParseGsbVersion>(args.gsb_version, "--gsb_version")
-        .help("Specifies which GSB version should be used for CRR switch block templates. Valid values are 1 or 2.")
-        .default_value("1")
+        .help("Specifies which GSB version should be used for CRR switch block templates. Valid values are 1 or 2. Defaults to 1 when --sb_maps is set, otherwise no GSB version is assumed.")
+        .default_value("none")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");
