@@ -320,9 +320,10 @@ struct t_draw_state {
     std::vector<std::vector<std::string>> parsed_graphics_cmds;
 
     ///@brief Index of the next command to run in `parsed_graphics_cmds` (an
-    /// index into the outer vector, i.e. the command index). Persists across
-    /// run_graphics_commands() invocations so that `wait_for_stage` barriers
-    /// can split a script across multiple update_screen() calls.
+    /// index into the outer `parsed_graphics_cmds` vector, i.e. which
+    /// `;`-separated command is next). Persists across run_graphics_commands()
+    /// invocations so that `wait_for_stage` barriers can split a script across
+    /// multiple update_screen() calls.
     size_t graphics_cmd_index = 0;
 
     ///@brief Rendering backend: "immediate", "deferred", or "rhi"
