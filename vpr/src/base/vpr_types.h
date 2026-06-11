@@ -1629,7 +1629,11 @@ struct t_vpr_setup {
     int GraphPause;                      ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
-    std::string RendererType;            ///<rendering backend: "immediate", "deferred", or "rhi"
+    std::string RendererType;            ///<rendering backend: "immediate" (SW QPainter, no batching; most
+                                         ///<compatible, lowest performance/RAM), "deferred" (SW QPainter with
+                                         ///<draw-call batching; faster than immediate, more RAM), or "rhi"
+                                         ///<(GPU hardware rendering; highest performance, requires a GPU/VRAM,
+                                         ///<uses the most RAM)
     t_power_opts PowerOpts;
     std::string device_layout;
     e_constant_net_method constant_net_method; ///<How constant nets should be handled
