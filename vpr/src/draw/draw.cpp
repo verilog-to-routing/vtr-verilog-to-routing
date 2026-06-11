@@ -160,6 +160,7 @@ ezgl::point2d window_preview_cursor(0, 0); // updated by act_on_mouse_move while
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
+// Used for scripted graphics (rendered to files via --graphics_commands).
 // Stages that have hit their first update_screen() (auto-recorded by
 // update_screen on pic_on_screen transitions) and stages that have been
 // marked complete via notify_stage_complete(). Consulted by the
@@ -167,6 +168,7 @@ std::string rr_highlight_message;
 std::set<e_pic_type> initial_stages;
 std::set<e_pic_type> completed_stages;
 
+// Used for scripted graphics (rendered to files via --graphics_commands).
 // `exit N` from --graphics_commands is processed deferredly: the
 // interpreter sets these flags and breaks, then update_screen() honors
 // the request after the current render checkpoint completes. This avoids
