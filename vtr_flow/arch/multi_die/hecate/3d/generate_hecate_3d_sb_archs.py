@@ -27,12 +27,14 @@ def _indent(level: int) -> str:
     return " " * (2 * level)
 
 
-def _sg_location_line(attrs: Mapping[str, str], *, everywhere: bool = False, spaced_everywhere: bool = True) -> str:
+def _sg_location_line(
+    attrs: Mapping[str, str], *, everywhere: bool = False, spaced_everywhere: bool = True
+) -> str:
     attr_text = " ".join(f'{key}="{value}"' for key, value in attrs.items())
     if everywhere:
         everywhere_type = 'type="EVERYWHERE"   ' if spaced_everywhere else 'type="EVERYWHERE" '
         return (
-            f'{_indent(3)}<sg_location {everywhere_type}'
+            f"{_indent(3)}<sg_location {everywhere_type}"
             f'num="{attrs["num"]}" sg_link_name="{attrs["sg_link_name"]}"/>'
         )
     return f"{_indent(3)}<sg_location {attr_text}/>"
@@ -42,9 +44,7 @@ def _location_header() -> list[str]:
     return ["", f"{_indent(3)}"]
 
 
-def _append_clb_locations(
-    lines: list[str], pitch_um: str, clb_num: float
-) -> None:
+def _append_clb_locations(lines: list[str], pitch_um: str, clb_num: float) -> None:
     integer_part, has_fractional = _split_conn_num(clb_num)
     clb_everywhere_spacing = pitch_um != "25"
 
@@ -67,12 +67,24 @@ def _append_clb_locations(
     if has_fractional:
         lines.append(
             _sg_location_line(
-                {"type": "XY_SPECIFIED", "num": "1", "starty": "0", "incry": "2", "sg_link_name": "L_UP"}
+                {
+                    "type": "XY_SPECIFIED",
+                    "num": "1",
+                    "starty": "0",
+                    "incry": "2",
+                    "sg_link_name": "L_UP",
+                }
             )
         )
         lines.append(
             _sg_location_line(
-                {"type": "XY_SPECIFIED", "num": "1", "starty": "1", "incry": "2", "sg_link_name": "L_DOWN"}
+                {
+                    "type": "XY_SPECIFIED",
+                    "num": "1",
+                    "starty": "1",
+                    "incry": "2",
+                    "sg_link_name": "L_DOWN",
+                }
             )
         )
 
@@ -201,9 +213,7 @@ def _append_mem_locations(lines: list[str], mem_num: float) -> None:
             lines.append("")
 
 
-def _build_locations(
-    pitch_um: str, clb_num: float, dsp_num: float, mem_num: float
-) -> list[str]:
+def _build_locations(pitch_um: str, clb_num: float, dsp_num: float, mem_num: float) -> list[str]:
     clb_total = int(clb_num * 2)
     dsp_total = clb_total + int(dsp_num * 2)
     mem_total = clb_total + int(mem_num * 2)
@@ -296,7 +306,9 @@ def _replace_xml_section(template_text: str, start_tag: str, end_tag: str, new_c
     return template_text[:start_idx] + new_content + template_text[end_idx:]
 
 
-def generate_hecate_arch_for_row(row: Mapping[str, str], template_text: str, output_dir: str) -> None:
+def generate_hecate_arch_for_row(
+    row: Mapping[str, str], template_text: str, output_dir: str
+) -> None:
     """Generate one Hecate 3D switch-block architecture variant."""
     variant_id = row["variant_id"]
     scatter_gather_section = build_scatter_gather_section(row)
@@ -304,7 +316,9 @@ def generate_hecate_arch_for_row(row: Mapping[str, str], template_text: str, out
         template_text, SCATTER_GATHER_START, SCATTER_GATHER_END, scatter_gather_section
     )
 
-    output_filename = (f"hecate_3d_sb_{variant_id}_fanin_{row['fanin']}_fanout_{row['fanout']}_7nm.xml")
+    output_filename = (
+        f"hecate_3d_sb_{variant_id}_fanin_{row['fanin']}_fanout_{row['fanout']}_7nm.xml"
+    )
     output_path = os.path.join(output_dir, output_filename)
 
     with open(output_path, "w", encoding="utf-8") as output_file:
