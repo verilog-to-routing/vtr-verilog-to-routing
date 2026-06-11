@@ -312,10 +312,11 @@ struct t_draw_state {
 
     std::string graphics_commands;
 
-    ///@brief Tokenized form of `graphics_commands` (one inner vector per
-    /// `;`-separated command). Built lazily by run_graphics_commands on the
-    /// first call (when this vector is still empty); `graphics_commands` is
-    /// set once at init and never mutated, so a single parse is sufficient.
+    ///@brief Tokenized form of `graphics_commands` (used for graphics
+    /// scripting); one inner vector per `;`-separated command. Built lazily by
+    /// run_graphics_commands on the first call (when this vector is still
+    /// empty); `graphics_commands` is set once at init and never mutated, so a
+    /// single parse is sufficient.
     std::vector<std::vector<std::string>> parsed_graphics_cmds;
 
     ///@brief Cursor into `parsed_graphics_cmds`. Persists across
