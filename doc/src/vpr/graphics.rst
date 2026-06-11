@@ -12,22 +12,47 @@ Enabling Graphics
 
 Compiling with Graphics Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The build system will attempt to build VPR with graphics support by default.
+VPR's graphics are built on `Qt6 <https://www.qt.io/>`_. A plain ``make`` builds
+the GUI **only if a suitable Qt6 (>= 6.9.3) is found**; otherwise VPR is built
+headless. The 6.9.3 floor exists because earlier Qt6 releases have QRhi
+rendering bugs.
 
-If all the required libraries are found the build system will report::
+The Qt6 GUI links against your system's OpenGL / EGL / xkbcommon runtime
+libraries. On Debian/Ubuntu these prerequisites are installed for you by
+``./install_apt_packages.sh``, or manually with::
 
-    -- EZGL: graphics enabled
+    > sudo apt-get install libxkbcommon-dev libgl-dev libegl-dev libopengl0 libegl-mesa0 libgl1-mesa-dri
 
-If the required libraries are not found cmake will report::
+With those in place, install Qt6 itself. On the currently supported
+distributions (e.g. Ubuntu 24.04) the system Qt6 is too old (24.04 ships
+Qt 6.4.2), so the recommended way to get a suitable Qt6 is the repo-local SDK
+installed by ``ensure_qt6_sdk.sh`` (no root required)::
 
-    -- EZGL: graphics disabled
+    > ./dev/ensure_qt6_sdk.sh
 
-and list the missing libraries::
+Two convenience targets make the choice explicit::
 
-    -- EZGL: Failed to find required X11 library (on debian/ubuntu try 'sudo apt-get install libx11-dev' to install)
-    -- EZGL: Failed to find required Xft library (on debian/ubuntu try 'sudo apt-get install libxft-dev' to install)
-    -- EZGL: Failed to find required fontconfig library (on debian/ubuntu try 'sudo apt-get install fontconfig' to install)
-    -- EZGL: Failed to find required cairo library (on debian/ubuntu try 'sudo apt-get install libcairo2-dev' to install)
+    > make ensure-gui        # build vpr WITH the GUI (runs ensure_qt6_sdk.sh first)
+    > make ensure-headless   # build vpr WITHOUT the GUI
+
+During configuration the build reports whether graphics were enabled. If a
+suitable Qt6 is found::
+
+    -- VPR Graphics: Enabled (Qt6 6.9.3 found)
+
+Otherwise (and VPR is built without graphics)::
+
+    -- VPR Graphics: Disabled (no Qt6 >= 6.9.3; run ./dev/ensure_qt6_sdk.sh or install a system Qt6 if its version >= 6.9.3)
+
+.. note:: On future distributions that ship Qt6 >= 6.9.3 (Ubuntu 26.04 onward)
+    you can instead install Qt6 system-wide and skip ``ensure_qt6_sdk.sh``
+    entirely — at which point the script becomes obsolete. The GUI needs the
+    base, private (QRhi/QShader headers), SVG, and shader-tools (the ``qsb``
+    shader baker) packages::
+
+        > sudo apt-get install qt6-base-dev qt6-base-private-dev qt6-svg-dev qt6-shadertools-dev
+
+.. seealso:: :doc:`Building VTR </BUILDING>` for the full build instructions.
 
 Enabling Graphics at Run-time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
