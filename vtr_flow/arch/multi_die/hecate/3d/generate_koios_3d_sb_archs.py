@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """Generate Koios 3D switch-block architecture variants from a CSV description
-and the base '3d_SB_koios_template_7nm.xml' architecture."""
+and the base 'hecate_3d_sb_template.xml' architecture."""
 
 import csv
 import os
@@ -337,4 +337,4 @@ def generate_koios_3d_sb_archs(
 
 
 if __name__ == "__main__":
-    generate_koios_3d_sb_archs("koios_sb_connectivity.csv", "3d_SB_koios_template_7nm.xml")
+    generate_koios_3d_sb_archs("koios_sb_connectivity.csv", "hecate_3d_sb_template.xml")
