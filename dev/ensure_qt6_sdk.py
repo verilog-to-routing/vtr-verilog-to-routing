@@ -37,6 +37,7 @@ otherwise the stale/partial SDK is removed and a clean copy is installed and
 re-validated.
 """
 
+import atexit
 import os
 import re
 import shutil
@@ -54,10 +55,51 @@ REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 QT_PREFIX = os.environ.get("VTR_QT_PREFIX", os.path.join(REPO_ROOT, "qt6"))
 QT_HOME = os.path.join(QT_PREFIX, QT_VERSION, "gcc_64")
 
+# A copy of this run's screen output is also written here (see start_logging).
+LOG_PATH = os.path.join(REPO_ROOT, "ensure_qt6_sdk.log")
+
 
 def have(cmd):
     """True if an executable named cmd is on PATH (like `command -v`)."""
     return shutil.which(cmd) is not None
+
+
+def start_logging(log_path):
+    """Mirror this run's screen output to log_path (a copy, not a redirect).
+
+    Tees fds 1/2 through `tee`, so BOTH our prints and the child-process
+    (pip/aqt) output land on the screen and in the file. Best-effort: silently
+    skipped if `tee` is unavailable or the target directory is not writable.
+    """
+    log_dir = os.path.dirname(log_path) or "."
+    if not have("tee") or not os.access(log_dir, os.W_OK):
+        return
+    try:
+        tee = subprocess.Popen(["tee", log_path], stdin=subprocess.PIPE)
+    except OSError:
+        return
+    # Point our stdout/stderr at tee's input; tee keeps writing to the original
+    # screen (its inherited stdout) and to the file.
+    os.dup2(tee.stdin.fileno(), 1)
+    os.dup2(tee.stdin.fileno(), 2)
+    tee.stdin.close()
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(line_buffering=True)
+        except (AttributeError, ValueError):
+            pass
+
+    def _finish():
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except (OSError, ValueError):
+            pass
+        os.close(1)
+        os.close(2)
+        tee.wait()
+
+    atexit.register(_finish)
 
 
 def aqt_runs(aqt_path):
@@ -298,6 +340,9 @@ def validate_qt_sdk(qthome):
 
 def main():
     """Ensure a suitable Qt6 is available; return a process exit code."""
+    # Also write this run's output to <repo>/ensure_qt6_sdk.log (still on screen).
+    start_logging(LOG_PATH)
+
     # -----------------------------------------------------------------------
     # Windows: not supported yet (placeholder). Everything below assumes a Linux
     # SDK (aqt linux_gcc_64, .so libraries, LD_LIBRARY_PATH, the offscreen
