@@ -1,7 +1,8 @@
-// Testbench for the registered 8x8 signed multiply
+// testbench for the registered 8x8 signed multiply
 //  - applies reset, then drives all signed (a, b) pairs
 //  - waits two clock edges (capture inputs, then registered product)
 //  - compares 16-bit output to signed a * b in software
+//  - includes -128 edge cases for magnitude and sign-combination logic
 `timescale 1ns/1ps
 module tb;
 
@@ -60,6 +61,13 @@ module tb;
         driveInputs(8'sd0, 8'sd0);
         repeat (3) @(posedge clk);
         rst = 0;
+
+        // -128 magnitude and sign-combination edge cases
+        checkMult(-8'sd128, -8'sd128);
+        checkMult(-8'sd128, 8'sd127);
+        checkMult(8'sd127, -8'sd128);
+        checkMult(-8'sd128, 8'sd1);
+        checkMult(-8'sd1, -8'sd128);
 
         for (int aTest = -128; aTest < 128; aTest++) begin
             for (int bTest = -128; bTest < 128; bTest++) begin

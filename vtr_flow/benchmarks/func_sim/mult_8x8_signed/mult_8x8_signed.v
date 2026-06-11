@@ -1,6 +1,7 @@
 // registered 8-bit by 8-bit signed multiply
 //  - latches a and b on each clock edge
-//  - forms signed product = a_reg * b_reg
+//  - converts signed operands to unsigned magnitudes for the primitive
+//  - multiplies operand signs and applies the result sign to the product
 //  - product is valid one full clock after inputs change
 //  - single-bit ports so post-implementation netlist port names match the testbench
 module top (
@@ -17,10 +18,34 @@ module top (
     reg signed [7:0] bReg;
     reg signed [15:0] prodReg;
 
+    wire signA;
+    wire signB;
+    wire negResult;
+    wire [7:0] aMag;
+    wire [7:0] bMag;
+    wire [15:0] unsignedProd;
+    wire signed [15:0] signedProd;
+
     assign a = {a7, a6, a5, a4, a3, a2, a1, a0};
     assign b = {b7, b6, b5, b4, b3, b2, b1, b0};
     assign {p15, p14, p13, p12, p11, p10, p9, p8,
             p7, p6, p5, p4, p3, p2, p1, p0} = prodReg;
+
+    assign signA = aReg[7];
+    assign signB = bReg[7];
+    assign negResult = signA ^ signB;
+
+    // -128 becomes unsigned 128
+    assign aMag = signA ? (~aReg + 8'd1) : aReg;
+    assign bMag = signB ? (~bReg + 8'd1) : bReg;
+
+    multiply #(.WIDTH(8)) multInst (
+        .a(aMag),
+        .b(bMag),
+        .out(unsignedProd)
+    );
+
+    assign signedProd = negResult ? (~unsignedProd + 16'd1) : unsignedProd;
 
     always @(posedge clk) begin
         if (rst) begin
@@ -30,7 +55,7 @@ module top (
         end else begin
             aReg <= a;
             bReg <= b;
-            prodReg <= aReg * bReg;
+            prodReg <= signedProd;
         end
     end
 endmodule
