@@ -115,21 +115,56 @@ def detect_system_qt6():
 def qt_smoke_test(qthome):
     """Build, link, and run a tiny Qt Widgets app against qthome; True on success."""
     if not have("make"):
-        print("  smoke test skipped ('make' not found)")
+        print("  ensure_qt6_sdk smoke test skipped ('make' not found)")
         return True
 
+    # Exercise the same Qt modules the real VPR GUI (libezgl) links against —
+    # Widgets, Xml, Svg, and the private QRhi API — not just Core/Gui/Widgets,
+    # so a Qt missing any of them fails here rather than during the VPR build.
     # The required floor (e.g. "6.9.3") is baked straight into the source, and
     # the program compares the *runtime* Qt version (qVersion()) against it with
     # Qt's QVersionNumber, failing if it is older.
     smoke_cpp = """\
 #include <QApplication>
 #include <QLabel>
+#include <QDomDocument>      // Qt6::Xml
+#include <QSvgRenderer>      // Qt6::Svg
 #include <QVersionNumber>
 #include <QtGlobal>
+#include <rhi/qrhi.h>        // Qt6::GuiPrivate (QRhi)
+#include <memory>
+// Exit codes (ensure_qt6_sdk.py maps these to a per-failure message):
+//   0 = ok, 2 = runtime Qt below floor, 3 = Xml, 4 = Svg, 5 = QRhi.
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     QLabel label(QStringLiteral("ok"));
     label.show();
+
+    // Qt6::Xml — parse a tiny document.
+    QDomDocument doc;
+    doc.setContent(QByteArray("<root><n>1</n></root>"));
+    if (doc.documentElement().tagName() != QLatin1String("root")) {
+        qWarning("QtXml (QDomDocument) failed to parse");
+        return 3;
+    }
+
+    // Qt6::Svg — parse a tiny SVG.
+    QSvgRenderer svg(QByteArray(
+        "<svg width='1' height='1'><rect width='1' height='1'/></svg>"));
+    if (!svg.isValid()) {
+        qWarning("QtSvg (QSvgRenderer) failed to parse SVG");
+        return 4;
+    }
+
+    // Qt6::GuiPrivate — QRhi. The Null backend needs no GPU and works headless,
+    // so it just verifies the private QRhi headers/libs link and initialize.
+    QRhiNullInitParams rhi_params;
+    std::unique_ptr<QRhi> rhi(QRhi::create(QRhi::Null, &rhi_params));
+    if (!rhi) {
+        qWarning("QRhi (Null backend) failed to initialize");
+        return 5;
+    }
+
     // Verify the runtime Qt meets the build floor.
     const QVersionNumber runtime = QVersionNumber::fromString(QString::fromLatin1(qVersion()));
     const QVersionNumber floor = QVersionNumber::fromString(QStringLiteral("__QT_VERSION__"));
@@ -141,7 +176,7 @@ int main(int argc, char **argv) {
 }
 """.replace("__QT_VERSION__", QT_VERSION)
     smoke_pro = """\
-QT += core gui widgets
+QT += core gui gui-private widgets svg xml
 CONFIG += console c++17
 CONFIG -= app_bundle
 TARGET = smoke
@@ -166,7 +201,7 @@ SOURCES += smoke.cpp
                 check=False,
             ).returncode == 0
         if not built:
-            print("  smoke test FAILED to build/link against {}".format(qthome))
+            print("  ensure_qt6_sdk smoke test FAILED to build/link against {}".format(qthome))
             return False
 
         # Run headless: the offscreen platform plugin needs no display/X server.
@@ -182,18 +217,26 @@ SOURCES += smoke.cpp
             check=False,
         ).returncode
 
-    if rc == 2:
-        print("  smoke test ran but runtime Qt is below the {} floor".format(QT_VERSION))
+    # Distinct exit codes from smoke.cpp, so a failure says *what* is wrong with
+    # the SDK rather than just "it failed". Keep in sync with the returns there.
+    smoke_failures = {
+        2: "the runtime Qt is below the {} floor".format(QT_VERSION),
+        3: "the Qt Xml module (QDomDocument) is not usable",
+        4: "the Qt Svg module (QSvgRenderer) is not usable",
+        5: "the private Qt QRhi API (Qt6::GuiPrivate) is not usable",
+    }
+    if rc in smoke_failures:
+        print("  ensure_qt6_sdk smoke test ran but {}".format(smoke_failures[rc]))
         return False
     if rc != 0:
-        print("  smoke test built but FAILED to run (exit {})".format(rc))
+        print("  ensure_qt6_sdk smoke test built but FAILED to run (exit {})".format(rc))
         return False
     return True
 
 
-# Validate the Qt SDK at qthome: required Core/Gui/Widgets/ShaderTools libs, the
-# Qt6 CMake config, and the offscreen plugin must exist, then the runtime smoke
-# test.
+# Validate the Qt SDK at qthome: required Core/Gui/Widgets/Svg/Xml/ShaderTools
+# libs, the Qt6 CMake config, and the offscreen plugin must exist, then the
+# runtime smoke test.
 def validate_qt_sdk(qthome):
     """True if qthome has the required Qt6 files and passes the runtime smoke test."""
     required = [
@@ -201,13 +244,15 @@ def validate_qt_sdk(qthome):
         "lib/libQt6Core.so",
         "lib/libQt6Gui.so",
         "lib/libQt6Widgets.so",
+        "lib/libQt6Svg.so",
+        "lib/libQt6Xml.so",
         "lib/libQt6ShaderTools.so",
         "lib/cmake/Qt6/Qt6Config.cmake",
         "plugins/platforms/libqoffscreen.so",
     ]
     for rel in required:
         if not os.path.exists(os.path.join(qthome, rel)):
-            print("  missing {}".format(rel))
+            print("  ensure_qt6_sdk: missing {}".format(rel))
             return False
     return qt_smoke_test(qthome)
 
