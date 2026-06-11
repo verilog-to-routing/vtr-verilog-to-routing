@@ -5,11 +5,23 @@ Some architectures are already in the folders, but due to the large number of to
 architectures using the base architectures and parameters inside a csv file.
 
 ## How to generate the Hecate architectures
+
+### 2.5D interposer architectures
+
 Run the following command to generate the 2.5D Hecate architectures:
 
 ```bash
 cd interposer
 python generate_hecate_interposer_archs.py
+```
+
+### 3D switch-block architectures
+
+Run the following command to generate the 3D switch-block architecture variants:
+
+```bash
+cd 3d
+python generate_hecate_3d_sb_archs.py
 ```
 
 ### Interposer CSV and Generation Script
@@ -54,7 +66,34 @@ The 2.5D architectures explore various interposer configurations:
 
 ## 3. 3D Architectures
 
-<!-- TODO: Add details about 3D Architectures -->
+The 3D architectures use the same FPGA fabric described in Section 1 with switch-block inter-layer connectivity.
+Variants explore different pitches and fanin/fanouts:
+
+* **Inter-die Connectivity:** Switch-block with bidirectional or unidirectional links.
+* **Architecture Variations:** The architectures differ in:
+  * **Pitch:** Lower pitch allows more inter-layer connections per block.
+  * **Directionality:** Bidirectional/unidirectional.
+* **Architecture Naming Scheme:**
+  - `hecate_3d_sb_[PITCH]um_[DIRECTIONALITY]_7nm.xml`
+  - `hecate_3d_sb_[PITCH]um_reduced_[DIRECTIONALITY]_7nm.xml` (10µm reduced variants)
+  - [PITCH]: bump pitch in µm (5, 10, or 25)
+  - [DIRECTIONALITY]: `bidir` or `unidir`
+
+### 3D CSV and Generation Script
+
+The 3D switch-block architecture variants are generated from `3d/hecate_3d_sb_connectivity.csv` and the
+template architecture `3d/hecate_3d_sb_template.xml`. Each CSV row describes one variant:
+
+* `variant_id`: output architecture identifier, used in the generated filename
+  `hecate_3d_sb_[variant_id]_7nm.xml`.
+* `pitch_um`: bump pitch in µm (5, 10, or 25).
+* `connectivity`: inter-die link directionality (`bidir` or `unidir`).
+* `clb_num`, `dsp_num`, `mem_num`: inter-layer connection counts per block type and per
+  direction (`L_UP` and `L_DOWN`). Each value times two must be an integer.
+
+`3d/generate_hecate_3d_sb_archs.py` reads each CSV row, reloads the template XML, and replaces the
+`scatter_gather_list` section with the variant-specific mux names, directionality, and connection
+counts. Generated files are written to `3d/hecate_3D/`.
 
 ---
 
