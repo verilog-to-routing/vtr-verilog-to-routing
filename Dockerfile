@@ -10,11 +10,11 @@ COPY . ${WORKSPACE}
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 # Install and cleanup is done in one command to minimize the build cache size
 RUN apt-get update -qq \
-# extract run-time package names from install_apt_packages.sh via sed parsing
-    && sed '/sudo/d' install_apt_packages.sh | sed '/#/d' | sed '/packages_to_install/d' | sed '/)/d' | sed '/if\s.*then$/d' | sed '/if\s*\[\[/d' | sed '/else$/d' | sed '/fi$/d' | sed '/echo\s/d' | sed '/install_dev/d' | sed '/for /d' | sed '/done/d' | sed '/verilator/d' | sed 's/ \\//g' | sed '/^$/d' | sed '/^[[:space:]]*$/d' | sed 's/\s//g' \
-# install run-time packages needed to run vtr
+# Extract package names from install_apt_packages.sh
+    && sed '/sudo/d' install_apt_packages.sh | sed '/#/d' | sed '/packages_to_install/d' | sed '/)/d' | sed '/if\s.*then$/d' | sed '/else$/d' | sed '/fi$/d' | sed '/echo\s/d' | sed '/install_dev/d' | sed '/for /d' | sed '/^done$/d' | sed 's/ \\//g' | sed '/^$/d' | sed '/^[[:space:]]*$/d' | sed 's/\s//g' \
+# Install packages
     | xargs apt-get -y install --no-install-recommends \
-# additional packages for this docker image, including developer packages (--dev)
+# Additional packages not listed in install_apt_packages.sh
     && apt-get -y install --no-install-recommends \
     wget \
     ninja-build \
