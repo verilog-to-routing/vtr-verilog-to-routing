@@ -43,9 +43,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -89,9 +88,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -145,9 +143,8 @@ jobs:
     steps:
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: ${{ matrix.with_submodules }}
       # NOTE: We usually do not need sub-modules. We do not check sub-modules
       #       for formatting. However we may need to build make-format which
       #       requires building VTR which will not build without submodules.
@@ -216,9 +213,8 @@ jobs:
     steps:
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -253,9 +249,8 @@ jobs:
     steps:
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -353,9 +348,8 @@ jobs:
     steps:
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
@@ -466,9 +460,8 @@ jobs:
         python-version: 3.12.3
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: 'Get number of CPU cores'
       uses: SimenB/github-actions-cpu-cores@v3
@@ -618,9 +611,8 @@ jobs:
         python-version: 3.12.3
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -707,9 +699,8 @@ jobs:
         python-version: 3.12.3
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -787,9 +778,8 @@ jobs:
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -836,9 +826,8 @@ jobs:
         with:
           python-version: 3.12.3
       - uses: actions/checkout@v6
-
-      - name: Fetch submodules
-        run: git submodule update --init --recursive
+        with:
+          submodules: 'true'
 
       - name: Get number of CPU cores
         uses: SimenB/github-actions-cpu-cores@v3
@@ -877,9 +866,8 @@ jobs:
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -919,9 +907,8 @@ jobs:
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -965,9 +952,8 @@ jobs:
     steps:
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
@@ -997,9 +983,8 @@ jobs:
       CXX: g++-11
     steps:
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3

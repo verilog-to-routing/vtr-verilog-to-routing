@@ -40,9 +40,8 @@ jobs:
 
     # Checkout the VTR repo.
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     # Get the extra benchmarks
     - name: 'Get Extra Benchmarks'
@@ -148,9 +147,8 @@ jobs:
         python-version: 3.12.3
 
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v3
