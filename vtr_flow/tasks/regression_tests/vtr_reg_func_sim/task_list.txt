@@ -1,5 +1,7 @@
-# dual_clock_counters remains disabled due to synthesis issues.
+# dual_clock_counters is disabled due to synthesis issues.
 # see https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/3595
+# for any circuits using the adder and subtractor, we must use step-by-step ripple carry adding as parmys
+# is not able to find addder primitives. this is for testcases sub_4bit, addsub_4bit and adder_4bit
 regression_tests/vtr_reg_func_sim/adder_4bit
 regression_tests/vtr_reg_func_sim/adder_4bit_blif
 regression_tests/vtr_reg_func_sim/seq_fsm_detect
