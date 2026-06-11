@@ -1,0 +1,9 @@
+variant_id,pitch_um,connectivity,clb_num,dsp_num,mem_num
+5um_bidir,5,bidir,12,31,36
+5um_dir,5,unidir,12,31,36
+10um_bidir,10,bidir,3,7,9
+10um_dir,10,unidir,3,7,9
+10um_reduced_bidir,10,bidir,1,2,3
+10um_reduced_dir,10,unidir,1,2,3
+25um_bidir,25,bidir,0.5,0.5,1.5
+25um_dir,25,unidir,0.5,0.5,1.5
