@@ -246,10 +246,10 @@ SOURCES += smoke.cpp
 """
 
     with tempfile.TemporaryDirectory() as tmp:
-        with open(os.path.join(tmp, "smoke.cpp"), "w") as f:
-            f.write(smoke_cpp)
-        with open(os.path.join(tmp, "smoke.pro"), "w") as f:
-            f.write(smoke_pro)
+        with open(os.path.join(tmp, "smoke.cpp"), "w") as cpp_file:
+            cpp_file.write(smoke_cpp)
+        with open(os.path.join(tmp, "smoke.pro"), "w") as pro_file:
+            pro_file.write(smoke_pro)
 
         print("  building a Qt sample (Core/Gui/Widgets/Xml/Svg/QRhi) ... ", end="", flush=True)
         built = (
@@ -287,11 +287,11 @@ SOURCES += smoke.cpp
         )
         env = dict(os.environ)
         env["QT_QPA_PLATFORM"] = "offscreen"
-        ld = os.path.join(qthome, "lib")
+        lib_path = os.path.join(qthome, "lib")
         if env.get("LD_LIBRARY_PATH"):
-            ld = ld + ":" + env["LD_LIBRARY_PATH"]
-        env["LD_LIBRARY_PATH"] = ld
-        rc = subprocess.run(
+            lib_path = lib_path + ":" + env["LD_LIBRARY_PATH"]
+        env["LD_LIBRARY_PATH"] = lib_path
+        smoke_rc = subprocess.run(
             [os.path.join(tmp, "smoke")],
             env=env,
             stdout=subprocess.DEVNULL,
@@ -307,13 +307,13 @@ SOURCES += smoke.cpp
         4: "the Qt Svg module (QSvgRenderer) is not usable",
         5: "the private Qt QRhi API (Qt6::GuiPrivate) is not usable",
     }
-    if rc in smoke_failures:
+    if smoke_rc in smoke_failures:
         print("FAILED")
-        print("  ensure_qt6_sdk smoke test ran but {}".format(smoke_failures[rc]))
+        print("  ensure_qt6_sdk smoke test ran but {}".format(smoke_failures[smoke_rc]))
         return False
-    if rc != 0:
+    if smoke_rc != 0:
         print("FAILED")
-        print("  ensure_qt6_sdk smoke test built but FAILED to run (exit {})".format(rc))
+        print("  ensure_qt6_sdk smoke test built but FAILED to run (exit {})".format(smoke_rc))
         return False
     print("OK")
     return True
