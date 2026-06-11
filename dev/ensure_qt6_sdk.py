@@ -86,8 +86,7 @@ def version_ge(ver_a, ver_b):
 def _query_version(cmd):
     """Run a package-query command; return its stdout, or '' on failure."""
     try:
-        return subprocess.run(
-            cmd, capture_output=True, text=True, check=False).stdout
+        return subprocess.run(cmd, capture_output=True, text=True, check=False).stdout
     except OSError:
         return ""
 
@@ -96,12 +95,10 @@ def detect_system_qt6():
     """Return the system Qt6 version (X.Y.Z) find_package(Qt6) would use, or ''."""
     if have("dpkg-query"):
         # Debian/Ubuntu: qt6-base-dev installs the Qt6 CMake config under /usr.
-        out = _query_version(
-            ["dpkg-query", "-W", "-f=${Version}", "qt6-base-dev"])
+        out = _query_version(["dpkg-query", "-W", "-f=${Version}", "qt6-base-dev"])
     elif have("rpm"):
         # Fedora/RHEL: qt6-qtbase-devel installs the Qt6 CMake config under /usr.
-        out = _query_version(
-            ["rpm", "-q", "--qf", "%{VERSION}", "qt6-qtbase-devel"])
+        out = _query_version(["rpm", "-q", "--qf", "%{VERSION}", "qt6-qtbase-devel"])
     else:
         return ""
     match = re.match(r"[0-9]+(\.[0-9]+){1,2}", out)
@@ -189,17 +186,27 @@ SOURCES += smoke.cpp
         with open(os.path.join(tmp, "smoke.pro"), "w") as f:
             f.write(smoke_pro)
 
-        built = subprocess.run(
-            [os.path.join(qthome, "bin", "qmake"), "smoke.pro"],
-            cwd=tmp, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            check=False,
-        ).returncode == 0
-        if built:
-            built = subprocess.run(
-                ["make"], cwd=tmp,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        built = (
+            subprocess.run(
+                [os.path.join(qthome, "bin", "qmake"), "smoke.pro"],
+                cwd=tmp,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 check=False,
-            ).returncode == 0
+            ).returncode
+            == 0
+        )
+        if built:
+            built = (
+                subprocess.run(
+                    ["make"],
+                    cwd=tmp,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                ).returncode
+                == 0
+            )
         if not built:
             print("  ensure_qt6_sdk smoke test FAILED to build/link against {}".format(qthome))
             return False
@@ -212,8 +219,10 @@ SOURCES += smoke.cpp
             ld = ld + ":" + env["LD_LIBRARY_PATH"]
         env["LD_LIBRARY_PATH"] = ld
         rc = subprocess.run(
-            [os.path.join(tmp, "smoke")], env=env,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            [os.path.join(tmp, "smoke")],
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             check=False,
         ).returncode
 
@@ -268,14 +277,20 @@ def main():
     # manually and point CMAKE_PREFIX_PATH at it.
     # -----------------------------------------------------------------------
     if is_windows():
-        print("ensure_qt6_sdk: automatic Qt6 provisioning is not supported on "
-              "Windows yet.", file=sys.stderr)
-        print("Install Qt6 >= {} manually (e.g. the official Qt installer or "
-              "aqt) and point CMAKE_PREFIX_PATH at it.".format(QT_VERSION),
-              file=sys.stderr)
-        print("Note: a future Windows implementation must use native win32 "
-              "Python, not the Python inside an MSYS2/Cygwin environment.",
-              file=sys.stderr)
+        print(
+            "ensure_qt6_sdk: automatic Qt6 provisioning is not supported on " "Windows yet.",
+            file=sys.stderr,
+        )
+        print(
+            "Install Qt6 >= {} manually (e.g. the official Qt installer or "
+            "aqt) and point CMAKE_PREFIX_PATH at it.".format(QT_VERSION),
+            file=sys.stderr,
+        )
+        print(
+            "Note: a future Windows implementation must use native win32 "
+            "Python, not the Python inside an MSYS2/Cygwin environment.",
+            file=sys.stderr,
+        )
         return 1
 
     # -----------------------------------------------------------------------
@@ -283,11 +298,17 @@ def main():
     # -----------------------------------------------------------------------
     sys_qt_version = detect_system_qt6()
     if sys_qt_version and version_ge(sys_qt_version, QT_VERSION):
-        print("System Qt6 {} satisfies >= {} — using system Qt, skipping aqt.".format(
-            sys_qt_version, QT_VERSION))
+        print(
+            "System Qt6 {} satisfies >= {} — using system Qt, skipping aqt.".format(
+                sys_qt_version, QT_VERSION
+            )
+        )
         return 0
-    print("System Qt6 ({}) does not satisfy >= {}; provisioning via aqt...".format(
-        sys_qt_version or "none found", QT_VERSION))
+    print(
+        "System Qt6 ({}) does not satisfy >= {}; provisioning via aqt...".format(
+            sys_qt_version or "none found", QT_VERSION
+        )
+    )
 
     # -----------------------------------------------------------------------
     # Idempotency + self-heal: if a repo-local SDK is already present, validate
@@ -313,12 +334,16 @@ def main():
     except OSError:
         pass
     if not os.access(QT_PREFIX, os.W_OK):
-        print("ERROR: {} is not writable by {}.".format(
-            QT_PREFIX, os.environ.get("USER", "the current user")), file=sys.stderr)
-        print("       This script does not use sudo. Choose a writable location via",
-              file=sys.stderr)
-        print("       VTR_QT_PREFIX=/some/writable/dir, or fix the permissions.",
-              file=sys.stderr)
+        print(
+            "ERROR: {} is not writable by {}.".format(
+                QT_PREFIX, os.environ.get("USER", "the current user")
+            ),
+            file=sys.stderr,
+        )
+        print(
+            "       This script does not use sudo. Choose a writable location via", file=sys.stderr
+        )
+        print("       VTR_QT_PREFIX=/some/writable/dir, or fix the permissions.", file=sys.stderr)
         return 1
 
     # -----------------------------------------------------------------------
@@ -341,16 +366,28 @@ def main():
     # -----------------------------------------------------------------------
     print("Installing Qt {} into {} via aqt (no sudo)...".format(QT_VERSION, QT_PREFIX))
     subprocess.run(
-        [aqt, "install-qt", "linux", "desktop", QT_VERSION, "linux_gcc_64",
-         "--outputdir", QT_PREFIX, "--modules", "qtshadertools"],
+        [
+            aqt,
+            "install-qt",
+            "linux",
+            "desktop",
+            QT_VERSION,
+            "linux_gcc_64",
+            "--outputdir",
+            QT_PREFIX,
+            "--modules",
+            "qtshadertools",
+        ],
         check=True,
     )
 
     # Verify the freshly installed SDK the same way (build + link + run).
     print("Validating freshly installed Qt {}...".format(QT_VERSION))
     if not validate_qt_sdk(QT_HOME):
-        print("ERROR: Qt {} at {} failed validation after install.".format(
-            QT_VERSION, QT_HOME), file=sys.stderr)
+        print(
+            "ERROR: Qt {} at {} failed validation after install.".format(QT_VERSION, QT_HOME),
+            file=sys.stderr,
+        )
         return 1
     print("Qt {} installed and validated at {}".format(QT_VERSION, QT_HOME))
     return 0
