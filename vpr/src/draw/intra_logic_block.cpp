@@ -86,6 +86,15 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
 
 #ifndef NO_GRAPHICS
 /**
+ * @brief Checks whether a block is large enough to draw at the current zoom level.
+ *
+ * @param pb_bbox Bounding box of the physical block in world coordinates.
+ * @param g Main renderer.
+ * @return True if the block covers at least the minimum screen-area ratio; otherwise false.
+ */
+static inline bool check_if_draw_on_screen(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
+
+/**
  * @brief Helper subroutine to recursively draw sub-blocks.
  *
  * This function traverses through the pb_graph which a netlist block can map to,
@@ -399,6 +408,21 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 }
 
 #ifndef NO_GRAPHICS
+static inline bool check_if_draw_on_screen(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
+    // Calculate the block bounding box's area in the world coordinates.
+    double pb_bbox_area = pb_bbox.area();
+    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
+    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
+    double screen_area = g->get_visible_world().area();
+    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the block
+    // because it would be very tiny on the screen, and it would also get cluttered with other blocks.
+    if (pb_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -413,28 +437,22 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-    // if we've gone too far, don't draw anything
+    // If we've gone too far, don't draw anything.
     if (pb_type->depth > draw_state->show_blk_internal) {
         return false;
     }
 
-    // Calculate the bounding box's area in the world coordinates.
-    double abs_bbox_area = abs_bbox.width() * abs_bbox.height();
-    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
-    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
-    double screen_area = g->get_visible_world().area();
-    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
-    // because it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
-    if (abs_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
+    // If the block's area is too small relative to the screen, don't draw anything.
+    if (!check_if_draw_on_screen(abs_bbox, g)) {
         return false;
     }
 
-    // first draw box
+    // First draw box.
     if (pb->name != nullptr) {
         // If block is used, draw it in colour with solid border.
         g->set_line_dash(ezgl::line_dash::none);
 
-        // determine default background color
+        // Determine default background color.
         if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
             g->set_color(SELECTED_COLOR, transparency_factor);
         } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
@@ -863,9 +881,11 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             // get the bbox for this child
             const ezgl::rectangle& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
-            // If child block is being used, check if it intersects
-            if (child_pb->name != nullptr && bbox.contains(local_pt)) {
-                // check farther down the graph, see if we can find
+            ezgl::renderer* g = application.get_renderer();
+            // If child block is being used, check if it intersects. Check also if it is visible (drawn) on screen,
+            // becuase otherwise it would be unavailable for selection.
+            if (child_pb->name != nullptr && bbox.contains(local_pt) && check_if_draw_on_screen(bbox, g)) {
+                // Check farther down the graph, see if we can find
                 // something more specific.
                 t_pb* subtree_result = highlight_sub_block_helper(
                     clb_index, child_pb, local_pt - bbox.bottom_left(), max_depth);
