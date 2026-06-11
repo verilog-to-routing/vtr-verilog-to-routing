@@ -144,6 +144,7 @@ regression_tests/vtr_reg_strong/strong_constraint_atom_pack_only
 regression_tests/vtr_reg_strong/strong_vib
 regression_tests/vtr_reg_strong/strong_3d/3d_cb
 regression_tests/vtr_reg_strong/strong_3d/3d_sb
+regression_tests/vtr_reg_strong/strong_3d/hecate_3d
 regression_tests/vtr_reg_strong/strong_xilinx_simple
 regression_tests/vtr_reg_strong/strong_xilinx_flagship
 regression_tests/vtr_reg_strong/strong_interposer/vtr_flagship_interposer
