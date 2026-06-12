@@ -75,6 +75,10 @@ def start_logging(log_path):
     if not have("tee") or not os.access(log_dir, os.W_OK):
         return
     try:
+        # tee is intentionally long-lived: it is wired into this process's
+        # stdout/stderr via os.dup2 below and must outlive this function, so a
+        # `with` block (which would close it immediately) is not applicable.
+        # pylint: disable=consider-using-with
         tee = subprocess.Popen(["tee", log_path], stdin=subprocess.PIPE)
     except OSError:
         return
@@ -246,9 +250,9 @@ SOURCES += smoke.cpp
 """
 
     with tempfile.TemporaryDirectory() as tmp:
-        with open(os.path.join(tmp, "smoke.cpp"), "w") as cpp_file:
+        with open(os.path.join(tmp, "smoke.cpp"), "w", encoding="utf-8") as cpp_file:
             cpp_file.write(smoke_cpp)
-        with open(os.path.join(tmp, "smoke.pro"), "w") as pro_file:
+        with open(os.path.join(tmp, "smoke.pro"), "w", encoding="utf-8") as pro_file:
             pro_file.write(smoke_pro)
 
         print("  building a Qt sample (Core/Gui/Widgets/Xml/Svg/QRhi) ... ", end="", flush=True)
@@ -360,7 +364,7 @@ def main():
     # -----------------------------------------------------------------------
     if is_windows():
         print(
-            "ensure_qt6_sdk: automatic Qt6 provisioning is not supported on " "Windows yet.",
+            "ensure_qt6_sdk: automatic Qt6 provisioning is not supported on Windows yet.",
             file=sys.stderr,
         )
         print(
