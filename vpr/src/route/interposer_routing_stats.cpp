@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <string_view>
 #include <vector>
 
 #include "device_grid.h"
@@ -36,7 +37,7 @@ static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
                                              const std::vector<std::vector<int>>& cut_locs,
                                              std::vector<std::vector<t_interposer_cut_routing_stats>>& cut_stats);
 
-static void print_cut_stats(const char* cut_orientation,
+static void print_cut_stats(std::string_view cut_orientation,
                             size_t layer,
                             size_t cut_idx,
                             int cut_loc,
@@ -242,13 +243,13 @@ static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
     }
 }
 
-static void print_cut_stats(const char* cut_orientation,
+static void print_cut_stats(std::string_view cut_orientation,
                             size_t layer,
                             size_t cut_idx,
                             int cut_loc,
                             const t_interposer_cut_routing_stats& stats) {
     VTR_LOG("  Layer %zu, %s cut %zu at %s=%d:\n",
-            layer, cut_orientation, cut_idx,
+            layer, cut_orientation.data(), cut_idx,
             (cut_orientation[0] == 'h') ? "y" : "x", cut_loc);
     VTR_LOG("\tNets crossing: %d\n", stats.num_nets_crossing);
     VTR_LOG("\tUsed wires crossing: %d\n", stats.num_used_wires);
