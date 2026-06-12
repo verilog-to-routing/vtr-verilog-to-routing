@@ -354,7 +354,9 @@ static bool is_loc_legal(const t_pl_loc& loc,
             continue;
         }
 
-        if (reg_rect.coincident({loc.x, loc.y})) {
+        // Region tile bounds are fully inclusive on all edges, so use contains_inclusive
+        // ([xmin,xmax] x [ymin,ymax]) rather than contains ([xmin,xmax) x [ymin,ymax)).
+        if (reg_rect.contains_inclusive({loc.x, loc.y})) {
             //check if the location is compatible with the block type
             const auto& type = grid.get_physical_type({loc.x, loc.y, loc.layer});
             int height_offset = grid.get_height_offset({loc.x, loc.y, loc.layer});
