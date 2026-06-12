@@ -1466,29 +1466,6 @@ void vpr_check_arch(const t_arch& Arch) {
     CheckArch(Arch);
 }
 
-///@brief Verify settings don't conflict or otherwise not make sense
-void vpr_check_setup(const t_packer_opts& PackerOpts,
-                     const t_placer_opts& PlacerOpts,
-                     const t_ap_opts& APOpts,
-                     const t_router_opts& RouterOpts,
-                     const t_server_opts& ServerOpts,
-                     const t_det_routing_arch& RoutingArch,
-                     const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf& Timing,
-                     const t_chan_width_dist& Chans,
-                     size_t device_width) {
-    CheckSetup(PackerOpts,
-               PlacerOpts,
-               APOpts,
-               RouterOpts,
-               ServerOpts,
-               RoutingArch,
-               Segments,
-               Timing,
-               Chans,
-               device_width);
-}
-
 ///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     show_setup(vpr_setup);
