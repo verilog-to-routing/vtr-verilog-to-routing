@@ -2,7 +2,7 @@
 
 VIB Architecture
 ============
-The Versatile Interconnect Block (VIB) architecture adds modeling support for double-level MUX topology and bent wires. In the past, switch blocks had only one level of routing MUXes, whose inputs were driven by outputs of programmable blocks and routing tracks. Now outputs of programmable blocks can shape the first level of routing MUXes, while the inputs of second level involves the outputs of first level and other routing tracks. This can reduce the number and input sizes of routing MUXes.
+The Versatile Interconnect Block (VIB) architecture adds modeling support for double-level MUX topology and bent wires. In the past, switch blocks had only one level of routing MUXes, whose inputs were driven by outputs of programmable blocks and routing tracks. Now outputs of programmable blocks can shape the first level of routing MUXes, while the inputs of second level involve the outputs of first level and other routing tracks. This can reduce the number and input sizes of routing MUXes.
 
 Figure 1 shows the proposed VIB architecture which is tile-based. Each tile is composed of a CLB and a VIB. Each CLB can interact with the corresponding VIB which contains all the routing programmable switches in one tile. Figure 2 shows an example of the detailed interconnect architecture in VIB. The CLB input muxes and the driving muxes of wire segments can share the same fanins. A routing path of a net with two sinks is presented red in the Figure.
 
@@ -17,7 +17,7 @@ Figure 1 shows the proposed VIB architecture which is tile-based. Each tile is c
     
     Figure 2. Double-level MUX topology.
 
-Figure 3 shows the modeling for bent wires. A bent L-length wire is modeled as two segments in CHANX and CHANY respectively connected by a delayless switch. The orange and red arrows represent conterclockwise and clockwise bent wires respectively. The bent wires can connect to both bent and straight wire segments.
+Figure 3 shows the modeling for bent wires. A bent L-length wire is modeled as two segments in CHANX and CHANY respectively connected by a delayless switch. The orange and red arrows represent counterclockwise and clockwise bent wires respectively. The bent wires can connect to both bent and straight wire segments.
     
 .. figure:: Images/bent_wires.png
     :align: center
@@ -50,7 +50,7 @@ For bent wires, a new content ``<bent>`` is added in the ``<segment>`` tag.
 
     This tag describes the bent pattern for this particular wire segment.
     For example, a length 4 wire has a bent pattern of ``- - U``.
-    A ``-`` indicates no bent at this position and a ``U`` indicates a conterclockwise bent at the position. (``D`` indicates a clockwise bent.)
+    A ``-`` indicates no bent at this position and a ``U`` indicates a counterclockwise bent at the position. (``D`` indicates a clockwise bent.)
     
     .. note:: A bent wire should remain consistent in both the x and y axes.
 
@@ -117,7 +117,7 @@ For example:
     :req_param content:
     	The detailed information for first and second MUXes.
     	
-The ``content`` of ``<multistage_muxs>`` tag consists of a ``<first_stage>`` tag and a ``<secong_stage>`` tag.
+The ``content`` of ``<multistage_muxs>`` tag consists of a ``<first_stage>`` tag and a ``<second_stage>`` tag.
 
 .. arch:tag:: <first_stage switch_name="switch_name">content</first_stage>
 
@@ -151,7 +151,7 @@ For example:
         ...
     </first_stage>
     
-The ``<from>`` tag in ``<mux>`` describes nodes that connects to the MUX. ``clb.O[*]`` means output pin(s); ``L1.E1`` means the track ``1`` in the ``East`` direction of ``L1`` segment.
+The ``<from>`` tag in ``<mux>`` describes nodes that connect to the MUX. ``clb.O[*]`` means output pin(s); ``L1.E1`` means the track ``1`` in the ``East`` direction of ``L1`` segment.
 
 .. arch:tag:: <second_stage>content</second_stage>
  	
@@ -166,7 +166,7 @@ The ``content`` of ``<second_stage>`` tag consists of many ``<mux>`` tags.
     	Name of the MUX.
     	
     :req_param content:
-        A ``<to>`` tag to describe where this MUX connect to and a ``<from>`` tag to describe what pins and wires connect to this MUX.
+        A ``<to>`` tag to describe where this MUX connects to and a ``<from>`` tag to describe what pins and wires connect to this MUX.
     	
 For example:
 
@@ -221,7 +221,7 @@ Its corresponding detailed architecture is shown in Figure 4.
     :align: center 
     :height: 600
     
-    Figure 4. The corresponding detaied architecture of the example.
+    Figure 4. The corresponding detailed architecture of the example.
 
 New Added Top Level Tag ``<vib_layout>``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
