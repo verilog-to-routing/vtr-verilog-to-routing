@@ -91,7 +91,7 @@ On most unix-like systems you can run:
 
 For more details on building VTR on various operating systems/platforms see :doc:`Building VTR</BUILDING>`.
 
-.. note:: A plain ``make`` builds VPR headless unless a suitable Qt6 (>= 6.9.3) is present. To use the interactive GUI (``--disp on``, used in the visualization steps below) you must build VPR with graphics support — see :ref:`VPR Graphics <vpr_graphics>`.
+.. note:: A plain ``make`` builds VPR headless (i.e. without graphics support — VPR runs place-and-route normally but cannot open a GUI window) unless a suitable Qt6 (>= 6.9.3) is present. To use the interactive GUI (``--disp on``, used in the visualization steps below) you must build VPR with graphics support — see :ref:`VPR Graphics <vpr_graphics>`.
 
 Running the VTR Flow
 ----------------------------------
