@@ -20,13 +20,14 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
     const std::vector<t_segment_inf>& segments = vpr_setup.Segments;
     const t_timing_inf& timing = vpr_setup.Timing;
     const size_t device_width = vpr_setup.device_width;
+    const std::string& device_layout = vpr_setup.device_layout;
 
     if (!timing.timing_analysis_enabled && packer_opts.timing_driven) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Packing cannot be timing driven without timing analysis enabled\n");
     }
 
-    if (device_width > 0 && packer_opts.device_layout != "auto") {
+    if (device_width > 0 && device_layout != "auto") {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "--device_width is only valid when --device is 'auto'\n");
     }
@@ -37,7 +38,7 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
     }
 
     if (packer_opts.load_flat_placement) {
-        if (!has_fixed_device_size(packer_opts.device_layout, device_width)) {
+        if (!has_fixed_device_size(device_layout, device_width)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Legalization requires a fixed device layout.\n");
         }
