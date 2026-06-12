@@ -79,9 +79,9 @@ std::optional<float> get_auto_layout_aspect_ratio(const std::vector<t_grid_def>&
 }
 
 size_t compute_auto_layout_height(const std::vector<t_grid_def>& grid_layouts, size_t width) {
-    auto aspect_ratio = get_auto_layout_aspect_ratio(grid_layouts);
+    std::optional<float> aspect_ratio = get_auto_layout_aspect_ratio(grid_layouts);
     if (aspect_ratio) {
-        return vtr::nint(width / *aspect_ratio);
+        return vtr::nint(width / aspect_ratio.value());
     }
     // No auto_layout; height is unconstrained for fixed-layout-only architectures
     return width;
