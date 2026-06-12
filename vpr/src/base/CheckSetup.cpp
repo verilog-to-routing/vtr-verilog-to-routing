@@ -5,6 +5,7 @@
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "globals.h"
+#include "setup_grid.h"
 
 static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
 static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
@@ -17,14 +18,25 @@ void CheckSetup(const t_packer_opts& packer_opts,
                 const t_det_routing_arch& routing_arch,
                 const std::vector<t_segment_inf>& segments,
                 const t_timing_inf& timing,
-                const t_chan_width_dist& chans) {
+                const t_chan_width_dist& chans,
+                size_t device_width) {
     if (!timing.timing_analysis_enabled && packer_opts.timing_driven) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Packing cannot be timing driven without timing analysis enabled\n");
     }
 
+    if (device_width > 0 && packer_opts.device_layout != "auto") {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--device_width is only valid when --device is 'auto'\n");
+    }
+
+    if ((int)device_width < 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--device_width must be non-negative\n");
+    }
+
     if (packer_opts.load_flat_placement) {
-        if (packer_opts.device_layout == "auto") {
+        if (!has_fixed_device_size(packer_opts.device_layout, device_width)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Legalization requires a fixed device layout.\n");
         }

@@ -10,4 +10,5 @@ void CheckSetup(const t_packer_opts& packer_opts,
                 const t_det_routing_arch& routing_arch,
                 const std::vector<t_segment_inf>& segments,
                 const t_timing_inf& timing,
-                const t_chan_width_dist& chans);
+                const t_chan_width_dist& chans,
+                size_t device_width);

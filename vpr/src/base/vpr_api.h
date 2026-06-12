@@ -207,7 +207,8 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
                      const t_timing_inf& Timing,
-                     const t_chan_width_dist& Chans);
+                     const t_chan_width_dist& Chans,
+                     size_t device_width);
 
 ///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup);
