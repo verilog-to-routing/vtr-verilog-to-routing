@@ -8,7 +8,6 @@
 #include "device_grid.h"
 #include "globals.h"
 #include "interposer_types.h"
-#include "route_common.h"
 #include "route_tree.h"
 #include "rr_node_types.h"
 #include "vpr_context.h"
@@ -213,8 +212,6 @@ static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
         for (const RouteTreeNode& rt_node : tree->all_nodes()) {
             const RRNodeId inode = rt_node.inode;
             const e_rr_type rr_type = rr_graph.node_type(inode);
-            const int occ = route_ctx.rr_node_route_inf[inode].occ();
-            VTR_ASSERT_SAFE(occ > 0);
 
             const int layer = rr_graph.node_layer_low(inode);
 
@@ -226,7 +223,7 @@ static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
                 for (size_t cut_idx = 0; cut_idx < layer_h_cuts.size(); cut_idx++) {
                     const int cut_y = layer_h_cuts[cut_idx];
                     if (ylow <= cut_y && cut_y < yhigh) {
-                        horz_usage[layer][cut_idx][x] += occ;
+                        horz_usage[layer][cut_idx][x]++;
                     }
                 }
             } else if (rr_type == e_rr_type::CHANX) {
@@ -237,7 +234,7 @@ static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
                 for (size_t cut_idx = 0; cut_idx < layer_v_cuts.size(); cut_idx++) {
                     const int cut_x = layer_v_cuts[cut_idx];
                     if (xlow <= cut_x && cut_x < xhigh) {
-                        vert_usage[layer][cut_idx][y] += occ;
+                        vert_usage[layer][cut_idx][y]++;
                     }
                 }
             }
