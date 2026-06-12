@@ -10,16 +10,17 @@
 static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
 static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
 
-void CheckSetup(const t_packer_opts& packer_opts,
-                const t_placer_opts& placer_opts,
-                const t_ap_opts& ap_opts,
-                const t_router_opts& router_opts,
-                const t_server_opts& server_opts,
-                const t_det_routing_arch& routing_arch,
-                const std::vector<t_segment_inf>& segments,
-                const t_timing_inf& timing,
-                const t_chan_width_dist& chans,
-                size_t device_width) {
+void CheckSetup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
+    const t_packer_opts& packer_opts = vpr_setup.PackerOpts;
+    const t_placer_opts& placer_opts = vpr_setup.PlacerOpts;
+    const t_ap_opts& ap_opts = vpr_setup.APOpts;
+    const t_router_opts& router_opts = vpr_setup.RouterOpts;
+    const t_server_opts& server_opts = vpr_setup.ServerOpts;
+    const t_det_routing_arch& routing_arch = vpr_setup.RoutingArch;
+    const std::vector<t_segment_inf>& segments = vpr_setup.Segments;
+    const t_timing_inf& timing = vpr_setup.Timing;
+    const size_t device_width = vpr_setup.device_width;
+
     if (!timing.timing_analysis_enabled && packer_opts.timing_driven) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Packing cannot be timing driven without timing analysis enabled\n");
