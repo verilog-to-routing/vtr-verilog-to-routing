@@ -160,6 +160,7 @@ ezgl::point2d window_preview_cursor(0, 0); // updated by act_on_mouse_move while
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
 
+// Used for scripted graphics (rendered to files via --graphics_commands).
 // Stages that have hit their first update_screen() (auto-recorded by
 // update_screen on pic_on_screen transitions) and stages that have been
 // marked complete via notify_stage_complete(). Consulted by the
@@ -167,6 +168,7 @@ std::string rr_highlight_message;
 std::set<e_pic_type> initial_stages;
 std::set<e_pic_type> completed_stages;
 
+// Used for scripted graphics (rendered to files via --graphics_commands).
 // `exit N` from --graphics_commands is processed deferredly: the
 // interpreter sets these flags and breaks, then update_screen() honors
 // the request after the current render checkpoint completes. This avoids
@@ -1367,12 +1369,18 @@ static void set_force_pause() {
     draw_state->forced_pause = true;
 }
 
+// The enums below are the integer argument values accepted by the
+// --graphics_commands graphics-script commands (e.g. `set_nets <int>`,
+// `set_cpd <int>`, `set_congestion <int>`).
+
+// Argument values for the `set_nets` graphics-script command.
 enum e_set_nets_arg : int {
     SET_NETS_OFF = 0,
     SET_NETS_FLYLINES = 1,
     SET_NETS_ROUTED = 2,
 };
 
+// Argument bits for the `set_cpd` graphics-script command (a bitmask).
 enum e_set_cpd_arg_bits : int {
     SET_CPD_OFF = 0,
     SET_CPD_FLYLINES = 1 << 0,
@@ -1380,17 +1388,57 @@ enum e_set_cpd_arg_bits : int {
     SET_CPD_ROUTING = 1 << 2,
 };
 
+// Argument values for the `set_congestion` graphics-script command.
 enum e_set_congestion_arg : int {
     SET_CONGESTION_OFF = 0,
     SET_CONGESTION_NODES = 1,
     SET_CONGESTION_NODES_AND_NETS = 2,
 };
 
+// Parse a `wait_for_stage` argument of the form <stage>_<initial|done>
+// (e.g. "routing_initial", "placement_done") into the target stage `want`
+// and whether it waits for stage completion (`wait_for_done`). Errors out on
+// a malformed suffix or an unsupported stage name.
+static void parse_wait_for_stage_arg(const std::string& arg,
+                                     e_pic_type& want,
+                                     bool& wait_for_done) {
+    const std::string done_suffix = "_done";
+    const std::string init_suffix = "_initial";
+    std::string stage_name;
+    if (arg.size() > done_suffix.size()
+        && arg.compare(arg.size() - done_suffix.size(), done_suffix.size(), done_suffix) == 0) {
+        wait_for_done = true;
+        stage_name = arg.substr(0, arg.size() - done_suffix.size());
+    } else if (arg.size() > init_suffix.size()
+               && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
+        wait_for_done = false;
+        stage_name = arg.substr(0, arg.size() - init_suffix.size());
+    } else {
+        VPR_ERROR(VPR_ERROR_DRAW,
+                  vtr::string_fmt("Unknown wait_for_stage argument '%s' "
+                                  "(use <stage>_initial or <stage>_done)",
+                                  arg.c_str())
+                      .c_str());
+    }
+
+    if (stage_name == "placement") {
+        want = e_pic_type::PLACEMENT;
+    } else if (stage_name == "routing") {
+        want = e_pic_type::ROUTING;
+    } else {
+        VPR_ERROR(VPR_ERROR_DRAW,
+                  vtr::string_fmt("Unknown or unsupported stage '%s' in "
+                                  "wait_for_stage (use placement|routing)",
+                                  stage_name.c_str())
+                      .c_str());
+    }
+}
+
 static void run_graphics_commands(const std::string& commands) {
     // A very simple command interpreter for scripting graphics.
     //
     // The parsed command list and the script cursor live on draw_state
-    // (parsed_graphics_cmds / graphics_cmd_cursor) so that `wait_for_stage`
+    // (parsed_graphics_cmds / graphics_cmd_index) so that `wait_for_stage`
     // barriers can split a script across multiple update_screen() invocations
     // (e.g. half at placement, half at routing). On each call, processing
     // resumes at the cursor and stops either at a wait-barrier whose stage
@@ -1407,8 +1455,8 @@ static void run_graphics_commands(const std::string& commands) {
 
     t_draw_state backup_draw_state = *draw_state;
 
-    while (draw_state->graphics_cmd_cursor < draw_state->parsed_graphics_cmds.size()) {
-        auto& cmd = draw_state->parsed_graphics_cmds[draw_state->graphics_cmd_cursor];
+    while (draw_state->graphics_cmd_index < draw_state->parsed_graphics_cmds.size()) {
+        auto& cmd = draw_state->parsed_graphics_cmds[draw_state->graphics_cmd_index];
         VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
 
         for (auto& item : cmd) {
@@ -1425,39 +1473,9 @@ static void run_graphics_commands(const std::string& commands) {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect <stage>_initial or <stage>_done after 'wait_for_stage' "
                            "(stage = placement|routing)");
-            const std::string& arg = cmd[1];
             e_pic_type want = e_pic_type::NO_PICTURE;
             bool wait_for_done = false;
-            std::string stage_name;
-            const std::string done_suffix = "_done";
-            const std::string init_suffix = "_initial";
-            if (arg.size() > done_suffix.size()
-                && arg.compare(arg.size() - done_suffix.size(), done_suffix.size(), done_suffix) == 0) {
-                wait_for_done = true;
-                stage_name = arg.substr(0, arg.size() - done_suffix.size());
-            } else if (arg.size() > init_suffix.size()
-                       && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
-                wait_for_done = false;
-                stage_name = arg.substr(0, arg.size() - init_suffix.size());
-            } else {
-                VPR_ERROR(VPR_ERROR_DRAW,
-                          vtr::string_fmt("Unknown wait_for_stage argument '%s' "
-                                          "(use <stage>_initial or <stage>_done)",
-                                          arg.c_str())
-                              .c_str());
-            }
-
-            if (stage_name == "placement") {
-                want = e_pic_type::PLACEMENT;
-            } else if (stage_name == "routing") {
-                want = e_pic_type::ROUTING;
-            } else {
-                VPR_ERROR(VPR_ERROR_DRAW,
-                          vtr::string_fmt("Unknown or unsupported stage '%s' in "
-                                          "wait_for_stage (use placement|routing)",
-                                          stage_name.c_str())
-                              .c_str());
-            }
+            parse_wait_for_stage_arg(cmd[1], want, wait_for_done);
 
             const auto& flag_set = wait_for_done ? completed_stages : initial_stages;
             if (draw_state->pic_on_screen != want
@@ -1465,12 +1483,12 @@ static void run_graphics_commands(const std::string& commands) {
                 // Revert any draw-state mutations made by commands earlier in
                 // this script run, but keep the script bookkeeping (cursor +
                 // parse cache) so the next update_screen() resumes here.
-                size_t saved_cursor = draw_state->graphics_cmd_cursor;
+                size_t saved_index = draw_state->graphics_cmd_index;
                 *draw_state = backup_draw_state;
-                draw_state->graphics_cmd_cursor = saved_cursor;
+                draw_state->graphics_cmd_index = saved_index;
                 return;
             }
-            ++draw_state->graphics_cmd_cursor;
+            ++draw_state->graphics_cmd_index;
             continue;
         }
 
@@ -1587,7 +1605,7 @@ static void run_graphics_commands(const std::string& commands) {
             pending_graphics_exit_code = vtr::atoi(cmd[1]);
             VTR_LOG("Graphics-command 'exit %d' deferred until next render checkpoint.\n",
                     pending_graphics_exit_code);
-            ++draw_state->graphics_cmd_cursor;
+            ++draw_state->graphics_cmd_index;
             break;
         } else {
             VPR_ERROR(VPR_ERROR_DRAW,
@@ -1595,15 +1613,15 @@ static void run_graphics_commands(const std::string& commands) {
                                       cmd[0].c_str())
                           .c_str());
         }
-        ++draw_state->graphics_cmd_cursor;
+        ++draw_state->graphics_cmd_index;
     }
 
     // Restore user-controllable draw state, but keep the script cursor at
     // end-of-script so subsequent update_screen() calls are no-ops rather
     // than re-running the whole script.
-    size_t saved_cursor = draw_state->graphics_cmd_cursor;
+    size_t saved_index = draw_state->graphics_cmd_index;
     *draw_state = backup_draw_state;
-    draw_state->graphics_cmd_cursor = saved_cursor;
+    draw_state->graphics_cmd_index = saved_index;
 
     //Advance the sequence number
     ++draw_state->sequence_number;

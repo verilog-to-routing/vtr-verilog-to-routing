@@ -1630,10 +1630,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Enable or disable interactive graphics."
             " When 'off' and QT_QPA_PLATFORM is not already set, VPR sets"
             " QT_QPA_PLATFORM=offscreen so Qt does not try to connect to"
-            " an X11/Wayland display. Note that the offscreen platform"
-            " typically disables the RHI (GPU) renderer; rendering falls"
-            " back to the QPainter (immediate) path. To override, set"
-            " QT_QPA_PLATFORM in the environment before invoking VPR.")
+            " an X11/Wayland display. Offscreen means no interactive window"
+            " is opened, but graphics are still rendered, so scripted output"
+            " (e.g. --save_graphics and --graphics_commands) still works."
+            " Note that the offscreen platform typically disables the RHI"
+            " (GPU) renderer; rendering falls back to the QPainter (immediate)"
+            " path. To override, set QT_QPA_PLATFORM in the environment before"
+            " invoking VPR.")
         .default_value("off");
 
     gfx_grp.add_argument(args.GraphPause, "--auto")
@@ -1650,7 +1653,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off");
 
     gfx_grp.add_argument(args.graphics_renderer, "--renderer")
-        .help("Select the rendering backend used by the graphics window")
+        .help(
+            "Select the rendering backend used by the graphics window.\n"
+            "   * rhi:       GPU hardware rendering. Gives the highest\n"
+            "                performance but requires a GPU (uses VRAM),\n"
+            "                and uses the most RAM.\n"
+            "   * deferred:  SW renderer (no GPU). Like 'immediate' but\n"
+            "                batches draw calls, giving the next highest\n"
+            "                performance at the cost of more RAM.\n"
+            "   * immediate: SW renderer (no GPU). The most compatible path\n"
+            "                (CPU-only QPainter, no batching); lowest\n"
+            "                performance and lowest memory use.")
         .default_value("rhi")
         .choices({"immediate", "deferred", "rhi"})
         .show_in(argparse::ShowIn::HELP_ONLY);

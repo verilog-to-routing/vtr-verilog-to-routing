@@ -153,6 +153,11 @@ TEST_CASE("RRClick: highlight_rr_nodes(RRNodeId) toggles MAGENTA ↔ WHITE "
     REQUIRE(target != RRNodeId::INVALID());
 
     t_draw_state* ds = get_draw_state_vars();
+    // highlight_rr_nodes(RRNodeId) only highlights node types that are
+    // currently displayed. pick_inter_cluster_node() returns a channel
+    // node or inter-cluster pin, both hidden by default, so enable them.
+    ds->draw_channel_nodes = true;
+    ds->draw_inter_cluster_pins = true;
     REQUIRE(ds->hit_nodes.count(target) == 0);
 
     // First call: select.
@@ -181,6 +186,10 @@ TEST_CASE("RRClick: highlight_rr_nodes(INVALID) returns false, no mutation",
     ensure_main_canvas(fx_app.app());
 
     t_draw_state* ds = get_draw_state_vars();
+    // Enable display of channel nodes / inter-cluster pins so the seeded
+    // node (picked from those types) is actually highlightable.
+    ds->draw_channel_nodes = true;
+    ds->draw_inter_cluster_pins = true;
 
     // Seed a real selection so we can assert the INVALID branch does
     // not touch existing state.
@@ -267,6 +276,10 @@ TEST_CASE("RRClick: select propagates MAGENTA to non-configurable neighbours",
     ensure_main_canvas(fx_app.app());
 
     t_draw_state* ds = get_draw_state_vars();
+    // Enable display of channel nodes / inter-cluster pins so the target
+    // node (picked from those types) is actually highlightable.
+    ds->draw_channel_nodes = true;
+    ds->draw_inter_cluster_pins = true;
 
     RRNodeId target = pick_inter_cluster_node();
     REQUIRE(target != RRNodeId::INVALID());
