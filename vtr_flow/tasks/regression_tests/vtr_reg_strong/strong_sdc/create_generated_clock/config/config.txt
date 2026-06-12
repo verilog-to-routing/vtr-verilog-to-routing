@@ -23,6 +23,12 @@ circuit_list_add=edges_falling_edge_start.blif
 circuit_list_add=edges_nonzero_master_rise.blif
 circuit_list_add=edges_with_edge_shift.blif
 circuit_list_add=edges_asymmetric_shift.blif
+circuit_list_add=master_clock_disambiguate.blif
+circuit_list_add=add_generated_same_target.blif
+circuit_list_add=phase_alone.blif
+circuit_list_add=offset_alone.blif
+circuit_list_add=phase_with_divide.blif
+circuit_list_add=offset_with_multiply.blif
 
 # Bind each circuit to its corresponding SDC file via circuit constraints.
 circuit_constraint_list_add=(clock_divider.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/clock_divider.sdc)
@@ -39,6 +45,12 @@ circuit_constraint_list_add=(edges_falling_edge_start.blif, sdc_file=tasks/regre
 circuit_constraint_list_add=(edges_nonzero_master_rise.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/edges_nonzero_master_rise.sdc)
 circuit_constraint_list_add=(edges_with_edge_shift.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/edges_with_edge_shift.sdc)
 circuit_constraint_list_add=(edges_asymmetric_shift.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/edges_asymmetric_shift.sdc)
+circuit_constraint_list_add=(master_clock_disambiguate.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/master_clock_disambiguate.sdc)
+circuit_constraint_list_add=(add_generated_same_target.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/add_generated_same_target.sdc)
+circuit_constraint_list_add=(phase_alone.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/phase_alone.sdc)
+circuit_constraint_list_add=(offset_alone.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/offset_alone.sdc)
+circuit_constraint_list_add=(phase_with_divide.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/phase_with_divide.sdc)
+circuit_constraint_list_add=(offset_with_multiply.blif, sdc_file=tasks/regression_tests/vtr_reg_strong/strong_sdc/create_generated_clock/config/offset_with_multiply.sdc)
 
 # Add architectures to list to sweep
 arch_list_add=k6_N10_mem32K_40nm.xml
