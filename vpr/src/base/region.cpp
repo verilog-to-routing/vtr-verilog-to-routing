@@ -58,8 +58,9 @@ bool Region::is_loc_in_reg(t_pl_loc loc) const {
 
     const vtr::Point<int> loc_coord(loc.x, loc.y);
 
-    //check that loc x and y coordinates are within region bounds
-    bool in_rectangle = rect_.coincident(loc_coord);
+    // Region tile bounds are fully inclusive on all edges, so use contains_inclusive
+    // ([xmin,xmax] x [ymin,ymax]) rather than contains ([xmin,xmax) x [ymin,ymax)).
+    bool in_rectangle = rect_.contains_inclusive(loc_coord);
 
     //if a subtile is specified for the region, the location subtile should match
     if (in_rectangle && sub_tile_ == loc.sub_tile) {
