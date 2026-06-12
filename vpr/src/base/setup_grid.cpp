@@ -10,6 +10,7 @@
 #include <cstring>
 #include <algorithm>
 #include <limits>
+#include <optional>
 
 #include "physical_types_util.h"
 #include "vtr_assert.h"
@@ -67,8 +68,35 @@ static void set_grid_block_type(int priority,
                                 vtr::NdMatrix<int, 3>& grid_priorities,
                                 const t_metadata_dict* meta);
 
+std::optional<float> get_auto_layout_aspect_ratio(const std::vector<t_grid_def>& grid_layouts) {
+    for (const t_grid_def& grid_def : grid_layouts) {
+        if (grid_def.grid_type == e_grid_def_type::AUTO) {
+            VTR_ASSERT(grid_def.aspect_ratio >= 0.);
+            return grid_def.aspect_ratio;
+        }
+    }
+    return std::nullopt;
+}
+
+size_t compute_auto_layout_height(const std::vector<t_grid_def>& grid_layouts, size_t width) {
+    auto aspect_ratio = get_auto_layout_aspect_ratio(grid_layouts);
+    if (aspect_ratio) {
+        return vtr::nint(width / *aspect_ratio);
+    }
+    // No auto_layout; height is unconstrained for fixed-layout-only architectures
+    return width;
+}
+
+bool has_fixed_device_size(const std::string& device_layout, size_t device_width) {
+    return device_layout != "auto" || device_width > 0;
+}
+
 ///@brief Create the device grid based on resource requirements
-DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float target_device_utilization) {
+DeviceGrid create_device_grid(const std::string& layout_name,
+                              const std::vector<t_grid_def>& grid_layouts,
+                              const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts,
+                              float target_device_utilization,
+                              size_t fixed_device_width) {
     // If the grid was fixed by a read RR graph, return it unchanged to prevent resizing.
     if (g_vpr_ctx.device().grid.fixed_by_rr_graph()) {
         VTR_ASSERT(g_vpr_ctx.device().grid.width() > 0 && g_vpr_ctx.device().grid.height() > 0);
@@ -76,6 +104,10 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
     }
 
     if (layout_name == "auto") {
+        if (fixed_device_width > 0) {
+            size_t height = compute_auto_layout_height(grid_layouts, fixed_device_width);
+            return create_device_grid(layout_name, grid_layouts, fixed_device_width, height);
+        }
         //Auto-size the device
         //
         //Note that we treat the target device utilization as a maximum
