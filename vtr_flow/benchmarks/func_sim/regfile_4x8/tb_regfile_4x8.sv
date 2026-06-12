@@ -29,19 +29,38 @@ module tb;
     initial clk = 0;
     always #5 clk = ~clk;
 
+    function automatic logic [7:0] sampleRd();
+        return {rd7, rd6, rd5, rd4, rd3, rd2, rd1, rd0};
+    endfunction
+
+    // fractured 1-bit dp ram uses read-first timing from primitives.v
     task automatic driveWrite(input int addr, input logic [7:0] data);
         {waddr1, waddr0} = 2'(addr);
         {wd7, wd6, wd5, wd4, wd3, wd2, wd1, wd0} = data;
+        we = 0;
+        @(posedge clk);
         we = 1;
         @(posedge clk);
         we = 0;
     endtask
 
-    task automatic driveRead(input int addr);
+    task automatic checkReadAt(input int addr, input logic [7:0] exp, input string label);
+        int cycles;
         {raddr1, raddr0} = 2'(addr);
-        repeat (2) @(posedge clk);
-        #1;
-        actual = {rd7, rd6, rd5, rd4, rd3, rd2, rd1, rd0};
+        {waddr1, waddr0} = 2'(addr);
+        we = 0;
+        cycles = 0;
+        do begin
+            @(posedge clk);
+            #1;
+            cycles++;
+        end while (sampleRd() !== exp && cycles < 12);
+        actual = sampleRd();
+        if (actual !== exp) begin
+            $display("FAIL %s reg=%0d expected=0x%02x got=0x%02x",
+                     label, addr, exp, actual);
+            errors++;
+        end
     endtask
 
     initial begin
@@ -58,38 +77,29 @@ module tb;
         end
         @(posedge clk);
 
-        for (int i = 0; i < 4; i++) begin
-            driveRead(i);
-            if (actual !== golden[i]) begin
-                $display("FAIL read reg=%0d expected=0x%02x got=0x%02x",
-                         i, golden[i], actual);
-                errors++;
-            end
-        end
+        for (int i = 0; i < 4; i++)
+            checkReadAt(i, golden[i], "read");
 
         // same-cycle write/read different registers
         golden[2] = 8'hcc;
         {waddr1, waddr0} = 2'd2;
         {wd7, wd6, wd5, wd4, wd3, wd2, wd1, wd0} = golden[2];
         {raddr1, raddr0} = 2'd1;
+        we = 0;
+        @(posedge clk);
         we = 1;
         @(posedge clk);
         we = 0;
         repeat (2) @(posedge clk);
         #1;
-        actual = {rd7, rd6, rd5, rd4, rd3, rd2, rd1, rd0};
+        actual = sampleRd();
         if (actual !== golden[1]) begin
             $display("FAIL same-cycle read reg1 expected=0x%02x got=0x%02x",
                      golden[1], actual);
             errors++;
         end
-        @(posedge clk);
-        driveRead(2);
-        if (actual !== golden[2]) begin
-            $display("FAIL read reg2 after write expected=0x%02x got=0x%02x",
-                     golden[2], actual);
-            errors++;
-        end
+
+        checkReadAt(2, golden[2], "read reg2 after write");
 
         if (errors == 0) begin
             $display("regfile_4x8: all tests passed.");

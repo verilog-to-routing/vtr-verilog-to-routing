@@ -1,3 +1,4 @@
+#include <utility>
 
 #include "rr_graph_chan_chan_edges.h"
 
@@ -124,16 +125,34 @@ static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
                               int wire_to_ipin_switch,
                               e_directionality directionality);
 
-//Returns how the switch type for the switch block at the specified location should be created
-//  from_chan_coord: The horizontal or vertical channel index (i.e. x-coord for CHANY, y-coord for CHANX)
-//  from_seg_coord: The horizontal or vertical location along the channel (i.e. y-coord for CHANY, x-coord for CHANX)
-//  from_chan_type: The from channel type
-//  to_chan_type: The to channel type
-static int should_create_switchblock(int layer_num,
-                                     int from_chan_coord,
-                                     int from_seg_coord,
-                                     e_rr_type from_chan_type,
-                                     e_rr_type to_chan_type);
+/// @brief Determines whether channel-to-channel connectivity should be created at a grid intersection.
+///
+/// Looks up the physical tile at the intersection of from_chan_coord and from_seg_coord and checks
+/// whether its switchblock_locations type permits a connection from from_chan_type to to_chan_type.
+///
+/// @param from_chan_coord Channel index.
+/// @param from_seg_coord Position along the channel where the SB is evaluated (x for CHANX, y for CHANY).
+/// @param from_chan_type Source channel type (CHANX or CHANY).
+/// @param to_chan_type Destination channel type (CHANX or CHANY).
+/// @return {switch_override, is_short_connection} where:
+///   - switch_override: NO_SWITCH (-1) if no connectivity should be created for this from/to pair;
+///   - is_short_connection: if true, create a delayless same-ptc straight-through edge instead of
+///     full SB fanout.
+static std::pair<int, bool> should_create_switchblock(int layer_num,
+                                                      int from_chan_coord,
+                                                      int from_seg_coord,
+                                                      e_rr_type from_chan_type,
+                                                      e_rr_type to_chan_type);
+
+/// @brief Adds a delayless connection from from_rr_node to the same-ptc track in the destination channel segment.
+static int short_same_ptc_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                            int layer,
+                                            int track,
+                                            int to_chan,
+                                            int to_seg,
+                                            e_rr_type to_type,
+                                            RRNodeId from_rr_node,
+                                            t_rr_edge_info_set& rr_edges_to_create);
 
 static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         int layer,
@@ -460,7 +479,7 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
             from_is_sblock = true;
         }
 
-        int switch_override = should_create_switchblock(layer, from_chan, sb_seg, from_type, to_type);
+        auto [switch_override, is_short_connection] = should_create_switchblock(layer, from_chan, sb_seg, from_type, to_type);
         if (switch_override == NO_SWITCH) {
             continue; //Do not create an SB here
         }
@@ -490,6 +509,23 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
 
         if (to_seg_details[0].length() == 0)
             continue;
+
+        if (is_short_connection) {
+            VTR_ASSERT_MSG(UNI_DIRECTIONAL == directionality,
+                           "Short connections are only supported in uni-directional graphs");
+
+            // Short connections are only made when the from wire ends at this SB.
+            // INC wires end at end_sb_seg; DEC wires end at start_sb_seg.
+            bool from_ends_here = (Direction::INC == from_seg_details[from_track].direction() && sb_seg == end_sb_seg)
+                                  || (Direction::DEC == from_seg_details[from_track].direction() && sb_seg == start_sb_seg);
+            if (!from_ends_here) {
+                continue;
+            }
+
+            num_conn += short_same_ptc_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
+                                                         to_type, from_rr_node, rr_edges_to_create);
+            continue;
+        }
 
         // Figure out whether the switch block at the current sb_seg coordinate is *behind*
         // the target channel segment (with respect to VPR coordinate system)
@@ -781,7 +817,11 @@ static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
     return num_conn;
 }
 
-static int should_create_switchblock(int layer_num, int from_chan_coord, int from_seg_coord, e_rr_type from_chan_type, e_rr_type to_chan_type) {
+static std::pair<int, bool> should_create_switchblock(int layer_num,
+                                                      int from_chan_coord,
+                                                      int from_seg_coord,
+                                                      e_rr_type from_chan_type,
+                                                      e_rr_type to_chan_type) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     // Convert the chan/seg indices to real x/y coordinates
@@ -803,19 +843,56 @@ static int should_create_switchblock(int layer_num, int from_chan_coord, int fro
     e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
     int switch_override = blk_type->switchblock_switch_overrides[width_offset][height_offset];
 
-    if (sb_type == e_sb_type::FULL) {
-        return switch_override;
-    } else if (sb_type == e_sb_type::STRAIGHT && from_chan_type == to_chan_type) {
-        return switch_override;
-    } else if (sb_type == e_sb_type::TURNS && from_chan_type != to_chan_type) {
-        return switch_override;
-    } else if (sb_type == e_sb_type::HORIZONTAL && from_chan_type == e_rr_type::CHANX && to_chan_type == e_rr_type::CHANX) {
-        return switch_override;
-    } else if (sb_type == e_sb_type::VERTICAL && from_chan_type == e_rr_type::CHANY && to_chan_type == e_rr_type::CHANY) {
-        return switch_override;
+    bool is_short_connection = false;
+    if (sb_type == e_sb_type::HORIZONTAL_SHORT) {
+        sb_type = e_sb_type::HORIZONTAL;
+        is_short_connection = true;
+    } else if (sb_type == e_sb_type::VERTICAL_SHORT) {
+        sb_type = e_sb_type::VERTICAL;
+        is_short_connection = true;
+    } else if (sb_type == e_sb_type::STRAIGHT_SHORT) {
+        sb_type = e_sb_type::STRAIGHT;
+        is_short_connection = true;
     }
 
-    return NO_SWITCH;
+    if (sb_type == e_sb_type::FULL) {
+        return {switch_override, is_short_connection};
+    } else if (sb_type == e_sb_type::STRAIGHT && from_chan_type == to_chan_type) {
+        return {switch_override, is_short_connection};
+    } else if (sb_type == e_sb_type::TURNS && from_chan_type != to_chan_type) {
+        return {switch_override, is_short_connection};
+    } else if (sb_type == e_sb_type::HORIZONTAL && from_chan_type == e_rr_type::CHANX && to_chan_type == e_rr_type::CHANX) {
+        return {switch_override, is_short_connection};
+    } else if (sb_type == e_sb_type::VERTICAL && from_chan_type == e_rr_type::CHANY && to_chan_type == e_rr_type::CHANY) {
+        return {switch_override, is_short_connection};
+    }
+
+    return {NO_SWITCH, false};
+}
+
+static int short_same_ptc_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                            int layer,
+                                            int track,
+                                            int to_chan,
+                                            int to_seg,
+                                            e_rr_type to_type,
+                                            RRNodeId from_rr_node,
+                                            t_rr_edge_info_set& rr_edges_to_create) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    int to_x = (e_rr_type::CHANX == to_type ? to_seg : to_chan);
+    int to_y = (e_rr_type::CHANX == to_type ? to_chan : to_seg);
+
+    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_type, track);
+    if (!to_node) {
+        return 0;
+    }
+
+    int iswitch = device_ctx.delayless_switch_idx;
+    VTR_ASSERT(iswitch != UNDEFINED);
+
+    rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch, false);
+    return 1;
 }
 
 static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,

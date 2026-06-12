@@ -262,6 +262,8 @@ struct ParseAPDetailedPlacer {
             conv_value.set_value(e_ap_detailed_placer::Identity);
         else if (str == "annealer")
             conv_value.set_value(e_ap_detailed_placer::Annealer);
+        else if (str == "windowed_bi_matching")
+            conv_value.set_value(e_ap_detailed_placer::WindowedBiMatching);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_detailed_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -279,6 +281,9 @@ struct ParseAPDetailedPlacer {
             case e_ap_detailed_placer::Annealer:
                 conv_value.set_value("annealer");
                 break;
+            case e_ap_detailed_placer::WindowedBiMatching:
+                conv_value.set_value("windowed_bi_matching");
+                break;
             default:
                 VTR_ASSERT(false);
         }
@@ -286,7 +291,7 @@ struct ParseAPDetailedPlacer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"none", "annealer"};
+        return {"none", "annealer", "windowed_bi_matching"};
     }
 };
 
