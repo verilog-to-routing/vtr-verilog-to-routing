@@ -219,7 +219,7 @@ module adder #(
    assign {cout, sumout} = a + b + cin;
    
 endmodule
-   
+
 //nxn multiplier module
 module multiply #(
     //The width of input signals

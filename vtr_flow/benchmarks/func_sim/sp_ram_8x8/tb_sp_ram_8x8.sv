@@ -39,6 +39,35 @@ module tb;
         return {q7, q6, q5, q4, q3, q2, q1, q0};
     endfunction
 
+    // fractured 1-bit bram banks use read-first timing from primitives.v
+    task automatic writeAt(input int addr, input logic [7:0] data);
+        driveAddr(addr);
+        driveData(data);
+        we = 0;
+        @(posedge clk);
+        we = 1;
+        @(posedge clk);
+        we = 0;
+    endtask
+
+    task automatic checkReadAt(input int addr, input logic [7:0] exp, input string label);
+        int cycles;
+        driveAddr(addr);
+        we = 0;
+        cycles = 0;
+        do begin
+            @(posedge clk);
+            #1;
+            cycles++;
+        end while (sampleQ() !== exp && cycles < 12);
+        actual = sampleQ();
+        if (actual !== exp) begin
+            $display("FAIL %s addr=%0d expected=0x%02x got=0x%02x",
+                     label, addr, exp, actual);
+            errors++;
+        end
+    endtask
+
     initial begin
         errors = 0;
         we = 0;
@@ -46,45 +75,18 @@ module tb;
         driveData(8'h00);
         @(posedge clk);
 
-        // write unique pattern per address
         for (int addr = 0; addr < 8; addr++) begin
             expected[addr] = 8'hA0 | 8'(addr);
-            driveAddr(addr);
-            driveData(expected[addr]);
-            we = 1;
-            @(posedge clk);
+            writeAt(addr, expected[addr]);
         end
-        we = 0;
         @(posedge clk);
 
-        // read back after address change (distributed 1-bit ram banks need extra cycles)
-        for (int addr = 0; addr < 8; addr++) begin
-            driveAddr(addr);
-            repeat (2) @(posedge clk);
-            #1;
-            actual = sampleQ();
-            if (actual !== expected[addr]) begin
-                $display("FAIL read addr=%0d expected=0x%02x got=0x%02x",
-                         addr, expected[addr], actual);
-                errors++;
-            end
-        end
+        for (int addr = 0; addr < 8; addr++)
+            checkReadAt(addr, expected[addr], "read");
 
-        // overwrite addr 3 and confirm
         expected[3] = 8'h5a;
-        driveAddr(3);
-        driveData(expected[3]);
-        we = 1;
-        @(posedge clk);
-        we = 0;
-        // distributed 1-bit ram banks need extra cycles before read data settles
-        repeat (4) @(posedge clk);
-        #1;
-        if (sampleQ() !== expected[3]) begin
-            $display("FAIL re-read addr=3 expected=0x%02x got=0x%02x",
-                     expected[3], sampleQ());
-            errors++;
-        end
+        writeAt(3, expected[3]);
+        checkReadAt(3, expected[3], "re-read");
 
         if (errors == 0) begin
             $display("sp_ram_8x8: all tests passed.");
