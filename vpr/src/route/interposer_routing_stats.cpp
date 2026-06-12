@@ -12,7 +12,38 @@
 #include "vtr_log.h"
 #include "vtr_ndmatrix.h"
 
+// =============================================================================
+// Static function declarations
+// =============================================================================
+
 /// @brief Returns true if the RR node spans different dice and therefore crosses an interposer cut.
+static bool rr_node_crosses_interposer(const RRGraphView& rr_graph,
+                                       const DeviceGrid& grid,
+                                       RRNodeId node);
+
+/// @brief Crossing direction relative to the net source: INC if the source is on the low side of the cut, DEC otherwise.
+static Direction get_crossing_direction_relative_to_source(e_interposer_cut_type cut_type,
+                                                           int cut_loc,
+                                                           int source_x,
+                                                           int source_y);
+
+static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
+                                             const RRGraphView& rr_graph,
+                                             const DeviceGrid& grid,
+                                             e_interposer_cut_type cut_type,
+                                             const std::vector<std::vector<int>>& cut_locs,
+                                             std::vector<std::vector<t_interposer_cut_routing_stats>>& cut_stats);
+
+static void print_cut_stats(const char* cut_orientation,
+                            size_t layer,
+                            size_t cut_idx,
+                            int cut_loc,
+                            const t_interposer_cut_routing_stats& stats);
+
+// =============================================================================
+// Static function definitions
+// =============================================================================
+
 static bool rr_node_crosses_interposer(const RRGraphView& rr_graph,
                                        const DeviceGrid& grid,
                                        RRNodeId node) {
@@ -35,7 +66,6 @@ static bool rr_node_crosses_interposer(const RRGraphView& rr_graph,
     return !grid.are_locs_on_same_die(side_high, side_low);
 }
 
-/// @brief Crossing direction relative to the net source: INC if the source is on the low side of the cut, DEC otherwise.
 static Direction get_crossing_direction_relative_to_source(e_interposer_cut_type cut_type,
                                                            int cut_loc,
                                                            int source_x,
@@ -165,6 +195,10 @@ static void print_cut_stats(const char* cut_orientation,
     VTR_LOG("\tUsed wires crossing (DEC): %d\n", stats.num_used_wires_dec);
     VTR_LOG("\tUsed wires crossing (BIDIR): %d\n", stats.num_used_wires_bidir);
 }
+
+// =============================================================================
+// Public function definition
+// =============================================================================
 
 void print_interposer_routing_stats(const Netlist<>& net_list) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
