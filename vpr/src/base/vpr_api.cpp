@@ -320,7 +320,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     CheckArch(*arch);
 
     // Verify settings don't conflict or otherwise not make sense
-    CheckSetup(*vpr_setup, arch->Chans);
+    check_setup(*vpr_setup, arch->Chans);
 
     /* flush any messages to user still in stdout that hasn't gotten displayed */
     fflush(stdout);

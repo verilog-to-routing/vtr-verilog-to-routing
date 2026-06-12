@@ -2,4 +2,4 @@
 
 #include "vpr_types.h"
 
-void CheckSetup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans);
+void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans);

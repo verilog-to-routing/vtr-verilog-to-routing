@@ -10,7 +10,7 @@
 static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
 static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
 
-void CheckSetup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
+void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
     const t_packer_opts& packer_opts = vpr_setup.PackerOpts;
     const t_placer_opts& placer_opts = vpr_setup.PlacerOpts;
     const t_ap_opts& ap_opts = vpr_setup.APOpts;
