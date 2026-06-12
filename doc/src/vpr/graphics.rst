@@ -15,7 +15,7 @@ Compiling with Graphics Support
 VPR's graphics are built on `Qt6 <https://www.qt.io/>`_. A plain ``make`` builds
 the GUI **only if a suitable Qt6 (>= 6.9.3) is found**; otherwise VPR is built
 headless. The 6.9.3 floor exists because earlier Qt6 releases have QRhi
-rendering bugs.
+(Render Hardware Interface, GPU accelerated) rendering bugs.
 
 The Qt6 GUI links against your system's OpenGL / EGL / xkbcommon runtime
 libraries. On Debian/Ubuntu these prerequisites are installed for you by
