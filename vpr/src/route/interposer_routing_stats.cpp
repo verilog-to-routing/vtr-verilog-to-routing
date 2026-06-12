@@ -277,6 +277,7 @@ void print_interposer_routing_stats(const Netlist<>& net_list) {
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
     const size_t num_layers = grid.get_num_layers();
 
+    // Indexed as [layer][cut_idx].
     std::vector<std::vector<t_interposer_cut_routing_stats>> horz_cut_stats(num_layers);
     std::vector<std::vector<t_interposer_cut_routing_stats>> vert_cut_stats(num_layers);
 
@@ -330,6 +331,7 @@ void write_interposer_cut_channel_utilization(const Netlist<>& net_list, std::st
         max_v_cuts = std::max(max_v_cuts, vertical_cuts[layer].size());
     }
 
+    // Indexed as [layer][cut_idx][x] / [layer][cut_idx][y].
     vtr::NdMatrix<int, 3> horz_usage({num_layers, max_h_cuts, grid.width()}, 0);
     vtr::NdMatrix<int, 3> vert_usage({num_layers, max_v_cuts, grid.height()}, 0);
 
@@ -338,6 +340,7 @@ void write_interposer_cut_channel_utilization(const Netlist<>& net_list, std::st
     const vtr::NdMatrix<int, 3>& horz_capacity = device_ctx.horz_interposer_capacity_;
     const vtr::NdMatrix<int, 3>& vert_capacity = device_ctx.vert_interposer_capacity_;
 
+    // Column widths for the output file.
     constexpr int w_layer = 6;
     constexpr int w_orientation = 12;
     constexpr int w_cut_idx = 8;
