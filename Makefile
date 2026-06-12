@@ -144,17 +144,21 @@ endif #ensure-gui
 endif #clean
 endif #distclean
 
-#Build vpr WITH graphics. Provision a Qt6 SDK (>= the supported floor) first,
+#Build VTR WITH graphics. Provision a Qt6 SDK (>= the supported floor) first,
 #honoring ensure_qt6_sdk.sh's exit code (make aborts if it fails), then delegate
 #to the normal build with graphics forced on. Defined after the 'all' rule so
 #'all' stays the default goal.
+#Builds the default 'all' goal (not just 'vpr') so the full flow -- synthesis
+#(yosys + parmys), mapping (abc) and place-and-route (vpr) -- is produced. The
+#yosys/parmys targets are 'ALL' custom targets that 'make vpr' would skip,
+#leaving build/bin/yosys missing and run_vtr_flow unable to find yosys.
 ensure-gui:
 	@ $(SOURCE_DIR)/dev/ensure_qt6_sdk.sh
-	@+$(MAKE) vpr VTR_GRAPHICS=on
+	@+$(MAKE) all VTR_GRAPHICS=on
 
-#Build vpr WITHOUT graphics (headless); no Qt SDK is needed.
+#Build VTR WITHOUT graphics (headless); no Qt SDK is needed.
 ensure-headless:
-	@+$(MAKE) vpr VTR_GRAPHICS=off
+	@+$(MAKE) all VTR_GRAPHICS=off
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: clean
