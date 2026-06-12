@@ -80,8 +80,9 @@ Variants explore different pitches and fanin/fanouts:
 
 ### 3D CSV and Generation Script
 
-The 3D switch-block architecture variants are generated from `3d/hecate_3d_sb_connectivity.csv` and the
-template architecture `3d/hecate_3d_sb_template.xml`. Each CSV row describes one variant:
+The 3D switch-block architecture variants are generated from `3d/hecate_3d_sb_connectivity.csv` and the base architecture
+`3d/hecate_3d_sb_10um_bidir_fanin_16_fanout_16_7nm.xml`. This file can also be used directly as the default Hecate 3D
+architecture without running the generator. Each CSV row describes one variant:
 
 * `variant_id`: output architecture identifier.
 * `pitch_um`: bump pitch in µm (5, 10, or 25).
