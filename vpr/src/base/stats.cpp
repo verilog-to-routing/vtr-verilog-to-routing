@@ -172,6 +172,7 @@ void routing_stats(const Netlist<>& net_list,
     print_channel_stats(is_flat);
     get_channel_occupancy_stats(net_list);
     print_interposer_routing_stats(net_list);
+    write_interposer_cut_channel_utilization(net_list, "interposer_cut_channel_utilization.txt");
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
