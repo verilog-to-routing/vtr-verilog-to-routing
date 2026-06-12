@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
+#include <limits>
 #include <utility>
 #include <vector>
 #include <ranges>
@@ -293,19 +294,24 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph);
 
 /**
- * @brief Build per-cut interposer crossing-capacity tables from the RR graph.
+ * @brief Build per-cut interposer-related tables from the RR graph.
  *
  * Architectures with interposer cut lines need a fast way to know how much routing capacity
  * crosses each cut at every coordinate along the cut. Placement and interposer congestion
  * estimation consume these tables; computing them here (once, next to channel-width init)
  * keeps that logic out of the hot path.
  *
- * @param device_ctx Writable device context; fills horz_interposer_capacity_ and
- *                   vert_interposer_capacity_ when the grid defines interposer cuts.
- * @param rr_graph   RR graph whose CHANX/CHANY segment capacities are summed per cut.
+ * In addition, the router needs to know the bounds of interposer wires that cross each
+ * cut in order to correctly set up the router's bounding box. That information is also
+ * computed in this function.
+ *
+ * @param device_ctx Writable device context; fills horz_interposer_capacity_,
+ *                   vert_interposer_capacity_, horz_interposer_cut_bounds_, and
+ *                   vert_interposer_cut_bounds_ when the grid defines interposer cuts.
+ * @param rr_graph   Input RR graph to be analyzed.
  */
-static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
-                                                   const RRGraphView& rr_graph);
+static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_ctx,
+                                                         const RRGraphView& rr_graph);
 
 /**
  * @brief Calculates the routing channel width at each grid location.
@@ -1037,8 +1043,8 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
     return delayless_switch;
 }
 
-static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
-                                                   const RRGraphView& rr_graph) {
+static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_ctx,
+                                                         const RRGraphView& rr_graph) {
     const DeviceGrid& grid = device_ctx.grid;
     // No interposer cuts on this device; nothing to populate.
     if (!grid.has_interposer_cuts()) {
@@ -1058,6 +1064,8 @@ static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
 
     vtr::NdMatrix<int, 3>& horz_interposer_capacity = device_ctx.horz_interposer_capacity_;
     vtr::NdMatrix<int, 3>& vert_interposer_capacity = device_ctx.vert_interposer_capacity_;
+    vtr::NdMatrix<std::pair<int, int>, 2>& horz_interposer_cut_bounds = device_ctx.horz_interposer_cut_bounds_;
+    vtr::NdMatrix<std::pair<int, int>, 2>& vert_interposer_cut_bounds = device_ctx.vert_interposer_cut_bounds_;
 
     // Matrices are sized to the maximum cut count across layers.
     // Layers with fewer cuts will leave the extra [cut_idx] planes at zero.
@@ -1065,6 +1073,10 @@ static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
     vert_interposer_capacity.resize({num_layers, max_v_cuts, grid.height()});
     horz_interposer_capacity.fill(0);
     vert_interposer_capacity.fill(0);
+
+    const std::pair<int, int> default_bounds = {std::numeric_limits<int>::max(), std::numeric_limits<int>::min()};
+    horz_interposer_cut_bounds.resize({num_layers, max_h_cuts}, default_bounds);
+    vert_interposer_cut_bounds.resize({num_layers, max_v_cuts}, default_bounds);
 
     for (RRNodeId node_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(node_id);
@@ -1081,6 +1093,10 @@ static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
                 // This CHANY node crosses the horizontal cut at y = cut_y.
                 if (ylow <= cut_y && cut_y < yhigh) {
                     horz_interposer_capacity[layer][cut_idx][x] += cap;
+
+                    std::pair<int, int>& cut_bounds = horz_interposer_cut_bounds[layer][cut_idx];
+                    cut_bounds.first = std::min(cut_bounds.first, ylow);
+                    cut_bounds.second = std::max(cut_bounds.second, yhigh);
                 }
             }
         } else if (rr_type == e_rr_type::CHANX) {
@@ -1093,6 +1109,10 @@ static void init_interposer_capacity_from_rr_graph(DeviceContext& device_ctx,
                 // This CHANX node crosses the vertical cut at x = cut_x.
                 if (xlow <= cut_x && cut_x < xhigh) {
                     vert_interposer_capacity[layer][cut_idx][y] += cap;
+
+                    std::pair<int, int>& cut_bounds = vert_interposer_cut_bounds[layer][cut_idx];
+                    cut_bounds.first = std::min(cut_bounds.first, xlow);
+                    cut_bounds.second = std::max(cut_bounds.second, xhigh);
                 }
             }
         }
@@ -1154,7 +1174,7 @@ static void alloc_and_init_channel_width() {
         chan_width_list.y[loc.x] = std::max(chan_width.y[loc.layer_num][loc.x][loc.y], chan_width_list.y[loc.x]);
     }
 
-    init_interposer_capacity_from_rr_graph(mutable_device_ctx, rr_graph);
+    init_interposer_per_cut_tables_from_rr_graph(mutable_device_ctx, rr_graph);
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,

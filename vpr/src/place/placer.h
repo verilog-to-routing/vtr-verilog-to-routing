@@ -182,8 +182,10 @@ class Placer {
     void check_place_();
 
     /**
-     * Computes bounding box and timing cost to ensure it is
-     * within a small error margin what we thing the cost is.
+     * Computes placement costs from scratch to ensure they are
+     * within a small error margin of what the incrementally computed
+     * costs are.
+     *
      * @return Number cost elements, i.e. BB and timing, that falls
      * outside the acceptable round-off error margin.
      */
