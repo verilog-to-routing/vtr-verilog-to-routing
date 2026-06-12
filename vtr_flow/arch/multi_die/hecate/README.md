@@ -69,10 +69,10 @@ The 2.5D architectures explore various interposer configurations:
 The 3D architectures use the same FPGA fabric described in Section 1 with switch-block inter-layer connectivity.
 Variants explore different pitches and fanin/fanouts:
 
-* **Inter-die Connectivity:** Switch-block with bidirectional or unidirectional links.
+* **Inter-die Connectivity:** 3D switch-blocks.
 * **Architecture Variations:** The architectures differ in:
   * **Pitch:** Lower pitch allows more inter-layer connections per block.
-  * **Directionality:** Bidirectional/unidirectional.
+  * **Directionality:** Bidirectional/unidirectional inter-layer links.
   * **Fan-in/Fan-out:** The number of wires driving/being driven by each inter-layer connection.
 * **Architecture Naming Scheme:**
   - `hecate_3d_sb_[variant_id]_fanin_[FANIN]_fanout_[FANOUT]_7nm.xml`
