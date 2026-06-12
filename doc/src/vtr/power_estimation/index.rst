@@ -297,7 +297,7 @@ This is done using the following construct:
             <port name="A" energy_per_toggle="1.0e-12"/>
             <port name="B[3:2]" energy_per_toggle="1.0e-12"/>
             <port name="C" energy_per_toggle="1.0e-12" scaled_by_static_prob="en1"/>
-            <port name="D" energy_per_toggle="1.0e-12" scaled_by_static_prob="en2"/>
+            <port name="D" energy_per_toggle="1.0e-12" scaled_by_static_prob_n="en2"/>
             <static_power power_per_instance="1.0e-6"/>
         </power>
     </pb_type>
