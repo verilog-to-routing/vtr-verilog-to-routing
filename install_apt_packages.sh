@@ -37,6 +37,9 @@ packages_to_install+=(
 # Required for graphics
 # GL/EGL/xkb runtime that the Qt6 GUI links against; the Qt6 SDK itself is
 # provisioned separately by dev/ensure_qt6_sdk.sh.
+# libxcb-cursor0 is required at runtime by Qt's xcb (X11) platform plugin since
+# Qt 6.5 — without it the GUI aborts with "Could not load the Qt platform
+# plugin xcb".
 packages_to_install+=(
     libxkbcommon-dev
     libgl-dev
@@ -44,6 +47,7 @@ packages_to_install+=(
     libopengl0
     libegl-mesa0
     libgl1-mesa-dri
+    libxcb-cursor0
 )
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
