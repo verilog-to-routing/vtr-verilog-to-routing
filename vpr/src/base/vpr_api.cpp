@@ -561,7 +561,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
     //       This would allow us to determine when to (re)build the RR graph in a
     //       more generic and flow-independent way.
     bool is_ap_and_fixed_device = (vpr_setup.APOpts.doAP == e_stage_action::DO)
-                                  && (vpr_setup.PackerOpts.device_layout != "auto");
+                                  && has_fixed_device_size(vpr_setup.PackerOpts.device_layout, vpr_setup.device_width);
 
     if (!is_ap_and_fixed_device
         && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH
@@ -822,7 +822,12 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // set up the device grid for the legalizer
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    if (vpr_setup.device_width > 0) {
+        size_t height = compute_auto_layout_height(arch.grid_layouts, vpr_setup.device_width);
+        device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, vpr_setup.device_width, height);
+    } else {
+        device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    }
     if (device_ctx.grid.get_num_layers() > 1) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
     }

@@ -854,7 +854,8 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                                                   num_used_type_instances,
                                                   block_type_utils,
                                                   vpr_setup_.PackerOpts.target_device_utilization,
-                                                  vpr_setup_.PackerOpts.device_layout);
+                                                  vpr_setup_.PackerOpts.device_layout,
+                                                  vpr_setup_.device_width);
             // Exit if clusters fit on device.
             if (fits_on_device)
                 break;
@@ -1299,6 +1300,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
                  prepacker_,
                  pre_cluster_timing_manager_,
                  flat_placement_info,
+                 vpr_setup_.device_width,
                  ram_mapper_);
     }
 
@@ -1382,7 +1384,7 @@ void FullLegalizer::recreate_device_if_needed() {
     // valid after the call.
     bool rr_graph_exists = !device_ctx.rr_graph.empty();
 
-    if (vpr_setup_.PackerOpts.device_layout != "auto") {
+    if (has_fixed_device_size(vpr_setup_.PackerOpts.device_layout, vpr_setup_.device_width)) {
         // If the device is fixed and the RR graph has not been generated
         // yet, now is the time to generate it. Without this, the RR graph
         // may not be generated in time for placement when timing analysis
