@@ -92,7 +92,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
  * @param g Main renderer.
  * @return True if the block covers at least the minimum screen-area ratio; otherwise false.
  */
-static inline bool check_if_draw_on_screen(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
+static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
 
 /**
  * @brief Helper subroutine to recursively draw sub-blocks.
@@ -408,7 +408,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 }
 
 #ifndef NO_GRAPHICS
-static inline bool check_if_draw_on_screen(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
+static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
     // Calculate the block bounding box's area in the world coordinates.
     double pb_bbox_area = pb_bbox.area();
     // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
@@ -443,7 +443,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     // If the block's area is too small relative to the screen, don't draw anything.
-    if (!check_if_draw_on_screen(abs_bbox, g)) {
+    if (!large_enough_to_draw(abs_bbox, g)) {
         return false;
     }
 
@@ -884,7 +884,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             ezgl::renderer* g = application.get_renderer();
             // If child block is being used, check if it intersects. Check also if it is visible (drawn) on screen,
             // because otherwise it would be unavailable for selection.
-            if (child_pb->name != nullptr && bbox.contains(local_pt) && check_if_draw_on_screen(bbox, g)) {
+            if (child_pb->name != nullptr && bbox.contains(local_pt) && large_enough_to_draw(bbox, g)) {
                 // Check farther down the graph, see if we can find
                 // something more specific.
                 t_pb* subtree_result = highlight_sub_block_helper(
