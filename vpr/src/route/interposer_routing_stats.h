@@ -1,5 +1,12 @@
 #pragma once
 
+/** 
+ * @file Post-routing statistics and reporting for interposer-based devices.
+ *
+ * Routines here summarize routing usage at interposer cuts (e.g. net/wire
+ * crossing counts, per-coordinate channel utilization).
+ */
+
 #include <string_view>
 
 #include "netlist.h"
