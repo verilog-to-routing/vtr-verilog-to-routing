@@ -30,6 +30,7 @@ static Direction get_crossing_direction_relative_to_source(e_interposer_cut_type
                                                            int source_x,
                                                            int source_y);
 
+/// @brief Counts nets and wires crossing interposer cuts of the given orientation; updates cut_stats[layer][cut_idx].
 static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
                                              const RRGraphView& rr_graph,
                                              const DeviceGrid& grid,
@@ -37,12 +38,14 @@ static void count_net_crossings_for_cut_type(const Netlist<>& net_list,
                                              const std::vector<std::vector<int>>& cut_locs,
                                              std::vector<std::vector<t_interposer_cut_routing_stats>>& cut_stats);
 
+/// @brief Logs interposer cut routing statistics for a single cut.
 static void print_cut_stats(std::string_view cut_orientation,
                             size_t layer,
                             size_t cut_idx,
                             int cut_loc,
                             const t_interposer_cut_routing_stats& stats);
 
+/// @brief Accumulates per-coordinate wire usage along horizontal and vertical interposer cuts.
 static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
                                             const RRGraphView& rr_graph,
                                             const DeviceGrid& grid,
