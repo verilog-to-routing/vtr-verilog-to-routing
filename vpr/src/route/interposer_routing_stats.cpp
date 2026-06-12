@@ -214,9 +214,7 @@ static void accumulate_interposer_cut_usage(const Netlist<>& net_list,
             const RRNodeId inode = rt_node.inode;
             const e_rr_type rr_type = rr_graph.node_type(inode);
             const int occ = route_ctx.rr_node_route_inf[inode].occ();
-            if (occ == 0) {
-                continue;
-            }
+            VTR_ASSERT_SAFE(occ > 0);
 
             const int layer = rr_graph.node_layer_low(inode);
 
