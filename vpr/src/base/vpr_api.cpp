@@ -746,7 +746,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                vpr_setup.PackerOpts.pack_verbosity,
-                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+                               has_fixed_device_size(vpr_setup.PackerOpts.device_layout, vpr_setup.device_width) /*is_fixed_device*/);
     }
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
@@ -755,6 +755,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
+                    vpr_setup.device_width,
                     ram_mapper);
 }
 

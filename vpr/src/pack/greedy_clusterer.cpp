@@ -81,8 +81,10 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const std::unordered_set<AtomNetId>& is_global,
                                  const PreClusterTimingManager& pre_cluster_timing_manager,
-                                 const APPackContext& appack_ctx)
+                                 const APPackContext& appack_ctx,
+                                 size_t device_width)
     : packer_opts_(packer_opts)
+    , device_width_(device_width)
     , analysis_opts_(analysis_opts)
     , atom_netlist_(atom_netlist)
     , arch_(arch)
@@ -515,11 +517,13 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
         num_instances += mutable_device_ctx.grid.num_instances(equivalent_tile, -1);
     }
 
-    if (num_used_type_instances[block_type] > num_instances) {
+    if (!has_fixed_device_size(packer_opts_.device_layout, device_width_)
+        && num_used_type_instances[block_type] > num_instances) {
         mutable_device_ctx.grid = create_device_grid(packer_opts_.device_layout,
                                                      arch_.grid_layouts,
                                                      num_used_type_instances,
-                                                     packer_opts_.target_device_utilization);
+                                                     packer_opts_.target_device_utilization,
+                                                     device_width_);
     }
 
     return new_cluster_id;

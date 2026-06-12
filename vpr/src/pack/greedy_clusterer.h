@@ -95,7 +95,8 @@ class GreedyClusterer {
                     const std::unordered_set<AtomNetId>& is_clock,
                     const std::unordered_set<AtomNetId>& is_global,
                     const PreClusterTimingManager& pre_cluster_timing_manager,
-                    const APPackContext& appack_ctx);
+                    const APPackContext& appack_ctx,
+                    size_t device_width);
 
     /**
      * @brief Performs clustering on the pack molecules formed by the prepacker.
@@ -222,6 +223,9 @@ class GreedyClusterer {
 
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;
+
+    /// @brief Fixed grid width when --device_width is set.
+    size_t device_width_;
 
     /// @brief The analysis options used to configure timing analysis within the
     ///        clusterer.

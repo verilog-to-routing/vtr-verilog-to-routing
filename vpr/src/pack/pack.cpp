@@ -234,6 +234,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
+              size_t device_width,
               const RamMapper& ram_mapper) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -340,7 +341,8 @@ bool try_pack(const t_packer_opts& packer_opts,
                               is_clock,
                               is_global,
                               pre_cluster_timing_manager,
-                              appack_ctx);
+                              appack_ctx,
+                              device_width);
 
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(true);
 
@@ -368,7 +370,8 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                    num_used_type_instances,
                                                    block_type_utils,
                                                    packer_opts.target_device_utilization,
-                                                   packer_opts.device_layout);
+                                                   packer_opts.device_layout,
+                                                   device_width);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
@@ -622,11 +625,12 @@ bool try_size_device_grid(const t_arch& arch,
                           const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
                           std::map<t_logical_block_type_ptr, float>& type_util,
                           float target_device_utilization,
-                          const std::string& device_layout_name) {
+                          const std::string& device_layout_name,
+                          size_t device_width) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
-    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
+    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization, device_width);
 
     report_device_grid_stats(grid);
 

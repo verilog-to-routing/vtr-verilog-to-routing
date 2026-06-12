@@ -53,6 +53,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
+              size_t device_width,
               const RamMapper& ram_mapper = RamMapper{});
 
 /**
@@ -76,6 +77,7 @@ bool try_size_device_grid(const t_arch& arch,
                           const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
                           std::map<t_logical_block_type_ptr, float>& type_util,
                           float target_device_utilization,
-                          const std::string& device_layout_name);
+                          const std::string& device_layout_name,
+                          size_t device_width);
 
 std::unordered_set<AtomNetId> alloc_and_load_is_clock();
