@@ -166,14 +166,23 @@ class Rect {
     ///@brief Return the rectangle height
     T height() const;
 
-    ///@brief Returns true if the point is fully contained within the rectangle (excluding the top-right edges)
+    /// @brief Returns true if the point is within the rectangle using half-open bounds:
+    ///        xmin <= x < xmax  AND  ymin <= y < ymax  (top and right edges are excluded).
+    ///
+    /// Use this when the rectangle represents an index range where xmax/ymax is one past
+    /// the last valid value (e.g., Rect(0, 0, width, height) for a width x height matrix).
     bool contains(Point<T> point) const;
 
-    ///@brief Returns true if the point is strictly contained within the region (excluding all edges)
+    /// @brief Returns true if the point is strictly inside the rectangle (all edges excluded):
+    ///        xmin < x < xmax  AND  ymin < y < ymax
     bool strictly_contains(Point<T> point) const;
 
-    ///@brief Returns true if the point is coincident with the rectangle (including the top-right edges)
-    bool coincident(Point<T> point) const;
+    /// @brief Returns true if the point is within the rectangle using fully-closed bounds:
+    ///        xmin <= x <= xmax  AND  ymin <= y <= ymax  (all edges are included).
+    ///
+    /// Use this when the rectangle stores the actual last valid value as xmax/ymax,
+    /// such as inclusive tile coordinate ranges in placement constraint regions.
+    bool contains_inclusive(Point<T> point) const;
 
     ///@brief Returns true if other is contained within the rectangle (including all edges)
     bool contains(const Rect<T>& other) const;
@@ -304,14 +313,16 @@ class RectUnion {
     ///@brief Returns the bounding box of all rectangles in the union
     Rect<T> bounding_box() const;
 
-    ///@brief Returns true if the point is fully contained within the region (excluding top-right edges)
+    /// @brief Returns true if the point is within the union using half-open bounds
+    ///        (xmin <= x < xmax, ymin <= y < ymax for each constituent rectangle).
     bool contains(Point<T> point) const;
 
-    ///@brief Returns true if the point is strictly contained within the region (excluding all edges)
+    /// @brief Returns true if the point is strictly inside the union (all edges excluded for each rectangle).
     bool strictly_contains(Point<T> point) const;
 
-    ///@brief Returns true if the point is coincident with the region (including the top-right edges)
-    bool coincident(Point<T> point) const;
+    /// @brief Returns true if the point is within the union using fully-closed bounds
+    ///        (xmin <= x <= xmax, ymin <= y <= ymax for each constituent rectangle).
+    bool contains_inclusive(Point<T> point) const;
 
     ///@brief Returns a range of all constituent rectangles
     rect_range rects() const;
