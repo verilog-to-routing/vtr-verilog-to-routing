@@ -45,7 +45,7 @@ See :ref:`power_technology_properties` for information on how to generate an XML
 
 In this mode, the VTR will run ODIN->ABC->ACE->VPR. The ACE stage is additional and specific to this power estimation flow. Using run_vtr_flow.py will automatically run ACE 2.0 to generate activity information and a new BLIF file (see ::ref:`power_ace` for details).
 
-The final power estimates will be available in file named <circuit_name>.power in the result directory.
+The final power estimates will be available in a file named <circuit_name>.power in the result directory.
 
 Here is an example command:
 
@@ -76,7 +76,7 @@ Technology Properties
 
 Power estimation requires information detailing the properties of the CMOS technology.
 This information, which includes transistor capacitances, leakage currents, etc. is included in an ``.xml`` file, and provided as a parameter to VPR.
-This XML file is generated using a script which automatically runs HSPICE, performs multiple circuit simulations, and extract the necessary values.
+This XML file is generated using a script which automatically runs HSPICE, performs multiple circuit simulations, and extracts the necessary values.
 
 Some of these technology XML files are included with the release, and are located here::
 
@@ -143,7 +143,7 @@ where
     * ``<activities.act>``: Is the activity file to be created.
     * ``<new.blif>``: The new BLIF file.
 
-        This will be functionally identical in function to the ABC blif; however, since ABC does not maintain internal node names, a new BLIF must be produced with node names that match the activity file. This blif file is fed to the subsequent parts of the flow (to VPR). If a user is using run_vtr_flow.py (which will run ACE 2.0 underneath if the options mentioned earlier like -power are used), then the flow will copy this ACE2 generated blif file (<circuit_name>.ace.blif) to <circuit_name>.pre-vpr.blif and then launch VPR with this new file.
+        This will be functionally identical to the ABC blif; however, since ABC does not maintain internal node names, a new BLIF must be produced with node names that match the activity file. This blif file is fed to the subsequent parts of the flow (to VPR). If a user is using run_vtr_flow.py (which will run ACE 2.0 underneath if the options mentioned earlier like -power are used), then the flow will copy this ACE2 generated blif file (<circuit_name>.ace.blif) to <circuit_name>.pre-vpr.blif and then launch VPR with this new file.
 
 Users may wish to use their own activity estimation tool.
 The produced activity file must contain one line for each net in the BLIF file, in the following format::
