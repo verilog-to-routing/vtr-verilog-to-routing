@@ -7,7 +7,6 @@
  */
 
 #include "ap_draw_manager.h"
-#include "physical_types.h"
 #include "vpr_types.h"
 
 #ifndef NO_GRAPHICS
@@ -17,15 +16,16 @@
 #endif
 
 void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+#ifndef NO_GRAPHICS
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
                         vpr_setup.GraphicsCommands, is_flat);
-#ifndef NO_GRAPHICS
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
         alloc_draw_structs(&arch);
     }
 #else
+    (void)vpr_setup;
     (void)arch;
 #endif
 }
