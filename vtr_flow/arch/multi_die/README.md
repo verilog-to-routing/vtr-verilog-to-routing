@@ -1,4 +1,4 @@
-# 3D FPGA Architectures
+# 2.5D/3D FPGA Architectures
 
 This directory contains architecture files for 3D and 2.5D FPGAs. The architectures are divided into multiple sub-directories:
 

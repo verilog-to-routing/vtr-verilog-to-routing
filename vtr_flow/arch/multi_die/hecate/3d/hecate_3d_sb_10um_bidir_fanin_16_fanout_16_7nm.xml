@@ -1,179 +1,3 @@
-<?xml version='1.0' encoding='UTF-8'?>
-
-<!--
-    This is the architecture file for the Hecate 2.5D architecture. The blocks (logic, RAM, DSP)
-    are Agilex-like [8] and the intra-die routing architecture is similar to Stratix IV [7].
-    The inter-die routing architecture is routing-based and similar the Xilinx 7-Series.  The FPGA
-    fabric is based on a 7nm fabric defined in [1], [2]. The architectures feature 10um microbump
-    and 5um hybrid-bonding pitches. This architecture is also used by the generate_hecate_interposer_archs.py
-    script to generate an entire familty of 2.5D architectures with different inter-die connectivity.
-
-    Delay models have been extracted using SPICE simulations (ASAP-7 7nm node for the active die
-    and 45nm for the interposer based on the ITRS 2005 interconnect report).
-
-    ##############################
-    Parameters
-    ##############################
-    Parameter | Value | Definition
-    __________|_______|______________________________
-    N         |    10 | Number of BLEs per cluster
-    W         |   320 | Channel width
-    L         |  4,16 | Wire segment length
-    I         |    40 | Number of cluster inputs
-    O         |    40 | Number of cluster outputs
-    K         |     6 | LUT size
-    Fs        |     3 | Switch block flexibility
-    Fcin      |   0.2 | Cluster input flexibility
-    Fcout     | 0.025 | Cluster output flexibility
-    Fclocal   |   0.5 | Local input crossbar population
-
-    ##############################
-    Logic Cluster
-    ##############################
-    This architecture has 10 ALMs (or FLEs: Fracturable Logic Elements) per Logic Cluster
-    (or LAB or CLB), where each ALM is a 6-LUT fracturable into
-    two 5-LUTs. The ALM has 8 inputs and 4 optionally registered outputs.The two 5-LUTs should
-    share at least two inputs. Each two ALM outputs are logically equivalent, which means any
-    output signal that can reach ALM.out[0] can reach ALM.out[1] and the same thing for
-    ALM.out[2] and ALM.out[3]. The ALMs in this architecture have an arithmetic mode
-    where each 5-LUT is fractured into two 4-LUTs, resulting in a total of four 4-LUTs and two
-    bits of addition per ALM. This architecture has a single carry chain that spans the 10 ALMs
-    in the LAB.
-
-    The LAB (or Logic Cluster or CLB) has 40 inputs and 40 outputs. Two outputs of each ALM are fed 
-    to the right and left LAB using direct links and are also fed back to the LAB as feedback connections 
-    sharing the 40 input ports with the signals coming from the routing channels.
-
-    The LAB has a 50% sparsely populated input crossbar.
-
-    All logic block output and input pins are located on the top and right sides, to avoid connectivity issues on interposer cutlines.
-    
-    ##############################
-    DSP Slice
-    ##############################
-    This architecture has a DSP block that supports the following modes:
-
-    Fixed point modes:
-    _________________
-    1. 27x27 fixed point multiplier (multiply)
-    2. 27x27 fixed point mac (mac_int_27x27)
-    3. Two 18x19 fixed point multipliers (multiply)
-    4. Two 18x19 fixed point macs (mac_int_18x19)
-    5. Four 9x9 fixed point multipliers (multiply)
-    6. Four 9x9 fixed point macs (mac_int_9x9)
-    7. 27x27 plus 64 mode (mult_add_mode_27_27_64/mult_add_int_27x27). 27 * 27 + 64 -> 64. result = ax * ay + bx + chainin. chainout = result 
-    8. 18x19 sum-of-2 mode (sop_2_mode/int_sop_2) result = (bx * by) + (ax * ay) + chainin. chainout = result    
-    9. 18x19 plus 36 mode (mult_add_mode_18_19_36/mult_add_int_18x19). 18 * 19 + 36 -> 64. result = ax * ay + bx + chainin. chainout = result 
-    10. 9x9 sum-of-4 mode (sop_4_mode/int_sop_4) result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin. chainout = result 
-    11. 9x9 sum-of-4 accum mode (sop_4_accum_mode/int_sop_accum_4) result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin + accumulator. chainout = result 
-
-    Floating point modes:
-    ____________________
-
-    IMPORTANT:
-    The precisions supported are IEEE floating point 32-bit, IEEE floating point 16-bit and
-    Brain floating point (BF16). In the 16-bit mode descriptions, wherever "fp16" is used, it
-    refers to either IEEE floating point 16-bit or BF16. There are mode bits on the DSP slice
-    that can be used to differentiate between them. Doing this saves the effort of explicitly
-    specifying all the 16-bit modes twice in this file. 
-    Since the goal is architectural exploration and not functional simulation, the mode bits 
-    can be specified to any random value while instantiating the DSP slice in a Verilog benchmark.
-
-    1A. One fp32 multiplier (mult_fp_32)
-    1B. One fp32 multiplier, clocked (mult_fp_clk_32)
-    2A. One fp32 adder/subtractor (addition_fp_32)
-    2B. One fp32 adder/subtractor, clocked (addition_fp_clk_32)
-    3. One fp32 mac (mac_fp_32)
-    4A. Two fp16 multipliers (mult_fp_16)
-    4B. Two fp16 multipliers, clocked (mult_fp_clk_16)
-    5A. Two fp16 adders/subtractors (addition_fp_16)
-    5B. Two fp16 adders/subtractors, clocked (addition_fp_clk_16)
-    6. Two fp16 macs (mac_fp_16)
-    7. floating point fp16 sum-of-products mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. chainout = third_inp or result) (fp16_sum_of_products_mode/fp16_mult_add)
-    8. floating point fp16 sum-of-2 mult mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b + fp32 chainin or third inp. chainout = third_inp or result) (fp16_sum_of_products_2_mult_mode/fp16_sop2_mult)
-    9. floating point fp16 sum-of-2 accum mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b + accumulator. chainout = result) (fp16_sum_of_products_2_accum_mode/fp16_sop2_accum)
-    10. floating point fp16 mult, fp32 add mode (chainout = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. result = chainin + third_inp) (fp16_mult_fp32_add/fp16_mult_fp32_add)
-    11. floating point fp16 mult, fp32 accum mode (chainout = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. result = third_inp + accumulator) (fp16_mult_fp32_accum/fp16_mult_fp32_accum)
-    12. floating point fp32 mult_then_add mode (result = fp32_mult_a * fp32_mult_b + chainin. chainout = third_inp or result) (fp32_mult_then_add/fp32_mult_then_add)
-    13. floating point fp32 mult_add mode (chainout = fp32_mult_a * fp32_mult_b. chainout = third_inp + chainin) (fp32_mult_add/fp32_mult_add)
-
-    The DSP block was designed in Verilog and COFFE's [5] hybrid flow was used to generate
-    area and delay results. The standard cell library used was Cadence GPDK 45nm (gsclib045_svt_v4.4)
-    and area/delay scaling equations from [6] were used.
-
-    A 50% sparsely populated input crossbar was added to the DSP block but is commented out.
-    It was leading to a failure in in VPR. See the discussion on this commit: 
-    https://github.com/verilog-to-routing/vtr-verilog-to-routing/commit/ea7acf1582ece35e892c26b756aa302d2e12ddb2
-
-    Once this is fixed, the input crossbar code can be enabled.
-
-    ##############################
-    Memory Blocks
-    ##############################
-    The architecture also has a 20Kb memory blocks (or M20k or BRAM) that has true and simple dual port modes. 
-    In simple dual port mode the memory can be configured in the following modes: 512x40, 1024x20 and 2048x10,
-    while in true dual port mode it can be configured as: 1024x20 and 2048x10.
-
-    The BRAM has registered inputs and outputs. See details on how the delays for this block were 
-    obtained, in the comments before the specification of the BRAM primitive, towards the end of this file.
-
-    The BRAM doesn't have an input crossbar. Adding an input crossbar was leading to a 
-    seg fault in VPR, likely because of https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1475
-
-    Once this is fixed, an input crossbar can be added. The input crossbar delay from COFFE was: 29.47ps
-
-    ##############################
-    Routing/Interconnect
-    ##############################
-    All switch pattern delay and area calculations were done assuming a channel width of 320. Channel width
-    is not specified in the architecture files, so during experiments it can be specified using  the command-
-    line argument `route_chan_width`.
-
-    The architecture uses unidirectional routing with wire segments of length 4 (280 out of 320 wires) and 
-    length 16 (40 out of 320 wires). The length 16 wires do not directly connect to block pins and are only 
-    accessible from the length 4 wires. Switches appear after every 4 blocks on the length 16 wires. 
-    The switch blocks use a custom switching pattern based on the Stratix-IV-like architecture used in the 
-    Titan flow [7]. 
-
-    ##############################
-    I/Os
-    ##############################
-    I/O pads are arranged along the perimeter of the FPGA. No area values provided for the I/Os.
-
-    ##############################
-    Comments on similarities and differences with Intel FPGA architecture.
-    ##############################
-    The main parameters of the logic blocks, DSPs and RAMs are similar to Intel FPGAs. But here are
-    some important points:
-    1. The DSP slice supports lower precision modes - int8 (actually 9x9) and 16-bit floating point
-       (IEEE half-precision and bfloat16). These modes are present in Intel Agilex FPGA DSPs.
-    2. DSPs are chained in vertical direction (chainin-chainout connections for output cascading
-       and scanin-scanout connections for input cascading). This is a common feature
-       in modern FPGAs.
-    3. There are no registers on the interconnect/routing wires in this architecture. That is a main
-       feature in the Stratix10 and Agilex families of Intel FPGA (it's called HyperFlex by Intel).
-    4. The architecture doesn't have sectors. All blocks are laid out in columns on the entire chip.
-       Most modern Intel FPGAs have sector based layout.
-    5. The IOs are on the perimeter, instead of being arranged in columns. Modern FPGAs arrange I/Os in
-       columns.
-    6. The routing architecture is similar to Stratix IV. There are wire segments of L=4 
-       and L=16. And a custom switch pattern (not a standard wilton switch) is used. 
-
-    [1] A. Arora et al., "Koios 2.0: Open-Source Deep Learning Benchmarks for FPGA Architecture and CAD Research," TCAD 2023
-    [2] A. Boutros, F. Mahmoudi, A. Mohaghegh, S. More and V. Betz, "Into the Third Dimension: Architecture Exploration Tools for 3D Reconfigurable Acceleration Devices," FPT 2023
-    [3] M. Eldafrawy, A. Boutros, S. Yazdanshenas, and V. Betz, "FPGA Logic Block Architectures for
-        Efficient Deep Learning Inference" in ACM TRETS, 2020
-    [4] PTM High Performance 22nm Metal Gate / High-K / Strained-Si 22NM_BULK_HP, from http://ptm.asu.edu/
-        See: https://github.com/vaughnbetz/COFFE/blob/master/spice_models/ptm_22nm_bulk_hp.l
-    [5] S. Yazdanshenas, and V. Betz, "COFFE 2: Automatic Modelling and Optimization of
-        Complex and Heterogeneous FPGA Architectures" in ACM TRETS, 2019. 
-    [6] A. Stillmaker and B. Baas, "Scaling equations for the accurate prediction of CMOS device 
-        performance from 180 nm to 7 nm" in Integration, the VLSI Journal (2017)
-    [7] K. E. Murray et al., “Timing-Driven Titan: Enabling Large Benchmarks and Exploring the Gap between 
-        Academic and Commercial CAD,” TRETS 2015.
-    [8] A. Arora et al., "Tensor Slices to the Rescue: Supercharging ML Acceleration on FPGAs", ISFPGA 2020.
--->
-
 <architecture>
   <models>
     <model name="single_port_ram">
@@ -293,7 +117,9 @@
         <input name="outpad" num_pins="1"/>
         <output name="inpad" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
-        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
+        </fc>
         <pinlocations pattern="custom">
           <loc side="left">io.inpad io.outpad io.clock</loc>
           <loc side="top">io.inpad io.outpad io.clock</loc>
@@ -322,7 +148,9 @@
         <output name="O9" num_pins="2" equivalent="full"/>
         <output name="O10" num_pins="2" equivalent="full"/>
         <clock name="clk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.025"/>
+        <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.025">
+          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
+        </fc>
         <!-- Two sided connectivity CLB architecture--> 
         <pinlocations pattern="custom">
           <loc side="right">clb.I1 clb.I3 clb.clk clb.O1 clb.O2 clb.O3 clb.O4 clb.O5</loc>
@@ -336,8 +164,8 @@
           <site pb_type="dsp_top" pin_mapping="direct"/>
         </equivalent_sites>
         <input name="reset" num_pins="1" is_non_clock_global="true"/>
-        <input name="dsp_I1" num_pins="37"/>
-        <input name="dsp_I2" num_pins="37"/>
+        <input name="dsp_I1" num_pins="37" />
+        <input name="dsp_I2" num_pins="37" />
         <input name="chainin" num_pins="64"/>
         <input name="scanin" num_pins="27"/>
         <output name="result" num_pins="74"/>
@@ -351,6 +179,8 @@
           <fc_override port_name="chainout" fc_type="frac" fc_val="0"/>
           <fc_override port_name="scanin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="scanout" fc_type="frac" fc_val="0"/>
+
+          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
         </fc>
         <pinlocations pattern="custom">
             <loc side="top">dsp_top.chainin dsp_top.scanin dsp_top.dsp_I1 dsp_top.reset dsp_top.result[73:37]</loc>
@@ -372,6 +202,7 @@
       <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
           <fc_override fc_type="frac" fc_val="0" port_name="clk"/>
+          <fc_override fc_type="abs" fc_val="0" segment_name="z_segment"/>
         </fc>  
         <pinlocations pattern="custom">
           <loc side="top"> memory.addr1[0] memory.addr1[8] memory.addr2[5] memory.data[2] memory.data[10] memory.data[18] memory.data[26] memory.data[34] memory.clk memory.addr1[1] memory.addr1[9] memory.addr2[6] memory.data[3] memory.data[11] memory.data[19] memory.data[27] memory.data[35] memory.out[0] memory.out[8] memory.out[16] memory.out[24] memory.out[32] memory.out[1] memory.out[9] memory.out[17] memory.out[25] memory.out[33] memory.addr1[6] memory.addr2[3] memory.data[0] memory.data[8] memory.data[16] memory.data[24] memory.data[32] memory.we1 memory.addr1[7] memory.addr2[4] memory.data[1] memory.data[9] memory.data[17] memory.data[25] memory.data[33] memory.we2 memory.out[6] memory.out[14] memory.out[22] memory.out[30] memory.out[38] memory.out[7] memory.out[15] memory.out[23] memory.out[31] memory.out[39]</loc>
@@ -379,11 +210,31 @@
         </pinlocations>
       </sub_tile>
     </tile>
+    <tile name="tsv_hole" height="2" width="2" area="0">
+      <switchblock_locations pattern="custom">
+        <!-- TSV areas cannot contain transistors, but routing wires can pass through.
+             Use straight_short (delayless same-ptc pass-through) instead of regular
+             switch blocks, which include transistors. -->
+        <sb_loc type="straight_short" xoffset="0" yoffset="0"/>
+        <sb_loc type="straight_short" xoffset="0" yoffset="1"/>
+        <sb_loc type="straight_short" xoffset="1" yoffset="0"/>
+        <sb_loc type="straight_short" xoffset="1" yoffset="1"/>
+      </switchblock_locations>
+      <sub_tile name="tsv_hole">
+        <equivalent_sites>
+          <site pb_type="tsv_hole"/>
+        </equivalent_sites>
+        <input name="I" num_pins="1"/>
+        <output name="O" num_pins="1"/>
+        <fc in_type="abs" in_val="0" out_type="abs" out_val="0"/>
+      </sub_tile>
+    </tile>
   </tiles>
   <!-- ODIN II specific config ends -->
   <layout>
     <!-- Physical descriptions begin -->
     <auto_layout aspect_ratio="1.0">
+      <layer die="0">
         <perimeter type="io" priority="101"/>
       
         <corners type="EMPTY" priority="102"/>
@@ -397,38 +248,29 @@
         <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
         <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
 
-        <!-- One horizontal interposer cut in the middle of the die. Each cut instantiates [INT_WIRE_LENGTH - 1]*[num] interposer
-             segments using the scatter-gather syntax. [num] depends on the die stacking technology pitch. 10um pitch means num = 3 while
-             5um pitch mean num = 12 -->
-        <interposer_cut y="H / 2 - 1">
-          <interdie_wire sg_name="interposer_sg_upward" sg_link="sg_UP" offset_start="-16" offset_end="-1" offset_increment="1" num="3"/>
-          <interdie_wire sg_name="interposer_sg_downward" sg_link="sg_DOWN" offset_start="1" offset_end="16" offset_increment="1" num="3"/>
-        </interposer_cut>
+        <!-- PW -->
+        <col type="tsv_hole" startx="8" starty="5" repeatx="13" incry="12" priority="103"/>
+
+        <!-- GND -->
+        <col type="tsv_hole" startx="14" starty="11" repeatx="13" incry="12" priority="103"/>
+
+      </layer>
+      <layer die="1">
+        <perimeter type="io" priority="101"/>
+      
+        <corners type="EMPTY" priority="102"/>
+
+        <fill type="clb" priority="10"/>
+
+        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
+        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
+
+        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
+        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
+        
+      </layer>
     </auto_layout>
-
-    <!-- Fixed device used for regression testing -->
-    <fixed_layout name="hecate_small" width="40" height="40">
-        <perimeter type="io" priority="101"/>
-      
-        <corners type="EMPTY" priority="102"/>
-
-        <fill type="clb" priority="10"/>
-
-        <col type="memory" startx="11" starty="1" repeatx="41" priority="20"/>
-        <col type="memory" startx="25" starty="1" repeatx="41" priority="20"/>
-        <col type="memory" startx="37" starty="1" repeatx="41" priority="20"/>
-
-        <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
-        <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
-
-        <!-- One horizontal interposer cut in the middle of the die. Each cut instantiates [INT_WIRE_LENGTH - 1]*[num] interposer
-             segments using the scatter-gather syntax. [num] depends on the die stacking technology pitch. 10um pitch means num = 3 while
-             5um pitch mean num = 12 -->
-        <interposer_cut y="H / 2 - 1">
-          <interdie_wire sg_name="interposer_sg_upward" sg_link="sg_UP" offset_start="-16" offset_end="-1" offset_increment="1" num="3"/>
-          <interdie_wire sg_name="interposer_sg_downward" sg_link="sg_DOWN" offset_start="1" offset_end="16" offset_increment="1" num="3"/>
-        </interposer_cut>
-    </fixed_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="13090" R_minW_pmos="19086.83"/>
@@ -448,140 +290,84 @@
     <switch type="mux" name="ipin_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="5.636e-11" mux_trans_size="2.008" buf_size="9.624436045683868"/>
     <switch type="mux" name="ipin_inter_layer_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="130e-12" mux_trans_size="1.508" buf_size="11.71"/>
 
-    <!-- Interposer wire segment drivers. Delay values are extracted from SPICE simulations -->
-    <switch type="mux" name="L5_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="132.52e-12"/>
-      <Tdel num_inputs="24" delay="111.03e-12"/>
-      <Tdel num_inputs="12" delay="104.61e-12"/>
-      <Tdel num_inputs="6" delay="99.164e-12"/>
-      <Tdel num_inputs="3" delay="97.653e-12"/>
+    <switch type="mux" name="inter_die_switch_1um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="2"  delay="68.02566667e-12"/>
+      <Tdel num_inputs="4"  delay="70.1185e-12"/>
+      <Tdel num_inputs="8"  delay="77.566e-12"/>
+      <Tdel num_inputs="16" delay="79.87633333e-12"/>
+      <Tdel num_inputs="32" delay="85.949e-12"/>
+      <Tdel num_inputs="64" delay="94.748e-12"/>
     </switch>
-    <switch type="mux" name="L9_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="149.16e-12"/>
-      <Tdel num_inputs="24" delay="130.46e-12"/>
-      <Tdel num_inputs="12" delay="121.6e-12"/>
-      <Tdel num_inputs="6" delay="118.57e-12"/>
-      <Tdel num_inputs="3" delay="110.54e-12"/>
+
+    <switch type="mux" name="bidir_inter_die_switch_1um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"   delay="68.02566667e-12"/>
+      <Tdel num_inputs="8"   delay="70.1185e-12"/>
+      <Tdel num_inputs="16"  delay="77.566e-12"/>
+      <Tdel num_inputs="32"  delay="79.87633333e-12"/>
+      <Tdel num_inputs="64"  delay="85.949e-12"/>
+      <Tdel num_inputs="128" delay="94.748e-12"/>
     </switch>
-    <switch type="mux" name="L13_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="173.38e-12"/>
-      <Tdel num_inputs="24" delay="147.9e-12"/>
-      <Tdel num_inputs="12" delay="140.18e-12"/>
-      <Tdel num_inputs="6" delay="137.78e-12"/>
-      <Tdel num_inputs="3" delay="130e-12"/>
+
+    <switch type="mux" name="inter_die_switch_5um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="2"  delay="64.49283333e-12"/>
+      <Tdel num_inputs="4"  delay="66.7455e-12"/>
+      <Tdel num_inputs="8"  delay="72.7335e-12"/>
+      <Tdel num_inputs="16" delay="76.40783333e-12"/>
+      <Tdel num_inputs="32" delay="82.30133333e-12"/>
+      <Tdel num_inputs="64" delay="90.1e-12"/>
     </switch>
-    <switch type="mux" name="L17_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="194.19e-12"/>
-      <Tdel num_inputs="24" delay="178.83e-12"/>
-      <Tdel num_inputs="12" delay="161.57e-12"/>
-      <Tdel num_inputs="6" delay="154.63e-12"/>
-      <Tdel num_inputs="3" delay="151.41e-12"/>
+
+    <switch type="mux" name="bidir_inter_die_switch_5um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"   delay="64.49283333e-12"/>
+      <Tdel num_inputs="8"   delay="66.7455e-12"/>
+      <Tdel num_inputs="16"  delay="72.7335e-12"/>
+      <Tdel num_inputs="32"  delay="76.40783333e-12"/>
+      <Tdel num_inputs="64"  delay="82.30133333e-12"/>
+      <Tdel num_inputs="128" delay="90.1e-12"/>
     </switch>
-    <switch type="mux" name="L21_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="215.82e-12"/>
-      <Tdel num_inputs="24" delay="203.22e-12"/>
-      <Tdel num_inputs="12" delay="196.28e-12"/>
-      <Tdel num_inputs="6" delay="182.5e-12"/>
-      <Tdel num_inputs="3" delay="182.85e-12"/>
+
+    <switch type="mux" name="inter_die_switch_10um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="2"  delay="69.60866667e-12"/>
+      <Tdel num_inputs="4"  delay="70.37833333e-12"/>
+      <Tdel num_inputs="8"  delay="79.27366667e-12"/>
+      <Tdel num_inputs="16" delay="81.4625e-12"/>
+      <Tdel num_inputs="32" delay="87.41566667e-12"/>
+      <Tdel num_inputs="64" delay="97.09e-12"/>
     </switch>
-    <switch type="mux" name="L25_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="242.32e-12"/>
-      <Tdel num_inputs="24" delay="226.26e-12"/>
-      <Tdel num_inputs="12" delay="219.66e-12"/>
-      <Tdel num_inputs="6" delay="207.28e-12"/>
-      <Tdel num_inputs="3" delay="205.51e-12"/>
+
+    <switch type="mux" name="bidir_inter_die_switch_10um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"   delay="69.60866667e-12"/>
+      <Tdel num_inputs="8"   delay="70.37833333e-12"/>
+      <Tdel num_inputs="16"  delay="79.27366667e-12"/>
+      <Tdel num_inputs="32"  delay="81.4625e-12"/>
+      <Tdel num_inputs="64"  delay="87.41566667e-12"/>
+      <Tdel num_inputs="128" delay="97.09e-12"/>
     </switch>
-    <switch type="mux" name="L29_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="267.98e-12"/>
-      <Tdel num_inputs="24" delay="250.5e-12"/>
-      <Tdel num_inputs="12" delay="241.47e-12"/>
-      <Tdel num_inputs="6" delay="237.65e-12"/>
-      <Tdel num_inputs="3" delay="234.65e-12"/>
+
+    <switch type="mux" name="inter_die_switch_25um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="2"  delay="78.712e-12"/>
+      <Tdel num_inputs="4"  delay="81.583e-12"/>
+      <Tdel num_inputs="8"  delay="83.234e-12"/>
+      <Tdel num_inputs="16" delay="88.59816667e-12"/>
+      <Tdel num_inputs="32" delay="94.7205e-12"/>
+      <Tdel num_inputs="64" delay="103.7835e-12"/>
     </switch>
-    <switch type="mux" name="L33_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="314.96e-12"/>
-      <Tdel num_inputs="24" delay="272.4e-12"/>
-      <Tdel num_inputs="12" delay="262.23e-12"/>
-      <Tdel num_inputs="6" delay="273.81e-12"/>
-      <Tdel num_inputs="3" delay="266.74e-12"/>
+
+    <switch type="mux" name="bidir_inter_die_switch_25um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"   delay="78.712e-12"/>
+      <Tdel num_inputs="8"   delay="81.583e-12"/>
+      <Tdel num_inputs="16"  delay="83.234e-12"/>
+      <Tdel num_inputs="32"  delay="88.59816667e-12"/>
+      <Tdel num_inputs="64"  delay="94.7205e-12"/>
+      <Tdel num_inputs="128" delay="103.7835e-12"/>
     </switch>
-    <switch type="mux" name="L37_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="337.75e-12"/>
-      <Tdel num_inputs="24" delay="317.26e-12"/>
-      <Tdel num_inputs="12" delay="281.28e-12"/>
-      <Tdel num_inputs="6" delay="307.3e-12"/>
-      <Tdel num_inputs="3" delay="300.49e-12"/>
-    </switch>
-    <switch type="mux" name="L5_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="109.48e-12"/>
-      <Tdel num_inputs="24" delay="98.575e-12"/>
-      <Tdel num_inputs="12" delay="92.242e-12"/>
-      <Tdel num_inputs="6" delay="87.002e-12"/>
-      <Tdel num_inputs="3" delay="84.789e-12"/>
-    </switch>
-    <switch type="mux" name="L9_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="130.38e-12"/>
-      <Tdel num_inputs="24" delay="112.92e-12"/>
-      <Tdel num_inputs="12" delay="103.28e-12"/>
-      <Tdel num_inputs="6" delay="100.98e-12"/>
-      <Tdel num_inputs="3" delay="95.482e-12"/>
-    </switch>
-    <switch type="mux" name="L13_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="148.94e-12"/>
-      <Tdel num_inputs="24" delay="130.38e-12"/>
-      <Tdel num_inputs="12" delay="121.19e-12"/>
-      <Tdel num_inputs="6" delay="113.61e-12"/>
-      <Tdel num_inputs="3" delay="112.75e-12"/>
-    </switch>
-    <switch type="mux" name="L17_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="167.82e-12"/>
-      <Tdel num_inputs="24" delay="149.06e-12"/>
-      <Tdel num_inputs="12" delay="138.15e-12"/>
-      <Tdel num_inputs="6" delay="133.84e-12"/>
-      <Tdel num_inputs="3" delay="132.62e-12"/>
-    </switch>
-    <switch type="mux" name="L21_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="189.94e-12"/>
-      <Tdel num_inputs="24" delay="174.41e-12"/>
-      <Tdel num_inputs="12" delay="161.01e-12"/>
-      <Tdel num_inputs="6" delay="155.28e-12"/>
-      <Tdel num_inputs="3" delay="153.27e-12"/>
-    </switch>
-    <switch type="mux" name="L25_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="213.81e-12"/>
-      <Tdel num_inputs="24" delay="197.4e-12"/>
-      <Tdel num_inputs="12" delay="190.9e-12"/>
-      <Tdel num_inputs="6" delay="176.69e-12"/>
-      <Tdel num_inputs="3" delay="175.21e-12"/>
-    </switch>
-    <switch type="mux" name="L29_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="237.89e-12"/>
-      <Tdel num_inputs="24" delay="220.39e-12"/>
-      <Tdel num_inputs="12" delay="211.48e-12"/>
-      <Tdel num_inputs="6" delay="207.15e-12"/>
-      <Tdel num_inputs="3" delay="197.08e-12"/>
-    </switch>
-    <switch type="mux" name="L33_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="260.54e-12"/>
-      <Tdel num_inputs="24" delay="242.51e-12"/>
-      <Tdel num_inputs="12" delay="233.67e-12"/>
-      <Tdel num_inputs="6" delay="242.19e-12"/>
-      <Tdel num_inputs="3" delay="235.79e-12"/>
-    </switch>
-    <switch type="mux" name="L37_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="305.25e-12"/>
-      <Tdel num_inputs="24" delay="262.49e-12"/>
-      <Tdel num_inputs="12" delay="252.88e-12"/>
-      <Tdel num_inputs="6" delay="272.86e-12"/>
-      <Tdel num_inputs="3" delay="267.45e-12"/>
-    </switch>
+
   </switchlist>
   <segmentlist>
-  <!-- Interposer wire segment definition. Interposer segment length and die stacking technology must match the driver. -->
-    <segment name="int_wire" freq="0" length="17" type="unidir" Rmetal="0.0" Cmetal="0.0">
-      <mux name="L17_int_driver_10um_bump"/>
-      <sb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</sb>
-      <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb>
+    <segment name="z_segment" freq="0" length="1" axis="z" type="unidir" Rmetal="0.0" Cmetal="0.0">
+      <mux name="inter_die_switch_25um"/>
+      <sb type="pattern">0 0</sb>
+      <cb type="pattern">0</cb>
     </segment>
   
     <segment name="L4" freq="280" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0">
@@ -602,8 +388,8 @@
   </segmentlist>
   <directlist>
     <!-- Direct connect from one DSP to the DSP directly below it -->
-    <direct name="dsp_out_chain" from_pin="dsp_top.chainout" to_pin="dsp_top.chainin" x_offset="0" y_offset="-4" z_offset="0"/>
-    <direct name="dsp_in_chain" from_pin="dsp_top.scanout" to_pin="dsp_top.scanin" x_offset="0" y_offset="-4" z_offset="0"/>
+    <direct name="dsp_out_chain" from_pin="dsp_top.chainout" from_side="bottom" to_pin="dsp_top.chainin" to_side="top" x_offset="0" y_offset="-4" z_offset="0"/>
+    <direct name="dsp_in_chain" from_pin="dsp_top.scanout" from_side="bottom" to_pin="dsp_top.scanin" to_side="top" x_offset="0" y_offset="-4" z_offset="0"/>
   </directlist>
 
   <complexblocklist>
@@ -706,46 +492,46 @@
             </pb_type>
             <interconnect>
               <direct name="direct0" input="ble6.in_A" output="lut6.in[0:0]">
-                <delay_constant max="1.1287999999999999e-10" in_port="ble6.in_A" out_port="lut6.in[0:0]"/>
+                <delay_constant max="1.1287999999999999e-10" in_port="ble6.in_A" out_port="lut6.in[0:0]" />
               </direct>
               <direct name="direct1" input="ble6.in_B" output="lut6.in[1:1]">
-                <delay_constant max="1.1072500000000001e-10" in_port="ble6.in_B" out_port="lut6.in[1:1]"/>
+                <delay_constant max="1.1072500000000001e-10" in_port="ble6.in_B" out_port="lut6.in[1:1]" />
               </direct>
               <direct name="direct3" input="ble6.in_D" output="lut6.in[3:3]">
-                <delay_constant max="8.1212e-11" in_port="ble6.in_D" out_port="lut6.in[3:3]"/>
+                <delay_constant max="8.1212e-11" in_port="ble6.in_D" out_port="lut6.in[3:3]" />
               </direct>
               <direct name="direct4" input="ble6.in_E" output="lut6.in[4:4]">
-                <delay_constant max="7.961e-11" in_port="ble6.in_E" out_port="lut6.in[4:4]"/>
+                <delay_constant max="7.961e-11" in_port="ble6.in_E" out_port="lut6.in[4:4]" />
               </direct>
               <direct name="direct5" input="ble6.in_F" output="lut6.in[5:5]">
-                <delay_constant max="4.9300999999999996e-11" in_port="ble6.in_F" out_port="lut6.in[5:5]"/>
+                <delay_constant max="4.9300999999999996e-11" in_port="ble6.in_F" out_port="lut6.in[5:5]" />
               </direct>
               <!--Clock -->
               <direct name="direct6" input="ble6.clk" output="ff.clk"/>
               <!-- Register feedback mux -->   
               <mux name="mux1" input="ble6.in_C ff.Q" output="lut6.in[2:2]">
-                <delay_constant max="1.1347e-10" in_port="ble6.in_C" out_port="lut6.in[2:2]"/>
-                <delay_constant max="1.1347e-10" in_port="ff.Q" out_port="lut6.in[2:2]"/>  
+                <delay_constant max="1.1347e-10" in_port="ble6.in_C" out_port="lut6.in[2:2]" />
+                <delay_constant max="1.1347e-10" in_port="ff.Q" out_port="lut6.in[2:2]" />  
               </mux>
               <!-- FF input selection mux -->
               <mux name="2" input="lut6.out ble6.in_C" output="ff.D">
-                <delay_constant max="1.74588e-11" in_port="lut6.out" out_port="ff.D"/>
-                <delay_constant max="1.74588e-11" in_port="ble6.in_C" out_port="ff.D"/>
+                <delay_constant max="1.74588e-11" in_port="lut6.out" out_port="ff.D" />
+                <delay_constant max="1.74588e-11" in_port="ble6.in_C" out_port="ff.D" />
               </mux>
               <!-- BLE output (local) -->
               <mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local">
-                <delay_constant max="1.346e-10" in_port="ff.Q" out_port="ble6.out_local"/>
-                <delay_constant max="1.346e-10" in_port="lut6.out" out_port="ble6.out_local"/>
+                <delay_constant max="1.346e-10" in_port="ff.Q" out_port="ble6.out_local" />
+                <delay_constant max="1.346e-10" in_port="lut6.out" out_port="ble6.out_local" />
               </mux>
               <!-- BLE output (routing 1) --> 
               <mux name="mux4" input="ff.Q lut6.out" output="ble6.out_routing[0:0]">
-                <delay_constant max="3.771e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]"/>
-                <delay_constant max="3.771e-11" in_port="lut6.out" out_port="ble6.out_routing[0:0]"/>
+                <delay_constant max="3.771e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
+                <delay_constant max="3.771e-11" in_port="lut6.out" out_port="ble6.out_routing[0:0]" />
               </mux>
               <!-- BLE output (routing 2) --> 
               <mux name="mux5" input="ff.Q lut6.out" output="ble6.out_routing[1:1]">
-                <delay_constant max="3.771e-11" in_port="ff.Q" out_port="ble6.out_routing[1:1]"/>
-                <delay_constant max="3.771e-11" in_port="lut6.out" out_port="ble6.out_routing[1:1]"/>
+                <delay_constant max="3.771e-11" in_port="ff.Q" out_port="ble6.out_routing[1:1]" />
+                <delay_constant max="3.771e-11" in_port="lut6.out" out_port="ble6.out_routing[1:1]" />
               </mux>
             </interconnect>
           </pb_type>
@@ -801,38 +587,38 @@
               </pb_type>
               <interconnect>
                 <direct name="direct0" input="ble5.in_A" output="lut5.in[0:0]">
-                  <delay_constant max="1.1287999999999999e-10" in_port="ble5.in_A" out_port="lut5.in[0:0]"/>
+                  <delay_constant max="1.1287999999999999e-10" in_port="ble5.in_A" out_port="lut5.in[0:0]" />
                 </direct>
                 <direct name="direct1" input="ble5.in_B" output="lut5.in[1:1]">
-                  <delay_constant max="1.1072500000000001e-10" in_port="ble5.in_B" out_port="lut5.in[1:1]"/>
+                  <delay_constant max="1.1072500000000001e-10" in_port="ble5.in_B" out_port="lut5.in[1:1]" />
                 </direct>
                 <direct name="direct3" input="ble5.in_D" output="lut5.in[3:3]">
-                  <delay_constant max="8.1212e-11" in_port="ble5.in_D" out_port="lut5.in[3:3]"/>
+                  <delay_constant max="8.1212e-11" in_port="ble5.in_D" out_port="lut5.in[3:3]" />
                 </direct>
                 <direct name="direct4" input="ble5.in_E" output="lut5.in[4:4]">
-                  <delay_constant max="7.961e-11" in_port="ble5.in_E" out_port="lut5.in[4:4]"/>
+                  <delay_constant max="7.961e-11" in_port="ble5.in_E" out_port="lut5.in[4:4]" />
                 </direct>
                   <!--Clock -->
                 <direct name="direct5" input="ble5.clk" output="ff.clk"/>
                 <!-- Register feedback mux -->   
                 <mux name="mux1" input="ble5.in_C ff.Q" output="lut5.in[2:2]">
-                  <delay_constant max="1.1347e-10" in_port="ble5.in_C" out_port="lut5.in[2:2]"/>
-                  <delay_constant max="1.1347e-10" in_port="ff.Q" out_port="lut5.in[2:2]"/>  
+                  <delay_constant max="1.1347e-10" in_port="ble5.in_C" out_port="lut5.in[2:2]" />
+                  <delay_constant max="1.1347e-10" in_port="ff.Q" out_port="lut5.in[2:2]" />  
                 </mux>
                 <!-- FF input selection mux -->
                 <mux name="2" input="lut5.out ble5.in_C" output="ff.D">
-                  <delay_constant max="1.74588e-11" in_port="lut5.out" out_port="ff.D"/>
-                  <delay_constant max="1.74588e-11" in_port="ble5.in_C" out_port="ff.D"/>
+                  <delay_constant max="1.74588e-11" in_port="lut5.out" out_port="ff.D" />
+                  <delay_constant max="1.74588e-11" in_port="ble5.in_C" out_port="ff.D" />
                 </mux>
                 <!-- BLE output (local) -->
                 <mux name="mux3" input="ff.Q lut5.out" output="ble5.out_local">
-                  <delay_constant max="1.346e-10" in_port="ff.Q" out_port="ble5.out_local"/>
-                  <delay_constant max="1.346e-10" in_port="lut5.out" out_port="ble5.out_local"/>
+                  <delay_constant max="1.346e-10" in_port="ff.Q" out_port="ble5.out_local" />
+                  <delay_constant max="1.346e-10" in_port="lut5.out" out_port="ble5.out_local" />
                 </mux>
                 <!-- BLE output (routing 1) --> 
                 <mux name="mux4" input="ff.Q lut5.out" output="ble5.out_routing[0:0]">
-                  <delay_constant max="3.771e-11" in_port="ff.Q" out_port="ble5.out_routing[0:0]"/>
-                  <delay_constant max="3.771e-11" in_port="lut5.out" out_port="ble5.out_routing[0:0]"/>
+                  <delay_constant max="3.771e-11" in_port="ff.Q" out_port="ble5.out_routing[0:0]" />
+                  <delay_constant max="3.771e-11" in_port="lut5.out" out_port="ble5.out_routing[0:0]" />
                 </mux>
               </interconnect>
             </pb_type>
@@ -867,28 +653,28 @@
         <interconnect>
         <!-- 50% sparsely populated local routing -->
         <complete name="lutA" input="clb.I4 clb.I3 fle[1:0].out_local fle[3:2].out_local fle[8:8].out_local" output="fle[9:0].in_A">
-          <delay_constant max="2.842e-11" in_port="clb.I4" out_port="fle.in_A"/>
-          <delay_constant max="2.842e-11" in_port="clb.I3" out_port="fle.in_A"/>
+          <delay_constant max="2.842e-11" in_port="clb.I4" out_port="fle.in_A" />
+          <delay_constant max="2.842e-11" in_port="clb.I3" out_port="fle.in_A" />
           </complete>
         <complete name="lutB" input="clb.I3 clb.I2 fle[3:2].out_local fle[5:4].out_local fle[9:9].out_local" output="fle[9:0].in_B">
-          <delay_constant max="2.842e-11" in_port="clb.I3" out_port="fle.in_B"/>
-          <delay_constant max="2.842e-11" in_port="clb.I2" out_port="fle.in_B"/>
+          <delay_constant max="2.842e-11" in_port="clb.I3" out_port="fle.in_B" />
+          <delay_constant max="2.842e-11" in_port="clb.I2" out_port="fle.in_B" />
           </complete>
         <complete name="lutC" input="clb.I2 clb.I1 fle[5:4].out_local fle[7:6].out_local fle[8:8].out_local" output="fle[9:0].in_C">
-          <delay_constant max="2.842e-11" in_port="clb.I2" out_port="fle.in_C"/>
-          <delay_constant max="2.842e-11" in_port="clb.I1" out_port="fle.in_C"/>
+          <delay_constant max="2.842e-11" in_port="clb.I2" out_port="fle.in_C" />
+          <delay_constant max="2.842e-11" in_port="clb.I1" out_port="fle.in_C" />
           </complete>
         <complete name="lutD" input="clb.I4 clb.I2 fle[1:0].out_local fle[5:4].out_local fle[9:9].out_local" output="fle[9:0].in_D">
-          <delay_constant max="2.842e-11" in_port="clb.I4" out_port="fle.in_D"/>
-          <delay_constant max="2.842e-11" in_port="clb.I2" out_port="fle.in_D"/>
+          <delay_constant max="2.842e-11" in_port="clb.I4" out_port="fle.in_D" />
+          <delay_constant max="2.842e-11" in_port="clb.I2" out_port="fle.in_D" />
           </complete>
         <complete name="lutE" input="clb.I3 clb.I1 fle[3:2].out_local fle[7:6].out_local fle[8:8].out_local" output="fle[9:0].in_E">
-          <delay_constant max="2.842e-11" in_port="clb.I3" out_port="fle.in_E"/>
-          <delay_constant max="2.842e-11" in_port="clb.I1" out_port="fle.in_E"/>
+          <delay_constant max="2.842e-11" in_port="clb.I3" out_port="fle.in_E" />
+          <delay_constant max="2.842e-11" in_port="clb.I1" out_port="fle.in_E" />
           </complete>
         <complete name="lutF" input="clb.I4 clb.I1 fle[1:0].out_local fle[7:6].out_local fle[9:9].out_local" output="fle[9:0].in_F">
-          <delay_constant max="2.842e-11" in_port="clb.I4" out_port="fle.in_F"/>
-          <delay_constant max="2.842e-11" in_port="clb.I1" out_port="fle.in_F"/>
+          <delay_constant max="2.842e-11" in_port="clb.I4" out_port="fle.in_F" />
+          <delay_constant max="2.842e-11" in_port="clb.I1" out_port="fle.in_F" />
           </complete>
           <complete name="clks" input="clb.clk" output="fle[9:0].clk">
           </complete>
@@ -910,8 +696,8 @@
     <!-- Define DSP slice begin -->
     <pb_type name="dsp_top">
       <input name="reset" num_pins="1" is_non_clock_global="true"/>
-      <input name="dsp_I1" num_pins="37"/>
-      <input name="dsp_I2" num_pins="37"/>
+      <input name="dsp_I1" num_pins="37" />
+      <input name="dsp_I2" num_pins="37" />
       <input name="chainin" num_pins="64"/>
       <input name="scanin" num_pins="27"/>
       <output name="result" num_pins="74"/>
@@ -1064,7 +850,7 @@
             </direct>
             <direct name="datain2by" input="dsp_pb.datain[73:55]" output="sop_2.by">
             </direct>
-            <direct name="chainin" input="dsp_pb.chainin[36:0]" output="sop_2.chainin">
+            <direct name="chainin"   input="dsp_pb.chainin[36:0]" output="sop_2.chainin">
             </direct>
             <direct name="dataout2result" input="sop_2.result" output="dsp_pb.result[36:0]">
             </direct>
@@ -1135,9 +921,9 @@
             </direct>
             <direct name="datain2bx" input="dsp_pb.datain[72:37]" output="mult_add.bx">
             </direct>
-            <direct name="chainin" input="dsp_pb.chainin[63:0]" output="mult_add.chainin">
+            <direct name="chainin"   input="dsp_pb.chainin[63:0]" output="mult_add.chainin">
             </direct>
-            <direct name="scanin" input="dsp_pb.scanin[18:0]" output="mult_add.scanin">
+            <direct name="scanin"   input="dsp_pb.scanin[18:0]" output="mult_add.scanin">
             </direct>
             <direct name="dataout2result" input="mult_add.result" output="dsp_pb.result[63:0]">
             </direct>
@@ -1232,7 +1018,7 @@
             </direct>
             <direct name="datain2dy" input="dsp_pb.datain[71:63]" output="sop_4.dy">
             </direct>
-            <direct name="chainin" input="dsp_pb.chainin[63:0]" output="sop_4.chainin">
+            <direct name="chainin"   input="dsp_pb.chainin[63:0]" output="sop_4.chainin">
             </direct>
             <direct name="dataout2result" input="sop_4.result" output="dsp_pb.result[63:0]">
             </direct>
@@ -1243,15 +1029,15 @@
       </pb_type>
 
       <interconnect>
-        <direct name="datain1" input="dsp.dsp_I1" output="dsp_pb.datain[36:0]"/>
-        <direct name="datain2" input="dsp.dsp_I2" output="dsp_pb.datain[73:37]"/>
-        <direct name="reset" input="dsp.reset" output="dsp_pb.reset"/>
-        <direct name="chainin" input="dsp.chainin" output="dsp_pb.chainin"/>
-        <direct name="chainout" input="dsp_pb.chainout" output="dsp.chainout"/>
-        <direct name="scanin" input="dsp.scanin" output="dsp_pb.scanin"/>
-        <direct name="scanout" input="dsp_pb.scanout" output="dsp.scanout"/>
-        <direct name="result" input="dsp_pb.result" output="dsp.result"/>
-        <direct name="clk" input="dsp.clk" output="dsp_pb.clk"/>
+        <direct name="datain1" input="dsp.dsp_I1" output ="dsp_pb.datain[36:0]"/>
+        <direct name="datain2" input="dsp.dsp_I2" output ="dsp_pb.datain[73:37]"/>
+        <direct name="reset" input="dsp.reset" output="dsp_pb.reset"></direct>
+        <direct name="chainin" input="dsp.chainin"    output="dsp_pb.chainin"></direct>
+        <direct name="chainout" input="dsp_pb.chainout" output="dsp.chainout"></direct>
+        <direct name="scanin" input="dsp.scanin"    output="dsp_pb.scanin"></direct>
+        <direct name="scanout" input="dsp_pb.scanout" output="dsp.scanout"></direct>
+        <direct name="result" input="dsp_pb.result" output="dsp.result"></direct>
+        <direct name="clk" input="dsp.clk" output="dsp_pb.clk"></direct>
       </interconnect>  
     </pb_type>
 
@@ -1268,10 +1054,10 @@
           <delay_constant max="333e-12" in_port="dsp_top.dsp_I2" out_port="dsp.dsp_I2"/>
       </complete>
       -->
-      <direct name="datain1" input="dsp_top.dsp_I1" output="dsp.dsp_I1"/>
-      <direct name="datain2" input="dsp_top.dsp_I2" output="dsp.dsp_I2"/>
+      <direct name="datain1" input="dsp_top.dsp_I1" output ="dsp.dsp_I1"/>
+      <direct name="datain2" input="dsp_top.dsp_I2" output ="dsp.dsp_I2"/>
 
-      <direct name="reset" input="dsp_top.reset" output="dsp.reset"/>
+      <direct name="reset" input="dsp_top.reset" output="dsp.reset"></direct>
       <direct name="chainin" input="dsp_top.chainin" output="dsp.chainin">
           <delay_constant max="1179e-12" in_port="dsp_top.chainin" out_port="dsp.chainin"/>
       </direct>
@@ -1284,8 +1070,8 @@
       <direct name="scanout" input="dsp.scanout" output="dsp_top.scanout">
           <delay_constant max="1179e-12" in_port="dsp.scanout" out_port="dsp_top.scanout"/>
       </direct>
-      <direct name="result" input="dsp.result" output="dsp_top.result"/>
-      <direct name="clk" input="dsp_top.clk" output="dsp.clk"/>
+      <direct name="result" input="dsp.result" output="dsp_top.result"></direct>
+      <direct name="clk" input="dsp_top.clk" output="dsp.clk"></direct>
     </interconnect>
   </pb_type>
     <!-- Define DSP slice end -->
@@ -1369,7 +1155,7 @@
 
           <delay_constant max="0" in_port="mem_512x40_sp.addr" out_port="mem_512x40_sp.out"/>
           <delay_constant max="0" in_port="mem_512x40_sp.data" out_port="mem_512x40_sp.out"/>
-          <delay_constant max="0" in_port="mem_512x40_sp.we" out_port="mem_512x40_sp.out"/>
+          <delay_constant max="0" in_port="mem_512x40_sp.we"   out_port="mem_512x40_sp.out"/>
 
         </pb_type>
         <interconnect>
@@ -1411,7 +1197,7 @@
 
           <delay_constant max="0" in_port="mem_1024x20_sp.addr" out_port="mem_1024x20_sp.out"/>
           <delay_constant max="0" in_port="mem_1024x20_sp.data" out_port="mem_1024x20_sp.out"/>
-          <delay_constant max="0" in_port="mem_1024x20_sp.we" out_port="mem_1024x20_sp.out"/>
+          <delay_constant max="0" in_port="mem_1024x20_sp.we"   out_port="mem_1024x20_sp.out"/>
 
         </pb_type>
         <interconnect>
@@ -1453,7 +1239,7 @@
 
           <delay_constant max="0" in_port="mem_2048x10_sp.addr" out_port="mem_2048x10_sp.out"/>
           <delay_constant max="0" in_port="mem_2048x10_sp.data" out_port="mem_2048x10_sp.out"/>
-          <delay_constant max="0" in_port="mem_2048x10_sp.we" out_port="mem_2048x10_sp.out"/>
+          <delay_constant max="0" in_port="mem_2048x10_sp.we"   out_port="mem_2048x10_sp.out"/>
 
         </pb_type>
         <interconnect>
@@ -1611,25 +1397,96 @@
     </pb_type>
     <!-- Define fracturable memory end -->
 
+    <pb_type name="tsv_hole">
+      <input name="I" num_pins="1"/>
+      <output name="O" num_pins="1"/>
+      <interconnect/>
+    </pb_type>
   </complexblocklist>
 
   <switchblocklist>
+    <!-- Stratix IV uses a uni-directional routing architecture with a Driver Input Mux (DIM) size of 12 (i.e.
+           each wire can be driven by one of 12 block/outputs or wires) for the L4s.
+           
+           In the Stratix IV architecture the long wires (L16 here) are accessible only from the short wires, 
+           and are not connected to the block pins (i.e. connection blocks). Furthermore, they only connect 
+           to switch blocks every 4 LABs (to avoid expensive deep via stacks).
+           We approximate the L16 DIM size as 40:1 (in reality it is a pair of 20:1 (?) muxes with a 2:1 swap mux
+           in front, which has nearly the same connectivity as a full 40:1).
 
-    <!--
-    Switch pattern
-    ==============
-    This switch block is based on the Wilton switch block (see Page 103 of Steve Wilton's PhD Thesis 
-    "Architecture and Algorithms for Field-Programmable Gate Arrays with Embedded Memory", 199
-         left-to-top: W - t
-         top-to-right: t + 1
-         right-to-bottom: 2*W - 2 - t
-         bottom-to-left: t + 1
-         left-to-right: t
-         top-to-bottom
-    Since Wilton assumed bidirection routing (while we use unidirectional routing),
-    we mirror the clock-wise turns to match the conter-clock-wise specification.
-    -->
+           L4 wires
+           ================
+           At a channel width of 300 there are 260 L4/L4prime wires. At an effective Fc_out of 0.075 
+           and 40 LAB outputs this yeilds:
 
+                40 * 2 = 80 outputs per channel  [2 LABs per-channel]
+
+                80 * 0.075 = 6 outputs drive each L4 wire [output connection block]
+
+           This leaves:
+
+                12 - 6 = 6 inputs to the DIMs from other routing wires [switch block]
+
+           Since L4s connect at every switch block, there are:
+
+                260 L16 wires per channel + direction which can drive wires at a particular switchblock
+                (via switchpoints 0, 1, 2, 3)
+
+           And for each direction (260 wires) only:
+
+               260 / 4 = 65 wires starting/ending per channel + direction at each switch block
+               (i.e. from each direction, north/south/east/west, there are 32 L4s starting, and 32 L4s ending; + 1 wire for the 65th)
+
+           Which we allocate as follows:
+
+                L4
+                =====
+                straight-through connection: 2 (from L4 or L16)
+                clock-wise turn            : 2 (from L4 or L16)
+                counter-clock-wise turn    : 2 (from L4 or L16)
+
+           L16 wires
+           =========
+           At a channel width of 300 there are 40 L16 wires (20 in each direction), which do not connect to the input/output connection blocks.
+           This leaves 40 inputs to the DIM to select from routing wires (long wires use larger DIMs to improve reachability,
+           the area cost is relatively small since they are so rare).
+
+           Since L16s only connect at every 4th switch block there are:
+
+                40 / 4 = 10 L16 wires per channel (5 in each direction) which can drive wires at a particular switchblock
+                (via switchpoints 0, 4, 8, 12)
+
+           And for each direction (20 wires) only:
+
+               40 / 16 = 2.25 => 2 wires starting/ending per channel + direction at each switch block
+               (i.e. from each direction, north/south/east/west, there is one L16 starting, and one L16 ending)
+           
+           We assign the 40 DIM inputs as follows:
+
+                L16
+                =====
+                straight-through connection:  3 (from L16)
+                straight-through connection: 11 (from L4)
+                clock-wise turn            :  3 (from L16)
+                clock-wise turn            : 10 (from L4)
+                counter clock-wise turn    :  3 (from L16)
+                counter clock-wise turn    : 10 (from L4)
+
+           Switch pattern
+           ==============
+           This switch block is based on the Wilton switch block (see Page 103 of Steve Wilton's PhD Thesis 
+           "Architecture and Algorithms for Field-Programmable Gate Arrays with Embedded Memory", 1997):
+
+                left-to-top: W - t
+                top-to-right: t + 1
+                right-to-bottom: 2*W - 2 - t
+                bottom-to-left: t + 1
+                left-to-right: t
+                top-to-bottom: t
+
+           Since Wilton assumed bidirection routing (while we use unidirectional routing),
+           we mirror the clock-wise turns to match the conter-clock-wise specification.
+           -->
     <switchblock name="wilton_turn_clockwise_core" type="unidir">
       <switchblock_location type="CORE"/>
       <switchfuncs>
@@ -1807,45 +1664,36 @@
     <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
 
-  <!-- Scatter-gather patterns used for inter-die connections. Two patterns are defined:
-       one for downward inter-die connections and one for upward inter-die connections. 
-       Each pattern gathers [num_conns] connections from L4 wires in 3 sides
-       (right, left, and top for downward, and right, left, and bottom for upward).
-       Then, it scatters these connections to [num_conns] L4 wires on all sides after travelling
-       the length of the interposer wire.
-  -->
   <scatter_gather_list>
-      <sg_pattern name="interposer_sg_downward" type="unidir">
-        <gather>
-          <wireconn num_conns="12" side="rlt">
-            <from type="L4" switchpoint="0, 1, 2, 3"/>
-          </wireconn>
-        </gather>
+    <sg_pattern name="3d_sb_sg_10um_dir" type="bidir">
+      <gather>
+        <wireconn num_conns="16" from_type="L4" from_switchpoint="0,1,2,3" side="rltb"/>
+      </gather>
+      <scatter>
+        <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rtlb"/>
+      </scatter>
+      <sg_link_list>
+        <sg_link name="L_UP"   z_offset="1"  mux="bidir_inter_die_switch_10um" seg_type="z_segment"/>
+        <sg_link name="L_DOWN" z_offset="-1" mux="bidir_inter_die_switch_10um" seg_type="z_segment"/>
+      </sg_link_list>
 
-        <scatter>
-          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/>
-        </scatter>
+      
+      <!-- 6 connections per CLB  -->
+      <sg_location type="EVERYWHERE"   num="6" sg_link_name="L_UP"/>
 
-        <sg_link_list>
-          <sg_link name="sg_DOWN" y_offset="-17" seg_type="int_wire"/>
-        </sg_link_list>
-      </sg_pattern>
+      <!-- 20 Connections per DSP. 6 of them are already covered by CLB connections. -->
+      <sg_location type="XY_SPECIFIED" num="14" startx="18" incrx="41" starty="1" sg_link_name="L_UP"/>
+      <sg_location type="XY_SPECIFIED" num="14" startx="31" incrx="41" starty="1" sg_link_name="L_UP"/>
 
-      <sg_pattern name="interposer_sg_upward" type="unidir">
-        <gather>
-          <wireconn num_conns="12" side="rlb">
-            <from type="L4" switchpoint="0, 1, 2, 3"/>
-          </wireconn>
-        </gather>
+      <!-- 24 Connections per Memory. 6 of them are already covered by CLB connections. -->
+      <sg_location type="XY_SPECIFIED" num="18" startx="11" incrx="41" starty="1" sg_link_name="L_UP"/>
+      <sg_location type="XY_SPECIFIED" num="18" startx="25" incrx="41" starty="1" sg_link_name="L_UP"/>
+      <sg_location type="XY_SPECIFIED" num="18" startx="37" incrx="41" starty="1" sg_link_name="L_UP"/>
 
-        <scatter>
-          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/>
-        </scatter>
+    </sg_pattern>
 
-        <sg_link_list>
-          <sg_link name="sg_UP" y_offset="17" seg_type="int_wire"/>
-        </sg_link_list>
-
-      </sg_pattern>
   </scatter_gather_list>
+
 </architecture>
+
+
