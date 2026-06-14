@@ -2741,7 +2741,7 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_from.*
                 :width: 100%
 
-        * ``to`` -- The number of switchblock edges equal to the 'to' set size size.
+        * ``to`` -- The number of switchblock edges equal to the 'to' set size.
 
             This ensures that each element of the 'to' set is connected to precisely one element of the 'from' set.
             However it may leave some elements of the 'from' set either multiply-connected or disconnected.
