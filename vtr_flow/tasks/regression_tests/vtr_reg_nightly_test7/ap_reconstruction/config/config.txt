@@ -21,10 +21,15 @@ circuit_list_add=neuron_stratixiv_arch_timing.blif
 circuit_list_add=cholesky_bdti_stratixiv_arch_timing.blif
 circuit_list_add=minres_stratixiv_arch_timing.blif
 
-# Constrain the circuits to their devices
-circuit_constraint_list_add=(neuron_stratixiv_arch_timing.blif,        device=titan_small)
-circuit_constraint_list_add=(cholesky_bdti_stratixiv_arch_timing.blif, device=titan_medium)
-circuit_constraint_list_add=(minres_stratixiv_arch_timing.blif,        device=titan_large)
+# Below are a set of fixed sized layouts which were found to work well for these
+# benchmarks. They were found by finding the minimum device size for each
+# benchmark and categorizing the benchmarks into the different fixed layouts.
+# Each fixed layout was chosen to be around 1.5x larger than the previous.
+# Constrain the circuits to their device widths
+# Constrain the circuits to their device widths
+circuit_constraint_list_add=(neuron_stratixiv_arch_timing.blif,        device_width=150)
+circuit_constraint_list_add=(cholesky_bdti_stratixiv_arch_timing.blif, device_width=225)
+circuit_constraint_list_add=(minres_stratixiv_arch_timing.blif,        device_width=300)
 
 # Read flat placement inputs
 circuit_constraint_list_add=(neuron_stratixiv_arch_timing.blif,        read_flat_place=../../../../../ap_reconstruction/constraints/neuron_stratixiv_arch_timing.fplace)
