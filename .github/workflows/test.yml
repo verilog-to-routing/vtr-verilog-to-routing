@@ -797,6 +797,37 @@ jobs:
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make -j${{ steps.cpu-cores.outputs.count}}
 
+  ResoluteCompatibility:
+    name: 'Ubuntu Resolute - 26.04 Compatibility Test'
+    runs-on: ubuntu-26.04
+    needs: [BuildVTR]
+    env:
+      CC: gcc-15
+      CXX: g++-15
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v3
+      id: cpu-cores
+
+    - name: Install Dependencies
+      run: ./install_apt_packages.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-gcc-15
+
+    - name: Build
+      env:
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off"
+        BUILD_TYPE: release
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+
   Msys2Compatibility:
     needs: [BuildVTR]
     name: ${{ matrix.config.name }}
