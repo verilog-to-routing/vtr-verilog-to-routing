@@ -1726,7 +1726,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     gen_grp.add_argument<size_t>(args.device_width, "--device_width")
         .help("When --device is 'auto', use a fixed grid width instead of auto-sizing."
-            " Grid height is derived from the architecture aspect ratio.")
+              " Grid height is derived from the architecture aspect ratio.")
         .default_value("0");
 
     gen_grp.add_argument<size_t>(args.num_workers, "--num_workers", "-j")
