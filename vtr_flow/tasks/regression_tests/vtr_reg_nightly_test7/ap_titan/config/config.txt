@@ -36,9 +36,9 @@ circuit_list_add=stap_qrd_stratixiv_arch_timing.blif
 circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
 # circuit_list_add=gaussianblur_stratixiv_arch_timing.blif
 
-# Below are a set of fixed sized layouts which were found to work well for these
+# Below are a set of fixed layouts which were found to work well for these
 # benchmarks. They were found by finding the minimum device size for each
-# benchmark and categorizing the benchmarks into the different fixed layouts.
+# benchmark and categorizing the benchmarks into the different fixed layouts. 
 # Each fixed layout was chosen to be around 1.5x larger than the previous.
 # Constrain the circuits to their device widths
 circuit_constraint_list_add=(sparcT1_core_stratixiv_arch_timing.blif,  device_width=100)
