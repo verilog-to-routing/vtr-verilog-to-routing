@@ -1982,24 +1982,58 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // Here, we try to move blocks that are closest to the partition line such
     // that the overfill on both sides is balanced.
 
-    // Try to move things from lower to upper greedily.
+    // Try to move things from lower to upper greedily, then upper to lower.
     // Iteration order: highest move_priority first, where
     //   move_priority = timing_tradeoff_ * (1 - criticality)
     //                 + (1 - timing_tradeoff_) * proximity_to_pivot
-    // proximity_to_pivot is 1 for a block sitting right at the partition line
-    // and 0 for the block farthest from it. This blends two goals:
-    //   - timing: prefer displacing non-critical blocks (criticality term)
-    //   - wirelength: prefer displacing blocks close to the line (proximity term)
+    // proximity_to_pivot is the block's actual geometric distance to the
+    // partition line, normalised to [0, 1] by the window half-span. This
+    // blends two competing goals:
+    //   - timing:     prefer displacing non-critical blocks
+    //   - wirelength: prefer displacing blocks that are already close to the
+    //                 partition line (moving them costs less wirelength)
     // When timing_tradeoff_ == 0 the order degrades to the original distance-
     // only behaviour; when timing_tradeoff_ == 1 it is purely criticality-based.
+
+    // Compute the position accessor and the window extents used for normalising
+    // proximity. Both are shared by the lower and upper loops below.
+    auto get_block_pos = [&](APBlockId blk_id) -> double {
+        switch (partitioned_window.partition_dir) {
+            case e_partition_dir::VERTICAL:   return p_placement.block_x_locs[blk_id];
+            case e_partition_dir::HORIZONTAL: return p_placement.block_y_locs[blk_id];
+            default:                          return p_placement.block_layer_nums[blk_id];
+        }
+    };
+    double pivot_pos = partitioned_window.pivot_pos;
+    double lower_far_edge, upper_far_edge;
+    switch (partitioned_window.partition_dir) {
+        case e_partition_dir::VERTICAL:
+            lower_far_edge = lower_window.region.xmin();
+            upper_far_edge = upper_window.region.xmax();
+            break;
+        case e_partition_dir::HORIZONTAL:
+            lower_far_edge = lower_window.region.ymin();
+            upper_far_edge = upper_window.region.ymax();
+            break;
+        default: // PLANAR
+            lower_far_edge = lower_window.layer_low;
+            upper_far_edge = upper_window.layer_high;
+            break;
+    }
+    // Half-span denominators: clamped away from zero to avoid division by zero
+    // when the window collapses to a single coordinate.
+    float lower_span = std::max(static_cast<float>(pivot_pos - lower_far_edge), 1e-6f);
+    float upper_span = std::max(static_cast<float>(upper_far_edge - pivot_pos), 1e-6f);
+
+    // Try to move things from lower to upper greedily.
     std::vector<APBlockId> lower_blocks_to_move;
     lower_blocks_to_move.reserve(lower_contained_blocks.size());
     {
-        // Normalise index→proximity: index pivot-1 maps to 1.0, index 0 to 0.0.
-        float lower_norm = (pivot > 1) ? 1.0f / static_cast<float>(pivot - 1) : 1.0f;
         auto lower_move_priority = [&](size_t idx) -> float {
-            float crit = block_criticality_[lower_contained_blocks[idx]];
-            float proximity = static_cast<float>(idx) * lower_norm;
+            APBlockId blk_id = lower_contained_blocks[idx];
+            float crit = block_criticality_[blk_id];
+            // proximity: 0 at the far edge of the lower window, 1 at the pivot.
+            float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
             return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
         };
         std::vector<size_t> lower_order(pivot);
@@ -2029,18 +2063,17 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     }
 
     // Try to move things from upper to lower greedily.
-    // Same blended priority as above; index 0 is closest to the partition line.
     std::vector<APBlockId> upper_blocks_to_move;
     upper_blocks_to_move.reserve(upper_contained_blocks.size());
     {
-        size_t upper_size = upper_contained_blocks.size();
-        float upper_norm = (upper_size > 1) ? 1.0f / static_cast<float>(upper_size - 1) : 1.0f;
         auto upper_move_priority = [&](size_t idx) -> float {
-            float crit = block_criticality_[upper_contained_blocks[idx]];
-            // Index 0 is at the pivot (proximity 1.0), higher index is farther.
-            float proximity = 1.0f - static_cast<float>(idx) * upper_norm;
+            APBlockId blk_id = upper_contained_blocks[idx];
+            float crit = block_criticality_[blk_id];
+            // proximity: 0 at the far edge of the upper window, 1 at the pivot.
+            float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
             return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
         };
+        size_t upper_size = upper_contained_blocks.size();
         std::vector<size_t> upper_order(upper_size);
         for (size_t k = 0; k < upper_size; k++) upper_order[k] = k;
         std::stable_sort(upper_order.begin(), upper_order.end(),
