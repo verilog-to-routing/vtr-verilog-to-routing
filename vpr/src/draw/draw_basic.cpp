@@ -40,6 +40,9 @@
 // Constant values used in this file
 static constexpr ezgl::color DEFAULT_RR_NODE_COLOR = ezgl::BLACK;
 static constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+static constexpr int PERPENDICULAR_OFFSET = 8;
+static constexpr int CRIT_PATH_DELAY_TEXT_WIDTH = 40;
+static constexpr int CRIT_PATH_DELAY_TEXT_HEIGHT = 13;
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
@@ -972,6 +975,10 @@ void draw_crit_path(ezgl::renderer* g) {
         *(draw_state->setup_timing_info->setup_analyzer()), 1);
     tatum::TimingPath path = paths[0];
 
+    if (draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays) {
+        update_least_cluttering_delay_drawing_scheme(path);
+    }
+
     //Walk through the timing path drawing each edge
     tatum::NodeId prev_node;
     float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
@@ -1004,7 +1011,7 @@ void draw_crit_path(ezgl::renderer* g) {
 
                     draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
                                              (ezgl::point2d)tnode_draw_coord(node), (float)delay,
-                                             (ezgl::renderer*)g);
+                                             head_node, (ezgl::renderer*)g);
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(0);
                 }
@@ -1019,6 +1026,70 @@ void draw_crit_path(ezgl::renderer* g) {
         prev_arr_time = arr_time;
     }
 }
+
+void update_least_cluttering_delay_drawing_scheme(tatum::TimingPath& path) {
+    initialize_delay_drawing_info(path);
+
+    tatum::NodeId prev_node;
+    for (tatum::TimingPathElem elem : path.data_arrival_path().elements()) {
+        tatum::NodeId node;
+        if (prev_node) {
+            ezgl::point2d start = tnode_draw_coord(prev_node);
+            ezgl::point2d end = tnode_draw_coord(node);
+            if (start.x > end.x) {
+                std::swap(start, end);
+            }
+            double min_y = std::min(start.y, end.y);
+            double max_y = std::max(start.y, end.y);
+
+            ezgl::rectangle text_bbox({start.x, min_y}, {end.x, max_y});
+            double text_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
+
+            // Get the screen coordinates for text drawing
+            ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+
+            if (std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2) < 40 * 40) {
+                return;
+            }
+        }
+        prev_node = node;
+    }
+}
+
+void initialize_delay_drawing_info(const tatum::TimingPath& path) {
+    std::vector<t_crit_path_delay_drawing_info> initialized_info;
+    tatum::NodeId prev_node;
+
+    for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
+        tatum::NodeId node = elem.node();
+
+        if (prev_node) {
+            t_crit_path_delay_drawing_info info{};
+            info.delay_edge_bbox = ezgl::rectangle(
+                tnode_draw_coord(prev_node),
+                tnode_draw_coord(node));
+            info.previous_pos = e_delay_text_relative_pos::NOT_DRAWN;
+
+            initialized_info.push_back(info);
+        }
+
+        prev_node = node;
+    }
+
+    get_draw_state_vars()->crit_path_delay_drawing_info.swap(initialized_info);
+}
+
+double get_bboxes_overlap_area(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2) {
+    double overlap_width = std::max(0.0, std::min(bbox1.right(), bbox2.right())
+                 - std::max(bbox1.left(), bbox2.left()));
+
+    double overlap_height = std::max(0.0, std::min(bbox1.top(), bbox2.top())
+                 - std::max(bbox1.bottom(), bbox2.bottom()));
+
+    return overlap_width * overlap_height;
+}
+
+
 
 /**
  * @brief Draw critical path elements.
@@ -1117,72 +1188,68 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 }
 
 //Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/) {
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, tatum::NodeID head_node,
+                              bool skip_draw_delays /*=false*/) {
     g->draw_line(start, end);
-    draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-    draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+    //draw_triangle_along_line(g, start, end, 0.8, 40 * DEFAULT_ARROW_SIZE);
+    //draw_triangle_along_line(g, start, end, 0.2, 40 * DEFAULT_ARROW_SIZE);
 
     bool draw_delays = get_draw_state_vars()->show_crit_path_delays && !skip_draw_delays;
 
     if (draw_delays) {
-        //Determine the strict bounding box based on the lines start/end
-        float min_x = std::min(start.x, end.x);
-        float max_x = std::max(start.x, end.x);
-        float min_y = std::min(start.y, end.y);
-        float max_y = std::max(start.y, end.y);
-
-        //If we have a nearly horizontal/vertical line the bbox is too
-        //small to draw the text, so widen it by a tile (i.e. CLB) width
-        float tile_width = get_draw_coords_vars()->get_tile_width();
-        if (max_x - min_x < tile_width) {
-            max_x += tile_width / 2;
-            min_x -= tile_width / 2;
-        }
-        if (max_y - min_y < tile_width) {
-            max_y += tile_width / 2;
-            min_y -= tile_width / 2;
-        }
-
-        //TODO: draw the delays nicer
-        //   * rotate to match edge
-        //   * offset from line
-        //   * track visible in window
-        ezgl::rectangle text_bbox({min_x, min_y}, {max_x, max_y});
-
-        std::stringstream ss;
-        ss.precision(3);
-        ss << 1e9 * incr_delay; //In nanoseconds
-        std::string incr_delay_str = ss.str();
-
-        // Get the angle of line, to rotate the text
-        float text_angle = (180 / std::numbers::pi)
-                           * atan((end.y - start.y) / (end.x - start.x));
-
-        // Get the screen coordinates for text drawing
-        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
-        g->set_text_rotation(text_angle);
-
-        // Set the text colour to black to differentiate it from the line
-        g->set_font_size(16);
-        g->set_color(ezgl::color(0, 0, 0));
-
-        g->set_coordinate_system(ezgl::SCREEN);
-
-        // Find an offset so it is sitting on top/below of the line
-        float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (std::numbers::pi / 180));
-        float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (std::numbers::pi / 180));
-
-        ezgl::point2d offset_text_bbox(x_offset, y_offset);
-        g->draw_text(offset_text_bbox, incr_delay_str,
-                     text_bbox.width(), text_bbox.height());
-
-        g->set_font_size(14);
-
-        g->set_text_rotation(0);
-        g->set_coordinate_system(ezgl::WORLD);
+        draw_delay_on_edge(start, end, incr_delay, g);
     }
+}
+
+void draw_delay_on_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g) {
+    if(start.x > end.x) {
+        std::swap(start, end);
+    }
+
+    //Determine the strict bounding box based on the lines start/end
+    double min_y = std::min(start.y, end.y);
+    double max_y = std::max(start.y, end.y);
+
+    //TODO: draw the delays nicer
+    //   * rotate to match edge
+    //   * offset from line
+    //   * track visible in window
+    ezgl::rectangle text_bbox({start.x, min_y}, {end.x, max_y});
+
+    std::stringstream ss;
+    ss.precision(3);
+    ss << std::fixed << 1e9 * incr_delay; //In nanoseconds
+    std::string incr_delay_str = ss.str();
+
+    // Get the angle of line, to rotate the text
+    float text_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
+
+    // Get the screen coordinates for text drawing
+    ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+
+    if (std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2) < 40 * 40) {
+        return;
+    }
+
+    g->set_text_rotation(text_angle);
+
+    g->set_font_size(16);
+
+    g->set_coordinate_system(ezgl::SCREEN);
+
+    // Find an offset so it is sitting on top/below of the line
+    float x_offset = screen_coords.center().x
+                    - PERPENDICULAR_OFFSET * sin(text_angle * (std::numbers::pi / 180));
+    float y_offset = screen_coords.center().y
+                    - PERPENDICULAR_OFFSET * cos(text_angle * (std::numbers::pi / 180));
+
+    ezgl::point2d offset_text_bbox(x_offset, y_offset);
+    g->draw_text(offset_text_bbox, incr_delay_str);
+
+    g->set_font_size(14);
+
+    g->set_text_rotation(0);
+    g->set_coordinate_system(ezgl::WORLD);
 }
 
 //Collect all the drawing locations associated with the timing edge between start and end
