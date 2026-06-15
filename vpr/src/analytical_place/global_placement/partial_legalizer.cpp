@@ -50,6 +50,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
                                                          PreClusterTimingManager& timing_manager,
+                                                         float ap_timing_tradeoff,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
@@ -67,6 +68,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                                     prepacker,
                                                                     models,
                                                                     timing_manager,
+                                                                    ap_timing_tradeoff,
                                                                     log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -868,6 +870,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     const Prepacker& prepacker,
     const LogicalModels& models,
     PreClusterTimingManager& timing_manager,
+    float ap_timing_tradeoff,
     int log_verbosity)
     : PartialLegalizer(netlist, log_verbosity)
     , density_manager_(density_manager)
@@ -877,6 +880,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
                    density_manager->mass_calculator().get_dim_manager(),
                    log_verbosity)
     , timing_manager_(timing_manager)
+    , timing_tradeoff_(ap_timing_tradeoff)
     , block_criticality_(netlist.blocks().size(), 0.0f) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
@@ -1979,20 +1983,30 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // that the overfill on both sides is balanced.
 
     // Try to move things from lower to upper greedily.
-    // Iteration order: least-critical blocks first; ties broken by closest to
-    // the partition line first (highest index in the position-sorted vector).
-    // This ensures timing-critical blocks are the last to be displaced.
+    // Iteration order: highest move_priority first, where
+    //   move_priority = timing_tradeoff_ * (1 - criticality)
+    //                 + (1 - timing_tradeoff_) * proximity_to_pivot
+    // proximity_to_pivot is 1 for a block sitting right at the partition line
+    // and 0 for the block farthest from it. This blends two goals:
+    //   - timing: prefer displacing non-critical blocks (criticality term)
+    //   - wirelength: prefer displacing blocks close to the line (proximity term)
+    // When timing_tradeoff_ == 0 the order degrades to the original distance-
+    // only behaviour; when timing_tradeoff_ == 1 it is purely criticality-based.
     std::vector<APBlockId> lower_blocks_to_move;
     lower_blocks_to_move.reserve(lower_contained_blocks.size());
     {
+        // Normalise index→proximity: index pivot-1 maps to 1.0, index 0 to 0.0.
+        float lower_norm = (pivot > 1) ? 1.0f / static_cast<float>(pivot - 1) : 1.0f;
+        auto lower_move_priority = [&](size_t idx) -> float {
+            float crit = block_criticality_[lower_contained_blocks[idx]];
+            float proximity = static_cast<float>(idx) * lower_norm;
+            return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
+        };
         std::vector<size_t> lower_order(pivot);
         for (size_t k = 0; k < pivot; k++) lower_order[k] = k;
         std::stable_sort(lower_order.begin(), lower_order.end(),
                          [&](size_t a, size_t b) {
-                             float ca = block_criticality_[lower_contained_blocks[a]];
-                             float cb = block_criticality_[lower_contained_blocks[b]];
-                             if (ca != cb) return ca < cb; // least critical first
-                             return a > b;                 // closest to pivot first
+                             return lower_move_priority(a) > lower_move_priority(b);
                          });
         for (size_t idx : lower_order) {
             if (lower_window_overfill.is_zero())
@@ -2015,19 +2029,23 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     }
 
     // Try to move things from upper to lower greedily.
-    // Iteration order: least-critical blocks first; ties broken by closest to
-    // the partition line first (lowest index in the position-sorted vector).
+    // Same blended priority as above; index 0 is closest to the partition line.
     std::vector<APBlockId> upper_blocks_to_move;
     upper_blocks_to_move.reserve(upper_contained_blocks.size());
     {
-        std::vector<size_t> upper_order(upper_contained_blocks.size());
-        for (size_t k = 0; k < upper_contained_blocks.size(); k++) upper_order[k] = k;
+        size_t upper_size = upper_contained_blocks.size();
+        float upper_norm = (upper_size > 1) ? 1.0f / static_cast<float>(upper_size - 1) : 1.0f;
+        auto upper_move_priority = [&](size_t idx) -> float {
+            float crit = block_criticality_[upper_contained_blocks[idx]];
+            // Index 0 is at the pivot (proximity 1.0), higher index is farther.
+            float proximity = 1.0f - static_cast<float>(idx) * upper_norm;
+            return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
+        };
+        std::vector<size_t> upper_order(upper_size);
+        for (size_t k = 0; k < upper_size; k++) upper_order[k] = k;
         std::stable_sort(upper_order.begin(), upper_order.end(),
                          [&](size_t a, size_t b) {
-                             float ca = block_criticality_[upper_contained_blocks[a]];
-                             float cb = block_criticality_[upper_contained_blocks[b]];
-                             if (ca != cb) return ca < cb; // least critical first
-                             return a < b;                 // closest to pivot first
+                             return upper_move_priority(a) > upper_move_priority(b);
                          });
         for (size_t idx : upper_order) {
             if (upper_window_overfill.is_zero())

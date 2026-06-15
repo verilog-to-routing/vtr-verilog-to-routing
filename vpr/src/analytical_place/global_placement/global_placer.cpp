@@ -123,6 +123,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                 prepacker,
                                                 models,
                                                 pre_cluster_timing_manager_,
+                                                ap_timing_tradeoff,
                                                 log_verbosity_);
 }
 

@@ -102,6 +102,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
                                                          PreClusterTimingManager& timing_manager,
+                                                         float ap_timing_tradeoff,
                                                          int log_verbosity);
 
 /**
@@ -551,6 +552,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
                                    const Prepacker& prepacker,
                                    const LogicalModels& models,
                                    PreClusterTimingManager& timing_manager,
+                                   float ap_timing_tradeoff,
                                    int log_verbosity);
 
     /**
@@ -711,6 +713,11 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     /// @brief Timing manager used to query setup pin criticalities. Used by
     ///        compute_block_criticalities() each call to legalize().
     PreClusterTimingManager& timing_manager_;
+
+    /// @brief Tradeoff between wirelength and timing in the partition sort key.
+    ///        0 = pure wirelength (distance to pivot), 1 = pure timing criticality.
+    ///        Mirrors the ap_timing_tradeoff used by the analytical solver.
+    float timing_tradeoff_;
 
     /// @brief Per-block timing criticality, updated at the start of each
     ///        legalize() call. Indexed by APBlockId. Values are in [0, 1].
