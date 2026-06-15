@@ -32,6 +32,7 @@
 
 // Forward declarations
 class APNetlist;
+class PreClusterTimingManager;
 class Prepacker;
 struct PartialPlacement;
 
@@ -100,6 +101,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
+                                                         PreClusterTimingManager& timing_manager,
                                                          int log_verbosity);
 
 /**
@@ -548,6 +550,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
                                    std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                    const Prepacker& prepacker,
                                    const LogicalModels& models,
+                                   PreClusterTimingManager& timing_manager,
                                    int log_verbosity);
 
     /**
@@ -673,6 +676,19 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      */
     void move_blocks_out_of_windows(std::vector<SpreadingWindow>& finished_windows);
 
+    /**
+     * @brief Compute the timing criticality of each APBlock.
+     *
+     * For each block, the criticality is the maximum setup pin criticality
+     * over all of its pins. Blocks with no timing-relevant pins get a
+     * criticality of 0. If timing is not valid (e.g. iteration 0 or timing
+     * disabled), all criticalities are set to 0, giving the same behaviour
+     * as the non-timing-aware path.
+     *
+     * Results are stored in block_criticality_.
+     */
+    void compute_block_criticalities();
+
   private:
     /// @brief The density manager which manages the capacity and utilization
     ///        of regions of the device.
@@ -691,6 +707,14 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     ///
     /// This is populated in the constructor and not modified.
     PerPrimitiveDimPrefixSum2D capacity_prefix_sum_;
+
+    /// @brief Timing manager used to query setup pin criticalities. Used by
+    ///        compute_block_criticalities() each call to legalize().
+    PreClusterTimingManager& timing_manager_;
+
+    /// @brief Per-block timing criticality, updated at the start of each
+    ///        legalize() call. Indexed by APBlockId. Values are in [0, 1].
+    vtr::vector<APBlockId, float> block_criticality_;
 
     /// @brief The number of times a window was partitioned in the legalizer.
     unsigned num_windows_partitioned_ = 0;

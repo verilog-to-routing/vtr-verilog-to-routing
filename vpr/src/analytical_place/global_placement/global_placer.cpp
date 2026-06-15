@@ -122,6 +122,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                 density_manager_,
                                                 prepacker,
                                                 models,
+                                                pre_cluster_timing_manager_,
                                                 log_verbosity_);
 }
 

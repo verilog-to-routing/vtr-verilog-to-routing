@@ -21,8 +21,11 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "PreClusterTimingManager.h"
 #include "ap_netlist.h"
+#include "atom_netlist_fwd.h"
 #include "flat_placement_bins.h"
+#include "timing_info.h"
 #include "flat_placement_density_manager.h"
 #include "flat_placement_mass_calculator.h"
 #include "model_grouper.h"
@@ -46,6 +49,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
+                                                         PreClusterTimingManager& timing_manager,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
@@ -62,6 +66,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                                     density_manager,
                                                                     prepacker,
                                                                     models,
+                                                                    timing_manager,
                                                                     log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -862,6 +867,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     std::shared_ptr<FlatPlacementDensityManager> density_manager,
     const Prepacker& prepacker,
     const LogicalModels& models,
+    PreClusterTimingManager& timing_manager,
     int log_verbosity)
     : PartialLegalizer(netlist, log_verbosity)
     , density_manager_(density_manager)
@@ -869,7 +875,9 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
                    models,
                    *density_manager,
                    density_manager->mass_calculator().get_dim_manager(),
-                   log_verbosity) {
+                   log_verbosity)
+    , timing_manager_(timing_manager)
+    , block_criticality_(netlist.blocks().size(), 0.0f) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
     capacity_prefix_sum_ = PerPrimitiveDimPrefixSum2D(
@@ -907,6 +915,28 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     num_blocks_partitioned_ = 0;
 }
 
+void BiPartitioningPartialLegalizer::compute_block_criticalities() {
+    // Default to zero (non-critical) for all blocks.
+    std::fill(block_criticality_.begin(), block_criticality_.end(), 0.0f);
+
+    // If timing is not available (e.g. first iteration or timing disabled),
+    // leave all criticalities at zero so the legalizer behaves exactly as it
+    // did before this feature was added.
+    if (!timing_manager_.is_valid())
+        return;
+
+    const SetupTimingInfo& timing_info = timing_manager_.get_timing_info();
+    for (APBlockId blk_id : netlist_.blocks()) {
+        float max_crit = 0.0f;
+        for (APPinId pin_id : netlist_.block_pins(blk_id)) {
+            AtomPinId atom_pin = netlist_.pin_atom_pin(pin_id);
+            if (atom_pin.is_valid())
+                max_crit = std::max(max_crit, timing_info.setup_pin_criticality(atom_pin));
+        }
+        block_criticality_[blk_id] = max_crit;
+    }
+}
+
 void BiPartitioningPartialLegalizer::print_statistics() {
     VTR_LOG("Bi-Partitioning Partial Legalizer Statistics:\n");
     VTR_LOG("\tTotal number of windows partitioned: %u\n", num_windows_partitioned_);
@@ -915,6 +945,10 @@ void BiPartitioningPartialLegalizer::print_statistics() {
 
 void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     VTR_LOGV(log_verbosity_ >= 10, "Running Bi-Partitioning Legalizer\n");
+
+    // Snapshot timing criticalities from the previous iteration's timing update.
+    // On iteration 0 (or when timing is disabled) all values default to 0.
+    compute_block_criticalities();
 
     // Prepare the density manager.
     density_manager_->import_placement_into_bins(p_placement);
@@ -1945,68 +1979,73 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // that the overfill on both sides is balanced.
 
     // Try to move things from lower to upper greedily.
+    // Iteration order: least-critical blocks first; ties broken by closest to
+    // the partition line first (highest index in the position-sorted vector).
+    // This ensures timing-critical blocks are the last to be displaced.
     std::vector<APBlockId> lower_blocks_to_move;
     lower_blocks_to_move.reserve(lower_contained_blocks.size());
-    // We start from the blocks closest to the partition line and move away.
-    for (int i = lower_contained_blocks.size() - 1; i >= 0; i--) {
-        // If the lower window has no overfill, there is no reason to move anything.
-        if (lower_window_overfill.is_zero())
-            break;
+    {
+        std::vector<size_t> lower_order(pivot);
+        for (size_t k = 0; k < pivot; k++) lower_order[k] = k;
+        std::stable_sort(lower_order.begin(), lower_order.end(),
+                         [&](size_t a, size_t b) {
+                             float ca = block_criticality_[lower_contained_blocks[a]];
+                             float cb = block_criticality_[lower_contained_blocks[b]];
+                             if (ca != cb) return ca < cb; // least critical first
+                             return a > b;                 // closest to pivot first
+                         });
+        for (size_t idx : lower_order) {
+            if (lower_window_overfill.is_zero())
+                break;
 
-        // Get the mass of this block.
-        APBlockId lower_blk = lower_contained_blocks[i];
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(lower_blk);
+            APBlockId lower_blk = lower_contained_blocks[idx];
+            const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(lower_blk);
 
-        // Using the mass, try to move the block to the other window if it would
-        // improve the imbalance of overfill.
-        // If the block is moved, this will update the window utilizations and
-        // overfills accordingly.
-        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                            lower_window_utilization,
-                                                            lower_window_overfill,
-                                                            upper_window_utilization,
-                                                            upper_window_overfill,
-                                                            upper_window_capacity);
-
-        if (block_was_moved) {
-            // If the block was moved, add this block to the list of blocks to
-            // move and invalidate the block in the current list.
-            // Here, we mark the block as invalid and later we will compress the vector.
-            lower_blocks_to_move.push_back(lower_blk);
-            lower_contained_blocks[i] = APBlockId::INVALID();
+            bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                                lower_window_utilization,
+                                                                lower_window_overfill,
+                                                                upper_window_utilization,
+                                                                upper_window_overfill,
+                                                                upper_window_capacity);
+            if (block_was_moved) {
+                lower_blocks_to_move.push_back(lower_blk);
+                lower_contained_blocks[idx] = APBlockId::INVALID();
+            }
         }
     }
 
     // Try to move things from upper to lower greedily.
+    // Iteration order: least-critical blocks first; ties broken by closest to
+    // the partition line first (lowest index in the position-sorted vector).
     std::vector<APBlockId> upper_blocks_to_move;
     upper_blocks_to_move.reserve(upper_contained_blocks.size());
-    // We start from the blocks closest to the partition line and move away.
-    for (size_t i = 0; i < upper_contained_blocks.size(); i++) {
-        // If the upper window has no overfill, there is no reason to move anything.
-        if (upper_window_overfill.is_zero())
-            break;
+    {
+        std::vector<size_t> upper_order(upper_contained_blocks.size());
+        for (size_t k = 0; k < upper_contained_blocks.size(); k++) upper_order[k] = k;
+        std::stable_sort(upper_order.begin(), upper_order.end(),
+                         [&](size_t a, size_t b) {
+                             float ca = block_criticality_[upper_contained_blocks[a]];
+                             float cb = block_criticality_[upper_contained_blocks[b]];
+                             if (ca != cb) return ca < cb; // least critical first
+                             return a < b;                 // closest to pivot first
+                         });
+        for (size_t idx : upper_order) {
+            if (upper_window_overfill.is_zero())
+                break;
 
-        // Get the mass of this block.
-        APBlockId upper_blk = upper_contained_blocks[i];
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(upper_blk);
+            APBlockId upper_blk = upper_contained_blocks[idx];
+            const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(upper_blk);
 
-        // Using the mass, try to move the block to the other window if it would
-        // improve the imbalance of overfill.
-        // If the block is moved, this will update the window utilizations and
-        // overfills accordingly.
-        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                            upper_window_utilization,
-                                                            upper_window_overfill,
-                                                            lower_window_utilization,
-                                                            lower_window_overfill,
-                                                            lower_window_capacity);
-
-        if (block_was_moved) {
-            // If the block was moved, add this block to the list of blocks to
-            // move and invalidate the block in the current list.
-            // Here, we mark the block as invalid and later we will compress the vector.
-            upper_blocks_to_move.push_back(upper_blk);
-            upper_contained_blocks[i] = APBlockId::INVALID();
+            bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                                upper_window_utilization,
+                                                                upper_window_overfill,
+                                                                lower_window_utilization,
+                                                                lower_window_overfill,
+                                                                lower_window_capacity);
+            if (block_was_moved) {
+                upper_blocks_to_move.push_back(upper_blk);
+                upper_contained_blocks[idx] = APBlockId::INVALID();
+            }
         }
     }
 
