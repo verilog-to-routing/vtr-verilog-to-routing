@@ -217,7 +217,7 @@ Now, lets invoke the VPR tool to implement:
 * the ``tseng`` circuit (``$VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif``), on 
 * the ``EArch`` FPGA architecture (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``).
 
-We do this by passing these files to the VPR tool, and also specifying that we want to route the circuit on a version of ``EArch`` with a routing architecture :option:`channel width <vpr --route_chan_width>` of ``100`` (``--route_chan_wdith 100``):
+We do this by passing these files to the VPR tool, and also specifying that we want to route the circuit on a version of ``EArch`` with a routing architecture :option:`channel width <vpr --route_chan_width>` of ``100`` (``--route_chan_width 100``):
 
 .. code-block:: bash
 
@@ -330,7 +330,7 @@ We now turn to how we can implement *our own circuit* on a pre-existing FPGA arc
 
 To do this, we begin by describing a circuit behaviourally using the Verilog Hardware Description Language (HDL).
 This allows us to quickly and consisely define the circuit's behaviour.
-We will then use the VTR Flow to synthesize the behavioural Verilog description it into a circuit netlist, and implement it onto an FPGA.
+We will then use the VTR Flow to synthesize the behavioural Verilog description into a circuit netlist, and implement it onto an FPGA.
 
 Example Circuit
 ---------------
@@ -415,7 +415,7 @@ We'll use the following, simple ABC commands::
     if -K 6;                                            #Technology map to 6 input LUTs (6-LUTs)
     write_hie blink.parmys.blif blink.abc_no_clock.blif   #Write new circuit to blink.abc_no_clock.blif
 
-.. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optitmizes your circuit well.
+.. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optimizes your circuit well.
 
 The corresponding command to run is:
 
