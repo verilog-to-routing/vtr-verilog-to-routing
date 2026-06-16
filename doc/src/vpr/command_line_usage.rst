@@ -1643,10 +1643,9 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --initial_pres_fac <float>
 
-    Sets the starting value of the present overuse penalty factor.
+    Sets the present overuse factor for the second routing iteration.
 
     *Speed-quality trade-off:* increasing this number speeds up the router, at the cost of some increase in final track count.
-    Values of 1000 or so are perfectly reasonable.
 
     **Default:** ``0.5``
 
