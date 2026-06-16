@@ -1594,6 +1594,9 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do not converge well in routing unless fan-out choke points are discovered and optimized for during net routing.
     Enabling this option improves router convergence for such architectures.
 
+    .. note::
+        This option only affects routing when the flat router (:option:`--flat_routing` on) is used.
+
     **Default:** ``on``
 
 .. option:: --max_router_iterations <int>
