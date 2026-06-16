@@ -2000,9 +2000,12 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // proximity. Both are shared by the lower and upper loops below.
     auto get_block_pos = [&](APBlockId blk_id) -> double {
         switch (partitioned_window.partition_dir) {
-            case e_partition_dir::VERTICAL:   return p_placement.block_x_locs[blk_id];
-            case e_partition_dir::HORIZONTAL: return p_placement.block_y_locs[blk_id];
-            default:                          return p_placement.block_layer_nums[blk_id];
+            case e_partition_dir::VERTICAL:
+                return p_placement.block_x_locs[blk_id];
+            case e_partition_dir::HORIZONTAL:
+                return p_placement.block_y_locs[blk_id];
+            default:
+                return p_placement.block_layer_nums[blk_id];
         }
     };
     double pivot_pos = partitioned_window.pivot_pos;
@@ -2038,7 +2041,8 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
             return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
         };
         std::vector<size_t> lower_order(pivot);
-        for (size_t k = 0; k < pivot; k++) lower_order[k] = k;
+        for (size_t k = 0; k < pivot; k++)
+            lower_order[k] = k;
         std::stable_sort(lower_order.begin(), lower_order.end(),
                          [&](size_t a, size_t b) {
                              return lower_move_priority(a) > lower_move_priority(b);
@@ -2076,7 +2080,8 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         };
         size_t upper_size = upper_contained_blocks.size();
         std::vector<size_t> upper_order(upper_size);
-        for (size_t k = 0; k < upper_size; k++) upper_order[k] = k;
+        for (size_t k = 0; k < upper_size; k++)
+            upper_order[k] = k;
         std::stable_sort(upper_order.begin(), upper_order.end(),
                          [&](size_t a, size_t b) {
                              return upper_move_priority(a) > upper_move_priority(b);
