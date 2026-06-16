@@ -924,11 +924,12 @@ void BiPartitioningPartialLegalizer::compute_block_criticalities() {
     std::fill(block_criticality_.begin(), block_criticality_.end(), 0.0f);
 
     // If timing is not available (e.g. first iteration or timing disabled),
-    // leave all criticalities at zero so the legalizer behaves exactly as it
-    // did before this feature was added.
+    // leave all criticalities at zero so the legalizer is fully wirelength-driven.
     if (!timing_manager_.is_valid())
         return;
 
+    // The criticality of each block is equal to the max criticality of
+    // any of its pins.
     const SetupTimingInfo& timing_info = timing_manager_.get_timing_info();
     for (APBlockId blk_id : netlist_.blocks()) {
         float max_crit = 0.0f;
@@ -1992,8 +1993,8 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     //   - timing:     prefer displacing non-critical blocks
     //   - wirelength: prefer displacing blocks that are already close to the
     //                 partition line (moving them costs less wirelength)
-    // When timing_tradeoff_ == 0 the order degrades to the original distance-
-    // only behaviour; when timing_tradeoff_ == 1 it is purely criticality-based.
+    // When timing_tradeoff_ == 0 the order degrades to distance-only behaviour;
+    // when timing_tradeoff_ == 1 it is purely criticality-based.
 
     // Compute the position accessor and the window extents used for normalising
     // proximity. Both are shared by the lower and upper loops below.
