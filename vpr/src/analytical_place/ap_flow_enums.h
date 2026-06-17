@@ -16,7 +16,8 @@
 enum class e_ap_analytical_solver {
     Identity,  ///< The identity analytical solver, which does not perform any optimizations on the placement. Used as a placeholder when solving should not be used.
     QP_Hybrid, ///< Analytical Solver which uses the hybrid net model to optimize the quadratic HPWL objective.
-    LP_B2B     ///< Analytical Solver which uses the B2B net model to optimize the linear HPWL objective.
+    LP_B2B,    ///< Analytical Solver which uses the B2B net model to optimize the linear HPWL objective.
+    Nesterov   ///< Global placer which uses accelerated first-order updates on smooth wirelength and density objectives.
 };
 
 /**

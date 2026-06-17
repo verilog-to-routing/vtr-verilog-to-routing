@@ -1339,7 +1339,7 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
     ``--analysis`` must be specified explicitly to run post-route timing analysis.
     It is not implied by ``--route``.
 
-.. option:: --ap_analytical_solver {identity | qp-hybrid | lp-b2b}
+.. option:: --ap_analytical_solver {identity | qp-hybrid | lp-b2b | nesterov}
 
     Controls which Analytical Solver the Global Placer will use in the AP Flow.
     The Analytical Solver solves for a placement which optimizes some objective
@@ -1362,6 +1362,10 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
       flat placement using the Bound2Bound net model (as described in Kraftwerk2 :cite:`Spindler2008_Kraftwerk2`).
       Uses the legalized solution as anchor-points to pull the solution to a
       more legal solution (similar to the approach from SimPL :cite:`Kim2013_SimPL`).
+
+    * ``nesterov`` Runs an experimental global placer that applies accelerated
+      first-order updates to a smooth wirelength and density objective before
+      invoking the selected partial legalizer.
 
     .. note::
 

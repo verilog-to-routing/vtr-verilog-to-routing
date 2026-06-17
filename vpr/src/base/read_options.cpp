@@ -145,6 +145,8 @@ struct ParseAPAnalyticalSolver {
             conv_value.set_value(e_ap_analytical_solver::QP_Hybrid);
         else if (str == "lp-b2b")
             conv_value.set_value(e_ap_analytical_solver::LP_B2B);
+        else if (str == "nesterov")
+            conv_value.set_value(e_ap_analytical_solver::Nesterov);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_analytical_solver (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -165,6 +167,9 @@ struct ParseAPAnalyticalSolver {
             case e_ap_analytical_solver::LP_B2B:
                 conv_value.set_value("lp-b2b");
                 break;
+            case e_ap_analytical_solver::Nesterov:
+                conv_value.set_value("nesterov");
+                break;
             default:
                 VTR_ASSERT(false);
         }
@@ -172,7 +177,7 @@ struct ParseAPAnalyticalSolver {
     }
 
     std::vector<std::string> default_choices() {
-        return {"identity", "qp-hybrid", "lp-b2b"};
+        return {"identity", "qp-hybrid", "lp-b2b", "nesterov"};
     }
 };
 
@@ -2058,7 +2063,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
             " * identity: Does not formulate any equations and just passes the last legalized solution through. This solver is only used for testing and debugging.\n"
             " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
-            " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
+            " * lp-b2b: Solves for a placement that minimizes the linear HPWL of the flat placement using the Bound2Bound net model.\n"
+            " * nesterov: Uses accelerated first-order updates to optimize smooth wirelength and density objectives.")
         .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

@@ -629,6 +629,9 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
         case e_ap_analytical_solver::LP_B2B:
             VTR_LOG("lp-b2b\n");
             break;
+        case e_ap_analytical_solver::Nesterov:
+            VTR_LOG("nesterov\n");
+            break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown analytical_solver_type\n");
     }

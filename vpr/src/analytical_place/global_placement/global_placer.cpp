@@ -23,6 +23,7 @@
 #include "flat_placement_density_manager.h"
 #include "globals.h"
 #include "logic_types.h"
+#include "nesterov_global_placer.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
 #include "physical_types.h"
@@ -48,6 +49,24 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
                                                  int log_verbosity) {
+    if (analytical_solver_type == e_ap_analytical_solver::Nesterov) {
+        (void)num_threads;
+        return std::make_unique<NesterovGlobalPlacer>(ap_netlist,
+                                                      prepacker,
+                                                      atom_netlist,
+                                                      device_grid,
+                                                      logical_block_types,
+                                                      physical_tile_types,
+                                                      models,
+                                                      pre_cluster_timing_manager,
+                                                      place_delay_model,
+                                                      ap_timing_tradeoff,
+                                                      generate_mass_report,
+                                                      target_density_arg_strs,
+                                                      partial_legalizer_type,
+                                                      log_verbosity);
+    }
+
     return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
                                                partial_legalizer_type,
                                                ap_netlist,
