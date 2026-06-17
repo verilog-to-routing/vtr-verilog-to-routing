@@ -26,4 +26,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # See gui_set_nets/config/config.txt for the --route_chan_width rationale.
-script_params_common=-start vpr -track_memory_usage false --route_chan_width 100 --disp off --graphics_commands "set_routing_util 1; exit 0"
+script_params_common=-start vpr -track_memory_usage false --pack --place --route --route_chan_width 100 --disp off --graphics_commands "set_routing_util 1; exit 0"

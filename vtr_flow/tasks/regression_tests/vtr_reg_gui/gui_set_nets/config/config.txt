@@ -36,4 +36,4 @@ pass_requirements_file=pass_requirements.txt
 # early, so the binary search for minimum channel width never
 # completes; pinning a fixed channel width skips that search and
 # lets vpr exit cleanly during a single routing pass instead.
-script_params_common=-start vpr -track_memory_usage false --route_chan_width 100 --disp off --graphics_commands "set_nets 1; exit 0"
+script_params_common=-start vpr -track_memory_usage false --pack --place --route --route_chan_width 100 --disp off --graphics_commands "set_nets 1; exit 0"

@@ -40,4 +40,4 @@ pass_requirements_file=pass_requirements.txt
 #                          on macOS but disabling avoids any host that
 #                          lacks GNU time entirely.
 # --disp off : DEF-008 — --disp on hangs under offscreen QPA.
-script_params_common=-start vpr -track_memory_usage false --disp off
+script_params_common=-start vpr -track_memory_usage false --pack --place --route --disp off
