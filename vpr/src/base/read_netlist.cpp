@@ -752,7 +752,7 @@ static void process_ports(pugi::xml_node Parent,
 
                     bool found = false;
                     for (int j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
+                        if (interconnect_name == pin_node[0][0]->output_edges[j]->interconnect->name) {
                             found = true;
                             break;
                         }
@@ -823,7 +823,7 @@ static void process_ports(pugi::xml_node Parent,
 
                     bool found = false;
                     for (int j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
+                        if (interconnect_name == pin_node[0][0]->output_edges[j]->interconnect->name) {
                             found = true;
                             break;
                         }

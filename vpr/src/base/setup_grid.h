@@ -30,3 +30,12 @@ DeviceGrid create_device_grid(const std::string& layout_name,
  *        (size of the bounding box of non-empty grid tiles)
  */
 size_t count_grid_tiles(const DeviceGrid& grid);
+
+/**
+ * @brief Logs a one-line summary of the device grid dimensions and tile count.
+ *
+ * The format of this log line is parsed by VTR's task parser to track device
+ * size as a QoR metric across regression runs. Do not change the format without
+ * also updating the task parser's regex patterns.
+ */
+void report_device_grid_stats(const DeviceGrid& grid);

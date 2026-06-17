@@ -32,7 +32,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
  * @param message   A message which we want to update by appending additional net information.
  * @param hit_node  The RRNodeId of the routing resource node whose net should be highlighted.
  */
-void highlight_nets(char* message, RRNodeId hit_node);
+void highlight_nets(std::string& message, RRNodeId hit_node);
 
 /**
  * @brief Returns the name of the net associated with a ParentNetId.
@@ -45,7 +45,7 @@ std::string draw_get_net_name(ParentNetId parent_id);
  * @param parent_net_id The ParentNetId representing the net to check. This may refer to either atom or cluster nets.
  * @param hit_node The RRNodeId of the node that was selected.
  */
-void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId hit_node);
+void check_node_highlight_net(std::string& message, ParentNetId parent_net_id, RRNodeId hit_node);
 
 /* If an rr_node has been clicked on, it will be either highlighted in MAGENTA,
  * or de-highlighted in WHITE. If highlighted, and toggle_rr is selected, highlight

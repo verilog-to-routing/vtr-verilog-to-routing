@@ -177,10 +177,12 @@ void init_graphics_state(bool show_graphics_val,
 }
 
 #ifndef NO_GRAPHICS
+
 static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
+
     if (draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT) {
         draw_interposer_cuts(g);
 
@@ -283,6 +285,10 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     hide_draw_routing(app);
 
     app->update_message(draw_state->default_message);
+
+    // Force a canvas redraw so the new picture type is visible immediately
+    // when the event loop starts, rather than waiting for user interaction.
+    app->refresh_drawing();
 }
 
 #endif //NO_GRAPHICS
@@ -584,6 +590,16 @@ void set_initial_world_ap() {
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
+}
+
+double get_pixels_per_world_unit(ezgl::renderer* g) {
+    double world_width = g->get_visible_world().width();
+    double screen_width = g->get_visible_screen().width();
+    // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
+    // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
+    // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
+    // returned by this function is below 1, it means that the channel nodes are blended together and should be decluttered.
+    return screen_width / world_width;
 }
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {

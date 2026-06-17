@@ -25,7 +25,9 @@
  */
 struct t_appack_options {
     // Constructor for the appack options.
-    t_appack_options(const FlatPlacementInfo& flat_placement_info) {
+    t_appack_options(const FlatPlacementInfo& flat_placement_info,
+                     const t_ap_opts& ap_opts)
+        : inter_die_gain_multiplier(ap_opts.appack_inter_die_gain_multiplier) {
         // If the flat placement info is valid, we want to use APPack.
         // TODO: Should probably check that all the information is valid here.
         use_appack = flat_placement_info.valid;
@@ -69,6 +71,10 @@ struct t_appack_options {
     // Squared scaling factor for the quadratic decay term.
     static constexpr float quad_fac_sqr = (1.0f - attenuation_th) / (dist_th * dist_th);
 
+    // Gain multiplier used when a candidate's flat placement location is on a
+    // different die than the cluster location.
+    float inter_die_gain_multiplier = 0.1f;
+
     // TODO: Investigate adding flat placement info to seed selection.
 };
 
@@ -86,7 +92,7 @@ struct APPackContext : public Context {
                   const t_ap_opts& ap_opts,
                   const std::vector<t_logical_block_type> logical_block_types,
                   const DeviceGrid& device_grid)
-        : appack_options(fplace_info)
+        : appack_options(fplace_info, ap_opts)
         , flat_placement_info(fplace_info) {
 
         // If the flat placement info has been provided, calculate max distance

@@ -58,6 +58,9 @@ class TaskConfig:
         additional_files=None,
         additional_files_list_add=None,
         circuit_constraint_list_add=None,
+        testbench_dir=None,
+        testbench_file=None,
+        flow_script=None,
     ):
         self.task_name = task_name
         self.config_dir = config_dir
@@ -87,6 +90,10 @@ class TaskConfig:
         self.circuit_constraints = parse_circuit_constraint_list(
             circuit_constraint_list_add, self.circuits, self.archs
         )
+        # testbench_dir falls back to circuits_dir if not explicitly set
+        self.testbench_dir = testbench_dir if testbench_dir is not None else circuits_dir
+        self.testbench_file = testbench_file
+        self.flow_script = flow_script
 
 
 # pylint: enable=too-few-public-methods
@@ -109,6 +116,7 @@ class Job:
         parse_command,
         second_parse_command,
         qor_parse_command,
+        flow_script=None,
     ):
         self._task_name = task_name
         self._arch = arch
@@ -120,6 +128,7 @@ class Job:
         self._second_parse_command = second_parse_command
         self._qor_parse_command = qor_parse_command
         self._work_dir = work_dir
+        self._flow_script = flow_script
 
     def task_name(self):
         """
@@ -181,6 +190,12 @@ class Job:
         """
         return self._qor_parse_command
 
+    def flow_script(self):
+        """
+        return the flow script override for this job, or None to use the default
+        """
+        return self._flow_script
+
     def work_dir(self, run_dir: str) -> str:
         """
         return the work directory of the job
@@ -217,6 +232,9 @@ def load_task_config(config_file) -> TaskConfig:
             "qor_parse_file",
             "cmos_tech_behavior",
             "pad_file",
+            "testbench_dir",
+            "testbench_file",
+            "flow_script",
         ]
     )
 
@@ -329,6 +347,8 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
             "route_chan_width",
             "read_flat_place",
             "net_file",
+            "sdc_file",
+            "testbench",
         ]
     )
 
@@ -662,8 +682,7 @@ def create_job(
 
     # remove any address-related characters that might be in the param_string
     # To avoid creating invalid URL path
-    path_str = "../"
-    if path_str in param_string:
+    if "../" in param_string:
         param_string = param_string.replace("../", "")
         param_string = param_string.replace("-", "")
         circuit_2 = circuit.replace(".blif", "")
@@ -726,6 +745,12 @@ def create_job(
     current_cmd = cmd.copy()
     current_cmd += ["-temp_dir", run_dir + "/{}".format(param_string)]
 
+    # Resolve testbench: per-circuit constraint takes priority over task default.
+    testbench_file = config.circuit_constraints[circuit]["testbench"] or config.testbench_file
+    if testbench_file:
+        abs_testbench = resolve_vtr_source_file(config, testbench_file, config.testbench_dir)
+        current_cmd += ["-testbench", abs_testbench]
+
     if getattr(args, "use_previous", None):
         for prev_run, [extension, option] in args.use_previous:
             prev_run_dir = get_existing_run_dir(find_task_dir(config, args.alt_tasks_dir), prev_run)
@@ -751,6 +776,7 @@ def create_job(
         current_parse_cmd,
         current_second_parse_cmd,
         current_qor_parse_command,
+        flow_script=config.flow_script,
     )
 
 
@@ -805,6 +831,10 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     net_file = config.circuit_constraints[circuit]["net_file"]
     if net_file is not None:
         cmd += ["--net_file", net_file]
+    # Check if the circuit has a specific SDC file.
+    sdc_file = config.circuit_constraints[circuit]["sdc_file"]
+    if sdc_file is not None:
+        cmd += ["-sdc_file", resolve_vtr_source_file(config, sdc_file)]
 
 
 def resolve_vtr_source_file(config, filename, base_dir=""):

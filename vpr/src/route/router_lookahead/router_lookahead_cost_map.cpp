@@ -121,6 +121,8 @@ util::Cost_Entry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y
     // Delta coordinate with the offset adjusted to fit the segment bounding box
     vtr::Point<int> coord(delta_x - offset_[0][from_seg_index].first,
                           delta_y - offset_[0][from_seg_index].second);
+    // bounds uses half-open convention: xmax/ymax = dim_size (one past the last valid index),
+    // matching the matrix's [0, dim_size) index range. Use contains() (not contains_inclusive()) below.
     vtr::Rect<int> bounds(0, 0, cost_map.dim_size(0), cost_map.dim_size(1));
 
     // Get the closest point in the bounding box:
@@ -173,6 +175,7 @@ void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_ind
     // find missing cost entries and fill them in by copying a nearby cost entry
     std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
     bool couldnt_fill = false;
+    // shifted_bounds uses half-open convention: xmax/ymax = dimension size (one past the last valid index).
     auto shifted_bounds = vtr::Rect<int>(0, 0, bounding_box_width, bounding_box_height);
     int max_fill = 0;
     for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
@@ -375,7 +378,8 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
                                                                 int cx,
                                                                 int cy,
                                                                 const vtr::Rect<int>& bounds) {
-    // spiral around (cx, cy) looking for a nearby entry
+    // spiral around (cx, cy) looking for a nearby entry.
+    // bounds is half-open ([xmin,xmax) x [ymin,ymax)), so contains() is correct for index validation.
     bool in_bounds = bounds.contains(vtr::Point<int>(cx, cy));
     if (!in_bounds) {
         return std::make_pair(util::Cost_Entry(), 0);

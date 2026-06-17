@@ -418,11 +418,7 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) 
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
         device_ctx.grid = create_device_grid(l.name, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
-        /*
-         *Report on the device
-         */
-        size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
-        VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
+        report_device_grid_stats(device_ctx.grid);
 
         std::string title("\nResource usage for device layout " + l.name + "...\n");
         VTR_LOG(title.c_str());
@@ -521,6 +517,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
+    // alloc_draw_structs now that the device context is valid (for both AP and non-AP paths).
+    // This call also reinitializes graphics state and re-sizes draw arrays in case the AP flow
+    // changed the device dimensions during full legalization.
     vpr_init_graphics(vpr_setup, arch, is_flat);
 
     vpr_init_server(vpr_setup);
@@ -612,11 +611,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
                    "Number of layers should be less than MAX_NUM_LAYERS. "
                    "If you need more layers, please increase the value of MAX_NUM_LAYERS in vpr_types.h");
 
-    /*
-     *Report on the device
-     */
-    size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
-    VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
+    report_device_grid_stats(device_ctx.grid);
 }
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
@@ -807,7 +802,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_post_pack();
 
     // Sanity check the resulting netlist
-    check_netlist(vpr_setup.PackerOpts.pack_verbosity);
+    check_netlist(vpr_setup.PackerOpts.pack_verbosity, arch);
 
     // Independently verify the clustering to ensure the clustering can be
     // used for the rest of the VPR flow.

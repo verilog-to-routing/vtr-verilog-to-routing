@@ -74,11 +74,11 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
             REQUIRE_FALSE(r2.strictly_contains(pi_2));
         }
 
-        SECTION("coincident_int") {
-            REQUIRE(r2.coincident(pi_1));
-            REQUIRE(r2.coincident({6, 4}));
-            REQUIRE_FALSE(r2.coincident({100, 4}));
-            REQUIRE(r2.coincident(pi_2));
+        SECTION("contains_inclusive_int") {
+            REQUIRE(r2.contains_inclusive(pi_1));
+            REQUIRE(r2.contains_inclusive({6, 4}));
+            REQUIRE_FALSE(r2.contains_inclusive({100, 4}));
+            REQUIRE(r2.contains_inclusive(pi_2));
         }
 
         SECTION("bounds_int") {
@@ -149,11 +149,11 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
             REQUIRE_FALSE(r4.strictly_contains(pf_2));
         }
 
-        SECTION("coincident_float") {
-            REQUIRE(r4.coincident(pf_1));
-            REQUIRE(r4.coincident({6, 4}));
-            REQUIRE_FALSE(r4.coincident({100, 4}));
-            REQUIRE(r4.coincident(pf_2));
+        SECTION("contains_inclusive_float") {
+            REQUIRE(r4.contains_inclusive(pf_1));
+            REQUIRE(r4.contains_inclusive({6, 4}));
+            REQUIRE_FALSE(r4.contains_inclusive({100, 4}));
+            REQUIRE(r4.contains_inclusive(pf_2));
         }
 
         SECTION("bounds_float") {
@@ -236,10 +236,10 @@ TEST_CASE("RectUnion", "[vtr_geometry/RectUnion]") {
         REQUIRE_FALSE(rect_union.strictly_contains({3, 3}));
     }
 
-    SECTION("coincident") {
-        REQUIRE(rect_union.coincident({0, 0}));
-        REQUIRE(rect_union.coincident({1, 1}));
-        REQUIRE(rect_union.coincident({2, 2}));
-        REQUIRE(rect_union.coincident({3, 3}));
+    SECTION("contains_inclusive") {
+        REQUIRE(rect_union.contains_inclusive({0, 0}));
+        REQUIRE(rect_union.contains_inclusive({1, 1}));
+        REQUIRE(rect_union.contains_inclusive({2, 2}));
+        REQUIRE(rect_union.contains_inclusive({3, 3}));
     }
 }

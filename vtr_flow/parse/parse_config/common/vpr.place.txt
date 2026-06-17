@@ -10,6 +10,6 @@ aborted_swap;vpr.out;\s*Swaps aborted\s*:\s*(\d+).*
 
 
 #VPR Run-time Metrics
-place_mem;vpr.out;.*Placement took.*\(max_rss (.*), .*\)
-place_time;vpr.out;\s*Placement took (.*) seconds
+place_mem;vpr.out;\s*(?:SA Placement|AP Detailed Placer) took.*\(max_rss (.*), .*\)
+place_time;vpr.out;\s*(?:SA Placement|AP Detailed Placer) took (.*) seconds
 place_quench_time;vpr.out;\s*Placement Quench took (.*) seconds

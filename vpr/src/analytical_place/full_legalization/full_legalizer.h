@@ -67,6 +67,16 @@ class FullLegalizer {
     void update_drawing_data_structures();
 
   protected:
+    /**
+     * @brief Recreate the device grid (and RR graph if needed) after final
+     *        clustering, when auto device sizing is used.
+     *
+     * The device grid estimated before packing may differ from the one needed
+     * after final clustering. This method finalizes the device size and ensures
+     * the RR graph matches it before placement begins.
+     */
+    void recreate_device_if_needed();
+
     /// @brief The AP Netlist to fully legalize the flat placement of.
     const APNetlist& ap_netlist_;
 

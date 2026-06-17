@@ -43,7 +43,8 @@ where:
 
     is the technology mapped netlist in :ref:`BLIF format <vpr_blif_file>` to be implemented
 
-VPR will then pack, place, and route the circuit onto the specified architecture.
+By default, VPR will run the analytical placement flow, performing integrated packing and placement, followed by routing and analysis.
+To use the traditional sequential flow (pack, place, route, analysis), pass all four stage flags explicitly (see :ref:`stage_options`).
 
 By default VPR will perform a binary search routing to find the minimum channel width required to route the circuit.
 
@@ -70,26 +71,48 @@ Values in curly braces separated by vertical bars, e.g. ``{on | off}``, indicate
 
 Stage Options
 ^^^^^^^^^^^^^
-VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--pack`, :option:`--place`, :option:`--route` or :option:`--analysis` are specified.
+When none of the stage flags below are specified, VPR runs the **default flow**: analytical
+placement (integrated packing + placement), routing, and analysis.
+
+When one or more stage flags are specified, **only those stages** are run.
+
+To run the **traditional sequential flow** (separate pack, place, route, and analysis stages)
+instead of the default analytical placement flow, pass all four stage flags explicitly:
+
+.. code-block:: shell
+
+    vpr <architecture> <circuit> --pack --place --route --analysis
+
+.. note::
+
+    The traditional sequential flow was the previous default. Scripts or flows that previously ran
+    ``vpr <architecture> <circuit>`` without stage flags and relied on the pack → place → route
+    behavior must now add ``--pack --place --route --analysis`` explicitly.
 
 .. option:: --pack
 
-    Run packing stage
+    Run packing stage (part of the traditional flow; not used with :option:`--analytical_place`).
 
     **Default:** ``off``
 
 .. option:: --place
 
-    Run placement stage
+    Run placement stage (part of the traditional flow; not used with :option:`--analytical_place`).
 
     **Default:** ``off``
 
 .. option:: --analytical_place
 
     Run the analytical placement flow.
-    This flows uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
-    as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
-    This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
+    This flow uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
+    as such, the :option:`--pack` and :option:`--place` options are not used when this option is set.
+    This flow supports both automatic device sizing (via :option:`--device` ``auto``) and fixed device sizes.
+    Placement constraints can optionally be used to fix primitive blocks to specific locations on the device grid.
+
+    .. note::
+
+        This is the first stage of the **default flow**: when no stage flags are specified, VPR
+        runs analytical placement, routing, and analysis automatically.
 
     .. seealso:: See :ref:`analytical_placement_options` for the options for this flow.
 
@@ -97,16 +120,11 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
     .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
 
-    .. warning::
-
-        This analytical placement flow is experimental and under active development.
-
     **Default:** ``off``
 
 .. option:: --route
 
-    Run routing stage
-    This also implies --analysis if routing was successful.
+    Run routing stage.
 
     **Default:** ``off``
 
@@ -774,7 +792,7 @@ For people not working on CAD, you can probably leave all the options to their d
     Architectures with simple logic block interconnects (i.e. those with full or regular crossbars) are likely to only see a marginal improvement, if any.
     Enabling this option does not affect circuit quality metrics like routed wirelength or critical path delay.
 
-    Note: Use of this feature with ``--analytical_place`` is experimental. For now, ``--memoize_cluster_packings`` is unsupported if ``--ap_full_legalizer`` is set to ``flat-recon``, and will be ignored.
+    Note: ``--memoize_cluster_packings`` is unsupported if ``--ap_full_legalizer`` is set to ``flat-recon``, and will be ignored.
 
     **Default:** ``off``
 
@@ -1286,8 +1304,8 @@ The following options are only used when FPGA device and netlist contain a NoC r
 .. _analytical_placement_options:
 
 Analytical Placement Options
-^^^^^^^^^^^^^^^
-Instead of Packing atoms into clusters and placing the clusters into valid tile
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Instead of packing atoms into clusters and placing the clusters into valid tile
 sites on the FPGA, Analytical Placement uses analytical techniques to place atoms
 on the FPGA device by relaxing the constraints on where they can be placed. This
 atom-level placement is then legalized into a clustered placement and passed into
@@ -1301,9 +1319,25 @@ Analytical Placement is generally split into three stages:
 
 * Detailed Placement: While keeping the clusters legal, performs optimizations on the clustered placement.
 
-.. warning::
+**Typical Usage**
 
-    Analytical Placement is experimental and under active development.
+A typical invocation that runs the full AP flow followed by routing and timing analysis:
+
+.. code-block:: none
+
+    vpr <arch>.xml <circuit>.blif --analytical_place --route --analysis
+
+When using a pre-computed flat placement file with the ``flat-recon`` full legalizer:
+
+.. code-block:: none
+
+    vpr <arch>.xml <circuit>.blif --analytical_place --read_flat_place <circuit>.fplace \
+        --ap_full_legalizer flat-recon --route --analysis
+
+.. note::
+
+    ``--analysis`` must be specified explicitly to run post-route timing analysis.
+    It is not implied by ``--route``.
 
 .. option:: --ap_analytical_solver {identity | qp-hybrid | lp-b2b}
 
@@ -1329,6 +1363,12 @@ Analytical Placement is generally split into three stages:
       Uses the legalized solution as anchor-points to pull the solution to a
       more legal solution (similar to the approach from SimPL :cite:`Kim2013_SimPL`).
 
+    .. note::
+
+        When VPR is compiled with Eigen and :option:`--num_workers` is set to more than one,
+        the solver step of the analytical solver can be parallelized across multiple threads.
+        This reduces solver runtime while producing the identical placement result.
+
     **Default:** ``lp-b2b``
 
 .. option:: --ap_partial_legalizer {none | bipartitioning | flow-based}
@@ -1343,12 +1383,14 @@ Analytical Placement is generally split into three stages:
       used for testing and debugging and should not be part of any real AP flow.
 
     * ``bipartitioning`` Creates minimum windows around over-dense regions of
-      the device bi-partitions the atoms in these windows such that the region
+      the device and bi-partitions the atoms in these windows such that the region
       is no longer over-dense and the atoms are in tiles that they can be placed
-      into.
+      into. This is the recommended partial legalizer: it has better time complexity
+      and produces better legalization quality than ``flow-based``.
 
     * ``flow-based`` Flows atoms from regions that are overfilled to regions that
-      are underfilled.
+      are underfilled. This is a legacy legalizer that predates ``bipartitioning``
+      and is retained for comparison purposes; ``bipartitioning`` should be preferred.
 
     **Default:** ``bipartitioning``
 
@@ -1361,8 +1403,9 @@ Analytical Placement is generally split into three stages:
     * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
 
     * ``flat-recon`` Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is
-      as close to the incoming flat placement as possible. It can be used to read a flat placement from a :ref:`.fplace <vpr_flat_place_file>` file
-      or on the (in memory) output of VTR's integrated Global Placement algorithm. In both cases, it expects the given solution to be close to legal.
+      as close to the incoming flat placement as possible. It can operate on the in-memory output of the Global Placement stage,
+      or it can reconstruct a placement from an external :ref:`.fplace <vpr_flat_place_file>` file supplied via :option:`--read_flat_place`.
+      In both cases, it expects the given solution to be close to legal.
       If used with a :ref:`.fplace <vpr_flat_place_file>` file, each atom in a molecule should have compatible location information. It is legal to
       leave some molecules unconstrained; the reconstruction phase will choose where to place them but does not attempt to optimize these locations.
 
@@ -1384,6 +1427,12 @@ Analytical Placement is generally split into three stages:
 
     A value of 0.0 makes the AP flow focus completely on wirelength minimization,
     while a value of 1.0 makes the AP flow focus completely on timing optimization.
+    The default of 0.5 balances both objectives equally.
+
+    .. note::
+
+        This option has no effect when :option:`--timing_analysis` is set to ``off``,
+        in which case the AP flow optimizes only for wirelength.
 
     **Default:** ``0.5``
 
@@ -1491,13 +1540,23 @@ Analytical Placement is generally split into three stages:
 
      .. code-block:: none
 
-        --appack_max_dist_th "clb|LAB:10,5"
+        --appack_unrelated_clustering_args "clb|LAB:10,5"
 
    This will set all of the logical block types to their "auto" parameters, except
    for logical blocks with the name clb/LAB which will have a max search distance of
    10 tiles and a maximum of 5 unrelated clustering attempts.
 
     **Default:** ``auto``
+
+.. option:: --appack_inter_die_gain_multiplier <float>
+
+   Multiplier applied to APPack candidate gains when the candidate's flat
+   placement location is on a different die than the current cluster location
+   in an interposer-based architecture. This option only applies when the
+   device grid has interposer cuts; it does not apply to candidates on a
+   different layer in a 3D architecture without interposer cuts.
+
+    **Default:** ``0.1``
 
 .. option:: --ap_high_fanout_threshold <int>
 
@@ -1552,6 +1611,16 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``off``
 
+.. option:: --router_opt_choke_points {on | off}
+
+    Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do not converge well in routing unless fan-out choke points are discovered and optimized for during net routing.
+    Enabling this option improves router convergence for such architectures.
+
+    .. note::
+        This option only affects routing when the flat router (:option:`--flat_routing` on) is used.
+
+    **Default:** ``on``
+
 .. option:: --max_router_iterations <int>
 
     The number of iterations of a Pathfinder-based router that will be executed before a circuit is declared unrouteable (if it hasn’t routed successfully yet) at a given channel width.
@@ -1574,10 +1643,9 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --initial_pres_fac <float>
 
-    Sets the starting value of the present overuse penalty factor.
+    Sets the present overuse factor for the second routing iteration.
 
     *Speed-quality trade-off:* increasing this number speeds up the router, at the cost of some increase in final track count.
-    Values of 1000 or so are perfectly reasonable.
 
     **Default:** ``0.5``
 

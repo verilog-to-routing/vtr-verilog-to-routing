@@ -1,0 +1,41 @@
+# Canonical two-clock circuit with both clocks as external input ports.
+# clk and clk2 each drive their own set of flip-flops; no internal clock
+# generation is present — the relationship between the clocks is defined
+# entirely by the SDC constraints.
+#
+# This file is the shared circuit for all tests that need this topology.
+# Several other .blif files in this directory are symlinks to this file —
+# each paired with a different .sdc file to test a distinct SDC constraint.
+# The .model name below does not need to match the symlink name; VPR uses
+# the port names (clk, clk2) for constraint matching, not the model name.
+
+.model multiclock_divide
+.inputs in1 in2 in3 clk clk2
+.outputs out1 out2 out3
+
+.latch to_FFA FFA re clk 0
+.latch to_FFC FFC re clk 0
+.latch to_FFD FFD re clk2 0
+.latch to_FFB FFB re clk2 0
+
+.names FFA FFB to_FFC
+11 1
+.names FFA FFB to_FFD
+11 1
+
+.names in1 to_FFA
+1 1
+
+.names in2 to_FFB
+1 1
+
+.names FFC out1
+1 1
+
+.names FFD out2
+1 1
+
+.names in3 out3
+1 1
+
+.end

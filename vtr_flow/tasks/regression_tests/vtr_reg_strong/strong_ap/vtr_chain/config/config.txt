@@ -54,5 +54,5 @@ qor_parse_file=qor_ap_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
 
 # Pass the script params while writing the vpr constraints.
-script_params=-track_memory_usage -crit_path_router_iterations 100 --analytical_place --route
+script_params=-track_memory_usage -crit_path_router_iterations 100 --analytical_place --route --analysis
 

@@ -1178,6 +1178,10 @@ struct t_ap_opts {
     /// Array of strings passed by the user to configure the unrelated clustering parameters used by APPack
     std::vector<std::string> appack_unrelated_clustering_args;
 
+    /// Multiplier applied to APPack candidate gains when the candidate is on a
+    /// different die than the cluster in an interposer-based architecture.
+    float appack_inter_die_gain_multiplier;
+
     /// The number of threads the AP flow can use.
     unsigned num_threads;
 
@@ -1405,15 +1409,23 @@ struct t_analysis_opts {
     bool skip_sync_clustering_and_routing_results;
 };
 
+/**
+ * @brief Version of the Generic Switch Block (GSB).
+ */
+enum class e_gsb_version {
+    NOT_CRR, ///< Default for non-CRR architectures
+    GSB_V1,
+    GSB_V2,
+};
+
 /// Stores CRR specific options
 struct t_crr_opts {
     std::string sb_maps;
     std::string sb_templates;
-    bool preserve_input_pin_connections;
-    bool preserve_output_pin_connections;
     bool annotated_rr_graph;
     bool remove_dangling_nodes;
     std::string sb_count_dir;
+    e_gsb_version gsb_version;
 };
 
 /// Stores NoC specific options, when supplied as an input by the user

@@ -1872,14 +1872,14 @@ static void process_interconnect(vtr::string_internment& strings,
             mode->interconnect[interconnect_idx].output_string = prop;
 
             prop = get_attribute(cur, "name", loc_data).value();
-            mode->interconnect[interconnect_idx].name = vtr::strdup(prop);
+            mode->interconnect[interconnect_idx].name = prop;
             mode->interconnect[interconnect_idx].meta = process_meta_data(strings, cur, loc_data);
 
             auto [_, success] = interconnect_names.insert(mode->interconnect[interconnect_idx].name);
             if (!success) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                vtr::string_fmt("Duplicate interconnect name: '%s' in mode: '%s'.\n",
-                                               mode->interconnect[interconnect_idx].name, mode->name)
+                                               mode->interconnect[interconnect_idx].name.c_str(), mode->name)
                                    .c_str());
             }
 
@@ -2214,19 +2214,19 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
     if (pattern == "custom") {
         expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
 
-        //Load a custom pattern specified with <sb_loc> tags
-        expect_only_children(switchblock_locations, {"sb_loc"}, loc_data); //Only sb_loc child tags
+        // Load a custom pattern specified with <sb_loc> tags
+        expect_only_children(switchblock_locations, {"sb_loc"}, loc_data); // Only sb_loc child tags
 
-        //Default to no SBs unless specified
+        // Default to no SBs unless specified
         type->switchblock_locations.fill(e_sb_type::NONE);
 
-        //Track which locations have been assigned to detect overlaps
+        // Track which locations have been assigned to detect overlaps
         auto assigned_locs = vtr::Matrix<bool>({{width, height}}, false);
 
         for (pugi::xml_node sb_loc : switchblock_locations.children("sb_loc")) {
             expect_only_attributes(sb_loc, {"type", "xoffset", "yoffset", "switch_override"}, loc_data);
 
-            //Determine the type
+            // Determine the type
             std::string sb_type_str = get_attribute(sb_loc, "type", loc_data, ReqOpt::OPTIONAL).as_string("full");
             e_sb_type sb_type = e_sb_type::FULL;
             if (sb_type_str == "none") {
@@ -2239,6 +2239,12 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                 sb_type = e_sb_type::TURNS;
             } else if (sb_type_str == "straight") {
                 sb_type = e_sb_type::STRAIGHT;
+            } else if (sb_type_str == "horizontal_short") {
+                sb_type = e_sb_type::HORIZONTAL_SHORT;
+            } else if (sb_type_str == "vertical_short") {
+                sb_type = e_sb_type::VERTICAL_SHORT;
+            } else if (sb_type_str == "straight_short") {
+                sb_type = e_sb_type::STRAIGHT_SHORT;
             } else if (sb_type_str == "full") {
                 sb_type = e_sb_type::FULL;
             } else {
@@ -2248,13 +2254,13 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                    .c_str());
             }
 
-            //Determine the switch type
+            // Determine the switch type
             int sb_switch_override = DEFAULT_SWITCH;
 
             auto sb_switch_override_attr = get_attribute(sb_loc, "switch_override", loc_data, ReqOpt::OPTIONAL);
             if (sb_switch_override_attr) {
                 std::string sb_switch_override_str = sb_switch_override_attr.as_string();
-                //Use the specified switch
+                // Use the specified switch
                 sb_switch_override = find_switch_by_name(arch.switches, sb_switch_override_str);
 
                 if (sb_switch_override == ARCH_FPGA_UNDEFINED_VAL) {
@@ -2265,7 +2271,7 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                 }
             }
 
-            //Get the horizontal offset
+            // Get the horizontal offset
             size_t xoffset = get_attribute(sb_loc, "xoffset", loc_data, ReqOpt::OPTIONAL).as_uint(0);
             if (xoffset > width - 1) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
@@ -2274,7 +2280,7 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                    .c_str());
             }
 
-            //Get the vertical offset
+            // Get the vertical offset
             size_t yoffset = get_attribute(sb_loc, "yoffset", loc_data, ReqOpt::OPTIONAL).as_uint(0);
             if (yoffset > height - 1) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
@@ -2283,7 +2289,7 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                    .c_str());
             }
 
-            //Check if this location has already been set
+            // Check if this location has already been set
             if (assigned_locs[xoffset][yoffset]) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
                                vtr::string_fmt("Duplicate <sb_loc> specifications at xoffset=%zu yoffset=%zu\n",
@@ -2296,18 +2302,18 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
             type->switchblock_switch_overrides[xoffset][yoffset] = sb_switch_override;
             assigned_locs[xoffset][yoffset] = true; //Mark the location as set for error detection
         }
-    } else { //Non-custom patterns
-        //Initialize defaults
+    } else { // Non-custom patterns
+        // Initialize defaults
         int internal_switch = DEFAULT_SWITCH;
         int external_switch = DEFAULT_SWITCH;
         e_sb_type internal_type = e_sb_type::FULL;
         e_sb_type external_type = e_sb_type::FULL;
 
-        //Determine any internal switch override
+        // Determine any internal switch override
         auto internal_switch_attr = get_attribute(switchblock_locations, "internal_switch", loc_data, ReqOpt::OPTIONAL);
         if (internal_switch_attr) {
             std::string internal_switch_name = internal_switch_attr.as_string();
-            //Use the specified switch
+            // Use the specified switch
             internal_switch = find_switch_by_name(arch.switches, internal_switch_name);
 
             if (internal_switch == ARCH_FPGA_UNDEFINED_VAL) {
@@ -2318,27 +2324,22 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
             }
         }
 
-        //Identify switch block types
+        // Identify switch block types
         if (pattern == "all") {
             internal_type = e_sb_type::FULL;
             external_type = e_sb_type::FULL;
-
         } else if (pattern == "external") {
             internal_type = e_sb_type::NONE;
             external_type = e_sb_type::FULL;
-
         } else if (pattern == "internal") {
             internal_type = e_sb_type::FULL;
             external_type = e_sb_type::NONE;
-
         } else if (pattern == "external_full_internal_straight") {
             internal_type = e_sb_type::STRAIGHT;
             external_type = e_sb_type::FULL;
-
         } else if (pattern == "none") {
             internal_type = e_sb_type::NONE;
             external_type = e_sb_type::NONE;
-
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
                            vtr::string_fmt("Invalid <switchblock_locations> 'pattern' attribute '%s'\n",
@@ -2346,18 +2347,18 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                .c_str());
         }
 
-        //Fill in all locations (sets internal)
+        // Fill in all locations (sets internal)
         type->switchblock_locations.fill(internal_type);
         type->switchblock_switch_overrides.fill(internal_switch);
 
-        //Fill in top edge external
+        // Fill in top edge external
         size_t yoffset = height - 1;
         for (size_t xoffset = 0; xoffset < width; ++xoffset) {
             type->switchblock_locations[xoffset][yoffset] = external_type;
             type->switchblock_switch_overrides[xoffset][yoffset] = external_switch;
         }
 
-        //Fill in right edge external
+        // Fill in right edge external
         size_t xoffset = width - 1;
         for (yoffset = 0; yoffset < height; ++yoffset) {
             type->switchblock_locations[xoffset][yoffset] = external_type;

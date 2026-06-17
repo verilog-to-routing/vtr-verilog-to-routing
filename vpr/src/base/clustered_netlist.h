@@ -76,7 +76,7 @@
  *
  * Example of logical_pin_index_
  * ---------------------
- * Given a ClusterPinId, logical_pin_index_ will return the index of the pin within its block
+ * Given a ClusterPinId (think of it as a global index), logical_pin_index_ will return the index of the pin within its block
  * relative to the t_logical_block_type (logical description of the block).
  *
  * ```
@@ -87,9 +87,8 @@
  *           +-----------+
  * ```
  *
- * The index skips over unused pins, e.g. CLB has 6 pins (3 in, 3 out, numbered [0...5]), where
- * the first two ins, and last two outs are used. Indices [0,1] represent the ins, and [4,5]
- * represent the outs. Indices [2,3] are unused. Therefore, logical_pin_index_[92] = 5.
+ * logical_pin_index_ does not contain unused pins, e.g. CLB has 6 pins (3 in, 3 out), where
+ * pins 2 and 3 are unused. Therefore, if logical_pin_index_[92] = 5, then logical_pin_index[90] = 1 (since pins 2 and 3 are not stored in logical_pin_index_).
  *
  *
  * Implementation

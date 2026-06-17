@@ -24,4 +24,4 @@ qor_parse_file=qor_ap_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
 
 # Script parameters
-script_params =-starting_stage vpr --device fixed_device --analytical_place --route --route_chan_width 64 --read_vpr_constraints ../../../../placement_constraints.xml
+script_params =-starting_stage vpr --device fixed_device --analytical_place --route --analysis --route_chan_width 64 --read_vpr_constraints ../../../../placement_constraints.xml

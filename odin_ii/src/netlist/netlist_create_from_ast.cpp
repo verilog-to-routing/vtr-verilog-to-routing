@@ -1586,7 +1586,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char* instance_name_p
             oassert(port_size != 0);
             port_size = outport_size;
 
-            if (strcmp(hb_model->name, "adder") == 0) {
+            if (hb_model->name == "adder") {
                 if (strcmp(hb_var_node->types.identifier, "cout") == 0 && flag == 0)
                     port_size = 1;
                 else if (strcmp(hb_var_node->types.identifier, "sumout") == 0 && flag == 0)
@@ -5156,9 +5156,9 @@ signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, 
     }
 
     /* memory's are a special case due to splitting */
-    if (strcmp(hb_model->name, "multiply") == 0) {
+    if (hb_model->name == "multiply") {
         is_mult = 1;
-    } else if (strcmp(hb_model->name, "adder") == 0) {
+    } else if (hb_model->name == "adder") {
         is_adder = 1;
     }
 

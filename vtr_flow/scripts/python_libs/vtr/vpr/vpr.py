@@ -107,6 +107,7 @@ def run_relax_w(
     relaxed_w = relax_w(min_w, relax_w_factor)
 
     vpr_args["route"] = True  # Re-route only
+    vpr_args["analysis"] = True  # Run analysis after re-routing
     vpr_args["route_chan_width"] = relaxed_w  # At a fixed channel width
 
     # Check if place_frequency is "always", then remove the key and set 'place'

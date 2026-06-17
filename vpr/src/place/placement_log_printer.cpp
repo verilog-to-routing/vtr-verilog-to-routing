@@ -308,8 +308,9 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     }
 
     if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+        VTR_ASSERT(placer_.interposer_cost_handler_.has_value());
         VTR_LOG("Initial placement estimated interposer cost: %g\n", costs.interposer_cost);
-        VTR_LOG("Initial number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
+        VTR_LOG("Initial number of nets crossing interposer cuts: %d\n", placer_.interposer_cost_handler_->get_num_nets_crossing_interposer_cuts());
     }
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -366,7 +367,8 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", estimated_wirelength);
 
     if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
-        VTR_LOG("Number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
+        VTR_ASSERT(placer_.interposer_cost_handler_.has_value());
+        VTR_LOG("Number of nets crossing interposer cuts: %d\n", placer_.interposer_cost_handler_->get_num_nets_crossing_interposer_cuts());
     }
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {

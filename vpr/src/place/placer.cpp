@@ -52,14 +52,13 @@ Placer::Placer(const Netlist<>& net_list,
     , net_cost_handler_(placer_state_,
                         cube_bb,
                         placer_opts.place_algorithm,
-                        placer_opts.interposer_cost_factor > 0.,
-                        placer_opts.interposer_cong_threshold,
                         placer_opts.congestion_chan_util_threshold)
     , place_delay_model_(std::move(place_delay_model))
     , log_printer_(*this, quiet)
     , quench_only_(placer_opts.place_quench_only)
     , is_flat_(is_flat) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     pre_place_timing_stats_ = g_vpr_ctx.timing().stats;
 
@@ -68,6 +67,14 @@ Placer::Placer(const Netlist<>& net_list,
     // create a NoC cost handler if NoC optimization is enabled
     if (noc_opts.noc) {
         noc_cost_handler_.emplace(placer_state_.block_locs());
+    }
+
+    if (device_ctx.grid.has_interposer_cuts()) {
+        interposer_cost_handler_.emplace(placer_opts.interposer_cost_factor > 0.,
+                                         placer_opts.interposer_cong_threshold,
+                                         [this](ClusterNetId net_id, bool use_ts) -> const t_bb& {
+                                             return net_cost_handler_.cube_bb_coords(net_id, use_ts);
+                                         });
     }
 
     // Initialize the placement for the Simulated Annealer.
@@ -131,6 +138,11 @@ Placer::Placer(const Netlist<>& net_list,
 
     // Gets initial cost and loads bounding boxes.
     auto [initial_cost_terms, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
+    if (interposer_cost_handler_.has_value()) {
+        const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
+        initial_cost_terms.interposer_cost = interposer_cost;
+        initial_cost_terms.interposer_cong_cost = interposer_cong_cost;
+    }
     costs_.bb_cost = initial_cost_terms.bb_cost;
     costs_.congestion_cost = initial_cost_terms.cong_cost;
     costs_.interposer_cost = initial_cost_terms.interposer_cost;
@@ -166,7 +178,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     log_printer_.print_initial_placement_stats();
 
-    annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, noc_cost_handler_,
+    annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, interposer_cost_handler_, noc_cost_handler_,
                                                     noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
                                                     placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
                                                     anneal_auto_init_t_scale,
@@ -272,9 +284,19 @@ void Placer::check_place_() {
 int Placer::check_placement_costs_() {
     int error = 0;
 
-    constexpr double MIN_EXPECTED_CONG_COST = 1.e-6;
+    // The interposer and congestion cost could potentially be zero, so we need to use
+    // an absolute tolerance when comparing these costs to handle potential floating-point
+    // round-off issues. For other cost terms, we can use a relative tolerance since these
+    // costs should never be zero.
+    constexpr double PLACE_CONGESTION_COST_ABS_TOLERANCE = 1.e-6;
+    constexpr double PLACE_INTERPOSER_COST_ABS_TOLERANCE = 1.e-6;
 
-    const auto [cost_terms_check, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
+    auto [cost_terms_check, expected_wirelength] = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::CHECK);
+    if (interposer_cost_handler_.has_value()) {
+        const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
+        cost_terms_check.interposer_cost = interposer_cost;
+        cost_terms_check.interposer_cong_cost = interposer_cong_cost;
+    }
 
     if (!vtr::isclose(cost_terms_check.bb_cost, costs_.bb_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
         VTR_LOG_ERROR(
@@ -290,16 +312,17 @@ int Placer::check_placement_costs_() {
     // We treat both values as equivalent whenthey are below this threshold.
     // We only apply this to congestion cost and interposer congestion cost because
     // other cost terms are never zero.
-    if (!((std::fabs(cost_terms_check.cong_cost) < MIN_EXPECTED_CONG_COST
-           && std::fabs(costs_.congestion_cost) < MIN_EXPECTED_CONG_COST)
-          || vtr::isclose(cost_terms_check.cong_cost, costs_.congestion_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
+    if (!vtr::isclose(cost_terms_check.cong_cost, costs_.congestion_cost, PL_INCREMENTAL_COST_TOLERANCE, PLACE_CONGESTION_COST_ABS_TOLERANCE)) {
         VTR_LOG_ERROR(
             "cong_cost_check: %g and congestion_cost: %g differ in check_place.\n",
             cost_terms_check.cong_cost, costs_.congestion_cost);
         error++;
     }
 
-    if (!vtr::isclose(cost_terms_check.interposer_cost, costs_.interposer_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
+    // Similar logic to congestion cost. In case of a small circuit on a large device,
+    // it's possible to have zero interposer cost so we need to handle
+    // tiny numerical differences.
+    if (!vtr::isclose(cost_terms_check.interposer_cost, costs_.interposer_cost, PL_INCREMENTAL_COST_TOLERANCE, PLACE_INTERPOSER_COST_ABS_TOLERANCE)) {
         VTR_LOG_ERROR(
             "interposer_cost_check: %g and interposer_cost: %g differ in check_place.\n",
             cost_terms_check.interposer_cost, costs_.interposer_cost);
@@ -307,9 +330,7 @@ int Placer::check_placement_costs_() {
     }
 
     // Similar logic to congestion cost.
-    if (!((std::fabs(cost_terms_check.interposer_cong_cost) < MIN_EXPECTED_CONG_COST
-           && std::fabs(costs_.interposer_cong_cost) < MIN_EXPECTED_CONG_COST)
-          || vtr::isclose(cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.))) {
+    if (!vtr::isclose(cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost, PL_INCREMENTAL_COST_TOLERANCE, PLACE_CONGESTION_COST_ABS_TOLERANCE)) {
         VTR_LOG_ERROR(
             "interposer_cong_cost_check: %g and interposer_cong_cost: %g differ in check_place.\n",
             cost_terms_check.interposer_cong_cost, costs_.interposer_cong_cost);

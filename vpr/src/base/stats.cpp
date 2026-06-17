@@ -27,6 +27,7 @@
 #include "rr_graph_area.h"
 #include "segment_stats.h"
 #include "channel_stats.h"
+#include "interposer_routing_stats.h"
 
 #include "crr_common.h"
 
@@ -170,6 +171,8 @@ void routing_stats(const Netlist<>& net_list,
     length_and_bends_stats(net_list, is_flat);
     print_channel_stats(is_flat);
     get_channel_occupancy_stats(net_list);
+    print_interposer_routing_stats(net_list);
+    write_interposer_cut_channel_utilization(net_list, "interposer_cut_channel_utilization.txt");
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 

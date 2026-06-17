@@ -69,6 +69,12 @@ static void set_grid_block_type(int priority,
 
 ///@brief Create the device grid based on resource requirements
 DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float target_device_utilization) {
+    // If the grid was fixed by a read RR graph, return it unchanged to prevent resizing.
+    if (g_vpr_ctx.device().grid.fixed_by_rr_graph()) {
+        VTR_ASSERT(g_vpr_ctx.device().grid.width() > 0 && g_vpr_ctx.device().grid.height() > 0);
+        return g_vpr_ctx.device().grid;
+    }
+
     if (layout_name == "auto") {
         //Auto-size the device
         //
@@ -101,6 +107,12 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
 
 ///@brief Create the device grid based on dimensions
 DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, size_t width, size_t height) {
+    // If the grid was fixed by a read RR graph, return it unchanged to prevent resizing.
+    if (g_vpr_ctx.device().grid.fixed_by_rr_graph()) {
+        VTR_ASSERT(g_vpr_ctx.device().grid.width() > 0 && g_vpr_ctx.device().grid.height() > 0);
+        return g_vpr_ctx.device().grid;
+    }
+
     if (layout_name == "auto") {
         VTR_ASSERT(!grid_layouts.empty());
         //Auto-size
@@ -759,4 +771,10 @@ static void check_grid(const DeviceGrid& grid) {
 
 size_t count_grid_tiles(const DeviceGrid& grid) {
     return grid.get_num_layers() * grid.width() * grid.height();
+}
+
+void report_device_grid_stats(const DeviceGrid& grid) {
+    size_t num_grid_tiles = count_grid_tiles(grid);
+    VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n",
+            grid.width(), grid.height(), num_grid_tiles, grid.name().c_str());
 }
