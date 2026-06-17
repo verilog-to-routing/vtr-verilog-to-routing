@@ -126,15 +126,14 @@ enum class e_edge_type {
 };
 
 enum class e_delay_text_relative_pos {
-    NOT_DRAWN,
     CENTER_ABOVE,
     CENTER_BELOW,
     LEFT_ABOVE,
     LEFT_BELOW,
-    FAR_LEFT_ABOVE,
-    FAR_LEFT_BELOW,
     RIGHT_ABOVE,
     RIGHT_BELOW,
+    FAR_LEFT_ABOVE,
+    FAR_LEFT_BELOW,
     FAR_RIGHT_ABOVE,
     FAR_RIGHT_BELOW,
 };
@@ -180,14 +179,6 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
-typedef struct {
-    // bbox of the two endpoints
-    ezgl::rectangle delay_edge_bbox;
-    ezgl::rectangle delay_text_bbox;
-    bool too_small_to_draw;
-    e_delay_text_relative_pos previous_pos;
-    std::string incr_delay_str;
-} t_crit_path_delay_drawing_info;
 
 struct PartialPlacement;
 
@@ -324,8 +315,6 @@ struct t_draw_state {
     vtr::vector<RRNodeId, t_draw_rr_node> draw_rr_node;
 
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
-
-    std::vector<t_crit_path_delay_drawing_info> crit_path_delay_drawing_info;
 
     ///@brief pointer to architecture info. const
     const t_arch* arch_info = nullptr;

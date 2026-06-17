@@ -84,6 +84,14 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node);
  * channels, while darker colours (e.g. blue) correspond to lower utilization.*/
 void draw_routing_util(ezgl::renderer* g);
 
+struct CritPathDelayDrawingInfo {
+    double edge_length = 0.0;
+    bool skip_delay_text = false;
+    ezgl::rectangle virtual_centered_text_bbox;
+    ezgl::rectangle delay_text_bbox;
+    double text_angle = 0.0;
+};
+
 /* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
  * pins is shown in a different colour.
  * User can toggle between two different visualizations:

@@ -41,8 +41,9 @@
 static constexpr ezgl::color DEFAULT_RR_NODE_COLOR = ezgl::BLACK;
 static constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 static constexpr int PERPENDICULAR_OFFSET = 8;
-static constexpr int CRIT_PATH_DELAY_TEXT_WIDTH = 40;
-static constexpr int CRIT_PATH_DELAY_TEXT_HEIGHT = 13;
+static constexpr int DELAY_TEXT_WIDTH = 40;
+static constexpr int DELAY_TEXT_HEIGHT = 13;
+static constexpr double EDGE_OFFSET_PERCENT = 0.1;
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
@@ -68,6 +69,32 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(226, 88, 34),   //reddish orange
     ezgl::color(43, 61, 38)     //olive green
 };
+
+static void update_crit_path_delay_drawing_info(
+    const tatum::TimingPath& path,
+    std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info,
+    ezgl::renderer* g);
+
+static void update_text_bbox_from_relative_pos(
+    CritPathDelayDrawingInfo& delay_drawing_info,
+    e_delay_text_relative_pos text_relative_pos);
+
+static void update_least_cluttering_delay_text_locs(
+    std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info);
+
+static void update_init_num_overlaps_per_edge(
+    std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info,
+    std::vector<std::pair<int, int>>& init_num_overlaps_per_edge);
+
+static bool check_if_bboxes_overlap(
+    const ezgl::rectangle& bbox1,
+    const ezgl::rectangle& bbox2);
+
+static void draw_delay_on_edge(
+    ezgl::point2d start,
+    ezgl::point2d end,
+    float incr_delay,
+    ezgl::renderer* g);
 
 /// @brief Determines the display color for a given block location.
 /// @details If a placer breakpoint highlight applies, uses its color; otherwise,
@@ -975,15 +1002,21 @@ void draw_crit_path(ezgl::renderer* g) {
         *(draw_state->setup_timing_info->setup_analyzer()), 1);
     tatum::TimingPath path = paths[0];
 
+    std::vector<CritPathDelayDrawingInfo> crit_path_delay_drawing_info;
     if (draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays) {
-        update_least_cluttering_delay_drawing_scheme(path);
+        int num_edges = int(path.data_arrival_path().elements().size()) - 1;
+        if (num_edges > 0) {
+            crit_path_delay_drawing_info.resize(num_edges);
+            update_crit_path_delay_drawing_info(path, crit_path_delay_drawing_info, g);
+            update_least_cluttering_delay_text_locs(crit_path_delay_drawing_info);
+        }
     }
 
     //Walk through the timing path drawing each edge
     tatum::NodeId prev_node;
     float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
-    int i = 0;
-    for (tatum::TimingPathElem elem : path.data_arrival_path().elements()) {
+    int edge_index = 0;
+    for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
         float arr_time = elem.tag().time();
 
@@ -992,8 +1025,13 @@ void draw_crit_path(ezgl::renderer* g) {
             //any routing which corresponds to the edge
             //
             //We pick colors from the kelly max-contrast list, for long paths there may be repeats
-            ezgl::color color = kelly_max_contrast_colors[i++
+            ezgl::color color = kelly_max_contrast_colors[edge_index
                                                           % kelly_max_contrast_colors.size()];
+
+            if (draw_state->show_crit_path_routing) {
+                //Draw the routed version of the timing edge
+                draw_routed_timing_edge_connection(prev_node, node, color, g);
+            }
 
             float delay = arr_time - prev_arr_time;
 
@@ -1009,87 +1047,253 @@ void draw_crit_path(ezgl::renderer* g) {
                     g->set_line_width(3);
                     g->set_color(color, flyline_visibility.alpha);
 
+                    ezgl::point2d start = tnode_draw_coord(prev_node);
+                    ezgl::point2d end = tnode_draw_coord(node);
+                    g->draw_line(start, end);
+
+                    if (get_draw_state_vars()->show_crit_path_delays) {
+                        CritPathDelayDrawingInfo& drawing_info = crit_path_delay_drawing_info[edge_index];
+                        if (!drawing_info.skip_delay_text) {
+                            std::stringstream ss;
+                            ss.precision(3);
+                            ss << std::fixed << 1e9 * delay;
+                            std::string incr_delay_str = ss.str();
+
+                            g->set_text_rotation(drawing_info.text_angle);
+
+                            g->set_font_size(16);
+
+                            g->set_coordinate_system(ezgl::SCREEN);
+
+                            g->draw_text(drawing_info.delay_text_bbox.center(), incr_delay_str);
+
+                            g->set_font_size(14);
+
+                            g->set_text_rotation(0);
+                            g->set_coordinate_system(ezgl::WORLD);
+                        } 
+                    }
+
+                    /*
                     draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
                                              (ezgl::point2d)tnode_draw_coord(node), (float)delay,
                                              head_node, (ezgl::renderer*)g);
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(0);
+                    */
                 }
             }
-
-            if (draw_state->show_crit_path_routing) {
-                //Draw the routed version of the timing edge
-                draw_routed_timing_edge_connection(prev_node, node, color, g);
-            }
+            edge_index++;
         }
         prev_node = node;
         prev_arr_time = arr_time;
     }
 }
 
-void update_least_cluttering_delay_drawing_scheme(tatum::TimingPath& path) {
-    initialize_delay_drawing_info(path);
-
+void update_crit_path_delay_drawing_info(const tatum::TimingPath& path,
+                    std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info, ezgl::renderer* g) {
+    
     tatum::NodeId prev_node;
-    for (tatum::TimingPathElem elem : path.data_arrival_path().elements()) {
-        tatum::NodeId node;
-        if (prev_node) {
-            ezgl::point2d start = tnode_draw_coord(prev_node);
-            ezgl::point2d end = tnode_draw_coord(node);
-            if (start.x > end.x) {
-                std::swap(start, end);
-            }
-            double min_y = std::min(start.y, end.y);
-            double max_y = std::max(start.y, end.y);
-
-            ezgl::rectangle text_bbox({start.x, min_y}, {end.x, max_y});
-            double text_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
-
-            // Get the screen coordinates for text drawing
-            ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
-
-            if (std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2) < 40 * 40) {
-                return;
-            }
-        }
-        prev_node = node;
-    }
-}
-
-void initialize_delay_drawing_info(const tatum::TimingPath& path) {
-    std::vector<t_crit_path_delay_drawing_info> initialized_info;
-    tatum::NodeId prev_node;
-
+    int edge_idx = 0;
     for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
 
         if (prev_node) {
-            t_crit_path_delay_drawing_info info{};
-            info.delay_edge_bbox = ezgl::rectangle(
-                tnode_draw_coord(prev_node),
-                tnode_draw_coord(node));
-            info.previous_pos = e_delay_text_relative_pos::NOT_DRAWN;
+            ezgl::point2d start = tnode_draw_coord(prev_node);
+            ezgl::point2d end = tnode_draw_coord(node);
 
-            initialized_info.push_back(info);
+            if(start.x > end.x) {
+                std::swap(start, end);
+            }
+
+            double min_y = std::min(start.y, end.y);
+            double max_y = std::max(start.y, end.y);
+
+            ezgl::rectangle edge_bbox({start.x, min_y}, {end.x, max_y});
+            
+            ezgl::rectangle screen_coords = g->world_to_screen(edge_bbox);
+            double edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
+            crit_path_delay_drawing_info[edge_idx].edge_length = edge_length;
+            bool too_long_to_draw = DELAY_TEXT_WIDTH > edge_length;
+
+            int src_block_layer = get_timing_path_node_layer_num(node);
+            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
+            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+
+            if (too_long_to_draw || !flyline_visibility.visible) {
+                crit_path_delay_drawing_info[edge_idx].skip_delay_text = true;
+                edge_idx++;
+                prev_node = node;
+                continue;
+            } else {
+                crit_path_delay_drawing_info[edge_idx].skip_delay_text = false;
+            }
+
+            double delay_text_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
+            crit_path_delay_drawing_info[edge_idx].text_angle = delay_text_angle;
+
+            double text_bbox_width = DELAY_TEXT_WIDTH * cos(delay_text_angle * (std::numbers::pi / 180)) 
+                                    + DELAY_TEXT_HEIGHT * std::abs(sin(delay_text_angle * (std::numbers::pi / 180)));
+            double text_bbox_height = DELAY_TEXT_WIDTH * std::abs(sin(delay_text_angle * (std::numbers::pi / 180)))
+                                    + DELAY_TEXT_HEIGHT * cos(delay_text_angle * (std::numbers::pi / 180));
+
+            ezgl::point2d bottom_left = screen_coords.center() - ezgl::point2d(text_bbox_width / 2, text_bbox_height / 2);
+            crit_path_delay_drawing_info[edge_idx].virtual_centered_text_bbox = ezgl::rectangle(bottom_left, text_bbox_width, text_bbox_height);
+
+            update_text_bbox_from_relative_pos(crit_path_delay_drawing_info[edge_idx], e_delay_text_relative_pos::CENTER_ABOVE);
+
+            edge_idx++;
         }
-
         prev_node = node;
     }
-
-    get_draw_state_vars()->crit_path_delay_drawing_info.swap(initialized_info);
 }
 
-double get_bboxes_overlap_area(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2) {
-    double overlap_width = std::max(0.0, std::min(bbox1.right(), bbox2.right())
-                 - std::max(bbox1.left(), bbox2.left()));
+void update_text_bbox_from_relative_pos(CritPathDelayDrawingInfo& delay_drawing_info,
+                                                e_delay_text_relative_pos text_relative_pos) {
+    int perpendicular_offset = 0;
+    double edge_offset_percent = 0.0;
+    switch (text_relative_pos) {
+        case e_delay_text_relative_pos::CENTER_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            break;
+        case e_delay_text_relative_pos::CENTER_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            break;
+        case e_delay_text_relative_pos::LEFT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset_percent = - EDGE_OFFSET_PERCENT;
+            break;
+        case e_delay_text_relative_pos::LEFT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset_percent = - EDGE_OFFSET_PERCENT;
+            break;
+        case e_delay_text_relative_pos::RIGHT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset_percent = EDGE_OFFSET_PERCENT;
+            break;
+        case e_delay_text_relative_pos::RIGHT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset_percent = EDGE_OFFSET_PERCENT;
+            break;
+        case e_delay_text_relative_pos::FAR_LEFT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset_percent = - EDGE_OFFSET_PERCENT * 2;
+            break;
+        case e_delay_text_relative_pos::FAR_LEFT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset_percent = - EDGE_OFFSET_PERCENT * 2;
+            break;
+        case e_delay_text_relative_pos::FAR_RIGHT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset_percent = EDGE_OFFSET_PERCENT * 2;
+            break;
+        case e_delay_text_relative_pos::FAR_RIGHT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset_percent = EDGE_OFFSET_PERCENT * 2;
+    }
 
-    double overlap_height = std::max(0.0, std::min(bbox1.top(), bbox2.top())
-                 - std::max(bbox1.bottom(), bbox2.bottom()));
+    double text_angle_in_deg = delay_drawing_info.text_angle * (std::numbers::pi / 180);
+    double x_offset = - perpendicular_offset * sin(text_angle_in_deg);
+    double y_offset = - perpendicular_offset * cos(text_angle_in_deg);
 
-    return overlap_width * overlap_height;
+    x_offset += delay_drawing_info.edge_length * edge_offset_percent * cos(text_angle_in_deg);
+    y_offset -= delay_drawing_info.edge_length * edge_offset_percent * sin(text_angle_in_deg);
+
+    delay_drawing_info.delay_text_bbox = delay_drawing_info.virtual_centered_text_bbox + ezgl::point2d(x_offset, y_offset);
 }
 
+void update_least_cluttering_delay_text_locs(std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info) {
 
+    std::vector<e_delay_text_relative_pos> text_loc_candidates = {e_delay_text_relative_pos::CENTER_BELOW,
+                                                                    e_delay_text_relative_pos::LEFT_ABOVE,
+                                                                    e_delay_text_relative_pos::LEFT_BELOW,
+                                                                    e_delay_text_relative_pos::RIGHT_ABOVE,
+                                                                    e_delay_text_relative_pos::RIGHT_BELOW,
+                                                                    e_delay_text_relative_pos::FAR_LEFT_ABOVE,
+                                                                    e_delay_text_relative_pos::FAR_LEFT_BELOW,
+                                                                    e_delay_text_relative_pos::FAR_RIGHT_ABOVE,
+                                                                    e_delay_text_relative_pos::FAR_RIGHT_BELOW};
+
+    std::vector<std::pair<int, int>> init_num_overlaps_per_edge;
+    update_init_num_overlaps_per_edge(crit_path_delay_drawing_info, init_num_overlaps_per_edge);
+    std::sort(init_num_overlaps_per_edge.begin(), init_num_overlaps_per_edge.end(),
+                [](const std::pair<int, int>& edge_a, const std::pair<int, int>& edge_b) {
+                    return edge_a.second < edge_b.second;
+                });
+
+    for(const std::pair<int, int>& index_overlaps_pair : init_num_overlaps_per_edge) {
+        if (index_overlaps_pair.second == 0) {
+            continue;
+        }
+        int edge_index = index_overlaps_pair.first;
+        CritPathDelayDrawingInfo& drawing_info = crit_path_delay_drawing_info[edge_index];
+
+        bool cannot_avoid_conflict = true;    
+        for(const e_delay_text_relative_pos& location_candidate : text_loc_candidates) {
+            update_text_bbox_from_relative_pos(crit_path_delay_drawing_info[edge_index],
+                                                                                location_candidate);
+
+            int edge_index_to_compare = 0; 
+            bool zero_conflict = true;                              
+            for(const CritPathDelayDrawingInfo& drawing_info_to_compare : crit_path_delay_drawing_info) {
+                if (edge_index == edge_index_to_compare || drawing_info_to_compare.skip_delay_text) {
+                    edge_index_to_compare++;
+                    continue;
+                }
+                if (check_if_bboxes_overlap(drawing_info.delay_text_bbox, drawing_info_to_compare.delay_text_bbox)) {
+                    zero_conflict = false;
+                    break;
+                }
+                edge_index_to_compare++;
+            }
+
+            if(zero_conflict) {
+                cannot_avoid_conflict = false;
+                break;
+            }
+        }
+
+        if (cannot_avoid_conflict) {
+            drawing_info.skip_delay_text = true;
+        }
+    }
+}
+
+void update_init_num_overlaps_per_edge(std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info,
+                                        std::vector<std::pair<int, int>>& init_num_overlaps_per_edge) {
+
+    init_num_overlaps_per_edge.reserve(crit_path_delay_drawing_info.size());
+    int edge_index = 0;
+    for(const CritPathDelayDrawingInfo& drawing_info : crit_path_delay_drawing_info) {
+        if (drawing_info.skip_delay_text) {
+            edge_index++;
+            continue;
+        }
+        int edge_index_to_compare = 0;
+        int num_of_overlaps = 0;
+        for(const CritPathDelayDrawingInfo& drawing_info_to_compare : crit_path_delay_drawing_info) {
+            if (edge_index == edge_index_to_compare || drawing_info_to_compare.skip_delay_text) {
+                edge_index_to_compare++;
+                continue;
+            }
+            
+            if (check_if_bboxes_overlap(drawing_info.delay_text_bbox, drawing_info_to_compare.delay_text_bbox)) {
+                num_of_overlaps++;
+            }
+            edge_index_to_compare++;
+        }
+        init_num_overlaps_per_edge.emplace_back({edge_index, num_of_overlaps});
+        edge_index++;
+    }
+}
+
+bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2) {
+    if (bbox1.right() < bbox2.left() || bbox1.left() > bbox2.right() || bbox1.bottom() > bbox2.top() || bbox1.top() < bbox2.bottom()) {
+        return false;
+    } else {
+        return true;
+    }
+}
 
 /**
  * @brief Draw critical path elements.
@@ -1188,7 +1392,7 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 }
 
 //Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, tatum::NodeID head_node,
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g,
                               bool skip_draw_delays /*=false*/) {
     g->draw_line(start, end);
     //draw_triangle_along_line(g, start, end, 0.8, 40 * DEFAULT_ARROW_SIZE);
@@ -1227,7 +1431,8 @@ void draw_delay_on_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay
     // Get the screen coordinates for text drawing
     ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
 
-    if (std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2) < 40 * 40) {
+    double edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
+    if (DELAY_TEXT_WIDTH > edge_length) {
         return;
     }
 
