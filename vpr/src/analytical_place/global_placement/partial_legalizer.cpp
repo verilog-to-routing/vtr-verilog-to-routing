@@ -33,6 +33,7 @@
 #include "prepack.h"
 #include "primitive_dim_manager.h"
 #include "primitive_vector.h"
+#include "globals.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
@@ -1614,6 +1615,108 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     // the two partitions are perfectly balanced (equal on both sides).
     float best_score = -1.0f;
     const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
+
+    // If the device has interposer die boundaries, always try to partition
+    // along them first. Even an unbalanced die-boundary cut is preferable to
+    // spreading blocks across an interposer; the recursive partitioner will
+    // re-balance each sub-window on subsequent splits. We pick the most
+    // balanced interposer cut when multiple boundaries fall in the window.
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    if (device_grid.has_interposer_cuts()) {
+        float best_interposer_score = -1.0f;
+        PartitionedWindow best_interposer_partition;
+
+        // Try vertical interposer cuts (die boundaries at constant x).
+        int min_pivot_x = (int)std::floor(window.region.xmin()) + 1;
+        int max_pivot_x = (int)std::ceil(window.region.xmax()) - 1;
+        std::unordered_set<int> vert_cut_xs;
+        for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+            for (int cut_x : device_grid.get_vertical_interposer_cuts()[layer]) {
+                if (cut_x >= min_pivot_x && cut_x <= max_pivot_x)
+                    vert_cut_xs.insert(cut_x);
+            }
+        }
+        for (int pivot_x : vert_cut_xs) {
+            auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                     window.region.ymin()),
+                                                  vtr::Point<double>(pivot_x,
+                                                                     window.region.ymax()));
+            auto upper_region = vtr::Rect<double>(vtr::Point<double>(pivot_x,
+                                                                     window.region.ymin()),
+                                                  vtr::Point<double>(window.region.xmax(),
+                                                                     window.region.ymax()));
+            float lower_window_capacity = 0.0f;
+            float upper_window_capacity = 0.0f;
+            for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+            }
+            lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+            upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+            float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+            float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+            float cut_score = smaller_capacity / larger_capacity;
+            if (cut_score > best_interposer_score) {
+                best_interposer_score = cut_score;
+                best_interposer_partition.partition_dir = e_partition_dir::VERTICAL;
+                best_interposer_partition.pivot_pos = pivot_x;
+                best_interposer_partition.lower_window.region = lower_region;
+                best_interposer_partition.upper_window.region = upper_region;
+                best_interposer_partition.lower_window.layer_low = window.layer_low;
+                best_interposer_partition.lower_window.layer_high = window.layer_high;
+                best_interposer_partition.upper_window.layer_low = window.layer_low;
+                best_interposer_partition.upper_window.layer_high = window.layer_high;
+            }
+        }
+
+        // Try horizontal interposer cuts (die boundaries at constant y).
+        int min_pivot_y = (int)std::floor(window.region.ymin()) + 1;
+        int max_pivot_y = (int)std::ceil(window.region.ymax()) - 1;
+        std::unordered_set<int> horz_cut_ys;
+        for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+            for (int cut_y : device_grid.get_horizontal_interposer_cuts()[layer]) {
+                if (cut_y >= min_pivot_y && cut_y <= max_pivot_y)
+                    horz_cut_ys.insert(cut_y);
+            }
+        }
+        for (int pivot_y : horz_cut_ys) {
+            auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                     window.region.ymin()),
+                                                  vtr::Point<double>(window.region.xmax(),
+                                                                     pivot_y));
+            auto upper_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                     pivot_y),
+                                                  vtr::Point<double>(window.region.xmax(),
+                                                                     window.region.ymax()));
+            float lower_window_capacity = 0.0f;
+            float upper_window_capacity = 0.0f;
+            for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+            }
+            lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+            upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+            float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+            float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+            float cut_score = smaller_capacity / larger_capacity;
+            if (cut_score > best_interposer_score) {
+                best_interposer_score = cut_score;
+                best_interposer_partition.partition_dir = e_partition_dir::HORIZONTAL;
+                best_interposer_partition.pivot_pos = pivot_y;
+                best_interposer_partition.lower_window.region = lower_region;
+                best_interposer_partition.upper_window.region = upper_region;
+                best_interposer_partition.lower_window.layer_low = window.layer_low;
+                best_interposer_partition.lower_window.layer_high = window.layer_high;
+                best_interposer_partition.upper_window.layer_low = window.layer_low;
+                best_interposer_partition.upper_window.layer_high = window.layer_high;
+            }
+        }
+
+        // If any interposer boundary falls within this window, return the
+        // best-balanced one immediately without evaluating non-boundary cuts.
+        if (best_interposer_score >= 0.0f)
+            return best_interposer_partition;
+    }
 
     // First, try all of the planar partitions, if any.
     if (window.layer_high > window.layer_low) {
