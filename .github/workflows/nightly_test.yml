@@ -75,9 +75,8 @@ jobs:
       # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
       #       to v4, need to upgrade the machine to support node20.
     - uses: actions/checkout@v6
-
-    - name: Fetch submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh

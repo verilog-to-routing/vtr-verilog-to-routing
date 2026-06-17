@@ -432,18 +432,27 @@ set(READLINE_FOUND FALSE)
 # ===========================================================================
 set(VTR_QT_MIN_VERSION 6.9.3)
 
-if (NOT VPR_USE_EZGL STREQUAL "off")
-    set(_vtr_qt_user_override OFF)
-    if (DEFINED Qt6_DIR OR DEFINED ENV{Qt6_DIR} OR DEFINED ENV{CMAKE_PREFIX_PATH})
-        set(_vtr_qt_user_override ON)
-    endif()
+# We knowingly depend on Qt private modules (QRhi / QShader via Qt6::GuiPrivate
+# in libezgl), which have no binary/source-compatibility guarantees. Silence
+# Qt's private-module warning here -- it must be set BEFORE the first
+# find_package(Qt6) so it is in scope for every Qt package load downstream,
+# including the libezgl subdirectory's find_package(Qt6 ... GuiPrivate).
+set(QT_NO_PRIVATE_MODULE_WARNING ON)
 
-    # 1) System-first probe (honors any user override via env/cache).
+if (NOT VPR_USE_EZGL STREQUAL "off")
+    # 1) System-first probe. This honors any explicit user override
+    #    (env CMAKE_PREFIX_PATH / Qt6_DIR, or a cached Qt6_DIR): an explicit
+    #    path always gets first crack here.
     find_package(Qt6 ${VTR_QT_MIN_VERSION} QUIET COMPONENTS Core Gui Widgets)
 
-    # 2) Fall back to the repo-local SDK if no suitable Qt is on the system and
-    #    the user has not pointed us somewhere explicitly.
-    if (NOT Qt6_FOUND AND NOT _vtr_qt_user_override)
+    # 2) Fall back to the repo-local SDK whenever the probe above did not find a
+    #    suitable Qt -- regardless of any env/cache override. The override had
+    #    its chance in step 1; if it didn't resolve a usable Qt6, a validated
+    #    repo-local SDK (./dev/ensure_qt6_sdk.sh) should still be used rather
+    #    than failing the build. (Previously a stale `Qt6_DIR-NOTFOUND` cache
+    #    entry or an unrelated CMAKE_PREFIX_PATH in the environment would
+    #    suppress this fallback and abort even though a valid SDK was present.)
+    if (NOT Qt6_FOUND)
         set(_vtr_qt_prefix "$ENV{VTR_QT_PREFIX}")
         if (NOT _vtr_qt_prefix)
             set(_vtr_qt_prefix "${CMAKE_SOURCE_DIR}/qt6")

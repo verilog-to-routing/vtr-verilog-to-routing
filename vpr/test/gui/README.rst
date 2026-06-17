@@ -133,6 +133,19 @@ an intentional visual change)::
     cp build/vpr/test/gui/artifacts/<renderer>/<case>.png \
        vpr/test/gui/golden/<renderer>/<case>.png
 
+To update **all** goldens at once — the usual case after an intentional
+change to how a stage is drawn (placement, congestion, etc.) — regenerate
+the whole matrix (every case × every renderer) with ``generate_goldens.sh``
+rather than copying files by hand::
+
+    ./vpr/test/gui/generate_goldens.sh        # defaults to build/vpr/vpr
+
+This overwrites every ``vpr/test/gui/golden/<renderer>/<case>.png``, so
+afterwards review the change (``git diff --stat`` and the cross-renderer
+triptychs under ``golden/tmp/``) and commit only the intended updates.
+Only regenerate when the visual change is intentional — it invalidates all
+prior comparisons.
+
 Diff-write policy:
 
 * **default** — the triptych is written only when SSIM falls below
