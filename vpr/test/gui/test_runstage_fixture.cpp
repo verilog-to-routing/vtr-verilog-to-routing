@@ -46,6 +46,11 @@ std::vector<const char*> VprRunStageFixture::build_argv() {
         "test_vpr_gui",
         VPR_TEST_ARCH_XML,
         VPR_TEST_BLIF_AND_LATCH,
+        // Explicitly request the pack -> place -> route flow. Without any
+        // stage flag, VPR now defaults to the Analytical Placement flow.
+        "--pack",
+        "--place",
+        "--route",
         "--route_chan_width",
         kRouteChanWidth,
         // Pin the seed so failures are reproducible bit-for-bit.
