@@ -12,17 +12,30 @@
 
 InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
                                              double interposer_cong_threshold,
+                                             e_interposer_net_cost_type interposer_net_cost_type,
+                                             e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type,
+                                             e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type,
+                                             double interposer_net_cost_change_threshold,
                                              std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb)
     : interposer_cost_enabled_(interposer_cost_enabled)
     , interposer_cong_modeling_started_(false)
     , interposer_cong_threshold_(interposer_cong_threshold)
-    , get_net_bb_(std::move(get_net_bb)) {
+    , get_net_bb_(std::move(get_net_bb))
+    , cost_type_(interposer_net_cost_type)
+    , two_stage_interposer_net_cost_first_stage_type_(two_stage_interposer_net_cost_first_stage_type)
+    , two_stage_interposer_net_cost_second_stage_type_(two_stage_interposer_net_cost_second_stage_type)
+    , interposer_net_cost_change_threshold_(interposer_net_cost_change_threshold) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
     const size_t num_layers = grid.get_num_layers();
     VTR_ASSERT(grid.has_interposer_cuts());
     VTR_ASSERT(interposer_cong_threshold_ >= 0. || interposer_cost_enabled_);
+    VTR_ASSERT(interposer_net_cost_change_threshold_ >= 0.);
+    VTR_ASSERT(two_stage_interposer_net_cost_first_stage_type_ == e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS
+               || two_stage_interposer_net_cost_first_stage_type_ == e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
+    VTR_ASSERT(two_stage_interposer_net_cost_second_stage_type_ == e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS
+               || two_stage_interposer_net_cost_second_stage_type_ == e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
     VTR_ASSERT(get_net_bb_);
 
     // TODO: the class seems to support multi-layer interposer cuts,
@@ -173,8 +186,9 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
 
     const t_bb& bb = get_net_bb_(net_id, use_ts);
     const auto [num_horizontal_crossings, num_vertical_crossings] = count_bb_interposer_cut_crossings_(bb);
+    const e_interposer_net_cost_type active_cost_type = get_active_net_cost_type_();
 
-    if (cost_type_ == e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS) {
+    if (active_cost_type == e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS) {
         // Weight crossings by the normalized BB span orthogonal to the cut direction:
         // - a horizontal cut spans X, so we scale by BB height / grid height
         // - a vertical cut spans Y, so we scale by BB width / grid width
@@ -188,7 +202,7 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
         double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
         return cost;
     } else {
-        VTR_ASSERT_SAFE(cost_type_ == e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
+        VTR_ASSERT_SAFE(active_cost_type == e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
 
         if (num_horizontal_crossings == 0 && num_vertical_crossings == 0) {
             return 0;
@@ -226,6 +240,50 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
 
 void InterposerCostHandler::change_net_cost_type(e_interposer_net_cost_type new_type) {
     cost_type_ = new_type;
+}
+
+bool InterposerCostHandler::try_change_interposer_cost_model(double current_cost) {
+    if (cost_type_ != e_interposer_net_cost_type::TWO_STAGE_COST_FIRST) {
+        return false;
+    }
+
+    interposer_net_cost_history_.push_back(current_cost);
+    if (!interposer_net_cost_history_.full()) {
+        return false;
+    }
+
+    double avg_interposer_net_cost = 0.;
+    for (double int_cost : interposer_net_cost_history_) {
+        avg_interposer_net_cost += int_cost;
+    }
+    avg_interposer_net_cost /= interposer_net_cost_history_.size();
+
+    double max_percent_diff_from_avg = 0.;
+    if (std::fabs(avg_interposer_net_cost) > 0.) {
+        for (double int_cost : interposer_net_cost_history_) {
+            double percent_diff_from_avg = std::fabs(int_cost - avg_interposer_net_cost) / std::fabs(avg_interposer_net_cost);
+            max_percent_diff_from_avg = std::max(max_percent_diff_from_avg, percent_diff_from_avg);
+        }
+    }
+
+    if (max_percent_diff_from_avg < interposer_net_cost_change_threshold_) {
+        change_net_cost_type(e_interposer_net_cost_type::TWO_STAGE_COST_SECOND);
+        return true;
+    }
+
+    return false;
+}
+
+e_interposer_net_cost_type InterposerCostHandler::get_active_net_cost_type_() const {
+    if (cost_type_ == e_interposer_net_cost_type::TWO_STAGE_COST_FIRST) {
+        return two_stage_interposer_net_cost_first_stage_type_;
+    }
+
+    if (cost_type_ == e_interposer_net_cost_type::TWO_STAGE_COST_SECOND) {
+        return two_stage_interposer_net_cost_second_stage_type_;
+    }
+
+    return cost_type_;
 }
 
 double InterposerCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const {

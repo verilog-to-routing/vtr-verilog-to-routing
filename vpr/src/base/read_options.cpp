@@ -600,6 +600,73 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParseInterposerNetCostType {
+    ConvertedValue<e_interposer_net_cost_type> from_str(const std::string& str) {
+        ConvertedValue<e_interposer_net_cost_type> conv_value;
+        if (str == "crossing_count_delta_pos") {
+            conv_value.set_value(e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS);
+        } else if (str == "delta_pos_segment_length") {
+            conv_value.set_value(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
+        } else if (str == "two_stage") {
+            conv_value.set_value(e_interposer_net_cost_type::TWO_STAGE_COST_FIRST);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_interposer_net_cost_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_interposer_net_cost_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS) {
+            conv_value.set_value("crossing_count_delta_pos");
+        } else if (val == e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH) {
+            conv_value.set_value("delta_pos_segment_length");
+        } else {
+            VTR_ASSERT(val == e_interposer_net_cost_type::TWO_STAGE_COST_FIRST
+                       || val == e_interposer_net_cost_type::TWO_STAGE_COST_SECOND);
+            conv_value.set_value("two_stage");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"crossing_count_delta_pos", "delta_pos_segment_length", "two_stage"};
+    }
+};
+
+struct ParseInterposerStageNetCostType {
+    ConvertedValue<e_interposer_net_cost_type> from_str(const std::string& str) {
+        ConvertedValue<e_interposer_net_cost_type> conv_value;
+        if (str == "crossing_count_delta_pos") {
+            conv_value.set_value(e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS);
+        } else if (str == "delta_pos_segment_length") {
+            conv_value.set_value(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_interposer_net_cost_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_interposer_net_cost_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS) {
+            conv_value.set_value("crossing_count_delta_pos");
+        } else {
+            VTR_ASSERT(val == e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
+            conv_value.set_value("delta_pos_segment_length");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"crossing_count_delta_pos", "delta_pos_segment_length"};
+    }
+};
+
 struct ParsePlaceBoundingBox {
     ConvertedValue<e_place_bounding_box_mode> from_str(const std::string& str) {
         ConvertedValue<e_place_bounding_box_mode> conv_value;
@@ -2775,6 +2842,30 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Penalizes placements whose average interposer congestion exceeds this threshold. "
               "Higher values reduce the likelihood of a penalty; very large values effectively disable threshold-based penalization.")
         .default_value("0.9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerNetCostType>(args.place_interposer_net_cost_type, "--place_interposer_net_cost_type")
+        .help("Controls which interposer net cost model is used during placement. "
+              "Valid options are crossing_count_delta_pos, delta_pos_segment_length, and two_stage.")
+        .default_value("two_stage")
+        .choices({"crossing_count_delta_pos", "delta_pos_segment_length", "two_stage"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerStageNetCostType>(args.place_two_stage_interposer_net_cost_first_stage_type, "--place_two_stage_interposer_net_cost_first_stage_type")
+        .help("Controls the first-stage interposer net cost model when --place_interposer_net_cost_type is two_stage.")
+        .default_value("crossing_count_delta_pos")
+        .choices({"crossing_count_delta_pos", "delta_pos_segment_length"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerStageNetCostType>(args.place_two_stage_interposer_net_cost_second_stage_type, "--place_two_stage_interposer_net_cost_second_stage_type")
+        .help("Controls the second-stage interposer net cost model when --place_interposer_net_cost_type is two_stage.")
+        .default_value("delta_pos_segment_length")
+        .choices({"crossing_count_delta_pos", "delta_pos_segment_length"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_interposer_net_cost_change_threshold, "--place_interposer_net_cost_change_threshold")
+        .help("Maximum recent interposer net cost deviation threshold used to switch the two-stage interposer net cost model.")
+        .default_value("0.005")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_congestion_factor, "--congestion_factor")

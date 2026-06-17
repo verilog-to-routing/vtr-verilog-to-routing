@@ -975,6 +975,18 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+enum class e_interposer_net_cost_type {
+    /// Net cost is delta_x * #vertical_interposer_crossings + delta_y * #horizontal_interposer_crossings.
+    CROSSING_COUNT_DELTA_POS,
+    /// Net cost is |delta_x - vertical_interposer_seg_length| * #vertical_interposer_crossings +
+    /// |delta_y - horizontal_interposer_seg_length| * #horizontal_interposer_crossings.
+    DELTA_POS_SEGMENT_LENGTH,
+    /// Two-stage mode currently using the configured first-stage net cost type.
+    TWO_STAGE_COST_FIRST,
+    /// Two-stage mode currently using the configured second-stage net cost type.
+    TWO_STAGE_COST_SECOND,
+};
+
 /**
  * @brief Enumeration of the different initial temperature estimators available
  *        for the placer.
@@ -1018,6 +1030,14 @@ struct t_placer_opts {
     float interposer_cong_threshold;
     /// Unitless scaling for interposer congestion after normalization. Comparable in tuning to \c congestion_factor.
     float interposer_cong_factor;
+    /// Formula used for interposer crossing cost; two-stage mode can switch formulas during placement.
+    e_interposer_net_cost_type interposer_net_cost_type;
+    /// Formula used before the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type;
+    /// Formula used after the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type;
+    /// Maximum recent cost deviation threshold used to switch the two-stage interposer cost model.
+    float interposer_net_cost_change_threshold;
 
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;
