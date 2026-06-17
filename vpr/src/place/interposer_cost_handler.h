@@ -5,19 +5,14 @@
  */
 
 #include "place_util.h"
+#include "vpr_types.h"
+#include "vtr_circular_buffer.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
 #include <functional>
 #include <utility>
 #include <vector>
-
-enum class e_interposer_net_cost_type {
-    /// Net cost is delta_x * #vertical_interposer_crossings + delta_y * #horizontal_interposer_crossings
-    CROSSING_COUNT_DELTA_POS,
-    /// Net cost is |delta_x - vertical_interposer_seg_length| + |delta_y - horizontal_interposer_seg_length|
-    DELTA_POS_SEGMENT_LENGTH,
-};
 
 class InterposerCostHandler {
   public:
@@ -29,6 +24,10 @@ class InterposerCostHandler {
 
     InterposerCostHandler(bool interposer_cost_enabled,
                           double interposer_cong_threshold,
+                          e_interposer_net_cost_type interposer_net_cost_type,
+                          e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type,
+                          e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type,
+                          double interposer_net_cost_change_threshold,
                           std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb);
 
     /// @brief Returns true when at least one interposer cost term is activated.
@@ -57,12 +56,17 @@ class InterposerCostHandler {
     /// @brief Selects the formula used for the interposer crossing cost term.
     void change_net_cost_type(e_interposer_net_cost_type new_type);
 
-    e_interposer_net_cost_type get_net_cost_type() {return cost_type_;}
+    /// @brief Try switching to a more detailed interposer net cost model based on recent costs.
+    /// @return True if the interposer net cost model was changed.
+    bool try_change_interposer_cost_model(double current_cost);
+
+    e_interposer_net_cost_type get_net_cost_type() const { return cost_type_; }
 
   private:
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
     double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const;
     std::pair<int, int> count_bb_interposer_cut_crossings_(const t_bb& bb) const;
+    e_interposer_net_cost_type get_active_net_cost_type_() const;
 
   private:
     /// Enables interposer crossing cost term.
@@ -89,4 +93,12 @@ class InterposerCostHandler {
     vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
     e_interposer_net_cost_type cost_type_ = e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS;
+    /// Concrete interposer net cost type used during the first stage of two-stage mode.
+    const e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type_;
+    /// Concrete interposer net cost type used during the second stage of two-stage mode.
+    const e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type_;
+    /// Threshold used to switch from first to second stage in two-stage mode.
+    double interposer_net_cost_change_threshold_;
+    /// Recent interposer net costs used to decide when to switch cost models.
+    vtr::circular_buffer<double> interposer_net_cost_history_ = vtr::circular_buffer<double>(10);
 };

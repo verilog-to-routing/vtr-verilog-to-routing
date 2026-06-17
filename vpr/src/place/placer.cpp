@@ -5,7 +5,6 @@
 #include <functional>
 #include <optional>
 #include <utility>
-#include <cmath>
 
 #include "echo_files.h"
 #include "flat_placement_types.h"
@@ -24,7 +23,6 @@
 #include "place_checkpoint.h"
 #include "tatum/echo_writer.hpp"
 #include "vtr_math.h"
-#include "vtr_circular_buffer.h"
 
 #ifndef NO_GRAPHICS
 #include "draw_global.h"
@@ -74,6 +72,10 @@ Placer::Placer(const Netlist<>& net_list,
     if (device_ctx.grid.has_interposer_cuts()) {
         interposer_cost_handler_.emplace(placer_opts.interposer_cost_factor > 0.,
                                          placer_opts.interposer_cong_threshold,
+                                         placer_opts.interposer_net_cost_type,
+                                         placer_opts.two_stage_interposer_net_cost_first_stage_type,
+                                         placer_opts.two_stage_interposer_net_cost_second_stage_type,
+                                         placer_opts.interposer_net_cost_change_threshold,
                                          [this](ClusterNetId net_id, bool use_ts) -> const t_bb& {
                                              return net_cost_handler_.cube_bb_coords(net_id, use_ts);
                                          });
@@ -357,11 +359,6 @@ void Placer::place() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     bool analytic_place_enabled = false;
 
-    vtr::circular_buffer<double> interposer_net_cost_history;
-    if (interposer_cost_handler_) {
-        interposer_net_cost_history = vtr::circular_buffer<double>(10);
-    }
-
     if (!analytic_place_enabled && !quench_only_) {
         // Table header
         log_printer_.print_place_status_header();
@@ -387,30 +384,11 @@ void Placer::place() {
             annealer_->placement_inner_loop();
 
             if (interposer_cost_handler_ && interposer_cost_handler_->has_active_cost_terms()) {
-                interposer_net_cost_history.push_back(costs_.interposer_cost);
-                if (interposer_net_cost_history.size() == 10) {
-                    double avg_interposer_net_cost = 0;
-                    for (double int_cost : interposer_net_cost_history) {
-                        avg_interposer_net_cost += int_cost;
-                    }
-                    avg_interposer_net_cost /= interposer_net_cost_history.size();
-
-                    double max_percent_diff_from_avg = 0;
-                    if (std::fabs(avg_interposer_net_cost) > 0.) {
-                        for (double int_cost : interposer_net_cost_history) {
-                            double percent_diff_from_avg = std::fabs(int_cost - avg_interposer_net_cost) / std::fabs(avg_interposer_net_cost);
-                            max_percent_diff_from_avg = std::max(max_percent_diff_from_avg, percent_diff_from_avg);
-                        }
-                    }
-
-                    if (max_percent_diff_from_avg > 0.005
-                        && interposer_cost_handler_->get_net_cost_type() != e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH) {
-                        VTR_LOG("Changed interposer net cost model.\n");
-                        interposer_cost_handler_->change_net_cost_type(e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH);
-                        const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
-                        costs_.interposer_cost = interposer_cost;
-                        costs_.interposer_cong_cost = interposer_cong_cost;
-                    }
+                if (interposer_cost_handler_->try_change_interposer_cost_model(costs_.interposer_cost)) {
+                    VTR_LOG("Changed interposer net cost model.\n");
+                    const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
+                    costs_.interposer_cost = interposer_cost;
+                    costs_.interposer_cong_cost = interposer_cong_cost;
                 }
             }
 
