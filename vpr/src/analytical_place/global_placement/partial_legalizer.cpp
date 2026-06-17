@@ -53,6 +53,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const LogicalModels& models,
                                                          PreClusterTimingManager& timing_manager,
                                                          float ap_timing_tradeoff,
+                                                         float ap_interposer_net_cut_tradeoff,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
@@ -71,6 +72,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                                     models,
                                                                     timing_manager,
                                                                     ap_timing_tradeoff,
+                                                                    ap_interposer_net_cut_tradeoff,
                                                                     log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -873,6 +875,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     const LogicalModels& models,
     PreClusterTimingManager& timing_manager,
     float ap_timing_tradeoff,
+    float ap_interposer_net_cut_tradeoff,
     int log_verbosity)
     : PartialLegalizer(netlist, log_verbosity)
     , density_manager_(density_manager)
@@ -883,7 +886,8 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
                    log_verbosity)
     , timing_manager_(timing_manager)
     , timing_tradeoff_(ap_timing_tradeoff)
-    , block_criticality_(netlist.blocks().size(), 0.0f) {
+    , block_criticality_(netlist.blocks().size(), 0.0f)
+    , interposer_net_cut_tradeoff_(ap_interposer_net_cut_tradeoff) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
     capacity_prefix_sum_ = PerPrimitiveDimPrefixSum2D(

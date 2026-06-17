@@ -103,6 +103,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const LogicalModels& models,
                                                          PreClusterTimingManager& timing_manager,
                                                          float ap_timing_tradeoff,
+                                                         float ap_interposer_net_cut_tradeoff,
                                                          int log_verbosity);
 
 /**
@@ -558,6 +559,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
                                    const LogicalModels& models,
                                    PreClusterTimingManager& timing_manager,
                                    float ap_timing_tradeoff,
+                                   float ap_interposer_net_cut_tradeoff,
                                    int log_verbosity);
 
     /**

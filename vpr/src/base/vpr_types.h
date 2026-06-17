@@ -1166,6 +1166,10 @@ struct t_ap_opts {
     /// A trade-off parameter used to decide how focused the AP flow should be on optimizing timing over wirelength.
     float ap_timing_tradeoff;
 
+    /// Net-cut tradeoff weight for the bi-partitioning partial legalizer when a partition line lies on
+    /// an interposer die boundary. See --ap_interposer_net_cut_tradeoff for the full description.
+    float ap_interposer_net_cut_tradeoff;
+
     /// The threshold to ignore nets with higher fanout than that value while constructing the solver.
     int ap_high_fanout_threshold;
 

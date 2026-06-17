@@ -2095,6 +2095,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<float>(args.ap_interposer_net_cut_tradeoff, "--ap_interposer_net_cut_tradeoff")
+        .help(
+            "Net-cut tradeoff weight applied by the bi-partitioning partial legalizer when "
+            "a partition line falls on an interposer die boundary. Blends the FM net-cut gain "
+            "term into the block-move priority:\n"
+            "    priority = (1 - w) * base + w * fm_gain\n"
+            "where base is the existing timing+proximity score. "
+            "0.0 disables net-cut awareness entirely (original behaviour); "
+            "higher values (e.g. 0.6) reduce cross-die wire crossings at the cost of "
+            "slightly worse wirelength. Has no effect on non-interposer architectures.")
+        .default_value("0.6")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
         .help(
             "Defines the threshold for high fanout nets within AP flow.\n"

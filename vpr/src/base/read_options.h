@@ -111,6 +111,7 @@ struct t_options {
     argparse::ArgValue<float> appack_inter_die_gain_multiplier;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
+    argparse::ArgValue<float> ap_interposer_net_cut_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
     argparse::ArgValue<bool> ap_generate_mass_report;
 
