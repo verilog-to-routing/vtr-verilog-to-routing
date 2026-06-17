@@ -732,7 +732,9 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     ///        Blends the existing (timing + proximity) score with the FM gain:
     ///            priority = (1 - net_cut_tradeoff_) * base + net_cut_tradeoff_ * fm_gain
     ///        0 = no net-cut awareness (original behaviour), 1 = pure net-cut.
-    float net_cut_tradeoff_ = 0.2f;
+    ///        Set to 0 by default; FM infrastructure is skipped entirely at runtime
+    ///        when this is 0, so there is no performance cost unless it is enabled.
+    float net_cut_tradeoff_ = 0.0f;
 
     /// @brief Higher net-cut weight applied when the partition line lies on an
     ///        interposer die boundary (where inter-die wire crossings are scarce).

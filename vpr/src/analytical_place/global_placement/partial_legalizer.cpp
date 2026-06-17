@@ -2110,6 +2110,12 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     float net_cut_w = partitioned_window.is_interposer_cut ? interposer_net_cut_tradeoff_
                                                            : net_cut_tradeoff_;
 
+    // Skip all FM infrastructure (map allocation, pin iteration, incremental
+    // updates) when net-cut awareness is disabled. The priority formula still
+    // evaluates correctly — the fm term is multiplied by 0 — but we avoid
+    // the O(pins) work that caused the 3-4× runtime increase.
+    bool use_fm = (net_cut_w > 0.0f);
+
     // Compute the position accessor and the window extents used for normalising
     // proximity. Both are shared by the lower and upper loops below.
     auto get_block_pos = [&](APBlockId blk_id) -> double {
@@ -2175,6 +2181,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     //   +1 if blk is the last lower-side block on n (n becomes uncut after move).
     //   -1 if n has no upper-side blocks yet       (n becomes newly cut after move).
     auto fm_gain_lower_to_upper = [&](APBlockId blk_id) -> float {
+        if (!use_fm) return 0.f;
         int gain = 0, degree = 0;
         for (APPinId pin : netlist_.block_pins(blk_id)) {
             APNetId net = netlist_.pin_net(pin);
@@ -2192,6 +2199,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
 
     // FM gain for moving blk from upper → lower (symmetric).
     auto fm_gain_upper_to_lower = [&](APBlockId blk_id) -> float {
+        if (!use_fm) return 0.f;
         int gain = 0, degree = 0;
         for (APPinId pin : netlist_.block_pins(blk_id)) {
             APNetId net = netlist_.pin_net(pin);
@@ -2236,7 +2244,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         // Rebuild net counts from the current block assignments. On pass 0 this
         // is the initial position-sorted assignment; on subsequent passes it
         // reflects all moves made so far.
-        build_net_counts();
+        if (use_fm) build_net_counts();
 
         // Try to move things from lower to upper greedily.
         {
@@ -2248,14 +2256,21 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
                     lower_order.push_back(k);
             }
 
+            // Pre-compute FM gains once so the sort comparator is a cheap lookup
+            // rather than an O(degree) pin walk per comparison.
+            std::vector<float> lower_fm_gain(lower_contained_blocks.size(), 0.f);
+            if (use_fm) {
+                for (size_t k : lower_order)
+                    lower_fm_gain[k] = fm_gain_lower_to_upper(lower_contained_blocks[k]);
+            }
+
             auto lower_move_priority = [&](size_t idx) -> float {
                 APBlockId blk_id = lower_contained_blocks[idx];
                 float crit = block_criticality_[blk_id];
                 // proximity: 0 at the far edge of the lower window, 1 at the pivot.
                 float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
                 float base = timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
-                float fm = fm_gain_lower_to_upper(blk_id);
-                return (1.0f - net_cut_w) * base + net_cut_w * fm;
+                return (1.0f - net_cut_w) * base + net_cut_w * lower_fm_gain[idx];
             };
 
             std::stable_sort(lower_order.begin(), lower_order.end(),
@@ -2279,7 +2294,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
                 if (block_was_moved) {
                     lower_blocks_to_move.push_back(lower_blk);
                     lower_contained_blocks[idx] = APBlockId::INVALID();
-                    update_net_counts_to_upper(lower_blk);
+                    if (use_fm) update_net_counts_to_upper(lower_blk);
                 }
             }
         }
@@ -2294,14 +2309,21 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
                     upper_order.push_back(k);
             }
 
+            // Pre-compute FM gains once so the sort comparator is a cheap lookup
+            // rather than an O(degree) pin walk per comparison.
+            std::vector<float> upper_fm_gain(upper_contained_blocks.size(), 0.f);
+            if (use_fm) {
+                for (size_t k : upper_order)
+                    upper_fm_gain[k] = fm_gain_upper_to_lower(upper_contained_blocks[k]);
+            }
+
             auto upper_move_priority = [&](size_t idx) -> float {
                 APBlockId blk_id = upper_contained_blocks[idx];
                 float crit = block_criticality_[blk_id];
                 // proximity: 0 at the far edge of the upper window, 1 at the pivot.
                 float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
                 float base = timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
-                float fm = fm_gain_upper_to_lower(blk_id);
-                return (1.0f - net_cut_w) * base + net_cut_w * fm;
+                return (1.0f - net_cut_w) * base + net_cut_w * upper_fm_gain[idx];
             };
 
             std::stable_sort(upper_order.begin(), upper_order.end(),
@@ -2325,7 +2347,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
                 if (block_was_moved) {
                     upper_blocks_to_move.push_back(upper_blk);
                     upper_contained_blocks[idx] = APBlockId::INVALID();
-                    update_net_counts_to_lower(upper_blk);
+                    if (use_fm) update_net_counts_to_lower(upper_blk);
                 }
             }
         }
