@@ -43,7 +43,8 @@ where:
 
     is the technology mapped netlist in :ref:`BLIF format <vpr_blif_file>` to be implemented
 
-VPR will then pack, place, and route the circuit onto the specified architecture.
+By default, VPR will run the analytical placement flow, performing integrated packing and placement, followed by routing and analysis.
+To use the traditional sequential flow (pack, place, route, analysis), pass all four stage flags explicitly (see :ref:`stage_options`).
 
 By default VPR will perform a binary search routing to find the minimum channel width required to route the circuit.
 
@@ -70,17 +71,33 @@ Values in curly braces separated by vertical bars, e.g. ``{on | off}``, indicate
 
 Stage Options
 ^^^^^^^^^^^^^
-VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--pack`, :option:`--place`, :option:`--route` or :option:`--analysis` are specified.
+When none of the stage flags below are specified, VPR runs the **default flow**: analytical
+placement (integrated packing + placement), routing, and analysis.
+
+When one or more stage flags are specified, **only those stages** are run.
+
+To run the **traditional sequential flow** (separate pack, place, route, and analysis stages)
+instead of the default analytical placement flow, pass all four stage flags explicitly:
+
+.. code-block:: shell
+
+    vpr <architecture> <circuit> --pack --place --route --analysis
+
+.. note::
+
+    The traditional sequential flow was the previous default. Scripts or flows that previously ran
+    ``vpr <architecture> <circuit>`` without stage flags and relied on the pack → place → route
+    behavior must now add ``--pack --place --route --analysis`` explicitly.
 
 .. option:: --pack
 
-    Run packing stage
+    Run packing stage (part of the traditional flow; not used with :option:`--analytical_place`).
 
     **Default:** ``off``
 
 .. option:: --place
 
-    Run placement stage
+    Run placement stage (part of the traditional flow; not used with :option:`--analytical_place`).
 
     **Default:** ``off``
 
@@ -92,6 +109,11 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
     This flow supports both automatic device sizing (via :option:`--device` ``auto``) and fixed device sizes.
     Placement constraints can optionally be used to fix primitive blocks to specific locations on the device grid.
 
+    .. note::
+
+        This is the first stage of the **default flow**: when no stage flags are specified, VPR
+        runs analytical placement, routing, and analysis automatically.
+
     .. seealso:: See :ref:`analytical_placement_options` for the options for this flow.
 
     .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
@@ -102,7 +124,7 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
 .. option:: --route
 
-    Run routing stage
+    Run routing stage.
 
     **Default:** ``off``
 
@@ -1628,6 +1650,16 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``off``
 
+.. option:: --router_opt_choke_points {on | off}
+
+    Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do not converge well in routing unless fan-out choke points are discovered and optimized for during net routing.
+    Enabling this option improves router convergence for such architectures.
+
+    .. note::
+        This option only affects routing when the flat router (:option:`--flat_routing` on) is used.
+
+    **Default:** ``on``
+
 .. option:: --max_router_iterations <int>
 
     The number of iterations of a Pathfinder-based router that will be executed before a circuit is declared unrouteable (if it hasn’t routed successfully yet) at a given channel width.
@@ -1650,10 +1682,9 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --initial_pres_fac <float>
 
-    Sets the starting value of the present overuse penalty factor.
+    Sets the present overuse factor for the second routing iteration.
 
     *Speed-quality trade-off:* increasing this number speeds up the router, at the cost of some increase in final track count.
-    Values of 1000 or so are perfectly reasonable.
 
     **Default:** ``0.5``
 

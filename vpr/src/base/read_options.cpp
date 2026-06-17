@@ -3034,7 +3034,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             ""
             "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do"
             " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing."
-            " This option helps router convergence for such architectures.")
+            " This option helps router convergence for such architectures."
+            " Note that this option only affects routing when the flat router (--flat_routing on) is used.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

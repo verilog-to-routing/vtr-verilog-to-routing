@@ -363,6 +363,10 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     hide_draw_routing(app);
 
     app->update_message(draw_state->default_message);
+
+    // Force a canvas redraw so the new picture type is visible immediately
+    // when the event loop starts, rather than waiting for user interaction.
+    app->refresh_drawing();
 }
 
 #endif //NO_GRAPHICS

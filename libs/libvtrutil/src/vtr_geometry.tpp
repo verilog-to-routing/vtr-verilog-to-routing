@@ -178,7 +178,7 @@ bool Rect<T>::strictly_contains(Point<T> point) const {
 }
 
 template<class T>
-bool Rect<T>::coincident(Point<T> point) const {
+bool Rect<T>::contains_inclusive(Point<T> point) const {
     //Including right or top edges
     return point.x() >= xmin() && point.x() <= xmax()
            && point.y() >= ymin() && point.y() <= ymax();
@@ -361,9 +361,9 @@ bool RectUnion<T>::strictly_contains(Point<T> point) const {
 }
 
 template<class T>
-bool RectUnion<T>::coincident(Point<T> point) const {
+bool RectUnion<T>::contains_inclusive(Point<T> point) const {
     for (const auto& rect : rects()) {
-        if (rect.coincident(point)) {
+        if (rect.contains_inclusive(point)) {
             return true;
         }
     }
