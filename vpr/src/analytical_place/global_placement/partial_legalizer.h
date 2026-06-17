@@ -370,6 +370,11 @@ struct PartitionedWindow {
     ///        is vertical, and the top partition when the direction is
     ///        horizontal.
     SpreadingWindow upper_window;
+
+    /// @brief True when this partition was cut along an interposer die boundary.
+    ///        Used by partition_blocks_in_window to apply a higher net-cut weight
+    ///        for interposer cuts, where inter-die wire crossings are scarce.
+    bool is_interposer_cut = false;
 };
 
 /**
@@ -722,6 +727,22 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     /// @brief Per-block timing criticality, updated at the start of each
     ///        legalize() call. Indexed by APBlockId. Values are in [0, 1].
     vtr::vector<APBlockId, float> block_criticality_;
+
+    /// @brief Tradeoff weight for the FM net-cut gain term in the move priority.
+    ///        Blends the existing (timing + proximity) score with the FM gain:
+    ///            priority = (1 - net_cut_tradeoff_) * base + net_cut_tradeoff_ * fm_gain
+    ///        0 = no net-cut awareness (original behaviour), 1 = pure net-cut.
+    float net_cut_tradeoff_ = 0.2f;
+
+    /// @brief Higher net-cut weight applied when the partition line lies on an
+    ///        interposer die boundary (where inter-die wire crossings are scarce).
+    float interposer_net_cut_tradeoff_ = 0.6f;
+
+    /// @brief Number of FM greedy passes run inside partition_blocks_in_window.
+    ///        Currently 1 (single pass). Increase for multi-pass FM to iteratively
+    ///        refine net-cut quality; future passes would also allow net-cut-improving
+    ///        swaps when overfill is already zero.
+    int num_fm_passes_ = 1;
 
     /// @brief The number of times a window was partitioned in the legalizer.
     unsigned num_windows_partitioned_ = 0;

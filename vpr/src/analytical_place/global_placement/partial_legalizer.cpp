@@ -18,6 +18,7 @@
 #include <memory>
 #include <queue>
 #include <stack>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -1714,8 +1715,10 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
 
         // If any interposer boundary falls within this window, return the
         // best-balanced one immediately without evaluating non-boundary cuts.
-        if (best_interposer_score >= 0.0f)
+        if (best_interposer_score >= 0.0f) {
+            best_interposer_partition.is_interposer_cut = true;
             return best_interposer_partition;
+        }
     }
 
     // First, try all of the planar partitions, if any.
@@ -2082,22 +2085,30 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         return;
     }
 
-    // 2) Resolve any overfill by moving blocks over the partition line.
-    // Here, we try to move blocks that are closest to the partition line such
-    // that the overfill on both sides is balanced.
+    // 2) Resolve any overfill by moving blocks over the partition line using a
+    //    greedy FM-style approach. Each pass sorts candidate blocks by a combined
+    //    priority that blends three objectives and moves the highest-priority
+    //    blocks first until overfill is resolved:
+    //      - timing:     prefer displacing non-critical blocks
+    //      - wirelength: prefer displacing blocks close to the partition line
+    //      - net-cut:    prefer displacing blocks whose move reduces cut nets
+    //    The net-cut term uses a Fiduccia-Mattheyses gain estimate:
+    //        +1 for each net where this block is the last block on its current
+    //             side (moving it makes that net uncut)
+    //        -1 for each net where no blocks exist on the destination side yet
+    //             (moving it creates a new cut)
+    //    Gain is normalised by block degree. Net counts are updated incrementally
+    //    after each block move so later evaluations in the same pass see the
+    //    current state.
+    //
+    //    num_fm_passes_ governs how many greedy passes are run (currently 1).
+    //    Raising it enables multi-pass FM: each pass refines the assignment using
+    //    updated net counts from the previous pass.
 
-    // Try to move things from lower to upper greedily, then upper to lower.
-    // Iteration order: highest move_priority first, where
-    //   move_priority = timing_tradeoff_ * (1 - criticality)
-    //                 + (1 - timing_tradeoff_) * proximity_to_pivot
-    // proximity_to_pivot is the block's actual geometric distance to the
-    // partition line, normalised to [0, 1] by the window half-span. This
-    // blends two competing goals:
-    //   - timing:     prefer displacing non-critical blocks
-    //   - wirelength: prefer displacing blocks that are already close to the
-    //                 partition line (moving them costs less wirelength)
-    // When timing_tradeoff_ == 0 the order degrades to distance-only behaviour;
-    // when timing_tradeoff_ == 1 it is purely criticality-based.
+    // Use a higher net-cut weight when the partition falls on an interposer
+    // boundary, where inter-die wire crossings are especially scarce.
+    float net_cut_w = partitioned_window.is_interposer_cut ? interposer_net_cut_tradeoff_
+                                                           : net_cut_tradeoff_;
 
     // Compute the position accessor and the window extents used for normalising
     // proximity. Both are shared by the lower and upper loops below.
@@ -2132,79 +2143,190 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     float lower_span = std::max(static_cast<float>(pivot_pos - lower_far_edge), 1e-6f);
     float upper_span = std::max(static_cast<float>(upper_far_edge - pivot_pos), 1e-6f);
 
-    // Try to move things from lower to upper greedily.
-    std::vector<APBlockId> lower_blocks_to_move;
-    lower_blocks_to_move.reserve(lower_contained_blocks.size());
-    {
-        auto lower_move_priority = [&](size_t idx) -> float {
-            APBlockId blk_id = lower_contained_blocks[idx];
-            float crit = block_criticality_[blk_id];
-            // proximity: 0 at the far edge of the lower window, 1 at the pivot.
-            float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
-            return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
-        };
-        std::vector<size_t> lower_order(pivot);
-        for (size_t k = 0; k < pivot; k++)
-            lower_order[k] = k;
-        std::stable_sort(lower_order.begin(), lower_order.end(),
-                         [&](size_t a, size_t b) {
-                             return lower_move_priority(a) > lower_move_priority(b);
-                         });
-        for (size_t idx : lower_order) {
-            if (lower_window_overfill.is_zero())
-                break;
+    // Per-net side counts for FM gain computation. For each net touching a block
+    // in this window we track how many of those blocks sit on each side.
+    // Rebuilt at the start of each FM pass and updated incrementally on each move.
+    std::unordered_map<APNetId, int> lower_net_count;
+    std::unordered_map<APNetId, int> upper_net_count;
 
-            APBlockId lower_blk = lower_contained_blocks[idx];
-            const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(lower_blk);
-
-            bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                                lower_window_utilization,
-                                                                lower_window_overfill,
-                                                                upper_window_utilization,
-                                                                upper_window_overfill,
-                                                                upper_window_capacity);
-            if (block_was_moved) {
-                lower_blocks_to_move.push_back(lower_blk);
-                lower_contained_blocks[idx] = APBlockId::INVALID();
+    auto build_net_counts = [&]() {
+        lower_net_count.clear();
+        upper_net_count.clear();
+        for (APBlockId blk : lower_contained_blocks) {
+            if (!blk.is_valid()) continue;
+            for (APPinId pin : netlist_.block_pins(blk)) {
+                APNetId net = netlist_.pin_net(pin);
+                if (net.is_valid())
+                    lower_net_count[net]++;
             }
         }
-    }
+        for (APBlockId blk : upper_contained_blocks) {
+            if (!blk.is_valid()) continue;
+            for (APPinId pin : netlist_.block_pins(blk)) {
+                APNetId net = netlist_.pin_net(pin);
+                if (net.is_valid())
+                    upper_net_count[net]++;
+            }
+        }
+    };
 
-    // Try to move things from upper to lower greedily.
+    // FM gain for moving blk from lower → upper (positive = net cut decreases).
+    // For each net n of blk:
+    //   +1 if blk is the last lower-side block on n (n becomes uncut after move).
+    //   -1 if n has no upper-side blocks yet       (n becomes newly cut after move).
+    auto fm_gain_lower_to_upper = [&](APBlockId blk_id) -> float {
+        int gain = 0, degree = 0;
+        for (APPinId pin : netlist_.block_pins(blk_id)) {
+            APNetId net = netlist_.pin_net(pin);
+            if (!net.is_valid()) continue;
+            degree++;
+            auto lc_it = lower_net_count.find(net);
+            auto uc_it = upper_net_count.find(net);
+            int lc = lc_it != lower_net_count.end() ? lc_it->second : 0;
+            int uc = uc_it != upper_net_count.end() ? uc_it->second : 0;
+            if (lc == 1 && uc > 0) gain++;  // net becomes uncut
+            if (lc > 1 && uc == 0) gain--;  // net becomes newly cut
+        }
+        return degree > 0 ? static_cast<float>(gain) / static_cast<float>(degree) : 0.f;
+    };
+
+    // FM gain for moving blk from upper → lower (symmetric).
+    auto fm_gain_upper_to_lower = [&](APBlockId blk_id) -> float {
+        int gain = 0, degree = 0;
+        for (APPinId pin : netlist_.block_pins(blk_id)) {
+            APNetId net = netlist_.pin_net(pin);
+            if (!net.is_valid()) continue;
+            degree++;
+            auto lc_it = lower_net_count.find(net);
+            auto uc_it = upper_net_count.find(net);
+            int lc = lc_it != lower_net_count.end() ? lc_it->second : 0;
+            int uc = uc_it != upper_net_count.end() ? uc_it->second : 0;
+            if (uc == 1 && lc > 0) gain++;  // net becomes uncut
+            if (uc > 1 && lc == 0) gain--;  // net becomes newly cut
+        }
+        return degree > 0 ? static_cast<float>(gain) / static_cast<float>(degree) : 0.f;
+    };
+
+    // Incrementally update net counts when a block is moved across the partition.
+    auto update_net_counts_to_upper = [&](APBlockId blk_id) {
+        for (APPinId pin : netlist_.block_pins(blk_id)) {
+            APNetId net = netlist_.pin_net(pin);
+            if (!net.is_valid()) continue;
+            lower_net_count[net]--;
+            upper_net_count[net]++;
+        }
+    };
+    auto update_net_counts_to_lower = [&](APBlockId blk_id) {
+        for (APPinId pin : netlist_.block_pins(blk_id)) {
+            APNetId net = netlist_.pin_net(pin);
+            if (!net.is_valid()) continue;
+            upper_net_count[net]--;
+            lower_net_count[net]++;
+        }
+    };
+
+    // Moved-block lists are accumulated across all FM passes and consumed by
+    // the window-construction step below.
+    std::vector<APBlockId> lower_blocks_to_move;
+    lower_blocks_to_move.reserve(lower_contained_blocks.size());
     std::vector<APBlockId> upper_blocks_to_move;
     upper_blocks_to_move.reserve(upper_contained_blocks.size());
-    {
-        auto upper_move_priority = [&](size_t idx) -> float {
-            APBlockId blk_id = upper_contained_blocks[idx];
-            float crit = block_criticality_[blk_id];
-            // proximity: 0 at the far edge of the upper window, 1 at the pivot.
-            float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
-            return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
-        };
-        size_t upper_size = upper_contained_blocks.size();
-        std::vector<size_t> upper_order(upper_size);
-        for (size_t k = 0; k < upper_size; k++)
-            upper_order[k] = k;
-        std::stable_sort(upper_order.begin(), upper_order.end(),
-                         [&](size_t a, size_t b) {
-                             return upper_move_priority(a) > upper_move_priority(b);
-                         });
-        for (size_t idx : upper_order) {
-            if (upper_window_overfill.is_zero())
-                break;
 
-            APBlockId upper_blk = upper_contained_blocks[idx];
-            const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(upper_blk);
+    for (int fm_pass = 0; fm_pass < num_fm_passes_; fm_pass++) {
+        // Rebuild net counts from the current block assignments. On pass 0 this
+        // is the initial position-sorted assignment; on subsequent passes it
+        // reflects all moves made so far.
+        build_net_counts();
 
-            bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                                upper_window_utilization,
-                                                                upper_window_overfill,
-                                                                lower_window_utilization,
-                                                                lower_window_overfill,
-                                                                lower_window_capacity);
-            if (block_was_moved) {
-                upper_blocks_to_move.push_back(upper_blk);
-                upper_contained_blocks[idx] = APBlockId::INVALID();
+        // Try to move things from lower to upper greedily.
+        {
+            // Build an index over the blocks still on the lower side.
+            std::vector<size_t> lower_order;
+            lower_order.reserve(lower_contained_blocks.size());
+            for (size_t k = 0; k < lower_contained_blocks.size(); k++) {
+                if (lower_contained_blocks[k].is_valid())
+                    lower_order.push_back(k);
+            }
+
+            auto lower_move_priority = [&](size_t idx) -> float {
+                APBlockId blk_id = lower_contained_blocks[idx];
+                float crit = block_criticality_[blk_id];
+                // proximity: 0 at the far edge of the lower window, 1 at the pivot.
+                float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
+                float base = timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
+                float fm = fm_gain_lower_to_upper(blk_id);
+                return (1.0f - net_cut_w) * base + net_cut_w * fm;
+            };
+
+            std::stable_sort(lower_order.begin(), lower_order.end(),
+                             [&](size_t a, size_t b) {
+                                 return lower_move_priority(a) > lower_move_priority(b);
+                             });
+
+            for (size_t idx : lower_order) {
+                if (lower_window_overfill.is_zero())
+                    break;
+
+                APBlockId lower_blk = lower_contained_blocks[idx];
+                const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(lower_blk);
+
+                bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                                    lower_window_utilization,
+                                                                    lower_window_overfill,
+                                                                    upper_window_utilization,
+                                                                    upper_window_overfill,
+                                                                    upper_window_capacity);
+                if (block_was_moved) {
+                    lower_blocks_to_move.push_back(lower_blk);
+                    lower_contained_blocks[idx] = APBlockId::INVALID();
+                    update_net_counts_to_upper(lower_blk);
+                }
+            }
+        }
+
+        // Try to move things from upper to lower greedily.
+        {
+            // Build an index over the blocks still on the upper side.
+            std::vector<size_t> upper_order;
+            upper_order.reserve(upper_contained_blocks.size());
+            for (size_t k = 0; k < upper_contained_blocks.size(); k++) {
+                if (upper_contained_blocks[k].is_valid())
+                    upper_order.push_back(k);
+            }
+
+            auto upper_move_priority = [&](size_t idx) -> float {
+                APBlockId blk_id = upper_contained_blocks[idx];
+                float crit = block_criticality_[blk_id];
+                // proximity: 0 at the far edge of the upper window, 1 at the pivot.
+                float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
+                float base = timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
+                float fm = fm_gain_upper_to_lower(blk_id);
+                return (1.0f - net_cut_w) * base + net_cut_w * fm;
+            };
+
+            std::stable_sort(upper_order.begin(), upper_order.end(),
+                             [&](size_t a, size_t b) {
+                                 return upper_move_priority(a) > upper_move_priority(b);
+                             });
+
+            for (size_t idx : upper_order) {
+                if (upper_window_overfill.is_zero())
+                    break;
+
+                APBlockId upper_blk = upper_contained_blocks[idx];
+                const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(upper_blk);
+
+                bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                                    upper_window_utilization,
+                                                                    upper_window_overfill,
+                                                                    lower_window_utilization,
+                                                                    lower_window_overfill,
+                                                                    lower_window_capacity);
+                if (block_was_moved) {
+                    upper_blocks_to_move.push_back(upper_blk);
+                    upper_contained_blocks[idx] = APBlockId::INVALID();
+                    update_net_counts_to_lower(upper_blk);
+                }
             }
         }
     }
