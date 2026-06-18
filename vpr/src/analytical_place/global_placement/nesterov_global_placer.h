@@ -1,7 +1,7 @@
 #pragma once
 /**
  * @file
- * @author  VTR Contributors
+ * @author  William Zhang
  * @date    June 2026
  * @brief   Declaration of a Nesterov-style analytical global placer.
  */
@@ -103,6 +103,21 @@ class NesterovGlobalPlacer : public GlobalPlacer {
                                     PlacementGradient* grad) const;
 
     /**
+     * @brief Update smooth wirelength net weights from pre-cluster timing criticalities.
+     */
+    void update_timing_net_weights_();
+
+    /**
+     * @brief Update pre-cluster timing delays and criticalities from a placement.
+     */
+    void update_timing_info_with_placement_(const PartialPlacement& p_placement);
+
+    /**
+     * @brief Estimate one tile of delay for missing delay-model entries.
+     */
+    float delay_per_tile_() const;
+
+    /**
      * @brief Add smooth bin-density value and gradient.
      */
     double add_density_gradient_(const PartialPlacement& p_placement,
@@ -147,12 +162,14 @@ class NesterovGlobalPlacer : public GlobalPlacer {
 
     std::shared_ptr<FlatPlacementDensityManager> density_manager_; ///< Architecture-aware density metadata.
     std::unique_ptr<PartialLegalizer> partial_legalizer_;          ///< Existing partial legalizer used after smooth optimization.
-    PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager; currently used only to detect unsupported timing-driven mode.
+    const AtomNetlist& atom_netlist_;                              ///< Atom netlist used for timing criticality lookup.
+    PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager used to weight smooth wirelength nets.
+    std::shared_ptr<PlaceDelayModel> place_delay_model_;           ///< Delay model used to update timing criticalities.
 
     std::vector<APBlockId> optimizable_blocks_; ///< Movable AP blocks touched by the optimizer.
+    vtr::vector<APNetId, double> net_weights_;  ///< Smooth wirelength weight for each AP net.
     size_t device_grid_width_ = 0;              ///< Width of the placement region.
     size_t device_grid_height_ = 0;             ///< Height of the placement region.
     size_t device_grid_num_layers_ = 0;         ///< Number of device layers.
     float ap_timing_tradeoff_ = 0.f;            ///< User timing tradeoff value.
 };
-

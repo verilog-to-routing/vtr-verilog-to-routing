@@ -1,6 +1,6 @@
 /**
  * @file
- * @author  VTR Contributors
+ * @author  William Zhang
  * @date    June 2026
  * @brief   Implementation of a Nesterov-style analytical global placer.
  */
@@ -18,8 +18,11 @@
 #include "logic_types.h"
 #include "partial_placement.h"
 #include "physical_types.h"
+#include "place_delay_model.h"
 #include "prepack.h"
 #include "primitive_vector.h"
+#include "router_lookahead_constants.h"
+#include "timing_info.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -118,13 +121,14 @@ NesterovGlobalPlacer::NesterovGlobalPlacer(const APNetlist& ap_netlist,
                                            e_ap_partial_legalizer partial_legalizer_type,
                                            int log_verbosity)
     : GlobalPlacer(ap_netlist, log_verbosity)
+    , atom_netlist_(atom_netlist)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+    , place_delay_model_(place_delay_model)
+    , net_weights_(ap_netlist.nets().size(), 1.0)
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
     , ap_timing_tradeoff_(ap_timing_tradeoff) {
-    (void)place_delay_model;
-
     vtr::ScopedStartFinishTimer nesterov_placer_building_timer("Constructing Nesterov Global Placer");
 
     density_manager_ = std::make_shared<FlatPlacementDensityManager>(ap_netlist_,
@@ -191,11 +195,10 @@ PartialPlacement NesterovGlobalPlacer::initialize_placement_() const {
 PartialPlacement NesterovGlobalPlacer::place() {
     vtr::ScopedStartFinishTimer global_placer_time("AP Nesterov Global Placer");
 
-    if (ap_timing_tradeoff_ != 0.f || pre_cluster_timing_manager_.is_valid()) {
-        VTR_LOG_WARN("Nesterov analytical placement MVP ignores timing-driven net weighting; optimizing wirelength and density only.\n");
-    }
-
     PartialPlacement current = initialize_placement_();
+    update_timing_info_with_placement_(current);
+    update_timing_net_weights_();
+
     PartialPlacement y_placement = current;
     PartialPlacement next = current;
     PlacementGradient grad(ap_netlist_);
@@ -310,6 +313,7 @@ double NesterovGlobalPlacer::add_wirelength_gradient_(const PartialPlacement& p_
         if (num_pins < 2)
             continue;
 
+        double net_weight = net_weights_[net_id];
         x_locs.clear();
         y_locs.clear();
         x_locs.reserve(num_pins);
@@ -326,7 +330,7 @@ double NesterovGlobalPlacer::add_wirelength_gradient_(const PartialPlacement& p_
         double log_pos_y = stable_log_sum_exp(y_locs, gamma, false);
         double log_neg_y = stable_log_sum_exp(y_locs, gamma, true);
 
-        smooth_wirelength += gamma * (log_pos_x + log_neg_x + log_pos_y + log_neg_y);
+        smooth_wirelength += net_weight * gamma * (log_pos_x + log_neg_x + log_pos_y + log_neg_y);
 
         if (!grad)
             continue;
@@ -351,14 +355,121 @@ double NesterovGlobalPlacer::add_wirelength_gradient_(const PartialPlacement& p_
                 double neg_x_grad = std::exp(-x_locs[pin_idx] / gamma - log_neg_x) / sum_neg_x;
                 double pos_y_grad = std::exp(y_locs[pin_idx] / gamma - log_pos_y) / sum_pos_y;
                 double neg_y_grad = std::exp(-y_locs[pin_idx] / gamma - log_neg_y) / sum_neg_y;
-                grad->dx[blk_id] += pos_x_grad - neg_x_grad;
-                grad->dy[blk_id] += pos_y_grad - neg_y_grad;
+                grad->dx[blk_id] += net_weight * (pos_x_grad - neg_x_grad);
+                grad->dy[blk_id] += net_weight * (pos_y_grad - neg_y_grad);
             }
             pin_idx++;
         }
     }
 
     return smooth_wirelength;
+}
+
+void NesterovGlobalPlacer::update_timing_net_weights_() {
+    std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
+
+    if (ap_timing_tradeoff_ == 0.f)
+        return;
+
+    if (!pre_cluster_timing_manager_.is_valid()) {
+        VTR_LOG_WARN("Nesterov analytical placement requested timing tradeoff %g, but pre-cluster timing is unavailable; using unit net weights.\n",
+                     ap_timing_tradeoff_);
+        return;
+    }
+
+    double total_weight = 0.;
+    double min_weight = std::numeric_limits<double>::infinity();
+    double max_weight = 0.;
+    size_t weighted_nets = 0;
+
+    for (APNetId net_id : ap_netlist_.nets()) {
+        if (ap_netlist_.net_is_ignored(net_id))
+            continue;
+
+        AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
+        VTR_ASSERT_SAFE(atom_net_id.is_valid());
+
+        double crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
+        double weight = ap_timing_tradeoff_ * crit + (1.0 - ap_timing_tradeoff_);
+        net_weights_[net_id] = weight;
+
+        total_weight += weight;
+        min_weight = std::min(min_weight, weight);
+        max_weight = std::max(max_weight, weight);
+        weighted_nets++;
+    }
+
+    if (log_verbosity_ >= 1 && weighted_nets > 0) {
+        VTR_LOG("Nesterov timing net weights: tradeoff=%g min=%g avg=%g max=%g nets=%zu\n",
+                ap_timing_tradeoff_,
+                min_weight,
+                total_weight / weighted_nets,
+                max_weight,
+                weighted_nets);
+    }
+}
+
+void NesterovGlobalPlacer::update_timing_info_with_placement_(const PartialPlacement& p_placement) {
+    if (ap_timing_tradeoff_ == 0.f || !pre_cluster_timing_manager_.is_valid() || !place_delay_model_)
+        return;
+
+    for (APPinId ap_pin_id : ap_netlist_.pins()) {
+        if (ap_netlist_.pin_type(ap_pin_id) != PinType::SINK)
+            continue;
+
+        APNetId ap_net_id = ap_netlist_.pin_net(ap_pin_id);
+        APBlockId ap_driver_block_id = ap_netlist_.net_driver_block(ap_net_id);
+        APBlockId ap_sink_block_id = ap_netlist_.pin_block(ap_pin_id);
+
+        t_physical_tile_loc driver_block_loc(p_placement.block_x_locs[ap_driver_block_id],
+                                             p_placement.block_y_locs[ap_driver_block_id],
+                                             p_placement.block_layer_nums[ap_driver_block_id]);
+        t_physical_tile_loc sink_block_loc(p_placement.block_x_locs[ap_sink_block_id],
+                                           p_placement.block_y_locs[ap_sink_block_id],
+                                           p_placement.block_layer_nums[ap_sink_block_id]);
+
+        float delay = place_delay_model_->delay(driver_block_loc,
+                                                0,
+                                                sink_block_loc,
+                                                0);
+        if (delay >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
+            int manhattan_dist = std::abs(driver_block_loc.x - sink_block_loc.x)
+                                 + std::abs(driver_block_loc.y - sink_block_loc.y);
+            delay = manhattan_dist * delay_per_tile_();
+        }
+
+        AtomPinId atom_sink_pin_id = ap_netlist_.pin_atom_pin(ap_pin_id);
+        pre_cluster_timing_manager_.set_timing_arc_delay(atom_sink_pin_id, delay);
+    }
+
+    if (pre_cluster_timing_manager_.get_timing_update_type() == e_timing_update_type::INCREMENTAL) {
+        for (tatum::EdgeId edge : pre_cluster_timing_manager_.get_timing_info().timing_graph()->edges()) {
+            pre_cluster_timing_manager_.get_timing_info_ptr()->invalidate_delay(edge);
+        }
+    }
+
+    pre_cluster_timing_manager_.update_timing_info();
+    pre_cluster_timing_manager_.get_timing_info_ptr()->set_warn_unconstrained(false);
+}
+
+float NesterovGlobalPlacer::delay_per_tile_() const {
+    VTR_ASSERT_SAFE(place_delay_model_);
+
+    int cx = static_cast<int>(device_grid_width_) / 2;
+    int cy = static_cast<int>(device_grid_height_) / 2;
+    int tx = std::min<int>(cx + 1, device_grid_width_ - 1);
+    int ty = cy;
+    if (tx == cx)
+        ty = std::min<int>(cy + 1, device_grid_height_ - 1);
+    if (tx == cx && ty == cy)
+        return 0.0f;
+
+    t_physical_tile_loc from_loc(cx, cy, 0);
+    t_physical_tile_loc to_loc(tx, ty, 0);
+    float delay = place_delay_model_->delay(from_loc, 0, to_loc, 0);
+    if (delay >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
+        return 0.0f;
+    return delay;
 }
 
 double NesterovGlobalPlacer::add_density_gradient_(const PartialPlacement& p_placement,
