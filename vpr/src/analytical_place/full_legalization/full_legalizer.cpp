@@ -1300,7 +1300,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
                  prepacker_,
                  pre_cluster_timing_manager_,
                  flat_placement_info,
-                 vpr_setup_.device_width,
+                 vpr_setup_,
                  ram_mapper_);
     }
 
@@ -1384,7 +1384,7 @@ void FullLegalizer::recreate_device_if_needed() {
     // valid after the call.
     bool rr_graph_exists = !device_ctx.rr_graph.empty();
 
-    if (has_fixed_device_size(vpr_setup_.PackerOpts.device_layout, vpr_setup_.device_width)) {
+    if (has_fixed_device_size(vpr_setup_)) {
         // If the device is fixed and the RR graph has not been generated
         // yet, now is the time to generate it. Without this, the RR graph
         // may not be generated in time for placement when timing analysis

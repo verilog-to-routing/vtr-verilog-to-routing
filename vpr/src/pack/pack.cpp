@@ -236,7 +236,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
-              size_t device_width,
+              const t_vpr_setup& vpr_setup,
               const RamMapper& ram_mapper) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -344,7 +344,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                               is_global,
                               pre_cluster_timing_manager,
                               appack_ctx,
-                              device_width);
+                              vpr_setup);
 
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(true);
 
@@ -373,7 +373,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                    block_type_utils,
                                                    packer_opts.target_device_utilization,
                                                    packer_opts.device_layout,
-                                                   device_width);
+                                                   vpr_setup.device_width);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause

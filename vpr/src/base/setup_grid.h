@@ -12,6 +12,7 @@
 #include "physical_types.h"
 
 class DeviceGrid;
+struct t_vpr_setup;
 
 /// @brief Returns aspect ratio from the single auto_layout, or std::nullopt if none
 std::optional<float> get_auto_layout_aspect_ratio(const std::vector<t_grid_def>& grid_layouts);
@@ -20,7 +21,7 @@ std::optional<float> get_auto_layout_aspect_ratio(const std::vector<t_grid_def>&
 size_t compute_auto_layout_height(const std::vector<t_grid_def>& grid_layouts, size_t width);
 
 /// @brief True when device size is fixed (named layout OR auto + device_width > 0)
-bool has_fixed_device_size(const std::string& device_layout, size_t device_width);
+bool has_fixed_device_size(const t_vpr_setup& vpr_setup);
 
 /// @brief Find the device satisfying the specified minimum resources
 /// minimum_instance_counts and target_device_utilization are not required when specifying a fixed layout

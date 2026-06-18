@@ -564,7 +564,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
     //       This would allow us to determine when to (re)build the RR graph in a
     //       more generic and flow-independent way.
     bool is_ap_and_fixed_device = (vpr_setup.APOpts.doAP == e_stage_action::DO)
-                                  && has_fixed_device_size(vpr_setup.PackerOpts.device_layout, vpr_setup.device_width);
+                                  && has_fixed_device_size(vpr_setup);
 
     if (!is_ap_and_fixed_device
         && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH
@@ -749,7 +749,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                vpr_setup.PackerOpts.pack_verbosity,
-                               has_fixed_device_size(vpr_setup.PackerOpts.device_layout, vpr_setup.device_width) /*is_fixed_device*/);
+                               has_fixed_device_size(vpr_setup) /*is_fixed_device*/);
     }
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
@@ -758,7 +758,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
-                    vpr_setup.device_width,
+                    vpr_setup,
                     ram_mapper);
 }
 

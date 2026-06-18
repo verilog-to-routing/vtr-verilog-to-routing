@@ -23,6 +23,7 @@
 
 #include "globals.h"
 #include "setup_grid.h"
+#include "vpr_types.h"
 #include "vtr_expr_eval.h"
 
 #define MAX_SIZE_FACTOR 10000
@@ -88,8 +89,8 @@ size_t compute_auto_layout_height(const std::vector<t_grid_def>& grid_layouts, s
     return 0; // Unreachable
 }
 
-bool has_fixed_device_size(const std::string& device_layout, size_t device_width) {
-    return device_layout != "auto" || device_width > 0;
+bool has_fixed_device_size(const t_vpr_setup& vpr_setup) {
+    return vpr_setup.device_layout != "auto" || vpr_setup.device_width > 0;
 }
 
 ///@brief Create the device grid based on resource requirements

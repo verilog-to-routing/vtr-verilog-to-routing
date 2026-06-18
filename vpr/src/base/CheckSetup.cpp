@@ -38,7 +38,7 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
     }
 
     if (packer_opts.load_flat_placement) {
-        if (!has_fixed_device_size(device_layout, device_width)) {
+        if (!has_fixed_device_size(vpr_setup)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Legalization requires a fixed device layout.\n");
         }

@@ -29,6 +29,7 @@ class t_pack_high_fanout_thresholds;
 struct t_analysis_opts;
 struct t_clustering_data;
 struct t_packer_opts;
+struct t_vpr_setup;
 
 /**
  * @brief A clusterer that generates clusters by greedily choosing the clusters
@@ -96,7 +97,7 @@ class GreedyClusterer {
                     const std::unordered_set<AtomNetId>& is_global,
                     const PreClusterTimingManager& pre_cluster_timing_manager,
                     const APPackContext& appack_ctx,
-                    size_t device_width);
+                    const t_vpr_setup& vpr_setup);
 
     /**
      * @brief Performs clustering on the pack molecules formed by the prepacker.
@@ -224,8 +225,8 @@ class GreedyClusterer {
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;
 
-    /// @brief Fixed grid width when --device_width is set.
-    size_t device_width_;
+    /// @brief The VPR setup options (device layout/width for grid resizing).
+    const t_vpr_setup& vpr_setup_;
 
     /// @brief The analysis options used to configure timing analysis within the
     ///        clusterer.

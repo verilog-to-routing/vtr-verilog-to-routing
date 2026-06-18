@@ -261,7 +261,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                ap_opts.log_verbosity,
-                               has_fixed_device_size(vpr_setup.PackerOpts.device_layout, vpr_setup.device_width) /*is_fixed_device*/);
+                               /*is_fixed_device=*/has_fixed_device_size(vpr_setup));
     }
 
     // Create the ap netlist from the atom netlist using the result from the

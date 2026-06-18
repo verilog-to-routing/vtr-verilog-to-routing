@@ -17,6 +17,7 @@ struct t_arch;
 struct t_lb_type_rr_node;
 struct t_packer_opts;
 struct t_logical_block_type;
+struct t_vpr_setup;
 using t_logical_block_type_ptr = const t_logical_block_type*;
 
 /**
@@ -53,7 +54,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
-              size_t device_width,
+              const t_vpr_setup& vpr_setup,
               const RamMapper& ram_mapper = RamMapper{});
 
 /**
