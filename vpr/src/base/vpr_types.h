@@ -977,14 +977,17 @@ enum class e_place_delta_delay_algorithm {
 
 enum class e_interposer_net_cost_type {
     /// Net cost is delta_x * #vertical_interposer_crossings + delta_y * #horizontal_interposer_crossings.
-    CROSSING_COUNT_DELTA_POS,
+    /// The intuition behind this cost is to bring interposer-crossing nets closer and minimize interposer
+    /// crossings.
+    MINIMIZE_INTERPOSER_CROSSING_BB,
     /// Net cost is |delta_x - vertical_interposer_seg_length| * #vertical_interposer_crossings +
-    /// |delta_y - horizontal_interposer_seg_length| * #horizontal_interposer_crossings.
-    DELTA_POS_SEGMENT_LENGTH,
-    /// Two-stage mode currently using the configured first-stage net cost type.
-    TWO_STAGE_COST_FIRST,
-    /// Two-stage mode currently using the configured second-stage net cost type.
-    TWO_STAGE_COST_SECOND,
+    ///             |delta_y - horizontal_interposer_seg_length| * #horizontal_interposer_crossings.
+    /// The intuition behind this cost is to keep nets that cross an interposer cut
+    /// one interposer segment away to avoid extra intra-die routing.
+    INTERPOSER_WIRE_AWARE_CROSSING_BB,
+    /// Two-stage cost mode. By default starts at MINIMIZE_INTERPOSER_CROSSING_BB and switches to 
+    /// INTERPOSER_WIRE_AWARE_CROSSING_BB mid anneal. 
+    TWO_STAGE
 };
 
 /**
