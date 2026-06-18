@@ -1668,13 +1668,16 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
 
         Direct interconnect example.
 
-.. arch:tag:: <mux name="string" input="string" output="string"/>
+.. arch:tag:: <mux name="string" input="string" output="string" bus="{true|false}"/>
 
     :req_param name: Identifier for the interconnect.
     :req_param input: Pins that are inputs to this interconnect. Different data lines are separated by a space.
     :req_param output: Pins that are outputs of this interconnect.
+    :opt_param bus: Whether this mux selects between multi-bit (bus) data lines.
 
-    This tag supports both single-bit muxes and bus-based muxes. Note that the bit width of each mux input must match the bit width of the mux output.
+        When ``true``, each data line may be a multi-bit bus and the bit width of every mux input must match the bit width of the mux output.
+
+        When ``false`` (the default), every data line and the output must be a single pin.
 
     **Example:**
 
