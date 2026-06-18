@@ -12,7 +12,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
@@ -38,7 +37,6 @@
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_log.h"
-#include "vtr_math.h"
 #include "vtr_prefix_sum.h"
 #include "vtr_strong_id.h"
 #include "vtr_time.h"
@@ -2106,13 +2104,9 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
                                      [&](double value, APBlockId blk_id) {
                                          return value < get_block_pos(blk_id);
                                      });
-    size_t pivot = std::distance(window.contained_blocks.begin(), pivot_it);
-
     // 1) Put everything on the side that they want to be on.
-    std::vector<APBlockId> lower_contained_blocks(window.contained_blocks.begin(),
-                                                  window.contained_blocks.begin() + pivot);
-    std::vector<APBlockId> upper_contained_blocks(window.contained_blocks.begin() + pivot,
-                                                  window.contained_blocks.end());
+    std::vector<APBlockId> lower_contained_blocks(window.contained_blocks.begin(), pivot_it);
+    std::vector<APBlockId> upper_contained_blocks(pivot_it, window.contained_blocks.end());
 
     auto compute_utilization = [&](const std::vector<APBlockId>& blocks) {
         PrimitiveVector utilization;
