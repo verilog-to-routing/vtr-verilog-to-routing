@@ -1963,6 +1963,80 @@ static bool try_move_blk_to_other_window(const PrimitiveVector& blk_mass,
     return true;
 }
 
+/**
+ * @brief Greedily moves blocks from source_blocks into the destination window
+ *        to reduce source_overfill, visiting blocks in descending move_priority
+ *        order.
+ *
+ * Blocks that are moved are appended to blocks_to_move and their slot in
+ * source_blocks is set to APBlockId::INVALID(). The utilization and overfill
+ * vectors for both windows are updated in place; the block positions themselves
+ * are not changed.
+ *
+ *  @param source_blocks
+ *      The blocks currently assigned to the source window. Moved blocks are
+ *      invalidated in place.
+ *  @param source_utilization
+ *      The current utilization of the source window.
+ *  @param source_overfill
+ *      The current overfill of the source window.
+ *  @param dest_utilization
+ *      The current utilization of the destination window.
+ *  @param dest_overfill
+ *      The current overfill of the destination window.
+ *  @param dest_capacity
+ *      The capacity of the destination window.
+ *  @param move_priority
+ *      Callable returning a priority score for a given block. Blocks with
+ *      higher scores are considered for moving first.
+ *  @param mass_calculator
+ *      Used to look up the primitive-vector mass of each block.
+ *  @param blocks_to_move
+ *      Output: blocks that were moved from source to destination are appended
+ *      here.
+ */
+static void greedy_resolve_overfill(
+    std::vector<APBlockId>& source_blocks,
+    PrimitiveVector& source_utilization,
+    PrimitiveVector& source_overfill,
+    PrimitiveVector& dest_utilization,
+    PrimitiveVector& dest_overfill,
+    const PrimitiveVector& dest_capacity,
+    const std::function<float(APBlockId)>& move_priority,
+    const FlatPlacementMassCalculator& mass_calculator,
+    std::vector<APBlockId>& blocks_to_move) {
+
+    blocks_to_move.reserve(source_blocks.size());
+
+    size_t n = source_blocks.size();
+    std::vector<size_t> order(n);
+    for (size_t k = 0; k < n; k++)
+        order[k] = k;
+    std::stable_sort(order.begin(), order.end(),
+                     [&](size_t a, size_t b) {
+                         return move_priority(source_blocks[a]) > move_priority(source_blocks[b]);
+                     });
+
+    for (size_t idx : order) {
+        if (source_overfill.is_zero())
+            break;
+
+        APBlockId blk = source_blocks[idx];
+        const PrimitiveVector& blk_mass = mass_calculator.get_block_mass(blk);
+
+        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                            source_utilization,
+                                                            source_overfill,
+                                                            dest_utilization,
+                                                            dest_overfill,
+                                                            dest_capacity);
+        if (block_was_moved) {
+            blocks_to_move.push_back(blk);
+            source_blocks[idx] = APBlockId::INVALID();
+        }
+    }
+}
+
 void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     SpreadingWindow& window,
     PartitionedWindow& partitioned_window,
@@ -2102,81 +2176,42 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     float upper_span = std::max(static_cast<float>(upper_far_edge - pivot_pos), 1e-6f);
 
     // Try to move things from lower to upper greedily.
+    auto lower_move_priority = [&](APBlockId blk_id) -> float {
+        float crit = block_criticality_[blk_id];
+        // proximity: 0 at the far edge of the lower window, 1 at the pivot.
+        float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
+        return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
+    };
+    const FlatPlacementMassCalculator& mass_calculator = density_manager_->mass_calculator();
+
     std::vector<APBlockId> lower_blocks_to_move;
-    lower_blocks_to_move.reserve(lower_contained_blocks.size());
-    {
-        auto lower_move_priority = [&](size_t idx) -> float {
-            APBlockId blk_id = lower_contained_blocks[idx];
-            float crit = block_criticality_[blk_id];
-            // proximity: 0 at the far edge of the lower window, 1 at the pivot.
-            float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
-            return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
-        };
-        std::vector<size_t> lower_order(pivot);
-        for (size_t k = 0; k < pivot; k++)
-            lower_order[k] = k;
-        std::stable_sort(lower_order.begin(), lower_order.end(),
-                         [&](size_t a, size_t b) {
-                             return lower_move_priority(a) > lower_move_priority(b);
-                         });
-        for (size_t idx : lower_order) {
-            if (lower_window_overfill.is_zero())
-                break;
-
-            APBlockId lower_blk = lower_contained_blocks[idx];
-            const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(lower_blk);
-
-            bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                                lower_window_utilization,
-                                                                lower_window_overfill,
-                                                                upper_window_utilization,
-                                                                upper_window_overfill,
-                                                                upper_window_capacity);
-            if (block_was_moved) {
-                lower_blocks_to_move.push_back(lower_blk);
-                lower_contained_blocks[idx] = APBlockId::INVALID();
-            }
-        }
-    }
+    greedy_resolve_overfill(lower_contained_blocks,
+                            lower_window_utilization,
+                            lower_window_overfill,
+                            upper_window_utilization,
+                            upper_window_overfill,
+                            upper_window_capacity,
+                            lower_move_priority,
+                            mass_calculator,
+                            lower_blocks_to_move);
 
     // Try to move things from upper to lower greedily.
+    auto upper_move_priority = [&](APBlockId blk_id) -> float {
+        float crit = block_criticality_[blk_id];
+        // proximity: 0 at the far edge of the upper window, 1 at the pivot.
+        float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
+        return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
+    };
     std::vector<APBlockId> upper_blocks_to_move;
-    upper_blocks_to_move.reserve(upper_contained_blocks.size());
-    {
-        auto upper_move_priority = [&](size_t idx) -> float {
-            APBlockId blk_id = upper_contained_blocks[idx];
-            float crit = block_criticality_[blk_id];
-            // proximity: 0 at the far edge of the upper window, 1 at the pivot.
-            float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
-            return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
-        };
-        size_t upper_size = upper_contained_blocks.size();
-        std::vector<size_t> upper_order(upper_size);
-        for (size_t k = 0; k < upper_size; k++)
-            upper_order[k] = k;
-        std::stable_sort(upper_order.begin(), upper_order.end(),
-                         [&](size_t a, size_t b) {
-                             return upper_move_priority(a) > upper_move_priority(b);
-                         });
-        for (size_t idx : upper_order) {
-            if (upper_window_overfill.is_zero())
-                break;
-
-            APBlockId upper_blk = upper_contained_blocks[idx];
-            const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(upper_blk);
-
-            bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                                upper_window_utilization,
-                                                                upper_window_overfill,
-                                                                lower_window_utilization,
-                                                                lower_window_overfill,
-                                                                lower_window_capacity);
-            if (block_was_moved) {
-                upper_blocks_to_move.push_back(upper_blk);
-                upper_contained_blocks[idx] = APBlockId::INVALID();
-            }
-        }
-    }
+    greedy_resolve_overfill(upper_contained_blocks,
+                            upper_window_utilization,
+                            upper_window_overfill,
+                            lower_window_utilization,
+                            lower_window_overfill,
+                            lower_window_capacity,
+                            upper_move_priority,
+                            mass_calculator,
+                            upper_blocks_to_move);
 
     // Move the blocks into the windows.
     //  Here we maintain the order the best we can to make future sorts faster.
