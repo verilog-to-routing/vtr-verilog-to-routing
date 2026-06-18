@@ -9,5 +9,6 @@
 %include "common/vpr.common.txt"
 %include "common/vpr.pack.txt"
 %include "common/vpr.place.txt"
+%include "timing/vpr.ap.txt"
 %include "common/vpr.route_min_chan_width.txt"
 %include "common/vpr.route_relaxed_chan_width.txt"
