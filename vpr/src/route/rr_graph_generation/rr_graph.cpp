@@ -1122,7 +1122,7 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                     std::pair<int, int>& cut_bounds = vert_interposer_cut_bounds[layer][cut_idx];
                     cut_bounds.first = std::min(cut_bounds.first, xlow);
                     cut_bounds.second = std::max(cut_bounds.second, xhigh);
-                    
+
                     vert_min_interposer_segment_length_[layer][cut_idx] = std::min(vert_min_interposer_segment_length_[layer][cut_idx], static_cast<uint16_t>(xhigh - xlow));
                 }
             }

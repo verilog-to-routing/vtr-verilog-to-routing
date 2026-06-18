@@ -15,8 +15,8 @@
 #include <vector>
 
 enum class e_interposer_cost_stage {
-  FIRST,
-  SECOND
+    FIRST,
+    SECOND
 };
 
 class InterposerCostHandler {
@@ -95,7 +95,7 @@ class InterposerCostHandler {
     vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
     e_interposer_net_cost_type cost_type_ = e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB;
-    
+
     /// Current stage of interposet net cost when using two-stage cost mode
     e_interposer_cost_stage cost_stage_ = e_interposer_cost_stage::FIRST;
     /// Concrete interposer net cost type used during the first stage of two-stage mode.

@@ -36,7 +36,7 @@ InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
     VTR_ASSERT(interposer_net_cost_change_threshold_ >= 0.);
     VTR_ASSERT(two_stage_interposer_net_cost_first_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
     VTR_ASSERT(two_stage_interposer_net_cost_second_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
-    
+
     VTR_ASSERT(get_net_bb_);
 
     // TODO: the class seems to support multi-layer interposer cuts,
