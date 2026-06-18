@@ -985,8 +985,8 @@ enum class e_interposer_net_cost_type {
     /// The intuition behind this cost is to keep nets that cross an interposer cut
     /// one interposer segment away to avoid extra intra-die routing.
     INTERPOSER_WIRE_AWARE_CROSSING_BB,
-    /// Two-stage cost mode. By default starts at MINIMIZE_INTERPOSER_CROSSING_BB and switches to 
-    /// INTERPOSER_WIRE_AWARE_CROSSING_BB mid anneal. 
+    /// Two-stage cost mode. By default starts at MINIMIZE_INTERPOSER_CROSSING_BB and switches to
+    /// INTERPOSER_WIRE_AWARE_CROSSING_BB mid anneal.
     TWO_STAGE
 };
 
