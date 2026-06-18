@@ -353,6 +353,14 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
 
         draw_state->save_graphics_file_base = "vpr_placement";
 
+    } else if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
+        // Routing has not started during analytical placement, so hide the
+        // routing controls (otherwise the Route button/switch/checkboxes are
+        // visible and interactable before routing commences).
+        app->hide_widget("RoutingMenuButton");
+
+        draw_state->save_graphics_file_base = "vpr_analytical_placement";
+
     } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
         app->show_widget("RoutingMenuButton");
 
