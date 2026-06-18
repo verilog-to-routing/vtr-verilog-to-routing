@@ -2095,6 +2095,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<float>(args.ap_pl_crit_tradeoff, "--ap_pl_crit_tradeoff")
+        .help(
+            "Controls the trade-off between proximity and criticality when the AP partial legalizer selects which blocks to displace.\n"
+            "A value of 0.0 selects blocks purely by proximity to the partition line (minimizing wirelength impact).\n"
+            "A value of 1.0 selects blocks purely by timing criticality (always displacing the least-critical block first).")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
         .help(
             "Defines the threshold for high fanout nets within AP flow.\n"

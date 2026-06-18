@@ -51,7 +51,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
                                                          PreClusterTimingManager& timing_manager,
-                                                         float ap_timing_tradeoff,
+                                                         float ap_pl_crit_tradeoff,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
@@ -69,7 +69,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                                     prepacker,
                                                                     models,
                                                                     timing_manager,
-                                                                    ap_timing_tradeoff,
+                                                                    ap_pl_crit_tradeoff,
                                                                     log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -871,7 +871,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     const Prepacker& prepacker,
     const LogicalModels& models,
     PreClusterTimingManager& timing_manager,
-    float ap_timing_tradeoff,
+    float ap_pl_crit_tradeoff,
     int log_verbosity)
     : PartialLegalizer(netlist, log_verbosity)
     , density_manager_(density_manager)
@@ -881,7 +881,7 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
                    density_manager->mass_calculator().get_dim_manager(),
                    log_verbosity)
     , timing_manager_(timing_manager)
-    , timing_tradeoff_(ap_timing_tradeoff)
+    , pl_crit_tradeoff_(ap_pl_crit_tradeoff)
     , block_criticality_(netlist.blocks().size(), 0.0f) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
@@ -2088,16 +2088,16 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
 
     // Try to move things from lower to upper greedily, then upper to lower.
     // Iteration order: highest move_priority first, where
-    //   move_priority = timing_tradeoff_ * (1 - criticality)
-    //                 + (1 - timing_tradeoff_) * proximity_to_pivot
+    //   move_priority = pl_crit_tradeoff_ * (1 - criticality)
+    //                 + (1 - pl_crit_tradeoff_) * proximity_to_pivot
     // proximity_to_pivot is the block's actual geometric distance to the
     // partition line, normalised to [0, 1] by the window half-span. This
     // blends two competing goals:
     //   - timing:     prefer displacing non-critical blocks
     //   - wirelength: prefer displacing blocks that are already close to the
     //                 partition line (moving them costs less wirelength)
-    // When timing_tradeoff_ == 0 the order degrades to distance-only behaviour;
-    // when timing_tradeoff_ == 1 it is purely criticality-based.
+    // When pl_crit_tradeoff_ == 0 the order degrades to distance-only behaviour;
+    // when pl_crit_tradeoff_ == 1 it is purely criticality-based.
 
     // Compute the position accessor and the window extents used for normalising
     // proximity. Both are shared by the lower and upper loops below.
@@ -2141,7 +2141,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
             float crit = block_criticality_[blk_id];
             // proximity: 0 at the far edge of the lower window, 1 at the pivot.
             float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
-            return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
+            return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
         };
         std::vector<size_t> lower_order(pivot);
         for (size_t k = 0; k < pivot; k++)
@@ -2179,7 +2179,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
             float crit = block_criticality_[blk_id];
             // proximity: 0 at the far edge of the upper window, 1 at the pivot.
             float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
-            return timing_tradeoff_ * (1.0f - crit) + (1.0f - timing_tradeoff_) * proximity;
+            return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
         };
         size_t upper_size = upper_contained_blocks.size();
         std::vector<size_t> upper_order(upper_size);

@@ -44,6 +44,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  PreClusterTimingManager& pre_cluster_timing_manager,
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
+                                                 float ap_pl_crit_tradeoff,
                                                  bool generate_mass_report,
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
@@ -60,6 +61,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                pre_cluster_timing_manager,
                                                place_delay_model,
                                                ap_timing_tradeoff,
+                                               ap_pl_crit_tradeoff,
                                                generate_mass_report,
                                                target_density_arg_strs,
                                                num_threads,
@@ -78,6 +80,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      PreClusterTimingManager& pre_cluster_timing_manager,
                                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                                      float ap_timing_tradeoff,
+                                     float ap_pl_crit_tradeoff,
                                      bool generate_mass_report,
                                      const std::vector<std::string>& target_density_arg_strs,
                                      unsigned num_threads,
@@ -123,7 +126,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                 prepacker,
                                                 models,
                                                 pre_cluster_timing_manager_,
-                                                ap_timing_tradeoff,
+                                                ap_pl_crit_tradeoff,
                                                 log_verbosity_);
 }
 
