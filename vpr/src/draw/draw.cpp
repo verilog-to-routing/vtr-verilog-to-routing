@@ -353,6 +353,14 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
 
         draw_state->save_graphics_file_base = "vpr_placement";
 
+    } else if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
+        // Routing has not started during analytical placement, so hide the
+        // routing controls (otherwise the Route button/switch/checkboxes are
+        // visible and interactable before routing commences).
+        app->hide_widget("RoutingMenuButton");
+
+        draw_state->save_graphics_file_base = "vpr_analytical_placement";
+
     } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
         app->show_widget("RoutingMenuButton");
 
@@ -450,7 +458,17 @@ void update_screen(ScreenUpdatePriority priority,
             // TODO: will this ever be null?
             auto canvas = application->get_canvas(application->get_main_canvas_id());
             if (canvas != nullptr) {
-                canvas->get_camera().set_world(initial_world);
+                // Same coordinate frame: set_world() keeps the user's pan/zoom.
+                // Changed frame (e.g. AP grid space -> tile space): reset_world().
+                // set_world() does not refresh camera::m_initial_world, and the
+                // RHI renderer sizes its geometry cull tile-grid from it; left
+                // stale at the old frame, all geometry is culled (blank canvas,
+                // only the text overlay survives). reset_world() refreshes it.
+                if (initial_world == canvas->get_camera().get_initial_world()) {
+                    canvas->get_camera().set_world(initial_world);
+                } else {
+                    canvas->get_camera().reset_world(initial_world);
+                }
             }
         }
 
