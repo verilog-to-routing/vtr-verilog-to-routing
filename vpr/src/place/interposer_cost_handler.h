@@ -14,6 +14,11 @@
 #include <utility>
 #include <vector>
 
+enum class e_interposer_cost_stage {
+  FIRST,
+  SECOND
+};
+
 class InterposerCostHandler {
   public:
     InterposerCostHandler() = delete;
@@ -53,9 +58,6 @@ class InterposerCostHandler {
     /// @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
     double compute_interposer_est_cong(bool compute_congestion_cost = true);
 
-    /// @brief Selects the formula used for the interposer crossing cost term.
-    void change_net_cost_type(e_interposer_net_cost_type new_type);
-
     /// @brief Try switching to a more detailed interposer net cost model based on recent costs.
     /// @return True if the interposer net cost model was changed.
     bool try_change_interposer_cost_model(double current_cost);
@@ -92,7 +94,10 @@ class InterposerCostHandler {
     /// Per-net interposer congestion cost (and temporary value during move evaluation).
     vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
-    e_interposer_net_cost_type cost_type_ = e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS;
+    e_interposer_net_cost_type cost_type_ = e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB;
+    
+    /// Current stage of interposet net cost when using two-stage cost mode
+    e_interposer_cost_stage cost_stage_ = e_interposer_cost_stage::FIRST;
     /// Concrete interposer net cost type used during the first stage of two-stage mode.
     const e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type_;
     /// Concrete interposer net cost type used during the second stage of two-stage mode.

@@ -93,10 +93,8 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
                         "Cannot have negative interposer net cost change threshold.\n");
     }
 
-    if (placer_opts.two_stage_interposer_net_cost_first_stage_type == e_interposer_net_cost_type::TWO_STAGE_COST_FIRST
-        || placer_opts.two_stage_interposer_net_cost_first_stage_type == e_interposer_net_cost_type::TWO_STAGE_COST_SECOND
-        || placer_opts.two_stage_interposer_net_cost_second_stage_type == e_interposer_net_cost_type::TWO_STAGE_COST_FIRST
-        || placer_opts.two_stage_interposer_net_cost_second_stage_type == e_interposer_net_cost_type::TWO_STAGE_COST_SECOND) {
+    if (placer_opts.two_stage_interposer_net_cost_first_stage_type == e_interposer_net_cost_type::TWO_STAGE
+        || placer_opts.two_stage_interposer_net_cost_second_stage_type == e_interposer_net_cost_type::TWO_STAGE) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Two-stage interposer net cost stage types must be concrete cost models.\n");
     }

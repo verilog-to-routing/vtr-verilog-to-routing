@@ -547,12 +547,11 @@ static void show_placer_opts(const t_placer_opts& placer_opts) {
 
         auto interposer_net_cost_type_to_string = [](e_interposer_net_cost_type cost_type) {
             switch (cost_type) {
-                case e_interposer_net_cost_type::CROSSING_COUNT_DELTA_POS:
-                    return "crossing_count_delta_pos";
-                case e_interposer_net_cost_type::DELTA_POS_SEGMENT_LENGTH:
-                    return "delta_pos_segment_length";
-                case e_interposer_net_cost_type::TWO_STAGE_COST_FIRST:
-                case e_interposer_net_cost_type::TWO_STAGE_COST_SECOND:
+                case e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB:
+                    return "minimize_interposer_crossing_bb";
+                case e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB:
+                    return "interposer_wire_aware_crossing_bb";
+                case e_interposer_net_cost_type::TWO_STAGE:
                     return "two_stage";
                 default:
                     VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown interposer net cost type\n");
@@ -560,7 +559,7 @@ static void show_placer_opts(const t_placer_opts& placer_opts) {
         };
 
         VTR_LOG("placer_opts.interposer_net_cost_type: %s\n", interposer_net_cost_type_to_string(placer_opts.interposer_net_cost_type));
-        if (placer_opts.interposer_net_cost_type == e_interposer_net_cost_type::TWO_STAGE_COST_FIRST) {
+        if (placer_opts.interposer_net_cost_type == e_interposer_net_cost_type::TWO_STAGE) {
             VTR_LOG("placer_opts.two_stage_interposer_net_cost_first_stage_type: %s\n",
                     interposer_net_cost_type_to_string(placer_opts.two_stage_interposer_net_cost_first_stage_type));
             VTR_LOG("placer_opts.two_stage_interposer_net_cost_second_stage_type: %s\n",
