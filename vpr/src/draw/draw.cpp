@@ -450,7 +450,17 @@ void update_screen(ScreenUpdatePriority priority,
             // TODO: will this ever be null?
             auto canvas = application->get_canvas(application->get_main_canvas_id());
             if (canvas != nullptr) {
-                canvas->get_camera().set_world(initial_world);
+                // Same coordinate frame: set_world() keeps the user's pan/zoom.
+                // Changed frame (e.g. AP grid space -> tile space): reset_world().
+                // set_world() does not refresh camera::m_initial_world, and the
+                // RHI renderer sizes its geometry cull tile-grid from it; left
+                // stale at the old frame, all geometry is culled (blank canvas,
+                // only the text overlay survives). reset_world() refreshes it.
+                if (initial_world == canvas->get_camera().get_initial_world()) {
+                    canvas->get_camera().set_world(initial_world);
+                } else {
+                    canvas->get_camera().reset_world(initial_world);
+                }
             }
         }
 
