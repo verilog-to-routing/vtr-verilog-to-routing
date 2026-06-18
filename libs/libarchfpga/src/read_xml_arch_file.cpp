@@ -1847,8 +1847,16 @@ static void process_interconnect(vtr::string_internment& strings,
     for (auto child_name : {"complete", "direct", "mux"}) {
         pugi::xml_node cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
 
+        const bool is_mux = (0 == strcmp(child_name, "mux"));
+
+        // The optional 'bus' attribute is only valid on <mux> tags
+        std::vector<std::string> expected_attributes = {"name", "input", "output"};
+        if (is_mux) {
+            expected_attributes.emplace_back("bus");
+        }
+
         while (cur != nullptr) {
-            expect_only_attributes(cur, {"name", "input", "output"}, loc_data);
+            expect_only_attributes(cur, expected_attributes, loc_data);
             expect_only_children(cur, {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern", "metadata"}, loc_data);
 
             if (0 == strcmp(cur.name(), "complete")) {
@@ -1856,8 +1864,9 @@ static void process_interconnect(vtr::string_internment& strings,
             } else if (0 == strcmp(cur.name(), "direct")) {
                 mode->interconnect[interconnect_idx].type = DIRECT_INTERC;
             } else {
-                VTR_ASSERT(0 == strcmp(cur.name(), "mux"));
+                VTR_ASSERT(is_mux);
                 mode->interconnect[interconnect_idx].type = MUX_INTERC;
+                mode->interconnect[interconnect_idx].bus = get_attribute(cur, "bus", loc_data, ReqOpt::OPTIONAL).as_bool(false);
             }
 
             mode->interconnect[interconnect_idx].line_num = loc_data.line(cur);
