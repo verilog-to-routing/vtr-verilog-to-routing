@@ -40,10 +40,10 @@
 // Constant values used in this file
 static constexpr ezgl::color DEFAULT_RR_NODE_COLOR = ezgl::BLACK;
 static constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-static constexpr int PERPENDICULAR_OFFSET = 8;
+static constexpr int PERPENDICULAR_OFFSET = 13;
 static constexpr int DELAY_TEXT_WIDTH = 40;
 static constexpr int DELAY_TEXT_HEIGHT = 13;
-static constexpr double EDGE_OFFSET_PERCENT = 0.1;
+static constexpr double EDGE_OFFSET_PERCENT = 0.05;
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
@@ -1114,13 +1114,13 @@ void update_crit_path_delay_drawing_info(const tatum::TimingPath& path,
             ezgl::rectangle screen_coords = g->world_to_screen(edge_bbox);
             double edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
             crit_path_delay_drawing_info[edge_idx].edge_length = edge_length;
-            bool too_long_to_draw = DELAY_TEXT_WIDTH > edge_length;
+            //bool too_long_to_draw = DELAY_TEXT_WIDTH > edge_length;
 
             int src_block_layer = get_timing_path_node_layer_num(node);
             int sink_block_layer = get_timing_path_node_layer_num(prev_node);
             t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
 
-            if (too_long_to_draw || !flyline_visibility.visible) {
+            if (!flyline_visibility.visible) {
                 crit_path_delay_drawing_info[edge_idx].skip_delay_text = true;
                 edge_idx++;
                 prev_node = node;
@@ -1206,12 +1206,12 @@ void update_least_cluttering_delay_text_locs(std::vector<CritPathDelayDrawingInf
 
     std::vector<e_delay_text_relative_pos> text_loc_candidates = {e_delay_text_relative_pos::CENTER_BELOW,
                                                                     e_delay_text_relative_pos::LEFT_ABOVE,
-                                                                    e_delay_text_relative_pos::LEFT_BELOW,
                                                                     e_delay_text_relative_pos::RIGHT_ABOVE,
+                                                                    e_delay_text_relative_pos::LEFT_BELOW,
                                                                     e_delay_text_relative_pos::RIGHT_BELOW,
                                                                     e_delay_text_relative_pos::FAR_LEFT_ABOVE,
-                                                                    e_delay_text_relative_pos::FAR_LEFT_BELOW,
                                                                     e_delay_text_relative_pos::FAR_RIGHT_ABOVE,
+                                                                    e_delay_text_relative_pos::FAR_LEFT_BELOW,
                                                                     e_delay_text_relative_pos::FAR_RIGHT_BELOW};
 
     std::vector<std::pair<int, int>> init_num_overlaps_per_edge;
@@ -1282,7 +1282,7 @@ void update_init_num_overlaps_per_edge(std::vector<CritPathDelayDrawingInfo>& cr
             }
             edge_index_to_compare++;
         }
-        init_num_overlaps_per_edge.emplace_back({edge_index, num_of_overlaps});
+        init_num_overlaps_per_edge.push_back({edge_index, num_of_overlaps});
         edge_index++;
     }
 }
