@@ -93,6 +93,12 @@ void CheckSetup(const t_packer_opts& packer_opts,
                             "ap_timing_tradeoff expects a value between 0.0 and 1.0");
         }
 
+        // Make sure that the partial legalizer criticality tradeoff is valid.
+        if (ap_opts.ap_pl_crit_tradeoff < 0.0f || ap_opts.ap_pl_crit_tradeoff > 1.0f) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "ap_pl_crit_tradeoff expects a value between 0.0 and 1.0");
+        }
+
         // Make sure that the high fanout threshold for solver is valid.
         if (ap_opts.ap_high_fanout_threshold <= 1) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,

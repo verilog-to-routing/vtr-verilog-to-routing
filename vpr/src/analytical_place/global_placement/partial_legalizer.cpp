@@ -12,7 +12,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
@@ -21,8 +20,11 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "PreClusterTimingManager.h"
 #include "ap_netlist.h"
+#include "atom_netlist_fwd.h"
 #include "flat_placement_bins.h"
+#include "timing_info.h"
 #include "flat_placement_density_manager.h"
 #include "flat_placement_mass_calculator.h"
 #include "model_grouper.h"
@@ -30,11 +32,11 @@
 #include "prepack.h"
 #include "primitive_dim_manager.h"
 #include "primitive_vector.h"
+#include "globals.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_log.h"
-#include "vtr_math.h"
 #include "vtr_prefix_sum.h"
 #include "vtr_strong_id.h"
 #include "vtr_time.h"
@@ -46,6 +48,8 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
+                                                         PreClusterTimingManager& timing_manager,
+                                                         float ap_pl_crit_tradeoff,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
@@ -62,6 +66,8 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                                     density_manager,
                                                                     prepacker,
                                                                     models,
+                                                                    timing_manager,
+                                                                    ap_pl_crit_tradeoff,
                                                                     log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -862,6 +868,8 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     std::shared_ptr<FlatPlacementDensityManager> density_manager,
     const Prepacker& prepacker,
     const LogicalModels& models,
+    PreClusterTimingManager& timing_manager,
+    float ap_pl_crit_tradeoff,
     int log_verbosity)
     : PartialLegalizer(netlist, log_verbosity)
     , density_manager_(density_manager)
@@ -869,7 +877,10 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
                    models,
                    *density_manager,
                    density_manager->mass_calculator().get_dim_manager(),
-                   log_verbosity) {
+                   log_verbosity)
+    , timing_manager_(timing_manager)
+    , pl_crit_tradeoff_(ap_pl_crit_tradeoff)
+    , block_criticality_(netlist.blocks().size(), 0.0f) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
     capacity_prefix_sum_ = PerPrimitiveDimPrefixSum2D(
@@ -907,6 +918,29 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     num_blocks_partitioned_ = 0;
 }
 
+void BiPartitioningPartialLegalizer::compute_block_criticalities() {
+    // Default to zero (non-critical) for all blocks.
+    std::fill(block_criticality_.begin(), block_criticality_.end(), 0.0f);
+
+    // If timing is not available (e.g. first iteration or timing disabled),
+    // leave all criticalities at zero so the legalizer is fully wirelength-driven.
+    if (!timing_manager_.is_valid())
+        return;
+
+    // The criticality of each block is equal to the max criticality of
+    // any of its pins.
+    const SetupTimingInfo& timing_info = timing_manager_.get_timing_info();
+    for (APBlockId blk_id : netlist_.blocks()) {
+        float max_crit = 0.0f;
+        for (APPinId pin_id : netlist_.block_pins(blk_id)) {
+            AtomPinId atom_pin = netlist_.pin_atom_pin(pin_id);
+            if (atom_pin.is_valid())
+                max_crit = std::max(max_crit, timing_info.setup_pin_criticality(atom_pin));
+        }
+        block_criticality_[blk_id] = max_crit;
+    }
+}
+
 void BiPartitioningPartialLegalizer::print_statistics() {
     VTR_LOG("Bi-Partitioning Partial Legalizer Statistics:\n");
     VTR_LOG("\tTotal number of windows partitioned: %u\n", num_windows_partitioned_);
@@ -915,6 +949,10 @@ void BiPartitioningPartialLegalizer::print_statistics() {
 
 void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     VTR_LOGV(log_verbosity_ >= 10, "Running Bi-Partitioning Legalizer\n");
+
+    // Snapshot timing criticalities from the previous iteration's timing update.
+    // On iteration 0 (or when timing is disabled) all values default to 0.
+    compute_block_criticalities();
 
     // Prepare the density manager.
     density_manager_->import_placement_into_bins(p_placement);
@@ -1576,6 +1614,108 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     float best_score = -1.0f;
     const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
 
+    // If the device has interposer die boundaries, always try to partition
+    // along them first. Even an unbalanced die-boundary cut is preferable to
+    // spreading blocks across an interposer; the recursive partitioner will
+    // re-balance each sub-window on subsequent splits. We pick the most
+    // balanced interposer cut when multiple boundaries fall in the window.
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    if (device_grid.has_interposer_cuts()) {
+        float best_interposer_score = -1.0f;
+        PartitionedWindow best_interposer_partition;
+
+        // Try vertical interposer cuts (die boundaries at constant x).
+        int min_pivot_x = (int)std::floor(window.region.xmin()) + 1;
+        int max_pivot_x = (int)std::ceil(window.region.xmax()) - 1;
+        std::unordered_set<int> vert_cut_xs;
+        for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+            for (int cut_x : device_grid.get_vertical_interposer_cuts()[layer]) {
+                if (cut_x >= min_pivot_x && cut_x <= max_pivot_x)
+                    vert_cut_xs.insert(cut_x);
+            }
+        }
+        for (int pivot_x : vert_cut_xs) {
+            auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                     window.region.ymin()),
+                                                  vtr::Point<double>(pivot_x,
+                                                                     window.region.ymax()));
+            auto upper_region = vtr::Rect<double>(vtr::Point<double>(pivot_x,
+                                                                     window.region.ymin()),
+                                                  vtr::Point<double>(window.region.xmax(),
+                                                                     window.region.ymax()));
+            float lower_window_capacity = 0.0f;
+            float upper_window_capacity = 0.0f;
+            for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+            }
+            lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+            upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+            float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+            float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+            float cut_score = smaller_capacity / larger_capacity;
+            if (cut_score > best_interposer_score) {
+                best_interposer_score = cut_score;
+                best_interposer_partition.partition_dir = e_partition_dir::VERTICAL;
+                best_interposer_partition.pivot_pos = pivot_x;
+                best_interposer_partition.lower_window.region = lower_region;
+                best_interposer_partition.upper_window.region = upper_region;
+                best_interposer_partition.lower_window.layer_low = window.layer_low;
+                best_interposer_partition.lower_window.layer_high = window.layer_high;
+                best_interposer_partition.upper_window.layer_low = window.layer_low;
+                best_interposer_partition.upper_window.layer_high = window.layer_high;
+            }
+        }
+
+        // Try horizontal interposer cuts (die boundaries at constant y).
+        int min_pivot_y = (int)std::floor(window.region.ymin()) + 1;
+        int max_pivot_y = (int)std::ceil(window.region.ymax()) - 1;
+        std::unordered_set<int> horz_cut_ys;
+        for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+            for (int cut_y : device_grid.get_horizontal_interposer_cuts()[layer]) {
+                if (cut_y >= min_pivot_y && cut_y <= max_pivot_y)
+                    horz_cut_ys.insert(cut_y);
+            }
+        }
+        for (int pivot_y : horz_cut_ys) {
+            auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                     window.region.ymin()),
+                                                  vtr::Point<double>(window.region.xmax(),
+                                                                     pivot_y));
+            auto upper_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                     pivot_y),
+                                                  vtr::Point<double>(window.region.xmax(),
+                                                                     window.region.ymax()));
+            float lower_window_capacity = 0.0f;
+            float upper_window_capacity = 0.0f;
+            for (size_t layer = window.layer_low; layer <= window.layer_high; layer++) {
+                lower_window_capacity += capacity_prefix_sum_.get_sum(dims, lower_region, layer).manhattan_norm();
+                upper_window_capacity += capacity_prefix_sum_.get_sum(dims, upper_region, layer).manhattan_norm();
+            }
+            lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+            upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+            float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+            float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+            float cut_score = smaller_capacity / larger_capacity;
+            if (cut_score > best_interposer_score) {
+                best_interposer_score = cut_score;
+                best_interposer_partition.partition_dir = e_partition_dir::HORIZONTAL;
+                best_interposer_partition.pivot_pos = pivot_y;
+                best_interposer_partition.lower_window.region = lower_region;
+                best_interposer_partition.upper_window.region = upper_region;
+                best_interposer_partition.lower_window.layer_low = window.layer_low;
+                best_interposer_partition.lower_window.layer_high = window.layer_high;
+                best_interposer_partition.upper_window.layer_low = window.layer_low;
+                best_interposer_partition.upper_window.layer_high = window.layer_high;
+            }
+        }
+
+        // If any interposer boundary falls within this window, return the
+        // best-balanced one immediately without evaluating non-boundary cuts.
+        if (best_interposer_score >= 0.0f)
+            return best_interposer_partition;
+    }
+
     // First, try all of the planar partitions, if any.
     if (window.layer_high > window.layer_low) {
         for (size_t pivot_layer = window.layer_low; pivot_layer < window.layer_high; pivot_layer++) {
@@ -1821,6 +1961,90 @@ static bool try_move_blk_to_other_window(const PrimitiveVector& blk_mass,
     return true;
 }
 
+/**
+ * @brief Greedily moves blocks from source_blocks into the destination window
+ *        to reduce source_overfill, visiting blocks in descending move_priority
+ *        order.
+ *
+ * Blocks that are moved are appended to blocks_to_move and their slot in
+ * source_blocks is set to APBlockId::INVALID(). The utilization and overfill
+ * vectors for both windows are updated in place; the block positions themselves
+ * are not changed.
+ *
+ *  @param source_blocks
+ *      The blocks currently assigned to the source window. Moved blocks are
+ *      invalidated in place.
+ *  @param source_utilization
+ *      The current utilization of the source window.
+ *  @param source_overfill
+ *      The current overfill of the source window.
+ *  @param dest_utilization
+ *      The current utilization of the destination window.
+ *  @param dest_overfill
+ *      The current overfill of the destination window.
+ *  @param dest_capacity
+ *      The capacity of the destination window.
+ *  @param move_priority
+ *      Callable returning a priority score for a given block. Blocks with
+ *      higher scores are considered for moving first.
+ *  @param mass_calculator
+ *      Used to look up the primitive-vector mass of each block.
+ *  @param blocks_to_move
+ *      Output: blocks that were moved from source to destination are appended
+ *      here.
+ */
+static void greedy_resolve_overfill(
+    std::vector<APBlockId>& source_blocks,
+    PrimitiveVector& source_utilization,
+    PrimitiveVector& source_overfill,
+    PrimitiveVector& dest_utilization,
+    PrimitiveVector& dest_overfill,
+    const PrimitiveVector& dest_capacity,
+    const std::function<float(APBlockId)>& move_priority,
+    const FlatPlacementMassCalculator& mass_calculator,
+    std::vector<APBlockId>& blocks_to_move) {
+
+    blocks_to_move.reserve(source_blocks.size());
+
+    size_t n = source_blocks.size();
+    std::vector<size_t> order(n);
+    for (size_t k = 0; k < n; k++)
+        order[k] = k;
+    std::stable_sort(order.begin(), order.end(),
+                     [&](size_t a, size_t b) {
+                         return move_priority(source_blocks[a]) > move_priority(source_blocks[b]);
+                     });
+
+    for (size_t idx : order) {
+        if (source_overfill.is_zero())
+            break;
+
+        APBlockId blk = source_blocks[idx];
+        const PrimitiveVector& blk_mass = mass_calculator.get_block_mass(blk);
+
+        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                            source_utilization,
+                                                            source_overfill,
+                                                            dest_utilization,
+                                                            dest_overfill,
+                                                            dest_capacity);
+        if (block_was_moved) {
+            blocks_to_move.push_back(blk);
+            source_blocks[idx] = APBlockId::INVALID();
+        }
+    }
+}
+
+PrimitiveVector BiPartitioningPartialLegalizer::compute_window_capacity(
+    const SpreadingWindow& window,
+    PrimitiveGroupId group_id) const {
+    const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
+    PrimitiveVector capacity;
+    for (size_t layer = window.layer_low; layer <= window.layer_high; layer++)
+        capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer);
+    return capacity;
+}
+
 void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     SpreadingWindow& window,
     PartitionedWindow& partitioned_window,
@@ -1829,21 +2053,11 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
 
     SpreadingWindow& lower_window = partitioned_window.lower_window;
     SpreadingWindow& upper_window = partitioned_window.upper_window;
+    const FlatPlacementMassCalculator& mass_calculator = density_manager_->mass_calculator();
 
     // Get the capacity of each window partition.
-    const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
-    PrimitiveVector lower_window_capacity;
-    for (size_t layer = lower_window.layer_low; layer <= lower_window.layer_high; layer++) {
-        lower_window_capacity += capacity_prefix_sum_.get_sum(dims,
-                                                              lower_window.region,
-                                                              layer);
-    }
-    PrimitiveVector upper_window_capacity;
-    for (size_t layer = upper_window.layer_low; layer <= upper_window.layer_high; layer++) {
-        upper_window_capacity += capacity_prefix_sum_.get_sum(dims,
-                                                              upper_window.region,
-                                                              layer);
-    }
+    PrimitiveVector lower_window_capacity = compute_window_capacity(lower_window, group_id);
+    PrimitiveVector upper_window_capacity = compute_window_capacity(upper_window, group_id);
 
     VTR_ASSERT_SAFE(lower_window_capacity.is_non_negative());
     VTR_ASSERT_SAFE(upper_window_capacity.is_non_negative());
@@ -1865,71 +2079,48 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         return;
     }
 
+    // Returns the coordinate that governs which partition side a block falls on.
+    auto get_block_pos = [&](APBlockId blk_id) -> double {
+        switch (partitioned_window.partition_dir) {
+            case e_partition_dir::VERTICAL:
+                return p_placement.block_x_locs[blk_id];
+            case e_partition_dir::HORIZONTAL:
+                return p_placement.block_y_locs[blk_id];
+            default:
+                return p_placement.block_layer_nums[blk_id];
+        }
+    };
+
     // Sort the blocks and get the pivot index. The pivot index is the index in
     // the windows contained block which decides which sub-window the block
     // wants to be in. The blocks at indices [0, pivot) want to be in the lower
     // window, blocks at indices [pivot, num_blks) want to be in the upper window.
     // This want is based on the solved positions of the blocks.
-    size_t pivot;
-    if (partitioned_window.partition_dir == e_partition_dir::VERTICAL) {
-        // Sort the blocks in the window by the x coordinate.
-        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-            return p_placement.block_x_locs[a] < p_placement.block_x_locs[b];
-        });
-        auto upper = std::upper_bound(window.contained_blocks.begin(),
-                                      window.contained_blocks.end(),
-                                      partitioned_window.pivot_pos,
-                                      [&](double value, APBlockId blk_id) {
-                                          return value < p_placement.block_x_locs[blk_id];
-                                      });
-        pivot = std::distance(window.contained_blocks.begin(), upper);
-    } else if (partitioned_window.partition_dir == e_partition_dir::HORIZONTAL) {
-        // Sort the blocks in the window by the y coordinate.
-        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-            return p_placement.block_y_locs[a] < p_placement.block_y_locs[b];
-        });
-        auto upper = std::upper_bound(window.contained_blocks.begin(),
-                                      window.contained_blocks.end(),
-                                      partitioned_window.pivot_pos,
-                                      [&](double value, APBlockId blk_id) {
-                                          return value < p_placement.block_y_locs[blk_id];
-                                      });
-        pivot = std::distance(window.contained_blocks.begin(), upper);
-    } else {
-        VTR_ASSERT(partitioned_window.partition_dir == e_partition_dir::PLANAR);
-        // Sort the blocks in the window by the z coordinate.
-        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-            return p_placement.block_layer_nums[a] < p_placement.block_layer_nums[b];
-        });
-        auto upper = std::upper_bound(window.contained_blocks.begin(),
-                                      window.contained_blocks.end(),
-                                      partitioned_window.pivot_pos,
-                                      [&](double value, APBlockId blk_id) {
-                                          return value < p_placement.block_layer_nums[blk_id];
-                                      });
-        pivot = std::distance(window.contained_blocks.begin(), upper);
-    }
-
+    std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(),
+                     [&](APBlockId a, APBlockId b) { return get_block_pos(a) < get_block_pos(b); });
+    auto pivot_it = std::upper_bound(window.contained_blocks.begin(),
+                                     window.contained_blocks.end(),
+                                     partitioned_window.pivot_pos,
+                                     [&](double value, APBlockId blk_id) {
+                                         return value < get_block_pos(blk_id);
+                                     });
     // 1) Put everything on the side that they want to be on.
-    std::vector<APBlockId> lower_contained_blocks(window.contained_blocks.begin(),
-                                                  window.contained_blocks.begin() + pivot);
-    std::vector<APBlockId> upper_contained_blocks(window.contained_blocks.begin() + pivot,
-                                                  window.contained_blocks.end());
+    std::vector<APBlockId> lower_contained_blocks(window.contained_blocks.begin(), pivot_it);
+    std::vector<APBlockId> upper_contained_blocks(pivot_it, window.contained_blocks.end());
+
+    auto compute_utilization = [&](const std::vector<APBlockId>& blocks) {
+        PrimitiveVector utilization;
+        for (APBlockId blk_id : blocks)
+            utilization += mass_calculator.get_block_mass(blk_id);
+        return utilization;
+    };
 
     // Compute the overfill of each sub-window
-    PrimitiveVector lower_window_utilization;
-    for (APBlockId blk_id : lower_contained_blocks) {
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-        lower_window_utilization += blk_mass;
-    }
+    PrimitiveVector lower_window_utilization = compute_utilization(lower_contained_blocks);
     PrimitiveVector lower_window_overfill = lower_window_utilization - lower_window_capacity;
     lower_window_overfill.relu();
 
-    PrimitiveVector upper_window_utilization;
-    for (APBlockId blk_id : upper_contained_blocks) {
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-        upper_window_utilization += blk_mass;
-    }
+    PrimitiveVector upper_window_utilization = compute_utilization(upper_contained_blocks);
     PrimitiveVector upper_window_overfill = upper_window_utilization - upper_window_capacity;
     upper_window_overfill.relu();
 
@@ -1944,71 +2135,75 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // Here, we try to move blocks that are closest to the partition line such
     // that the overfill on both sides is balanced.
 
-    // Try to move things from lower to upper greedily.
-    std::vector<APBlockId> lower_blocks_to_move;
-    lower_blocks_to_move.reserve(lower_contained_blocks.size());
-    // We start from the blocks closest to the partition line and move away.
-    for (int i = lower_contained_blocks.size() - 1; i >= 0; i--) {
-        // If the lower window has no overfill, there is no reason to move anything.
-        if (lower_window_overfill.is_zero())
+    // Try to move things from lower to upper greedily, then upper to lower.
+    // Iteration order: highest move_priority first, where
+    //   move_priority = pl_crit_tradeoff_ * (1 - criticality)
+    //                 + (1 - pl_crit_tradeoff_) * proximity_to_pivot
+    // proximity_to_pivot is the block's actual geometric distance to the
+    // partition line, normalised to [0, 1] by the window half-span. This
+    // blends two competing goals:
+    //   - timing:     prefer displacing non-critical blocks
+    //   - wirelength: prefer displacing blocks that are already close to the
+    //                 partition line (moving them costs less wirelength)
+    // When pl_crit_tradeoff_ == 0 the order degrades to distance-only behaviour;
+    // when pl_crit_tradeoff_ == 1 it is purely criticality-based.
+
+    double pivot_pos = partitioned_window.pivot_pos;
+    double lower_far_edge, upper_far_edge;
+    switch (partitioned_window.partition_dir) {
+        case e_partition_dir::VERTICAL:
+            lower_far_edge = lower_window.region.xmin();
+            upper_far_edge = upper_window.region.xmax();
             break;
-
-        // Get the mass of this block.
-        APBlockId lower_blk = lower_contained_blocks[i];
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(lower_blk);
-
-        // Using the mass, try to move the block to the other window if it would
-        // improve the imbalance of overfill.
-        // If the block is moved, this will update the window utilizations and
-        // overfills accordingly.
-        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                            lower_window_utilization,
-                                                            lower_window_overfill,
-                                                            upper_window_utilization,
-                                                            upper_window_overfill,
-                                                            upper_window_capacity);
-
-        if (block_was_moved) {
-            // If the block was moved, add this block to the list of blocks to
-            // move and invalidate the block in the current list.
-            // Here, we mark the block as invalid and later we will compress the vector.
-            lower_blocks_to_move.push_back(lower_blk);
-            lower_contained_blocks[i] = APBlockId::INVALID();
-        }
+        case e_partition_dir::HORIZONTAL:
+            lower_far_edge = lower_window.region.ymin();
+            upper_far_edge = upper_window.region.ymax();
+            break;
+        default: // PLANAR
+            lower_far_edge = lower_window.layer_low;
+            upper_far_edge = upper_window.layer_high;
+            break;
     }
+    // Half-span denominators: clamped away from zero to avoid division by zero
+    // when the window collapses to a single coordinate.
+    float lower_span = std::max(static_cast<float>(pivot_pos - lower_far_edge), 1e-6f);
+    float upper_span = std::max(static_cast<float>(upper_far_edge - pivot_pos), 1e-6f);
+
+    // Try to move things from lower to upper greedily.
+    auto lower_move_priority = [&](APBlockId blk_id) -> float {
+        float crit = block_criticality_[blk_id];
+        // proximity: 0 at the far edge of the lower window, 1 at the pivot.
+        float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
+        return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
+    };
+    std::vector<APBlockId> lower_blocks_to_move;
+    greedy_resolve_overfill(lower_contained_blocks,
+                            lower_window_utilization,
+                            lower_window_overfill,
+                            upper_window_utilization,
+                            upper_window_overfill,
+                            upper_window_capacity,
+                            lower_move_priority,
+                            mass_calculator,
+                            lower_blocks_to_move);
 
     // Try to move things from upper to lower greedily.
+    auto upper_move_priority = [&](APBlockId blk_id) -> float {
+        float crit = block_criticality_[blk_id];
+        // proximity: 0 at the far edge of the upper window, 1 at the pivot.
+        float proximity = static_cast<float>(upper_far_edge - get_block_pos(blk_id)) / upper_span;
+        return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
+    };
     std::vector<APBlockId> upper_blocks_to_move;
-    upper_blocks_to_move.reserve(upper_contained_blocks.size());
-    // We start from the blocks closest to the partition line and move away.
-    for (size_t i = 0; i < upper_contained_blocks.size(); i++) {
-        // If the upper window has no overfill, there is no reason to move anything.
-        if (upper_window_overfill.is_zero())
-            break;
-
-        // Get the mass of this block.
-        APBlockId upper_blk = upper_contained_blocks[i];
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(upper_blk);
-
-        // Using the mass, try to move the block to the other window if it would
-        // improve the imbalance of overfill.
-        // If the block is moved, this will update the window utilizations and
-        // overfills accordingly.
-        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
-                                                            upper_window_utilization,
-                                                            upper_window_overfill,
-                                                            lower_window_utilization,
-                                                            lower_window_overfill,
-                                                            lower_window_capacity);
-
-        if (block_was_moved) {
-            // If the block was moved, add this block to the list of blocks to
-            // move and invalidate the block in the current list.
-            // Here, we mark the block as invalid and later we will compress the vector.
-            upper_blocks_to_move.push_back(upper_blk);
-            upper_contained_blocks[i] = APBlockId::INVALID();
-        }
-    }
+    greedy_resolve_overfill(upper_contained_blocks,
+                            upper_window_utilization,
+                            upper_window_overfill,
+                            lower_window_utilization,
+                            lower_window_overfill,
+                            lower_window_capacity,
+                            upper_move_priority,
+                            mass_calculator,
+                            upper_blocks_to_move);
 
     // Move the blocks into the windows.
     //  Here we maintain the order the best we can to make future sorts faster.
