@@ -2037,6 +2037,16 @@ static void greedy_resolve_overfill(
     }
 }
 
+PrimitiveVector BiPartitioningPartialLegalizer::compute_window_capacity(
+    const SpreadingWindow& window,
+    PrimitiveGroupId group_id) const {
+    const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
+    PrimitiveVector capacity;
+    for (size_t layer = window.layer_low; layer <= window.layer_high; layer++)
+        capacity += capacity_prefix_sum_.get_sum(dims, window.region, layer);
+    return capacity;
+}
+
 void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     SpreadingWindow& window,
     PartitionedWindow& partitioned_window,
@@ -2045,21 +2055,11 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
 
     SpreadingWindow& lower_window = partitioned_window.lower_window;
     SpreadingWindow& upper_window = partitioned_window.upper_window;
+    const FlatPlacementMassCalculator& mass_calculator = density_manager_->mass_calculator();
 
     // Get the capacity of each window partition.
-    const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
-    PrimitiveVector lower_window_capacity;
-    for (size_t layer = lower_window.layer_low; layer <= lower_window.layer_high; layer++) {
-        lower_window_capacity += capacity_prefix_sum_.get_sum(dims,
-                                                              lower_window.region,
-                                                              layer);
-    }
-    PrimitiveVector upper_window_capacity;
-    for (size_t layer = upper_window.layer_low; layer <= upper_window.layer_high; layer++) {
-        upper_window_capacity += capacity_prefix_sum_.get_sum(dims,
-                                                              upper_window.region,
-                                                              layer);
-    }
+    PrimitiveVector lower_window_capacity = compute_window_capacity(lower_window, group_id);
+    PrimitiveVector upper_window_capacity = compute_window_capacity(upper_window, group_id);
 
     VTR_ASSERT_SAFE(lower_window_capacity.is_non_negative());
     VTR_ASSERT_SAFE(upper_window_capacity.is_non_negative());
@@ -2117,7 +2117,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     auto compute_utilization = [&](const std::vector<APBlockId>& blocks) {
         PrimitiveVector utilization;
         for (APBlockId blk_id : blocks)
-            utilization += density_manager_->mass_calculator().get_block_mass(blk_id);
+            utilization += mass_calculator.get_block_mass(blk_id);
         return utilization;
     };
 
@@ -2182,8 +2182,6 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         float proximity = static_cast<float>(get_block_pos(blk_id) - lower_far_edge) / lower_span;
         return pl_crit_tradeoff_ * (1.0f - crit) + (1.0f - pl_crit_tradeoff_) * proximity;
     };
-    const FlatPlacementMassCalculator& mass_calculator = density_manager_->mass_calculator();
-
     std::vector<APBlockId> lower_blocks_to_move;
     greedy_resolve_overfill(lower_contained_blocks,
                             lower_window_utilization,

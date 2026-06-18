@@ -673,6 +673,13 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
                                     const PartialPlacement& p_placement);
 
     /**
+     * @brief Computes the total primitive-vector capacity of the given window
+     *        for the given group by summing over all layers it spans.
+     */
+    PrimitiveVector compute_window_capacity(const SpreadingWindow& window,
+                                            PrimitiveGroupId group_id) const;
+
+    /**
      * @brief Move the blocks out of the given windows and put them back into
      *        the correct bin according to the window that contains them.
      */
