@@ -2007,50 +2007,32 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
         return;
     }
 
+    // Returns the coordinate that governs which partition side a block falls on.
+    auto get_block_pos = [&](APBlockId blk_id) -> double {
+        switch (partitioned_window.partition_dir) {
+            case e_partition_dir::VERTICAL:
+                return p_placement.block_x_locs[blk_id];
+            case e_partition_dir::HORIZONTAL:
+                return p_placement.block_y_locs[blk_id];
+            default:
+                return p_placement.block_layer_nums[blk_id];
+        }
+    };
+
     // Sort the blocks and get the pivot index. The pivot index is the index in
     // the windows contained block which decides which sub-window the block
     // wants to be in. The blocks at indices [0, pivot) want to be in the lower
     // window, blocks at indices [pivot, num_blks) want to be in the upper window.
     // This want is based on the solved positions of the blocks.
-    size_t pivot;
-    if (partitioned_window.partition_dir == e_partition_dir::VERTICAL) {
-        // Sort the blocks in the window by the x coordinate.
-        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-            return p_placement.block_x_locs[a] < p_placement.block_x_locs[b];
-        });
-        auto upper = std::upper_bound(window.contained_blocks.begin(),
-                                      window.contained_blocks.end(),
-                                      partitioned_window.pivot_pos,
-                                      [&](double value, APBlockId blk_id) {
-                                          return value < p_placement.block_x_locs[blk_id];
-                                      });
-        pivot = std::distance(window.contained_blocks.begin(), upper);
-    } else if (partitioned_window.partition_dir == e_partition_dir::HORIZONTAL) {
-        // Sort the blocks in the window by the y coordinate.
-        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-            return p_placement.block_y_locs[a] < p_placement.block_y_locs[b];
-        });
-        auto upper = std::upper_bound(window.contained_blocks.begin(),
-                                      window.contained_blocks.end(),
-                                      partitioned_window.pivot_pos,
-                                      [&](double value, APBlockId blk_id) {
-                                          return value < p_placement.block_y_locs[blk_id];
-                                      });
-        pivot = std::distance(window.contained_blocks.begin(), upper);
-    } else {
-        VTR_ASSERT(partitioned_window.partition_dir == e_partition_dir::PLANAR);
-        // Sort the blocks in the window by the z coordinate.
-        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-            return p_placement.block_layer_nums[a] < p_placement.block_layer_nums[b];
-        });
-        auto upper = std::upper_bound(window.contained_blocks.begin(),
-                                      window.contained_blocks.end(),
-                                      partitioned_window.pivot_pos,
-                                      [&](double value, APBlockId blk_id) {
-                                          return value < p_placement.block_layer_nums[blk_id];
-                                      });
-        pivot = std::distance(window.contained_blocks.begin(), upper);
-    }
+    std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(),
+                     [&](APBlockId a, APBlockId b) { return get_block_pos(a) < get_block_pos(b); });
+    auto pivot_it = std::upper_bound(window.contained_blocks.begin(),
+                                     window.contained_blocks.end(),
+                                     partitioned_window.pivot_pos,
+                                     [&](double value, APBlockId blk_id) {
+                                         return value < get_block_pos(blk_id);
+                                     });
+    size_t pivot = std::distance(window.contained_blocks.begin(), pivot_it);
 
     // 1) Put everything on the side that they want to be on.
     std::vector<APBlockId> lower_contained_blocks(window.contained_blocks.begin(),
@@ -2058,20 +2040,19 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     std::vector<APBlockId> upper_contained_blocks(window.contained_blocks.begin() + pivot,
                                                   window.contained_blocks.end());
 
+    auto compute_utilization = [&](const std::vector<APBlockId>& blocks) {
+        PrimitiveVector utilization;
+        for (APBlockId blk_id : blocks)
+            utilization += density_manager_->mass_calculator().get_block_mass(blk_id);
+        return utilization;
+    };
+
     // Compute the overfill of each sub-window
-    PrimitiveVector lower_window_utilization;
-    for (APBlockId blk_id : lower_contained_blocks) {
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-        lower_window_utilization += blk_mass;
-    }
+    PrimitiveVector lower_window_utilization = compute_utilization(lower_contained_blocks);
     PrimitiveVector lower_window_overfill = lower_window_utilization - lower_window_capacity;
     lower_window_overfill.relu();
 
-    PrimitiveVector upper_window_utilization;
-    for (APBlockId blk_id : upper_contained_blocks) {
-        const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-        upper_window_utilization += blk_mass;
-    }
+    PrimitiveVector upper_window_utilization = compute_utilization(upper_contained_blocks);
     PrimitiveVector upper_window_overfill = upper_window_utilization - upper_window_capacity;
     upper_window_overfill.relu();
 
@@ -2099,18 +2080,6 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // When pl_crit_tradeoff_ == 0 the order degrades to distance-only behaviour;
     // when pl_crit_tradeoff_ == 1 it is purely criticality-based.
 
-    // Compute the position accessor and the window extents used for normalising
-    // proximity. Both are shared by the lower and upper loops below.
-    auto get_block_pos = [&](APBlockId blk_id) -> double {
-        switch (partitioned_window.partition_dir) {
-            case e_partition_dir::VERTICAL:
-                return p_placement.block_x_locs[blk_id];
-            case e_partition_dir::HORIZONTAL:
-                return p_placement.block_y_locs[blk_id];
-            default:
-                return p_placement.block_layer_nums[blk_id];
-        }
-    };
     double pivot_pos = partitioned_window.pivot_pos;
     double lower_far_edge, upper_far_edge;
     switch (partitioned_window.partition_dir) {
