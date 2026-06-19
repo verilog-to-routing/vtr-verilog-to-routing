@@ -10,7 +10,6 @@ archs_dir=arch/timing
 
 # Add circuits to list to sweep
 circuit_list_add=diffeq.blif
-circuit_list_add=ex5p.blif
 circuit_list_add=s298.blif
 
 # Add architectures to list to sweep
@@ -25,5 +24,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file= #No pass requirements since we only care about valgrind results
 
-script_params=-valgrind -starting_stage vpr -track_memory_usage
+script_params=-valgrind -starting_stage vpr
 
