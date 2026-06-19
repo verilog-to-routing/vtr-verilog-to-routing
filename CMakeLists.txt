@@ -468,7 +468,7 @@ if (NOT VPR_USE_EZGL STREQUAL "off")
                 break()
             endif()
         endforeach()
-        find_package(Qt6 ${VTR_QT_MIN_VERSION} QUIET COMPONENTS Core Gui Widgets)
+        find_package(Qt6 ${VTR_QT_MIN_VERSION} REQUIRED QUIET COMPONENTS Core Gui Widgets)
     endif()
 endif()
 
