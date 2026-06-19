@@ -14,7 +14,8 @@
 class DeviceGrid;
 struct t_vpr_setup;
 
-/// @brief Returns aspect ratio from the single auto_layout, or std::nullopt if none
+/// @brief Returns aspect ratio from the single auto_layout,
+/// or std::nullopt if there is no <auto_layout> defined for the target architecture
 std::optional<float> get_auto_layout_aspect_ratio(const std::vector<t_grid_def>& grid_layouts);
 
 /// @brief Compute height for a fixed auto-layout width from the architecture aspect ratio
