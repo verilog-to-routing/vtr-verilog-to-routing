@@ -54,6 +54,8 @@
 #include <filesystem>
 #include <string>
 
+#include "vtr_util.h"
+
 #include <QApplication>
 #include <QComboBox>
 #include <QDialog>
@@ -114,7 +116,7 @@ class TmpDir {
     TmpDir() {
         static std::atomic<unsigned> seq{0};
         path_ = fs::temp_directory_path()
-                / ("vpr_gui_t003_" + std::to_string(::getpid()) + "_"
+                / ("vpr_gui_t003_" + std::to_string(vtr::get_pid()) + "_"
                    + std::to_string(seq.fetch_add(1)));
         fs::create_directories(path_);
     }
