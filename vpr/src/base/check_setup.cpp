@@ -32,9 +32,9 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
                         "--device_width is only valid when --device is 'auto'\n");
     }
 
-    if (device_width <= 0 && device_layout == "auto") {
+    if (device_width < 0 && device_layout == "auto") {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "--device_width must be positive when --device is 'auto'\n");
+                        "--device_width must be non-negative when --device is 'auto'\n");
     }
 
     if (packer_opts.load_flat_placement) {
