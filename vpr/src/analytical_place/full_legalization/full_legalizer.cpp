@@ -63,6 +63,42 @@
 #include "draw_global.h"
 #endif
 
+#include "atom_netlist.h"
+#include "timing_info.h"
+
+/**
+ * @brief Compute the timing criticality of each cluster block.
+ *
+ * For each cluster, the criticality is the maximum setup pin criticality of
+ * any atom pin in that cluster. Returns std::nullopt if timing is not
+ * available (e.g. timing is disabled), so callers can skip criticality-based
+ * sorting entirely.
+ */
+static std::optional<vtr::vector<ClusterBlockId, float>> compute_cluster_criticalities(
+    const AtomNetlist& atom_netlist,
+    const PreClusterTimingManager& pre_cluster_timing_manager) {
+    if (!pre_cluster_timing_manager.is_valid())
+        return std::nullopt;
+
+    const ClusteredNetlist& cluster_netlist = g_vpr_ctx.clustering().clb_nlist;
+    vtr::vector<ClusterBlockId, float> cluster_criticalities(cluster_netlist.blocks().size(), 0.0f);
+
+    const SetupTimingInfo& timing_info = pre_cluster_timing_manager.get_timing_info();
+    const auto& atoms_lookup = g_vpr_ctx.clustering().atoms_lookup;
+
+    for (ClusterBlockId cluster_blk_id : cluster_netlist.blocks()) {
+        float max_crit = 0.0f;
+        for (AtomBlockId atom_blk_id : atoms_lookup[cluster_blk_id]) {
+            for (AtomPinId atom_pin : atom_netlist.block_pins(atom_blk_id)) {
+                max_crit = std::max(max_crit, timing_info.setup_pin_criticality(atom_pin));
+            }
+        }
+        cluster_criticalities[cluster_blk_id] = max_crit;
+    }
+
+    return cluster_criticalities;
+}
+
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
@@ -952,6 +988,11 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
         }
     }
 
+    // Compute per-cluster timing criticalities from the pre-cluster timing
+    // info so the initial placer can give critical clusters first dibs.
+    std::optional<vtr::vector<ClusterBlockId, float>> cluster_criticalities = compute_cluster_criticalities(
+        atom_netlist_, pre_cluster_timing_manager_);
+
     // Run the initial placer on the clusters created.
     // TODO: Currently, the way initial placer sorts the blocks to place is aligned
     //       how self clustering passes the clusters created, so there is no need to explicitly
@@ -965,7 +1006,8 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
                       *g_vpr_ctx.placement().place_macros,
                       noc_cost_handler,
                       flat_placement_info,
-                      rng);
+                      rng,
+                      cluster_criticalities);
 
     // Log some information on how good the reconstruction was.
     log_flat_placement_reconstruction_info(flat_placement_info,
@@ -1328,6 +1370,11 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Create the RNG container for the initial placer.
     vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
 
+    // Compute per-cluster timing criticalities from the pre-cluster timing
+    // info so the initial placer can give critical clusters first dibs.
+    std::optional<vtr::vector<ClusterBlockId, float>> cluster_criticalities = compute_cluster_criticalities(
+        atom_netlist_, pre_cluster_timing_manager_);
+
     // Run the initial placer on the clusters created by the packer, using the
     // flat placement information from the global placer to guide where to place
     // the clusters.
@@ -1338,7 +1385,8 @@ void APPack::legalize(const PartialPlacement& p_placement) {
                       *g_vpr_ctx.placement().place_macros,
                       noc_cost_handler,
                       flat_placement_info,
-                      rng);
+                      rng,
+                      cluster_criticalities);
 
     // Log some information on how good the reconstruction was.
     log_flat_placement_reconstruction_info(flat_placement_info,

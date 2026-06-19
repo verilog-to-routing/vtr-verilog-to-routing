@@ -1663,15 +1663,20 @@ static void print_ap_initial_placer_status(unsigned iteration,
  *        be placed first appear early in the list.
  *
  * The clusters are sorted based on how many clusters are in the macro that
- * contains this cluster and the standard deviation of the placement of atoms
- * within the cluster. Large macros with low standard deviation will be placed
+ * contains this cluster, the standard deviation of the placement of atoms
+ * within the cluster, and (optionally) the timing criticality of the cluster.
+ * Large macros with low standard deviation and high criticality will be placed
  * first.
+ *
+ *  @param cluster_criticalities  Optional per-cluster timing criticality in
+ *         [0, 1]. Pass nullptr to omit criticality from the sort key.
  */
 static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
     BlkLocRegistry& blk_loc_registry,
     const PlaceMacros& place_macros,
     const ClusteredNetlist& cluster_netlist,
-    const FlatPlacementInfo& flat_placement_info) {
+    const FlatPlacementInfo& flat_placement_info,
+    const std::optional<vtr::vector<ClusterBlockId, float>>& cluster_criticalities) {
 
     const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
 
@@ -1694,6 +1699,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
     // earlier in the list will get first dibs on where to be placed.
     constexpr float macro_size_weight = 1.0f;
     constexpr float std_dev_weight = 4.0f;
+    constexpr float criticality_weight = 1.0f;
     vtr::vector<ClusterBlockId, float> cluster_score(cluster_netlist.blocks().size(), 0.0f);
     vtr::vector<ClusterBlockId, float> cluster_constr_area(cluster_netlist.blocks().size(), std::numeric_limits<float>::max());
     for (ClusterBlockId blk_id : cluster_netlist.blocks()) {
@@ -1715,14 +1721,22 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // Normalize the macro size to be a number between 0 and 1.
         float normalized_macro_size = macro_size / static_cast<float>(max_macro_size);
 
+        // Get the timing criticality of this cluster. Clusters with higher
+        // criticality should be placed first so they have better access to
+        // their preferred locations and the critical path is optimized.
+        float criticality = cluster_criticalities.has_value() ? (*cluster_criticalities)[blk_id] : 0.0f;
+
         // Compute the cost. Clusters with a higher cost will be placed first.
         // Cost is proportional to macro size since larger macros are more
         // challenging to place and should be placed earlier if possible.
         // Cost is inversly proportional to standard deviation, since clusters
         // that contain atoms that all want to be within the same cluster
         // should be placed first.
+        // Cost is proportional to criticality since clusters on the critical
+        // path benefit most from being placed near their preferred location.
         cluster_score[blk_id] = (macro_size_weight * normalized_macro_size)
-                                + (std_dev_weight * (1.0f - normalized_std_dev));
+                                + (std_dev_weight * (1.0f - normalized_std_dev))
+                                + (criticality_weight * criticality);
 
         // If the cluster is constrained, compute how much area its constrained
         // region takes up. This will be used to place "more constrained" blocks
@@ -1922,7 +1936,8 @@ static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
 static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                        BlkLocRegistry& blk_loc_registry,
                                        const PlaceMacros& place_macros,
-                                       const FlatPlacementInfo& flat_placement_info) {
+                                       const FlatPlacementInfo& flat_placement_info,
+                                       const std::optional<vtr::vector<ClusterBlockId, float>>& cluster_criticalities) {
 
     const ClusteredNetlist& cluster_netlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -1931,7 +1946,8 @@ static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
     std::vector<ClusterBlockId> sorted_cluster_list = get_sorted_clusters_to_place(blk_loc_registry,
                                                                                    place_macros,
                                                                                    cluster_netlist,
-                                                                                   flat_placement_info);
+                                                                                   flat_placement_info,
+                                                                                   cluster_criticalities);
 
     // 1: Get the constrained clusters and place them first. For now, we place
     //    constrained clusters first to prevent other clusters from taking their
@@ -2036,7 +2052,8 @@ void initial_placement(const t_placer_opts& placer_opts,
                        const PlaceMacros& place_macros,
                        std::optional<NocCostHandler>& noc_cost_handler,
                        const FlatPlacementInfo& flat_placement_info,
-                       vtr::RngContainer& rng) {
+                       vtr::RngContainer& rng,
+                       const std::optional<vtr::vector<ClusterBlockId, float>>& cluster_criticalities) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     // Initialize the block loc registry.
@@ -2069,7 +2086,8 @@ void initial_placement(const t_placer_opts& placer_opts,
             all_blocks_placed = place_all_blocks_ap(placer_opts.pad_loc_type,
                                                     blk_loc_registry,
                                                     place_macros,
-                                                    flat_placement_info);
+                                                    flat_placement_info,
+                                                    cluster_criticalities);
 
             // If AP failed to place all of the blocks, reset the placement solution
             // so we can fall back on the original initial placement algorithm.
