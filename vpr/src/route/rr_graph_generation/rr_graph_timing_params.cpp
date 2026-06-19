@@ -158,7 +158,7 @@ void add_rr_graph_C_from_switches() {
              */
             int iseg_low_start_idx = iseg_low - 1;
             if (iseg_low == 0) {
-              iseg_low_start_idx = iseg_low;
+                iseg_low_start_idx = iseg_low;
             }
             for (isblock = iseg_low_start_idx; isblock <= iseg_high; isblock++) {
                 rr_node_C[inode] += buffer_Cin[isblock]; /* Biggest buf Cin at loc */
