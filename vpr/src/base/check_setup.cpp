@@ -1,5 +1,5 @@
 
-#include "CheckSetup.h"
+#include "check_setup.h"
 
 #include "vtr_log.h"
 #include "vpr_types.h"

@@ -51,7 +51,7 @@
 #include "setup_vpr.h"
 #include "show_setup.h"
 #include "CheckArch.h"
-#include "CheckSetup.h"
+#include "check_setup.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "route.h"
