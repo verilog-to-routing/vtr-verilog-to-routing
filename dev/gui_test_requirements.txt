@@ -7,5 +7,5 @@
 # Python 3.12 wheels on PyPI, so they install without a source build.
 numpy==1.26.4
 scikit-image==0.22.0
-Pillow==10.2.0
+Pillow==12.2.0
 gcovr==7.0
