@@ -881,7 +881,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             // get the bbox for this child
             const ezgl::rectangle& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
-            ezgl::renderer* g = application.get_renderer();
+            ezgl::renderer* g = application->get_renderer();
             // If child block is being used, check if it intersects. Check also if it is visible (drawn) on screen,
             // because otherwise it would be unavailable for selection.
             if (child_pb->name != nullptr && bbox.contains(local_pt) && large_enough_to_draw(bbox, g)) {
