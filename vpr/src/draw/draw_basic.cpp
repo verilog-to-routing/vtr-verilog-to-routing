@@ -1204,9 +1204,9 @@ void update_text_bbox_from_relative_pos(CritPathDelayDrawingInfo& delay_drawing_
 
 void update_least_cluttering_delay_text_locs(std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info) {
 
-    std::vector<e_delay_text_relative_pos> text_loc_candidates = {e_delay_text_relative_pos::CENTER_BELOW,
-                                                                    e_delay_text_relative_pos::LEFT_ABOVE,
+    std::vector<e_delay_text_relative_pos> text_loc_candidates = {e_delay_text_relative_pos::LEFT_ABOVE,
                                                                     e_delay_text_relative_pos::RIGHT_ABOVE,
+                                                                    e_delay_text_relative_pos::CENTER_BELOW,
                                                                     e_delay_text_relative_pos::LEFT_BELOW,
                                                                     e_delay_text_relative_pos::RIGHT_BELOW,
                                                                     e_delay_text_relative_pos::FAR_LEFT_ABOVE,
