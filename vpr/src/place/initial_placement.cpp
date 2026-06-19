@@ -1699,7 +1699,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
     // earlier in the list will get first dibs on where to be placed.
     constexpr float macro_size_weight = 1.0f;
     constexpr float std_dev_weight = 4.0f;
-    constexpr float criticality_weight = 1.0f;
+    constexpr float criticality_weight = 4.0f;
     vtr::vector<ClusterBlockId, float> cluster_score(cluster_netlist.blocks().size(), 0.0f);
     vtr::vector<ClusterBlockId, float> cluster_constr_area(cluster_netlist.blocks().size(), std::numeric_limits<float>::max());
     for (ClusterBlockId blk_id : cluster_netlist.blocks()) {
