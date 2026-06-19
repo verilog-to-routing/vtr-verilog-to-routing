@@ -19,7 +19,7 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
     const t_det_routing_arch& routing_arch = vpr_setup.RoutingArch;
     const std::vector<t_segment_inf>& segments = vpr_setup.Segments;
     const t_timing_inf& timing = vpr_setup.Timing;
-    const size_t device_width = vpr_setup.device_width;
+    const int device_width = vpr_setup.device_width;
     const std::string& device_layout = vpr_setup.device_layout;
 
     if (!timing.timing_analysis_enabled && packer_opts.timing_driven) {

@@ -405,9 +405,9 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
             }
         }
 
-        if (vpr_setup.device_width > 0 && width != vpr_setup.device_width) {
+        if (vpr_setup.device_width > 0 && width != static_cast<size_t>(vpr_setup.device_width)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Fixed device width %zu (from --device_width) does not match "
+                            "Fixed device width %d (from --device_width) does not match "
                             "the RR graph grid width %zu.",
                             vpr_setup.device_width, width);
         }
@@ -432,7 +432,7 @@ DeviceSizeEstimator::DeviceSizeEstimator(t_vpr_setup& vpr_setup,
     VTR_ASSERT(device_layout == "auto");
 
     if (vpr_setup.device_width > 0) {
-        VTR_LOG("Device layout 'auto' with fixed width %zu.\n", vpr_setup.device_width);
+        VTR_LOG("Device layout 'auto' with fixed width %d.\n", vpr_setup.device_width);
         device_ctx.grid = create_device_grid(device_layout, arch.grid_layouts,
                                              {}, packer_opts.target_device_utilization,
                                              vpr_setup.device_width);

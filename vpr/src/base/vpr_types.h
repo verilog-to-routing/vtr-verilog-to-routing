@@ -1632,7 +1632,7 @@ struct t_vpr_setup {
     t_power_opts PowerOpts;
     std::string device_layout;
     /// When > 0 and device_layout is "auto", use this fixed grid width and a height calculated from the auto layout's aspect ratio.
-    size_t device_width = 0;
+    int device_width = 0;
     e_constant_net_method constant_net_method; ///<How constant nets should be handled
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
