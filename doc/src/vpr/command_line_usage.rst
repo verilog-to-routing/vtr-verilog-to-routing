@@ -173,9 +173,24 @@ Graphics Options
     * set_macros <int>
          Sets the placement macro drawing state
     * set_nets <int>
-         Sets the net drawing state
+         Sets the net drawing state.
+         ``0`` = nets off,
+         ``1`` = flylines (direct source-to-sink lines),
+         ``2`` = routed nets (actual routed wire paths).
     * set_cpd <int>
-         Sets the criticla path delay drawing state
+         Sets the critical path delay drawing state.
+         Bitmask: ``0`` = off,
+         bit 0 (``1``) = flylines along the critical path,
+         bit 1 (``2``) = per-edge delay labels,
+         bit 2 (``4``) = routed-wire highlight along the critical path.
+         Useful values: ``1`` = flylines, ``3`` = flylines + delays,
+         ``4`` = routing only, ``5`` = flylines + routing,
+         ``7`` = flylines + delays + routing.
+         Values ``2`` and ``6`` are degenerate (no-ops): delay labels are
+         drawn alongside flylines, so the delay bit on its own renders
+         nothing.
+         Bit 2 (routing) only renders at the routing stage; gate with
+         ``wait_for_stage routing_done``.
     * set_routing_util <int>
          Sets the routing utilization drawing state
     * set_clip_routing_util <int>
@@ -189,7 +204,31 @@ Graphics Options
     * set_draw_net_max_fanout <int>
          Sets the maximum fanout for nets to be drawn (if fanout is beyond this value the net will not be drawn)
     * set_congestion <int>
-         Sets the routing congestion drawing state
+         Sets the routing congestion drawing state.
+         ``0`` = off, ``1`` = congested nodes, ``2`` = congested nodes + nets.
+         Only renders when invoked at the routing stage.
+    * wait_for_stage <stage>_<initial|done>
+         Pauses script execution until VPR reaches the named stage at the
+         requested checkpoint. Stages: ``placement``, ``routing``.
+
+         - ``<stage>_initial`` resumes on the *first* ``update_screen()``
+           call at that stage. Per-iteration state is mid-flight, but
+           anything that only needs already-settled inputs to that stage
+           (e.g. flylines based on netlist topology, route trees from the
+           first routing iteration) is available.
+         - ``<stage>_done`` resumes on the *post*-stage ``update_screen()``
+           checkpoint, where the underlying contexts (``place_ctx``,
+           ``route_ctx``) are fully settled. Required for any renderer that
+           depends on final per-stage output — e.g. ``set_congestion`` /
+           ``set_routing_util`` (need final occupancy data) or visual
+           regression goldens.
+
+         Commands placed after the barrier run on the matching checkpoint.
+         Examples::
+
+             wait_for_stage placement_done; save_graphics place.png;
+             wait_for_stage routing_initial; set_nets 2; save_graphics nets.png;
+             wait_for_stage routing_done; set_congestion 1; save_graphics cong.png;
     * exit <int>
          Exits VPR with specified exit code
 
@@ -1616,6 +1655,9 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do not converge well in routing unless fan-out choke points are discovered and optimized for during net routing.
     Enabling this option improves router convergence for such architectures.
 
+    .. note::
+        This option only affects routing when the flat router (:option:`--flat_routing` on) is used.
+
     **Default:** ``on``
 
 .. option:: --max_router_iterations <int>
@@ -1640,10 +1682,9 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --initial_pres_fac <float>
 
-    Sets the starting value of the present overuse penalty factor.
+    Sets the present overuse factor for the second routing iteration.
 
     *Speed-quality trade-off:* increasing this number speeds up the router, at the cost of some increase in final track count.
-    Values of 1000 or so are perfectly reasonable.
 
     **Default:** ``0.5``
 

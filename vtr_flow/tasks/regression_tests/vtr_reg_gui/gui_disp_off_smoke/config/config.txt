@@ -1,0 +1,43 @@
+##############################################
+# Configuration for vtr_reg_gui / gui_disp_off_smoke
+#
+# Purpose
+# -------
+# End-to-end VPR flow under offscreen Qt with --disp off and no
+# graphics_commands. This is the lowest-friction member of the
+# vtr_reg_gui suite — it proves that pulling VPR through the full
+# pack/place/route flow does not regress when the Qt-built binary
+# is the one running. If this task fails, no other vtr_reg_gui
+# task can be trusted.
+#
+# R7 mitigation
+# -------------
+# script_params_common pins -start vpr so VPR consumes the
+# pre-prepared .blif directly and the macOS parmys link failure
+# (DEF-008 / Risk R7 in the test plan) does not gate this suite.
+#
+# Offscreen Qt
+# ------------
+# The user is expected to export QT_QPA_PLATFORM=offscreen before
+# running ./run_reg_test.py vtr_reg_gui. S0 §S0.2 verified the env
+# var propagates through run_vtr_flow.py into the Qt loader; the
+# task framework inherits the parent shell environment.
+##############################################
+
+circuits_dir=benchmarks/microbenchmarks
+archs_dir=arch/timing
+
+circuit_list_add=mult_4x4.blif
+
+arch_list_add=k6_N10_40nm.xml
+
+parse_file=vpr_standard.txt
+qor_parse_file=qor_standard.txt
+pass_requirements_file=pass_requirements.txt
+
+# -start vpr : skip parmys/odin (Risk R7)
+# -track_memory_usage false : DEF-006 belt-and-braces; gtime is preferred
+#                          on macOS but disabling avoids any host that
+#                          lacks GNU time entirely.
+# --disp off : DEF-008 — --disp on hangs under offscreen QPA.
+script_params_common=-start vpr -track_memory_usage false --pack --place --route --disp off
