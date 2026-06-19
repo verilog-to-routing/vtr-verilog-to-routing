@@ -312,6 +312,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
              &vpr_setup->GraphicsCommands,
+             &vpr_setup->RendererType,
              &vpr_setup->PowerOpts,
              vpr_setup);
 
@@ -521,6 +522,17 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     // This call also reinitializes graphics state and re-sizes draw arrays in case the AP flow
     // changed the device dimensions during full legalization.
     vpr_init_graphics(vpr_setup, arch, is_flat);
+
+    // Re-run init_draw_coords() now that the graphics state (show_graphics,
+    // save_graphics, graphics_commands) is fully configured. The call inside
+    // vpr_create_device() fired before vpr_init_graphics() set those flags,
+    // so it always hit the early-return and left initial_world at zero. This
+    // second call populates tile_x/tile_y and sets initial_world correctly,
+    // which save_graphics needs to compute valid image dimensions.
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
+        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
+                         g_vpr_ctx.placement().blk_loc_registry());
+    }
 
     vpr_init_server(vpr_setup);
 
@@ -995,6 +1007,13 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
                   "Aborting program.\n",
                   num_errors);
     }
+
+    // Mirror the post-place barrier emitted by placement_log_printer when the
+    // placer ran (DO mode): scripted `wait_for_stage placement_done` callers
+    // need the same checkpoint under --analysis / --route LOAD paths.
+    notify_stage_complete(e_pic_type::PLACEMENT);
+    update_screen(ScreenUpdatePriority::MAJOR, "Placement loaded",
+                  e_pic_type::PLACEMENT, nullptr);
 }
 
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
@@ -1124,7 +1143,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             print_switch_usage();
         }
 
-        // Update interactive graphics
+        // Update interactive graphics. Mark routing as complete first so that
+        // scripted graphics_commands using `wait_for_stage routing_done` will
+        // resume at this fully-settled checkpoint rather than per-iteration
+        // routing-stage updates where route_ctx is mid-flight.
+        notify_stage_complete(e_pic_type::ROUTING);
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), e_pic_type::ROUTING, timing_info);
     }
 
@@ -1285,7 +1308,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, is_flat);
+                        vpr_setup.GraphicsCommands, vpr_setup.RendererType, is_flat);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
@@ -1297,7 +1320,6 @@ void vpr_init_server(const t_vpr_setup& vpr_setup) {
         server::GateIO& gate_io = g_vpr_ctx.mutable_server().gate_io;
         if (!gate_io.is_running()) {
             gate_io.start(vpr_setup.ServerOpts.port_num);
-            g_timeout_add(/*interval_ms*/ 100, server::update, &application);
         }
     }
 #else
@@ -1435,6 +1457,7 @@ void vpr_setup_vpr(t_options* Options,
                    int* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
+                   std::string* RendererType,
                    t_power_opts* PowerOpts,
                    t_vpr_setup* vpr_setup) {
     SetupVPR(Options,
@@ -1459,6 +1482,7 @@ void vpr_setup_vpr(t_options* Options,
              GraphPause,
              SaveGraphics,
              GraphicsCommands,
+             RendererType,
              PowerOpts,
              vpr_setup);
 }

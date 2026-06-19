@@ -90,14 +90,4 @@ void load_block_names(ezgl::application* app);
  */
 void load_net_names(ezgl::application* app);
 
-/**
- * @brief Hides widget with given name; name is id string created in Glade
- */
-void hide_widget(std::string widgetName, ezgl::application* app);
-
-/**
- * @brief Shows widget with given name; name is id string created in Glade
- */
-void show_widget(std::string widgetName, ezgl::application* app);
-
 #endif /* NO_GRAPHICS */

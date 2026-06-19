@@ -29,9 +29,14 @@ sudo dnf install --refresh -y \
     swig
 
 # Required for graphics
+# GL/EGL/xkb runtime that the Qt6 GUI links against; the Qt6 SDK itself is
+# provisioned separately by dev/ensure_qt6_sdk.sh.
 sudo dnf install --refresh -y \
-    gtk3-devel \
-    libX11
+    libxkbcommon-devel \
+    mesa-libGL-devel \
+    mesa-libEGL-devel \
+    libglvnd-opengl \
+    mesa-dri-drivers
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
 sudo dnf install --refresh -y \
