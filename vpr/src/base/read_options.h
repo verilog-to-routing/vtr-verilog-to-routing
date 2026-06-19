@@ -64,6 +64,7 @@ struct t_options {
     argparse::ArgValue<int> GraphPause;
     argparse::ArgValue<bool> save_graphics;
     argparse::ArgValue<std::string> graphics_commands;
+    argparse::ArgValue<std::string> graphics_renderer;
 
     // General options
     argparse::ArgValue<bool> show_help;

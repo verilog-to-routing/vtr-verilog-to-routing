@@ -26,6 +26,10 @@ RUN apt-get update -qq \
 # Cleanup
     && apt-get autoclean && apt-get clean && apt-get -y autoremove \
     && rm -rf /var/lib/apt/lists/*
+# Provision the Qt6 SDK exactly like CI: dev/ensure_qt6_sdk.sh installs it
+# (no sudo) into the repo-local prefix, which CMake auto-detects — so no
+# CMAKE_PREFIX_PATH is needed.
+RUN bash dev/ensure_qt6_sdk.sh
 # Build VTR
 RUN rm -rf build && make -j$(nproc) && make install
 # Container's default launch command

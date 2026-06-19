@@ -1626,7 +1626,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.show_graphics, "--disp")
-        .help("Enable or disable interactive graphics")
+        .help(
+            "Enable or disable interactive graphics."
+            " When 'off' and QT_QPA_PLATFORM is not already set, VPR sets"
+            " QT_QPA_PLATFORM=offscreen so Qt does not try to connect to"
+            " an X11/Wayland display. Offscreen means no interactive window"
+            " is opened, but graphics are still rendered, so scripted output"
+            " (e.g. --save_graphics and --graphics_commands) still works."
+            " Note that the offscreen platform typically disables the RHI"
+            " (GPU) renderer; rendering falls back to the QPainter (immediate)"
+            " path. To override, set QT_QPA_PLATFORM in the environment before"
+            " invoking VPR.")
         .default_value("off");
 
     gfx_grp.add_argument(args.GraphPause, "--auto")
@@ -1641,6 +1651,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
         .help("Save all graphical contents to PDF files")
         .default_value("off");
+
+    gfx_grp.add_argument(args.graphics_renderer, "--renderer")
+        .help(
+            "Select the rendering backend used by the graphics window.\n"
+            "   * rhi:       GPU hardware rendering. Gives the highest\n"
+            "                performance but requires a GPU (uses VRAM),\n"
+            "                and uses the most RAM.\n"
+            "   * deferred:  SW renderer (no GPU). Like 'immediate' but\n"
+            "                batches draw calls, giving the next highest\n"
+            "                performance at the cost of more RAM.\n"
+            "   * immediate: SW renderer (no GPU). The most compatible path\n"
+            "                (CPU-only QPainter, no batching); lowest\n"
+            "                performance and lowest memory use.")
+        .default_value("rhi")
+        .choices({"immediate", "deferred", "rhi"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
