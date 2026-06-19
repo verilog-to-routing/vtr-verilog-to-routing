@@ -617,8 +617,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
             ezgl::point2d start = atom_pin_draw_coord(net_driver);
             ezgl::point2d end = atom_pin_draw_coord(ipin);
             g->draw_line(start, end);
-            draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-            draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
         }
 
         for (AtomPinId opin : atom_nl.block_output_pins(blk)) {
@@ -636,8 +636,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
                 ezgl::point2d start = atom_pin_draw_coord(opin);
                 ezgl::point2d end = atom_pin_draw_coord(net_sink);
                 g->draw_line(start, end);
-                draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-                draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
             }
         }
     }

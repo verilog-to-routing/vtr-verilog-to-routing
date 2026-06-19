@@ -93,8 +93,8 @@ First is a snippet of the verilog netlist:
 
 Here we see three primitives instantiated:
 
-* ``fpga_interconnect`` represent connections between netlist primitives
-* ``LUT_K`` represent look-up tables (LUTs) (corresponding to ``.names`` in the BLIF netlist). Two parameters define the LUTs functionality:
+* ``fpga_interconnect`` represents connections between netlist primitives
+* ``LUT_K`` represents look-up tables (LUTs) (corresponding to ``.names`` in the BLIF netlist). Two parameters define the LUTs functionality:
 
      * ``K`` the number of inputs, and
      * ``LUT_MASK`` which defines the logic function.

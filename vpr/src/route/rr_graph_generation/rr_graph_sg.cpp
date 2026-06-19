@@ -58,8 +58,20 @@ static std::pair<RRNodeId, short> next_chanz_node_for_seg(const std::array<t_phy
                                                           std::vector<std::pair<RRNodeId, short>>& nodes0,
                                                           std::vector<std::pair<RRNodeId, short>>& nodes1) {
 
-    VTR_ASSERT_SAFE(!nodes0.empty());
-    VTR_ASSERT_SAFE(!nodes1.empty());
+    VTR_ASSERT_SAFE(!nodes0.empty() || !nodes1.empty());
+
+    // If only one adjacent switch block has CHANZ candidates for this segment, use it.
+    if (nodes0.empty()) {
+        int& offset1 = Fc_zofs[sb_locs[1].x][sb_locs[1].y][seg_index];
+        const int idx = offset1++;
+        return nodes1[idx % nodes1.size()];
+    }
+
+    if (nodes1.empty()) {
+        int& offset0 = Fc_zofs[sb_locs[0].x][sb_locs[0].y][seg_index];
+        const int idx = offset0++;
+        return nodes0[idx % nodes0.size()];
+    }
 
     int& offset0 = Fc_zofs[sb_locs[0].x][sb_locs[0].y][seg_index];
     int& offset1 = Fc_zofs[sb_locs[1].x][sb_locs[1].y][seg_index];
@@ -211,7 +223,8 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
                                    int num_seg_types,
                                    vtr::NdMatrix<int, 3>& Fc_zofs,
                                    t_rr_edge_info_set& rr_edges_to_create,
-                                   const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
+                                   const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                   bool device_model_warnings) {
     const RRSpatialLookup& node_lookup = rr_graph.node_lookup();
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
@@ -273,6 +286,13 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
 
         collect_chanz_nodes_for_seg(node_lookup, interdie_3d_links, adjacent_sb_loc[1],
                                     layer, seg_index, selected_chanz_nodes1);
+
+        if (selected_chanz_nodes0.empty() && selected_chanz_nodes1.empty()) {
+            VTR_LOGV_WARN(device_model_warnings,
+                          "No CHANZ nodes found for layer %d at (%d, %d) side %s for segment type %d. Skipping OPIN-CHANZ edge creation.\n",
+                          layer, x, y, TOTAL_2D_SIDE_STRINGS[side], iseg);
+            continue;
+        }
 
         for (RRNodeId opin_node_id : opin_nodes) {
             int pin_number = rr_graph.node_pin_num(opin_node_id);

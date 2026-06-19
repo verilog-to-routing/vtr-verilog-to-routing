@@ -18,38 +18,58 @@
 #include "save_graphics.h"
 #include "search_bar.h"
 #include "ui_setup.h"
-#include "gtkcomboboxhelper.h"
+
+#include "vtr_log.h"
 
 #include "ezgl/application.hpp"
+
+#include <QCheckBox>
+#include <QComboBox>
+#include <QSpinBox>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QBoxLayout>
+#include <QStringList>
+#include <QCompleter>
 
 /**
  * @brief Helper function to connect a toggle button to a callback function
  */
 static void setup_checkbox_button(std::string button_id, ezgl::application* app, bool* toggle_state) {
     t_draw_state* draw_state = get_draw_state_vars();
-    GtkToggleButton* checkbox_button = GTK_TOGGLE_BUTTON(app->get_object(button_id.c_str()));
+    QCheckBox* checkbox_button = app->find_check_box(button_id.c_str());
     draw_state->checkbox_data.emplace_back(app, toggle_state);
-    g_signal_connect(checkbox_button, "toggled", G_CALLBACK(toggle_checkbox_cbk), &draw_state->checkbox_data.back());
+    t_checkbox_data* data = &draw_state->checkbox_data.back();
+    QObject::connect(checkbox_button, &QCheckBox::toggled, checkbox_button, [checkbox_button, data]() {
+        toggle_checkbox_cbk(checkbox_button, data);
+    });
 }
 
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
-    GtkButton* window = (GtkButton*)app->get_object("Window");
-    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
+    QPushButton* window = app->find_push_button("Window");
+    QObject::connect(window, &QPushButton::clicked, window, [app]() {
+        toggle_window_mode(/*widget=*/nullptr, app);
+    });
 
     //button to search, created in main.ui
-    GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
+    QPushButton* search = app->find_push_button("Search");
+    search->setText("Search");
+    QObject::connect(search, &QPushButton::clicked, search, [app]() {
+        search_and_highlight(/*widget=*/nullptr, app);
+    });
 
     //button for save graphics, created in main.ui
-    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
+    QPushButton* save = app->find_push_button("SaveGraphics");
+    QObject::connect(save, &QPushButton::clicked, save, []() {
+        save_graphics_dialog_box(/*widget=*/nullptr, /*app=*/nullptr);
+    });
 
     //combo box for search type, created in main.ui
-    GObject* search_type = (GObject*)app->get_object("SearchType");
-    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    QComboBox* search_type_combo = app->find_combo_box("SearchType");
+    QObject::connect(search_type_combo, &QComboBox::currentIndexChanged, search_type_combo, [search_type_combo, app]() {
+        search_type_changed(search_type_combo, app);
+    });
 }
 
 /*
@@ -62,13 +82,16 @@ void basic_button_setup(ezgl::application* app) {
 void net_button_setup(ezgl::application* app) {
 
     t_draw_state* draw_state = get_draw_state_vars();
-
-    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleNets"));
-    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_show_nets_cbk), app);
+    SwitchButton* toggle_nets_switch = app->find_switch_button("ToggleNets");
+    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [toggle_nets_switch, app](bool checked) {
+        toggle_show_nets_cbk(toggle_nets_switch, checked, app);
+    });
 
     // Manages net type
-    GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNetType"));
-    g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_draw_nets_cbk), app);
+    QComboBox* toggle_nets = app->find_combo_box("ToggleNetType");
+    QObject::connect(toggle_nets, &QComboBox::currentIndexChanged, toggle_nets, [toggle_nets, app]() {
+        toggle_draw_nets_cbk(toggle_nets, app);
+    });
 
     setup_checkbox_button("ToggleInterClusterNets", app, &draw_state->draw_inter_cluster_nets);
 
@@ -77,16 +100,20 @@ void net_button_setup(ezgl::application* app) {
     setup_checkbox_button("FanInFanOut", app, &draw_state->highlight_fan_in_fan_out);
 
     //Manages net alpha
-    GtkSpinButton* net_alpha = GTK_SPIN_BUTTON(app->get_object("NetAlpha"));
-    g_signal_connect(net_alpha, "value-changed", G_CALLBACK(set_net_alpha_value_cbk), app);
-    gtk_spin_button_set_increments(net_alpha, 1, 1);
-    gtk_spin_button_set_range(net_alpha, 0, 255);
+    QSpinBox* net_alpha = app->find_spin_box("NetAlpha");
+    QObject::connect(net_alpha, &QSpinBox::valueChanged, net_alpha, [net_alpha, app]() {
+        set_net_alpha_value_cbk(net_alpha, app);
+    });
+    net_alpha->setSingleStep(1);
+    net_alpha->setRange(0, 255);
 
     //Manages net max fanout
-    GtkSpinButton* max_fanout = GTK_SPIN_BUTTON(app->get_object("NetMaxFanout"));
-    g_signal_connect(max_fanout, "value-changed", G_CALLBACK(set_net_max_fanout_cbk), app);
-    gtk_spin_button_set_increments(max_fanout, 1, 1);
-    gtk_spin_button_set_range(max_fanout, 0., (double)get_max_fanout());
+    QSpinBox* max_fanout = app->find_spin_box("NetMaxFanout");
+    QObject::connect(max_fanout, &QSpinBox::valueChanged, max_fanout, [max_fanout, app]() {
+        set_net_max_fanout_cbk(max_fanout, app);
+    });
+    max_fanout->setSingleStep(1);
+    max_fanout->setRange(0, get_max_fanout());
 }
 
 /*
@@ -101,26 +128,34 @@ void block_button_setup(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Toggle block internals
-    GtkSpinButton* blk_internals_button = GTK_SPIN_BUTTON(app->get_object("ToggleBlkInternals"));
-    g_signal_connect(blk_internals_button, "value-changed", G_CALLBACK(toggle_blk_internal_cbk), app);
-    gtk_spin_button_set_increments(blk_internals_button, 1, 1);
-    gtk_spin_button_set_range(blk_internals_button, 0., (double)(draw_state->max_sub_blk_lvl));
+    QSpinBox* blk_internals_button = app->find_spin_box("ToggleBlkInternals");
+    QObject::connect(blk_internals_button, &QSpinBox::valueChanged, blk_internals_button, [blk_internals_button, app]() {
+        toggle_blk_internal_cbk(blk_internals_button, app);
+    });
+    blk_internals_button->setSingleStep(1);
+    blk_internals_button->setRange(0, draw_state->max_sub_blk_lvl);
 
     //Toggle Block Pin Util
-    GtkComboBoxText* blk_pin_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleBlkPinUtil"));
-    g_signal_connect(blk_pin_util, "changed", G_CALLBACK(toggle_blk_pin_util_cbk), app);
+    QComboBox* blk_pin_util = app->find_combo_box("ToggleBlkPinUtil");
+    QObject::connect(blk_pin_util, &QComboBox::currentIndexChanged, blk_pin_util, [blk_pin_util, app]() {
+        toggle_blk_pin_util_cbk(blk_pin_util, app);
+    });
 
     //Toggle Placement Macros
-    GtkComboBoxText* placement_macros = GTK_COMBO_BOX_TEXT(app->get_object("TogglePlacementMacros"));
-    g_signal_connect(placement_macros, "changed", G_CALLBACK(placement_macros_cbk), app);
+    QComboBox* placement_macros = app->find_combo_box("TogglePlacementMacros");
+    QObject::connect(placement_macros, &QComboBox::currentIndexChanged, placement_macros, [placement_macros, app]() {
+        placement_macros_cbk(placement_macros, app);
+    });
 
     //Toggle NoC Display (based on startup cmd --noc on)
     if (!draw_state->show_noc_button) {
-        hide_widget("NocLabel", app);
-        hide_widget("ToggleNocBox", app);
+        app->hide_widget("NocLabel");
+        app->hide_widget("ToggleNocBox");
     } else {
-        GtkComboBoxText* toggleNocBox = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNocBox"));
-        g_signal_connect(toggleNocBox, "changed", G_CALLBACK(toggle_noc_cbk), app);
+        QComboBox* toggleNocBox = app->find_combo_box("ToggleNocBox");
+        QObject::connect(toggleNocBox, &QComboBox::currentIndexChanged, toggleNocBox, [toggleNocBox, app]() {
+            toggle_noc_cbk(toggleNocBox, app);
+        });
     }
 }
 
@@ -136,8 +171,10 @@ void routing_button_setup(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Toggle RR
-    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleRR"));
-    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_rr_cbk), app);
+    SwitchButton* toggle_nets_switch = app->find_switch_button("ToggleRR");
+    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [toggle_nets_switch, app](bool checked) {
+        toggle_rr_cbk(toggle_nets_switch, checked, app);
+    });
 
     // RR Checkboxes
 
@@ -150,28 +187,38 @@ void routing_button_setup(ezgl::application* app) {
     setup_checkbox_button("ToggleHighlightRR", app, &draw_state->highlight_rr_edges);
 
     //Toggle Congestion
-    GtkComboBoxText* toggle_congestion = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestion"));
-    g_signal_connect(toggle_congestion, "changed", G_CALLBACK(toggle_cong_cbk), app);
+    QComboBox* toggle_congestion = app->find_combo_box("ToggleCongestion");
+    QObject::connect(toggle_congestion, &QComboBox::currentIndexChanged, toggle_congestion, [toggle_congestion, app]() {
+        toggle_cong_cbk(toggle_congestion, app);
+    });
 
     //Toggle Congestion Cost
-    GtkComboBoxText* toggle_cong_cost = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestionCost"));
-    g_signal_connect(toggle_cong_cost, "changed", G_CALLBACK(toggle_cong_cost_cbk), app);
+    QComboBox* toggle_cong_cost = app->find_combo_box("ToggleCongestionCost");
+    QObject::connect(toggle_cong_cost, &QComboBox::currentIndexChanged, toggle_cong_cost, [toggle_cong_cost, app]() {
+        toggle_cong_cost_cbk(toggle_cong_cost, app);
+    });
 
     //Toggle Routing BB
-    GtkSpinButton* toggle_routing_bbox = GTK_SPIN_BUTTON(app->get_object("ToggleRoutingBBox"));
-    g_signal_connect(toggle_routing_bbox, "value-changed", G_CALLBACK(toggle_routing_bbox_cbk), app);
-    gtk_spin_button_set_increments(toggle_routing_bbox, 1, 1);
-    gtk_spin_button_set_range(toggle_routing_bbox, -1., (double)(route_ctx.route_bb.size() - 1));
-    gtk_spin_button_set_value(toggle_routing_bbox, -1.);
+    QSpinBox* toggle_routing_bbox = app->find_spin_box("ToggleRoutingBBox");
+    QObject::connect(toggle_routing_bbox, &QSpinBox::valueChanged, toggle_routing_bbox, [toggle_routing_bbox, app]() {
+        toggle_routing_bbox_cbk(toggle_routing_bbox, app);
+    });
+    toggle_routing_bbox->setSingleStep(1);
+    toggle_routing_bbox->setRange(-1, route_ctx.route_bb.size() - 1);
+    toggle_routing_bbox->setValue(-1);
 
     //Toggle Routing Expansion Costs
-    GtkComboBoxText* toggle_expansion_cost = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingExpansionCost"));
-    g_signal_connect(toggle_expansion_cost, "changed", G_CALLBACK(toggle_expansion_cost_cbk), app);
+    QComboBox* toggle_expansion_cost = app->find_combo_box("ToggleRoutingExpansionCost");
+    QObject::connect(toggle_expansion_cost, &QComboBox::currentIndexChanged, toggle_expansion_cost, [toggle_expansion_cost, app]() {
+        toggle_expansion_cost_cbk(toggle_expansion_cost, app);
+    });
 
     //Toggle Router Util
-    GtkComboBoxText* toggle_router_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingUtil"));
-    g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
-    show_widget("RoutingMenuButton", app);
+    QComboBox* toggle_router_util = app->find_combo_box("ToggleRoutingUtil");
+    QObject::connect(toggle_router_util, &QComboBox::currentIndexChanged, toggle_router_util, [toggle_router_util, app]() {
+        toggle_router_util_cbk(toggle_router_util, app);
+    });
+    app->show_widget("RoutingMenuButton");
 }
 
 void view_button_setup(ezgl::application* app) {
@@ -182,56 +229,77 @@ void view_button_setup(ezgl::application* app) {
 
     // Hide the button if we only have one layer
     if (num_layers == 1) {
-        hide_widget("3DMenuButton", app);
+        app->hide_widget("3DMenuButton");
     } else {
-        GtkBox* box = GTK_BOX(app->get_object("LayerBox"));
-        GtkBox* trans_box = GTK_BOX(app->get_object("TransparencyBox"));
+        QWidget* box_widget = app->find_widget("LayerBox");
+        QWidget* trans_box_widget = app->find_widget("TransparencyBox");
+        if (!box_widget || !trans_box_widget) {
+            VTR_LOG_WARN("view_button_setup: LayerBox/TransparencyBox widget not found; skipping per-layer controls.\n");
+            return;
+        }
+
+        QBoxLayout* box = qobject_cast<QBoxLayout*>(box_widget->layout());
+        QBoxLayout* trans_box = qobject_cast<QBoxLayout*>(trans_box_widget->layout());
+        if (!box || !trans_box) {
+            VTR_LOG_WARN("view_button_setup: LayerBox/TransparencyBox layout is not a QBoxLayout; skipping per-layer controls.\n");
+            return;
+        }
 
         // Create checkboxes and spin buttons for each layer
         for (int i = 0; i < num_layers; i++) {
             std::string label = "Layer " + std::to_string(i);
             std::string trans_label = "Transparency " + std::to_string(i);
 
-            GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
+            QCheckBox* checkbox = new QCheckBox(label.c_str());
             // Add margins to checkboxes to match the transparency spin button height
-            gtk_widget_set_margin_top(checkbox, 7);
-            gtk_widget_set_margin_bottom(checkbox, 7);
+            ezgl::widget_set_margin_top(checkbox, 7);
+            ezgl::widget_set_margin_bottom(checkbox, 7);
 
-            gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
+            ezgl::box_pack_start(box, checkbox, false, false, 0);
 
-            GtkWidget* spin_button = gtk_spin_button_new_with_range(0, 255, 1);
-            gtk_widget_set_name(spin_button, g_strdup(trans_label.c_str()));
-            gtk_box_pack_start(GTK_BOX(trans_box), spin_button, FALSE, FALSE, 0);
+            QSpinBox* spin_button = new QSpinBox;
+            spin_button->setRange(0, 255);
+            spin_button->setSingleStep(1);
+            spin_button->setObjectName(QString::fromStdString(trans_label));
+            ezgl::box_pack_start(trans_box, spin_button, false, false, 0);
 
             if (i == 0) {
                 // Set the initial state of the first checkbox to checked to represent the default view.
-                gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox), TRUE);
+                checkbox->setChecked(true);
             }
-
-            g_signal_connect(checkbox, "toggled", G_CALLBACK(select_layer_cbk), app);
-            g_signal_connect(spin_button, "value-changed", G_CALLBACK(transparency_cbk), app);
+            QObject::connect(checkbox, &QAbstractButton::toggled, checkbox, [checkbox]() {
+                select_layer_cbk(checkbox, /*response_id=*/0, /*data=*/nullptr);
+            });
+            QObject::connect(spin_button, &QSpinBox::valueChanged, spin_button, [spin_button]() {
+                transparency_cbk(spin_button, /*response_id=*/0, /*data=*/nullptr);
+            });
         }
 
         // Set up the final row for cross-layer connections
         std::string label = "Cross Layer Connections";
         std::string trans_label = "CrossLayerConnectionsTransparency";
 
-        GtkWidget* checkbox = gtk_check_button_new_with_label(label.c_str());
-        gtk_widget_set_margin_top(checkbox, 7);
-        gtk_widget_set_margin_bottom(checkbox, 7);
-        gtk_box_pack_start(GTK_BOX(box), checkbox, FALSE, FALSE, 0);
+        QCheckBox* checkbox = new QCheckBox(label.c_str());
+        ezgl::widget_set_margin_top(checkbox, 7);
+        ezgl::widget_set_margin_bottom(checkbox, 7);
+        ezgl::box_pack_start(box, checkbox, false, false, 0);
 
-        GtkWidget* spin_button = gtk_spin_button_new_with_range(0, 255, 1);
-        gtk_widget_set_name(spin_button, g_strdup(trans_label.c_str()));
-        gtk_box_pack_start(GTK_BOX(trans_box), spin_button, FALSE, FALSE, 0);
+        QSpinBox* spin_button = new QSpinBox;
+        spin_button->setRange(0, 255);
+        spin_button->setSingleStep(1);
+        spin_button->setObjectName(QString::fromStdString(trans_label));
+        ezgl::box_pack_start(trans_box, spin_button, false, false, 0);
 
-        // Connect cross layer to callback function:
-        g_signal_connect(checkbox, "toggled", G_CALLBACK(cross_layer_checkbox_cbk), app);
-        g_signal_connect(spin_button, "value-changed", G_CALLBACK(cross_layer_transparency_cbk), app);
+        QObject::connect(checkbox, &QAbstractButton::toggled, checkbox, [checkbox]() {
+            cross_layer_checkbox_cbk(checkbox, /*response_id=*/0, /*data=*/nullptr);
+        });
+        QObject::connect(spin_button, &QSpinBox::valueChanged, spin_button, [spin_button]() {
+            cross_layer_transparency_cbk(spin_button, /*response_id=*/0, /*data=*/nullptr);
+        });
 
         // Make all widgets in the boxes appear
-        gtk_widget_show_all(GTK_WIDGET(box));
-        gtk_widget_show_all(GTK_WIDGET(trans_box));
+        box_widget->show();
+        trans_box_widget->show();
     }
 }
 
@@ -241,9 +309,6 @@ void view_button_setup(ezgl::application* app) {
 void search_setup(ezgl::application* app) {
     load_block_names(app);
     load_net_names(app);
-    //Setting custom matching function for entry completion (searches whole string instead of start)
-    GtkEntryCompletion* wildcardComp = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
-    gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 }
 
 /**
@@ -256,8 +321,10 @@ void crit_path_button_setup(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // Toggle Critical Path
-    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleCritPath"));
-    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_crit_path_cbk), app);
+    SwitchButton* toggle_nets_switch = app->find_switch_button("ToggleCritPath");
+    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [toggle_nets_switch, app](bool checked) {
+        toggle_crit_path_cbk(toggle_nets_switch, checked, app);
+    });
 
     // Checkboxes for critical path
     setup_checkbox_button("ToggleCritPathFlylines", app, &draw_state->show_crit_path_flylines);
@@ -274,43 +341,24 @@ void hide_crit_path_routing(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     bool state = draw_state->setup_timing_info && draw_state->pic_on_screen == e_pic_type::ROUTING && draw_state->show_crit_path;
 
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
+    app->find_widget("ToggleCritPathRouting")->setEnabled(state);
 }
 
 void hide_draw_routing(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNetType"));
+    QComboBox* toggle_nets = app->find_combo_box("ToggleNetType");
 
     // Enable the option to draw routing only during the routing stage
-    int route_item_index = get_item_index_by_text(toggle_nets, "Routing");
+    int route_item_index = toggle_nets->findText("Routing");
     if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
         if (route_item_index != -1) {
-            gtk_combo_box_text_remove(toggle_nets, route_item_index);
+            toggle_nets->removeItem(route_item_index);
         }
     } else {
         if (route_item_index == -1) {
-            gtk_combo_box_text_append(toggle_nets, "2", "Routing");
+            toggle_nets->addItem("Routing", "2");
         }
     }
-}
-
-/*
- * @brief Hides the widget with the given name
- *
- * @param widgetName string of widget name in main.ui
- * @param app ezgl app
- */
-void hide_widget(std::string widgetName, ezgl::application* app) {
-    GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
-    gtk_widget_hide(widget);
-}
-
-/**
- * @brief Hides the widget with the given name
- */
-void show_widget(std::string widgetName, ezgl::application* app) {
-    GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
-    gtk_widget_show(widget);
 }
 
 /**
@@ -319,20 +367,23 @@ void show_widget(std::string widgetName, ezgl::application* app) {
  * @param app ezgl application used for ui
  */
 void load_block_names(ezgl::application* app) {
-    auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
+    QLineEdit* textInput = app->find_line_edit("TextInput");
+    if (!textInput) return;
+
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    GtkTreeIter iter;
+    QStringList block_names;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
-        gtk_list_store_append(blockStorage, &iter);
-        gtk_list_store_set(blockStorage, &iter,
-                           0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
+        block_names.append(QString::fromStdString(cluster_ctx.clb_nlist.block_name(id)));
     }
     for (AtomBlockId id : atom_ctx.netlist().blocks()) {
-        gtk_list_store_append(blockStorage, &iter);
-        gtk_list_store_set(blockStorage, &iter,
-                           0, (atom_ctx.netlist().block_name(id)).c_str(), -1);
+        block_names.append(QString::fromStdString(atom_ctx.netlist().block_name(id)));
     }
+
+    QCompleter* completer = new QCompleter(block_names, textInput);
+    completer->setObjectName("BlockNames");
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setFilterMode(Qt::MatchContains);
 }
 
 /*
@@ -341,15 +392,19 @@ void load_block_names(ezgl::application* app) {
  * @param app ezgl application used for ui
  */
 void load_net_names(ezgl::application* app) {
-    auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
+    QLineEdit* textInput = qobject_cast<QLineEdit*>(app->find_line_edit("TextInput"));
+    if (!textInput) return;
+
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    GtkTreeIter iter;
-    //Loading net names
+    QStringList net_names;
     for (AtomNetId id : atom_ctx.netlist().nets()) {
-        gtk_list_store_append(netStorage, &iter);
-        gtk_list_store_set(netStorage, &iter,
-                           0, (atom_ctx.netlist().net_name(id)).c_str(), -1);
+        net_names.append(QString::fromStdString(atom_ctx.netlist().net_name(id)));
     }
+
+    QCompleter* completer = new QCompleter(net_names, textInput);
+    completer->setObjectName("NetNames");
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setFilterMode(Qt::MatchContains);
 }
 
 #endif /* NO_GRAPHICS */

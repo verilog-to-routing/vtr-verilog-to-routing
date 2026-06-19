@@ -262,6 +262,8 @@ struct ParseAPDetailedPlacer {
             conv_value.set_value(e_ap_detailed_placer::Identity);
         else if (str == "annealer")
             conv_value.set_value(e_ap_detailed_placer::Annealer);
+        else if (str == "windowed_bi_matching")
+            conv_value.set_value(e_ap_detailed_placer::WindowedBiMatching);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_detailed_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -279,6 +281,9 @@ struct ParseAPDetailedPlacer {
             case e_ap_detailed_placer::Annealer:
                 conv_value.set_value("annealer");
                 break;
+            case e_ap_detailed_placer::WindowedBiMatching:
+                conv_value.set_value("windowed_bi_matching");
+                break;
             default:
                 VTR_ASSERT(false);
         }
@@ -286,7 +291,7 @@ struct ParseAPDetailedPlacer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"none", "annealer"};
+        return {"none", "annealer", "windowed_bi_matching"};
     }
 };
 
@@ -1621,7 +1626,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.show_graphics, "--disp")
-        .help("Enable or disable interactive graphics")
+        .help(
+            "Enable or disable interactive graphics."
+            " When 'off' and QT_QPA_PLATFORM is not already set, VPR sets"
+            " QT_QPA_PLATFORM=offscreen so Qt does not try to connect to"
+            " an X11/Wayland display. Offscreen means no interactive window"
+            " is opened, but graphics are still rendered, so scripted output"
+            " (e.g. --save_graphics and --graphics_commands) still works."
+            " Note that the offscreen platform typically disables the RHI"
+            " (GPU) renderer; rendering falls back to the QPainter (immediate)"
+            " path. To override, set QT_QPA_PLATFORM in the environment before"
+            " invoking VPR.")
         .default_value("off");
 
     gfx_grp.add_argument(args.GraphPause, "--auto")
@@ -1636,6 +1651,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
         .help("Save all graphical contents to PDF files")
         .default_value("off");
+
+    gfx_grp.add_argument(args.graphics_renderer, "--renderer")
+        .help(
+            "Select the rendering backend used by the graphics window.\n"
+            "   * rhi:       GPU hardware rendering. Gives the highest\n"
+            "                performance but requires a GPU (uses VRAM),\n"
+            "                and uses the most RAM.\n"
+            "   * deferred:  SW renderer (no GPU). Like 'immediate' but\n"
+            "                batches draw calls, giving the next highest\n"
+            "                performance at the cost of more RAM.\n"
+            "   * immediate: SW renderer (no GPU). The most compatible path\n"
+            "                (CPU-only QPainter, no batching); lowest\n"
+            "                performance and lowest memory use.")
+        .default_value("rhi")
+        .choices({"immediate", "deferred", "rhi"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
@@ -3016,7 +3047,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             ""
             "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do"
             " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing."
-            " This option helps router convergence for such architectures.")
+            " This option helps router convergence for such architectures."
+            " Note that this option only affects routing when the flat router (--flat_routing on) is used.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

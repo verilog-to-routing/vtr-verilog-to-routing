@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/ezgl">
+        <file>main.ui</file>
+    </qresource>
+</RCC>

@@ -137,6 +137,7 @@ void SetupVPR(const t_options* options,
               int* graphPause,
               bool* saveGraphics,
               std::string* graphicsCommands,
+              std::string* rendererType,
               t_power_opts* powerOpts,
               t_vpr_setup* vpr_setup) {
     using argparse::Provenance;
@@ -286,10 +287,12 @@ void SetupVPR(const t_options* options,
         && !options->do_analytical_placement
         && !options->do_routing
         && !options->do_analysis) {
-        //run all stages if none specified
-        packerOpts->doPacking = e_stage_action::DO;
-        placerOpts->do_placement = e_stage_action::DO;
-        apOpts->doAP = e_stage_action::SKIP; // AP not default.
+        // If none specified, we do the AP flow.
+        // This skips the packing and placement stages, since
+        // AP combines packing and placement together.
+        packerOpts->doPacking = e_stage_action::SKIP;
+        placerOpts->do_placement = e_stage_action::SKIP;
+        apOpts->doAP = e_stage_action::DO;
         routerOpts->doRouting = e_stage_action::DO;
         analysisOpts->doAnalysis = e_stage_action::SKIP_IF_PRIOR_FAIL; //Deferred until implementation status known
     } else {
@@ -371,6 +374,7 @@ void SetupVPR(const t_options* options,
 
     *saveGraphics = options->save_graphics;
     *graphicsCommands = options->graphics_commands;
+    *rendererType = options->graphics_renderer;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
         EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, arch);
