@@ -1750,6 +1750,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .metavar("DEVICE_NAME")
         .default_value("auto");
 
+    gen_grp.add_argument<int>(args.device_width, "--device_width")
+        .help("When --device is 'auto', use a fixed grid width instead of auto-sizing."
+              " Grid height is derived from the architecture aspect ratio.")
+        .default_value("0");
+
     gen_grp.add_argument<size_t>(args.num_workers, "--num_workers", "-j")
         .help(
             "Controls how many parallel workers VPR may use:\n"
