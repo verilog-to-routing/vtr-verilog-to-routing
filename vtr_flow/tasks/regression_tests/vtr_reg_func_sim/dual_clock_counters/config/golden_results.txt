@@ -1,0 +1,2 @@
+arch	circuit	script_params	vtr_flow_elapsed_time	vtr_max_mem_stage	vtr_max_mem	error	vpr_status	vpr_revision	vpr_build_info	vpr_compiler	vpr_compiled	hostname	rundir	max_vpr_mem	
+k6_frac_N10_mem32K_40nm.xml	dual_clock_counters.v	common	-1	-1	-1		success	3ca157f-dirty	release IPO VTR_ASSERT_LEVEL=2	GNU 13.3.0 on Linux-6.6.87.2-microsoft-standard-WSL2 x86_64	2026-06-08T21:30:10	DESKTOP-9R439FK	/mnt/c/2w-reborn/docs-env/vtr	67544	

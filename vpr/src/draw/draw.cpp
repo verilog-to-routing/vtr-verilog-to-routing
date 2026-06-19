@@ -13,8 +13,10 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <set>
 #include <vector>
 #include "draw.h"
 
@@ -58,6 +60,17 @@
 #include "draw_floorplanning.h"
 
 #include "ui_setup.h"
+#include "ezgl/qt/render_backend.hpp"
+
+#include <QCheckBox>
+#include <QCoreApplication>
+#include <QDialog>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QTreeWidget>
+#include <QVBoxLayout>
+#include <QMouseEvent>
+#include <QDialogButtonBox>
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
@@ -74,9 +87,9 @@ static constexpr ezgl::color OLD_BLK_LOC_COLOR = blk_GOLD;
 static constexpr ezgl::color NEW_BLK_LOC_COLOR = blk_GREEN;
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
-void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
-void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y);
+void act_on_key_press(ezgl::application* /*app*/, QKeyEvent* event, const std::string& key_name);
+void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, double y);
+void act_on_mouse_move(ezgl::application* app, QMouseEvent* event, double x, double y);
 
 static void highlight_blocks(double x, double y);
 
@@ -92,11 +105,11 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void set_force_pause();
+static void set_block_outline(bool checked);
+static void set_block_text(bool checked);
+static void set_draw_partitions(bool checked);
+static void clip_routing_util(bool checked);
 static void run_graphics_commands(const std::string& commands);
 
 /************************** File Scope Variables ****************************/
@@ -131,14 +144,40 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-ezgl::application::settings settings("/ezgl/main.ui", "MainWindow", "MainCanvas", "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()), setup_default_ezgl_callbacks);
-ezgl::application application(settings);
+ezgl::application::settings settings(":/ezgl/main.ui", "MainWindow", "MainCanvas", "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()), setup_default_ezgl_callbacks);
+// provide fake argc and argv required for QApplication initialization
+int argc = 1;
+char appName[] = "vpr";
+char* argv[] = {appName, nullptr};
+ezgl::application* application = nullptr;
 
 bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0, 0);
+ezgl::point2d window_preview_cursor(0, 0); // updated by act_on_mouse_move while
+                                           // window_point_1_collected is true; drawn
+                                           // as a dashed rect by the regular draw flow.
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
+
+// Used for scripted graphics (rendered to files via --graphics_commands).
+// Stages that have hit their first update_screen() (auto-recorded by
+// update_screen on pic_on_screen transitions) and stages that have been
+// marked complete via notify_stage_complete(). Consulted by the
+// `wait_for_stage <stage>_initial` / `<stage>_done` script barriers.
+std::set<e_pic_type> initial_stages;
+std::set<e_pic_type> completed_stages;
+
+// Used for scripted graphics (rendered to files via --graphics_commands).
+// `exit N` from --graphics_commands is processed deferredly: the
+// interpreter sets these flags and breaks, then update_screen() honors
+// the request after the current render checkpoint completes. This avoids
+// terminating VPR mid-iteration. Both log lines start with the literal
+// "Graphics-command 'exit" — run_vtr_flow.py keys off that prefix to
+// skip downstream convergence/consistency checks for runs intentionally
+// terminated by a graphics command.
+static bool pending_graphics_exit = false;
+static int pending_graphics_exit_code = 0;
 
 #endif // NO_GRAPHICS
 
@@ -149,6 +188,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
+                         std::string renderer_type,
                          bool is_flat) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
@@ -163,7 +203,21 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
+    draw_state->renderer_type = renderer_type;
     draw_state->is_flat = is_flat;
+
+    // When --disp is off, force Qt into offscreen mode before QApplication is
+    // created so it doesn't try to connect to an X11/Wayland display.
+    if (!show_graphics_val && !qEnvironmentVariableIsSet("QT_QPA_PLATFORM")) {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
+    }
+
+    // Create the application object here (not at file scope) so that the
+    // QApplication lifetime is bounded by init/close_graphics, not by
+    // static-object construction/destruction order.
+    if (application == nullptr) {
+        application = new ezgl::application(settings, argc, argv);
+    }
 
 #else
     //Suppress unused parameter warnings
@@ -172,8 +226,17 @@ void init_graphics_state(bool show_graphics_val,
     (void)route_type;
     (void)save_graphics;
     (void)graphics_commands;
+    (void)renderer_type;
     (void)is_flat;
 #endif // NO_GRAPHICS
+}
+
+void notify_stage_complete(e_pic_type stage) {
+#ifndef NO_GRAPHICS
+    completed_stages.insert(stage);
+#else
+    (void)stage;
+#endif
 }
 
 #ifndef NO_GRAPHICS
@@ -244,13 +307,30 @@ static void draw_main_canvas(ezgl::renderer* g) {
     } else {
         draw_analytical_place(g);
     }
+
+    // Zoom-Select preview: while the user is in window mode and has clicked
+    // the first point, paint a dashed grey rectangle from that anchor to the
+    // current cursor. Drawing it here (inside the regular draw flow) instead
+    // of on an animation overlay makes the preview work uniformly across all
+    // backends, including RHI.
+    if (window_point_1_collected) {
+        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+        g->set_color(blk_GREY);
+        g->set_line_width(2);
+        g->draw_rectangle(point_1, window_preview_cursor);
+        // Reset to defaults so subsequent overlays (e.g. legend) aren't
+        // accidentally inherited.
+        g->set_line_dash(ezgl::line_dash::none);
+        g->set_line_width(0);
+    }
+
     if (draw_state->auto_proceed) {
         //Automatically exit the event loop, so user's don't need to manually click proceed
 
         //Avoid trying to repeatedly exit (which would cause errors in GTK)
         draw_state->auto_proceed = false;
 
-        application.quit(); //Ensure we leave the event loop
+        application->quit(); //Ensure we leave the event loop
     }
 }
 
@@ -269,12 +349,20 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
-        hide_widget("RoutingMenuButton", app);
+        app->hide_widget("RoutingMenuButton");
 
         draw_state->save_graphics_file_base = "vpr_placement";
 
+    } else if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
+        // Routing has not started during analytical placement, so hide the
+        // routing controls (otherwise the Route button/switch/checkboxes are
+        // visible and interactable before routing commences).
+        app->hide_widget("RoutingMenuButton");
+
+        draw_state->save_graphics_file_base = "vpr_analytical_placement";
+
     } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
-        show_widget("RoutingMenuButton", app);
+        app->show_widget("RoutingMenuButton");
 
         draw_state->save_graphics_file_base = "vpr_routing";
     }
@@ -285,6 +373,10 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     hide_draw_routing(app);
 
     app->update_message(draw_state->default_message);
+
+    // Force a canvas redraw so the new picture type is visible immediately
+    // when the event loop starts, rather than waiting for user interaction.
+    app->refresh_drawing();
 }
 
 #endif //NO_GRAPHICS
@@ -299,6 +391,12 @@ void update_screen(ScreenUpdatePriority priority,
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
+
+    // The application object is created lazily in vpr_init_graphics(), which is
+    // called after the AP flow.  If we are called before that (e.g. from the
+    // global placer's draw callbacks), bail out — there is nothing to draw.
+    if (application == nullptr)
+        return;
 
     strcpy(draw_state->default_message, msg);
 
@@ -325,18 +423,60 @@ void update_screen(ScreenUpdatePriority priority,
         }
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
-            // Only add the canvas the first time we open graphics
-            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+            if (canvas != nullptr) {
+                ezgl::renderer_type rt = ezgl::renderer_type::rhi;
+                if (draw_state->renderer_type == "immediate")
+                    rt = ezgl::renderer_type::immediate;
+                else if (draw_state->renderer_type == "deferred")
+                    rt = ezgl::renderer_type::deferred;
+
+                // The QRhiWidget path (used only under --disp on) cannot
+                // acquire a QRhi from QPlatformBackingStore::rhi() under the
+                // offscreen QPA — the plugin returns nullptr. Headless
+                // (--disp off) is fine: render_to_image() creates an
+                // offscreen QRhi directly without QRhiWidget. So scope the
+                // fallback to the widget case only.
+                if (rt == ezgl::renderer_type::rhi
+                    && draw_state->show_graphics
+                    && qEnvironmentVariable("QT_QPA_PLATFORM") == "offscreen") {
+                    VTR_LOG_WARN(
+                        "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
+                        "with --disp on; falling back to the immediate renderer.\n");
+                    rt = ezgl::renderer_type::immediate;
+                }
+
+                canvas->set_renderer_type(rt);
+
+                // Surface the renderer that actually got installed (which may
+                // differ from --renderer after the offscreen-QPA fallback
+                // above) so logs/tests can confirm the active backend.
+                VTR_LOG("EZGL: active renderer backend: %s\n",
+                        ezgl::renderer_type_name(rt));
+            }
         } else {
             // TODO: will this ever be null?
-            auto canvas = application.get_canvas(application.get_main_canvas_id());
+            auto canvas = application->get_canvas(application->get_main_canvas_id());
             if (canvas != nullptr) {
-                canvas->get_camera().set_world(initial_world);
+                // Same coordinate frame: set_world() keeps the user's pan/zoom.
+                // Changed frame (e.g. AP grid space -> tile space): reset_world().
+                // set_world() does not refresh camera::m_initial_world, and the
+                // RHI renderer sizes its geometry cull tile-grid from it; left
+                // stale at the old frame, all geometry is culled (blank canvas,
+                // only the text overlay survives). reset_world() refreshes it.
+                if (initial_world == canvas->get_camera().get_initial_world()) {
+                    canvas->get_camera().set_world(initial_world);
+                } else {
+                    canvas->get_camera().reset_world(initial_world);
+                }
             }
         }
 
         draw_state->setup_timing_info = setup_timing_info;
         draw_state->pic_on_screen = pic_on_screen_val;
+        // Record that we've now reached this stage at least once. Consumed
+        // by the `wait_for_stage <stage>_initial` script barrier.
+        initial_stages.insert(pic_on_screen_val);
     }
 
     bool should_pause = int(priority) >= draw_state->gr_automode;
@@ -348,6 +488,12 @@ void update_screen(ScreenUpdatePriority priority,
     //the user won't need to click manually.
     draw_state->auto_proceed = (state_change && !should_pause);
 
+    // Headless mode (save_graphics / graphics_commands without --disp): never
+    // block for user interaction — there is no user at the keyboard. Always
+    // auto-proceed so the event loop exits immediately after setup.
+    if (!draw_state->show_graphics)
+        draw_state->auto_proceed = true;
+
     if (state_change                   //Must update buttons
         || should_pause                //The priority means graphics should pause for user interaction
         || draw_state->forced_pause) { //The user asked to pause
@@ -357,23 +503,51 @@ void update_screen(ScreenUpdatePriority priority,
             draw_state->forced_pause = false; //Reset pause flag
         }
 
-        application.run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
-                        act_on_key_press);
+        const bool has_cmds = !draw_state->graphics_commands.empty();
 
-        if (!draw_state->graphics_commands.empty()) {
+        // Under --disp on, run the script inside the event loop. Without this,
+        // QT_QPA_PLATFORM=offscreen delivers no input events, auto-proceed
+        // never fires, and exec() sleeps forever.
+        if (has_cmds && draw_state->show_graphics) {
+            std::string cmds = draw_state->graphics_commands;
+            application->schedule_initial_callback([cmds]() {
+                run_graphics_commands(cmds);
+                // If the script didn't `exit`, return from exec() so VPR can
+                // continue with subsequent stages.
+                QCoreApplication::quit();
+            });
+        }
+
+        application->run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
+                         act_on_key_press);
+
+        // --disp off path: application::run() short-circuits via
+        // disable_event_loop, so commands must run synchronously here.
+        if (has_cmds && !draw_state->show_graphics) {
             run_graphics_commands(draw_state->graphics_commands);
         }
     }
 
     if (draw_state->show_graphics) {
-        application.update_message(msg);
-        application.refresh_drawing();
-        application.flush_drawing();
+        application->update_message(msg);
+        application->refresh_drawing();
+        application->flush_drawing();
     }
 
     if (draw_state->save_graphics) {
         std::string extension = "pdf";
         save_graphics(extension, draw_state->save_graphics_file_base);
+    }
+
+    // Honor a deferred `exit N` request from a graphics command. We are at
+    // a render-safe checkpoint here (refresh/flush/save_graphics have
+    // completed). Emit the sentinel so run_vtr_flow.py recognizes this as
+    // an intentional early termination, then exit with the requested code.
+    // exit() flushes stdio, so the sentinel reliably lands in vpr.out.
+    if (pending_graphics_exit) {
+        VTR_LOG("Graphics-command 'exit %d' fired: terminating now.\n",
+                pending_graphics_exit_code);
+        exit(pending_graphics_exit_code);
     }
 
 #else
@@ -385,7 +559,7 @@ void update_screen(ScreenUpdatePriority priority,
 }
 
 #ifndef NO_GRAPHICS
-void toggle_window_mode(GtkWidget* /*widget*/,
+void toggle_window_mode(QWidget* /*widget*/,
                         ezgl::application* app) {
     window_mode = true;
     app->update_message("Zoom to Selection: Click on two points to define a rectangle to zoom into.");
@@ -450,6 +624,9 @@ void free_draw_structs() {
         vtr::release_memory(draw_coords->tile_x);
         vtr::release_memory(draw_coords->tile_y);
     }
+
+    delete application;
+    application = nullptr;
 
 #else
     ;
@@ -546,6 +723,26 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 
     // Load coordinates of sub-blocks inside the clbs
     draw_internal_init_blk();
+
+    // Tile coordinates are now fully populated — set initial_world so that
+    // save_graphics / graphics_commands can compute valid image dimensions
+    // even in headless mode (show_graphics = false).
+    const ezgl::rectangle prev_initial_world = initial_world;
+    set_initial_world();
+
+    // The router's binary search re-runs init_draw_coords() per channel-width
+    // trial, which can change tile_x/tile_y (and therefore initial_world)
+    // without a pic_on_screen state change — so update_screen()'s state-change
+    // branch will not refresh the camera. If the user is currently at "fit"
+    // (camera world == previous initial_world) push the new initial_world to
+    // the camera so the next render uses the correct world rect. If the user
+    // has pan/zoomed away from fit, leave their view alone.
+    if (application != nullptr && initial_world != prev_initial_world) {
+        ezgl::canvas* canvas = application->get_canvas(application->get_main_canvas_id());
+        if (canvas != nullptr && canvas->get_camera().get_world() == prev_initial_world) {
+            canvas->get_camera().set_world(initial_world);
+        }
+    }
 
 #else
     (void)clb_width;
@@ -648,30 +845,32 @@ bool draw_if_net_highlighted(ParentNetId inet) {
  * At the moment, only does something if user is currently typing in searchBar and
  * hits enter, at which point it runs autocomplete
  */
-void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
-    std::string key(key_name);
-    GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
-    std::string text(gtk_entry_get_text(GTK_ENTRY(searchBar)));
+void act_on_key_press(ezgl::application* app, QKeyEvent* /*event*/, const std::string& key_name) {
+    QLineEdit* searchBar = app->find_line_edit("TextInput");
+    if (!searchBar) {
+        return;
+    }
+    QString text(searchBar->text());
     t_draw_state* draw_state = get_draw_state_vars();
-    if (gtk_widget_is_focus(searchBar)) {
-        if (key == "Return" || key == "Tab") {
+    if (searchBar->hasFocus()) {
+        if (key_name == "Return" || key_name == "Tab") {
             enable_autocomplete(app);
-            gtk_editable_set_position(GTK_EDITABLE(searchBar), text.length());
+            searchBar->setCursorPosition(text.length());
             return;
         }
     }
     if (draw_state->justEnabled) {
         draw_state->justEnabled = false;
     } else {
-        gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
+        searchBar->setCompleter(nullptr);
     }
-    if (key == "Escape") {
+    if (key_name == "Escape") {
         deselect_all();
     }
 }
 
-void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    if (event->button == 1) {
+void act_on_mouse_press(ezgl::application* app, QMouseEvent* event, double x, double y) {
+    if (event->button() == Qt::LeftButton) {
 
         if (window_mode) {
             //click on any two points to form new window rectangle bound
@@ -681,15 +880,23 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
 
                 window_point_1_collected = true;
                 point_1 = {x, y};
+                // Seed the preview cursor at the anchor so the dashed preview
+                // rect has zero area until the next mouse-move event arrives.
+                // Without this, a stale cursor from a previous zoom-select
+                // operation would briefly produce a wrong-sized rectangle.
+                window_preview_cursor = {x, y};
             } else {
                 //collect second point data
 
                 //click on any two points to form new window rectangle bound
                 ezgl::point2d point_2 = {x, y};
-                ezgl::rectangle current_window = (app->get_canvas(
-                                                      app->get_main_canvas_id()))
-                                                     ->get_camera()
-                                                     .get_world();
+                // get_canvas() returns nullptr if the canvas hasn't been
+                // registered yet (canvas is added lazily in update_screen()
+                // on the first stage transition). Bail out rather than
+                // dereferencing — same pattern as update_screen() above.
+                auto* canvas = app->get_canvas(app->get_main_canvas_id());
+                if (canvas == nullptr) return;
+                ezgl::rectangle current_window = canvas->get_camera().get_world();
 
                 //calculate a rectangle with the same ratio based on the two clicks
                 double window_ratio = current_window.height()
@@ -699,7 +906,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
 
                 //zoom in
                 ezgl::rectangle new_window = {point_1, {point_1.x + new_width, point_2.y}};
-                (app->get_canvas(app->get_main_canvas_id()))->get_camera().set_world(new_window);
+                canvas->get_camera().set_world(new_window);
 
                 //reset flags
                 window_mode = false;
@@ -726,7 +933,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
             }
 
             /* Control + mouse click to select multiple nets. */
-            if (!(event->state & GDK_CONTROL_MASK))
+            if (!(event->modifiers() & Qt::ControlModifier))
                 deselect_all();
 
             //Check if we hit an rr node
@@ -740,22 +947,30 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
     }
 }
 
-void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, double x, double y) {
+void act_on_mouse_move(ezgl::application* app, QMouseEvent* /* event */, double x, double y) {
+    // DEF-005 symptom guard — defends against ezgl mouse-move dispatch arriving
+    // outside an active VPR draw lifecycle (stale callback after teardown,
+    // pre-init dispatch from offscreen platform, etc.). Root cause is tracked
+    // separately under DEF-005 (ezgl mouse-dispatch); this guard keeps the VPR
+    // side crash-free while that investigation continues. See
+    // doc/src/dev/vpr_gui_test_implementation_plan.rst §7.6.
+    if (app == nullptr) return;
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state == nullptr) return;
+
     // user has clicked the window button, in window mode
     if (window_point_1_collected) {
-        // draw a grey, dashed-line box to indicate the zoom-in region
+        // Update the preview cursor position and let the regular draw flow
+        // paint the dashed-rectangle preview (see draw_main_canvas). Drawing
+        // it as part of the main draw works uniformly across all backends —
+        // the immediate-renderer "animation" pattern used by GTK does not
+        // translate cleanly to RHI's GPU-composited overlay.
+        window_preview_cursor = {x, y};
         app->refresh_drawing();
-        ezgl::renderer* g = app->get_renderer();
-        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-        g->set_color(blk_GREY);
-        g->set_line_width(2);
-        g->draw_rectangle(point_1, {x, y});
         return;
     }
 
     // user has not clicked the window button, in regular mode
-    t_draw_state* draw_state = get_draw_state_vars();
-
     if (!draw_state->show_rr) {
         return;
     }
@@ -923,18 +1138,18 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
             == DRAW_ROUTER_EXPANSION_COST_TOTAL
         || draw_state->show_router_expansion_cost
                == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
-        application.update_message(
+        application->update_message(
             "Routing Expected Total Cost (known + estimate)");
     } else if (draw_state->show_router_expansion_cost
                    == DRAW_ROUTER_EXPANSION_COST_KNOWN
                || draw_state->show_router_expansion_cost
                       == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
-        application.update_message("Routing Known Cost (from source to node)");
+        application->update_message("Routing Known Cost (from source to node)");
     } else if (draw_state->show_router_expansion_cost
                    == DRAW_ROUTER_EXPANSION_COST_EXPECTED
                || draw_state->show_router_expansion_cost
                       == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
-        application.update_message(
+        application->update_message(
             "Routing Expected Cost (from node to target)");
     } else {
         VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
@@ -993,8 +1208,8 @@ static void highlight_blocks(double x, double y) {
         }
     }
 
-    application.update_message(msg);
-    application.refresh_drawing();
+    application->update_message(msg);
+    application->refresh_drawing();
 }
 
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
@@ -1047,180 +1262,257 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
 
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
-    GObject* proceed_button = app->get_object("ProceedButton");
-    g_signal_connect(proceed_button, "clicked", G_CALLBACK(ezgl::press_proceed),
-                     app);
+    QPushButton* proceed_button = app->find_push_button("ProceedButton");
+    QObject::connect(proceed_button, &QPushButton::clicked, [app]() {
+        press_proceed(/*unused*/ nullptr, app);
+    });
 
     // Connect press_zoom_fit function to the Zoom-fit button
-    GObject* zoom_fit_button = app->get_object("ZoomFitButton");
-    g_signal_connect(zoom_fit_button, "clicked",
-                     G_CALLBACK(ezgl::press_zoom_fit), app);
+    QPushButton* zoom_fit_button = app->find_push_button("ZoomFitButton");
+    QObject::connect(zoom_fit_button, &QPushButton::clicked, [app]() {
+        press_zoom_fit(/*unused*/ nullptr, app);
+    });
 
     // Connect Pause button
-    GObject* pause_button = app->get_object("PauseButton");
-    g_signal_connect(pause_button, "clicked", G_CALLBACK(set_force_pause), app);
+    QPushButton* pause_button = app->find_push_button("PauseButton");
+    QObject::connect(pause_button, &QPushButton::clicked, []() {
+        set_force_pause();
+    });
 
     // Connect Block Outline checkbox
-    GObject* block_outline = app->get_object("blockOutline");
-    g_signal_connect(block_outline, "toggled", G_CALLBACK(set_block_outline),
-                     app);
+    QCheckBox* block_outline = app->find_check_box("blockOutline");
+    QObject::connect(block_outline, &QCheckBox::toggled, [](bool checked) {
+        set_block_outline(checked);
+    });
 
     // Connect Block Text checkbox
-    GObject* block_text = app->get_object("blockText");
-    g_signal_connect(block_text, "toggled", G_CALLBACK(set_block_text), app);
+    QCheckBox* block_text = app->find_check_box("blockText");
+    QObject::connect(block_text, &QCheckBox::toggled, [](bool checked) {
+        set_block_text(checked);
+    });
 
     // Connect Clip Routing Util checkbox
-    GObject* clip_routing = app->get_object("clipRoutingUtil");
-    g_signal_connect(clip_routing, "toggled", G_CALLBACK(clip_routing_util),
-                     app);
+    QCheckBox* clip_routing = app->find_check_box("clipRoutingUtil");
+    QObject::connect(clip_routing, &QCheckBox::toggled, [](bool checked) {
+        clip_routing_util(checked);
+    });
 
     // Connect Debug Button
-    GObject* debugger = app->get_object("debugButton");
-    g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
+    QPushButton* debugger = app->find_push_button("debugButton");
+    QObject::connect(debugger, &QPushButton::clicked, [app]() {
+        draw_debug_window();
+    });
 
     // Connect Draw Partitions Checkbox
-    GObject* draw_partitions = app->get_object("drawPartitions");
-    g_signal_connect(draw_partitions, "toggled", G_CALLBACK(set_draw_partitions), app);
+    QCheckBox* draw_partitions = app->find_check_box("drawPartitions");
+    QObject::connect(draw_partitions, &QCheckBox::toggled, [](bool checked) {
+        set_draw_partitions(checked);
+    });
 }
 
 // Callback function for Block Outline checkbox
-static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_outline(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // assign corresponding bool value to draw_state->draw_block_outlines
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
-        draw_state->draw_block_outlines = true;
-    else
-        draw_state->draw_block_outlines = false;
+    draw_state->draw_block_outlines = checked;
+
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
 // Callback function for Block Text checkbox
-static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_text(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // assign corresponding bool value to draw_state->draw_block_text
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
-        draw_state->draw_block_text = true;
-    else
-        draw_state->draw_block_text = false;
+    draw_state->draw_block_text = checked;
 
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
 // Callback function for Clip Routing Util checkbox
-static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void clip_routing_util(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // assign corresponding bool value to draw_state->clip_routing_util
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
-        draw_state->clip_routing_util = true;
-    else
-        draw_state->clip_routing_util = false;
+    draw_state->clip_routing_util = checked;
 
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
-}
-
-static void on_dialog_response(GtkDialog* dialog, gint response_id, gpointer /* user_data*/) {
-    switch (response_id) {
-        case GTK_RESPONSE_ACCEPT:
-            std::cout << "GTK_RESPONSE_ACCEPT ";
-            break;
-        case GTK_RESPONSE_DELETE_EVENT:
-            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ’X’ button) ";
-            break;
-        case GTK_RESPONSE_REJECT:
-            std::cout << "GTK_RESPONSE_REJECT ";
-            break;
-        default:
-            std::cout << "UNKNOWN ";
-            break;
-    }
-
-    gtk_widget_destroy(GTK_WIDGET(dialog));
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
 // Callback function for Draw Partitions checkbox
-static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_draw_partitions(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    GObject* window;
-    GtkWidget* dialog;
+    if (checked) {
+        QWidget* window = application->find_widget(application->get_main_window_id().c_str());
 
-    window = application.get_object(application.get_main_window_id().c_str());
+        QDialog* dialog = new QDialog(window);
+        dialog->setWindowTitle("Floorplanning Legend");
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setWindowFlag(Qt::Tool, true); // float above the main window
+        dialog->resize(400, 500);
 
-    dialog = gtk_dialog_new_with_buttons(
-        "Floorplanning Legend",
-        (GtkWindow*)window,
-        GTK_DIALOG_DESTROY_WITH_PARENT,
-        ("CLOSE"),
-        GTK_RESPONSE_ACCEPT,
-        NULL);
+        QVBoxLayout* layout = new QVBoxLayout(dialog);
 
-    GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    GtkWidget* content_tree = gtk_tree_view_new();
-    content_tree = setup_floorplanning_legend(content_tree);
+        QTreeWidget* tree = new QTreeWidget(dialog);
+        setup_floorplanning_legend(tree);
+        layout->addWidget(tree);
 
-    gtk_container_add(GTK_CONTAINER(content_area), content_tree);
+        QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+        QObject::connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::close);
+        layout->addWidget(buttons);
 
-    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(content_tree));
-    g_signal_connect(selection,
-                     "changed",
-                     G_CALLBACK(highlight_selected_partition),
-                     NULL);
+        QObject::connect(tree, &QTreeWidget::itemSelectionChanged, tree, [tree]() {
+            highlight_selected_partition(tree);
+        });
 
-    // assign corresponding bool value to draw_state->draw_partitions
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget)) {
-        gtk_widget_show_all(dialog);
-
-        g_signal_connect(
-            GTK_DIALOG(dialog),
-            "response",
-            G_CALLBACK(on_dialog_response),
-            NULL);
-
+        // show() alone is not always enough: some window managers refuse to
+        // give a freshly-created top-level dialog focus, leaving it stacked
+        // behind the main window. raise() + activateWindow() force it on top.
+        dialog->show();
+        dialog->raise();
+        dialog->activateWindow();
         draw_state->draw_partitions = true;
-
     } else {
-        gtk_widget_destroy(GTK_WIDGET(dialog));
         draw_state->draw_partitions = false;
     }
 
-    //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    application->update_message(draw_state->default_message);
+    application->refresh_drawing();
 }
 
-static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+static void set_force_pause() {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->forced_pause = true;
 }
 
+// The enums below are the integer argument values accepted by the
+// --graphics_commands graphics-script commands (e.g. `set_nets <int>`,
+// `set_cpd <int>`, `set_congestion <int>`).
+
+// Argument values for the `set_nets` graphics-script command.
+enum e_set_nets_arg : int {
+    SET_NETS_OFF = 0,
+    SET_NETS_FLYLINES = 1,
+    SET_NETS_ROUTED = 2,
+};
+
+// Argument bits for the `set_cpd` graphics-script command (a bitmask).
+enum e_set_cpd_arg_bits : int {
+    SET_CPD_OFF = 0,
+    SET_CPD_FLYLINES = 1 << 0,
+    SET_CPD_DELAYS = 1 << 1,
+    SET_CPD_ROUTING = 1 << 2,
+};
+
+// Argument values for the `set_congestion` graphics-script command.
+enum e_set_congestion_arg : int {
+    SET_CONGESTION_OFF = 0,
+    SET_CONGESTION_NODES = 1,
+    SET_CONGESTION_NODES_AND_NETS = 2,
+};
+
+// Parse a `wait_for_stage` argument of the form <stage>_<initial|done>
+// (e.g. "routing_initial", "placement_done") into the target stage `want`
+// and whether it waits for stage completion (`wait_for_done`). Errors out on
+// a malformed suffix or an unsupported stage name.
+static void parse_wait_for_stage_arg(const std::string& arg,
+                                     e_pic_type& want,
+                                     bool& wait_for_done) {
+    const std::string done_suffix = "_done";
+    const std::string init_suffix = "_initial";
+    std::string stage_name;
+    if (arg.size() > done_suffix.size()
+        && arg.compare(arg.size() - done_suffix.size(), done_suffix.size(), done_suffix) == 0) {
+        wait_for_done = true;
+        stage_name = arg.substr(0, arg.size() - done_suffix.size());
+    } else if (arg.size() > init_suffix.size()
+               && arg.compare(arg.size() - init_suffix.size(), init_suffix.size(), init_suffix) == 0) {
+        wait_for_done = false;
+        stage_name = arg.substr(0, arg.size() - init_suffix.size());
+    } else {
+        VPR_ERROR(VPR_ERROR_DRAW,
+                  vtr::string_fmt("Unknown wait_for_stage argument '%s' "
+                                  "(use <stage>_initial or <stage>_done)",
+                                  arg.c_str())
+                      .c_str());
+    }
+
+    if (stage_name == "placement") {
+        want = e_pic_type::PLACEMENT;
+    } else if (stage_name == "routing") {
+        want = e_pic_type::ROUTING;
+    } else {
+        VPR_ERROR(VPR_ERROR_DRAW,
+                  vtr::string_fmt("Unknown or unsupported stage '%s' in "
+                                  "wait_for_stage (use placement|routing)",
+                                  stage_name.c_str())
+                      .c_str());
+    }
+}
+
 static void run_graphics_commands(const std::string& commands) {
-    // A very simple command interpreter for scripting graphics
+    // A very simple command interpreter for scripting graphics.
+    //
+    // The parsed command list and the script cursor live on draw_state
+    // (parsed_graphics_cmds / graphics_cmd_index) so that `wait_for_stage`
+    // barriers can split a script across multiple update_screen() invocations
+    // (e.g. half at placement, half at routing). On each call, processing
+    // resumes at the cursor and stops either at a wait-barrier whose stage
+    // hasn't been reached yet, or at end-of-script.
     t_draw_state* draw_state = get_draw_state_vars();
+
+    // Parse once: `graphics_commands` is set at init and never mutated, so
+    // the empty-vector check doubles as a "first call" trigger.
+    if (draw_state->parsed_graphics_cmds.empty()) {
+        for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
+            draw_state->parsed_graphics_cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
+        }
+    }
 
     t_draw_state backup_draw_state = *draw_state;
 
-    std::vector<std::vector<std::string>> cmds;
-    for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
-        cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
-    }
-
-    for (auto& cmd : cmds) {
+    while (draw_state->graphics_cmd_index < draw_state->parsed_graphics_cmds.size()) {
+        auto& cmd = draw_state->parsed_graphics_cmds[draw_state->graphics_cmd_index];
         VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
 
         for (auto& item : cmd) {
             VTR_LOG("%s ", item.c_str());
         }
         VTR_LOG("\n");
+
+        if (cmd[0] == "wait_for_stage") {
+            // Argument form: <stage>_<initial|done>, e.g. routing_initial
+            // or placement_done. `_initial` resumes on the first
+            // update_screen() at that stage; `_done` resumes only after the
+            // stage has been marked complete by notify_stage_complete()
+            // (i.e. on the post-stage settled checkpoint).
+            VTR_ASSERT_MSG(cmd.size() == 2,
+                           "Expect <stage>_initial or <stage>_done after 'wait_for_stage' "
+                           "(stage = placement|routing)");
+            e_pic_type want = e_pic_type::NO_PICTURE;
+            bool wait_for_done = false;
+            parse_wait_for_stage_arg(cmd[1], want, wait_for_done);
+
+            const auto& flag_set = wait_for_done ? completed_stages : initial_stages;
+            if (draw_state->pic_on_screen != want
+                || flag_set.find(want) == flag_set.end()) {
+                // Revert any draw-state mutations made by commands earlier in
+                // this script run, but keep the script bookkeeping (cursor +
+                // parse cache) so the next update_screen() resumes here.
+                size_t saved_index = draw_state->graphics_cmd_index;
+                *draw_state = backup_draw_state;
+                draw_state->graphics_cmd_index = saved_index;
+                return;
+            }
+            ++draw_state->graphics_cmd_index;
+            continue;
+        }
 
         if (cmd[0] == "save_graphics") {
             VTR_ASSERT_MSG(cmd.size() == 2,
@@ -1241,17 +1533,51 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->show_placement_macros = (e_draw_placement_macros)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_placement_macros);
         } else if (cmd[0] == "set_nets") {
+            // 0 = off, 1 = flylines, 2 = routed nets.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect net draw state after 'set_nets'");
-            draw_state->draw_nets = (e_draw_nets)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->draw_nets);
+                           "Expect net draw state (0=off, 1=flylines, 2=routed) after 'set_nets'");
+            int state = vtr::atoi(cmd[1]);
+            VTR_ASSERT_MSG(state >= SET_NETS_OFF && state <= SET_NETS_ROUTED,
+                           "set_nets expects a value in 0..2");
+            if (state == SET_NETS_OFF) {
+                draw_state->show_nets = false;
+                draw_state->draw_inter_cluster_nets = false;
+                draw_state->draw_intra_cluster_nets = false;
+                draw_state->highlight_fan_in_fan_out = false;
+            } else {
+                draw_state->show_nets = true;
+                draw_state->draw_inter_cluster_nets = true;
+                draw_state->draw_intra_cluster_nets = true;
+                draw_state->highlight_fan_in_fan_out = true;
+                draw_state->draw_nets = (state == SET_NETS_ROUTED) ? DRAW_ROUTED_NETS : DRAW_FLYLINES;
+            }
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_cpd") {
+            // Bitmask: 0=off, bit0(1)=flylines, bit1(2)=delay labels,
+            // bit2(4)=routed-wire highlight (only meaningful at routing stage;
+            // gate with `wait_for_stage routing_done`).
+            // Useful values: 1=flylines, 3=flylines+delays,
+            //                4=routing only,
+            //                5=flylines+routing, 7=flylines+delays+routing.
+            // Degenerate (no-op): 2 and 6 — delay labels need flylines to
+            // anchor to, so the delay bit alone draws nothing.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect show critical path delay (bool), show critical path flylines (bool), and show critical path routing (bool) after 'set_cpd'");
-            draw_state->show_crit_path = true;
-            draw_state->show_crit_path_flylines = true;
-            draw_state->show_crit_path_delays = (bool)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->show_crit_path);
+                           "Expect crit-path draw state (0=off, bitmask 1|2|4 = flylines|delays|routing) after 'set_cpd'");
+            int state = vtr::atoi(cmd[1]);
+            VTR_ASSERT_MSG(state >= SET_CPD_OFF && state <= (SET_CPD_FLYLINES | SET_CPD_DELAYS | SET_CPD_ROUTING),
+                           "set_cpd expects a value in 0..7");
+            if (state == SET_CPD_OFF) {
+                draw_state->show_crit_path = false;
+                draw_state->show_crit_path_flylines = false;
+                draw_state->show_crit_path_delays = false;
+                draw_state->show_crit_path_routing = false;
+            } else {
+                draw_state->show_crit_path = true;
+                draw_state->show_crit_path_flylines = (state & SET_CPD_FLYLINES) != 0;
+                draw_state->show_crit_path_delays = (state & SET_CPD_DELAYS) != 0;
+                draw_state->show_crit_path_routing = (state & SET_CPD_ROUTING) != 0;
+            }
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect routing util draw state after 'set_routing_util'");
@@ -1264,10 +1590,14 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->clip_routing_util = (bool)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->clip_routing_util);
         } else if (cmd[0] == "set_congestion") {
+            // 0 = off, 1 = congested nodes, 2 = congested nodes + nets.
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect congestion draw state after 'set_congestion'");
-            draw_state->show_congestion = (e_draw_congestion)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->show_congestion);
+                           "Expect congestion draw state (0=off, 1=congested, 2=congested+nets) after 'set_congestion'");
+            int state = vtr::atoi(cmd[1]);
+            VTR_ASSERT_MSG(state >= SET_CONGESTION_OFF && state <= SET_CONGESTION_NODES_AND_NETS,
+                           "set_congestion expects a value in 0..2");
+            draw_state->show_congestion = (e_draw_congestion)state;
+            VTR_LOG("%d\n", state);
         } else if (cmd[0] == "set_draw_block_outlines") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect draw block outlines state after 'set_draw_block_outlines'");
@@ -1290,16 +1620,30 @@ static void run_graphics_commands(const std::string& commands) {
             VTR_LOG("%d\n", (int)draw_state->draw_net_max_fanout);
         } else if (cmd[0] == "exit") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect exit code after 'exit'");
-            exit(vtr::atoi(cmd[1]));
+            // Deferred exit: record the request and stop processing. The
+            // current render checkpoint finishes (refresh/flush/save_graphics
+            // below in update_screen) and then the flag is honored.
+            pending_graphics_exit = true;
+            pending_graphics_exit_code = vtr::atoi(cmd[1]);
+            VTR_LOG("Graphics-command 'exit %d' deferred until next render checkpoint.\n",
+                    pending_graphics_exit_code);
+            ++draw_state->graphics_cmd_index;
+            break;
         } else {
             VPR_ERROR(VPR_ERROR_DRAW,
                       vtr::string_fmt("Unrecognized graphics command '%s'",
                                       cmd[0].c_str())
                           .c_str());
         }
+        ++draw_state->graphics_cmd_index;
     }
 
-    *draw_state = backup_draw_state; // Restore original draw state
+    // Restore user-controllable draw state, but keep the script cursor at
+    // end-of-script so subsequent update_screen() calls are no-ops rather
+    // than re-running the whole script.
+    size_t saved_index = draw_state->graphics_cmd_index;
+    *draw_state = backup_draw_state;
+    draw_state->graphics_cmd_index = saved_index;
 
     //Advance the sequence number
     ++draw_state->sequence_number;

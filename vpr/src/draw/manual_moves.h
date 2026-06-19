@@ -18,7 +18,8 @@
 #include <cfloat>
 #include <cstring>
 #include <cmath>
-#include <gtk/gtk.h>
+
+#include <QWidget>
 
 /**
  * @brief ManualMovesInfo struct
@@ -70,7 +71,7 @@ struct ManualMovesState {
     bool manual_move_window_is_open = false;
     bool user_highlighted_block = false;
     bool manual_move_enabled = false;
-    GtkWidget* manual_move_window;
+    QWidget* manual_move_window;
 };
 
 /** manual moves functions **/
@@ -94,10 +95,10 @@ void draw_manual_moves_window(const std::string& block_id);
  * @brief Evaluates if the user input is valid and allowed.
  *
  * Sets the members from the ManualMovesState manual_moves_state variable to their respective values (block id and locations).
- * @param GtkWidget* widget: Passed in for gtk callback functions (Needed due to the GTK function prototype, in GTK documentation).
- * @param GtkWidget* grid: The grid is used to extract the user input from the manual move window, to later assign to the ManualMovesState variable. 
+ * @param QWidget* widget: Passed in for gtk callback functions (Needed due to the GTK function prototype, in GTK documentation).
+ * @param QWidget* grid: The grid is used to extract the user input from the manual move window, to later assign to the ManualMovesState variable. 
  */
-void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+void calculate_cost_callback(QWidget* /*widget*/, QWidget* grid);
 
 /**
  * @brief In -detail checking of the user's input.
