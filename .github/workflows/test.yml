@@ -253,7 +253,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - uses: actions/setup-python@v6
@@ -352,7 +352,7 @@ jobs:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - uses: actions/setup-python@v6
