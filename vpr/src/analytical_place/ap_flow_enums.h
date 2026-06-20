@@ -7,17 +7,26 @@
  */
 
 /**
+ * @brief The type of a Global Placer.
+ *
+ * The Analytical Placement flow may implement different Global Placers. This
+ * enum can select between these different Global Placers.
+ */
+enum class e_ap_global_placer {
+    SimPL,             ///< Global placer which alternates an analytical solver with partial legalization.
+    NonlinearNesterov, ///< Global placer which uses nonlinear Nesterov optimization of smooth wirelength and density objectives.
+};
+
+/**
  * @brief The type of an Analytical Solver.
  *
- * The Analytical Placement flow may implement different Analytical Solvers as
- * part of the Global Placer. This enum can select between these different
- * Analytical Solvers.
+ * The SimPL Global Placer may implement different Analytical Solvers. This
+ * enum can select between these different Analytical Solvers.
  */
 enum class e_ap_analytical_solver {
     Identity,  ///< The identity analytical solver, which does not perform any optimizations on the placement. Used as a placeholder when solving should not be used.
     QP_Hybrid, ///< Analytical Solver which uses the hybrid net model to optimize the quadratic HPWL objective.
     LP_B2B,    ///< Analytical Solver which uses the B2B net model to optimize the linear HPWL objective.
-    Nesterov   ///< Global placer which uses accelerated first-order updates on smooth wirelength and density objectives.
 };
 
 /**

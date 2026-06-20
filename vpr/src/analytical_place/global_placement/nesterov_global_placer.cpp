@@ -35,6 +35,31 @@ namespace {
 constexpr size_t kMaxNesterovIterations = 200;
 
 /**
+ * @brief Number of optimization/legalization epochs in the Nesterov placer.
+ */
+constexpr size_t kNesterovEpochs = 4;
+
+/**
+ * @brief Number of first-order iterations performed before each legalization.
+ */
+constexpr size_t kNesterovIterationsPerEpoch = kMaxNesterovIterations / kNesterovEpochs;
+
+/**
+ * @brief Number of Jacobi iterations used to solve each electrostatic potential.
+ */
+constexpr size_t kElectrostaticJacobiIterations = 40;
+
+/**
+ * @brief Initial proximity weight after the first partial legalization.
+ */
+constexpr double kInitialProximityWeight = 0.05;
+
+/**
+ * @brief Multiplicative proximity-weight increase between legalization epochs.
+ */
+constexpr double kProximityWeightGrowth = 2.0;
+
+/**
  * @brief Minimum line-search step size before accepting a non-improving move.
  */
 constexpr double kMinStepSize = 1e-6;
@@ -196,14 +221,7 @@ PartialPlacement NesterovGlobalPlacer::place() {
     vtr::ScopedStartFinishTimer global_placer_time("AP Nesterov Global Placer");
 
     PartialPlacement current = initialize_placement_();
-    update_timing_info_with_placement_(current);
-    update_timing_net_weights_();
-
-    PartialPlacement y_placement = current;
-    PartialPlacement next = current;
-    PlacementGradient grad(ap_netlist_);
-
-    ObjectiveValue initial_components = evaluate_objective_(current, 1.0, nullptr);
+    ObjectiveValue initial_components = evaluate_objective_(current, 1.0, nullptr, 0., nullptr);
     double initial_density_weight = 1e-3;
     if (initial_components.density > kEpsilon) {
         initial_density_weight = kInitialDensityToWirelengthRatio * std::max(initial_components.wirelength, 1.0) / initial_components.density;
@@ -212,71 +230,116 @@ PartialPlacement NesterovGlobalPlacer::place() {
     double max_density_weight = density_weight * kMaxDensityWeightGrowth;
 
     double device_span = std::max<double>(device_grid_width_, device_grid_height_);
-    double step_size = std::max(0.1, device_span * kInitialStepSpanFraction);
-    double nesterov_t = 1.0;
-    ObjectiveValue current_obj = evaluate_objective_(current, density_weight, nullptr);
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("----  ------------  --------------  ------------  ------------  -----------\n");
-        VTR_LOG("Iter  Smooth Obj    Smooth WL       Density       HPWL          Step\n");
-        VTR_LOG("----  ------------  --------------  ------------  ------------  -----------\n");
+        VTR_LOG("Epoch  Pre HPWL  Post HPWL  Pre Oflow  Post Oflow  Pre Max  Post Max  Mean Move  Max Move  Density Wt  Prox Wt\n");
+        VTR_LOG("-----  --------  ---------  ---------  ----------  -------  --------  ---------  --------  ----------  -------\n");
     }
 
-    for (size_t iter = 0; iter < kMaxNesterovIterations; iter++) {
-        ObjectiveValue y_obj = evaluate_objective_(y_placement, density_weight, &grad);
-        double grad_norm_sq = gradient_norm_squared_(grad);
-        if (grad_norm_sq < kEpsilon)
-            break;
+    for (size_t epoch = 0; epoch < kNesterovEpochs; epoch++) {
+        update_timing_info_with_placement_(current);
+        update_timing_net_weights_();
 
-        double accepted_step = step_size;
-        ObjectiveValue next_obj;
-        bool accepted = false;
-        while (accepted_step >= kMinStepSize) {
-            gradient_step_(y_placement, grad, accepted_step, next);
-            next_obj = evaluate_objective_(next, density_weight, nullptr);
-            if (next_obj.total <= y_obj.total || accepted_step == kMinStepSize) {
-                accepted = true;
+        PartialPlacement legal_anchor = current;
+        PartialPlacement y_placement = current;
+        PartialPlacement next = current;
+        PlacementGradient grad(ap_netlist_);
+        double proximity_weight = epoch == 0 ? 0. : kInitialProximityWeight * std::pow(kProximityWeightGrowth, epoch - 1);
+        double step_size = std::max(0.1, device_span * kInitialStepSpanFraction);
+        double nesterov_t = 1.0;
+        ObjectiveValue current_obj = evaluate_objective_(current,
+                                                         density_weight,
+                                                         &legal_anchor,
+                                                         proximity_weight,
+                                                         nullptr);
+
+        for (size_t iter = 0; iter < kNesterovIterationsPerEpoch; iter++) {
+            ObjectiveValue y_obj = evaluate_objective_(y_placement,
+                                                       density_weight,
+                                                       &legal_anchor,
+                                                       proximity_weight,
+                                                       &grad);
+            double grad_norm_sq = gradient_norm_squared_(grad);
+            if (grad_norm_sq < kEpsilon)
                 break;
+
+            double accepted_step = step_size;
+            ObjectiveValue next_obj;
+            bool accepted = false;
+            while (accepted_step >= kMinStepSize) {
+                gradient_step_(y_placement, grad, accepted_step, next);
+                next_obj = evaluate_objective_(next,
+                                               density_weight,
+                                               &legal_anchor,
+                                               proximity_weight,
+                                               nullptr);
+                if (next_obj.total <= y_obj.total || accepted_step == kMinStepSize) {
+                    accepted = true;
+                    break;
+                }
+                accepted_step *= 0.5;
             }
-            accepted_step *= 0.5;
+
+            if (!accepted)
+                break;
+
+            double next_t = 0.5 * (1.0 + std::sqrt(1.0 + 4.0 * nesterov_t * nesterov_t));
+            double beta = (nesterov_t - 1.0) / next_t;
+
+            if (next_obj.total > current_obj.total) {
+                nesterov_t = 1.0;
+                copy_placement_(next, y_placement);
+            } else {
+                extrapolate_(current, next, beta, y_placement);
+                nesterov_t = next_t;
+            }
+
+            copy_placement_(next, current);
+            current_obj = next_obj;
+            step_size = std::min(device_span, accepted_step * 1.05);
+            density_weight = std::min(max_density_weight, density_weight * kDensityWeightGrowth);
         }
 
-        if (!accepted)
-            break;
+        ObjectiveValue pre_legalization = evaluate_objective_(current,
+                                                              density_weight,
+                                                              &legal_anchor,
+                                                              proximity_weight,
+                                                              nullptr);
+        PartialPlacement before_legalization = current;
+        partial_legalizer_->legalize(current);
+        ObjectiveValue post_legalization = evaluate_objective_(current,
+                                                               density_weight,
+                                                               &legal_anchor,
+                                                               proximity_weight,
+                                                               nullptr);
 
-        double next_t = 0.5 * (1.0 + std::sqrt(1.0 + 4.0 * nesterov_t * nesterov_t));
-        double beta = (nesterov_t - 1.0) / next_t;
-
-        if (next_obj.total > current_obj.total) {
-            nesterov_t = 1.0;
-            copy_placement_(next, y_placement);
-        } else {
-            extrapolate_(current, next, beta, y_placement);
-            nesterov_t = next_t;
+        double total_displacement = 0.;
+        double max_displacement = 0.;
+        for (APBlockId blk_id : optimizable_blocks_) {
+            double dx = current.block_x_locs[blk_id] - before_legalization.block_x_locs[blk_id];
+            double dy = current.block_y_locs[blk_id] - before_legalization.block_y_locs[blk_id];
+            double displacement = std::hypot(dx, dy);
+            total_displacement += displacement;
+            max_displacement = std::max(max_displacement, displacement);
         }
 
-        copy_placement_(next, current);
-        current_obj = next_obj;
-        step_size = std::min(device_span, accepted_step * 1.05);
-        density_weight = std::min(max_density_weight, density_weight * kDensityWeightGrowth);
-
-        if (log_verbosity_ >= 1 && (iter % 10 == 0 || iter + 1 == kMaxNesterovIterations)) {
-            VTR_LOG("%4zu  %12.4g  %14.4g  %12.4g  %12.2f  %11.4g\n",
-                    iter,
-                    current_obj.total,
-                    current_obj.wirelength,
-                    current_obj.density,
-                    current.get_hpwl(ap_netlist_),
-                    accepted_step);
-        }
+        VTR_LOG("%5zu  %8.2f  %9.2f  %9.4f  %10.4f  %7.4f  %8.4f  %9.4f  %8.4f  %10.4g  %7.4g\n",
+                epoch,
+                before_legalization.get_hpwl(ap_netlist_),
+                current.get_hpwl(ap_netlist_),
+                pre_legalization.total_overflow,
+                post_legalization.total_overflow,
+                pre_legalization.max_overflow,
+                post_legalization.max_overflow,
+                optimizable_blocks_.empty() ? 0. : total_displacement / optimizable_blocks_.size(),
+                max_displacement,
+                density_weight,
+                proximity_weight);
     }
 
     VTR_LOG("Nesterov Global Placer Statistics:\n");
-    VTR_LOG("\tSmooth placement HPWL before partial legalization: %g\n", current.get_hpwl(ap_netlist_));
+    VTR_LOG("\tPlacement HPWL after final partial legalization: %g\n", current.get_hpwl(ap_netlist_));
     VTR_LOG("\tFinal density weight: %g\n", density_weight);
-
-    partial_legalizer_->legalize(current);
-    VTR_LOG("\tPlacement HPWL after partial legalization: %g\n", current.get_hpwl(ap_netlist_));
     partial_legalizer_->print_statistics();
 
     return current;
@@ -284,14 +347,22 @@ PartialPlacement NesterovGlobalPlacer::place() {
 
 NesterovGlobalPlacer::ObjectiveValue NesterovGlobalPlacer::evaluate_objective_(const PartialPlacement& p_placement,
                                                                                double density_weight,
+                                                                               const PartialPlacement* legal_anchor,
+                                                                               double proximity_weight,
                                                                                PlacementGradient* grad) const {
     if (grad)
         grad->clear();
 
     ObjectiveValue value;
     value.wirelength = add_wirelength_gradient_(p_placement, grad);
-    value.density = add_density_gradient_(p_placement, density_weight, grad);
-    value.total = value.wirelength + density_weight * value.density;
+    value.density = add_density_gradient_(p_placement,
+                                          density_weight,
+                                          &value.total_overflow,
+                                          &value.max_overflow,
+                                          grad);
+    if (legal_anchor)
+        value.proximity = add_proximity_gradient_(p_placement, *legal_anchor, proximity_weight, grad);
+    value.total = value.wirelength + density_weight * value.density + proximity_weight * value.proximity;
     return value;
 }
 
@@ -474,21 +545,53 @@ float NesterovGlobalPlacer::delay_per_tile_() const {
 
 double NesterovGlobalPlacer::add_density_gradient_(const PartialPlacement& p_placement,
                                                    double density_weight,
+                                                   double* total_overflow,
+                                                   double* max_overflow,
                                                    PlacementGradient* grad) const {
-    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
-    vtr::vector<FlatPlacementBinId, PrimitiveVector> bin_utilization(density_manager_->flat_placement_bins().bins().size());
+    VTR_ASSERT_SAFE(total_overflow);
+    VTR_ASSERT_SAFE(max_overflow);
+    *total_overflow = 0.;
+    *max_overflow = 0.;
 
-    struct BlockBinContribution {
-        APBlockId blk_id;
-        FlatPlacementBinId bin_id;
-        double dweight_dx;
-        double dweight_dy;
-        PrimitiveVector block_mass;
+    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
+    std::vector<PrimitiveVectorDim> dimensions = density_manager_->get_used_dims_mask().get_non_zero_dims();
+    if (dimensions.empty())
+        return 0.;
+
+    size_t width = device_grid_width_;
+    size_t height = device_grid_height_;
+    size_t num_layers = device_grid_num_layers_;
+    size_t num_sites = width * height * num_layers;
+    auto site_index = [width, height](size_t layer, size_t x, size_t y) {
+        return (layer * height + y) * width + x;
     };
 
-    std::vector<BlockBinContribution> contributions;
-    contributions.reserve(optimizable_blocks_.size() * 4);
+    std::vector<std::vector<double>> utilization(dimensions.size(), std::vector<double>(num_sites, 0.));
+    std::vector<std::vector<double>> target_capacity(dimensions.size(), std::vector<double>(num_sites, 0.));
+    std::vector<std::vector<double>> potential(dimensions.size(), std::vector<double>(num_sites, 0.));
+    std::vector<std::vector<double>> field_x(dimensions.size(), std::vector<double>(num_sites, 0.));
+    std::vector<std::vector<double>> field_y(dimensions.size(), std::vector<double>(num_sites, 0.));
 
+    // Spread each bin's capacity over its footprint, so hard blocks do not
+    // create an artificially large electrostatic charge at their root tile.
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t x = 0; x < width; x++) {
+            for (size_t y = 0; y < height; y++) {
+                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+                const vtr::Rect<double>& region = bins.bin_region(bin_id);
+                double bin_area = std::max(1.0, region.width() * region.height());
+                double target_density = density_manager_->get_bin_target_density(bin_id);
+                size_t idx = site_index(layer, x, y);
+                for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+                    PrimitiveVectorDim dim = dimensions[dim_idx];
+                    target_capacity[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim)
+                                                    * target_density / bin_area;
+                }
+            }
+        }
+    }
+
+    // Deposit each primitive-vector mass bilinearly onto the tile grid.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         if (block_mass.is_zero())
@@ -496,91 +599,208 @@ double NesterovGlobalPlacer::add_density_gradient_(const PartialPlacement& p_pla
 
         double x = std::clamp(p_placement.block_x_locs[blk_id], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
         double y = std::clamp(p_placement.block_y_locs[blk_id], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
-        double layer = std::clamp(std::round(p_placement.block_layer_nums[blk_id]), 0., static_cast<double>(device_grid_num_layers_ - 1));
-
-        if (!block_is_optimizable_(blk_id)) {
-            FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-            bin_utilization[bin_id] += block_mass;
-            continue;
-        }
-
-        int x0 = static_cast<int>(std::floor(x));
-        int y0 = static_cast<int>(std::floor(y));
-        int x1 = std::min<int>(x0 + 1, device_grid_width_ - 1);
-        int y1 = std::min<int>(y0 + 1, device_grid_height_ - 1);
+        size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
+                                                      0.,
+                                                      static_cast<double>(device_grid_num_layers_ - 1)));
+        size_t x0 = static_cast<size_t>(std::floor(x));
+        size_t y0 = static_cast<size_t>(std::floor(y));
+        size_t x1 = std::min(x0 + 1, width - 1);
+        size_t y1 = std::min(y0 + 1, height - 1);
         double fx = x - x0;
         double fy = y - y0;
-
-        double wx[2] = {1.0 - fx, fx};
-        double wy[2] = {1.0 - fy, fy};
-        double dwx[2] = {-1.0, 1.0};
-        double dwy[2] = {-1.0, 1.0};
-        int xs[2] = {x0, x1};
-        int ys[2] = {y0, y1};
+        double wx[2] = {1. - fx, fx};
+        double wy[2] = {1. - fy, fy};
+        size_t xs[2] = {x0, x1};
+        size_t ys[2] = {y0, y1};
 
         if (x0 == x1) {
-            wx[0] = 1.0;
-            wx[1] = 0.0;
-            dwx[0] = 0.0;
-            dwx[1] = 0.0;
+            wx[0] = 1.;
+            wx[1] = 0.;
         }
         if (y0 == y1) {
-            wy[0] = 1.0;
-            wy[1] = 0.0;
-            dwy[0] = 0.0;
-            dwy[1] = 0.0;
+            wy[0] = 1.;
+            wy[1] = 0.;
         }
 
-        for (size_t xi = 0; xi < 2; xi++) {
-            for (size_t yi = 0; yi < 2; yi++) {
-                double weight = wx[xi] * wy[yi];
-                if (weight == 0.)
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
+            if (mass == 0.)
+                continue;
+            for (size_t xi = 0; xi < 2; xi++) {
+                for (size_t yi = 0; yi < 2; yi++) {
+                    double weight = wx[xi] * wy[yi];
+                    if (weight != 0.)
+                        utilization[dim_idx][site_index(layer, xs[xi], ys[yi])] += mass * weight;
+                }
+            }
+        }
+    }
+
+    double density_energy = 0.;
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        std::vector<double> charge(num_sites, 0.);
+        std::vector<bool> active(num_sites, false);
+        double charge_sum = 0.;
+        size_t active_sites = 0;
+
+        for (size_t idx = 0; idx < num_sites; idx++) {
+            double target = target_capacity[dim_idx][idx];
+            double utilization_at_site = utilization[dim_idx][idx];
+            if (target <= kEpsilon) {
+                // A block in a tile without capacity for its primitive type is
+                // an overfill source, not an empty destination.
+                if (utilization_at_site <= kEpsilon)
                     continue;
-                FlatPlacementBinId bin_id = density_manager_->get_bin(xs[xi], ys[yi], layer);
-                PrimitiveVector weighted_mass = block_mass;
-                weighted_mass *= weight;
-                bin_utilization[bin_id] += weighted_mass;
-                contributions.push_back({blk_id,
-                                         bin_id,
-                                         dwx[xi] * wy[yi],
-                                         wx[xi] * dwy[yi],
-                                         block_mass});
+                charge[idx] = utilization_at_site;
+                *total_overflow += utilization_at_site;
+                *max_overflow = std::max(*max_overflow, utilization_at_site);
+            } else {
+                double normalized_utilization = utilization_at_site / std::max(target, 1.0);
+                charge[idx] = normalized_utilization - 1.0;
+
+                double normalized_overflow = std::max(0., normalized_utilization - 1.0);
+                *total_overflow += normalized_overflow;
+                *max_overflow = std::max(*max_overflow, normalized_overflow);
+            }
+            active[idx] = true;
+            charge_sum += charge[idx];
+            active_sites++;
+        }
+
+        if (active_sites == 0)
+            continue;
+
+        double mean_charge = charge_sum / active_sites;
+        for (size_t idx = 0; idx < num_sites; idx++) {
+            if (active[idx])
+                charge[idx] -= mean_charge;
+        }
+
+        std::vector<double> next_potential(num_sites, 0.);
+        for (size_t iter = 0; iter < kElectrostaticJacobiIterations; iter++) {
+            for (size_t layer = 0; layer < num_layers; layer++) {
+                for (size_t x = 0; x < width; x++) {
+                    for (size_t y = 0; y < height; y++) {
+                        size_t idx = site_index(layer, x, y);
+                        if (!active[idx]) {
+                            next_potential[idx] = 0.;
+                            continue;
+                        }
+
+                        double neighbor_sum = 0.;
+                        if (x > 0)
+                            neighbor_sum += potential[dim_idx][site_index(layer, x - 1, y)];
+                        if (x + 1 < width)
+                            neighbor_sum += potential[dim_idx][site_index(layer, x + 1, y)];
+                        if (y > 0)
+                            neighbor_sum += potential[dim_idx][site_index(layer, x, y - 1)];
+                        if (y + 1 < height)
+                            neighbor_sum += potential[dim_idx][site_index(layer, x, y + 1)];
+                        next_potential[idx] = 0.25 * (neighbor_sum + charge[idx]);
+                    }
+                }
+            }
+            potential[dim_idx].swap(next_potential);
+        }
+
+        for (size_t idx = 0; idx < num_sites; idx++)
+            density_energy += 0.5 * charge[idx] * potential[dim_idx][idx];
+
+        for (size_t layer = 0; layer < num_layers; layer++) {
+            for (size_t x = 0; x < width; x++) {
+                for (size_t y = 0; y < height; y++) {
+                    size_t idx = site_index(layer, x, y);
+                    if (!active[idx])
+                        continue;
+                    size_t left = site_index(layer, x == 0 ? x : x - 1, y);
+                    size_t right = site_index(layer, x + 1 == width ? x : x + 1, y);
+                    size_t down = site_index(layer, x, y == 0 ? y : y - 1);
+                    size_t up = site_index(layer, x, y + 1 == height ? y : y + 1);
+                    field_x[dim_idx][idx] = 0.5 * (potential[dim_idx][right] - potential[dim_idx][left]);
+                    field_y[dim_idx][idx] = 0.5 * (potential[dim_idx][up] - potential[dim_idx][down]);
+                }
             }
         }
     }
 
-    vtr::vector<FlatPlacementBinId, PrimitiveVector> bin_util_derivative(bins.bins().size());
-    double density_penalty = 0.;
-    for (FlatPlacementBinId bin_id : bins.bins()) {
-        PrimitiveVector target_capacity = density_manager_->get_bin_capacity(bin_id);
-        target_capacity *= density_manager_->get_bin_target_density(bin_id);
+    if (!grad)
+        return density_energy;
 
-        for (PrimitiveVectorDim dim : bin_utilization[bin_id].get_non_zero_dims()) {
-            double util = bin_utilization[bin_id].get_dim_val(dim);
-            double capacity = target_capacity.get_dim_val(dim);
-            double overflow = std::max(0.0, util - capacity);
-            double norm_capacity = std::max(capacity, 1.0);
-            double normalized_overflow = overflow / norm_capacity;
-            density_penalty += 0.5 * normalized_overflow * normalized_overflow;
-            if (overflow > 0.)
-                bin_util_derivative[bin_id].set_dim_val(dim, overflow / (norm_capacity * norm_capacity));
+    for (APBlockId blk_id : optimizable_blocks_) {
+        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+        if (block_mass.is_zero())
+            continue;
+
+        double x = std::clamp(p_placement.block_x_locs[blk_id], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+        double y = std::clamp(p_placement.block_y_locs[blk_id], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+        size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
+                                                      0.,
+                                                      static_cast<double>(device_grid_num_layers_ - 1)));
+        size_t x0 = static_cast<size_t>(std::floor(x));
+        size_t y0 = static_cast<size_t>(std::floor(y));
+        size_t x1 = std::min(x0 + 1, width - 1);
+        size_t y1 = std::min(y0 + 1, height - 1);
+        double fx = x - x0;
+        double fy = y - y0;
+        double wx[2] = {1. - fx, fx};
+        double wy[2] = {1. - fy, fy};
+        size_t xs[2] = {x0, x1};
+        size_t ys[2] = {y0, y1};
+
+        if (x0 == x1) {
+            wx[0] = 1.;
+            wx[1] = 0.;
         }
-    }
+        if (y0 == y1) {
+            wy[0] = 1.;
+            wy[1] = 0.;
+        }
 
-    if (grad) {
-        for (const BlockBinContribution& contribution : contributions) {
-            double density_derivative = 0.;
-            for (PrimitiveVectorDim dim : contribution.block_mass.get_non_zero_dims()) {
-                density_derivative += bin_util_derivative[contribution.bin_id].get_dim_val(dim)
-                                      * contribution.block_mass.get_dim_val(dim);
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
+            if (mass == 0.)
+                continue;
+
+            double local_field_x = 0.;
+            double local_field_y = 0.;
+            double local_target = 0.;
+            for (size_t xi = 0; xi < 2; xi++) {
+                for (size_t yi = 0; yi < 2; yi++) {
+                    double weight = wx[xi] * wy[yi];
+                    size_t idx = site_index(layer, xs[xi], ys[yi]);
+                    local_field_x += weight * field_x[dim_idx][idx];
+                    local_field_y += weight * field_y[dim_idx][idx];
+                    local_target += weight * target_capacity[dim_idx][idx];
+                }
             }
-            density_derivative *= density_weight;
-            grad->dx[contribution.blk_id] += density_derivative * contribution.dweight_dx;
-            grad->dy[contribution.blk_id] += density_derivative * contribution.dweight_dy;
+
+            double normalized_mass = mass / std::max(local_target, 1.0);
+            grad->dx[blk_id] += density_weight * normalized_mass * local_field_x;
+            grad->dy[blk_id] += density_weight * normalized_mass * local_field_y;
         }
     }
 
-    return density_penalty;
+    return density_energy;
+}
+
+double NesterovGlobalPlacer::add_proximity_gradient_(const PartialPlacement& p_placement,
+                                                     const PartialPlacement& legal_anchor,
+                                                     double proximity_weight,
+                                                     PlacementGradient* grad) const {
+    if (proximity_weight == 0.)
+        return 0.;
+
+    double proximity_penalty = 0.;
+    for (APBlockId blk_id : optimizable_blocks_) {
+        double dx = p_placement.block_x_locs[blk_id] - legal_anchor.block_x_locs[blk_id];
+        double dy = p_placement.block_y_locs[blk_id] - legal_anchor.block_y_locs[blk_id];
+        proximity_penalty += 0.5 * (dx * dx + dy * dy);
+        if (grad) {
+            grad->dx[blk_id] += proximity_weight * dx;
+            grad->dy[blk_id] += proximity_weight * dy;
+        }
+    }
+    return proximity_penalty;
 }
 
 void NesterovGlobalPlacer::project_placement_(PartialPlacement& p_placement) const {

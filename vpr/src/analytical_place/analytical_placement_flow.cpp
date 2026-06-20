@@ -199,7 +199,8 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
         return p_placement;
     } else {
         // Run the Global Placer
-        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(ap_opts.analytical_solver_type,
+        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(ap_opts.global_placer_type,
+                                                                         ap_opts.analytical_solver_type,
                                                                          ap_opts.partial_legalizer_type,
                                                                          ap_netlist,
                                                                          prepacker,

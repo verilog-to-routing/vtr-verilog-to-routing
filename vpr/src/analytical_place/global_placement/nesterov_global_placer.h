@@ -79,9 +79,12 @@ class NesterovGlobalPlacer : public GlobalPlacer {
      * @brief Objective components from a smooth placement evaluation.
      */
     struct ObjectiveValue {
-        double total = 0.;      ///< Weighted total objective.
-        double wirelength = 0.; ///< Unweighted smooth wirelength.
-        double density = 0.;    ///< Unweighted smooth density penalty.
+        double total = 0.;          ///< Weighted total objective.
+        double wirelength = 0.;     ///< Unweighted smooth wirelength.
+        double density = 0.;        ///< Unweighted electrostatic density energy.
+        double proximity = 0.;      ///< Unweighted proximity penalty to a legalized anchor.
+        double total_overflow = 0.; ///< Sum of normalized tile overflows.
+        double max_overflow = 0.;   ///< Largest normalized tile overflow.
     };
 
     /**
@@ -94,6 +97,8 @@ class NesterovGlobalPlacer : public GlobalPlacer {
      */
     ObjectiveValue evaluate_objective_(const PartialPlacement& p_placement,
                                        double density_weight,
+                                       const PartialPlacement* legal_anchor,
+                                       double proximity_weight,
                                        PlacementGradient* grad) const;
 
     /**
@@ -122,7 +127,17 @@ class NesterovGlobalPlacer : public GlobalPlacer {
      */
     double add_density_gradient_(const PartialPlacement& p_placement,
                                  double density_weight,
+                                 double* total_overflow,
+                                 double* max_overflow,
                                  PlacementGradient* grad) const;
+
+    /**
+     * @brief Add a quadratic proximity penalty to the latest legalized placement.
+     */
+    double add_proximity_gradient_(const PartialPlacement& p_placement,
+                                   const PartialPlacement& legal_anchor,
+                                   double proximity_weight,
+                                   PlacementGradient* grad) const;
 
     /**
      * @brief Project all block locations into device bounds and restore fixed blocks.

@@ -33,7 +33,8 @@
 #include "vtr_log.h"
 #include "vtr_time.h"
 
-std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
+std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_placer_type,
+                                                 e_ap_analytical_solver analytical_solver_type,
                                                  e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
@@ -49,40 +50,44 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
                                                  int log_verbosity) {
-    if (analytical_solver_type == e_ap_analytical_solver::Nesterov) {
-        (void)num_threads;
-        return std::make_unique<NesterovGlobalPlacer>(ap_netlist,
-                                                      prepacker,
-                                                      atom_netlist,
-                                                      device_grid,
-                                                      logical_block_types,
-                                                      physical_tile_types,
-                                                      models,
-                                                      pre_cluster_timing_manager,
-                                                      place_delay_model,
-                                                      ap_timing_tradeoff,
-                                                      generate_mass_report,
-                                                      target_density_arg_strs,
-                                                      partial_legalizer_type,
-                                                      log_verbosity);
+    switch (global_placer_type) {
+        case e_ap_global_placer::SimPL:
+            return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
+                                                       partial_legalizer_type,
+                                                       ap_netlist,
+                                                       prepacker,
+                                                       atom_netlist,
+                                                       device_grid,
+                                                       logical_block_types,
+                                                       physical_tile_types,
+                                                       models,
+                                                       pre_cluster_timing_manager,
+                                                       place_delay_model,
+                                                       ap_timing_tradeoff,
+                                                       generate_mass_report,
+                                                       target_density_arg_strs,
+                                                       num_threads,
+                                                       log_verbosity);
+        case e_ap_global_placer::NonlinearNesterov:
+            (void)num_threads;
+            return std::make_unique<NesterovGlobalPlacer>(ap_netlist,
+                                                          prepacker,
+                                                          atom_netlist,
+                                                          device_grid,
+                                                          logical_block_types,
+                                                          physical_tile_types,
+                                                          models,
+                                                          pre_cluster_timing_manager,
+                                                          place_delay_model,
+                                                          ap_timing_tradeoff,
+                                                          generate_mass_report,
+                                                          target_density_arg_strs,
+                                                          partial_legalizer_type,
+                                                          log_verbosity);
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized global placer type");
+            return nullptr;
     }
-
-    return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
-                                               partial_legalizer_type,
-                                               ap_netlist,
-                                               prepacker,
-                                               atom_netlist,
-                                               device_grid,
-                                               logical_block_types,
-                                               physical_tile_types,
-                                               models,
-                                               pre_cluster_timing_manager,
-                                               place_delay_model,
-                                               ap_timing_tradeoff,
-                                               generate_mass_report,
-                                               target_density_arg_strs,
-                                               num_threads,
-                                               log_verbosity);
 }
 
 SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_type,
