@@ -5,7 +5,7 @@
 #
 # Pinned to Ubuntu 24.04's distro versions (the CI runner OS). These have
 # Python 3.12 wheels on PyPI, so they install without a source build.
-numpy==1.26.4
+numpy==2.4.6
 scikit-image==0.22.0
 Pillow==12.2.0
 gcovr==7.0
