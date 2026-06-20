@@ -40,10 +40,6 @@
 // Constant values used in this file
 static constexpr ezgl::color DEFAULT_RR_NODE_COLOR = ezgl::BLACK;
 static constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-static constexpr int PERPENDICULAR_OFFSET = 13;
-static constexpr int DELAY_TEXT_WIDTH = 40;
-static constexpr int DELAY_TEXT_HEIGHT = 13;
-static constexpr double EDGE_OFFSET_PERCENT = 0.05;
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
@@ -69,32 +65,6 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(226, 88, 34),   //reddish orange
     ezgl::color(43, 61, 38)     //olive green
 };
-
-static void update_crit_path_delay_drawing_info(
-    const tatum::TimingPath& path,
-    std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info,
-    ezgl::renderer* g);
-
-static void update_text_bbox_from_relative_pos(
-    CritPathDelayDrawingInfo& delay_drawing_info,
-    e_delay_text_relative_pos text_relative_pos);
-
-static void update_least_cluttering_delay_text_locs(
-    std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info);
-
-static void update_init_num_overlaps_per_edge(
-    std::vector<CritPathDelayDrawingInfo>& crit_path_delay_drawing_info,
-    std::vector<std::pair<int, int>>& init_num_overlaps_per_edge);
-
-static bool check_if_bboxes_overlap(
-    const ezgl::rectangle& bbox1,
-    const ezgl::rectangle& bbox2);
-
-static void draw_delay_on_edge(
-    ezgl::point2d start,
-    ezgl::point2d end,
-    float incr_delay,
-    ezgl::renderer* g);
 
 /// @brief Determines the display color for a given block location.
 /// @details If a placer breakpoint highlight applies, uses its color; otherwise,

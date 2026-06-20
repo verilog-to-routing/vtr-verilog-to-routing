@@ -7,26 +7,28 @@
 #include "ezgl/graphics.hpp"
 
 void draw_crit_path(ezgl::renderer* g);
-void draw_timing_edges(ezgl::renderer* g);
-void draw_routed_timing_connections(ezgl::renderer* g);
+void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::renderer* g);
+void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::renderer* g);
+void draw_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer* g)
 
 
 class DelayLabelDrawer {
     public:
-    DelayLabelDrawer(const tatum::TimingPath& path, const int num_timing_edges, ezgl::renderer* g);
-    draw_delay_labels(ezgl::renderer* g);
+    DelayLabelDrawer() = default;
+    void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g);
 
     private:
-    struct t_delay_label_info {
+    struct t_label_drawing_info {
         double edge_length = 0.0;
-        bool skip_delay_text = false;
-        ezgl::rectangle virtual_centered_text_bbox;
-        ezgl::rectangle delay_text_bbox;
-        double text_angle = 0.0;
+        bool hide_label = false;
+        int label_transparency = 0;
+        ezgl::rectangle virtual_centered_label_bbox;
+        ezgl::rectangle label_bbox;
+        double rotation_angle = 0.0;
     };
 
-    struct t_overlap_info {
-        int edge_index = 0;
+    struct t_label_overlap_info {
+        int edge_idx = 0;
         int num_overlaps = 0;
     }
 
@@ -43,14 +45,20 @@ class DelayLabelDrawer {
         FAR_RIGHT_BELOW,
     };
 
-    std::vector<t_delay_label_info> delay_label_info;
-    std::vector<t_overlap_info> init_overlap_info;
-    
-    void update_label_drawing_info();
-    void update_label_bbox_from_relative_pos(e_label_relative_pos label_relative_pos);
+    std::vector<t_label_drawing_info> label_drawing_info;
+    std::vector<t_label_overlap_info> initial_overlap_info;
+
+    void update_basic_label_drawing_info(const tatum::TimingPath& path, ezgl::renderer* g);
+    void update_least_cluttering_label_pos();
+    void update_initial_num_overlaps();
+    void update_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos);
     bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2);
-    void update_init_num_overlaps();
-    void update_least_cluttering_label_locs();
+    void draw_labels(ezgl::renderer* g);
 };
 
+#ifndef NO_SERVER
+
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g);
+
+#endif /* NO_SERVER */
 #endif /* NO_GRAPHICS */

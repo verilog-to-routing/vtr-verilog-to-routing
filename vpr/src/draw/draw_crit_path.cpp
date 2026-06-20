@@ -4,16 +4,223 @@
 #include "draw_basic.h"
 #include "draw.h"
 
+static constexpr int PERPENDICULAR_OFFSET = 13;
+static constexpr int LABEL_WIDTH = 40;
+static constexpr int LABEL_HEIGHT = 13;
+static constexpr double EDGE_OFFSET_PERCENT = 0.05;
 
+const std::vector<ezgl::color> kelly_max_contrast_colors = {
+    //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
+    ezgl::color(34, 34, 34),    //black
+    ezgl::color(243, 195, 0),   //yellow
+    ezgl::color(135, 86, 146),  //purple
+    ezgl::color(243, 132, 0),   //orange
+    ezgl::color(161, 202, 241), //light blue
+    ezgl::color(190, 0, 50),    //red
+    ezgl::color(194, 178, 128), //buf
+    ezgl::color(132, 132, 130), //gray
+    ezgl::color(0, 136, 86),    //green
+    ezgl::color(230, 143, 172), //purplish pink
+    ezgl::color(0, 103, 165),   //blue
+    ezgl::color(249, 147, 121), //yellowish pink
+    ezgl::color(96, 78, 151),   //violet
+    ezgl::color(246, 166, 0),   //orange yellow
+    ezgl::color(179, 68, 108),  //purplish red
+    ezgl::color(220, 211, 0),   //greenish yellow
+    ezgl::color(136, 45, 23),   //redish brown
+    ezgl::color(141, 182, 0),   //yellow green
+    ezgl::color(101, 69, 34),   //yellowish brown
+    ezgl::color(226, 88, 34),   //reddish orange
+    ezgl::color(43, 61, 38)     //olive green
+};
 
-DelayLabelDrawer::DelayLabelDrawer(const tatum::TimingPath& path, const int num_timing_edges, ezgl::renderer* g) {
-    delay_label_info.resize(num_timing_edges);
+void draw_crit_path(ezgl::renderer* g) {
+    tatum::TimingPathCollector path_collector;
+
+    t_draw_state* draw_state = get_draw_state_vars();
+    const TimingContext& timing_ctx = g_vpr_ctx.timing();
+
+    if (!draw_state->show_crit_path) {
+        return;
+    }
+
+    if (!draw_state->setup_timing_info) {
+        return; //No timing to draw
+    }
+
+    //Get the worst timing path
+    auto paths = path_collector.collect_worst_setup_timing_paths(
+        *timing_ctx.graph,
+        *(draw_state->setup_timing_info->setup_analyzer()), 1);
+    tatum::TimingPath path = paths[0];
+
+    int num_edges = int(path.data_arrival_path().elements().size()) - 1;
+    if (num_edges <= 0) {
+        return;
+    }
+
+    if (draw_state->show_crit_path_flylines) {
+        draw_timing_edge_flylines(path, g);
+        if (draw_state->show_crit_path_delays) {
+            DelayLabelDrawer delay_label_drawer();
+            delay_label_drawer.calculate_and_draw_labels(path, g);
+        }
+    }
+
+    if (draw_state->show_crit_path_routing) {
+        draw_routed_timing_connections(path, g);
+    }
+}
+
+void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::renderer* g) {
+    g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+    g->set_line_width(3);
+
+    tatum::NodeId prev_node;
+    int edge_index = 0;
+
+    for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
+        tatum::NodeId node = elem.node();
+        if (prev_node) {
+            //We draw each 'edge' in a different color, this allows users to identify the stages and
+            //any routing which corresponds to the edge.
+            //We pick colors from the kelly max-contrast list, for long paths there may be repeats.
+            ezgl::color color = kelly_max_contrast_colors[edge_index % kelly_max_contrast_colors.size()];
+            int src_block_layer = get_timing_path_node_layer_num(node);
+            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
+
+            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+
+            // FLylines for critical path are drawn based on the layer visibility of the source and sink
+            if (flyline_visibility.visible) {
+                g->set_color(color, flyline_visibility.alpha);
+                ezgl::point2d start = tnode_draw_coord(prev_node);
+                ezgl::point2d end = tnode_draw_coord(node);
+                g->draw_line(start, end);
+            }
+            
+            edge_index++;
+        }
+        prev_node = node;
+    }
+
+    g->set_line_dash(ezgl::line_dash::none);
+    g->set_line_width(0); 
+}
+
+void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::renderer* g) {
+    tatum::NodeId prev_node;
+    for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
+        tatum::NodeId node = elem.node();
+        if (prev_node) {
+            draw_connections_between_nodes(prev_node, node, color, g);
+        }
+        prev_node = node;
+    }
+}
+
+void draw_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer* g) {
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const TimingContext& timing_ctx = g_vpr_ctx.timing();
+
+    AtomPinId atom_src_pin = atom_ctx.lookup().tnode_atom_pin(src_tnode);
+    AtomPinId atom_sink_pin = atom_ctx.lookup().tnode_atom_pin(sink_tnode);
+
+    tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
+    tatum::EdgeType edge_type = timing_ctx.graph->edge_type(tedge);
+
+    ClusterNetId net_id = ClusterNetId::INVALID();
+
+    //We currently only trace interconnect edges in detail, and treat all others
+    //as flylines
+    if (edge_type == tatum::EdgeType::INTERCONNECT) {
+        //All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
+
+        //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
+        //      into a common method for walking the clustered netlist, this would also (potentially)
+        //      allow us to grab the component delays
+        AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(atom_src_pin);
+        AtomBlockId atom_sink_block = atom_ctx.netlist().pin_block(atom_sink_pin);
+
+        ClusterBlockId clb_src_block = atom_ctx.lookup().atom_clb(atom_src_block);
+        VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
+        ClusterBlockId clb_sink_block = atom_ctx.lookup().atom_clb(
+            atom_sink_block);
+        VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
+
+        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(
+            atom_sink_pin);
+        VTR_ASSERT(sink_gpin);
+
+        int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
+
+        int sink_block_pin_index = -1;
+        int sink_net_pin_index = -1;
+
+        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block,
+                                                                                                     sink_pb_route_id);
+        if (net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
+            && sink_net_pin_index != -1) {
+            //Connection leaves the CLB
+            //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
+            VTR_ASSERT(
+                cluster_ctx.clb_nlist.net_driver_block(net_id)
+                == clb_src_block);
+
+            t_draw_state* draw_state = get_draw_state_vars();
+
+            std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
+
+            //Mark all the nodes highlighted
+
+            for (RRNodeId inode : routed_rr_nodes) {
+                draw_state->draw_rr_node[inode].color = color;
+                draw_state->draw_rr_node[inode].node_highlighted = true;
+            }
+
+            //draw_partial_route() takes care of layer visibility and cross-layer settings
+            draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
+        } else {
+            //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
+            VTR_ASSERT(clb_src_block == clb_sink_block);
+        }
+    }
+}
+
+void DelayLabelDrawer::calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g) {
+    update_basic_label_drawing_info(path, g);
+    update_least_cluttering_label_pos();
+    draw_labels(g);
+}
+
+void DelayLabelDrawer::update_basic_label_drawing_info(const tatum::TimingPath& path, ezgl::renderer* g) {
+    int num_edges = int(path.data_arrival_path().elements().size()) - 1;
+    label_drawing_info.resize(num_edges);
+
     tatum::NodeId prev_node;
     int edge_idx = 0;
     for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
 
         if (prev_node) {
+            t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
+
+            int src_block_layer = get_timing_path_node_layer_num(node);
+            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
+            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+
+            if (!flyline_visibility.visible) {
+                drawing_info.hide_label = true;
+                edge_idx++;
+                prev_node = node;
+                continue;
+            } else {
+                drawing_info.hide_label = false;
+            }
+
+            drawing_info.label_transparency = flyline_visibility.alpha;
+
             ezgl::point2d start = tnode_draw_coord(prev_node);
             ezgl::point2d end = tnode_draw_coord(node);
 
@@ -23,38 +230,23 @@ DelayLabelDrawer::DelayLabelDrawer(const tatum::TimingPath& path, const int num_
 
             double min_y = std::min(start.y, end.y);
             double max_y = std::max(start.y, end.y);
-
             ezgl::rectangle edge_bbox({start.x, min_y}, {end.x, max_y});
             
             ezgl::rectangle screen_coords = g->world_to_screen(edge_bbox);
-            double edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
-            delay_label_info[edge_idx].edge_length = edge_length;
+            drawing_info.edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
+            
+            double rotation_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
+            drawing_info.rotation_angle = rotation_angle;
 
-            int src_block_layer = get_timing_path_node_layer_num(node);
-            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
-            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+            double label_bbox_width = LABEL_WIDTH * cos(rotation_angle * (std::numbers::pi / 180)) 
+                                    + LABEL_HEIGHT * std::abs(sin(rotation_angle * (std::numbers::pi / 180)));
+            double label_bbox_height = LABEL_WIDTH * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
+                                    + LABEL_HEIGHT * cos(rotation_angle * (std::numbers::pi / 180));
 
-            if (!flyline_visibility.visible) {
-                crit_path_delay_drawing_info[edge_idx].skip_delay_text = true;
-                edge_idx++;
-                prev_node = node;
-                continue;
-            } else {
-                crit_path_delay_drawing_info[edge_idx].skip_delay_text = false;
-            }
+            ezgl::point2d bbox_bottom_left = screen_coords.center() - ezgl::point2d(label_bbox_width / 2, label_bbox_height / 2);
+            drawing_info.virtual_centered_label_bbox = ezgl::rectangle(bbox_bottom_left, label_bbox_width, label_bbox_height);
 
-            double delay_text_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
-            crit_path_delay_drawing_info[edge_idx].text_angle = delay_text_angle;
-
-            double text_bbox_width = DELAY_TEXT_WIDTH * cos(delay_text_angle * (std::numbers::pi / 180)) 
-                                    + DELAY_TEXT_HEIGHT * std::abs(sin(delay_text_angle * (std::numbers::pi / 180)));
-            double text_bbox_height = DELAY_TEXT_WIDTH * std::abs(sin(delay_text_angle * (std::numbers::pi / 180)))
-                                    + DELAY_TEXT_HEIGHT * cos(delay_text_angle * (std::numbers::pi / 180));
-
-            ezgl::point2d bottom_left = screen_coords.center() - ezgl::point2d(text_bbox_width / 2, text_bbox_height / 2);
-            crit_path_delay_drawing_info[edge_idx].virtual_centered_text_bbox = ezgl::rectangle(bottom_left, text_bbox_width, text_bbox_height);
-
-            update_text_bbox_from_relative_pos(crit_path_delay_drawing_info[edge_idx], e_delay_text_relative_pos::CENTER_ABOVE);
+            update_label_bbox_from_relative_pos(edge_idx, e_label_relative_pos::CENTER_ABOVE);
 
             edge_idx++;
         }
@@ -62,4 +254,223 @@ DelayLabelDrawer::DelayLabelDrawer(const tatum::TimingPath& path, const int num_
     }
 }
 
+void DelayLabelDrawer::update_least_cluttering_label_pos() {
+    std::vector<e_label_relative_pos> label_pos_candidates = {e_label_relative_pos::LEFT_ABOVE,
+                                                                e_label_relative_pos::RIGHT_ABOVE,
+                                                                e_label_relative_pos::CENTER_BELOW,
+                                                                e_label_relative_pos::LEFT_BELOW,
+                                                                e_label_relative_pos::RIGHT_BELOW,
+                                                                e_label_relative_pos::FAR_LEFT_ABOVE,
+                                                                e_label_relative_pos::FAR_RIGHT_ABOVE,
+                                                                e_label_relative_pos::FAR_LEFT_BELOW,
+                                                                e_label_relative_pos::FAR_RIGHT_BELOW};
+
+    update_init_num_overlaps();
+    std::sort(init_overlap_info.begin(), init_overlap_info.end(),
+                [](const t_overlap_info& label_a, const t_overlap_info& label_b) {
+                    return label_a.num_overlaps < label_b.num_overlaps;
+                });
+
+    for(const t_overlap_info& label_overlap_info : init_overlap_info) {
+        if (label_overlap_info.num_overlaps == 0) {
+            continue;
+        }
+        int edge_idx = label_overlap_info.edge_idx;
+        t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
+
+        bool candidate_with_no_overlap_found = false;    
+        for(const e_label_relative_pos& pos_candidate : label_pos_candidates) {
+            update_text_bbox_from_relative_pos(edge_idx, pos_candidate);
+
+            bool has_overlap = false;                              
+            for(int edge_idx_to_compare = 0; edge_idx_to_compare < label_drawing_info.size(); edge_idx_to_compare++) {
+                const t_label_drawing_info& drawing_info_to_compare = label_drawing_info[edge_idx_to_compare];
+
+                if (edge_idx == edge_idx_to_compare || drawing_info_to_compare.hide_label) {
+                    continue;
+                }
+                if (check_if_bboxes_overlap(drawing_info.label_bbox, drawing_info_to_compare.delay_text_bbox)) {
+                    has_overlap = true;
+                    break;
+                }
+            }
+
+            if(!has_overlap) {
+                candidate_with_no_overlap_found = true;
+                break;
+            }
+        }
+
+        if (!candidate_with_no_overlap_found) {
+            drawing_info.hide_label = true;
+        }
+    }
+}
+
+void DelayLabelDrawer::update_initial_num_overlaps() {
+    for (int edge_idx = 0; edge_idx < label_drawing_info.size(); edge_idx++) {
+        const t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
+
+        if (drawing_info.hide_label) {
+            continue;
+        }
+
+        int num_of_overlaps = 0;
+        for (int edge_idx_to_compare = 0; edge_idx_to_compare < label_drawing_info.size(); edge_idx_to_compare++) {
+            const t_label_drawing_info& drawing_info_to_compare = label_drawing_info[edge_idx_to_compare];
+
+            if (edge_idx == edge_idx_to_compare || drawing_info_to_compare.hide_label) {
+                continue;
+            }
+            
+            if (check_if_bboxes_overlap(drawing_info.label_bbox, drawing_info_to_compare.label_bbox)) {
+                num_of_overlaps++;
+            }
+        }
+        init_overlap_info.push_back(t_overlap_info{edge_idx, num_of_overlaps});
+    }
+}
+
+void DelayLabelDrawer::update_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos) {
+    double edge_length = label_to_update.edge_length;
+    double edge_offset_unit = edge_length * EDGE_OFFSET_PERCENT;
+
+    if (edge_offset_unit > 30) {
+        edge_offset_unit = 30;
+    }
+
+    int perpendicular_offset = 0;
+    double edge_offset = 0.0;
+    switch (label_relative_pos) {
+        case e_label_relative_pos::CENTER_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            break;
+        case e_label_relative_pos::CENTER_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            break;
+        case e_label_relative_pos::LEFT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset = - edge_offset_unit;
+            break;
+        case e_label_relative_pos::LEFT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset = - edge_offset_unit;
+            break;
+        case e_label_relative_pos::RIGHT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset = edge_offset_unit;
+            break;
+        case e_label_relative_pos::RIGHT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset = edge_offset_unit;
+            break;
+        case e_label_relative_pos::FAR_LEFT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset = - edge_offset_unit * 2;
+            break;
+        case e_label_relative_pos::FAR_LEFT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset = - edge_offset_unit * 2;
+            break;
+        case e_label_relative_pos::FAR_RIGHT_ABOVE:
+            perpendicular_offset = PERPENDICULAR_OFFSET;
+            edge_offset = edge_offset_unit * 2;
+            break;
+        case e_label_relative_pos::FAR_RIGHT_BELOW:
+            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            edge_offset = edge_offset_unit * 2;
+    }
+
+    double rotation_angle_in_deg = label_to_update.rotation_angle * (std::numbers::pi / 180);
+    double x_offset = - perpendicular_offset * sin(rotation_angle_in_deg);
+    double y_offset = - perpendicular_offset * cos(rotation_angle_in_deg);
+
+    x_offset += edge_offset * cos(rotation_angle_in_deg);
+    y_offset -= edge_offset * sin(rotation_angle_in_deg);
+
+    label_to_update.label_bbox = label_to_update.virtual_centered_label_bbox + ezgl::point2d(x_offset, y_offset);
+}
+
+bool DelayLabelDrawer::check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2) {
+    if (bbox1.right() < bbox2.left() || bbox1.left() > bbox2.right() || bbox1.bottom() > bbox2.top() || bbox1.top() < bbox2.bottom()) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+#ifndef NO_SERVER
+/**
+ * @brief Draw critical path elements.
+ *
+ * This function draws critical path elements based on the provided timing paths
+ * and indexes map. It is primarily used in server mode, where items are drawn upon request.
+ */
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    const ezgl::color contour_color{0, 0, 0, 40};
+    const ezgl::line_dash contour_line_style{ezgl::line_dash::none};
+    const int contour_line_width{1};
+
+    auto draw_server_mode_flylines_and_labels_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay,
+                                                 const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays = false) {
+        renderer->set_color(color);
+        renderer->set_line_dash(line_style);
+        renderer->set_line_width(line_width);
+        draw_server_mode_flylines_and_labels(tnode_draw_coord(prev_node),
+                                 tnode_draw_coord(node), delay, renderer, skip_draw_delays);
+
+        renderer->set_line_dash(ezgl::line_dash::none);
+        renderer->set_line_width(0);
+    };
+
+    for (const auto& [path_index, element_indexes] : indexes) {
+        if (path_index < paths.size()) {
+            const tatum::TimingPath& path = paths[path_index];
+
+            //Walk through the timing path drawing each edge
+            tatum::NodeId prev_node;
+            float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+            int element_counter = 0;
+            for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
+                bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
+
+                // draw element
+                tatum::NodeId node = elem.node();
+                float arr_time = elem.tag().time();
+
+                //We draw each 'edge' in a different color, this allows users to identify the stages and
+                //any routing which corresponds to the edge
+                //
+                //We pick colors from the kelly max-contrast list, for long paths there may be repeats
+                ezgl::color color = kelly_max_contrast_colors[element_counter % kelly_max_contrast_colors.size()];
+
+                if (prev_node) {
+                    float delay = arr_time - prev_arr_time;
+                    if (draw_state->show_crit_path_flylines) {
+                        if (draw_current_element) {
+                            draw_server_mode_flylines_and_labels_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/ 3, delay, prev_node, node);
+                        } else if (draw_crit_path_contour) {
+                            draw_server_mode_flylines_and_labels_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
+                        }
+                    }
+                    if (draw_state->show_crit_path_routing) {
+                        if (draw_current_element) {
+                            //Draw the routed version of the timing edge
+                            draw_connections_between_nodes(prev_node, node, color, g);
+                        }
+                    }
+                }
+
+                prev_node = node;
+                prev_arr_time = arr_time;
+                // end draw element
+
+                element_counter++;
+            }
+        }
+    }
+}
+
+#endif /* NO_SERVER */
 #endif /* NO_GRAPHICS */
