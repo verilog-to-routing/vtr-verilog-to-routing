@@ -8,4 +8,4 @@
 numpy==1.26.4
 scikit-image==0.22.0
 Pillow==12.2.0
-gcovr==7.0
+gcovr==8.6
