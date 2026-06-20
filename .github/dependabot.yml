@@ -18,3 +18,24 @@ updates:
     # Check for updates once a week
     schedule:
       interval: "weekly"
+
+  # Pip dependency updates. Directories are listed explicitly to prevent
+  # vtr_flow/parse/pass_requirements/ (a VTR-internal config folder whose
+  # files happen to match the requirements*.txt pattern) from being
+  # misidentified as pip manifests.
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: pip
+    directory: "/dev"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: pip
+    directory: "/doc"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: pip
+    directory: "/parmys"
+    schedule:
+      interval: "weekly"
