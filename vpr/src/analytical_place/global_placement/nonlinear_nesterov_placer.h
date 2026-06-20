@@ -3,7 +3,7 @@
  * @file
  * @author  William Zhang
  * @date    June 2026
- * @brief   Declaration of a Nesterov-style analytical global placer.
+ * @brief   Declaration of a nonlinear Nesterov analytical global placer.
  */
 
 #include <memory>
@@ -31,25 +31,25 @@ struct t_physical_tile_type;
  * is then passed through the existing partial legalizer to clean up discrete
  * architecture constraints before full legalization.
  */
-class NesterovGlobalPlacer : public GlobalPlacer {
+class NonlinearNesterovPlacer : public GlobalPlacer {
   public:
     /**
-     * @brief Construct the Nesterov global placer and its density/legalization helpers.
+     * @brief Construct the nonlinear Nesterov global placer and its density/legalization helpers.
      */
-    NesterovGlobalPlacer(const APNetlist& ap_netlist,
-                         const Prepacker& prepacker,
-                         const AtomNetlist& atom_netlist,
-                         const DeviceGrid& device_grid,
-                         const std::vector<t_logical_block_type>& logical_block_types,
-                         const std::vector<t_physical_tile_type>& physical_tile_types,
-                         const LogicalModels& models,
-                         PreClusterTimingManager& pre_cluster_timing_manager,
-                         std::shared_ptr<PlaceDelayModel> place_delay_model,
-                         float ap_timing_tradeoff,
-                         bool generate_mass_report,
-                         const std::vector<std::string>& target_density_arg_strs,
-                         e_ap_partial_legalizer partial_legalizer_type,
-                         int log_verbosity);
+    NonlinearNesterovPlacer(const APNetlist& ap_netlist,
+                            const Prepacker& prepacker,
+                            const AtomNetlist& atom_netlist,
+                            const DeviceGrid& device_grid,
+                            const std::vector<t_logical_block_type>& logical_block_types,
+                            const std::vector<t_physical_tile_type>& physical_tile_types,
+                            const LogicalModels& models,
+                            PreClusterTimingManager& pre_cluster_timing_manager,
+                            std::shared_ptr<PlaceDelayModel> place_delay_model,
+                            float ap_timing_tradeoff,
+                            bool generate_mass_report,
+                            const std::vector<std::string>& target_density_arg_strs,
+                            e_ap_partial_legalizer partial_legalizer_type,
+                            int log_verbosity);
 
     /**
      * @brief Run accelerated smooth global placement and final partial legalization.

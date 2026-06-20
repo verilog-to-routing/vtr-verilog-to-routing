@@ -141,7 +141,7 @@ struct ParseAPGlobalPlacer {
         ConvertedValue<e_ap_global_placer> conv_value;
         if (str == "simpl")
             conv_value.set_value(e_ap_global_placer::SimPL);
-        else if (str == "non-linear-nesterov")
+        else if (str == "nonlinear-nesterov")
             conv_value.set_value(e_ap_global_placer::NonlinearNesterov);
         else {
             std::stringstream msg;
@@ -158,7 +158,7 @@ struct ParseAPGlobalPlacer {
                 conv_value.set_value("simpl");
                 break;
             case e_ap_global_placer::NonlinearNesterov:
-                conv_value.set_value("non-linear-nesterov");
+                conv_value.set_value("nonlinear-nesterov");
                 break;
             default:
                 VTR_ASSERT(false);
@@ -167,7 +167,7 @@ struct ParseAPGlobalPlacer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"simpl", "non-linear-nesterov"};
+        return {"simpl", "nonlinear-nesterov"};
     }
 };
 
@@ -2123,7 +2123,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls which Global Placer the AP Flow will use.\n"
             " * simpl: Alternates the selected analytical solver with partial legalization.\n"
-            " * non-linear-nesterov: Uses nonlinear Nesterov optimization of smooth wirelength and density objectives with the selected partial legalizer.")
+            " * nonlinear-nesterov: Uses nonlinear Nesterov optimization of smooth wirelength and density objectives with the selected partial legalizer.")
         .default_value("simpl")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

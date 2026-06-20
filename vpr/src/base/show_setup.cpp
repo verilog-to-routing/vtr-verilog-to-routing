@@ -624,7 +624,7 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
             VTR_LOG("simpl\n");
             break;
         case e_ap_global_placer::NonlinearNesterov:
-            VTR_LOG("non-linear-nesterov\n");
+            VTR_LOG("nonlinear-nesterov\n");
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown global_placer_type\n");
