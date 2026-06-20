@@ -1178,7 +1178,7 @@ jobs:
           echo "CURL_PATH=$curlPath" >> $env:GITHUB_ENV
 
       - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@v1.13.0
       
       - name: Check MSVC Version
         run: cl
