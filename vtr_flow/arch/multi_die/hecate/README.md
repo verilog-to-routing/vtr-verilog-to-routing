@@ -96,6 +96,11 @@ architecture without running the generator. Each CSV row describes one variant:
 `scatter_gather_list` section with the variant-specific mux names, directionality, and connection
 counts. Generated files are written to `3d/hecate_3D/`.
 
+## 4. 2D Architecture
+
+A 2D FPGA fabric (same as 2.5D but without interposer cuts) is available in the 2d folder for reference and comparison
+with 2.5D and 3D architectures.
+
 ---
 
 ## References
