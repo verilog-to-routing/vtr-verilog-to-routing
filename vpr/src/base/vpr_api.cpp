@@ -51,7 +51,7 @@
 #include "setup_vpr.h"
 #include "show_setup.h"
 #include "CheckArch.h"
-#include "CheckSetup.h"
+#include "check_setup.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "route.h"
@@ -246,6 +246,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     vpr_setup->TimingEnabled = options->timing_analysis;
     vpr_setup->device_layout = options->device_layout;
+    vpr_setup->device_width = options->device_width;
     vpr_setup->constant_net_method = options->constant_net_method;
     vpr_setup->clock_modeling = options->clock_modeling;
     vpr_setup->two_stage_clock_routing = options->two_stage_clock_routing;
@@ -312,19 +313,15 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
              &vpr_setup->GraphicsCommands,
+             &vpr_setup->RendererType,
              &vpr_setup->PowerOpts,
              vpr_setup);
 
     /* Check inputs are reasonable */
     CheckArch(*arch);
 
-    /* Verify settings don't conflict or otherwise not make sense */
-    CheckSetup(vpr_setup->PackerOpts,
-               vpr_setup->PlacerOpts,
-               vpr_setup->APOpts,
-               vpr_setup->RouterOpts,
-               vpr_setup->ServerOpts,
-               vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing, arch->Chans);
+    // Verify settings don't conflict or otherwise not make sense
+    check_setup(*vpr_setup, arch->Chans);
 
     /* flush any messages to user still in stdout that hasn't gotten displayed */
     fflush(stdout);
@@ -522,6 +519,17 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     // changed the device dimensions during full legalization.
     vpr_init_graphics(vpr_setup, arch, is_flat);
 
+    // Re-run init_draw_coords() now that the graphics state (show_graphics,
+    // save_graphics, graphics_commands) is fully configured. The call inside
+    // vpr_create_device() fired before vpr_init_graphics() set those flags,
+    // so it always hit the early-return and left initial_world at zero. This
+    // second call populates tile_x/tile_y and sets initial_world correctly,
+    // which save_graphics needs to compute valid image dimensions.
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
+        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
+                         g_vpr_ctx.placement().blk_loc_registry());
+    }
+
     vpr_init_server(vpr_setup);
 
     { //Place
@@ -568,7 +576,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
     //       This would allow us to determine when to (re)build the RR graph in a
     //       more generic and flow-independent way.
     bool is_ap_and_fixed_device = (vpr_setup.APOpts.doAP == e_stage_action::DO)
-                                  && (vpr_setup.PackerOpts.device_layout != "auto");
+                                  && has_fixed_device_size(vpr_setup);
 
     if (!is_ap_and_fixed_device
         && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH
@@ -602,7 +610,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     //Build the device
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
-    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization, vpr_setup.device_width);
     if (!Arch.vib_infs.empty()) {
         device_ctx.vib_grid = create_vib_device_grid(vpr_setup.device_layout, Arch.vib_grid_layouts);
     }
@@ -753,7 +761,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                vpr_setup.PackerOpts.pack_verbosity,
-                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+                               has_fixed_device_size(vpr_setup) /*is_fixed_device*/);
     }
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
@@ -762,6 +770,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
+                    vpr_setup,
                     ram_mapper);
 }
 
@@ -828,7 +837,12 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // set up the device grid for the legalizer
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    if (vpr_setup.device_width > 0) {
+        size_t height = compute_auto_layout_height(arch.grid_layouts, vpr_setup.device_width);
+        device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, vpr_setup.device_width, height);
+    } else {
+        device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    }
     if (device_ctx.grid.get_num_layers() > 1) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
     }
@@ -995,6 +1009,13 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
                   "Aborting program.\n",
                   num_errors);
     }
+
+    // Mirror the post-place barrier emitted by placement_log_printer when the
+    // placer ran (DO mode): scripted `wait_for_stage placement_done` callers
+    // need the same checkpoint under --analysis / --route LOAD paths.
+    notify_stage_complete(e_pic_type::PLACEMENT);
+    update_screen(ScreenUpdatePriority::MAJOR, "Placement loaded",
+                  e_pic_type::PLACEMENT, nullptr);
 }
 
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
@@ -1124,7 +1145,11 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             print_switch_usage();
         }
 
-        // Update interactive graphics
+        // Update interactive graphics. Mark routing as complete first so that
+        // scripted graphics_commands using `wait_for_stage routing_done` will
+        // resume at this fully-settled checkpoint rather than per-iteration
+        // routing-stage updates where route_ctx is mid-flight.
+        notify_stage_complete(e_pic_type::ROUTING);
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), e_pic_type::ROUTING, timing_info);
     }
 
@@ -1285,7 +1310,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, is_flat);
+                        vpr_setup.GraphicsCommands, vpr_setup.RendererType, is_flat);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
@@ -1297,7 +1322,6 @@ void vpr_init_server(const t_vpr_setup& vpr_setup) {
         server::GateIO& gate_io = g_vpr_ctx.mutable_server().gate_io;
         if (!gate_io.is_running()) {
             gate_io.start(vpr_setup.ServerOpts.port_num);
-            g_timeout_add(/*interval_ms*/ 100, server::update, &application);
         }
     }
 #else
@@ -1435,6 +1459,7 @@ void vpr_setup_vpr(t_options* Options,
                    int* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
+                   std::string* RendererType,
                    t_power_opts* PowerOpts,
                    t_vpr_setup* vpr_setup) {
     SetupVPR(Options,
@@ -1459,33 +1484,13 @@ void vpr_setup_vpr(t_options* Options,
              GraphPause,
              SaveGraphics,
              GraphicsCommands,
+             RendererType,
              PowerOpts,
              vpr_setup);
 }
 
 void vpr_check_arch(const t_arch& Arch) {
     CheckArch(Arch);
-}
-
-///@brief Verify settings don't conflict or otherwise not make sense
-void vpr_check_setup(const t_packer_opts& PackerOpts,
-                     const t_placer_opts& PlacerOpts,
-                     const t_ap_opts& APOpts,
-                     const t_router_opts& RouterOpts,
-                     const t_server_opts& ServerOpts,
-                     const t_det_routing_arch& RoutingArch,
-                     const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf& Timing,
-                     const t_chan_width_dist& Chans) {
-    CheckSetup(PackerOpts,
-               PlacerOpts,
-               APOpts,
-               RouterOpts,
-               ServerOpts,
-               RoutingArch,
-               Segments,
-               Timing,
-               Chans);
 }
 
 ///@brief Show current setup

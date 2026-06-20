@@ -666,7 +666,7 @@ bool highlight_rr_nodes(float x, float y) {
 
     // The user cannot select any RR nodes if RR drawing is turned off or decluttered. Doing so avoid processing all the RR nodes and saves time.
     if (!draw_state->show_rr || draw_state->declutter_rr) {
-        application.refresh_drawing();
+        application->refresh_drawing();
         // After we return false, the caller will check if the mouse clicked on a block.
         // There can be cases where the mouse actually clicked on an RR node, and processing blocks may seem unnecessary.
         // But since the number of RR nodes is much greater than the number of blocks, this way is still more efficient.

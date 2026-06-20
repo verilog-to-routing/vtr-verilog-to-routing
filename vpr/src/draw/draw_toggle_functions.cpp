@@ -1,6 +1,10 @@
 
 #ifndef NO_GRAPHICS
 
+#include <QCheckBox>
+#include <QComboBox>
+#include <QSpinBox>
+
 #include <cstring>
 
 #include "vpr_error.h"
@@ -18,60 +22,54 @@
 #include <X11/keysym.h>
 #endif
 
-void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data) {
-
-    if (gtk_toggle_button_get_active(self)) {
-        *data->toggle_state = true;
-    } else {
-        *data->toggle_state = false;
-    }
-
+void toggle_checkbox_cbk(QCheckBox* self, t_checkbox_data* data) {
+    *data->toggle_state = self->isChecked();
     data->app->refresh_drawing();
 }
 
-void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
+void toggle_show_nets_cbk(SwitchButton*, bool state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->show_nets = state;
 
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), state);
+    app->find_widget("ToggleNetType")->setEnabled(state);
+    app->find_widget("ToggleInterClusterNets")->setEnabled(state);
     if (draw_state->is_flat || draw_state->draw_nets != DRAW_ROUTED_NETS) {
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), state);
+        app->find_widget("ToggleIntraClusterNets")->setEnabled(state);
     }
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("FanInFanOut")), state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetAlpha")), state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetMaxFanout")), state);
+    app->find_widget("FanInFanOut")->setEnabled(state);
+    app->find_widget("NetAlpha")->setEnabled(state);
+    app->find_widget("NetMaxFanout")->setEnabled(state);
 
     app->refresh_drawing();
 }
 
-void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
+void toggle_draw_nets_cbk(QComboBox* self, ezgl::application* app) {
     enum e_draw_nets new_state;
     t_draw_state* draw_state = get_draw_state_vars();
-    gchar* setting = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
+    QString setting = self->currentText();
 
     // assign corresponding enum value to draw_state->show_nets
-    if (strcmp(setting, "Routing") == 0) {
+    if (setting == "Routing") {
         new_state = DRAW_ROUTED_NETS;
 
         // Make sure that intra-cluster routed nets is never enabled when flat routing is off
         if (!draw_state->is_flat) {
-            gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), false);
-            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets")), false);
+            app->find_widget("ToggleIntraClusterNets")->setEnabled(false);
+            QCheckBox* checkbox = app->find_check_box("ToggleIntraClusterNets");
+            if (checkbox) {
+                checkbox->setChecked(false);
+            }
             draw_state->draw_intra_cluster_nets = false;
         }
 
     } else { // Flylines - direct connections between sources and sinks
         new_state = DRAW_FLYLINES;
 
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), true);
+        app->find_widget("ToggleIntraClusterNets")->setEnabled(true);
     }
 
     draw_state->draw_nets = new_state;
-
-    //free dynamically allocated pointers
-    g_free(setting);
 
     //redraw
     app->refresh_drawing();
@@ -84,23 +82,23 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
  * @param self ptr to gtkComboBoxText object
  * @param app ezgl application
  */
-void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
+void toggle_rr_cbk(SwitchButton*, bool state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->show_rr = state;
 
     // Enable/disable the rr drawing sub-options based on the switch state
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRChannels")), state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterPinNodes")), state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRSBox")), state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRCBox")), state);
+    app->find_widget("ToggleRRChannels")->setEnabled(state);
+    app->find_widget("ToggleInterClusterPinNodes")->setEnabled(state);
+    app->find_widget("ToggleRRSBox")->setEnabled(state);
+    app->find_widget("ToggleRRCBox")->setEnabled(state);
 
     //currently intra-cluster nodes and edges are only supported if flat routing is enabled
     if (draw_state->is_flat) {
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), state);
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), state);
+        app->find_widget("ToggleRRIntraClusterNodes")->setEnabled(state);
+        app->find_widget("ToggleRRIntraClusterEdges")->setEnabled(state);
     }
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleHighlightRR")), state);
+    app->find_widget("ToggleHighlightRR")->setEnabled(state);
 
     app->refresh_drawing();
 }
@@ -109,16 +107,16 @@ void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
  * @brief cbk function for toggle congestion comboBox. Updates shown cong. based on selected option
  * updates draw_state->show_congestion
  * 
- * @param self self ptr to GtkComboBoxText
+ * @param self self ptr to QComboBox
  * @param app ezgl application
  */
-void toggle_cong_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_cong_cbk(QComboBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     enum e_draw_congestion new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0)
+    QString combo_box_content = self->currentText();
+    if (combo_box_content == "None")
         new_state = DRAW_NO_CONGEST;
-    else if (strcmp(combo_box_content, "Congested") == 0)
+    else if (combo_box_content == "Congested")
         new_state = DRAW_CONGESTED;
     else
         // congested with nets
@@ -128,7 +126,6 @@ void toggle_cong_cbk(GtkComboBoxText* self, ezgl::application* app) {
     if (draw_state->show_congestion == DRAW_NO_CONGEST) {
         app->update_message(draw_state->default_message);
     }
-    g_free(combo_box_content);
     app->refresh_drawing();
 }
 
@@ -139,31 +136,30 @@ void toggle_cong_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @param self self ptr
  * @param app ezgl app
  */
-void toggle_cong_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_cong_cost_cbk(QComboBox* self, ezgl::application* app) {
     /* this is the callback function for runtime created toggle_routing_congestion_cost button
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     enum e_draw_routing_costs new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0)
+    QString combo_box_content = self->currentText();
+    if (combo_box_content == "None")
         new_state = DRAW_NO_ROUTING_COSTS;
-    else if (strcmp(combo_box_content, "Total Routing Costs") == 0)
+    else if (combo_box_content == "Total Routing Costs")
         new_state = DRAW_TOTAL_ROUTING_COSTS;
-    else if (strcmp(combo_box_content, "Log Total Routing Costs") == 0)
+    else if (combo_box_content == "Log Total Routing Costs")
         new_state = DRAW_LOG_TOTAL_ROUTING_COSTS;
-    else if (strcmp(combo_box_content, "Acc Routing Costs") == 0)
+    else if (combo_box_content == "Acc Routing Costs")
         new_state = DRAW_ACC_ROUTING_COSTS;
-    else if (strcmp(combo_box_content, "Log Acc Routing Costs") == 0)
+    else if (combo_box_content == "Log Acc Routing Costs")
         new_state = DRAW_LOG_ACC_ROUTING_COSTS;
-    else if (strcmp(combo_box_content, "Pres Routing Costs") == 0)
+    else if (combo_box_content == "Pres Routing Costs")
         new_state = DRAW_PRES_ROUTING_COSTS;
-    else if (strcmp(combo_box_content, "Log Pres Routing Costs") == 0)
+    else if (combo_box_content == "Log Pres Routing Costs")
         new_state = DRAW_LOG_PRES_ROUTING_COSTS;
     else
         new_state = DRAW_BASE_ROUTING_COSTS;
 
     draw_state->show_routing_costs = new_state;
-    g_free(combo_box_content);
     if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
         app->update_message(draw_state->default_message);
     }
@@ -177,7 +173,7 @@ void toggle_cong_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @param self 
  * @param app 
  */
-void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
+void toggle_routing_bbox_cbk(QSpinBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
     // get the pointer to the toggle_routing_bounding_box button
@@ -186,7 +182,7 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
         return; //Nothing to draw
 
     // use the pointer to get the active value
-    int new_value = gtk_spin_button_get_value_as_int(self);
+    int new_value = self->value();
 
     // assign value to draw_state->show_routing_bb, bound check + set UNDEFINED when it's -1 (draw nothing)
     if (new_value <= -1)
@@ -211,25 +207,24 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
  * @param self self ptr
  * @param app ezgl app
  */
-void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_router_util_cbk(QComboBox* self, ezgl::application* app) {
     /* this is the callback function for runtime created toggle_routing_util button
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
     enum e_draw_routing_util new_state;
 
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0)
+    QString combo_box_content = self->currentText();
+    if (combo_box_content == "None")
         new_state = DRAW_NO_ROUTING_UTIL;
-    else if (strcmp(combo_box_content, "Routing Util") == 0)
+    else if (combo_box_content == "Routing Util")
         new_state = DRAW_ROUTING_UTIL;
-    else if (strcmp(combo_box_content, "Routing Util with Value") == 0)
+    else if (combo_box_content == "Routing Util with Value")
         new_state = DRAW_ROUTING_UTIL_WITH_VALUE;
-    else if (strcmp(combo_box_content, "Routing Util with Formula") == 0)
+    else if (combo_box_content == "Routing Util with Formula")
         new_state = DRAW_ROUTING_UTIL_WITH_FORMULA;
     else
         new_state = DRAW_ROUTING_UTIL_OVER_BLOCKS;
 
-    g_free(combo_box_content);
     draw_state->show_routing_util = new_state;
 
     if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
@@ -245,9 +240,9 @@ void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @param self ptr to self
  * @param app ezgl::app
  */
-void toggle_blk_internal_cbk(GtkSpinButton* self, ezgl::application* app) {
+void toggle_blk_internal_cbk(QSpinBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    int new_value = gtk_spin_button_get_value_as_int(self);
+    int new_value = self->value();
     if (new_value < 0)
         draw_state->show_blk_internal = 0;
     else if (new_value >= draw_state->max_sub_blk_lvl)
@@ -264,21 +259,20 @@ void toggle_blk_internal_cbk(GtkSpinButton* self, ezgl::application* app) {
  * @param self ptr to self
  * @param app ezgl::app
  */
-void toggle_blk_pin_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_blk_pin_util_cbk(QComboBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0) {
+    QString combo_box_content = self->currentText();
+    if (combo_box_content == "None") {
         draw_state->show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
         draw_reset_blk_colors();
         app->update_message(draw_state->default_message);
-    } else if (strcmp(combo_box_content, "All") == 0)
+    } else if (combo_box_content == "All")
         draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_TOTAL;
-    else if (strcmp(combo_box_content, "Inputs") == 0)
+    else if (combo_box_content == "Inputs")
         draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_INPUTS;
     else
         draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_OUTPUTS;
 
-    g_free(combo_box_content);
     app->refresh_drawing();
 }
 
@@ -289,29 +283,28 @@ void toggle_blk_pin_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @param self ptr to self
  * @param app ezgl::app
  */
-void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void placement_macros_cbk(QComboBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0)
+    QString combo_box_content = self->currentText();
+    if (combo_box_content == "None")
         draw_state->show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
     else
         draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS;
 
-    g_free(combo_box_content);
     app->refresh_drawing();
 }
 
-void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
+void toggle_crit_path_cbk(SwitchButton*, bool state, ezgl::application* app) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->show_crit_path = state;
 
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathFlylines")), state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathDelays")), state);
+    app->find_widget("ToggleCritPathFlylines")->setEnabled(state);
+    app->find_widget("ToggleCritPathDelays")->setEnabled(state);
 
     if (draw_state->setup_timing_info && draw_state->pic_on_screen == e_pic_type::ROUTING) {
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
+        app->find_widget("ToggleCritPathRouting")->setEnabled(state);
     }
 
     app->refresh_drawing();
@@ -324,29 +317,28 @@ void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
  * @param self self ptr
  * @param app ezgl::application
  */
-void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_expansion_cost_cbk(QComboBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     e_draw_router_expansion_cost new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0) {
+    QString combo_box_content = self->currentText();
+    if (combo_box_content == "None") {
         new_state = DRAW_NO_ROUTER_EXPANSION_COST;
-    } else if (strcmp(combo_box_content, "Total") == 0) {
+    } else if (combo_box_content == "Total") {
         new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL;
-    } else if (strcmp(combo_box_content, "Known") == 0) {
+    } else if (combo_box_content == "Known") {
         new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN;
-    } else if (strcmp(combo_box_content, "Expected") == 0) {
+    } else if (combo_box_content == "Expected") {
         new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED;
-    } else if (strcmp(combo_box_content, "Total (with edges)") == 0) {
+    } else if (combo_box_content == "Total (with edges)") {
         new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES;
-    } else if (strcmp(combo_box_content, "Known (with edges)") == 0) {
+    } else if (combo_box_content == "Known (with edges)") {
         new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES;
-    } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
+    } else if (combo_box_content == "Expected (with edges)") {
         new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES;
     } else {
         VPR_THROW(VPR_ERROR_DRAW, "Unrecognized draw RR cost option");
     }
 
-    g_free(combo_box_content);
     draw_state->show_router_expansion_cost = new_state;
 
     if (draw_state->show_router_expansion_cost
@@ -364,18 +356,17 @@ void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @param self ptr to combo box
  * @param app ezgl application
  */
-void toggle_noc_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_noc_cbk(QComboBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0) {
+    QString combo_box_content = self->currentText();
+    if (combo_box_content == "None") {
         draw_state->draw_noc = DRAW_NO_NOC;
-    } else if (strcmp(combo_box_content, "NoC Links") == 0)
+    } else if (combo_box_content == "NoC Links")
         draw_state->draw_noc = DRAW_NOC_LINKS;
     else
         draw_state->draw_noc = DRAW_NOC_LINK_USAGE;
 
-    g_free(combo_box_content);
     app->refresh_drawing();
 }
 
@@ -383,12 +374,12 @@ void toggle_noc_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @brief CBK for Net Max Fanout spin button. Sets max fanout when val. changes
  * updates draw_state->draw_net_max_fanout
  * 
- * @param self self ptr to GtkSpinButton
+ * @param self self ptr to QSpinBox
  * @param app ezgl::app
  */
-void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app) {
+void set_net_max_fanout_cbk(QSpinBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->draw_net_max_fanout = gtk_spin_button_get_value_as_int(self);
+    draw_state->draw_net_max_fanout = self->value();
     app->refresh_drawing();
 }
 
@@ -399,101 +390,62 @@ void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app) {
  * @param self 
  * @param app 
  */
-void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
+void set_net_alpha_value_cbk(QSpinBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->net_alpha = 255 - gtk_spin_button_get_value_as_int(self);
+    draw_state->net_alpha = 255 - self->value();
     app->refresh_drawing();
 }
 
 /**
  * @brief Callback function for 3d layer checkboxes
  */
-void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+void select_layer_cbk(QWidget* widget, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkBox* box = GTK_BOX(parent);
-
-    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
     int index = 0;
-    // Iterate over the checkboxes
-    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
-        if (GTK_IS_CHECK_BUTTON(iter->data)) {
-            GtkWidget* checkbox = GTK_WIDGET(iter->data);
-            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
-            const gchar* name = gtk_button_get_label(GTK_BUTTON(checkbox));
-
-            // Only iterate through checkboxes with name "Layer ...", skip Cross Layer Connection
-            if (std::string(name).find("Layer") != std::string::npos
-                && std::string(name).find("Cross") == std::string::npos) {
-                // Change the boolean of the draw_layer_display vector depending on checkbox
-                if (state) {
-                    draw_state->draw_layer_display[index].visible = true;
-                } else {
-                    draw_state->draw_layer_display[index].visible = false;
-                }
-                index++;
-            }
+    for (QCheckBox* checkbox : widget->parentWidget()->findChildren<QCheckBox*>(QString(), Qt::FindDirectChildrenOnly)) {
+        const QString label = checkbox->text();
+        if (label.contains("Layer") && !label.contains("Cross")) {
+            draw_state->draw_layer_display[index].visible = checkbox->isChecked();
+            index++;
         }
     }
-    application.refresh_drawing();
-    g_list_free(children);
+    application->refresh_drawing();
 }
 /**
  * @brief Callback function for 3d layer transparency spin buttons
  */
-void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+void transparency_cbk(QWidget* widget, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkBox* box = GTK_BOX(parent);
-    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
-
     int index = 0;
-    // Iterate over transparency layers
-    for (GList* iter = children; iter != nullptr; iter = g_list_next(iter)) {
-        if (GTK_IS_SPIN_BUTTON(iter->data)) {
-            GtkWidget* spin_button = GTK_WIDGET(iter->data);
-            const gchar* name = gtk_widget_get_name(spin_button);
-
-            if (std::string(name).find("Transparency") != std::string::npos
-                && std::string(name).find("Cross") == std::string::npos) {
-                gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
-                draw_state->draw_layer_display[index].alpha = 255 - value;
-                index++;
-            }
+    for (QSpinBox* spin_button : widget->parentWidget()->findChildren<QSpinBox*>(QString(), Qt::FindDirectChildrenOnly)) {
+        const QString name = spin_button->objectName();
+        if (name.contains("Transparency") && !name.contains("Cross")) {
+            draw_state->draw_layer_display[index].alpha = 255 - spin_button->value();
+            index++;
         }
     }
-    application.refresh_drawing();
-    g_list_free(children);
+    application->refresh_drawing();
 }
 
 /**
  * @brief Callback function for cross layer connection checkbox
  */
-void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+void cross_layer_checkbox_cbk(QCheckBox* checkbox, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-
-    if (state) {
-        draw_state->cross_layer_display.visible = true;
-    } else {
-        draw_state->cross_layer_display.visible = false;
-    }
-
-    application.refresh_drawing();
+    draw_state->cross_layer_display.visible = checkbox->isChecked();
+    application->refresh_drawing();
 }
 
 /**
  * @brief Callback function for cross layer connection spin button
  */
-void cross_layer_transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+void cross_layer_transparency_cbk(QSpinBox* spinbox, int /*response_id*/, void* /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
+    int value = spinbox->value();
     draw_state->cross_layer_display.alpha = 255 - value;
 
-    application.refresh_drawing();
+    application->refresh_drawing();
 }
 #endif
