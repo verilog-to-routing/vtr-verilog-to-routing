@@ -1632,8 +1632,15 @@ struct t_vpr_setup {
     int GraphPause;                      ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
+    std::string RendererType;            ///<rendering backend: "immediate" (SW QPainter, no batching; most
+                                         ///<compatible, lowest performance/RAM), "deferred" (SW QPainter with
+                                         ///<draw-call batching; faster than immediate, more RAM), or "rhi"
+                                         ///<(GPU hardware rendering; highest performance, requires a GPU/VRAM,
+                                         ///<uses the most RAM)
     t_power_opts PowerOpts;
     std::string device_layout;
+    /// When > 0 and device_layout is "auto", use this fixed grid width and a height calculated from the auto layout's aspect ratio.
+    int device_width = 0;
     e_constant_net_method constant_net_method; ///<How constant nets should be handled
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network

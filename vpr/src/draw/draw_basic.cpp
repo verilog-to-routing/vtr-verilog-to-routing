@@ -323,7 +323,7 @@ void draw_congestion(ezgl::renderer* g) {
         VTR_ASSERT(draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS);
         sprintf(msg, "RR Node Overuse ratio range (%.2f, %.2f] (and congested nets)", min_congestion_ratio, max_congestion_ratio);
     }
-    application.update_message(msg);
+    application->update_message(msg);
 
     std::shared_ptr<vtr::ColorMap> cmap = std::make_shared<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
 
@@ -492,7 +492,7 @@ void draw_routing_costs(ezgl::renderer* g) {
     } else {
         sprintf(msg, "Cost Range [%g, %g]", min_cost, max_cost);
     }
-    application.update_message(msg);
+    application->update_message(msg);
 
     draw_rr_costs(g, rr_node_costs, true);
 }
@@ -555,7 +555,7 @@ void draw_routing_bb(ezgl::renderer* g) {
     msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(convert_to_cluster_net_id(net_id))
            + "'";
     msg += " (#" + std::to_string(size_t(net_id)) + ")";
-    application.update_message(msg.c_str());
+    application->update_message(msg.c_str());
 }
 
 /* Draws an X centered at (x,y). The width and height of the X are each 2 * size. */
@@ -1117,8 +1117,8 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 //Draws critical path shown as flylines.
 void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/) {
     g->draw_line(start, end);
-    draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-    draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
 
     bool draw_delays = get_draw_state_vars()->show_crit_path_delays && !skip_draw_delays;
 
@@ -1142,8 +1142,6 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         }
 
         //TODO: draw the delays nicer
-        //   * rotate to match edge
-        //   * offset from line
         //   * track visible in window
         ezgl::rectangle text_bbox({min_x, min_y}, {max_x, max_y});
 
@@ -1156,30 +1154,31 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
-        // Get the screen coordinates for text drawing
-        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+        // Offset the label perpendicular to the line by a fixed SCREEN-
+        // pixel amount via set_text_screen_offset. The offset is applied
+        // at paint time AFTER world→screen transform, so its visible size
+        // is always exactly kOffsetPx regardless of zoom — and crucially
+        // it's preserved through the camera-only redraw path (zoom/pan
+        // operations that replay cached overlay commands without re-running
+        // this code). The angle is in screen space: +X right, +Y down (Qt
+        // convention), which is why cos is negated here vs. world-Y-up.
+        constexpr float kFontPx = 16.0f;
+        constexpr float kOffsetPx = 12.0f;
+        const float angle_rad = text_angle * (std::numbers::pi / 180.0f);
+        const ezgl::point2d screen_offset{
+            -kOffsetPx * std::sin(angle_rad),
+            -kOffsetPx * std::cos(angle_rad)};
+
         g->set_text_rotation(text_angle);
-
-        // Set the text colour to black to differentiate it from the line
-        g->set_font_size(16);
+        g->set_font_size(kFontPx);
         g->set_color(ezgl::color(0, 0, 0));
+        g->set_text_screen_offset(screen_offset);
 
-        g->set_coordinate_system(ezgl::SCREEN);
-
-        // Find an offset so it is sitting on top/below of the line
-        float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (std::numbers::pi / 180));
-        float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (std::numbers::pi / 180));
-
-        ezgl::point2d offset_text_bbox(x_offset, y_offset);
-        g->draw_text(offset_text_bbox, incr_delay_str,
+        g->draw_text(text_bbox.center(), incr_delay_str,
                      text_bbox.width(), text_bbox.height());
 
         g->set_font_size(14);
-
         g->set_text_rotation(0);
-        g->set_coordinate_system(ezgl::WORLD);
     }
 }
 
@@ -1270,11 +1269,11 @@ void draw_color_map_legend(const vtr::ColorMap& cmap,
 
     g->set_coordinate_system(ezgl::SCREEN);
 
-    float screen_width = application.get_canvas(
-                                        application.get_main_canvas_id())
+    float screen_width = application->get_canvas(
+                                        application->get_main_canvas_id())
                              ->width();
-    float screen_height = application.get_canvas(
-                                         application.get_main_canvas_id())
+    float screen_height = application->get_canvas(
+                                         application->get_main_canvas_id())
                               ->height();
     float vert_offset = screen_height * LEGEND_VERT_OFFSET_FAC;
     float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
@@ -1367,12 +1366,12 @@ void draw_block_pin_util() {
     draw_state->color_map = std::move(cmap);
 
     if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
-        application.update_message("Block Total Pin Utilization");
+        application->update_message("Block Total Pin Utilization");
     } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_INPUTS) {
-        application.update_message("Block Input Pin Utilization");
+        application->update_message("Block Input Pin Utilization");
 
     } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
-        application.update_message("Block Output Pin Utilization");
+        application->update_message("Block Output Pin Utilization");
     } else {
         VTR_ASSERT(false);
     }

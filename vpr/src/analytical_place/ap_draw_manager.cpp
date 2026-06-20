@@ -12,6 +12,7 @@
 #ifndef NO_GRAPHICS
 #include "draw.h"
 #include "draw_global.h"
+#include "globals.h"
 #include "partial_placement.h"
 #endif
 
@@ -20,9 +21,11 @@ void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, is_flat);
+                        vpr_setup.GraphicsCommands, vpr_setup.RendererType, is_flat);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty()) {
         alloc_draw_structs(&arch);
+        init_draw_coords(vpr_setup.PlacerOpts.place_chan_width,
+                         g_vpr_ctx.placement().blk_loc_registry());
     }
 #else
     (void)vpr_setup;

@@ -141,7 +141,26 @@ void add_rr_graph_C_from_switches() {
                 cblock_counted[icblock] = false;
             }
 
-            for (isblock = iseg_low - 1; isblock <= iseg_high; isblock++) {
+            /* In VPR's regular routing architecture, there are 
+             * - no CHANX routing tracks in (x=0, y=<int>).
+             * - no CHANY routing tracks in (x=<int>, y=0).
+             * In the for-loop here, you may get, for example, 
+             * - CHANY at node_xlow, node_ylow) = (0,2)
+             * - but not CHANX (node_xlow, node_ylow) = (0,2)
+             * So, you will not get invalid address when applying -1 on the index.
+             * 
+             * In tileable routing architecture, when the option perimeter_cb is true, there are routing tracks at (x=0, y=2).
+             * In the for-loop here, you may get
+             * - CHANY at node_xlow, node_ylow) = (0,2)
+             * - but also CHANX (node_xlow, node_ylow) = (0,2)
+             * Then, you may get some data at (x=-1, y=2)
+             * The patch here is set conditional index to start the for-loop
+             */
+            int iseg_low_start_idx = iseg_low - 1;
+            if (iseg_low == 0) {
+                iseg_low_start_idx = iseg_low;
+            }
+            for (isblock = iseg_low_start_idx; isblock <= iseg_high; isblock++) {
                 rr_node_C[inode] += buffer_Cin[isblock]; /* Biggest buf Cin at loc */
                 buffer_Cin[isblock] = 0.;
             }

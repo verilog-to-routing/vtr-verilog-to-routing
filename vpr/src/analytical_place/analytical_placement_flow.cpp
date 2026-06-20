@@ -17,6 +17,7 @@
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
 #include "full_legalizer.h"
+#include "setup_grid.h"
 #include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
@@ -261,7 +262,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                ap_opts.log_verbosity,
-                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+                               /*is_fixed_device=*/has_fixed_device_size(vpr_setup));
     }
 
     // Create the ap netlist from the atom netlist using the result from the
