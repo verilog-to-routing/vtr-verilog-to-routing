@@ -3,7 +3,7 @@
 # modules with pip.
 
 # Pinned sphinx's version to avoid breakage in future
-sphinx == 8.2.3
+sphinx == 9.1.0
 sphinx_rtd_theme
 
 # Support custom domains
