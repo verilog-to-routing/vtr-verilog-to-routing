@@ -51,7 +51,7 @@
 #include "setup_vpr.h"
 #include "show_setup.h"
 #include "CheckArch.h"
-#include "CheckSetup.h"
+#include "check_setup.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "route.h"
@@ -246,6 +246,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     vpr_setup->TimingEnabled = options->timing_analysis;
     vpr_setup->device_layout = options->device_layout;
+    vpr_setup->device_width = options->device_width;
     vpr_setup->constant_net_method = options->constant_net_method;
     vpr_setup->clock_modeling = options->clock_modeling;
     vpr_setup->two_stage_clock_routing = options->two_stage_clock_routing;
@@ -319,13 +320,8 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     /* Check inputs are reasonable */
     CheckArch(*arch);
 
-    /* Verify settings don't conflict or otherwise not make sense */
-    CheckSetup(vpr_setup->PackerOpts,
-               vpr_setup->PlacerOpts,
-               vpr_setup->APOpts,
-               vpr_setup->RouterOpts,
-               vpr_setup->ServerOpts,
-               vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing, arch->Chans);
+    // Verify settings don't conflict or otherwise not make sense
+    check_setup(*vpr_setup, arch->Chans);
 
     /* flush any messages to user still in stdout that hasn't gotten displayed */
     fflush(stdout);
@@ -580,7 +576,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
     //       This would allow us to determine when to (re)build the RR graph in a
     //       more generic and flow-independent way.
     bool is_ap_and_fixed_device = (vpr_setup.APOpts.doAP == e_stage_action::DO)
-                                  && (vpr_setup.PackerOpts.device_layout != "auto");
+                                  && has_fixed_device_size(vpr_setup);
 
     if (!is_ap_and_fixed_device
         && vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH
@@ -614,7 +610,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     //Build the device
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
-    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization, vpr_setup.device_width);
     if (!Arch.vib_infs.empty()) {
         device_ctx.vib_grid = create_vib_device_grid(vpr_setup.device_layout, Arch.vib_grid_layouts);
     }
@@ -765,7 +761,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                vpr_setup.PackerOpts.pack_verbosity,
-                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+                               has_fixed_device_size(vpr_setup) /*is_fixed_device*/);
     }
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
@@ -774,6 +770,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                     prepacker,
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
+                    vpr_setup,
                     ram_mapper);
 }
 
@@ -840,7 +837,12 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // set up the device grid for the legalizer
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    if (vpr_setup.device_width > 0) {
+        size_t height = compute_auto_layout_height(arch.grid_layouts, vpr_setup.device_width);
+        device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, vpr_setup.device_width, height);
+    } else {
+        device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    }
     if (device_ctx.grid.get_num_layers() > 1) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
     }
@@ -1489,27 +1491,6 @@ void vpr_setup_vpr(t_options* Options,
 
 void vpr_check_arch(const t_arch& Arch) {
     CheckArch(Arch);
-}
-
-///@brief Verify settings don't conflict or otherwise not make sense
-void vpr_check_setup(const t_packer_opts& PackerOpts,
-                     const t_placer_opts& PlacerOpts,
-                     const t_ap_opts& APOpts,
-                     const t_router_opts& RouterOpts,
-                     const t_server_opts& ServerOpts,
-                     const t_det_routing_arch& RoutingArch,
-                     const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf& Timing,
-                     const t_chan_width_dist& Chans) {
-    CheckSetup(PackerOpts,
-               PlacerOpts,
-               APOpts,
-               RouterOpts,
-               ServerOpts,
-               RoutingArch,
-               Segments,
-               Timing,
-               Chans);
 }
 
 ///@brief Show current setup

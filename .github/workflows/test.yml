@@ -42,7 +42,7 @@ jobs:
     name: 'B: Building VTR Release'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -53,7 +53,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -87,7 +87,7 @@ jobs:
     name: 'B: Building VTR Release With Odin'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -104,7 +104,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install qtbase5-dev
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -142,7 +142,7 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: ${{ matrix.with_submodules }}
       # NOTE: We usually do not need sub-modules. We do not check sub-modules
@@ -196,7 +196,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
 
     - name: 'Run test suite verification'
@@ -212,7 +212,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -248,12 +248,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - uses: actions/setup-python@v6
@@ -267,7 +267,7 @@ jobs:
     # (first run / when ensure_qt6_sdk.sh changes). On a hit, the next step is a
     # near-instant no-op thanks to the script's idempotency check.
     - name: Cache Qt6 SDK
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: qt6
         key: qt6-sdk-${{ runner.os }}-${{ hashFiles('dev/ensure_qt6_sdk.sh') }}
@@ -278,7 +278,7 @@ jobs:
     - name: Install GUI test dependencies
       run: ./dev/install_gui_test_deps.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -347,12 +347,12 @@ jobs:
     needs: [GUITests]
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
     - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
+      uses: SimenB/github-actions-cpu-cores@v3
       id: cpu-cores
 
     - uses: actions/setup-python@v6
@@ -366,7 +366,7 @@ jobs:
     # (first run / when ensure_qt6_sdk.sh changes). On a hit, the next step is a
     # near-instant no-op thanks to the script's idempotency check.
     - name: Cache Qt6 SDK
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: qt6
         key: qt6-sdk-${{ runner.os }}-${{ hashFiles('dev/ensure_qt6_sdk.sh') }}
@@ -377,7 +377,7 @@ jobs:
     - name: Install GUI test dependencies
       run: ./dev/install_gui_test_deps.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -424,7 +424,7 @@ jobs:
         retention-days: 30
 
     - name: Upload coverage XML to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         files: build/coverage_gui.xml
         flags: gui
@@ -459,7 +459,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -475,7 +475,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: 'ccache'
-      uses: hendrikmuhs/ccache-action@v1.2
+      uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -610,7 +610,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -698,7 +698,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -777,7 +777,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -792,7 +792,7 @@ jobs:
       run: |
         pip install -r requirements.txt
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}-${{ matrix.suite }}
 
@@ -825,7 +825,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: 3.12.3
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'true'
 
@@ -865,7 +865,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -906,7 +906,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -951,7 +951,7 @@ jobs:
       CXX: ${{ matrix.CXX }}
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -962,7 +962,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}-${{ matrix.CC }}
 
@@ -982,7 +982,7 @@ jobs:
       CC: gcc-11
       CXX: g++-11
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -993,7 +993,7 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}-gcc-11
 
@@ -1013,7 +1013,7 @@ jobs:
       CC: gcc-15
       CXX: g++-15
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -1024,7 +1024,7 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}-gcc-15
 
@@ -1065,7 +1065,7 @@ jobs:
       CC: ${{ matrix.config.cc }}
       CXX: ${{ matrix.config.cxx }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'true'
 
@@ -1108,7 +1108,7 @@ jobs:
           ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ${{ runner.os }}-msys2-${{ github.job }}-${{ hashFiles('**/CMakeLists.txt', '**/Makefile') }}
           restore-keys: |
@@ -1135,7 +1135,7 @@ jobs:
         config:
           - name: "Build Compatibility (MSVC, Windows 2025)"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'true'
 
@@ -1178,13 +1178,13 @@ jobs:
           echo "CURL_PATH=$curlPath" >> $env:GITHUB_ENV
 
       - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@v1.13.0
       
       - name: Check MSVC Version
         run: cl
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ${{ runner.os }}-msvc-${{ github.sha }}
           restore-keys: ${{ runner.os }}-msvc-

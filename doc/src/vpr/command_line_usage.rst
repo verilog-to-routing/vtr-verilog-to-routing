@@ -106,7 +106,7 @@ instead of the default analytical placement flow, pass all four stage flags expl
     Run the analytical placement flow.
     This flow uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
     as such, the :option:`--pack` and :option:`--place` options are not used when this option is set.
-    This flow supports both automatic device sizing (via :option:`--device` ``auto``) and fixed device sizes.
+    This flow supports both automatic device sizing (via :option:`--device` ``auto``) and fixed device sizes (via :option:`--device` with a ``<fixed_layout>`` name, or via :option:`--device_width` with :option:`--device` ``auto``).
     Placement constraints can optionally be used to fix primitive blocks to specific locations on the device grid.
 
     .. note::
@@ -116,7 +116,7 @@ instead of the default analytical placement flow, pass all four stage flags expl
 
     .. seealso:: See :ref:`analytical_placement_options` for the options for this flow.
 
-    .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
+    .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>`, :option:`--device`, and :option:`--device_width` for how to fix the device size.
 
     .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
 
@@ -263,7 +263,7 @@ General Options
 
     Specifies which device layout/floorplan to use from the architecture file.  Valid values are:
 
-    * ``auto`` VPR uses the smallest device satisfying the circuit's resource requirements.  This option will use the ``<auto_layout>`` tag if it is present in the architecture file in order to construct the smallest FPGA that has sufficient resources to fit the design. If the ``<auto_layout>`` tag is not present, the ``auto`` option chooses the smallest device amongst all the architecture file's ``<fixed_layout>`` specifications into which the design can be packed.
+    * ``auto`` VPR uses the smallest device satisfying the circuit's resource requirements.  This option will use the ``<auto_layout>`` tag if it is present in the architecture file in order to construct the smallest FPGA that has sufficient resources to fit the design. If the ``<auto_layout>`` tag is not present, the ``auto`` option chooses the smallest device amongst all the architecture file's ``<fixed_layout>`` specifications into which the design can be packed. When :option:`--device_width` is set, VPR instead uses the specified grid width and derives the height from the ``<auto_layout>`` aspect ratio.
     * Any string matching ``name`` attribute of a device layout defined with a ``<fixed_layout>`` tag in the :ref:`arch_grid_layout` section of the architecture file.
 
     If the value specified is neither ``auto`` nor matches the ``name`` attribute value of a ``<fixed_layout>`` tag, VPR issues an error.
@@ -271,6 +271,15 @@ General Options
     .. note:: If the only layout in the architecture file is a single device specified using ``<fixed_layout>``, it is recommended to always specify the ``--device`` option; this prevents the value ``--device auto`` from interfering with operations supported only for ``<fixed_layout>`` grids.
 
     **Default:** ``auto``
+
+.. option:: --device_width <int>
+
+    When :option:`--device` is ``auto``, use a fixed grid width instead of auto-sizing the device to fit the circuit.
+    Grid height is derived from the ``<auto_layout>`` aspect ratio in the architecture file.
+
+    .. note:: This option is only valid when :option:`--device` is ``auto``. The architecture file must define an ``<auto_layout>`` tag so that the grid height can be computed from the specified width.
+
+    **Default:** ``0`` (disabled; device width is auto-sized)
 
 .. option:: -j, --num_workers <int>
 
