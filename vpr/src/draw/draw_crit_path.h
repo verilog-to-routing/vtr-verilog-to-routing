@@ -2,15 +2,16 @@
 
 #ifndef NO_GRAPHICS
 
+#include <map>
+#include <set>
+
+#include "tatum/TimingConstraintsFwd.hpp"
 #include "tatum/report/TimingPathCollector.hpp"
+
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
 
 void draw_crit_path(ezgl::renderer* g);
-void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::renderer* g);
-void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::renderer* g);
-void draw_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer* g)
-
 
 class DelayLabelDrawer {
     public:
@@ -19,18 +20,19 @@ class DelayLabelDrawer {
 
     private:
     struct t_label_drawing_info {
-        double edge_length = 0.0;
+        float delay_time = 0.0;
         bool hide_label = false;
         int label_transparency = 0;
+        double edge_length = 0.0;
+        double rotation_angle = 0.0;
         ezgl::rectangle virtual_centered_label_bbox;
         ezgl::rectangle label_bbox;
-        double rotation_angle = 0.0;
     };
 
     struct t_label_overlap_info {
-        int edge_idx = 0;
+        std::size_t edge_idx = 0;
         int num_overlaps = 0;
-    }
+    };
 
     enum class e_label_relative_pos {
         CENTER_ABOVE,

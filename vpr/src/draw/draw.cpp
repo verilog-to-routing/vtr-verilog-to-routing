@@ -56,6 +56,7 @@
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
+#include "draw_crit_path.h"
 
 #include "ui_setup.h"
 
