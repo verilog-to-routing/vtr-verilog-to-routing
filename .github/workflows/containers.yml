@@ -53,7 +53,7 @@ jobs:
 
       - name: 🛰️ Push container image
         if: github.event_name != 'pull_request'
-        uses: pyTooling/Actions/with-post-step@v7.10.1
+        uses: pyTooling/Actions/with-post-step@v7.11.0
         with:
           main: |
             echo '${{ github.token }}' | docker login ghcr.io -u GitHub-Actions --password-stdin
