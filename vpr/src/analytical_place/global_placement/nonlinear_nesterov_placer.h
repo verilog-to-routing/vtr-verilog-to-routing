@@ -6,7 +6,9 @@
  * @brief   Declaration of a nonlinear Nesterov analytical global placer.
  */
 
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include "flat_placement_density_manager.h"
@@ -97,15 +99,15 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      */
     ObjectiveValue evaluate_objective_(const PartialPlacement& p_placement,
                                        double density_weight,
-                                       const PartialPlacement* legal_anchor,
+                                       std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
                                        double proximity_weight,
-                                       PlacementGradient* grad) const;
+                                       std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
      * @brief Add smooth weighted-average wirelength value and gradient.
      */
     double add_wirelength_gradient_(const PartialPlacement& p_placement,
-                                    PlacementGradient* grad) const;
+                                    std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
      * @brief Update smooth wirelength net weights from pre-cluster timing criticalities.
@@ -113,23 +115,13 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     void update_timing_net_weights_();
 
     /**
-     * @brief Update pre-cluster timing delays and criticalities from a placement.
-     */
-    void update_timing_info_with_placement_(const PartialPlacement& p_placement);
-
-    /**
-     * @brief Estimate one tile of delay for missing delay-model entries.
-     */
-    float delay_per_tile_() const;
-
-    /**
      * @brief Add electrostatic density value and gradient.
      */
     double add_density_gradient_(const PartialPlacement& p_placement,
                                  double density_weight,
-                                 double* total_overflow,
-                                 double* max_overflow,
-                                 PlacementGradient* grad) const;
+                                 double& total_overflow,
+                                 double& max_overflow,
+                                 std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
      * @brief Add a quadratic proximity penalty to the latest legalized placement.
@@ -137,7 +129,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     double add_proximity_gradient_(const PartialPlacement& p_placement,
                                    const PartialPlacement& legal_anchor,
                                    double proximity_weight,
-                                   PlacementGradient* grad) const;
+                                   std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
      * @brief Project all block locations into device bounds and restore fixed blocks.
@@ -169,6 +161,12 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * @brief Compute the squared norm of a placement gradient.
      */
     double gradient_norm_squared_(const PlacementGradient& grad) const;
+
+    /**
+     * @brief Return the largest x-y displacement between two placements.
+     */
+    double max_block_displacement_(const PartialPlacement& from,
+                                   const PartialPlacement& to) const;
 
     /**
      * @brief Return true if the block should be moved by the continuous optimizer.

@@ -93,6 +93,17 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_place
                                                  int log_verbosity);
 
 /**
+ * @brief Update pre-cluster timing using a partial placement and delay model.
+ *
+ * This associates each AP sink pin with the delay estimated between its driver
+ * and sink locations, then runs STA to refresh timing criticalities.
+ */
+void update_timing_info_with_partial_placement(PreClusterTimingManager& pre_cluster_timing_manager,
+                                               const PlaceDelayModel& place_delay_model,
+                                               const PartialPlacement& p_placement,
+                                               const APNetlist& ap_netlist);
+
+/**
  * @brief A Global Placer based on the SimPL work for analytical ASIC placement.
  *          https://doi.org/10.1145/2461256.2461279
  *
