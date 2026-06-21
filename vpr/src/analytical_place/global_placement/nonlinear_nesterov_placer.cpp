@@ -726,7 +726,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
 
         for (size_t idx = 0; idx < num_sites; idx++)
             density_energy += 0.5 * charge[idx] * potential[dim_idx][idx];
-        
+
         // Computes field, i.e. potential gradient by central differences
         // site_index computes (layer * height + y) * width + x;
         for (size_t layer = 0; layer < num_layers; layer++) {
