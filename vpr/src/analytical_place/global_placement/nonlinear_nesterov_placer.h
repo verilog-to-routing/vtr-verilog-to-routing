@@ -123,7 +123,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     float delay_per_tile_() const;
 
     /**
-     * @brief Add smooth bin-density value and gradient.
+     * @brief Add electrostatic density value and gradient.
      */
     double add_density_gradient_(const PartialPlacement& p_placement,
                                  double density_weight,

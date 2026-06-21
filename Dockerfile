@@ -17,6 +17,9 @@ RUN apt-get update -qq \
     && apt-get -y install --no-install-recommends \
     wget \
     ninja-build \
+    libgtk-3-dev \
+    libcairo2-dev \
+    libglib2.0-dev \
     python3-pip \
     python3-venv \
     time \

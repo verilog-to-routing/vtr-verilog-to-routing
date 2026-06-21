@@ -8,7 +8,6 @@
 #include "nonlinear_nesterov_placer.h"
 #include <algorithm>
 #include <cmath>
-#include <limits>
 #include <vector>
 #include "PreClusterTimingManager.h"
 #include "ap_netlist.h"
@@ -100,12 +99,25 @@ constexpr double kEpsilon = 1e-9;
 constexpr double kDeviceBoundaryEpsilon = 1e-6;
 
 /**
- * @brief Numerically stable log(sum(exp(value / gamma))).
+ * @brief Compute a numerically stable log-sum-exp smooth approximation of a coordinate extremum.
+ *
+ * With @p negate false, multiplying the result by @p gamma approximates the
+ * maximum value. With @p negate true, multiplying the result by @p gamma
+ * approximates the negated minimum value; this lets the caller form a smooth
+ * max-minus-min wirelength estimate.
+ *
+ * @param values Coordinate values for one net dimension. Must be non-empty.
+ * @param gamma Positive smoothing factor: smaller values more closely
+ *              approximate the extremum, while larger values smooth it more.
+ * @param negate When true, negate each value before computing log-sum-exp to
+ *               approximate the negated minimum instead of the maximum.
+ * @return The log-sum-exp of the scaled coordinate values.
  */
-static double stable_log_sum_exp(const std::vector<double>& values, double gamma, bool negate) {
+double stable_log_sum_exp(const std::vector<double>& values, double gamma, bool negate) {
     VTR_ASSERT(!values.empty());
+    VTR_ASSERT(gamma > 0.);
 
-    double max_scaled = -std::numeric_limits<double>::infinity();
+    double max_scaled = negate ? -values.front() / gamma : values.front() / gamma;
     for (double value : values) {
         double scaled_value = negate ? -value / gamma : value / gamma;
         max_scaled = std::max(max_scaled, scaled_value);
@@ -566,6 +578,12 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         return (layer * height + y) * width + x;
     };
 
+    // Arrays with grid information of the density objective via electrostatic formulation
+    // All are recreated & zero-filled at every density-objective evaluation
+    // Utilization: deposited block mass at each site
+    // Target Capacity: available target mass/capacity at each site
+    // Potential: solved electrostatic potential
+    // field_x, field_y: components of the potential gradient
     std::vector<std::vector<double>> utilization(dimensions.size(), std::vector<double>(num_sites, 0.));
     std::vector<std::vector<double>> target_capacity(dimensions.size(), std::vector<double>(num_sites, 0.));
     std::vector<std::vector<double>> potential(dimensions.size(), std::vector<double>(num_sites, 0.));
@@ -622,6 +640,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
             wy[1] = 0.;
         }
 
+        // Traverses dimensions, i.e. resource types of the mass abstraction
         for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
             double mass = block_mass.get_dim_val(dimensions[dim_idx]);
             if (mass == 0.)
@@ -636,6 +655,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         }
     }
 
+    // Builds up "charge" at every tile site, corresponding to utilization
     double density_energy = 0.;
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
         std::vector<double> charge(num_sites, 0.);
@@ -676,6 +696,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                 charge[idx] -= mean_charge;
         }
 
+        // Solve an approximate discrete Poisson equation using 40 Jacobi iterations
         std::vector<double> next_potential(num_sites, 0.);
         for (size_t iter = 0; iter < kElectrostaticJacobiIterations; iter++) {
             for (size_t layer = 0; layer < num_layers; layer++) {
@@ -705,7 +726,9 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
 
         for (size_t idx = 0; idx < num_sites; idx++)
             density_energy += 0.5 * charge[idx] * potential[dim_idx][idx];
-
+        
+        // Computes field, i.e. potential gradient by central differences
+        // site_index computes (layer * height + y) * width + x;
         for (size_t layer = 0; layer < num_layers; layer++) {
             for (size_t x = 0; x < width; x++) {
                 for (size_t y = 0; y < height; y++) {
@@ -726,6 +749,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     if (!grad)
         return density_energy;
 
+    // Turn the grid field into a block gradient
     for (APBlockId blk_id : optimizable_blocks_) {
         PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         if (block_mass.is_zero())
