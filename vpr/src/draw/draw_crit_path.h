@@ -29,11 +29,6 @@ class DelayLabelDrawer {
         ezgl::rectangle label_bbox;
     };
 
-    struct t_edge_length_info {
-        std::size_t edge_idx = 0;
-        double edge_length = 0.0;
-    };
-
     enum class e_label_relative_pos {
         CENTER_ABOVE,
         CENTER_BELOW,
@@ -47,14 +42,13 @@ class DelayLabelDrawer {
         FAR_RIGHT_BELOW,
     };
 
-    std::vector<t_label_drawing_info> label_drawing_info;
-    std::vector<t_edge_length_info> edge_length_info;
+    std::vector<t_label_drawing_info> label_drawing_info_;
 
-    void update_basic_label_drawing_info(const tatum::TimingPath& path, ezgl::renderer* g);
-    void update_least_cluttering_label_pos();
-    void update_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos);
-    bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2);
-    void draw_labels(ezgl::renderer* g);
+    void update_basic_label_drawing_info_(const tatum::TimingPath& path, ezgl::renderer* g);
+    void update_least_cluttering_label_pos_();
+    void update_label_bbox_from_relative_pos_(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos);
+    bool check_if_bboxes_overlap_(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2);
+    void draw_labels_(ezgl::renderer* g);
 };
 
 #ifndef NO_SERVER
