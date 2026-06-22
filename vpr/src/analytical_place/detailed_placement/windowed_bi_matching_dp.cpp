@@ -15,15 +15,9 @@
 #include "place_and_route.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
+#include "verify_placement.h"
 
-namespace {
-int window_size = 2;
-int placement_layer = 0;
-int placement_sub_tile = 0;
-/**
- * @brief Creates a placement location from grid coordinates.
- */
-t_pl_loc make_pl_loc(int x, int y, int sub_tile, int layer) {
+t_pl_loc WindowedBiMatchingDetailedPlacer::make_pl_loc(int x, int y, int sub_tile, int layer) {
     t_pl_loc loc;
     loc.x = x;
     loc.y = y;
@@ -31,10 +25,8 @@ t_pl_loc make_pl_loc(int x, int y, int sub_tile, int layer) {
     loc.layer = layer;
     return loc;
 }
-/**
- * @brief Returns true if  physical tile at given grid location is not empty.
- */
-bool is_non_empty_physical_tile(const DeviceGrid& grid, int x, int y, int layer) {
+
+bool WindowedBiMatchingDetailedPlacer::is_non_empty_physical_tile(const DeviceGrid& grid, int x, int y, int layer) {
     t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
     if (!physical_type) {
         return false;
@@ -45,12 +37,9 @@ bool is_non_empty_physical_tile(const DeviceGrid& grid, int x, int y, int layer)
     return true;
 }
 
-/**
- * @brief Returns true if every physical tile in the 2x2 window is not empty.
- */
-bool window_has_no_empty_physical_tiles(const DeviceGrid& grid, int x, int y, int layer) {
-    for (int dx = 0; dx < window_size; ++dx) {
-        for (int dy = 0; dy < window_size; ++dy) {
+bool WindowedBiMatchingDetailedPlacer::window_has_no_empty_physical_tiles(const DeviceGrid& grid, int x, int y, int layer) {
+    for (int dx = 0; dx < window_size_; dx++) {
+        for (int dy = 0; dy < window_size_; dy++) {
             if (!is_non_empty_physical_tile(grid, x + dx, y + dy, layer)) {
                 return false;
             }
@@ -59,14 +48,11 @@ bool window_has_no_empty_physical_tiles(const DeviceGrid& grid, int x, int y, in
     return true;
 }
 
-/**
- * @brief Returns true if every checked sub-tile location in the window contains a placed block.
- */
-bool window_has_all_placed_blocks(const BlkLocRegistry& blk_loc_registry, int x, int y, int layer) {
+bool WindowedBiMatchingDetailedPlacer::window_has_all_placed_blocks(const BlkLocRegistry& blk_loc_registry, int x, int y, int layer) {
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-    for (int dx = 0; dx < window_size; dx++) {
-        for (int dy = 0; dy < window_size; dy++) {
-            t_pl_loc loc = make_pl_loc(x + dx, y + dy, placement_sub_tile, layer);
+    for (int dx = 0; dx < window_size_++; dx++) {
+        for (int dy = 0; dy < window_size_++; dy++) {
+            t_pl_loc loc = make_pl_loc(x + dx, y + dy, placement_sub_tile_, layer);
             ClusterBlockId blk = grid_blocks.block_at_location(loc);
             if (blk == ClusterBlockId::INVALID()) {
                 return false;
@@ -76,13 +62,10 @@ bool window_has_all_placed_blocks(const BlkLocRegistry& blk_loc_registry, int x,
     return true;
 }
 
-/**
- * @brief Returns true if two blocks can be swapped by this pass.
- */
-bool blocks_are_swappable(const BlkLocRegistry& blk_loc_registry,
-                          const ClusteredNetlist& clb_nlist,
-                          ClusterBlockId block_a,
-                          ClusterBlockId block_b) {
+bool WindowedBiMatchingDetailedPlacer::blocks_are_swappable(const BlkLocRegistry& blk_loc_registry,
+                                                            const ClusteredNetlist& clb_nlist,
+                                                            ClusterBlockId block_a,
+                                                            ClusterBlockId block_b) {
     if (block_a == ClusterBlockId::INVALID() || block_b == ClusterBlockId::INVALID()) {
         return false;
     }
@@ -96,14 +79,11 @@ bool blocks_are_swappable(const BlkLocRegistry& blk_loc_registry,
     return true;
 }
 
-/**
- * @brief Attempts to commit a swap between two placed blocks.
- */
-bool try_swap_blocks(BlkLocRegistry& blk_loc_registry,
-                     ClusterBlockId block_a,
-                     t_pl_loc loc_a,
-                     ClusterBlockId block_b,
-                     t_pl_loc loc_b) {
+bool WindowedBiMatchingDetailedPlacer::try_swap_blocks(BlkLocRegistry& blk_loc_registry,
+                                                       ClusterBlockId block_a,
+                                                       t_pl_loc loc_a,
+                                                       ClusterBlockId block_b,
+                                                       t_pl_loc loc_b) {
     t_pl_blocks_to_be_moved blocks_affected(2);
 
     e_block_move_result result_a =
@@ -123,7 +103,6 @@ bool try_swap_blocks(BlkLocRegistry& blk_loc_registry,
     blocks_affected.clear_move_blocks();
     return true;
 }
-} // namespace
 
 void WindowedBiMatchingDetailedPlacer::optimize_placement() {
     vtr::ScopedStartFinishTimer timer("Windowed Bipartite Matching Detailed Placer");
@@ -140,18 +119,18 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
 
     int num_swaps = 0;
 
-    for (int x = 0; x + window_size - 1 < grid_width; x += window_size) {
-        for (int y = 0; y + window_size - 1 < grid_height; y += window_size) {
-            if (!window_has_no_empty_physical_tiles(grid, x, y, placement_layer)) {
+    for (int x = 0; x + window_size_ - 1 < grid_width; x += window_size_) {
+        for (int y = 0; y + window_size_ - 1 < grid_height; y += window_size_) {
+            if (!window_has_no_empty_physical_tiles(grid, x, y, placement_layer_)) {
                 continue;
             }
-            if (!window_has_all_placed_blocks(blk_loc_registry, x, y, placement_layer)) {
+            if (!window_has_all_placed_blocks(blk_loc_registry, x, y, placement_layer_)) {
                 continue;
             }
 
             ///Temporary test: fixed swap between top left and top right block (no cost function)
-            t_pl_loc left_loc = make_pl_loc(x, y, placement_sub_tile, placement_layer);
-            t_pl_loc right_loc = make_pl_loc(x + 1, y, placement_sub_tile, placement_layer);
+            t_pl_loc left_loc = make_pl_loc(x, y, placement_sub_tile_, placement_layer_);
+            t_pl_loc right_loc = make_pl_loc(x + 1, y, placement_sub_tile_, placement_layer_);
 
             ClusterBlockId left_blk = grid_blocks.block_at_location(left_loc);
             ClusterBlockId right_blk = grid_blocks.block_at_location(right_loc);
@@ -168,7 +147,17 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
     }
     if (num_swaps > 0) {
         post_place_sync();
+
+        // Verify that the placement remains valid after the detailed-placement swaps.
+        unsigned num_placement_errors = verify_placement(g_vpr_ctx);
+        if (num_placement_errors == 0) {
+            VTR_LOG("Completed placement consistency check successfully.\n");
+        } else {
+            VPR_ERROR(VPR_ERROR_AP,
+                      "Completed placement consistency check, %u errors found.\n"
+                      "Aborting program.\n",
+                      num_placement_errors);
+        }
     }
-    ///Verifying that swaps are actually happening
     VTR_LOG("Windowed BiMatching DP: committed %d neighbor swaps.\n", num_swaps);
 }
