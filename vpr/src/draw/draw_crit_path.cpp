@@ -14,7 +14,6 @@
 
 static constexpr int LABEL_WIDTH = 40;
 static constexpr int LABEL_HEIGHT = 13;
-static constexpr int PERPENDICULAR_OFFSET = 12;
 static constexpr double EDGE_OFFSET_PERCENT = 0.1;
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
@@ -47,7 +46,9 @@ void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::rendere
 void draw_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer* g);
 
 #ifndef NO_SERVER
+
 void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/);
+
 #endif /* NO_SERVER */
 
 void draw_crit_path(ezgl::renderer* g) {
@@ -78,7 +79,7 @@ void draw_crit_path(ezgl::renderer* g) {
     if (draw_state->show_crit_path_flylines) {
         draw_timing_edge_flylines(path, g);
         if (draw_state->show_crit_path_delays) {
-            DelayLabelDrawer delay_label_drawer;
+            DelayLabelDrawer delay_label_drawer(g);
             delay_label_drawer.calculate_and_draw_labels(path, g);
         }
     }
@@ -209,13 +210,17 @@ void draw_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_
     }
 }
 
+DelayLabelDrawer::DelayLabelDrawer(ezgl::renderer* g) {
+    pixels_per_world_unit_ = get_pixels_per_world_unit(g);
+}
+
 void DelayLabelDrawer::calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g) {
-    update_basic_label_drawing_info_(path, g);
+    update_basic_label_drawing_info_(path);
     update_least_cluttering_label_pos_();
     draw_labels_(g);
 }
 
-void DelayLabelDrawer::update_basic_label_drawing_info_(const tatum::TimingPath& path, ezgl::renderer* g) {
+void DelayLabelDrawer::update_basic_label_drawing_info_(const tatum::TimingPath& path) {
     std::size_t num_edges = path.data_arrival_path().elements().size() - 1;
     label_drawing_info_.resize(num_edges);
 
@@ -259,18 +264,20 @@ void DelayLabelDrawer::update_basic_label_drawing_info_(const tatum::TimingPath&
             double max_y = std::max(start.y, end.y);
             ezgl::rectangle edge_bbox({start.x, min_y}, {end.x, max_y});
             
-            ezgl::rectangle screen_coords = g->world_to_screen(edge_bbox);
-            drawing_info.edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
+            //ezgl::rectangle screen_coords = g->world_to_screen(edge_bbox);
+            drawing_info.edge_length = std::sqrt(std::pow(edge_bbox.width(), 2) + std::pow(edge_bbox.height(), 2));
             
             double rotation_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
             drawing_info.rotation_angle = rotation_angle;
 
-            double label_bbox_width = LABEL_WIDTH * cos(rotation_angle * (std::numbers::pi / 180)) 
-                                    + LABEL_HEIGHT * std::abs(sin(rotation_angle * (std::numbers::pi / 180)));
-            double label_bbox_height = LABEL_WIDTH * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
-                                    + LABEL_HEIGHT * cos(rotation_angle * (std::numbers::pi / 180));
+            double label_bbox_width = (LABEL_WIDTH * cos(rotation_angle * (std::numbers::pi / 180)) 
+                                    + LABEL_HEIGHT * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
+                                    / pixels_per_world_unit_;
+            double label_bbox_height = (LABEL_WIDTH * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
+                                    + LABEL_HEIGHT * cos(rotation_angle * (std::numbers::pi / 180)))
+                                    / pixels_per_world_unit_;
 
-            ezgl::point2d bbox_bottom_left = screen_coords.center() - ezgl::point2d(label_bbox_width / 2, label_bbox_height / 2);
+            ezgl::point2d bbox_bottom_left = edge_bbox.center() - ezgl::point2d(label_bbox_width / 2, label_bbox_height / 2);
             drawing_info.virtual_centered_label_bbox = ezgl::rectangle(bbox_bottom_left, label_bbox_width, label_bbox_height);
 
             update_label_bbox_from_relative_pos_(drawing_info, e_label_relative_pos::CENTER_ABOVE);
@@ -334,61 +341,61 @@ void DelayLabelDrawer::update_label_bbox_from_relative_pos_(t_label_drawing_info
     double edge_length = label_to_update.edge_length;
     double edge_offset_unit = edge_length * EDGE_OFFSET_PERCENT;
 
-    if (edge_offset_unit > 40) {
-        edge_offset_unit = 40;
+    if (edge_offset_unit > 40 / pixels_per_world_unit_) {
+        edge_offset_unit = 40 / pixels_per_world_unit_;
     }
 
-    int perpendicular_offset = 0;
+    double perpendicular_offset = 0;
     double edge_offset = 0.0;
     switch (label_relative_pos) {
         case e_label_relative_pos::CENTER_ABOVE:
-            perpendicular_offset = PERPENDICULAR_OFFSET;
+            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit_;
             break;
         case e_label_relative_pos::CENTER_BELOW:
-            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit_;
             break;
         case e_label_relative_pos::LEFT_ABOVE:
-            perpendicular_offset = PERPENDICULAR_OFFSET;
+            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = - edge_offset_unit;
             break;
         case e_label_relative_pos::LEFT_BELOW:
-            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = - edge_offset_unit;
             break;
         case e_label_relative_pos::RIGHT_ABOVE:
-            perpendicular_offset = PERPENDICULAR_OFFSET;
+            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = edge_offset_unit;
             break;
         case e_label_relative_pos::RIGHT_BELOW:
-            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = edge_offset_unit;
             break;
         case e_label_relative_pos::FAR_LEFT_ABOVE:
-            perpendicular_offset = PERPENDICULAR_OFFSET;
+            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = - edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_LEFT_BELOW:
-            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = - edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_RIGHT_ABOVE:
-            perpendicular_offset = PERPENDICULAR_OFFSET;
+            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_RIGHT_BELOW:
-            perpendicular_offset = - PERPENDICULAR_OFFSET;
+            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit_;
             edge_offset = edge_offset_unit * 2;
             break;
         default:
-            perpendicular_offset = PERPENDICULAR_OFFSET;
+            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit_;
     }
 
     double rotation_angle_in_deg = label_to_update.rotation_angle * (std::numbers::pi / 180);
     double x_offset = - perpendicular_offset * sin(rotation_angle_in_deg);
-    double y_offset = - perpendicular_offset * cos(rotation_angle_in_deg);
+    double y_offset = perpendicular_offset * cos(rotation_angle_in_deg);
 
     x_offset += edge_offset * cos(rotation_angle_in_deg);
-    y_offset -= edge_offset * sin(rotation_angle_in_deg);
+    y_offset += edge_offset * sin(rotation_angle_in_deg);
 
     label_to_update.label_bbox = label_to_update.virtual_centered_label_bbox + ezgl::point2d(x_offset, y_offset);
 }
@@ -403,7 +410,6 @@ bool DelayLabelDrawer::check_if_bboxes_overlap_(const ezgl::rectangle& bbox1, co
 
 void DelayLabelDrawer::draw_labels_(ezgl::renderer* g) {
     g->set_font_size(16);
-    g->set_coordinate_system(ezgl::SCREEN);
 
     for (std::size_t edge_idx = 0; edge_idx < label_drawing_info_.size(); edge_idx++) {
         t_label_drawing_info& drawing_info = label_drawing_info_[edge_idx];
@@ -422,7 +428,6 @@ void DelayLabelDrawer::draw_labels_(ezgl::renderer* g) {
 
     g->set_font_size(14);
     g->set_text_rotation(0);
-    g->set_coordinate_system(ezgl::WORLD);
 }
 
 #ifndef NO_SERVER

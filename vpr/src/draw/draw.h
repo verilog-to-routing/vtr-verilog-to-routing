@@ -112,7 +112,7 @@ const float WIRE_DRAWING_WIDTH = 0.5;
 /**
  * @brief Calculate the ratio between pixels and world units spanning the screen width.
  * 
- * @return Returns the ratio described above, which will be used to determine when decluttering should occur.
+ * @return Returns the ratio described above, which is usually used to determine when decluttering should occur.
  */
 double get_pixels_per_world_unit(ezgl::renderer* g);
 

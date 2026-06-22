@@ -15,7 +15,8 @@ void draw_crit_path(ezgl::renderer* g);
 
 class DelayLabelDrawer {
     public:
-    DelayLabelDrawer() = default;
+    DelayLabelDrawer() = delete;
+    DelayLabelDrawer(ezgl::renderer* g);
     void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g);
 
     private:
@@ -42,9 +43,10 @@ class DelayLabelDrawer {
         FAR_RIGHT_BELOW,
     };
 
+    double pixels_per_world_unit_ = 0.0;
     std::vector<t_label_drawing_info> label_drawing_info_;
 
-    void update_basic_label_drawing_info_(const tatum::TimingPath& path, ezgl::renderer* g);
+    void update_basic_label_drawing_info_(const tatum::TimingPath& path);
     void update_least_cluttering_label_pos_();
     void update_label_bbox_from_relative_pos_(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos);
     bool check_if_bboxes_overlap_(const ezgl::rectangle& bbox1, const ezgl::rectangle& bbox2);

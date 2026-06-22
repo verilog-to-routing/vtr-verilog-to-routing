@@ -116,7 +116,7 @@ void draw_routing_util(ezgl::renderer* g);
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer);
 
 /* Draws critical path shown as flylines. Takes in start and end coordinates, time delay, & renderer.*/
-//void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays = false);
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays = false);
 
 /* Collects all the drawing locations associated with the timing edge between start and end.
  * Only traces interconnect edges in detail, and treats all others as flylines.
