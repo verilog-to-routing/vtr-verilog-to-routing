@@ -167,54 +167,58 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         TATUM_ASSERT(node_type == NodeType::SOURCE);
 
         if(tc.node_is_clock_source(node_id)) {
-            //Generate the appropriate clock tag
-
-            //Find the domain of this node (since it is a source)
-            DomainId domain_id = tc.node_clock_domain(node_id);
-            TATUM_ASSERT(domain_id);
-
-            //Initialize a clock launch tag from this to any capture domain
+            //Generate the appropriate clock tags.
             //
-            //Note: we assume that edge counting has set the effective period constraint assuming a
-            //launch edge at time zero + source latency.  This means we don't need to do anything 
-            //special for clocks with rising edges after time zero.
-            Time launch_source_latency = ops_.launch_source_latency(tc, domain_id);
-            TimingTag launch_tag = TimingTag(launch_source_latency, 
-                                             domain_id,
-                                             DomainId::INVALID(), //Any capture
-                                             NodeId::INVALID(), //Origin
-                                             TagType::CLOCK_LAUNCH);
-            //Add the launch tag
-            ops_.set_tag(node_id, launch_tag);
+            //A source node may host multiple clock domains when the SDC uses create_clock -add
+            //to define more than one clock on the same pin (e.g. physically-exclusive clocks
+            //driven by a board-level mux). We iterate all domains so that every clock that
+            //originates here gets its launch and capture tags seeded independently.
+            for(DomainId domain_id : tc.clock_domains()) {
+                if(tc.clock_domain_source_node(domain_id) != node_id) continue;
 
-            //Initialize the clock capture tags from any valid launch domain to this domain
-            //
-            //Note that we enumerate all pairs of valid launch domains for the current domain 
-            //(which is now treated as the capture domain), since each pair may have different constraints
-            for(DomainId launch_domain_id : tc.clock_domains()) {
-                if(tc.should_analyze(launch_domain_id, domain_id)) {
+                //Initialize a clock launch tag from this to any capture domain
+                //
+                //Note: we assume that edge counting has set the effective period constraint assuming a
+                //launch edge at time zero + source latency.  This means we don't need to do anything
+                //special for clocks with rising edges after time zero.
+                Time launch_source_latency = ops_.launch_source_latency(tc, domain_id);
+                TimingTag launch_tag = TimingTag(launch_source_latency,
+                                                 domain_id,
+                                                 DomainId::INVALID(), //Any capture
+                                                 NodeId::INVALID(), //Origin
+                                                 TagType::CLOCK_LAUNCH);
+                //Add the launch tag
+                ops_.set_tag(node_id, launch_tag);
 
-                    //Initialize the clock capture tag with the constraint, including the effect of any source latency
-                    //
-                    //Note: We assume that this period constraint has been resolved by edge counting for this
-                    //domain pair. Note that it does not include the effect of clock uncertainty, which is handled
-                    //when the caputre tag is converted into a data-arrival tag.
-                    //
-                    //Also note that this is the default clock constraint. If there is a different per capture node
-                    //constraint this is also handled when setting the required time.
-                    Time clock_constraint = ops_.clock_constraint(tc, launch_domain_id, domain_id);
+                //Initialize the clock capture tags from any valid launch domain to this domain
+                //
+                //Note that we enumerate all pairs of valid launch domains for the current domain
+                //(which is now treated as the capture domain), since each pair may have different constraints
+                for(DomainId launch_domain_id : tc.clock_domains()) {
+                    if(tc.should_analyze(launch_domain_id, domain_id)) {
 
-                    Time capture_source_latency = ops_.capture_source_latency(tc, domain_id);
+                        //Initialize the clock capture tag with the constraint, including the effect of any source latency
+                        //
+                        //Note: We assume that this period constraint has been resolved by edge counting for this
+                        //domain pair. Note that it does not include the effect of clock uncertainty, which is handled
+                        //when the capture tag is converted into a data-arrival tag.
+                        //
+                        //Also note that this is the default clock constraint. If there is a different per capture node
+                        //constraint this is also handled when setting the required time.
+                        Time clock_constraint = ops_.clock_constraint(tc, launch_domain_id, domain_id);
 
-                    TimingTag capture_tag = TimingTag(Time(capture_source_latency) + Time(clock_constraint), 
-                                                      launch_domain_id,
-                                                      domain_id,
-                                                      NodeId::INVALID(), //Origin
-                                                      TagType::CLOCK_CAPTURE);
+                        Time capture_source_latency = ops_.capture_source_latency(tc, domain_id);
 
-                    ops_.set_tag(node_id, capture_tag);
+                        TimingTag capture_tag = TimingTag(Time(capture_source_latency) + Time(clock_constraint),
+                                                          launch_domain_id,
+                                                          domain_id,
+                                                          NodeId::INVALID(), //Origin
+                                                          TagType::CLOCK_CAPTURE);
 
-                    node_constrained = true;
+                        ops_.set_tag(node_id, capture_tag);
+
+                        node_constrained = true;
+                    }
                 }
             }
         } else {

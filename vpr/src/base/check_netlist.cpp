@@ -4,10 +4,16 @@
  *
  * These include checking for duplicated names, dangling links, etc.
  */
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
+#include "atom_lookup.h"
+#include "atom_netlist.h"
+#include "direct_connection_legality.h"
 #include "logic_types.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -31,9 +37,37 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn);
 
 static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& intra_lb_pb_pini_lookup);
 
+/** @brief Checks Fc_out = 0 top-level OUT pins are only used by legal external <direct>s. */
+static int check_external_directs_legality(const t_arch& arch);
+
+/** @brief True if the given top-level OUT pin has Fc_out == 0 (no general-routing access). */
+static bool pin_has_fc_out_zero(t_logical_block_type_ptr lb, int pin_count_in_cluster);
+
+/**
+ * @brief Walks pb_route up from a primitive sink pin to the top-level IN pin it enters
+ * through, returning that pin's pin_count_in_cluster, or -1 if none is reached.
+ */
+static int find_top_level_input_pin_of_sink(const t_pb_routes& pb_route,
+                                            const t_pb_graph_node* pb_head,
+                                            int sink_primitive_pin_id);
+
+/** @brief True if the given sink pin is routed entirely within its cluster. */
+static bool is_sink_routed_within_cluster(const t_pb_routes& pb_route,
+                                          const t_pb_graph_node* pb_head,
+                                          int sink_primitive_pin_id);
+
+/** @brief A single illegal use of an Fc_out = 0 OUT pin: the source net/cluster/pin and the sink it couldn't legally reach. */
+struct t_external_directs_legality_violation {
+    AtomNetId net_id;               ///< The offending source net.
+    ClusterBlockId cluster_id;      ///< Cluster driving the Fc_out = 0 OUT pin.
+    const t_pb_graph_pin* out_pin;  ///< The Fc_out = 0 top-level OUT pin.
+    ClusterBlockId sink_cluster_id; ///< Cluster of the sink that couldn't be reached legally.
+    const t_pb_graph_pin* sink_pin; ///< The sink pin within sink_cluster_id.
+};
+
 /*********************** Subroutine definitions *****************************/
 
-void check_netlist(int verbosity) {
+void check_netlist(int verbosity, const t_arch& arch) {
     int error = 0;
     int num_conn;
     t_hash **net_hash_table, *h_net_ptr;
@@ -81,6 +115,8 @@ void check_netlist(int verbosity) {
     }
 
     error += check_for_duplicated_names();
+
+    error += check_external_directs_legality(arch);
 
     if (error != 0) {
         VPR_ERROR(VPR_ERROR_OTHER,
@@ -218,6 +254,172 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
         }
     }
     return error;
+}
+
+static int check_external_directs_legality(const t_arch& arch) {
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomNetlist& atom_nlist = atom_ctx.netlist();
+    const AtomLookup& atom_lookup = atom_ctx.lookup();
+    const DirectConnectionLegality direct_legality(arch.directs, g_vpr_ctx.device());
+
+    std::vector<t_external_directs_legality_violation> violations;
+
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_logical_block_type_ptr cluster_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        const t_pb* cluster_pb = cluster_ctx.clb_nlist.block_pb(blk_id);
+        if (cluster_type == nullptr || cluster_pb == nullptr) continue;
+
+        const t_pb_graph_node* pb_head = cluster_pb->pb_graph_node;
+        if (pb_head == nullptr) continue;
+
+        const t_pb_routes& pb_route = cluster_pb->pb_route;
+
+        // Iterate every used pin in the cluster (entries in pb_route are by
+        // definition used). Filter to top-level OUT pins.
+        for (const auto& pb_route_entry : pb_route) {
+            int out_pin_id = pb_route_entry.first;
+            const t_pb_graph_pin* pb_pin = pb_route_entry.second.pb_graph_pin;
+            if (pb_pin == nullptr || pb_pin->port == nullptr) continue;
+            if (pb_pin->parent_node != pb_head || pb_pin->port->type != OUT_PORT) continue;
+
+            AtomNetId net_id = pb_route_entry.second.atom_net_id;
+            if (!net_id) continue;
+
+            // Fc_out > 0 pins have general-routing access; nothing to check.
+            if (!pin_has_fc_out_zero(cluster_type, out_pin_id)) continue;
+
+            bool net_has_unsatisfied_sink = false;
+            ClusterBlockId offending_sink_cluster_id;
+            const t_pb_graph_pin* offending_sink_pin = nullptr;
+            for (AtomPinId sink_atom_pin : atom_nlist.net_sinks(net_id)) {
+                AtomBlockId sink_blk = atom_nlist.pin_block(sink_atom_pin);
+                if (!sink_blk) continue;
+
+                ClusterBlockId sink_cluster_id = atom_lookup.atom_clb(sink_blk);
+                if (!sink_cluster_id.is_valid()) continue;
+
+                const t_pb* sink_cluster_pb = cluster_ctx.clb_nlist.block_pb(sink_cluster_id);
+                t_logical_block_type_ptr sink_cluster_type = cluster_ctx.clb_nlist.block_type(sink_cluster_id);
+                if (sink_cluster_pb == nullptr || sink_cluster_type == nullptr) continue;
+
+                const t_pb_graph_pin* sink_pb_pin = find_pb_graph_pin(
+                    atom_nlist,
+                    atom_lookup.atom_pb_bimap(),
+                    sink_atom_pin);
+                if (sink_pb_pin == nullptr) continue;
+
+                if (sink_cluster_id == blk_id) {
+                    // Source and sink share a cluster. The connection is legal
+                    // if it routes entirely with intra-cluster resources. If
+                    // instead it leaves and re-enters through a top-level pin,
+                    // that feedback path needs general routing, which an
+                    // Fc_out = 0 pin cannot provide.
+                    if (!is_sink_routed_within_cluster(sink_cluster_pb->pb_route,
+                                                       sink_cluster_pb->pb_graph_node,
+                                                       sink_pb_pin->pin_count_in_cluster)) {
+                        net_has_unsatisfied_sink = true;
+                        offending_sink_cluster_id = sink_cluster_id;
+                        offending_sink_pin = sink_pb_pin;
+                        break;
+                    }
+                } else {
+                    // Source and sink are in different clusters: the connection
+                    // can only exist if a <direct> wires this OUT pin to the
+                    // sink's top-level IN pin.
+                    int sink_top_in_pin = find_top_level_input_pin_of_sink(
+                        sink_cluster_pb->pb_route,
+                        sink_cluster_pb->pb_graph_node,
+                        sink_pb_pin->pin_count_in_cluster);
+                    if (!direct_legality.is_direct_legal(cluster_type, out_pin_id,
+                                                         sink_cluster_type, sink_top_in_pin)) {
+                        net_has_unsatisfied_sink = true;
+                        offending_sink_cluster_id = sink_cluster_id;
+                        offending_sink_pin = sink_pb_pin;
+                        break;
+                    }
+                }
+            }
+
+            if (net_has_unsatisfied_sink) {
+                violations.push_back({net_id, blk_id, pb_pin, offending_sink_cluster_id, offending_sink_pin});
+            }
+        }
+    }
+
+    if (violations.empty()) return 0;
+
+    VTR_LOG_ERROR("Clustered netlist <direct>-list legality check failed: "
+                  "%zu cluster/net pair(s) drive top-level OUT pin(s) with Fc_out = 0 "
+                  "without a matching <direct> entry.\n",
+                  violations.size());
+    for (const t_external_directs_legality_violation& violation : violations) {
+        VTR_LOG_ERROR("    Offending net: %s, cluster: %s, Fc_out = 0 pin: %s, sink cluster: %s, sink pin: %s\n",
+                      atom_nlist.net_name(violation.net_id).c_str(),
+                      cluster_ctx.clb_nlist.block_name(violation.cluster_id).c_str(),
+                      violation.out_pin->to_string().c_str(),
+                      cluster_ctx.clb_nlist.block_name(violation.sink_cluster_id).c_str(),
+                      violation.sink_pin->to_string().c_str());
+    }
+
+    return violations.size();
+}
+
+static bool pin_has_fc_out_zero(t_logical_block_type_ptr lb, int pin_count_in_cluster) {
+    // LIMITATION: only the first equivalent tile is considered. A logical
+    // block placeable in multiple physical tiles with differing Fc is not
+    // supported.
+    if (lb == nullptr || lb->equivalent_tiles.empty()) return true;
+
+    const t_physical_tile_type* tile = lb->equivalent_tiles.front();
+    int phys_pin = get_physical_pin(tile, lb, pin_count_in_cluster);
+    for (const t_fc_specification& fc_spec : tile->fc_specs) {
+        if (fc_spec.fc_value <= 0) continue;
+        if (std::find(fc_spec.pins.begin(), fc_spec.pins.end(), phys_pin) != fc_spec.pins.end()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static int find_top_level_input_pin_of_sink(const t_pb_routes& pb_route,
+                                            const t_pb_graph_node* pb_head,
+                                            int sink_primitive_pin_id) {
+    int current_pin_id = sink_primitive_pin_id;
+
+    // Follow driver links upstream. The step count bounds the walk in case a
+    // malformed pb_route contains a cycle.
+    for (size_t remaining_steps = pb_route.size(); remaining_steps > 0; --remaining_steps) {
+        auto it = pb_route.find(current_pin_id);
+        if (it == pb_route.end()) return -1;
+
+        const t_pb_route& entry = it->second;
+        const t_pb_graph_pin* pb_pin = entry.pb_graph_pin;
+        if (pb_pin == nullptr) return -1;
+
+        if (pb_pin->pin_count_in_cluster != current_pin_id) return -1;
+
+        if (pb_pin->parent_node == pb_head
+            && pb_pin->port != nullptr
+            && pb_pin->port->type == IN_PORT) {
+            return current_pin_id;
+        }
+
+        if (entry.driver_pb_pin_id < 0) return -1;
+        current_pin_id = entry.driver_pb_pin_id;
+    }
+
+    return -1;
+}
+
+static bool is_sink_routed_within_cluster(const t_pb_routes& pb_route,
+                                          const t_pb_graph_node* pb_head,
+                                          int sink_primitive_pin_id) {
+    // find_top_level_input_pin_of_sink returns >= 0 only when the sink's driver chain
+    // reaches a top-level input pin (i.e. the signal enters from outside). A negative
+    // result means the chain ends on an internal driver, so the sink is fed within the cluster.
+    return find_top_level_input_pin_of_sink(pb_route, pb_head, sink_primitive_pin_id) < 0;
 }
 
 static int check_for_duplicated_names() {

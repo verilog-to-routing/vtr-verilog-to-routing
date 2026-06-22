@@ -1,4 +1,28 @@
 SB_MAPS:
-  SB_[6:19:8]__\*_: sb_template_2.csv
-  SB_[2:19:8]__\*_: sb_template_3.csv
-  SB_\*__\*_: sb_template_1.csv
+  SB_\*__0_: null
+  SB_0__\*_: null
+  SB_\*__21_: null
+  SB_21__\*_: null
+
+  SB_20__20_: null
+  SB_1__20_: null
+  SB_20__1_: null
+
+  SB_\*__20_: sb_io_top.csv
+  SB_20__\*_: sb_io_right.csv
+  SB_1__\*_: sb_io_left.csv
+  SB_\*__1_: sb_io_bottom.csv
+
+  SB_[6:19:8]__[2,6,10,14]_: sb_mult_0.csv
+  SB_[6:19:8]__[3,7,11,15]_: sb_mult_1.csv
+  SB_[6:19:8]__[4,8,12,16]_: sb_mult_2.csv
+  SB_[6:19:8]__[5,9,13,17]_: sb_mult_3.csv
+
+  SB_[4:19:8]__[2,8,14]_: sb_memory_0.csv
+  SB_[4:19:8]__[3,9,15]_: sb_memory_1.csv
+  SB_[4:19:8]__[4,10,16]_: sb_memory_2.csv
+  SB_[4:19:8]__[5,11,17]_: sb_memory_3.csv
+  SB_[4:19:8]__[6,12,18]_: sb_memory_4.csv
+  SB_[4:19:8]__[7,13,19]_: sb_memory_5.csv
+
+  SB_\*__\*_: sb_main.csv

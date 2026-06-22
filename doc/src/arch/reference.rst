@@ -221,6 +221,38 @@ Empty grid locations can be specified using the special block type ``EMPTY``.
 
 .. note:: All grid locations default to ``EMPTY`` unless otherwise specified.
 
+TSV Hole Grid Locations
+~~~~~~~~~~~~~~~~~~~~~~~
+In multi-die devices, through-silicon via (TSV) holes reserved for power delivery occupy silicon area and prevent inter-layer connectivity at those grid locations.
+These regions are modeled as ordinary tiles (with any name) placed in the device layout at the corresponding grid locations.
+
+The tile should use ``pattern="custom"`` in ``<switchblock_locations>`` with ``<sb_loc type="straight_short">`` entries at each switchblock location.
+This electrically shorts routing wires straight-through using same-track (ptc) connections.
+The tile should typically also set ``Fc = 0`` so that no block-pin routing connections are created.
+
+VPR skips inter-layer scatter-gather links when either the gather or scatter endpoint has a short switchblock type (``horizontal_short``, ``vertical_short``, or ``straight_short``).
+
+Example of a TSV hole tile:
+
+.. code-block:: xml
+
+    <tile name="tsv_hole" height="2" width="2" area="0">
+        <switchblock_locations pattern="custom">
+            <sb_loc type="straight_short" xoffset="0" yoffset="0"/>
+            <sb_loc type="straight_short" xoffset="0" yoffset="1"/>
+            <sb_loc type="straight_short" xoffset="1" yoffset="0"/>
+            <sb_loc type="straight_short" xoffset="1" yoffset="1"/>
+        </switchblock_locations>
+        <sub_tile name="tsv_hole">
+            <equivalent_sites>
+                <site pb_type="tsv_hole"/>
+            </equivalent_sites>
+            <input name="I" num_pins="1"/>
+            <output name="O" num_pins="1"/>
+            <fc in_type="abs" in_val="0" out_type="abs" out_val="0"/>
+        </sub_tile>
+    </tile>
+
 .. _grid_expressions:
 
 Grid Location Expressions
@@ -1300,19 +1332,26 @@ The following tags are common to all ``<tile>`` tags:
 
 
 
-    .. arch:tag:: <sb_loc type="{full|straight|turns|none}" xoffset="int" yoffset="int", switch_override="string">
+    .. arch:tag:: <sb_loc type="{full|straight|turns|horizontal|vertical|horizontal_short|vertical_short|straight_short|none}" xoffset="int" yoffset="int", switch_override="string">
 
         Specifies the type of switchblock to create at a particular location relative to a complex block for the ``custom`` switchblock location pattern.
 
         :req_param type:
             Specifies the type of switchblock to be created at this location:
 
-            * ``full``: denotes that a full switchblock will be created (i.e. both ``staight`` and ``turns``)
-            * ``straight``: denotes that a switchblock with only straight-through connections will be created (i.e. no ``turns``)
+            * ``full``: denotes that a full switchblock will be created (i.e. both ``straight`` and ``turns``)
+            * ``straight``: denotes that a switchblock with only straight connections will be created (i.e. no ``turns``)
             * ``turns``: denotes that a switchblock with only turning connections will be created (i.e. no ``straight``)
+            * ``horizontal``: denotes that a switchblock with only horizontal straight connections will be created (i.e. CHANX to CHANX only)
+            * ``vertical``: denotes that a switchblock with only vertical straight connections will be created (i.e. CHANY to CHANY only)
+            * ``horizontal_short``: like ``horizontal``, but connects only wires with the same track number (ptc) using the delayless switch
+            * ``vertical_short``: like ``vertical``, but connects only wires with the same track number (ptc) using the delayless switch
+            * ``straight_short``: like ``straight``, but connects only wires with the same track number (ptc) using the delayless switch
             * ``none``: denotes that no switchblock will be created
 
             **Default:** ``full``
+
+            .. note:: The ``*_short`` types are only supported for uni-directional routing graphs. They are typically used to model electrical shorts at locations such as TSV holes in 3D architectures, where wires cross the TSV hole straight-through.
 
             .. figure:: sb_types.*
 
@@ -2702,7 +2741,7 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_from.*
                 :width: 100%
 
-        * ``to`` -- The number of switchblock edges equal to the 'to' set size size.
+        * ``to`` -- The number of switchblock edges equal to the 'to' set size.
 
             This ensures that each element of the 'to' set is connected to precisely one element of the 'from' set.
             However it may leave some elements of the 'from' set either multiply-connected or disconnected.
@@ -2867,7 +2906,13 @@ The number of additional wires or muxes created by scatter-gather specifications
     Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
     These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
 
-When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
+When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks.
+
+.. note:: For inter-layer scatter-gather links (``z_offset`` != 0), VPR skips instantiation when either the gather or scatter endpoint has a short switchblock type (``horizontal_short``, ``vertical_short``, or ``straight_short``).
+    This models regions such as TSV holes reserved for power delivery, where inter-layer connectivity is not feasible.
+    As a result, some scatter-gather links specified by ``<sg_location>`` tags are ignored at those grid locations even though they match the specified region.
+
+An example is shown below:
 
     .. code-block:: xml
 

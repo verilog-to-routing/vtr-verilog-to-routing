@@ -855,9 +855,10 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const std::vector<t_segment_inf>& segment_inf_y,
                                 const size_t& layer,
                                 const vtr::Point<size_t>& gsb_coordinate,
-                                const bool& perimeter_cb) {
+                                const bool& perimeter_cb,
+                                e_gsb_version gsb_version) {
     /* Create an object to return */
-    RRGSB rr_gsb;
+    RRGSB rr_gsb(gsb_version);
 
     /* Check */
     VTR_ASSERT(gsb_coordinate.x() <= grids.width());
@@ -1760,7 +1761,8 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                             break;
                         }
                     }
-                    VTR_ASSERT(to_sub_tile != nullptr);
+                    if (to_sub_tile == nullptr)
+                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Could not find the sub-tile instance for the target capacity.");
                     // Check if the to port is the one from the subtile, if not, pass as this is not the destination
                     bool port_match = false;
                     for (auto to_sub_tile_port : to_sub_tile->ports) {

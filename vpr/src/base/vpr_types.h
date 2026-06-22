@@ -799,6 +799,7 @@ struct t_packer_opts {
     int pack_verbosity;
     bool use_ram_mapper;
     bool memoize_cluster_packings;
+    bool cluster_router_hot_start;
     bool enable_pin_feasibility_filter;
     e_balance_block_type_util balance_block_type_utilization;
     std::vector<std::string> target_external_pin_util;
@@ -1177,6 +1178,10 @@ struct t_ap_opts {
     /// Array of strings passed by the user to configure the unrelated clustering parameters used by APPack
     std::vector<std::string> appack_unrelated_clustering_args;
 
+    /// Multiplier applied to APPack candidate gains when the candidate is on a
+    /// different die than the cluster in an interposer-based architecture.
+    float appack_inter_die_gain_multiplier;
+
     /// The number of threads the AP flow can use.
     unsigned num_threads;
 
@@ -1404,15 +1409,23 @@ struct t_analysis_opts {
     bool skip_sync_clustering_and_routing_results;
 };
 
+/**
+ * @brief Version of the Generic Switch Block (GSB).
+ */
+enum class e_gsb_version {
+    NOT_CRR, ///< Default for non-CRR architectures
+    GSB_V1,
+    GSB_V2,
+};
+
 /// Stores CRR specific options
 struct t_crr_opts {
     std::string sb_maps;
     std::string sb_templates;
-    bool preserve_input_pin_connections;
-    bool preserve_output_pin_connections;
     bool annotated_rr_graph;
     bool remove_dangling_nodes;
     std::string sb_count_dir;
+    e_gsb_version gsb_version;
 };
 
 /// Stores NoC specific options, when supplied as an input by the user
@@ -1616,8 +1629,15 @@ struct t_vpr_setup {
     int GraphPause;                      ///<user interactiveness graphics option
     bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
     std::string GraphicsCommands;        ///<commands to control graphics settings
+    std::string RendererType;            ///<rendering backend: "immediate" (SW QPainter, no batching; most
+                                         ///<compatible, lowest performance/RAM), "deferred" (SW QPainter with
+                                         ///<draw-call batching; faster than immediate, more RAM), or "rhi"
+                                         ///<(GPU hardware rendering; highest performance, requires a GPU/VRAM,
+                                         ///<uses the most RAM)
     t_power_opts PowerOpts;
     std::string device_layout;
+    /// When > 0 and device_layout is "auto", use this fixed grid width and a height calculated from the auto layout's aspect ratio.
+    int device_width = 0;
     e_constant_net_method constant_net_method; ///<How constant nets should be handled
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network

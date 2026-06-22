@@ -1,3 +1,14 @@
+#!/bin/bash
+
+# if --dev is specified, also install packages needed by vtr developers (e.g. verilator
+# for functional simulation). otherwise only install packages needed to run vtr.
+install_dev=false
+for arg in "$@"; do
+    if [ "$arg" = "--dev" ]; then
+        install_dev=true
+    fi
+done
+
 # Base packages to compile and run basic regression tests
 sudo dnf install --refresh -y \
     make \
@@ -19,8 +30,16 @@ sudo dnf install --refresh -y \
 
 # Required for graphics
 sudo dnf install --refresh -y \
-    gtk3-devel \
-    libX11
+    qt6-qtbase-devel \
+    qt6-qtsvg-devel \
+    qt6-qtbase-private-devel \
+    qt6-qtshadertools \
+    qt6-qtshadertools-devel \
+    libxkbcommon-devel \
+    mesa-libGL-devel \
+    mesa-libEGL-devel \
+    libglvnd-opengl \
+    mesa-dri-drivers
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
 sudo dnf install --refresh -y \
@@ -49,3 +68,9 @@ sudo dnf install --refresh -y \
 # Required to run the analytical placement flow
 sudo dnf install --refresh -y \
     eigen3-devel
+
+if [ "$install_dev" = true ]; then
+    # required for functional simulation (run_func_sim_flow.py)
+    sudo dnf install --refresh -y \
+        verilator
+fi

@@ -24,10 +24,33 @@ If you cloned the repository, you will need to set up the git submodules (if you
     > git submodule init
     > git submodule update
 
-VTR requires several system and Python packages to build and run the flow. Ubuntu users can install the required system packages using the provided script or the command below. This setup works on Ubuntu 18.04, 20.04, 22.04, and 24.04, but note that some packages (such as ``clang-format-18``) are only available by default on Ubuntu 24.04. On older versions, this package will not be installed unless you manually add the appropriate LLVM APT repository.
+VTR requires several system and Python packages to build and run the flow.
+On Ubuntu and Debian systems, install the packages required by VTR using the command below. 
 
-To install ``clang-format-18`` on older Ubuntu versions (e.g., 20.04 or 22.04), you must add the LLVM repository manually. Note that this tool is only required if you want to run ``make format`` to automatically fix formatting issues in the code. It is not necessary for building or running VPR.
+.. note:: Developers planning to modify VTR should add the --dev option so extra packages for code formatting and functional verification are added.
 
+.. code-block:: bash
+
+    > ./install_apt_packages.sh     # add --dev if you plan to modify VTR code
+
+Fedora and RHEL users instead use the command below to install the required system packages.
+
+.. code-block:: bash
+
+    > ./install_dnf_packages.sh     # add --dev if you plan to modify VTR code
+
+Next install the required Python packages (optionally within a new Python virtual environment):
+
+.. code-block:: bash
+
+    > make env                          # optional: install python virtual environment
+    > source .venv/bin/activate         # optional: activate python virtual environment
+    > pip install -r requirements.txt   # install python packages (in virtual environment if prior commands run, system wide otherwise)
+
+.. note:: Developers who wish to modify VTR and are working on older Ubuntu versions (e.g. 20.04 or 22.04) must add  ``clang-format-18`` manually using the commands below. Note that this tool is only required if you want to run ``make format`` to automatically fix formatting issues in the code; it is not necessary for building or running VPR. 
+
+First add the LLVM APT repository to your system:
+ 
 .. code-block:: bash
 
    sudo apt install wget gnupg lsb-release
@@ -40,24 +63,6 @@ After that, you can install ``clang-format-18`` using:
 .. code-block:: bash
 
    sudo apt install clang-format-18
-
-.. code-block:: bash
-
-    > ./install_apt_packages.sh
-
-Fedora and RHEL users may use the following command to install the required system packages.
-
-.. code-block:: bash
-
-    > ./install_dnf_packages.sh
-
-Then, to install the required Python packages (optionally within a new Python virtual environment):
-
-.. code-block:: bash
-
-    > make env                          # optional: install python virtual environment
-    > source .venv/bin/activate         # optional: activate python virtual environment
-    > pip install -r requirements.txt   # install python packages (in virtual environment if prior commands run, system wide otherwise)
 
 
 Build VTR
@@ -85,6 +90,8 @@ On most unix-like systems you can run:
 
 
 For more details on building VTR on various operating systems/platforms see :doc:`Building VTR</BUILDING>`.
+
+.. note:: A plain ``make`` builds VPR headless (i.e. without graphics support — VPR runs place-and-route normally but cannot open a GUI window) unless a suitable Qt6 (>= 6.9.3) is present. To use the interactive GUI (``--disp on``, used in the visualization steps below) you must build VPR with graphics support — see :ref:`VPR Graphics <vpr_graphics>`.
 
 Running the VTR Flow
 ----------------------------------
@@ -176,11 +183,15 @@ which we can visualize with:
 
 .. code-block:: bash
 
+    > cd $VTR_FLOW_DIR/temp
     > $VTR_ROOT/vpr/vpr \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
         blink --circuit_file $VTR_FLOW_DIR/temp/blink.pre-vpr.blif \
         --route_chan_width 100 \
         --analysis --disp on
+
+.. note:: When :option:`--analysis <vpr --analysis>` is provided, the VPR flow will attempt to read the prior optimization output files (``.net``, ``.place`` and ``.route``) under ``temp``, and hence we need to cd to that directory. If it is not provided, this step is optional.
+
 
 
 Running VPR Manually
@@ -208,7 +219,7 @@ Now, lets invoke the VPR tool to implement:
 * the ``tseng`` circuit (``$VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif``), on 
 * the ``EArch`` FPGA architecture (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``).
 
-We do this by passing these files to the VPR tool, and also specifying that we want to route the circuit on a version of ``EArch`` with a routing architecture :option:`channel width <vpr --route_chan_width>` of ``100`` (``--route_chan_wdith 100``):
+We do this by passing these files to the VPR tool, and also specifying that we want to route the circuit on a version of ``EArch`` with a routing architecture :option:`channel width <vpr --route_chan_width>` of ``100`` (``--route_chan_width 100``):
 
 .. code-block:: bash
 
@@ -321,7 +332,7 @@ We now turn to how we can implement *our own circuit* on a pre-existing FPGA arc
 
 To do this, we begin by describing a circuit behaviourally using the Verilog Hardware Description Language (HDL).
 This allows us to quickly and consisely define the circuit's behaviour.
-We will then use the VTR Flow to synthesize the behavioural Verilog description it into a circuit netlist, and implement it onto an FPGA.
+We will then use the VTR Flow to synthesize the behavioural Verilog description into a circuit netlist, and implement it onto an FPGA.
 
 Example Circuit
 ---------------
@@ -406,7 +417,7 @@ We'll use the following, simple ABC commands::
     if -K 6;                                            #Technology map to 6 input LUTs (6-LUTs)
     write_hie blink.parmys.blif blink.abc_no_clock.blif   #Write new circuit to blink.abc_no_clock.blif
 
-.. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optitmizes your circuit well.
+.. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optimizes your circuit well.
 
 The corresponding command to run is:
 

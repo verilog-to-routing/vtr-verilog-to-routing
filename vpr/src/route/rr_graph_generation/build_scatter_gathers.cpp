@@ -120,9 +120,22 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
  */
 static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link);
 
+/// @brief Returns true if switchblock_locations at loc is a short SB type.
+static bool is_short_switchblock_at_loc(const DeviceGrid& grid, const t_physical_tile_loc& loc);
+
 //                             //
 // Static Function Definitions //
 //                             //
+
+static bool is_short_switchblock_at_loc(const DeviceGrid& grid, const t_physical_tile_loc& loc) {
+    t_physical_tile_type_ptr blk_type = grid.get_physical_type(loc);
+    int width_offset = grid.get_width_offset(loc);
+    int height_offset = grid.get_height_offset(loc);
+    e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
+    return sb_type == e_sb_type::HORIZONTAL_SHORT
+           || sb_type == e_sb_type::VERTICAL_SHORT
+           || sb_type == e_sb_type::STRAIGHT_SHORT;
+}
 
 static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link) {
     t_wireconn_inf mirrored_pattern = sg_pattern;
@@ -246,7 +259,7 @@ static void find_candidate_wires(const std::vector<t_chan_loc>& channels,
                         continue;
                     }
 
-                    candidates.push_back({chan_loc, chan_type, chan_side, {iwire, wire_switchpoint}});
+                    candidates.push_back({{chan_loc, chan_type, chan_side}, {iwire, wire_switchpoint}});
                 }
             }
         }
@@ -327,6 +340,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_width& nodes_per_chan,
                                                                          vtr::RngContainer& rng,
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                                                         const int route_verbosity,
                                                                          bool device_model_warnings) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
@@ -389,6 +403,19 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
+                // No CHANZ connection at switch blocks with short SB types (e.g. TSV holes).
+                if (sg_link.z_offset != 0
+                    && (is_short_switchblock_at_loc(grid, gather_loc) || is_short_switchblock_at_loc(grid, scatter_loc))) {
+                    VTR_LOGV_WARN(device_model_warnings && route_verbosity > 1,
+                                  "Deliberately skipped inter-layer SG connections for pattern '%s' with SG link '%s' "
+                                  "at gather (%i, %i, %i) and scatter (%i, %i, %i) "
+                                  "due to short switchblock locations\n",
+                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
+                                  gather_loc.layer_num, gather_loc.x, gather_loc.y,
+                                  scatter_loc.layer_num, scatter_loc.x, scatter_loc.y);
+                    continue;
+                }
+
                 // Determine the routing resources (CHANX/CHANY/CHANZ) involved based on the offset axis.
                 const std::vector<t_segment_inf>& segment_inf = (sg_link.x_offset != 0) ? segment_inf_x : (sg_link.y_offset != 0) ? segment_inf_y
                                                                                                                                   : segment_inf_z;
@@ -431,20 +458,21 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                 if (fwd_bottleneck_fanin == 0 || fwd_bottleneck_fanout == 0) {
 
-                    VTR_LOGV_WARN(device_model_warnings && fwd_bottleneck_fanin == 0,
+                    VTR_LOGV_WARN(device_model_warnings && route_verbosity > 1 && fwd_bottleneck_fanin == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero gather fanin connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   gather_loc.layer_num, gather_loc.x, gather_loc.y,
                                   fwd_gather_wire_candidates.size());
 
-                    VTR_LOGV_WARN(device_model_warnings && fwd_bottleneck_fanout == 0,
+                    VTR_LOGV_WARN(device_model_warnings && route_verbosity > 1 && fwd_bottleneck_fanout == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero scatter fanout connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   scatter_loc.layer_num, scatter_loc.x, scatter_loc.y,
                                   fwd_scatter_wire_candidates.size());
-
+                    // Although the link doesn't seem to have any fan-in or fan-out connections,
+                    // we still create the link. It may connect to IPIN/OPIN nodes.
                     // continue;
                 }
 

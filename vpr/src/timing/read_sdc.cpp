@@ -156,9 +156,9 @@ class SdcParseCallback : public sdcparse::Callback {
     void create_clock(const sdcparse::CreateClock& cmd) override {
         num_commands_++;
 
-        if (cmd.add) {
+        if (cmd.add && cmd.name.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-add option not supported for create_clock");
+                      "-add requires -name for create_clock");
         }
 
         if (cmd.is_virtual) {
@@ -232,29 +232,48 @@ class SdcParseCallback : public sdcparse::Callback {
         num_commands_++;
 
         // Check that the arguments to the command are valid.
-        if (cmd.add) {
+        if (cmd.add && cmd.name.empty()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-add option not supported for create_generated_clock");
+                      "-add requires -name for create_generated_clock");
+        }
+
+        if (!std::isnan(cmd.phase) && !std::isnan(cmd.offset)) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-phase and -offset are mutually exclusive for create_generated_clock");
+        }
+
+        if (!cmd.edge_shift.empty() && cmd.edges.empty()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "-edge_shift requires -edges for create_generated_clock");
         }
 
         if (!cmd.edges.empty()) {
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-edges option not supported for create_generated_clock");
-        }
-
-        if (!cmd.edge_shift.empty()) {
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-edge_shift option not supported for create_generated_clock");
-        }
-
-        if (cmd.invert) {
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-invert not supported for create_generated_clock");
-        }
-
-        if (!std::isnan(cmd.duty_cycle)) {
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "-duty_cycle option not supported for create_generated_clock");
+            if (cmd.edges.size() != 3) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-edges must contain exactly 3 edge indices for create_generated_clock");
+            }
+            if (!cmd.edge_shift.empty() && cmd.edge_shift.size() != cmd.edges.size()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-edge_shift must contain the same number of values as -edges for create_generated_clock");
+            }
+            for (double edge : cmd.edges) {
+                if (edge != std::floor(edge)) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "-edges values must be integers for create_generated_clock");
+                }
+                if (edge < 1.0) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "-edges indices are 1-based; index must be >= 1 for create_generated_clock");
+                }
+            }
+            if (!(cmd.edges[0] < cmd.edges[1] && cmd.edges[1] < cmd.edges[2])) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-edges must be strictly increasing for create_generated_clock");
+            }
+            if (!std::isnan(cmd.phase) || !std::isnan(cmd.offset)) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-phase and -offset cannot be combined with -edges for create_generated_clock");
+            }
         }
 
         if (cmd.sources.empty()) {
@@ -262,13 +281,33 @@ class SdcParseCallback : public sdcparse::Callback {
                       "-source is required for create_generated_clock");
         }
 
-        if (cmd.divide_by == sdcparse::UNINITIALIZED_INT && cmd.multiply_by == sdcparse::UNINITIALIZED_INT) {
+        if (cmd.edges.empty() && cmd.divide_by == sdcparse::UNINITIALIZED_INT && cmd.multiply_by == sdcparse::UNINITIALIZED_INT
+            && std::isnan(cmd.phase) && std::isnan(cmd.offset)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "Either -divide_by or -multiply_by is required for create_generated_clock");
+                      "One of -divide_by, -multiply_by, -edges, -phase, or -offset is required for create_generated_clock");
         }
         if ((cmd.divide_by != sdcparse::UNINITIALIZED_INT && cmd.divide_by <= 0) || (cmd.multiply_by != sdcparse::UNINITIALIZED_INT && cmd.multiply_by <= 0)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "-divide_by and -multiply_by must be strictly positive for create_generated_clock");
+        }
+
+        if (cmd.invert) {
+            if (!cmd.edges.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-invert cannot be combined with -edges for create_generated_clock");
+            }
+            if (cmd.divide_by == sdcparse::UNINITIALIZED_INT && cmd.multiply_by == sdcparse::UNINITIALIZED_INT
+                && std::isnan(cmd.phase) && std::isnan(cmd.offset)) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-invert can only be used for clock multiplication, division, phase shift, or offset.");
+            }
+        }
+
+        if (!std::isnan(cmd.duty_cycle)) {
+            if (cmd.multiply_by == sdcparse::UNINITIALIZED_INT) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-duty_cycle can only be used for clock multiplication.");
+            }
         }
 
         // If no targets are provided, the generated clock is virtual.
@@ -303,48 +342,123 @@ class SdcParseCallback : public sdcparse::Callback {
         AtomPinId source_clock_pin = source_clock_pins.begin()->first;
         tatum::NodeId source_clock_tnode = get_clock_source(source_clock_pin);
         tatum::DomainId source_domain_id;
-        for (tatum::DomainId domain_id : tc_.clock_domains()) {
-            if (tc_.clock_domain_source_node(domain_id) == source_clock_tnode) {
-                if (source_domain_id.is_valid()) {
-                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                              "create_generated_clock source pin matches multiple clocks.");
+        if (cmd.master_clock.is_valid()) {
+            // -master_clock disambiguates which domain to derive from when multiple
+            // clocks share the source pin (e.g. create_clock -add was used on it).
+            auto it = object_to_clock_id_.find(cmd.master_clock);
+            if (it == object_to_clock_id_.end()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Cannot find -master_clock for create_generated_clock. "
+                          "Make sure it has been created using create_clock.");
+            }
+            source_domain_id = it->second;
+            if (tc_.clock_domain_source_node(source_domain_id) != source_clock_tnode) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "-master_clock does not originate at the specified -source pin "
+                          "for create_generated_clock.");
+            }
+        } else {
+            for (tatum::DomainId domain_id : tc_.clock_domains()) {
+                if (tc_.clock_domain_source_node(domain_id) == source_clock_tnode) {
+                    if (source_domain_id.is_valid()) {
+                        vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                                  "create_generated_clock source pin matches multiple clocks; "
+                                  "use -master_clock to specify which one.");
+                    }
+                    source_domain_id = domain_id;
                 }
-                source_domain_id = domain_id;
             }
         }
         if (!source_domain_id.is_valid()) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "Cannot find source clock for create_generated_clock. Make sure that the source clock has been created using create_clock.");
+                      "Cannot find source clock for create_generated_clock. "
+                      "Make sure that the source clock has been created using create_clock.");
         }
         //  Find the command that created this clock.
         VTR_ASSERT(sdc_clocks_.contains(source_domain_id));
         const sdcparse::CreateClock& source_clock_cmd = sdc_clocks_[source_domain_id];
 
-        // Get the generated clock period.
+        // Get the generated clock period and rise/fall edges.
         double source_clock_period = source_clock_cmd.period;
-        double generated_clock_period = sdcparse::UNINITIALIZED_FLOAT;
-        if (cmd.divide_by != sdcparse::UNINITIALIZED_INT) {
-            // Dividing the frequency means multiplying the period.
-            generated_clock_period = source_clock_period * static_cast<double>(cmd.divide_by);
-        } else {
-            VTR_ASSERT(cmd.multiply_by != sdcparse::UNINITIALIZED_INT);
-            // Similarly, multiplying the frequency means dividing the period.
-            generated_clock_period = source_clock_period / static_cast<double>(cmd.multiply_by);
-        }
+        double generated_clock_period;
+        double generated_rise_edge;
+        double generated_fall_edge;
 
-        // Get the rise and fall edge.
-        // Since we can only multiply and divide the clock, the generated clock
-        // can only have a 50% duty cycle.
-        // TODO: Need to add -edges support so other duty cycles can be expressed.
-        if (source_clock_cmd.rise_edge != 0.0) {
-            // Note: This is not supported because it shifts where the rise time
-            //       of the generated clock should be. It is not clear how this
-            //       shift should be performed.
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "Creating a generated clock on a source with a non-zero rising edge is currently unsupported in VPR.");
+        if (!cmd.edges.empty()) {
+            // Edges mode: convert 1-based master clock edge indices to absolute times,
+            // optionally apply per-edge shifts, then derive the waveform.
+            //
+            // Edge index n maps to the master clock timeline:
+            //   odd  n → source_rise_edge + ((n-1)/2) * source_period  (rising edge)
+            //   even n → source_fall_edge + ((n-1)/2) * source_period  (falling edge)
+            auto edge_index_to_time = [&](double edge_idx) -> double {
+                int n = static_cast<int>(edge_idx);
+                int cycle = (n - 1) / 2;
+                return (n % 2 == 1 ? source_clock_cmd.rise_edge : source_clock_cmd.fall_edge)
+                       + cycle * source_clock_period;
+            };
+
+            double shift0 = cmd.edge_shift.empty() ? 0.0 : cmd.edge_shift[0];
+            double shift1 = cmd.edge_shift.empty() ? 0.0 : cmd.edge_shift[1];
+            double shift2 = cmd.edge_shift.empty() ? 0.0 : cmd.edge_shift[2];
+
+            double t0 = edge_index_to_time(cmd.edges[0]) + shift0;
+            double t1 = edge_index_to_time(cmd.edges[1]) + shift1;
+            double t2 = edge_index_to_time(cmd.edges[2]) + shift2;
+
+            generated_rise_edge = t0;
+            generated_fall_edge = t1;
+            generated_clock_period = t2 - t0;
+
+            if (generated_clock_period <= 0.0) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Generated clock period derived from -edges must be strictly positive");
+            }
+        } else {
+            // Determine the generated clock period.
+            // The rise edge is stored as-is, even if it falls outside the generated clock's period.
+            // Normalization is handled at the point of use in calculate_launch_to_capture_edge_times().
+            if (cmd.divide_by != sdcparse::UNINITIALIZED_INT) {
+                // Dividing the frequency means multiplying the period.
+                generated_clock_period = source_clock_period * static_cast<double>(cmd.divide_by);
+            } else if (cmd.multiply_by != sdcparse::UNINITIALIZED_INT) {
+                // Multiplying the frequency means dividing the period.
+                generated_clock_period = source_clock_period / static_cast<double>(cmd.multiply_by);
+            } else {
+                // -phase or -offset alone: the period is unchanged from the master.
+                generated_clock_period = source_clock_period;
+            }
+
+            generated_rise_edge = source_clock_cmd.rise_edge;
+            if (cmd.divide_by != sdcparse::UNINITIALIZED_INT || cmd.multiply_by != sdcparse::UNINITIALIZED_INT) {
+                // Per SDC spec, if no duty cycle is specified, the generated clock defaults to 50%.
+                double duty_cycle = 50.0;
+                // If a duty cycle was specified (only valid for multiplication, enforced above), use it.
+                if (!std::isnan(cmd.duty_cycle)) {
+                    duty_cycle = cmd.duty_cycle;
+                }
+                generated_fall_edge = generated_rise_edge + generated_clock_period * (duty_cycle / 100.0);
+            } else {
+                // -phase or -offset alone: inherit the master's duty cycle.
+                generated_fall_edge = source_clock_cmd.fall_edge;
+            }
+
+            // Apply a phase shift (in degrees) or a fixed time offset (in ns) to both edges.
+            // The period is unaffected; only the waveform position shifts.
+            if (!std::isnan(cmd.phase)) {
+                double shift = (cmd.phase / 360.0) * source_clock_period;
+                generated_rise_edge += shift;
+                generated_fall_edge += shift;
+            } else if (!std::isnan(cmd.offset)) {
+                generated_rise_edge += cmd.offset;
+                generated_fall_edge += cmd.offset;
+            }
+
+            // If the clock is inverted, we swap the rising and falling edges.
+            if (cmd.invert) {
+                std::swap(generated_rise_edge, generated_fall_edge);
+            }
         }
-        double generated_rise_edge = 0.0;
-        double generated_fall_edge = generated_clock_period / 2.0;
 
         if (is_virtual) {
             // Create a virtual clock.
@@ -522,9 +636,29 @@ class SdcParseCallback : public sdcparse::Callback {
     void set_clock_groups(const sdcparse::SetClockGroups& cmd) override {
         num_commands_++;
 
-        if (cmd.type != sdcparse::ClockGroupsType::ASYNCHRONOUS) {
+        // The three clock-group relationship types differ in how they affect SI/crosstalk
+        // analysis, but are identical from a pure timing (STA) standpoint; in all three
+        // cases, no setup/hold paths are analyzed between clocks in different groups:
+        //
+        //   -physically_exclusive: only one clock can exist in the design at a time
+        //       (e.g. a board-level mux selects among several clock sources). Neither
+        //       STA nor SI is performed between the groups.
+        //
+        //   -logically_exclusive: an internal mux selects among the clocks, so paths
+        //       between groups are false paths. Both clock trees are physically present
+        //       simultaneously, so SI/crosstalk between the groups is still possible.
+        //
+        //   -asynchronous: all clocks coexist and propagate through the design but have
+        //       no defined phase relationship. Paths between groups are not timed, but
+        //       SI/crosstalk is still possible.
+        //
+        // VPR does not model SI/crosstalk, so all three types are implemented identically:
+        // timing analysis is disabled between every pair of clocks in different groups.
+        if (cmd.type != sdcparse::ClockGroupsType::ASYNCHRONOUS
+            && cmd.type != sdcparse::ClockGroupsType::PHYSICALLY_EXCLUSIVE
+            && cmd.type != sdcparse::ClockGroupsType::LOGICALLY_EXCLUSIVE) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "set_clock_groups only supports -asynchronous groups");
+                      "set_clock_groups only supports -asynchronous, -physically_exclusive, and -logically_exclusive groups");
         }
 
         for (const auto& clock_group : cmd.clock_groups) {
@@ -1117,6 +1251,13 @@ class SdcParseCallback : public sdcparse::Callback {
             int launch_rise_edge = static_cast<int>(launch_clock.rise_edge * CLOCK_SCALE);
             int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);
 
+            // Normalize rise edges to [0, period) to handle values the SDC parser may
+            // produce outside that range (e.g. from generated clocks with large phases).
+            // In practice rise edges should always be non-negative, but the double-modulo
+            // pattern ((x % n) + n) % n handles negative values safely just in case.
+            launch_rise_edge = ((launch_rise_edge % launch_period) + launch_period) % launch_period;
+            capture_rise_edge = ((capture_rise_edge % capture_period) + capture_period) % capture_period;
+
             //Find the LCM of the two periods. This determines how long it takes before
             //the pattern of the two clocks' edges starts repeating.
             int lcm_period = vtr::lcm(launch_period, capture_period);
@@ -1389,7 +1530,8 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         auto it = object_to_net_id_.find(net_object_id);
-        VTR_ASSERT(it != object_to_net_id_.end());
+        if (it == object_to_net_id_.end())
+            VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find net object in object_to_net_id_ map.");
         return it->second;
     }
 
@@ -1420,7 +1562,8 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         auto it = object_to_clock_id_.find(clock_object_id);
-        VTR_ASSERT(it != object_to_clock_id_.end());
+        if (it == object_to_clock_id_.end())
+            VPR_FATAL_ERROR(VPR_ERROR_SDC, "Could not find clock object in object_to_clock_id_ map.");
         return it->second;
     }
 

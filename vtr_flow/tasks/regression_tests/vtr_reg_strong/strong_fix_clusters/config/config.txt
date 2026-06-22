@@ -24,4 +24,4 @@ qor_parse_file=qor_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params =-starting_stage vpr --pack --place --route --route_chan_width 206  --fix_clusters ../../../../apex2_block_locations.place
+script_params =-starting_stage vpr --pack --place --route --analysis --route_chan_width 206  --fix_clusters ../../../../apex2_block_locations.place

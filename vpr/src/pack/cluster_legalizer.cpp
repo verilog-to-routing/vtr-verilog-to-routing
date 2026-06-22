@@ -39,7 +39,53 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "lazy_pop_unique_priority_queue.h"
-#include "cluster_placement.h"
+#include "logic_block_location_util.h"
+
+/**
+ * @brief Verify that clustering placed an atom at its constrained logical block location.
+ *
+ * Acts as a quality checker after the clustering algorithm proposes a primitive
+ * placement. The constraint string comes from the user constraints file
+ * (logical_block_location); the candidate path comes from @p pb->hierarchical_type_name(),
+ * which describes where that primitive sits in the packed pb hierarchy.
+ *
+ * The two strings use different surface syntax but encode the same fields (name, index,
+ * mode). LbHierPathParser parses the constraint with '.' separators and '{}' for mode,
+ * parses hierarchical_type_name() with '/' separators and '[]' for mode, then compares
+ * token-by-token (see matches_hierarchical_type()).
+ *
+ * Example (atom 'd' packing into a CLB), logged when verbosity > 3:
+ * - expected (constraint):  `clb[0].fle[0]{n1_lut4}.ble4[0].ff[0]`
+ * - candidate (pb path):    `clb[0][default]/fle[3][n1_lut4]/ble4[0][default]/ff[0]`
+ *   `[default]` is the implicit pb_mode at levels with no explicit architecture mode;  User constraints need not write `{default}`; they can omit `{...}` to match any mode, including default.
+ *   -> fails because fle index 3 != constrained fle index 0 (same for fle[2], fle[1]).
+ * - a passing candidate must match every specified index/mode, e.g. fle[0] and {n1_lut4}.
+ *
+ * @param blk_id Atom being packed.
+ * @param pb Candidate primitive block from the proposed cluster mapping.
+ * @param verbosity Pack verbosity; mismatch details are logged when verbosity > 3.
+ *
+ * @return True if there is no constraint, or the candidate matches the constraint.
+ */
+static bool check_logical_block_location_constraint(const AtomBlockId blk_id, const t_pb* pb, int verbosity) {
+    const auto& constraints = g_vpr_ctx.floorplanning().constraints;
+    std::string logical_block_location = constraints.get_atom_logical_block_location(blk_id);
+    if (logical_block_location.empty()) {
+        return true;
+    }
+    LbHierPathParser parser(logical_block_location);
+    parser.parse();
+    if (parser.matches_hierarchical_type(pb->hierarchical_type_name())) {
+        return true;
+    }
+
+    VTR_LOGV(verbosity > 3,
+             "\t\t\tFAILED logical_block_location constraint: atom '%s' expected '%s' but candidate '%s'\n",
+             g_vpr_ctx.atom().netlist().block_name(blk_id).c_str(),
+             logical_block_location.c_str(),
+             pb->hierarchical_type_name().c_str());
+    return false;
+}
 
 /*
  * @brief Allocates the stats stored within the pb of a cluster.
@@ -63,12 +109,13 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                         const std::unordered_set<int>& valid_feedback_pins)
+                                         const std::unordered_set<int>& valid_feedback_pins,
+                                         bool enable_router_hot_start)
     : pb(new t_pb)
     , type(cluster_type)
     , pr(PartitionRegion())
     , noc_grp_id(NocGroupId::INVALID())
-    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins)
+    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type, valid_feedback_pins, enable_router_hot_start)
     , placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
@@ -556,6 +603,11 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         cluster_router.add_atom_as_target(blk_id, atom_to_pb);
         if (!primitive_feasible(blk_id, pb, atom_to_pb)) {
             /* failed location feasibility check, revert pack */
+            block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
+        }
+        // Reject feasible pack candidates that violate logical_block_location constraints.
+        if (block_pack_status == e_block_pack_status::BLK_PASSED
+            && !check_logical_block_location_constraint(blk_id, pb, verbosity)) {
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
         }
 
@@ -1196,6 +1248,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // macros that limit placement flexibility.
     if (cluster.placement_stats->has_long_chain && molecule.is_chain() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
         VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
+        VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: long_chain_conflict\n");
         return e_block_pack_status::BLK_FAILED_FEASIBLE;
     }
 
@@ -1218,6 +1271,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                                        log_verbosity_,
                                                                        cluster_pr_needs_update);
         if (!block_pack_floorplan_status) {
+            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: floorplanning_conflict (atom '%s')\n",
+                     atom_ctx.netlist().block_name(atom_blk_id).c_str());
             return e_block_pack_status::BLK_FAILED_FLOORPLANNING;
         }
 
@@ -1238,6 +1293,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                                  atom_noc_grp_id_,
                                                                  log_verbosity_);
         if (!block_pack_noc_grp_status) {
+            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: noc_group_conflict (atom '%s')\n",
+                     atom_ctx.netlist().block_name(atom_blk_id).c_str());
             return e_block_pack_status::BLK_FAILED_NOC_GROUP;
         }
     }
@@ -1287,23 +1344,24 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          mutable_atom_pb_lookup());
         }
 
-        // If we're using the pin feasibility filter, we need to add the candidate molecule to
-        // cluster.molecules. We use this flag to control the cleanup in case of failure.
+        // This flag controls the pop_back cleanup of cluster.molecules in case of subsequent failure.
         bool candidate_molecule_added_to_cluster = false;
 
-        if (enable_pin_feasibility_filter_ && block_pack_status == e_block_pack_status::BLK_PASSED) {
-            // try_update_lookahead_pins_used needs the candidate molecule to be in cluster.molecules.
+        if (block_pack_status == e_block_pack_status::BLK_PASSED) {
             cluster.molecules.push_back(molecule_id);
             candidate_molecule_added_to_cluster = true;
 
-            // Check if pin usage is feasible for the current packing assignment
-            reset_lookahead_pins_used(cluster.pb);
-            try_update_lookahead_pins_used(cluster, prepacker_, atom_cluster_, atom_pb_lookup());
-            if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
-                VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
-                block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
-            } else {
-                VTR_LOGV(log_verbosity_ > 3, "\t\t\tPin Feasibility: Passed pin feasibility filter\n");
+            if (enable_pin_feasibility_filter_) {
+                // try_update_lookahead_pins_used requires the candidate molecule to
+                // already be in cluster.molecules, which is satisfied by the push above.
+                reset_lookahead_pins_used(cluster.pb);
+                try_update_lookahead_pins_used(cluster, prepacker_, atom_cluster_, atom_pb_lookup());
+                if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
+                    VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
+                    block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
+                } else {
+                    VTR_LOGV(log_verbosity_ > 3, "\t\t\tPin Feasibility: Passed pin feasibility filter\n");
+                }
             }
         }
 
@@ -1365,14 +1423,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 }
             }
 
-            // Set the fall-through value of the routed state. If the current
-            // cluster is recognised as being seen before by the PST, then routing
-            // gets skipped and the cluster routing structures fall out of date.
-            // If the PST is used, then a repeated cluster pattern will reach a
-            // final solution without ever running routing, so the packer must
-            // check this boolean to know if it must run one final routing.
-            routed_ = false;
-
             // Determine whether a legal routing exists for this cluster.
             t_mode_selection_status mode_status;
             e_ecn_legality legality = e_ecn_legality::UNKNOWN;
@@ -1386,19 +1436,21 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     // If the PST does not know the legality of this cluster, then
                     // a routing legality check must be run, as usual.
                     if (legality == e_ecn_legality::UNKNOWN) {
+                        bool routed;
                         do {
                             cluster.cluster_router.reset_intra_lb_route();
-                            routed_ = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
+                            routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
                         } while (mode_status.is_mode_issue());
-                        legality = (routed_) ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
+                        legality = routed ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
                         packing_signature_tree_->add_ecn(legality);
                     }
                 } else {
+                    bool routed;
                     do {
                         cluster.cluster_router.reset_intra_lb_route();
-                        routed_ = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
+                        routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
                     } while (mode_status.is_mode_issue());
-                    legality = (routed_) ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
+                    legality = routed ? e_ecn_legality::LEGAL : e_ecn_legality::ILLEGAL;
                 }
             }
 
@@ -1525,8 +1577,6 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
         packing_signature_tree_->start_packing_signature(cluster_type);
     }
 
-    routed_ = false;
-
     // Safety asserts to ensure the API is being called with valid arguments.
     VTR_ASSERT_DEBUG(molecule_id.is_valid());
     VTR_ASSERT_DEBUG(cluster_type != nullptr);
@@ -1542,7 +1592,8 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     VTR_ASSERT_MSG(cluster_type->index < (int)valid_feedback_pins_by_type_.size(),
                    ("Logical block type not found in feedback pin map: " + std::string(cluster_type->name)).c_str());
     LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_,
-                                    valid_feedback_pins_by_type_[cluster_type->index]);
+                                    valid_feedback_pins_by_type_[cluster_type->index],
+                                    enable_cluster_router_hot_start_);
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
@@ -1708,7 +1759,16 @@ bool ClusterLegalizer::check_cluster_legality(LegalizationClusterId cluster_id) 
 }
 
 bool ClusterLegalizer::ensure_legal_final_routing(LegalizationClusterId cluster_id) {
-    if (routed_) return true;
+    // Safety asserts to make sure the inputs are valid.
+    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+
+    // Fast path: if the saved route already covers the current nets exactly,
+    // no re-route is needed. This handles both the normal case (last molecule
+    // was successfully routed) and the case where a molecule that failed routing
+    // was removed, restoring the cluster to its last successfully-routed state.
+    if (cluster.cluster_router.is_saved_route_valid())
+        return true;
 
     if (packing_signature_tree_) {
         e_ecn_legality stored_legality = packing_signature_tree_->check_legality();
@@ -1733,6 +1793,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
                                    bool enable_pin_feasibility_filter,
                                    bool memoize_cluster_packings,
+                                   bool enable_cluster_router_hot_start,
                                    const LogicalModels& models,
                                    int log_verbosity)
     : prepacker_(prepacker) {
@@ -1762,6 +1823,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Copy the options passed by the user
     cluster_legalization_strategy_ = cluster_legalization_strategy;
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;
+    enable_cluster_router_hot_start_ = enable_cluster_router_hot_start;
     log_verbosity_ = log_verbosity;
     VTR_ASSERT(g_vpr_ctx.atom().lookup().atom_pb_bimap().is_empty());
     atom_pb_lookup_ = AtomPBBimap();

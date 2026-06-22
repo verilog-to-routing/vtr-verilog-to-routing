@@ -1,0 +1,38 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+# Two small circuits: one with carry chains (stereovision3) and one with
+# distributed logic (ch_intrinsics), to exercise different packing patterns.
+circuit_list_add=stereovision3.v
+circuit_list_add=ch_intrinsics.v
+
+# Add architectures to list to sweep
+# One architecture with fracturable LUTs and carry chains (exercises mode
+# assignments in the intra-cluster router) and one simpler architecture.
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+arch_list_add=k6_N10_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+# Test --cluster_router_hot_start both on and off.
+# The hot-start optimization must not change circuit quality; both runs
+# should produce identical QoR results.
+script_params_common = -track_memory_usage --route_chan_width 50
+script_params_list_add = --cluster_router_hot_start off
+script_params_list_add = --cluster_router_hot_start on

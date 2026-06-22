@@ -515,7 +515,7 @@ class LatchInst : public Instance {
             VTR_ASSERT(false);
         return os;
     }
-    friend std::istream& operator>>(std::istream& is, Type& type) {
+    [[maybe_unused]] friend std::istream& operator>>(std::istream& is, Type& type) {
         std::string tok;
         is >> tok;
         if (tok == "re")

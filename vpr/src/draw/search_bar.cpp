@@ -35,6 +35,10 @@
 #include "physical_types.h"
 #include "place_macro.h"
 
+#include <QLineEdit>
+#include <QComboBox>
+#include <QMessageBox>
+
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
@@ -43,15 +47,19 @@
 
 extern std::string rr_highlight_message;
 
-void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
+void search_and_highlight(QWidget* /*widget*/, ezgl::application* app) {
+    if (!app)
+        return;
+
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // get ID from search bar
-    GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
-    const char* text = gtk_entry_get_text(text_entry);
-    std::string user_input = text;
+    QLineEdit* text_entry = app->find_line_edit("TextInput");
+    if (!text_entry)
+        return;
+    std::string user_input = text_entry->text().toStdString();
     std::stringstream ss(user_input);
 
     auto search_type = get_search_type(app);
@@ -203,18 +211,28 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 
 bool highlight_rr_nodes(RRNodeId hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    //TODO: fixed sized char array may cause overflow.
-    char message[250] = "";
+    std::string message = "";
 
     if (!hit_node) {
-        application.update_message(draw_state->default_message);
+        application->update_message(draw_state->default_message);
         rr_highlight_message = "";
-        application.refresh_drawing();
+        application->refresh_drawing();
         return false;
     }
 
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    if (!draw_state->draw_channel_nodes && (rr_graph.node_type(hit_node) == e_rr_type::CHANX || rr_graph.node_type(hit_node) == e_rr_type::CHANY)) {
+        application->refresh_drawing();
+        // Return true here to indicate that we processed the click, even though we didn't highlight anything.
+        return true;
+    }
+
+    if (!draw_state->draw_inter_cluster_pins && is_inter_cluster_node(rr_graph, hit_node) && (rr_graph.node_type(hit_node) == e_rr_type::IPIN || rr_graph.node_type(hit_node) == e_rr_type::OPIN)) {
+        application->refresh_drawing();
+        return true;
+    }
 
     // Highlight neighboring non_configurable nodes in magenta as well
     std::set<RRNodeId> nodes = draw_expand_non_configurable_rr_nodes(hit_node);
@@ -238,7 +256,7 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
 
     //Show info about *only* hit node to graphics
     std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
-    sprintf(message, "Selected %s", info.c_str());
+    message = "Selected " + info;
     rr_highlight_message = message;
 
     if (draw_state->show_nets) {
@@ -250,8 +268,8 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         draw_highlight_fan_in_fan_out(nodes);
     }
 
-    application.update_message(message);
-    application.refresh_drawing();
+    application->update_message(message);
+    application->refresh_drawing();
 
     return true;
 }
@@ -298,7 +316,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
     // zoom to the node
     ezgl::point2d offset = {rr_node.width() * 1.5, rr_node.height() * 1.5};
     ezgl::rectangle zoom_view = {rr_node.m_first - offset, rr_node.m_second + offset};
-    (application.get_canvas(application.get_main_canvas_id()))->get_camera().set_world(zoom_view);
+    (application->get_canvas(application->get_main_canvas_id()))->get_camera().set_world(zoom_view);
 }
 
 /**
@@ -317,6 +335,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
 
     VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
+    clb_bbox = get_draw_coords_vars()->get_absolute_clb_bbox(
+        clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
+
     ezgl::point2d point_in_clb = clb_bbox.bottom_left();
     highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));
 
@@ -332,9 +353,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
                 block_locs[clb_index].loc.x, block_locs[clb_index].loc.y);
     }
 
-    application.update_message(msg);
+    application->update_message(msg);
 
-    application.refresh_drawing();
+    application->refresh_drawing();
 }
 
 /**
@@ -378,29 +399,14 @@ void highlight_nets(ClusterNetId net_id) {
 }
 
 void warning_dialog_box(const char* message) {
-    GObject* main_window;    // parent window over which to add the dialog
-    GtkWidget* content_area; // content area of the dialog
-    GtkWidget* label;        // label to display a message
-    GtkWidget* dialog;
-    // get a pointer to the main window
-    main_window = application.get_object(application.get_main_window_id().c_str());
-    // create a dialog window modal with no button
-    dialog = gtk_message_dialog_new(GTK_WINDOW(main_window),
-                                    GTK_DIALOG_DESTROY_WITH_PARENT,
-                                    GTK_MESSAGE_INFO,
-                                    GTK_BUTTONS_NONE,
-                                    "Error");
-    // create a label and attach it to content area of the dialog
-    content_area = gtk_message_dialog_get_message_area(GTK_MESSAGE_DIALOG(dialog));
-    label = gtk_label_new(message);
-    gtk_container_add(GTK_CONTAINER(content_area), label);
-    // show the label & child widget of the dialog
-    gtk_widget_show_all(dialog);
-
-    g_signal_connect_swapped(dialog,
-                             "response",
-                             G_CALLBACK(gtk_widget_destroy),
-                             dialog);
+    QWidget* main_window = application->find_widget(application->get_main_window_id().c_str());
+    QMessageBox* box = new QMessageBox(QMessageBox::Warning,
+                                       "Error",
+                                       message,
+                                       QMessageBox::NoButton,
+                                       main_window);
+    box->setAttribute(Qt::WA_DeleteOnClose);
+    box->show();
 }
 
 /**
@@ -410,32 +416,23 @@ void warning_dialog_box(const char* message) {
  * from gtkComboBox SearchType. Currently only sets a completion model for Block Name options,
  * sets null for anything else. brh
  *
- * @param self GtkComboBox that holds current Search Setting
+ * @param self QComboBox that holds current Search Setting
  * @param app ezgl app used to access other objects
  */
-void search_type_changed(GtkComboBox* self, ezgl::application* app) {
-    auto type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
-    GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
-    GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
-    GtkTreeModel* netNames = GTK_TREE_MODEL(app->get_object("NetNames"));
-    GtkTreeModel* blockNames = GTK_TREE_MODEL(app->get_object("BlockNames"));
-    //Ensuring a valid type was selected
-    if (!type) return;
-    if (type[0] == '\0') return;
-    std::string searchType(type);
+void search_type_changed(QComboBox* self, ezgl::application* app) {
+    if (!self) return;
+    const QString searchType = self->currentText();
+    if (searchType.isEmpty()) return;
 
-    /*
-     * If search type is name, connecting search bar to completion,
-     * and connecting completion to the appropriate model (blocks or nets)
-     * Additionally, visibility of key length setter is toggled by these changes
-     */
+    QLineEdit* searchBar = app->find_line_edit("TextInput");
+    if (!searchBar) return;
+
     if (searchType == "Block Name") {
-        gtk_entry_completion_set_model(completion, blockNames);
+        searchBar->setCompleter(searchBar->findChild<QCompleter*>("BlockNames"));
     } else if (searchType == "Net Name") {
-        gtk_entry_completion_set_model(completion, netNames);
-    } else { //setting to null if option does not require auto-complete
-        gtk_entry_completion_set_model(completion, nullptr);
-        gtk_entry_set_completion(searchBar, nullptr);
+        searchBar->setCompleter(searchBar->findChild<QCompleter*>("NetNames"));
+    } else {
+        searchBar->setCompleter(nullptr);
     }
 }
 
@@ -450,47 +447,6 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
  * @return true | if the string pointed to by iter contains key (case-insensitive)
  * @return false | if the string pointed to does not contain key
  */
-gboolean customMatchingFunction(
-    GtkEntryCompletion* completer,
-    const gchar* key,
-    GtkTreeIter* iter,
-    gpointer /*user data*/
-) {
-    GtkTreeModel* model = gtk_entry_completion_get_model(completer);
-    const gchar* text;
-    gtk_tree_model_get(model, iter, 0, &text, -1);
-    //Removing case information
-    g_utf8_casefold(text, -1);
-    g_utf8_normalize(text, -1, G_NORMALIZE_DEFAULT);
-    std::string cppText(text);
-    //If substring not found, returning false;
-    return (cppText.find(key, 0) != std::string::npos);
-}
-
-/**
- * @brief Creates a GdkEvent that simulates user pressing key "key".
- * Currently used to fool GtkEntryCompletion into showing options w/o receiving a new input
- *
- * @param key character value
- * @param window GdkWindow
- * @return GdkEvent Keypress event
- */
-GdkEvent simulate_keypress(char key, GdkWindow* window) {
-    int charVal = (int)key;
-    //Creating event and adding properties
-    GdkEvent new_event;
-    new_event.key.type = GDK_KEY_PRESS;
-    new_event.key.window = window;
-    new_event.key.send_event = TRUE;
-    new_event.key.time = GDK_CURRENT_TIME;
-    new_event.key.keyval = gdk_unicode_to_keyval(charVal);
-    new_event.key.state = GDK_KEY_PRESS_MASK;
-    new_event.key.length = 0;
-    new_event.key.string = 0;
-    new_event.key.hardware_keycode = 0;
-    new_event.key.group = 0;
-    return new_event;
-}
 
 /**
  * @brief Turns on autocomplete
@@ -523,56 +479,48 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * @param app ezgl app
  */
 void enable_autocomplete(ezgl::application* app) {
-    GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
-    GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
-    auto draw_state = get_draw_state_vars();
+    QLineEdit* searchBar = app->find_line_edit("TextInput");
+    if (!searchBar) return;
 
-    std::string searchType = get_search_type(app);
-    if (searchType.empty())
-        return;
-    //Checking to make sure that we are on a mode that uses auto-complete
-    if (gtk_entry_completion_get_model(completion) == nullptr) {
-        std::cout << "NO MODEL SELECTED" << std::endl;
-        return;
+    const std::string searchType = get_search_type(app);
+    if (searchType.empty()) return;
+
+    // Resolve the completer for the active search type. Completers are stored
+    // as named children of the QLineEdit (set up in ui_setup.cpp).
+    QCompleter* completer = nullptr;
+    if (searchType == "Block Name") {
+        completer = searchBar->findChild<QCompleter*>("BlockNames");
+    } else if (searchType == "Net Name") {
+        completer = searchBar->findChild<QCompleter*>("NetNames");
     }
 
-    //Getting input text
-    std::string oldText(gtk_entry_get_text(searchBar));
+    if (!completer) return;
 
-    //Turning on completion
-    gtk_entry_set_completion(searchBar, completion);
-    gtk_entry_completion_complete(completion);
+    searchBar->setCompleter(completer);
 
-    //Setting min key length to either 0 or 1 less than key length (max option)
-    gtk_entry_completion_set_minimum_key_length(completion, std::max(0, (int)(oldText.length() - 1)));
-
+    auto draw_state = get_draw_state_vars();
     draw_state->justEnabled = true;
 
-    //If string len is 0, reutrning
-    if (oldText.length() == 0) return;
-
-    gtk_widget_grab_focus(GTK_WIDGET(searchBar));
-    std::string newText = (oldText.length() > 1) ? oldText.substr(0, oldText.length() - 1) : "";
-    gtk_entry_set_text(searchBar, newText.c_str());
-
-    //Creating a false event to insert the last character into the string
-    auto window = gtk_widget_get_parent_window(GTK_WIDGET(searchBar));
-    GdkEvent new_event = simulate_keypress(oldText.back(), window);
-    gdk_event_put(&new_event);
+    // Directly trigger the popup — replaces the GTK hack of stripping and
+    // re-typing the last character to force GtkEntryCompletion to show.
+    completer->complete();
 }
 
 //Returns current search type. Returns empty string if fails
 std::string get_search_type(ezgl::application* app) {
-    GObject* combo_box = (GObject*)app->get_object("SearchType");
-    gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
+    if (!app)
+        return "";
+    QComboBox* combo_box = app->find_combo_box("SearchType");
+    if (!combo_box)
+        return "";
+    QString type = combo_box->currentText();
     //Checking that a type is selected
-    if (!type || (type && type[0] == '\0')) {
+    if (type.isEmpty() || (!type.isEmpty() && type[0] == '\0')) {
         warning_dialog_box("Please select a search type");
         app->refresh_drawing();
         return "";
     }
-    std::string searchType(type);
-    return searchType;
+    return type.toStdString();
 }
 
 #endif /* NO_GRAPHICS */

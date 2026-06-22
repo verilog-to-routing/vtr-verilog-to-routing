@@ -115,7 +115,7 @@ void find_hard_adders() {
     hard_adders = NULL;
     for (LogicalModelId model_id : Arch.models.user_models()) {
         hard_adders = &Arch.models.get_model(model_id);
-        if (strcmp(hard_adders->name, "adder") == 0) {
+        if (hard_adders->name == "adder") {
             init_add_distribution();
             return;
         } else {

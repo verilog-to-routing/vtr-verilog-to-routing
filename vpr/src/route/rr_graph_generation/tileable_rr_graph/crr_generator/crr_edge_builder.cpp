@@ -98,8 +98,8 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
             rr_switch_id = rr_node_driver_switches[connection.sink_node()];
         } else {
             auto it = delay_to_switch_id.find(delay_ps);
-            VTR_ASSERT_MSG(it != delay_to_switch_id.end(),
-                           "CRR connection delay was not pre-created in delay_to_switch_id map");
+            if (it == delay_to_switch_id.end())
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CRR connection delay was not pre-created in delay_to_switch_id map.");
             rr_switch_id = it->second;
         }
         VTR_ASSERT(rr_switch_id != RRSwitchId::INVALID());

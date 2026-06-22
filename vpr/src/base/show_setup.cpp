@@ -671,6 +671,9 @@ static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
         case e_ap_detailed_placer::Annealer:
             VTR_LOG("annealer\n");
             break;
+        case e_ap_detailed_placer::WindowedBiMatching:
+            VTR_LOG("windowed_bi_matching\n");
+            break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
     }

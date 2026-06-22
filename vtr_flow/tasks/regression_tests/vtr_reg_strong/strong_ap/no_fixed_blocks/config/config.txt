@@ -22,12 +22,16 @@ circuit_list_add=or1200.v
 circuit_list_add=spree.v
 circuit_list_add=stereovision3.v
 
-# Constrain the circuits to their devices
-circuit_constraint_list_add=(stereovision3.v,    device=vtr_extra_small)
-circuit_constraint_list_add=(ch_intrinsics.v,    device=vtr_extra_small)
-circuit_constraint_list_add=(spree.v,            device=vtr_extra_small)
-circuit_constraint_list_add=(boundtop.v,         device=vtr_extra_small)
-circuit_constraint_list_add=(or1200.v,           device=vtr_small)
+# Below are a set of fixed layouts which were found to work well for these
+# benchmarks. They were found by finding the minimum device size for each
+# benchmark and categorizing the benchmarks into the different fixed layouts. 
+# Each fixed layout was chosen to be around 1.5x larger than the previous.
+# Constrain the circuits to their device widths
+circuit_constraint_list_add=(stereovision3.v,    device_width=20)
+circuit_constraint_list_add=(ch_intrinsics.v,    device_width=20)
+circuit_constraint_list_add=(spree.v,            device_width=20)
+circuit_constraint_list_add=(boundtop.v,         device_width=20)
+circuit_constraint_list_add=(or1200.v,           device_width=30)
 
 # Constrain the circuits to their channel widths
 #       1.3 * minW
@@ -47,5 +51,5 @@ qor_parse_file=qor_ap_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
 
 # Pass the script params while writing the vpr constraints.
-script_params=-track_memory_usage -crit_path_router_iterations 100 --analytical_place --route
+script_params=-track_memory_usage -crit_path_router_iterations 100 --analytical_place --route --analysis
 

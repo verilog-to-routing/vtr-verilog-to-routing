@@ -34,8 +34,13 @@
 #define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 
 //The arrow head position for turning/straight-thru connections in a switch box
-constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
-constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
+static constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
+static constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
+
+// This value is used to help determine when decluttering should be on. Every channel node is drawn 1 pixel wide always and
+// placed parallel to each other. If we allocate exactly 1 pixel for each channel node, they will be blended into a solid color.
+// Therefore, 1.5 is a more relaxed bar, where the extra serves as spacing between the channel nodes.
+static constexpr double min_pixel_per_chan_node = 1.5;
 
 /* Draws the routing resources that exist in the FPGA, if the user wants
  * them drawn.
@@ -47,6 +52,16 @@ void draw_rr(ezgl::renderer* g) {
 
     if (!draw_state->show_rr) {
         return;
+    }
+
+    // The ratio between pixels and world units spanning the screen width. Used to determine when decluttering should occur.
+    double pixel_per_world_unit = get_pixels_per_world_unit(g);
+    if (draw_state->enable_decluttering) {
+        // If pixel_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
+        draw_state->declutter_rr = pixel_per_world_unit < min_pixel_per_chan_node;
+    } else {
+        // Currently this branch will never be called, since enable_decluttering hasn't been wired to a UI button.
+        draw_state->declutter_rr = false;
     }
 
     g->set_line_dash(ezgl::line_dash::none);
@@ -72,24 +87,28 @@ void draw_rr(ezgl::renderer* g) {
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool node_highlighted = draw_state->draw_rr_node[inode].node_highlighted;
 
-        // Apply color to the node if it is not highlighted
+        // Highlighted nodes should always be drawn, even when decluttering is on.
         if (!node_highlighted) {
+            // Apply color to the node
             draw_state->draw_rr_node[inode].color = node_colors.at(node_type);
-        }
 
-        if (!node_highlighted) {
-            // Draw channel nodes if enabled
-            if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && !draw_state->draw_channel_nodes) {
+            // Don't draw if decluttering is on
+            if (draw_state->declutter_rr) {
                 continue;
             }
 
-            // Draw inter-cluster pins if enabled
-            if (inter_cluster_node && !draw_state->draw_inter_cluster_pins && (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN)) {
+            // Don't Draw channel nodes if disabled
+            else if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && (!draw_state->draw_channel_nodes)) {
                 continue;
             }
 
-            // Draw intra-cluster nodes if enabled
-            if (!inter_cluster_node && !draw_state->draw_intra_cluster_nodes) {
+            // Don't Draw inter-cluster pins if disabled
+            else if (inter_cluster_node && !draw_state->draw_inter_cluster_pins && (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN)) {
+                continue;
+            }
+
+            // Don't Draw intra-cluster nodes if disabled
+            else if (!inter_cluster_node && !draw_state->draw_intra_cluster_nodes) {
                 continue;
             }
         }
@@ -275,20 +294,24 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
         // Determine whether to draw the edge based on user options
 
-        if ((edge_type == e_edge_type::PIN_TO_OPIN || edge_type == e_edge_type::PIN_TO_IPIN) && !draw_state->draw_intra_cluster_edges) {
+        // If decluttering is on, don't draw any edges.
+        if (draw_state->declutter_rr) {
             draw_edge = false;
         }
-
-        if ((edge_type == e_edge_type::OPIN_TO_CHAN || edge_type == e_edge_type::CHAN_TO_IPIN) && !draw_state->draw_connection_box_edges) {
+        // PIN_TO_OPIN and OPIN_TO_OPIN edges are intra-cluster edges, so don't draw if the intra-cluster edges option is disabled.
+        else if ((edge_type == e_edge_type::PIN_TO_OPIN || edge_type == e_edge_type::PIN_TO_IPIN) && !draw_state->draw_intra_cluster_edges) {
             draw_edge = false;
         }
-
-        if (edge_type == e_edge_type::CHAN_TO_CHAN && !draw_state->draw_switch_box_edges) {
+        // OPIN_TO_CHAN and CHAN_TO_IPIN edges are connection box edges, so don't draw if the connection box edges option is disabled.
+        else if ((edge_type == e_edge_type::OPIN_TO_CHAN || edge_type == e_edge_type::CHAN_TO_IPIN) && !draw_state->draw_connection_box_edges) {
             draw_edge = false;
         }
-
+        // CHAN_TO_CHAN edges are switch box edges, so don't draw if the switch box edges option is disabled.
+        else if (edge_type == e_edge_type::CHAN_TO_CHAN && !draw_state->draw_switch_box_edges) {
+            draw_edge = false;
+        }
         // Special case for direct connections between output pins and input pins of clb.
-        if (edge_type == e_edge_type::PIN_TO_IPIN && inode_inter_cluster && to_node_inter_cluster) {
+        else if (edge_type == e_edge_type::PIN_TO_IPIN && inode_inter_cluster && to_node_inter_cluster) {
             draw_edge = draw_state->draw_connection_box_edges;
         }
 
@@ -634,11 +657,21 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
 }
 
 /* This routine is called when the routing resource graph is shown, and someone
- * clicks outside a block. That click might represent a click on a wire -- we call
+ * clicks on the canvas. That click might represent a click on a wire -- we call
  * this routine to determine which wire (if any) was clicked on.  If a wire was
  * clicked upon, we highlight it in Magenta, and its fanout in red.
  */
 bool highlight_rr_nodes(float x, float y) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // The user cannot select any RR nodes if RR drawing is turned off or decluttered. Doing so avoid processing all the RR nodes and saves time.
+    if (!draw_state->show_rr || draw_state->declutter_rr) {
+        application->refresh_drawing();
+        // After we return false, the caller will check if the mouse clicked on a block.
+        // There can be cases where the mouse actually clicked on an RR node, and processing blocks may seem unnecessary.
+        // But since the number of RR nodes is much greater than the number of blocks, this way is still more efficient.
+        return false;
+    }
 
     // Check which rr_node (if any) was clicked on.
     RRNodeId hit_node = draw_check_rr_node_hit(x, y);

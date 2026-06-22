@@ -510,7 +510,9 @@ static void process_nodes(const Netlist<>& net_list,
         oldpos = fp.tellg();
     }
 
-    VTR_ASSERT(validate_and_update_traceback(head_ptr, verify_route_file_switch_id));
+    if (!validate_and_update_traceback(head_ptr, verify_route_file_switch_id)) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback validation failed after reading route file.");
+    }
 
     /* Convert to route_tree after reading */
     route_ctx.route_trees[inet] = TracebackCompat::traceback_to_route_tree(head_ptr);

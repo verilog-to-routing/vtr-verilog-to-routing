@@ -129,7 +129,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
-void highlight_nets(char* message, RRNodeId hit_node) {
+void highlight_nets(std::string& message, RRNodeId hit_node) {
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
@@ -149,7 +149,7 @@ void highlight_nets(char* message, RRNodeId hit_node) {
         }
     }
 
-    application.update_message(message);
+    application->update_message(message);
 }
 
 std::string draw_get_net_name(ParentNetId parent_id) {
@@ -160,7 +160,7 @@ std::string draw_get_net_name(ParentNetId parent_id) {
     }
 }
 
-void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId hit_node) {
+void check_node_highlight_net(std::string& message, ParentNetId parent_net_id, RRNodeId hit_node) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -172,10 +172,10 @@ void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId
         if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
             draw_state->net_color[parent_net_id] = draw_state->draw_rr_node[inode].color;
             if (inode == hit_node) {
-                std::string orig_msg(message);
-                sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(),
-                        size_t(parent_net_id),
-                        draw_get_net_name(parent_net_id).c_str());
+                std::string orig_msg = message;
+                message = vtr::string_fmt("%s  ||  Net: %zu (%s)", orig_msg.c_str(),
+                                          size_t(parent_net_id),
+                                          draw_get_net_name(parent_net_id).c_str());
             }
         } else if (draw_state->draw_rr_node[inode].color == ezgl::WHITE) {
             // If node is de-selected.

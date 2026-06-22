@@ -7,7 +7,7 @@
 #include <vector>
 
 struct t_pb_type;
-struct t_pb_graph_pin;
+class t_pb_graph_pin;
 struct t_pack_pattern_connections;
 
 /**

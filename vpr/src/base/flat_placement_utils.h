@@ -11,6 +11,7 @@
 #include "device_grid.h"
 #include "flat_placement_types.h"
 #include "physical_types.h"
+#include "vtr_assert.h"
 
 /**
  * @brief Returns the manhattan distance (L1 distance) between two flat
@@ -28,6 +29,9 @@ inline float get_manhattan_distance(const t_flat_pl_loc& loc_a,
 inline float get_manhattan_distance_to_tile(const t_flat_pl_loc& src_flat_loc,
                                             const t_physical_tile_loc& tile_loc,
                                             const DeviceGrid& device_grid) {
+    VTR_ASSERT_SAFE_MSG(device_grid.is_valid_tile_loc(tile_loc),
+                        "tile_loc is not a valid location on the device grid");
+
     // Get the bounds of the tile.
     // Note: The get_tile_bb function will not work in this case since it
     //       subtracts 1 from the width and height.

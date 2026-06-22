@@ -8,10 +8,12 @@
 #ifndef NO_GRAPHICS
 
 #include "ezgl/application.hpp"
-#include <gtk/gtk.h>
+
+class QWidget;
+class QDialog;
 
 void save_graphics(std::string extension, std::string file_name);
-void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/);
-void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data);
+void save_graphics_dialog_box(QWidget* /*widget*/, ezgl::application* /*app*/);
+void save_graphics_from_button(QDialog* dialog);
 
 #endif /* NO_GRAPHICS */

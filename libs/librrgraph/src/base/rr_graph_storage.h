@@ -287,9 +287,6 @@ class t_rr_graph_storage {
      *         or INVALID RRNodeID if the clock network name is not found.
      */
     RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
-        // Convert the input char* to a C++ string
-        std::string clock_network_name_str(clock_network_name);
-        
         // Check if the clock network name exists in the list of virtual sink entries
         auto it = virtual_clock_network_root_idx_.find(clock_network_name);
         

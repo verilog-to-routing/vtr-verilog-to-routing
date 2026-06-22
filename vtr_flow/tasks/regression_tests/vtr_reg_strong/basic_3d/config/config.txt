@@ -37,5 +37,5 @@ qor_parse_file=qor_fixed_chan_width.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
-script_params=-starting_stage vpr -track_memory_usage --device FPGA3D --route_chan_width 100
+script_params=-starting_stage vpr -track_memory_usage --route_chan_width 100 --device FPGA3D
 

@@ -64,7 +64,7 @@ void cache_hard_block_names()
     std::reverse(user_models.begin(), user_models.end());
     for (LogicalModelId model_id : user_models) {
         t_model* hard_blocks = &Arch.models.get_model(model_id);
-        int sc_spot = sc_add_string(hard_block_names, hard_blocks->name);
+        int sc_spot = sc_add_string(hard_block_names, hard_blocks->name.c_str());
         hard_block_names->data[sc_spot] = (void *)hard_blocks;
     }
 }
@@ -214,7 +214,7 @@ void output_hard_blocks_yosys(Yosys::Design *design)
         {
             // IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and
             // add_the_blackbox_for_mults)
-            if (strcmp(hard_blocks->name, "adder") == 0 || strcmp(hard_blocks->name, "multiply") == 0) {
+            if (hard_blocks->name == "adder" || hard_blocks->name == "multiply") {
                 break;
             }
 

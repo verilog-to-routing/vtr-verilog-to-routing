@@ -81,8 +81,10 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const std::unordered_set<AtomNetId>& is_global,
                                  const PreClusterTimingManager& pre_cluster_timing_manager,
-                                 const APPackContext& appack_ctx)
+                                 const APPackContext& appack_ctx,
+                                 const t_vpr_setup& vpr_setup)
     : packer_opts_(packer_opts)
+    , vpr_setup_(vpr_setup)
     , analysis_opts_(analysis_opts)
     , atom_netlist_(atom_netlist)
     , arch_(arch)
@@ -448,7 +450,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
         prioritize_pre_assigned_ram_type(root_atom, prepacker, ram_mapper, atom_netlist_, candidate_types);
 
     if (log_verbosity_ > 2) {
-        VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name);
+        VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name.c_str());
         VTR_LOGV(seed_mol.pack_pattern, " molecule_type %s molecule_size %zu",
                  seed_mol.pack_pattern->name, seed_mol.atom_block_ids.size());
         VTR_LOG("\n");
@@ -515,11 +517,13 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
         num_instances += mutable_device_ctx.grid.num_instances(equivalent_tile, -1);
     }
 
-    if (num_used_type_instances[block_type] > num_instances) {
+    if (!has_fixed_device_size(vpr_setup_)
+        && num_used_type_instances[block_type] > num_instances) {
         mutable_device_ctx.grid = create_device_grid(packer_opts_.device_layout,
                                                      arch_.grid_layouts,
                                                      num_used_type_instances,
-                                                     packer_opts_.target_device_utilization);
+                                                     packer_opts_.target_device_utilization,
+                                                     vpr_setup_.device_width);
     }
 
     return new_cluster_id;

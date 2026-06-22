@@ -392,7 +392,7 @@ inline int chan_type_to_index(e_rr_type chan_type) {
             chan_index = 2;
             break;
         default:
-            VTR_ASSERT(false);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unsupported channel type.");
     }
 
     return chan_index;

@@ -92,7 +92,7 @@ interest.
 
 Most parts of the Architecture can be modified by hand. However care must
 be taken when changing some fields (e.g. a <pb_type>'s num_pb) to ensure
-that the the interconnect between pb_types remains correct.
+that the interconnect between pb_types remains correct.
 
 If you wish to modify the memory architecture (i.e. RAM blocks), it is 
 probably best to use gen_stratixiv_memories_class.py, rather than attempt 

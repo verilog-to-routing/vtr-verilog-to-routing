@@ -10,12 +10,14 @@
 #include "PlacementDelayModelCreator.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
+#include "ap_draw_manager.h"
 #include "ap_netlist.h"
 #include "atom_netlist.h"
 #include "cluster_util.h"
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
 #include "full_legalizer.h"
+#include "setup_grid.h"
 #include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
@@ -259,7 +261,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                ap_opts.log_verbosity,
-                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+                               /*is_fixed_device=*/has_fixed_device_size(vpr_setup));
     }
 
     // Create the ap netlist from the atom netlist using the result from the
@@ -285,6 +287,10 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                            device_ctx.arch->directs,
                                                                            false /*is_flat*/);
     }
+
+    // Initialize graphics here, after the device grid exists, so the draw structures
+    // can be allocated.
+    init_ap_graphics(vpr_setup, *device_ctx.arch);
 
     // Run the Global Placer.
     PartialPlacement p_placement = run_global_placer(ap_opts,

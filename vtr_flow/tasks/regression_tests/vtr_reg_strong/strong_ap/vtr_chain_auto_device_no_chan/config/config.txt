@@ -30,5 +30,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-track_memory_usage --analytical_place --route
+script_params=-track_memory_usage --analytical_place --route --analysis
 

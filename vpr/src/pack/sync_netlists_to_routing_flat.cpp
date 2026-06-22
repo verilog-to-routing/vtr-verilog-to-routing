@@ -362,7 +362,7 @@ static void sync_clustered_netlist_to_routing(void) {
                 else if (pb_graph_pin->port->type == OUT_PORT)
                     port_type = PortType::OUTPUT;
                 else
-                    VTR_ASSERT_MSG(false, "Unsupported port type");
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unsupported port type.");
                 port_id = clb_netlist.create_port(clb, pb_graph_pin->port->name, pb_graph_pin->port->num_pins, port_type);
             }
             PinType pin_type = node_type == e_rr_type::OPIN ? PinType::DRIVER : PinType::SINK;

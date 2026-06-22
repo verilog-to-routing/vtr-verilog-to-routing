@@ -129,6 +129,26 @@ class UserPlaceConstraints {
      */
     const std::unordered_set<t_logical_block_type_ptr>& get_part_lb_type_constraints(PartitionId part_id) const;
 
+    /**
+     * @brief Associate an atom with its logical_block_location constraint.
+     *
+     * The path is parsed and validated against the architecture pb graphs when set.
+     * The cluster legalizer later matches this location against candidate pb hierarchies.
+     */
+    void set_atom_logical_block_location(AtomBlockId blk_id, const std::string& logical_block_location);
+
+    /**
+     * @brief Return an atom's logical_block_location constraint, if one exists.
+     *
+     * Returns empty string when no location constraint was provided.
+     */
+    std::string get_atom_logical_block_location(AtomBlockId blk_id) const;
+
+    /**
+     * @brief Returns true if any atom has a logical_block_location constraint.
+     */
+    bool has_atom_logical_block_location_constraints() const;
+
   private:
     /**
      * Store logical block type constraints for each partition
@@ -139,6 +159,19 @@ class UserPlaceConstraints {
      * Store all constrained atoms
      */
     std::unordered_map<AtomBlockId, PartitionId> constrained_atoms;
+
+    /**
+     * Store optional per-atom logical_block_location strings. (used during cluster legalization).
+     *
+     * Format: '.'-separated path through the architecture block hierarchy.
+     *         Each step is block_name[index]; use {mode} when that step has modes (e.g. "fle[2]{n1_lut4}").
+     *
+     * Example: "clb[0].fle[2]{n1_lut4}.ble4[0].ff[0]"
+     *   - clb[0]: block name "clb"
+     *   - fle[2]{n1_lut4}: block name "fle", instance 2, architecture mode n1_lut4
+     *   - ble4[0].ff[0]: via block "ble4" instance 0, pack into flip-flop "ff" instance 0
+     */
+    std::unordered_map<AtomBlockId, std::string> atom_logical_block_locations_;
 
     /**
      * Store all partitions

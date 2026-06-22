@@ -27,25 +27,54 @@ static bool is_integer(const std::string& s) {
     return ec == std::errc() && ptr == s.data() + s.size();
 }
 
+/**
+ * @brief Builds the per-tile-type reverse map (pin_name -> pin_ptc) for every
+ *        physical tile type.
+ *
+ * The returned vector is indexed by t_physical_tile_type::index.
+ *
+ * Kept as a free helper so it can be invoked directly in the constructor's
+ * initializer list. The returned vector is a prvalue, so it is moved (not
+ * copied) into the member it initializes.
+ */
+static std::vector<std::unordered_map<std::string, int>>
+create_pin_name_to_ptc_cache(const std::vector<t_physical_tile_type>& physical_tile_types) {
+    std::vector<std::unordered_map<std::string, int>> pin_name_to_ptc_cache(physical_tile_types.size());
+
+    for (const t_physical_tile_type& tile_type : physical_tile_types) {
+        VTR_ASSERT(tile_type.index >= 0 && tile_type.index < static_cast<int>(physical_tile_types.size()));
+        std::unordered_map<std::string, int>& name_to_ptc = pin_name_to_ptc_cache[tile_type.index];
+        name_to_ptc.reserve(tile_type.num_pins);
+        for (int pin_ptc = 0; pin_ptc < tile_type.num_pins; ++pin_ptc) {
+            name_to_ptc.emplace(block_type_pin_index_to_name(&tile_type, pin_ptc, false), pin_ptc);
+        }
+    }
+
+    return pin_name_to_ptc_cache;
+}
+
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
                                            const NodeLookupManager& node_lookup,
                                            const SwitchBlockManager& sb_manager,
-                                           const int verbosity)
+                                           const int verbosity,
+                                           e_gsb_version gsb_version)
     : rr_graph_(rr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager)
-    , verbosity_(verbosity) {}
+    , verbosity_(verbosity)
+    , gsb_version_(gsb_version)
+    , pin_name_to_ptc_cache_(create_pin_name_to_ptc_cache(g_vpr_ctx.device().physical_tile_types)) {
+    if (gsb_version_ != e_gsb_version::GSB_V1 && gsb_version_ != e_gsb_version::GSB_V2) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized GSB version: %d\n", static_cast<int>(gsb_version_));
+    }
+}
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
                                       int fpga_grid_y,
-                                      bool preserve_ipin_connections,
-                                      bool preserve_opin_connections,
                                       bool is_annotated) {
 
     fpga_grid_x_ = fpga_grid_x;
     fpga_grid_y_ = fpga_grid_y;
-    preserve_ipin_connections_ = preserve_ipin_connections;
-    preserve_opin_connections_ = preserve_opin_connections;
     is_annotated_ = is_annotated;
 }
 
@@ -126,19 +155,6 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
             RRNodeId sink_node = sink_it->second;
             e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
 
-            // Skip connections involving IPIN/OPIN nodes if preservation is enabled
-            if (preserve_ipin_connections_) {
-                if (source_node_type == e_rr_type::IPIN || sink_node_type == e_rr_type::IPIN) {
-                    continue;
-                }
-            }
-
-            if (preserve_opin_connections_) {
-                if (source_node_type == e_rr_type::OPIN || sink_node_type == e_rr_type::OPIN) {
-                    continue;
-                }
-            }
-
             std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
 
             // If the source node is an IPIN, then it should be considered as
@@ -202,6 +218,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
 
         if (node_id != RRNodeId::INVALID()) {
             source_nodes[row] = node_id;
+        } else {
+            VTR_LOGV(verbosity_ > 1, "No node found for source at row %zu in tile (%d,%d)\n", row, x, y);
         }
 
         prev_seg_type = info.seg_type;
@@ -239,6 +257,8 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(i
 
         if (node_id != RRNodeId::INVALID()) {
             sink_nodes[col] = node_id;
+        } else {
+            VTR_LOGV(verbosity_ > 1, "No node found for sink at column %zu in tile (%d,%d)\n", col, x, y);
         }
 
         prev_seg_type = info.seg_type;
@@ -325,12 +345,10 @@ int CRRConnectionBuilder::resolve_pin_ptc(const SegmentInfo& info,
                         info.pin_name.c_str(), x, y);
     }
 
-    for (int pin_ptc = 0; pin_ptc < tile_type->num_pins; ++pin_ptc) {
-        // is_flat is false: CRR only specifies connections between general routing resources
-        // and does not touch intra-cluster connections.
-        if (block_type_pin_index_to_name(tile_type, pin_ptc, false) == info.pin_name) {
-            return pin_ptc;
-        }
+    const auto& name_to_ptc = pin_name_to_ptc_cache_.at(tile_type->index);
+    auto pin_it = name_to_ptc.find(info.pin_name);
+    if (pin_it != name_to_ptc.end()) {
+        return pin_it->second;
     }
 
     VTR_LOGV(verbosity_ > 0,
@@ -364,7 +382,8 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
         return row_it->second;
     }
 
-    return RRNodeId::INVALID();
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find %s node for pin '%s' at (%d,%d)\n",
+                    rr_node_typename[node_type], info.pin_name.c_str(), x, y);
 }
 
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
@@ -426,9 +445,16 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
         return row_it->second;
     }
 
-    VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-             seg_sequence.c_str(), x_low, y_low, x_high, y_high);
-    return RRNodeId::INVALID();
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                    "Node not found: SB(%d,%d) side=%s seg_type=%s seg_index=%d tap=%d -> %s [%s] (%d,%d) -> (%d,%d)\n",
+                    x, y,
+                    template_side_name[info.side],
+                    info.seg_type.c_str(),
+                    info.seg_index,
+                    info.tap,
+                    seg_type_label.c_str(),
+                    seg_sequence.c_str(),
+                    x_low, y_low, x_high, y_high);
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
@@ -444,12 +470,14 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     int seg_length = std::stoi(info.seg_type.substr(1));
     int tap = info.tap;
 
-    // Calculate initial coordinates based on side
+    // V1 uses 1-indexed segment coordinates; V2 uses 0-indexed.
+    int coord_offset = (gsb_version_ == e_gsb_version::GSB_V1) ? 1 : 0;
+
     if (is_vertical) {
         switch (info.side) {
             case e_sw_template_dir::LEFT:
-                x_high = x + (seg_length - tap);
-                x_low = x - (tap - 1);
+                x_high = x + seg_length - tap - 1 + coord_offset;
+                x_low = x - tap + coord_offset;
                 y_high = y;
                 y_low = y;
                 break;
@@ -468,8 +496,8 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
             case e_sw_template_dir::BOTTOM:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length - tap;
-                y_low = y - tap + 1;
+                y_high = y + seg_length - tap - 1 + coord_offset;
+                y_low = y - tap + coord_offset;
                 break;
             default:
                 x_high = x;
@@ -487,16 +515,16 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                 y_low = y;
                 break;
             case e_sw_template_dir::RIGHT:
-                x_high = x + seg_length;
-                x_low = x + 1;
+                x_high = x + seg_length - 1 + coord_offset;
+                x_low = x + coord_offset;
                 y_high = y;
                 y_low = y;
                 break;
             case e_sw_template_dir::TOP:
                 x_high = x;
                 x_low = x;
-                y_high = y + seg_length;
-                y_low = y + 1;
+                y_high = y + seg_length - 1 + coord_offset;
+                y_low = y + coord_offset;
                 break;
             case e_sw_template_dir::BOTTOM:
                 x_high = x;

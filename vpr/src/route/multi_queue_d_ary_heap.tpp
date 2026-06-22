@@ -26,6 +26,7 @@
 #include <vector>
 #include <algorithm>
 #include <atomic>
+#include <thread>
 #include <cassert>
 #include <thread>
 #include "d_ary_heap.tpp"

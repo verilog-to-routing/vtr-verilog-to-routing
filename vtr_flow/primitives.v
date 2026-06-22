@@ -145,25 +145,27 @@ module LUT_K #(
 endmodule
 
 //D-FlipFlop module
+//The clock port is named 'clock' instead of 'clk' to match vpr's post-synthesis netlists.
 module DFF #(
     parameter INITIAL_VALUE=1'b0    
 ) (
-    input clk,
+    input clock,
     input D,
     output reg Q
 );
 
     specify
-        (clk => Q) = "";
-        $setup(D, posedge clk, "");
-        $hold(posedge clk, D, "");
+        (clock => Q) = "";
+        $setup(D, posedge clock, "");
+        $hold(posedge clock, D, "");
     endspecify
 
+    // non-blocking assignments in initial blocks are unsupported
     initial begin
-        Q <= INITIAL_VALUE;
+        Q = INITIAL_VALUE;
     end
 
-    always@(posedge clk) begin
+    always@(posedge clock) begin
         Q <= D;
     end
 endmodule
@@ -217,7 +219,7 @@ module adder #(
    assign {cout, sumout} = a + b + cin;
    
 endmodule
-   
+
 //nxn multiplier module
 module multiply #(
     //The width of input signals

@@ -1249,7 +1249,7 @@ where ``$VTR_ROOT`` should be replaced with the root of the VTR source tree on y
 
 ## RR (Record Replay) Debugger
 
-[RR](https://rr-project.org/) extends GDB with the ability to to record a run of a tool and then re-run it to reproduce any observed issues.
+[RR](https://rr-project.org/) extends GDB with the ability to record a run of a tool and then re-run it to reproduce any observed issues.
 RR also enables efficient reverse execution (!) which can be *extremely helpful* when tracking down the source of a bug.
 
 # Speeding up the edit-compile-test cycle

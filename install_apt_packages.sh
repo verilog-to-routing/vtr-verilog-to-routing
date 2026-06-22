@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# if --dev is specified, also install packages needed by vtr developers (e.g. verilator
+# for functional simulation). otherwise only install packages needed to run vtr.
+install_dev=false
+for arg in "$@"; do
+    if [ "$arg" = "--dev" ]; then
+        install_dev=true
+    fi
+done
+
 # Base packages to compile and run basic regression tests
 packages_to_install=(
     make
@@ -26,9 +35,24 @@ packages_to_install+=(
 )
 
 # Required for graphics
+# GL/EGL/xkb runtime that the Qt6 GUI links against; the Qt6 SDK itself is
+# provisioned separately by dev/ensure_qt6_sdk.sh.
+# The libxcb-* packages are runtime dependencies of Qt's xcb (X11) platform
+# plugin (libqxcb.so). Without them the GUI aborts at startup with "Could not
+# load the Qt platform plugin xcb" (the loader reports only the first missing
+# one, typically libxcb-cursor0, which Qt has required since 6.5).
 packages_to_install+=(
-    libgtk-3-dev
-    libx11-dev
+    libxkbcommon-dev
+    libgl-dev
+    libegl-dev
+    libopengl0
+    libegl-mesa0
+    libgl1-mesa-dri
+    libxcb-cursor0
+    libxcb-icccm4
+    libxcb-image0
+    libxcb-keysyms1
+    libxcb-render-util0
 )
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
@@ -53,6 +77,13 @@ packages_to_install+=(
     zlib1g-dev
 )
 
+if [[ "$install_dev" == true ]]; then
+    # required for functional simulation (run_func_sim_flow.py)
+    packages_to_install+=(
+        verilator
+    )
+fi
+
 # Required for code formatting
 # NOTE: clang-format-18 may only be found on specific distributions. Only
 #       install it if the distribution has this version of clang format.
@@ -66,4 +97,3 @@ fi
 
 sudo apt-get update
 sudo apt-get install -y "${packages_to_install[@]}"
-

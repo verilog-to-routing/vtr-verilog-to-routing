@@ -7,7 +7,6 @@
 
 #include "vpr_error.h"
 #include "crr_switch_block_manager.h"
-#include "crr_pattern_matcher.h"
 
 #include "vtr_log.h"
 
@@ -55,6 +54,7 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
         pattern = std::regex_replace(pattern, escaped_asterisk, "*");
 
         ordered_switch_block_patterns_.push_back(pattern);
+        pattern_matcher_.register_pattern(pattern);
         switch_block_to_file_[pattern] = full_path;
         if (!full_path.empty()) {
             unique_files.insert(full_path);
@@ -131,7 +131,7 @@ std::vector<std::string> SwitchBlockManager::get_all_patterns() const {
 std::string SwitchBlockManager::find_matching_pattern(size_t x, size_t y) const {
     std::string sw_name = get_switch_block_name(x, y);
     for (const std::string& pattern : ordered_switch_block_patterns_) {
-        if (CRRPatternMatcher::matches_pattern(sw_name, pattern)) {
+        if (pattern_matcher_.matches_pattern(sw_name, pattern)) {
             return pattern;
         }
     }

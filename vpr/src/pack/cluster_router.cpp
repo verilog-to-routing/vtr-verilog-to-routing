@@ -13,7 +13,9 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <map>
@@ -98,13 +100,27 @@ static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_n
  */
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t_lb_type_rr_node>& lb_rr_graph);
 
+/**
+ * @brief Returns true if every edge in the route tree is reachable under the
+ *        current mode assignments in lb_rr_node_stats.
+ *
+ * Used at hot-start time to decide whether a saved route tree can be reused
+ * without re-routing. An edge parent→child is valid only if child appears in
+ * lb_type_graph[parent].outedges[mode], where mode is the current forced mode
+ * of parent (defaulting to 0 when unconstrained).
+ */
+static bool is_route_mode_compatible(const t_lb_trace& rt,
+                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
+
 /*****************************************************************************************
  * Constructor/Destructor functions
  ******************************************************************************************/
 
 ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
                              t_logical_block_type_ptr type,
-                             const std::unordered_set<int>& valid_feedback_pins) {
+                             const std::unordered_set<int>& valid_feedback_pins,
+                             bool enable_hot_start) {
     lb_type_graph_ = lb_type_graph;
     lb_type_ = type;
     valid_feedback_pins_ = &valid_feedback_pins;
@@ -124,6 +140,7 @@ ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
 
     is_clean_ = false;
     is_valid_ = true;
+    enable_hot_start_ = enable_hot_start;
 }
 
 void ClusterRouter::clean_router_data() {
@@ -139,6 +156,30 @@ void ClusterRouter::clean_router_data() {
 
     is_clean_ = true;
     is_valid_ = false;
+}
+
+bool ClusterRouter::is_saved_route_valid() const {
+    // No saved route exists yet.
+    if (saved_lb_nets_.empty() || intra_lb_nets_.size() != saved_lb_nets_.size())
+        return false;
+
+    // Build a lookup from atom net ID to the terminals recorded in the saved route.
+    std::unordered_map<AtomNetId, const std::vector<int>*> saved_map;
+    saved_map.reserve(saved_lb_nets_.size());
+    for (const auto& net : saved_lb_nets_)
+        saved_map[net.atom_net_id] = &net.terminals;
+
+    // Every current net must appear in the saved route with identical terminals.
+    // Identical terminals means the saved route trees cover exactly the same
+    // physical pins, so the saved solution is still valid without re-routing.
+    for (const auto& net : intra_lb_nets_) {
+        auto it = saved_map.find(net.atom_net_id);
+        if (it == saved_map.end())
+            return false;
+        if (net.terminals != *it->second)
+            return false;
+    }
+    return true;
 }
 
 static bool route_has_conflict(const t_lb_trace& rt,
@@ -196,7 +237,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
         if (result.first->second != mode) {
             std::cout << vtr::string_fmt("Differing modes for block.  Got %s mode, while previously was %s for interconnect %s.",
                                          mode->name, result.first->second->name,
-                                         edge->interconnect->name)
+                                         edge->interconnect->name.c_str())
                       << std::endl;
 
             // The illegal mode is added to the pb_graph_node as it resulted in a conflict during atom-to-atom routing. This mode cannot be used in the consequent cluster
@@ -369,6 +410,37 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
     return is_impossible;
 }
 
+void ClusterRouter::hot_start_intra_lb_route_(
+    std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
+    t_mode_selection_status* mode_status) {
+    // Build a lookup from atom net ID to intra-lb net index for fast access.
+    std::unordered_map<AtomNetId, size_t> atom_net_to_inet;
+    atom_net_to_inet.reserve(intra_lb_nets_.size());
+    for (size_t inet = 0; inet < intra_lb_nets_.size(); inet++)
+        atom_net_to_inet.insert({intra_lb_nets_[inet].atom_net_id, inet});
+
+    for (const auto& saved_lb_net : saved_lb_nets_) {
+        // Skip if the net's terminals have changed since the last save — the
+        // saved route tree no longer reaches the right pins.
+        auto it = atom_net_to_inet.find(saved_lb_net.atom_net_id);
+        // Skip if the atom net is not present in the current cluster. It may
+        // have been removed since the last save, making the saved route invalid.
+        if (it == atom_net_to_inet.end())
+            continue;
+        size_t inet = it->second;
+        if (intra_lb_nets_[inet].terminals != saved_lb_net.terminals)
+            continue;
+
+        // Skip if a mode change has invalidated this net's route tree.
+        if (!is_route_mode_compatible(saved_lb_net.rt_tree, *lb_type_graph_, lb_rr_node_stats_))
+            continue;
+
+        // Commit the saved route tree so pathfinder can skip this net.
+        commit_remove_rt_(saved_lb_net.rt_tree, RT_COMMIT, mode_map, mode_status);
+        intra_lb_nets_[inet].rt_tree = saved_lb_net.rt_tree;
+    }
+}
+
 bool ClusterRouter::try_intra_lb_route(int verbosity,
                                        t_mode_selection_status* mode_status) {
     VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
@@ -392,6 +464,11 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
     }
 
     std::unordered_map<const t_pb_graph_node*, const t_mode*> mode_map;
+
+    // Hot-start: seed previously-saved, still-valid route trees so that
+    // pathfinder can skip unchanged nets on its first iteration.
+    if (enable_hot_start_ && !saved_lb_nets_.empty())
+        hot_start_intra_lb_route_(mode_map, mode_status);
 
     /*	Iteratively remove congestion until a successful route is found.
      * Cap the total number of iterations tried so that if a solution does not exist, then the router won't run indefinitely */
@@ -968,6 +1045,31 @@ static bool is_skip_route_net(const t_lb_trace& rt,
     }
 
     /* No conflict, this net's current route is legal, skip routing this net */
+    return true;
+}
+
+static bool is_route_mode_compatible(const t_lb_trace& rt,
+                                     const std::vector<t_lb_type_rr_node>& lb_type_graph,
+                                     const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats) {
+    int cur_node = rt.current_node;
+    int mode = lb_rr_node_stats[cur_node].mode;
+    if (mode == -1) mode = 0;
+
+    for (const auto& child : rt.next_nodes) {
+        // Verify the edge cur_node -> child.current_node exists in the current mode.
+        bool edge_exists = false;
+        if (mode < lb_type_graph[cur_node].num_modes) {
+            for (int iedge = 0; iedge < lb_type_graph[cur_node].num_fanout[mode]; iedge++) {
+                if (lb_type_graph[cur_node].outedges[mode][iedge].node_index == child.current_node) {
+                    edge_exists = true;
+                    break;
+                }
+            }
+        }
+        if (!edge_exists) return false;
+        if (!is_route_mode_compatible(child, lb_type_graph, lb_rr_node_stats))
+            return false;
+    }
     return true;
 }
 

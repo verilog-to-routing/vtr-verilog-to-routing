@@ -1,0 +1,6 @@
+# Pass requirements for functional simulation tasks.
+# The only requirement is that the flow (VPR + Verilator simulation) completed
+# successfully. Timing and area metrics are not checked here because functional
+# simulation tasks exist to verify correctness, not QoR.
+vpr_status;Equal()
+error;Equal()

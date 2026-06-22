@@ -36,7 +36,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         }
 
         for (int cut_y : horizontal_cuts[layer]) {
-            float y;
+            float y = 0.0;
             if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
                 // Draw the interposer line exactly in the middle of routing channel.
                 y = (draw_coords->tile_y[cut_y + 1] + draw_coords->tile_y[cut_y] + draw_coords->get_tile_height()) / 2.0f;
@@ -53,7 +53,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         }
 
         for (int cut_x : vertical_cuts[layer]) {
-            float x;
+            float x = 0.0;
             if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
                 // Draw the interposer line exactly in the middle of routing channel.
                 x = (draw_coords->tile_x[cut_x + 1] + draw_coords->tile_x[cut_x] + draw_coords->get_tile_width()) / 2.0f;

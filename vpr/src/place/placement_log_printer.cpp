@@ -308,8 +308,9 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     }
 
     if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
+        VTR_ASSERT(placer_.interposer_cost_handler_.has_value());
         VTR_LOG("Initial placement estimated interposer cost: %g\n", costs.interposer_cost);
-        VTR_LOG("Initial number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
+        VTR_LOG("Initial number of nets crossing interposer cuts: %d\n", placer_.interposer_cost_handler_->get_num_nets_crossing_interposer_cuts());
     }
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -366,7 +367,8 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", estimated_wirelength);
 
     if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
-        VTR_LOG("Number of nets crossing interposer cuts: %d\n", placer_.net_cost_handler_.get_num_nets_crossing_interposer_cuts());
+        VTR_ASSERT(placer_.interposer_cost_handler_.has_value());
+        VTR_LOG("Number of nets crossing interposer cuts: %d\n", placer_.interposer_cost_handler_->get_num_nets_crossing_interposer_cuts());
     }
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
@@ -397,6 +399,10 @@ void PlacementLogPrinter::print_post_placement_stats() const {
             placer_.costs_.cost, placer_.costs_.bb_cost, placer_.costs_.timing_cost, placer_.placer_opts_.place_chan_width);
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", placer_.costs_.cost,
             placer_.costs_.bb_cost, placer_.costs_.timing_cost);
+    // Mark placement as fully settled so `wait_for_stage placement_done`
+    // barriers in graphics_commands resume on this final checkpoint rather
+    // than the per-iteration placement update_screen() calls.
+    notify_stage_complete(e_pic_type::PLACEMENT);
     update_screen(ScreenUpdatePriority::MAJOR, msg_.data(), e_pic_type::PLACEMENT, placer_.timing_info_);
 
     // print the noc costs info

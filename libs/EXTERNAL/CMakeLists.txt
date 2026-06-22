@@ -44,6 +44,17 @@ endif()
 #compile libezgl only if the user asks for or has its dependencies installed.
 if (VPR_USE_EZGL STREQUAL "on")
     add_subdirectory(libezgl)
+
+    # DEF-013 fix — propagate coverage flags into the ezgl submodule so the
+    # gcovr `-f libs/EXTERNAL/libezgl/src` filter picks up real instrumentation
+    # data. We can't `add_compile_options(${ADDITIONAL_FLAGS})` at this
+    # directory level because libezgl is a git submodule and we don't want
+    # to edit its CMakeLists.txt; per-target flags applied after
+    # `add_subdirectory` are scoped to the upstream target only.
+    if(VTR_ENABLE_COVERAGE AND TARGET ezgl)
+        target_compile_options(ezgl PRIVATE ${COVERAGE_FLAGS_LIST})
+        target_link_options(ezgl PRIVATE ${COVERAGE_FLAGS_LIST})
+    endif()
 endif ()
 
 # The VTR root CMakeFile initializes the WITH_PARMYS

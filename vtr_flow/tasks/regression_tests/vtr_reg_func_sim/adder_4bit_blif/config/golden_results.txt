@@ -1,0 +1,3 @@
+arch	circuit	script_params	vtr_flow_elapsed_time	vtr_max_mem_stage	vtr_max_mem	error	vpr_status	vpr_revision	vpr_build_info	vpr_compiler	vpr_compiled	hostname	rundir	max_vpr_mem	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	adder_4bit_luts.blif	common	45.43	vpr	66.70 MiB		success	3ca157f-dirty	release IPO VTR_ASSERT_LEVEL=2	GNU 13.3.0 on Linux-6.6.87.2-microsoft-standard-WSL2 x86_64	2026-06-08T21:30:10	DESKTOP-9R439FK	/mnt/c/2w-reborn/docs-env/vtr	68300	
+k6_frac_N10_frac_chain_mem32K_40nm.xml	adder_4bit_carry_adder.blif	common	44.10	vpr	67.30 MiB		success	3ca157f-dirty	release IPO VTR_ASSERT_LEVEL=2	GNU 13.3.0 on Linux-6.6.87.2-microsoft-standard-WSL2 x86_64	2026-06-08T21:30:10	DESKTOP-9R439FK	/mnt/c/2w-reborn/docs-env/vtr	68916	

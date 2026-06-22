@@ -13,6 +13,7 @@
 #include <vector>
 #include "PreClusterTimingManager.h"
 #include "appack_context.h"
+#include "device_grid.h"
 #include "flat_placement_types.h"
 #include "flat_placement_utils.h"
 #include "atom_netlist.h"
@@ -1109,6 +1110,7 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
                                const APPackContext& appack_ctx) {
     VTR_ASSERT(molecule_id.is_valid());
     const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     float gain = 0;
     constexpr float attraction_group_penalty = 0.1;
@@ -1185,7 +1187,7 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         // tile as the rest of the molecules in the cluster.
         float dist = get_manhattan_distance_to_tile(target_loc,
                                                     cluster_tile_loc,
-                                                    g_vpr_ctx.device().grid);
+                                                    grid);
         float gain_mult = 1.0f;
         if (dist < appack_options.dist_th) {
             gain_mult = 1.0f - (appack_options.quad_fac_sqr * dist * dist);
@@ -1196,6 +1198,16 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
 
         // Update the gain.
         gain *= gain_mult;
+
+        // Multiply molecule gain by 'inter_die_gain_multiplier' if the molecule is placed on
+        // a different interposer die from the cluster.
+        // With a default value of 0.1, this penalizes packing together molecules that are on different dice.
+        if (grid.has_interposer_cuts()) {
+            t_physical_tile_loc target_physical_loc = {(int)target_loc.x, (int)target_loc.y, (int)target_loc.layer};
+            if (!grid.are_locs_on_same_die(target_physical_loc, cluster_tile_loc)) {
+                gain *= appack_options.inter_die_gain_multiplier;
+            }
+        }
     }
 
     return gain;
@@ -1442,11 +1454,11 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         //       since they should be closer.
         if (node_loc.x >= 1)
             search_queue.push({node_loc.x - 1, node_loc.y, node_loc.layer_num});
-        if (node_loc.x <= (int)appack_unrelated_clustering_data_.dim_size(0) - 2)
+        if (node_loc.x <= (int)flat_grid_width - 2)
             search_queue.push({node_loc.x + 1, node_loc.y, node_loc.layer_num});
         if (node_loc.y >= 1)
             search_queue.push({node_loc.x, node_loc.y - 1, node_loc.layer_num});
-        if (node_loc.y <= (int)appack_unrelated_clustering_data_.dim_size(1) - 2)
+        if (node_loc.y <= (int)flat_grid_height - 2)
             search_queue.push({node_loc.x, node_loc.y + 1, node_loc.layer_num});
 
         // Pop the position off the queue.

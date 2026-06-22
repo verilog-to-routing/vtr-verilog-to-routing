@@ -11,4 +11,5 @@ Tutorials
     titan_benchmarks/index
     titanium_benchmarks/index
     timing_simulation/index
+    func_simulation/index
     timing_analysis/index

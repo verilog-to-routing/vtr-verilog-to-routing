@@ -360,7 +360,9 @@ def run_parallel(args, queued_jobs, run_dirs: dict) -> int:
     queued_procs = []
     queue = Manager().Queue()
     for job in queued_jobs:
-        queued_procs.append((queue, run_dirs, job, args.script))
+        # A config-level flow_script overrides the command-line -script default.
+        script = job.flow_script() or args.script
+        queued_procs.append((queue, run_dirs, job, script))
 
     # Queue of currently running subprocesses
     num_failed = 0

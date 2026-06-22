@@ -16,7 +16,6 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
         RRIndexedDataId cost_index = rr_graph.node_cost_index(inode);
 
         int seg_index = rr_indexed_data[cost_index].seg_index;
-        std::string rr_node_direction_string = rr_graph.node_direction_string(inode);
 
         if (seg_index < (int)rr_graph.num_rr_segments()) {
             msg += vtr::string_fmt(" track: %d longline: %d",

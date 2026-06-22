@@ -85,7 +85,7 @@ static void setup_switches(const t_arch& arch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
 
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
-static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts);
+static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
 /**
@@ -137,6 +137,7 @@ void SetupVPR(const t_options* options,
               int* graphPause,
               bool* saveGraphics,
               std::string* graphicsCommands,
+              std::string* rendererType,
               t_power_opts* powerOpts,
               t_vpr_setup* vpr_setup) {
     using argparse::Provenance;
@@ -179,7 +180,7 @@ void SetupVPR(const t_options* options,
     setup_anneal_sched(*options, &placerOpts->anneal_sched);
     setup_router_opts(*options, routerOpts);
     setup_analysis_opts(*options, *analysisOpts);
-    setup_crr_opts(*options, *crrOpts);
+    setup_crr_opts(*options, *crrOpts, device_ctx);
     setup_power_opts(*options, powerOpts, arch);
     setup_noc_opts(*options, nocOpts);
     setup_server_opts(*options, serverOpts);
@@ -286,10 +287,12 @@ void SetupVPR(const t_options* options,
         && !options->do_analytical_placement
         && !options->do_routing
         && !options->do_analysis) {
-        //run all stages if none specified
-        packerOpts->doPacking = e_stage_action::DO;
-        placerOpts->do_placement = e_stage_action::DO;
-        apOpts->doAP = e_stage_action::SKIP; // AP not default.
+        // If none specified, we do the AP flow.
+        // This skips the packing and placement stages, since
+        // AP combines packing and placement together.
+        packerOpts->doPacking = e_stage_action::SKIP;
+        placerOpts->do_placement = e_stage_action::SKIP;
+        apOpts->doAP = e_stage_action::DO;
         routerOpts->doRouting = e_stage_action::DO;
         analysisOpts->doAnalysis = e_stage_action::SKIP_IF_PRIOR_FAIL; //Deferred until implementation status known
     } else {
@@ -309,7 +312,6 @@ void SetupVPR(const t_options* options,
             packerOpts->doPacking = e_stage_action::LOAD;
             placerOpts->do_placement = e_stage_action::LOAD;
             routerOpts->doRouting = e_stage_action::DO;
-            analysisOpts->doAnalysis = ((options->do_analysis) ? e_stage_action::DO : e_stage_action::SKIP_IF_PRIOR_FAIL); //Always run analysis after routing
         }
 
         if (options->do_placement) {
@@ -372,6 +374,7 @@ void SetupVPR(const t_options* options,
 
     *saveGraphics = options->save_graphics;
     *graphicsCommands = options->graphics_commands;
+    *rendererType = options->graphics_renderer;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
         EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, arch);
@@ -603,6 +606,7 @@ static void setup_ap_opts(const t_options& options,
     apOpts.ap_partial_legalizer_target_density = options.ap_partial_legalizer_target_density.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.appack_unrelated_clustering_args = options.appack_unrelated_clustering_args.value();
+    apOpts.appack_inter_die_gain_multiplier = options.appack_inter_die_gain_multiplier.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
@@ -627,6 +631,7 @@ void setup_packer_opts(const t_options& Options,
     PackerOpts->pack_verbosity = Options.pack_verbosity;
     PackerOpts->use_ram_mapper = Options.use_ram_mapper;
     PackerOpts->memoize_cluster_packings = Options.memoize_cluster_packings;
+    PackerOpts->cluster_router_hot_start = Options.cluster_router_hot_start;
     PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
     PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
     PackerOpts->target_external_pin_util = Options.target_external_pin_util;
@@ -768,14 +773,21 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
     analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
 }
 
-static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
+static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, DeviceContext& device_ctx) {
     crr_opts.sb_maps = Options.sb_maps;
     crr_opts.sb_templates = Options.sb_templates;
-    crr_opts.preserve_input_pin_connections = Options.preserve_input_pin_connections;
-    crr_opts.preserve_output_pin_connections = Options.preserve_output_pin_connections;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
     crr_opts.sb_count_dir = Options.sb_count_dir;
+
+    // If the user did not explicitly set a GSB version, infer the default:
+    // use GSB_V1 when sb_maps is provided (CRR flow), otherwise NOT_CRR.
+    e_gsb_version gsb_version = Options.gsb_version;
+    if (gsb_version == e_gsb_version::NOT_CRR && !Options.sb_maps.value().empty()) {
+        gsb_version = e_gsb_version::GSB_V1;
+    }
+    crr_opts.gsb_version = gsb_version;
+    device_ctx.gsb_version = gsb_version;
 }
 
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

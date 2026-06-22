@@ -1,0 +1,4 @@
+regression_tests/vtr_reg_gui/gui_disp_off_smoke
+regression_tests/vtr_reg_gui/gui_set_nets
+regression_tests/vtr_reg_gui/gui_set_routing_util
+regression_tests/vtr_reg_gui/gui_set_draw_block_text

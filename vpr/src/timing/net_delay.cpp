@@ -81,7 +81,8 @@ static void load_one_net_delay(const Netlist<>& net_list,
 
     for (unsigned int ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
         auto itr = ipin_to_Tdel_map.find(ipin);
-        VTR_ASSERT(itr != ipin_to_Tdel_map.end());
+        if (itr == ipin_to_Tdel_map.end())
+            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Could not find ipin in ipin_to_Tdel_map.");
 
         net_delay[net_id][ipin] = itr->second; // search for the value of Tdel in the ipin map and load into net_delay
     }

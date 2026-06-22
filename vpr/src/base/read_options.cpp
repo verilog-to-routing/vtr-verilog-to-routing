@@ -262,6 +262,8 @@ struct ParseAPDetailedPlacer {
             conv_value.set_value(e_ap_detailed_placer::Identity);
         else if (str == "annealer")
             conv_value.set_value(e_ap_detailed_placer::Annealer);
+        else if (str == "windowed_bi_matching")
+            conv_value.set_value(e_ap_detailed_placer::WindowedBiMatching);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_detailed_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -279,6 +281,9 @@ struct ParseAPDetailedPlacer {
             case e_ap_detailed_placer::Annealer:
                 conv_value.set_value("annealer");
                 break;
+            case e_ap_detailed_placer::WindowedBiMatching:
+                conv_value.set_value("windowed_bi_matching");
+                break;
             default:
                 VTR_ASSERT(false);
         }
@@ -286,7 +291,7 @@ struct ParseAPDetailedPlacer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"none", "annealer"};
+        return {"none", "annealer", "windowed_bi_matching"};
     }
 };
 
@@ -1495,6 +1500,44 @@ struct ParsePostSynthNetlistUnconnOutputHandling {
     }
 };
 
+struct ParseGsbVersion {
+    ConvertedValue<e_gsb_version> from_str(const std::string& str) {
+        ConvertedValue<e_gsb_version> conv_value;
+        if (str == "none")
+            conv_value.set_value(e_gsb_version::NOT_CRR);
+        else if (str == "1")
+            conv_value.set_value(e_gsb_version::GSB_V1);
+        else if (str == "2")
+            conv_value.set_value(e_gsb_version::GSB_V2);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_gsb_version (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_gsb_version val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_gsb_version::NOT_CRR)
+            conv_value.set_value("none");
+        else if (val == e_gsb_version::GSB_V1)
+            conv_value.set_value("1");
+        else if (val == e_gsb_version::GSB_V2)
+            conv_value.set_value("2");
+        else {
+            std::stringstream msg;
+            msg << "Unrecognized e_gsb_version value: " << static_cast<int>(val);
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "1", "2"};
+    }
+};
+
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -1583,7 +1626,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.show_graphics, "--disp")
-        .help("Enable or disable interactive graphics")
+        .help(
+            "Enable or disable interactive graphics."
+            " When 'off' and QT_QPA_PLATFORM is not already set, VPR sets"
+            " QT_QPA_PLATFORM=offscreen so Qt does not try to connect to"
+            " an X11/Wayland display. Offscreen means no interactive window"
+            " is opened, but graphics are still rendered, so scripted output"
+            " (e.g. --save_graphics and --graphics_commands) still works."
+            " Note that the offscreen platform typically disables the RHI"
+            " (GPU) renderer; rendering falls back to the QPainter (immediate)"
+            " path. To override, set QT_QPA_PLATFORM in the environment before"
+            " invoking VPR.")
         .default_value("off");
 
     gfx_grp.add_argument(args.GraphPause, "--auto")
@@ -1598,6 +1651,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
         .help("Save all graphical contents to PDF files")
         .default_value("off");
+
+    gfx_grp.add_argument(args.graphics_renderer, "--renderer")
+        .help(
+            "Select the rendering backend used by the graphics window.\n"
+            "   * rhi:       GPU hardware rendering. Gives the highest\n"
+            "                performance but requires a GPU (uses VRAM),\n"
+            "                and uses the most RAM.\n"
+            "   * deferred:  SW renderer (no GPU). Like 'immediate' but\n"
+            "                batches draw calls, giving the next highest\n"
+            "                performance at the cost of more RAM.\n"
+            "   * immediate: SW renderer (no GPU). The most compatible path\n"
+            "                (CPU-only QPainter, no batching); lowest\n"
+            "                performance and lowest memory use.")
+        .default_value("rhi")
+        .choices({"immediate", "deferred", "rhi"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
@@ -1680,6 +1749,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " 'auto' uses the smallest device which satisfies the circuit's resource requirements.")
         .metavar("DEVICE_NAME")
         .default_value("auto");
+
+    gen_grp.add_argument<int>(args.device_width, "--device_width")
+        .help("When --device is 'auto', use a fixed grid width instead of auto-sizing."
+              " Grid height is derived from the architecture aspect ratio.")
+        .default_value("0");
 
     gen_grp.add_argument<size_t>(args.num_workers, "--num_workers", "-j")
         .help(
@@ -2128,6 +2202,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.appack_inter_die_gain_multiplier, "--appack_inter_die_gain_multiplier")
+        .help(
+            "Multiplier applied to APPack candidate gains when the candidate's "
+            "flat placement location is on a different die than the current "
+            "cluster location in an interposer-based architecture. This does "
+            "not apply to candidates on a different layer in a 3D architecture "
+            "without interposer cuts.")
+        .default_value("0.1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "
@@ -2303,6 +2387,23 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               "For now, `--memoize_cluster_packings` is unsupported if\n"
               "`--ap_full_legalizer` is set to `flat-recon`, and will be ignored.\n")
         .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument<bool, ParseOnOff>(args.cluster_router_hot_start, "--cluster_router_hot_start")
+        .help("Enables hot-starting of the intra-cluster router during packing.\n"
+              "\n"
+              "When enabled, the router seeds each new routing attempt with the\n"
+              "route trees from the previous successful route. Nets whose terminals\n"
+              "are unchanged and whose route trees are still valid under the current\n"
+              "mode assignments are committed before pathfinder begins, allowing them\n"
+              "to be skipped in the first iteration. This can reduce router runtime\n"
+              "when many molecules are tried and rejected, since the cluster returns\n"
+              "to a known-good state without re-routing nets that did not change.\n"
+              "\n"
+              "Enabling this option should not significantly affect circuit quality\n"
+              "metrics like routed wirelength or critical path delay, though minor\n"
+              "variations are possible.\n")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
@@ -2660,20 +2761,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_interposer_cost_factor, "--place_interposer_cost_factor")
         .help("Factor to scale the interposer cost when calculating the total cost.")
-        .default_value("0.0")
+        .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_interposer_cong_cost_factor, "--place_interposer_cong_cost_factor")
         .help("Weighting factor for interposer congestion cost during placement. "
               "Higher values prioritize avoiding interposer congestion over other placement costs. "
               "When set to zero, interposer congestion modeling and optimization is disabled in the placement stage.")
-        .default_value("0.0")
+        .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_interposer_cong_threshold, "--place_interposer_cong_threshold")
         .help("Penalizes placements whose average interposer congestion exceeds this threshold. "
               "Higher values reduce the likelihood of a penalty; very large values effectively disable threshold-based penalization.")
-        .default_value("0.0")
+        .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
@@ -2951,7 +3052,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             ""
             "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do"
             " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing."
-            " This option helps router convergence for such architectures.")
+            " This option helps router convergence for such architectures."
+            " Note that this option only affects routing when the flat router (--flat_routing on) is used.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3415,16 +3517,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    crr_grp.add_argument<bool, ParseOnOff>(args.preserve_input_pin_connections, "--preserve_input_pin_connections")
-        .help("If it set to on, the input pin connections will be generated by the default flow and not from the CRR template")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    crr_grp.add_argument<bool, ParseOnOff>(args.preserve_output_pin_connections, "--preserve_output_pin_connections")
-        .help("If it set to on, the output pin connections will be generated by the default flow and not from the CRR template")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     crr_grp.add_argument<bool, ParseOnOff>(args.annotated_rr_graph, "--annotated_rr_graph")
         .help("Whether the generated CRR should be annotated with delay")
         .default_value("off")
@@ -3438,6 +3530,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
         .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
         .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<e_gsb_version, ParseGsbVersion>(args.gsb_version, "--gsb_version")
+        .help("Specifies which GSB version should be used for CRR switch block templates. Valid values are 1 or 2. Defaults to 1 when --sb_maps is set, otherwise no GSB version is assumed.")
+        .default_value("none")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");

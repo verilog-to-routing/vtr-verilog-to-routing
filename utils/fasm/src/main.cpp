@@ -6,7 +6,6 @@
 using namespace std;
 
 #include "vtr_error.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 
 #include "tatum/error.hpp"
@@ -16,9 +15,6 @@ using namespace std;
 #include "vpr_signal_handler.h"
 
 #include "globals.h"
-
-#include "net_delay.h"
-#include "RoutingDelayCalculator.h"
 
 #include "fasm.h"
 

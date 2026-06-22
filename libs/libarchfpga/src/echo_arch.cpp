@@ -336,7 +336,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
 }
 
 static void print_model(FILE* echo, const t_model& model) {
-    fprintf(echo, "Model: \"%s\"\n", model.name);
+    fprintf(echo, "Model: \"%s\"\n", model.name.c_str());
     t_model_ports* input_model_port = model.inputs;
     while (input_model_port) {
         fprintf(echo, "\tInput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
@@ -351,12 +351,9 @@ static void print_model(FILE* echo, const t_model& model) {
                 output_model_port->min_size);
         output_model_port = output_model_port->next;
     }
-    vtr::t_linked_vptr* cur_vptr = model.pb_types;
     int i = 0;
-    while (cur_vptr != nullptr) {
-        fprintf(echo, "\tpb_type %d: \"%s\"\n", i,
-                ((t_pb_type*)cur_vptr->data_vptr)->name);
-        cur_vptr = cur_vptr->next;
+    for (const t_pb_type* model_pb_type : model.pb_types) {
+        fprintf(echo, "\tpb_type %d: \"%s\"\n", i, model_pb_type->name);
         i++;
     }
 }

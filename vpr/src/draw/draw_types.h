@@ -180,8 +180,21 @@ struct PartialPlacement;
  * when running graphics commands.)
  */
 struct t_draw_state {
-    ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
+    /// @brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
+
+    /**
+     * @brief This enables level of detail drawing
+     * 
+     * (e.g. stop drawing RR nodes, dynamically reduce number of block internals
+     *  and critical path delays when zoomed out).
+     * 
+     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
+     */
+    bool enable_decluttering = true;
+
+    ///@brief This dynamically sets whether to stop drawing RR nodes based on the current zoom level.
+    bool declutter_rr = false;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;
@@ -298,6 +311,23 @@ struct t_draw_state {
     bool save_graphics = false;
 
     std::string graphics_commands;
+
+    ///@brief Tokenized form of `graphics_commands` (used for graphics
+    /// scripting); one inner vector per `;`-separated command. Built lazily by
+    /// run_graphics_commands on the first call (when this vector is still
+    /// empty); `graphics_commands` is set once at init and never mutated, so a
+    /// single parse is sufficient.
+    std::vector<std::vector<std::string>> parsed_graphics_cmds;
+
+    ///@brief Index of the next command to run in `parsed_graphics_cmds` (an
+    /// index into the outer `parsed_graphics_cmds` vector, i.e. which
+    /// `;`-separated command is next). Persists across run_graphics_commands()
+    /// invocations so that `wait_for_stage` barriers can split a script across
+    /// multiple update_screen() calls.
+    size_t graphics_cmd_index = 0;
+
+    ///@brief Rendering backend: "immediate", "deferred", or "rhi"
+    std::string renderer_type = "rhi";
 
     ///@brief If we should pause for user interaction (requested by user)
     bool forced_pause = false;

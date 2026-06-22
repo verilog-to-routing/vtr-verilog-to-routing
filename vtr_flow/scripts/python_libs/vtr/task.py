@@ -58,6 +58,9 @@ class TaskConfig:
         additional_files=None,
         additional_files_list_add=None,
         circuit_constraint_list_add=None,
+        testbench_dir=None,
+        testbench_file=None,
+        flow_script=None,
     ):
         self.task_name = task_name
         self.config_dir = config_dir
@@ -87,6 +90,10 @@ class TaskConfig:
         self.circuit_constraints = parse_circuit_constraint_list(
             circuit_constraint_list_add, self.circuits, self.archs
         )
+        # testbench_dir falls back to circuits_dir if not explicitly set
+        self.testbench_dir = testbench_dir if testbench_dir is not None else circuits_dir
+        self.testbench_file = testbench_file
+        self.flow_script = flow_script
 
 
 # pylint: enable=too-few-public-methods
@@ -109,6 +116,7 @@ class Job:
         parse_command,
         second_parse_command,
         qor_parse_command,
+        flow_script=None,
     ):
         self._task_name = task_name
         self._arch = arch
@@ -120,6 +128,7 @@ class Job:
         self._second_parse_command = second_parse_command
         self._qor_parse_command = qor_parse_command
         self._work_dir = work_dir
+        self._flow_script = flow_script
 
     def task_name(self):
         """
@@ -181,6 +190,12 @@ class Job:
         """
         return self._qor_parse_command
 
+    def flow_script(self):
+        """
+        return the flow script override for this job, or None to use the default
+        """
+        return self._flow_script
+
     def work_dir(self, run_dir: str) -> str:
         """
         return the work directory of the job
@@ -217,6 +232,9 @@ def load_task_config(config_file) -> TaskConfig:
             "qor_parse_file",
             "cmos_tech_behavior",
             "pad_file",
+            "testbench_dir",
+            "testbench_file",
+            "flow_script",
         ]
     )
 
@@ -325,10 +343,13 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
         [
             "arch",
             "device",
+            "device_width",
             "constraints",
             "route_chan_width",
             "read_flat_place",
             "net_file",
+            "sdc_file",
+            "testbench",
         ]
     )
 
@@ -375,6 +396,10 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
             raise VtrError(f'Circuit "{circuit}" cannot be constrained more than once')
         # Add the constraint for this circuit
         res_circuit_constraints[circuit][constr_key] = constr_val
+
+    for circuit, constraints in res_circuit_constraints.items():
+        if constraints["device"] is not None and constraints["device_width"] is not None:
+            raise VtrError(f'Circuit "{circuit}" cannot constrain both "device" and "device_width"')
 
     return res_circuit_constraints
 
@@ -662,8 +687,7 @@ def create_job(
 
     # remove any address-related characters that might be in the param_string
     # To avoid creating invalid URL path
-    path_str = "../"
-    if path_str in param_string:
+    if "../" in param_string:
         param_string = param_string.replace("../", "")
         param_string = param_string.replace("-", "")
         circuit_2 = circuit.replace(".blif", "")
@@ -726,6 +750,12 @@ def create_job(
     current_cmd = cmd.copy()
     current_cmd += ["-temp_dir", run_dir + "/{}".format(param_string)]
 
+    # Resolve testbench: per-circuit constraint takes priority over task default.
+    testbench_file = config.circuit_constraints[circuit]["testbench"] or config.testbench_file
+    if testbench_file:
+        abs_testbench = resolve_vtr_source_file(config, testbench_file, config.testbench_dir)
+        current_cmd += ["-testbench", abs_testbench]
+
     if getattr(args, "use_previous", None):
         for prev_run, [extension, option] in args.use_previous:
             prev_run_dir = get_existing_run_dir(find_task_dir(config, args.alt_tasks_dir), prev_run)
@@ -751,6 +781,7 @@ def create_job(
         current_parse_cmd,
         current_second_parse_cmd,
         current_qor_parse_command,
+        flow_script=config.flow_script,
     )
 
 
@@ -785,9 +816,12 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     Apply the circuit constraints to the command line. If the circuit is not
     constrained for any key, this method will not do anything.
     """
-    # Check if this circuit is constrained to a specific device.
+    # Check if this circuit is constrained to a specific device or device width.
     constrained_device = config.circuit_constraints[circuit]["device"]
-    if constrained_device is not None:
+    constrained_device_width = config.circuit_constraints[circuit]["device_width"]
+    if constrained_device_width is not None:
+        cmd += ["--device", "auto", "--device_width", constrained_device_width]
+    elif constrained_device is not None:
         cmd += ["--device", constrained_device]
     # Check if the circuit has constrained atom locations.
     circuit_vpr_constraints = config.circuit_constraints[circuit]["constraints"]
@@ -805,6 +839,10 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     net_file = config.circuit_constraints[circuit]["net_file"]
     if net_file is not None:
         cmd += ["--net_file", net_file]
+    # Check if the circuit has a specific SDC file.
+    sdc_file = config.circuit_constraints[circuit]["sdc_file"]
+    if sdc_file is not None:
+        cmd += ["-sdc_file", resolve_vtr_source_file(config, sdc_file)]
 
 
 def resolve_vtr_source_file(config, filename, base_dir=""):
