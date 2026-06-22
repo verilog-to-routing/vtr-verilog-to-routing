@@ -1,5 +1,9 @@
 #pragma once
 
+#include <queue>
+#include <unordered_set>
+#include <utility>
+
 #include "netlist_fwd.h"
 #include "vtr_assert.h"
 
@@ -55,6 +59,23 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
             AtomPinId atom_sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
             VTR_ASSERT_SAFE(atom_sink_pin.is_valid());
             VTR_ASSERT_SAFE(netlist_.pin_type(atom_sink_pin) == PinType::SINK);
+
+            // If the source and sink atoms belong to the same molecule they will
+            // be packed into the same cluster, so the inter-cluster delay is a
+            // significant overestimate. Use a more accurate intra-cluster delay
+            // derived from the pb_graph hierarchy instead.
+            AtomPinId atom_src_pin = netlist_lookup_.tnode_atom_pin(src_node);
+            if (atom_src_pin.is_valid()) {
+                AtomBlockId src_blk = netlist_.pin_block(atom_src_pin);
+                AtomBlockId sink_blk = netlist_.pin_block(atom_sink_pin);
+
+                PackMoleculeId src_mol = prepacker_.get_atom_molecule(src_blk);
+                PackMoleculeId sink_mol = prepacker_.get_atom_molecule(sink_blk);
+
+                if (src_mol == sink_mol) {
+                    return calc_intra_molecule_delay(atom_src_pin, atom_sink_pin);
+                }
+            }
 
             // External net delay
             return tatum::Time(timing_arc_delays_[atom_sink_pin]);
@@ -160,6 +181,50 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         VTR_ASSERT(gpin);
 
         return gpin;
+    }
+
+    tatum::Time calc_intra_molecule_delay(AtomPinId src_pin, AtomPinId sink_pin) const {
+        const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
+        const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
+
+        float delay = find_pb_graph_path_delay(src_gpin, sink_gpin);
+
+        // If a valid path was found through the pb_graph hierarchy, use it.
+        // Otherwise fall back to 0: still correct since intra-cluster delay
+        // is always less than the inter-cluster estimate.
+        return tatum::Time(delay >= 0.0f ? delay : 0.0f);
+    }
+
+    // BFS through pb_graph output_edges to find the accumulated delay_max
+    // from src to sink. Returns -1.0f if no path exists.
+    float find_pb_graph_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* sink) const {
+        if (src == nullptr || sink == nullptr) return -1.0f;
+        if (src == sink) return 0.0f;
+
+        std::queue<std::pair<const t_pb_graph_pin*, float>> queue;
+        std::unordered_set<const t_pb_graph_pin*> visited;
+
+        queue.push({src, 0.0f});
+        visited.insert(src);
+
+        while (!queue.empty()) {
+            auto [cur_pin, cur_delay] = queue.front();
+            queue.pop();
+
+            for (const t_pb_graph_edge* edge : cur_pin->output_edges) {
+                for (int op = 0; op < edge->num_output_pins; ++op) {
+                    const t_pb_graph_pin* next = edge->output_pins[op];
+                    if (next == sink) {
+                        return cur_delay + edge->delay_max;
+                    }
+                    if (visited.count(next) == 0) {
+                        visited.insert(next);
+                        queue.push({next, cur_delay + edge->delay_max});
+                    }
+                }
+            }
+        }
+        return -1.0f;
     }
 
     const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId io_pin) const {
