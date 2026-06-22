@@ -1,0 +1,39 @@
+##############################################
+# Configuration for vtr_reg_gui / gui_set_nets
+#
+# Purpose
+# -------
+# Regression guard that the graphics-command parser still accepts
+# `set_nets <0|1>` and `exit 0` and that VPR exits cleanly after
+# executing them. This task does NOT assert that the rendered
+# output is visually different — DEF-009 (state setters inert
+# under --disp off) makes that impossible today; that aspect is
+# tracked in vpr_gui_defects_discovered.rst. This task is a
+# regression guard against future graphics_command parser breakage.
+#
+# R7 mitigation: -start vpr (see gui_disp_off_smoke/config).
+# Offscreen Qt: caller exports QT_QPA_PLATFORM=offscreen.
+##############################################
+
+circuits_dir=benchmarks/microbenchmarks
+archs_dir=arch/timing
+
+circuit_list_add=mult_4x4.blif
+
+arch_list_add=k6_N10_40nm.xml
+
+parse_file=vpr_standard.txt
+qor_parse_file=qor_standard.txt
+pass_requirements_file=pass_requirements.txt
+
+# script_params_common quoting:
+#   - The whole value is one shell word as far as the task framework
+#     is concerned; --graphics_commands "..." then becomes one
+#     argument to vpr because run_vtr_flow.py uses shlex when
+#     building argv. S0.1 verified the embedded semicolon survives
+#     the quoting pipeline.
+# --route_chan_width 100 : `exit 0` in graphics_commands terminates vpr
+# early, so the binary search for minimum channel width never
+# completes; pinning a fixed channel width skips that search and
+# lets vpr exit cleanly during a single routing pass instead.
+script_params_common=-start vpr -track_memory_usage false --pack --place --route --route_chan_width 100 --disp off --graphics_commands "set_nets 1; exit 0"

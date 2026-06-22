@@ -10,6 +10,7 @@ namespace {
 
 static constexpr const char kArchFile[] = "test_post_verilog_arch.xml";
 static constexpr const char kCircuitFile[] = "unconnected.eblif";
+static constexpr const char kPackedNetlistFile[] = "unconnected.net";
 
 void do_vpr_flow(const char* input_unc_opt, const char* output_unc_opt) {
     // Minimal setup
@@ -22,6 +23,10 @@ void do_vpr_flow(const char* input_unc_opt, const char* output_unc_opt) {
         "test_vpr",
         kArchFile,
         kCircuitFile,
+        "--net_file", kPackedNetlistFile,
+        "--place",
+        "--route",
+        "--analysis",
         "--route_chan_width", "100",
         "--gen_post_synthesis_netlist", "on",
         "--post_synth_netlist_unconn_inputs", input_unc_opt,

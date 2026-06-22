@@ -617,8 +617,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
             ezgl::point2d start = atom_pin_draw_coord(net_driver);
             ezgl::point2d end = atom_pin_draw_coord(ipin);
             g->draw_line(start, end);
-            draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-            draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
         }
 
         for (AtomPinId opin : atom_nl.block_output_pins(blk)) {
@@ -636,8 +636,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
                 ezgl::point2d start = atom_pin_draw_coord(opin);
                 ezgl::point2d end = atom_pin_draw_coord(net_sink);
                 g->draw_line(start, end);
-                draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-                draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
             }
         }
     }
@@ -881,7 +881,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             // get the bbox for this child
             const ezgl::rectangle& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
-            ezgl::renderer* g = application.get_renderer();
+            ezgl::renderer* g = application->get_renderer();
             // If child block is being used, check if it intersects. Check also if it is visible (drawn) on screen,
             // because otherwise it would be unavailable for selection.
             if (child_pb->name != nullptr && bbox.contains(local_pt) && large_enough_to_draw(bbox, g)) {

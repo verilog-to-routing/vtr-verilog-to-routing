@@ -12,6 +12,12 @@ bin/
 CMakeCache.txt
 CMakeFiles
 build
+build_cov
+
+#
+# Repo-local Qt6 SDK provisioned by dev/ensure_qt6_sdk.sh
+#
+/qt6/
 
 #
 #VTR Flow/Tasks
@@ -73,6 +79,7 @@ vtr_flow/benchmarks/symbiflow/sdc/*.sdc
 # Hecate 2.5D and 3D architecture family
 # These are auto generated from a few baseline architectures
 vtr_flow/arch/multi_die/hecate/interposer/hecate_25D
+vtr_flow/arch/multi_die/hecate/3d/hecate_3D
 
 #
 # Cloud9 Directory
@@ -165,3 +172,6 @@ cmake-build-release
 #
 compile_commands.json
 .clangd
+
+vpr/test/gui/golden/tmp/*
+

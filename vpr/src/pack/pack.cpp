@@ -3,6 +3,8 @@
 
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
+#include "device_grid.h"
+#include "physical_types.h"
 #include "setup_grid.h"
 #include "appack_context.h"
 #include "attraction_groups.h"
@@ -234,6 +236,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
+              const t_vpr_setup& vpr_setup,
               const RamMapper& ram_mapper) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -340,7 +343,8 @@ bool try_pack(const t_packer_opts& packer_opts,
                               is_clock,
                               is_global,
                               pre_cluster_timing_manager,
-                              appack_ctx);
+                              appack_ctx,
+                              vpr_setup);
 
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(true);
 
@@ -368,7 +372,8 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                    num_used_type_instances,
                                                    block_type_utils,
                                                    packer_opts.target_device_utilization,
-                                                   packer_opts.device_layout);
+                                                   packer_opts.device_layout,
+                                                   vpr_setup.device_width);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
@@ -547,7 +552,7 @@ bool try_pack(const t_packer_opts& packer_opts,
             //No suitable device found
             std::string resource_reqs;
             std::string resource_avail;
-            auto& grid = g_vpr_ctx.device().grid;
+            DeviceGrid& grid = g_vpr_ctx.mutable_device().grid;
             for (auto iter = num_used_type_instances.begin(); iter != num_used_type_instances.end(); ++iter) {
                 if (iter != num_used_type_instances.begin()) {
                     resource_reqs += ", ";
@@ -557,7 +562,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                 resource_reqs += iter->first->name + ": " + std::to_string(iter->second);
 
                 int num_instances = 0;
-                for (auto type : iter->first->equivalent_tiles)
+                for (const t_physical_tile_type_ptr type : iter->first->equivalent_tiles)
                     num_instances += grid.num_instances(type, -1);
 
                 resource_avail += iter->first->name + ": " + std::to_string(num_instances);
@@ -603,12 +608,12 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
 
     std::unordered_set<AtomNetId> is_clock;
 
-    /* Want to identify all the clock nets.  */
-    auto& atom_ctx = g_vpr_ctx.atom();
+    // Want to identify all the clock nets.
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
-    for (auto blk_id : atom_ctx.netlist().blocks()) {
-        for (auto pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
-            auto net_id = atom_ctx.netlist().pin_net(pin_id);
+    for (AtomBlockId blk_id : atom_ctx.netlist().blocks()) {
+        for (AtomPinId pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
+            AtomNetId net_id = atom_ctx.netlist().pin_net(pin_id);
             if (!is_clock.count(net_id)) {
                 is_clock.insert(net_id);
             }
@@ -622,11 +627,16 @@ bool try_size_device_grid(const t_arch& arch,
                           const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
                           std::map<t_logical_block_type_ptr, float>& type_util,
                           float target_device_utilization,
-                          const std::string& device_layout_name) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+                          const std::string& device_layout_name,
+                          size_t device_width) {
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
-    //Build the device
-    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
+    // Build the device
+    DeviceGrid grid = create_device_grid(device_layout_name,
+                                         arch.grid_layouts,
+                                         num_type_instances,
+                                         target_device_utilization,
+                                         device_width);
 
     report_device_grid_stats(grid);
 
@@ -634,7 +644,7 @@ bool try_size_device_grid(const t_arch& arch,
 
     float device_utilization = calculate_device_utilization(grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    for (const auto& type : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         if (is_empty_type(&type)) continue;
 
         auto itr = num_type_instances.find(&type);
@@ -644,7 +654,7 @@ bool try_size_device_grid(const t_arch& arch,
         float util = 0.;
 
         float num_total_instances = 0.;
-        for (const auto& equivalent_tile : type.equivalent_tiles) {
+        for (const t_physical_tile_type_ptr equivalent_tile : type.equivalent_tiles) {
             num_total_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
         }
 

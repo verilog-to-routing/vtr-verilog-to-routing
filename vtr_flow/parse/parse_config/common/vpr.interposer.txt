@@ -1,2 +1,12 @@
+#Interposer placement metrics
 init_num_nets_crossing_interposer;vpr.out;Initial number of nets crossing interposer cuts: (\d+)
 num_nets_crossing_interposer;vpr.out;Number of nets crossing interposer cuts: (\d+)
+
+#Interposer routing statistics (reported per cut; last cut wins if multiple cuts are printed)
+interposer_nets_crossing;vpr.out;\tNets crossing: (\d+)
+interposer_used_wires_crossing;vpr.out;\tUsed wires crossing: (\d+)
+interposer_nets_crossing_inc;vpr.out;\tNets crossing \(INC\): (\d+)
+interposer_nets_crossing_dec;vpr.out;\tNets crossing \(DEC\): (\d+)
+interposer_used_wires_crossing_inc;vpr.out;\tUsed wires crossing \(INC\): (\d+)
+interposer_used_wires_crossing_dec;vpr.out;\tUsed wires crossing \(DEC\): (\d+)
+interposer_used_wires_crossing_bidir;vpr.out;\tUsed wires crossing \(BIDIR\): (\d+)

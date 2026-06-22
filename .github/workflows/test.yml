@@ -32,13 +32,17 @@ concurrency:
 env:
   # default compiler for all non-compatibility tests
   MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
+  # install_apt_packages.sh installs the apt packages. Jobs that build the GUI
+  # additionally run dev/ensure_qt6_sdk.sh to provision a Qt6 SDK (>= the
+  # supported floor). CMake discovers Qt and bakes its location into the
+  # binaries, so no CMAKE_PREFIX_PATH or runtime Qt env is needed anywhere.
 
 jobs:
   BuildVTR:
     name: 'B: Building VTR Release'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -49,7 +53,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -83,7 +87,7 @@ jobs:
     name: 'B: Building VTR Release With Odin'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -100,7 +104,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install qtbase5-dev
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -138,7 +142,7 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: ${{ matrix.with_submodules }}
       # NOTE: We usually do not need sub-modules. We do not check sub-modules
@@ -192,7 +196,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
 
     - name: 'Run test suite verification'
@@ -208,7 +212,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -235,6 +239,210 @@ jobs:
         make test -j${{ steps.cpu-cores.outputs.count }}
 
 
+  # GUITests — Plan §7.9 — runs the full GUI test pyramid on ubuntu-24.04.
+  # Builds with -DVPR_USE_EZGL=on so the local and CI command lines match:
+  #
+  #     make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
+  GUITests:
+    name: 'T: GUI Tests (Layers 1+3+4+5)'
+    runs-on: ubuntu-24.04
+    steps:
+
+    - uses: actions/checkout@v7
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v3
+      id: cpu-cores
+
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.3
+
+    - name: Install dependencies
+      run: ./install_apt_packages.sh
+
+    # Cache the repo-local Qt6 SDK so aqt only downloads it on a cache miss
+    # (first run / when ensure_qt6_sdk.sh changes). On a hit, the next step is a
+    # near-instant no-op thanks to the script's idempotency check.
+    - name: Cache Qt6 SDK
+      uses: actions/cache@v5
+      with:
+        path: qt6
+        key: qt6-sdk-${{ runner.os }}-${{ hashFiles('dev/ensure_qt6_sdk.sh') }}
+
+    - name: Provision Qt6 SDK (>=6.9.3)
+      run: ./dev/ensure_qt6_sdk.sh
+
+    - name: Install GUI test dependencies
+      run: ./dev/install_gui_test_deps.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2.23
+      with:
+        key: ${{ github.job }}
+
+    # Plan §7.9 #4 — local and CI command lines identical. Top-level
+    # Makefile forwards `gui-tests` to the cmake-generated build dir.
+    - name: Build GUI test binaries
+      env:
+        BUILD_TYPE: release
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make CMAKE_PARAMS="-DVPR_USE_EZGL=on" -j${{ steps.cpu-cores.outputs.count }}
+
+    # Drives all four registered GUI ctest entries:
+    #   Layer 1 — test_vpr_gui_smoke      (headless P&R smoke, --disp off)
+    #   Layer 3 — test_vpr_gui            (Catch2 widget tree + S8 unit tests)
+    #   Layer 4 — test_vpr_gui_interactive (S6 mouse/key dispatch)
+    #   Layer 5 — test_vpr_gui_visual     (SSIM compare vs goldens)
+    - name: Run GUI Test Layers 1 + 3 + 4 + 5
+      run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on" gui-tests
+
+    # Plan §8.2 PR-merge exit criterion: `./run_reg_test.py vtr_reg_gui`
+    # must be green. Reuses the EZGL build above (vpr binary already
+    # produced) and exercises the four gui_* tasks defined under
+    # vtr_flow/tasks/regression_tests/vtr_reg_gui/.
+    - name: Run vtr_reg_gui regression suite
+      run: |
+        # run_reg_test.py needs the flow harness Python deps (prettytable,
+        # pandas, lxml, ...); install them into the setup-python environment.
+        pip install -r requirements.txt
+        ./run_reg_test.py vtr_reg_gui -show_failures
+
+    - name: Upload failure logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: gui-tests-failure-logs
+        path: |
+          build/vpr/test/gui/Testing/Temporary/
+          /tmp/tmp.*
+        if-no-files-found: ignore
+        retention-days: 7
+
+
+  # GUICoverage — Plan §7.9 #5 — Linux-only (gcov toolchain stable on
+  # Ubuntu; macOS uses xcrun llvm-cov gcov and isn't a stable CI target
+  # for coverage yet). Runs the same `make gui-coverage` target the
+  # local flow uses; the wrapper script swallows DEF-010 (visual
+  # regression) so gcovr always emits its report and the regression
+  # gate (35 % line / 22 % branch — see DEF-014) is what gates this job.
+  #
+  # DISABLED (if: false): this job is a separate debug + coverage-instrumented
+  # full rebuild of VTR in its own build tree (no ccache reuse from the release
+  # legs), so it takes ~1 hour per run — by far the most expensive job here for
+  # the weakest signal (a coarse coverage floor set below an already-low
+  # baseline). It is not upstream and nothing depends on it; the GUI is still
+  # functionally exercised by the GUITests job. To conserve CI resources we
+  # disable it rather than delete it. The `gui-coverage` make target remains for
+  # local/on-demand runs:
+  #   make CMAKE_PARAMS="-DVPR_USE_EZGL=on -DVTR_ENABLE_COVERAGE=on" gui-coverage
+  # Re-enable here (or move to the nightly workflow) if a per-PR coverage gate is
+  # wanted again.
+  GUICoverage:
+    name: 'T: GUI Coverage (Linux, gcovr regression gate)'
+    if: false
+    runs-on: ubuntu-24.04
+    needs: [GUITests]
+    steps:
+
+    - uses: actions/checkout@v7
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v3
+      id: cpu-cores
+
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.3
+
+    - name: Install dependencies
+      run: ./install_apt_packages.sh
+
+    # Cache the repo-local Qt6 SDK so aqt only downloads it on a cache miss
+    # (first run / when ensure_qt6_sdk.sh changes). On a hit, the next step is a
+    # near-instant no-op thanks to the script's idempotency check.
+    - name: Cache Qt6 SDK
+      uses: actions/cache@v5
+      with:
+        path: qt6
+        key: qt6-sdk-${{ runner.os }}-${{ hashFiles('dev/ensure_qt6_sdk.sh') }}
+
+    - name: Provision Qt6 SDK (>=6.9.3)
+      run: ./dev/ensure_qt6_sdk.sh
+
+    - name: Install GUI test dependencies
+      run: ./dev/install_gui_test_deps.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2.23
+      with:
+        key: ${{ github.job }}
+
+    # Coverage build is debug + -ftest-coverage and produces ~25-30 GB
+    # of .o/.gcno objects + final exes. The hosted runner image ships
+    # with only ~14 GB free on /, which is consumed before the final
+    # link of test_vpr_gui (observed: 'No space left on device' during
+    # ld). Free the unused tooling that ships with the image — Android
+    # SDK / .NET / Haskell / CodeQL / Swap together account for >20 GB.
+    - name: Free runner disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet \
+                    /usr/local/lib/android \
+                    /opt/ghc \
+                    /opt/hostedtoolcache/CodeQL \
+                    /usr/local/share/boost \
+                    "$AGENT_TOOLSDIRECTORY/CodeQL" \
+                    /opt/microsoft || true
+        sudo apt-get -y autoremove --purge azure-cli google-chrome-stable \
+                                            firefox powershell mono-devel \
+                                            'temurin-*-jdk' 'mongodb-*' || true
+        sudo apt-get clean
+        df -h /
+
+    # Coverage build — separate build/ tree so it does not poison
+    # ccache for the release legs.
+    - name: Build with coverage instrumentation
+      env:
+        BUILD_TYPE: debug
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make CMAKE_PARAMS="-DVPR_USE_EZGL=on -DVTR_ENABLE_COVERAGE=on" \
+             -j${{ steps.cpu-cores.outputs.count }}
+
+    - name: Run gui-coverage target (gcovr regression gate)
+      run: make CMAKE_PARAMS="-DVPR_USE_EZGL=on -DVTR_ENABLE_COVERAGE=on" gui-coverage
+
+    - name: Upload coverage HTML artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: gui-coverage-html
+        path: build/coverage_gui.html
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Upload coverage XML to Codecov
+      uses: codecov/codecov-action@v7
+      with:
+        files: build/coverage_gui.xml
+        flags: gui
+        fail_ci_if_error: false
+      continue-on-error: true
+
+    - name: Upload coverage failure logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: gui-coverage-failure-logs
+        path: |
+          build/coverage_gui.txt
+          build/vpr/test/gui/Testing/Temporary/
+        if-no-files-found: ignore
+        retention-days: 7
+
+
   # This test builds different variations of VTR (with different CMake Params)
   # and ensures that they can run the basic regression tests. This also ensures
   # that these build variations are warning clean.
@@ -251,7 +459,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -267,7 +475,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: 'ccache'
-      uses: hendrikmuhs/ccache-action@v1.2
+      uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}
 
@@ -402,7 +610,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -490,7 +698,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -569,7 +777,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -584,7 +792,7 @@ jobs:
       run: |
         pip install -r requirements.txt
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}-${{ matrix.suite }}
 
@@ -617,7 +825,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: 3.12.3
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'true'
 
@@ -657,7 +865,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -698,7 +906,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -743,7 +951,7 @@ jobs:
       CXX: ${{ matrix.CXX }}
     steps:
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -754,7 +962,7 @@ jobs:
     - name: Install dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}-${{ matrix.CC }}
 
@@ -774,7 +982,7 @@ jobs:
       CC: gcc-11
       CXX: g++-11
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
 
@@ -785,7 +993,7 @@ jobs:
     - name: Install Dependencies
       run: ./install_apt_packages.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - uses: hendrikmuhs/ccache-action@v1.2.23
       with:
         key: ${{ github.job }}-gcc-11
 
@@ -793,6 +1001,37 @@ jobs:
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off"
         BUILD_TYPE: release # Note: Found that release build caches way better than debug build for this test.
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+
+  ResoluteCompatibility:
+    name: 'Ubuntu Resolute - 26.04 Compatibility Test'
+    runs-on: ubuntu-26.04
+    needs: [BuildVTR]
+    env:
+      CC: gcc-15
+      CXX: g++-15
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v3
+      id: cpu-cores
+
+    - name: Install Dependencies
+      run: ./install_apt_packages.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2.23
+      with:
+        key: ${{ github.job }}-gcc-15
+
+    - name: Build
+      env:
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DCMAKE_COMPILE_WARNING_AS_ERROR=off -DVTR_IPO_BUILD=off"
+        BUILD_TYPE: release
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         make -j${{ steps.cpu-cores.outputs.count}}
@@ -826,7 +1065,7 @@ jobs:
       CC: ${{ matrix.config.cc }}
       CXX: ${{ matrix.config.cxx }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'true'
 
@@ -869,7 +1108,7 @@ jobs:
           ls /${{ matrix.config.prefix }}/lib/gcc/x86_64-w64-mingw32/*/adalib/libgnat.a
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ${{ runner.os }}-msys2-${{ github.job }}-${{ hashFiles('**/CMakeLists.txt', '**/Makefile') }}
           restore-keys: |
@@ -896,7 +1135,7 @@ jobs:
         config:
           - name: "Build Compatibility (MSVC, Windows 2025)"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'true'
 
@@ -939,13 +1178,13 @@ jobs:
           echo "CURL_PATH=$curlPath" >> $env:GITHUB_ENV
 
       - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@v1.13.0
       
       - name: Check MSVC Version
         run: cl
 
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ${{ runner.os }}-msvc-${{ github.sha }}
           restore-keys: ${{ runner.os }}-msvc-

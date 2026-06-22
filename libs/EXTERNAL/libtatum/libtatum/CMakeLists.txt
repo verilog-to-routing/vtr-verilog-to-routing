@@ -75,8 +75,8 @@ if (TATUM_USE_EXECUTION_ENGINE STREQUAL "tbb")
     message(STATUS "Tatum: will support parallel execution using '${TATUM_USE_EXECUTION_ENGINE}'")
 
     target_compile_definitions(libtatum PUBLIC TATUM_USE_TBB)
-    target_link_libraries(libtatum tbb)
-    target_link_libraries(libtatum ${TBB_tbbmalloc_proxy_LIBRARY}) #Use the scalable memory allocator
+    target_link_libraries(libtatum TBB::tbb)
+    target_link_libraries(libtatum TBB::tbbmalloc_proxy) #Use the scalable memory allocator
 
 elseif (TATUM_USE_EXECUTION_ENGINE STREQUAL "serial")
     #Nothing to do

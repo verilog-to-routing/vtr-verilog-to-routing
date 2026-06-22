@@ -5,11 +5,23 @@ Some architectures are already in the folders, but due to the large number of to
 architectures using the base architectures and parameters inside a csv file.
 
 ## How to generate the Hecate architectures
+
+### 2.5D interposer architectures
+
 Run the following command to generate the 2.5D Hecate architectures:
 
 ```bash
 cd interposer
 python generate_hecate_interposer_archs.py
+```
+
+### 3D switch-block architectures
+
+Run the following command to generate the 3D switch-block architecture variants:
+
+```bash
+cd 3d
+python generate_hecate_3d_sb_archs.py
 ```
 
 ### Interposer CSV and Generation Script
@@ -54,7 +66,40 @@ The 2.5D architectures explore various interposer configurations:
 
 ## 3. 3D Architectures
 
-<!-- TODO: Add details about 3D Architectures -->
+The 3D architectures use the same FPGA fabric described in Section 1 with switch-block inter-layer connectivity.
+Variants explore different pitches and fanin/fanouts:
+
+* **Inter-die Connectivity:** 3D switch-blocks.
+* **Architecture Variations:** The architectures differ in:
+  * **Pitch:** Lower pitch allows more inter-layer connections per block.
+  * **Directionality:** Bidirectional/unidirectional inter-layer links.
+  * **Fan-in/Fan-out:** The number of wires driving/being driven by each inter-layer connection.
+* **Architecture Naming Scheme:**
+  - `hecate_3d_sb_[variant_id]_fanin_[FANIN]_fanout_[FANOUT]_7nm.xml`
+
+
+### 3D CSV and Generation Script
+
+The 3D switch-block architecture variants are generated from `3d/hecate_3d_sb_connectivity.csv` and the base architecture
+`3d/hecate_3d_sb_10um_bidir_fanin_16_fanout_16_7nm.xml`. This file can also be used directly as the default Hecate 3D
+architecture without running the generator. Each CSV row describes one variant:
+
+* `variant_id`: output architecture identifier.
+* `pitch_um`: bump pitch in µm (5, 10, or 25).
+* `connectivity`: inter-die link directionality (`bidir` or `unidir`).
+* `fanin`: The number of wires that drive each inter-layer connection.
+* `fanout`: The number of wires that are driven by each inter-layer connection.
+* `clb_num`, `dsp_num`, `mem_num`: inter-layer connection counts per block type and per
+  direction (`L_UP` and `L_DOWN`). Each value times two must be an integer.
+
+`3d/generate_hecate_3d_sb_archs.py` reads each CSV row, reloads the template XML, and replaces the
+`scatter_gather_list` section with the variant-specific mux names, directionality, and connection
+counts. Generated files are written to `3d/hecate_3D/`.
+
+## 4. 2D Architecture
+
+A 2D FPGA fabric (same as 2.5D but without interposer cuts) is available in the 2d folder for reference and comparison
+with 2.5D and 3D architectures.
 
 ---
 
