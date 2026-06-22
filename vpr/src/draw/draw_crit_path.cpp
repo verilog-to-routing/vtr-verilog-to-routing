@@ -2,6 +2,7 @@
 
 #include <numbers>
 #include <sstream>
+#include <iostream>
 
 #include "draw_crit_path.h"
 #include "draw.h"
@@ -11,10 +12,10 @@
 #include "globals.h"
 #include "vpr_utils.h"
 
-static constexpr int PERPENDICULAR_OFFSET = 13;
 static constexpr int LABEL_WIDTH = 40;
 static constexpr int LABEL_HEIGHT = 13;
-static constexpr double EDGE_OFFSET_PERCENT = 0.05;
+static constexpr int PERPENDICULAR_OFFSET = 12;
+static constexpr double EDGE_OFFSET_PERCENT = 0.1;
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
@@ -217,6 +218,7 @@ void DelayLabelDrawer::calculate_and_draw_labels(const tatum::TimingPath& path, 
 void DelayLabelDrawer::update_basic_label_drawing_info(const tatum::TimingPath& path, ezgl::renderer* g) {
     int num_edges = int(path.data_arrival_path().elements().size()) - 1;
     label_drawing_info.resize(num_edges);
+    edge_length_info.resize(num_edges);
 
     tatum::NodeId prev_node;
     float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
@@ -228,6 +230,8 @@ void DelayLabelDrawer::update_basic_label_drawing_info(const tatum::TimingPath& 
 
         if (prev_node) {
             t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
+            t_edge_length_info& length_info = edge_length_info[edge_idx];
+            length_info.edge_idx = edge_idx;
 
             drawing_info.delay_time = arr_time - prev_arr_time;
 
@@ -259,7 +263,10 @@ void DelayLabelDrawer::update_basic_label_drawing_info(const tatum::TimingPath& 
             ezgl::rectangle edge_bbox({start.x, min_y}, {end.x, max_y});
             
             ezgl::rectangle screen_coords = g->world_to_screen(edge_bbox);
-            drawing_info.edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
+            double edge_length = std::sqrt(std::pow(screen_coords.width(), 2) + std::pow(screen_coords.height(), 2));
+            drawing_info.edge_length = edge_length;
+            length_info.edge_length = edge_length;
+            
             
             double rotation_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
             drawing_info.rotation_angle = rotation_angle;
@@ -282,7 +289,8 @@ void DelayLabelDrawer::update_basic_label_drawing_info(const tatum::TimingPath& 
 }
 
 void DelayLabelDrawer::update_least_cluttering_label_pos() {
-    std::vector<e_label_relative_pos> label_pos_candidates = {e_label_relative_pos::LEFT_ABOVE,
+    std::vector<e_label_relative_pos> label_pos_candidates = {e_label_relative_pos::CENTER_ABOVE,
+                                                                e_label_relative_pos::LEFT_ABOVE,
                                                                 e_label_relative_pos::RIGHT_ABOVE,
                                                                 e_label_relative_pos::CENTER_BELOW,
                                                                 e_label_relative_pos::LEFT_BELOW,
@@ -292,18 +300,17 @@ void DelayLabelDrawer::update_least_cluttering_label_pos() {
                                                                 e_label_relative_pos::FAR_LEFT_BELOW,
                                                                 e_label_relative_pos::FAR_RIGHT_BELOW};
 
-    update_initial_num_overlaps();
-    std::stable_sort(initial_overlap_info.begin(), initial_overlap_info.end(),
-                [](const t_label_overlap_info& label_a, const t_label_overlap_info& label_b) {
-                    return label_a.num_overlaps < label_b.num_overlaps;
-                });
+    std::sort(edge_length_info.begin(), edge_length_info.end(), [](const t_edge_length_info& edge_a, const t_edge_length_info& edge_b) {
+        return edge_a.edge_length > edge_b.edge_length;
+    });
 
-    for(const t_label_overlap_info& label_overlap_info : initial_overlap_info) {
-        if (label_overlap_info.num_overlaps == 0) {
+    for(t_edge_length_info& length_info : edge_length_info) {
+        std::size_t edge_idx = length_info.edge_idx;
+        t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
+
+        if(drawing_info.hide_label) {
             continue;
         }
-        std::size_t edge_idx = label_overlap_info.edge_idx;
-        t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
 
         bool candidate_with_no_overlap_found = false;    
         for(const e_label_relative_pos& pos_candidate : label_pos_candidates) {
@@ -334,36 +341,12 @@ void DelayLabelDrawer::update_least_cluttering_label_pos() {
     }
 }
 
-void DelayLabelDrawer::update_initial_num_overlaps() {
-    for (std::size_t edge_idx = 0; edge_idx < label_drawing_info.size(); edge_idx++) {
-        const t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
-
-        if (drawing_info.hide_label) {
-            continue;
-        }
-
-        int num_of_overlaps = 0;
-        for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < label_drawing_info.size(); edge_idx_to_compare++) {
-            const t_label_drawing_info& drawing_info_to_compare = label_drawing_info[edge_idx_to_compare];
-
-            if (edge_idx == edge_idx_to_compare || drawing_info_to_compare.hide_label) {
-                continue;
-            }
-            
-            if (check_if_bboxes_overlap(drawing_info.label_bbox, drawing_info_to_compare.label_bbox)) {
-                num_of_overlaps++;
-            }
-        }
-        initial_overlap_info.push_back(t_label_overlap_info{edge_idx, num_of_overlaps});
-    }
-}
-
 void DelayLabelDrawer::update_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos) {
     double edge_length = label_to_update.edge_length;
     double edge_offset_unit = edge_length * EDGE_OFFSET_PERCENT;
 
-    if (edge_offset_unit > 30) {
-        edge_offset_unit = 30;
+    if (edge_offset_unit > 40) {
+        edge_offset_unit = 40;
     }
 
     int perpendicular_offset = 0;
