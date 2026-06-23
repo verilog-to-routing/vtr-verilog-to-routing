@@ -217,7 +217,7 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
             for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
                 int cut_y = layer_h_cuts[i_cut];
                 if (cut_y >= bb.ymin && cut_y < bb.ymax) {
-                    bb_height_factor += std::abs((double)g_vpr_ctx.device().horz_interposer_cut_min_seg_length[layer][i_cut] - (double)(bb.ymax - bb.ymin)) * inv_device_grid_height_;
+                    bb_height_factor += std::abs(g_vpr_ctx.device().horz_interposer_cut_min_seg_length[layer][i_cut] - (bb.ymax - bb.ymin + 1)) * inv_device_grid_height_;
                 }
             }
 
@@ -225,7 +225,7 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
             for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
                 int cut_x = layer_v_cuts[i_cut];
                 if (cut_x >= bb.xmin && cut_x < bb.xmax) {
-                    bb_width_factor += std::abs((double)g_vpr_ctx.device().vert_interposer_cut_min_seg_length[layer][i_cut] - (double)(bb.xmax - bb.xmin)) * inv_device_grid_width_;
+                    bb_width_factor += std::abs(g_vpr_ctx.device().vert_interposer_cut_min_seg_length[layer][i_cut] - (bb.xmax - bb.xmin + 1)) * inv_device_grid_width_;
                 }
             }
         }
