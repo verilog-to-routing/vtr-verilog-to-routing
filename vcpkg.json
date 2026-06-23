@@ -6,6 +6,7 @@
     "readline",
     "openssl",
     "pkgconf",
-    "capnproto"
+    "capnproto",
+    "eigen3"
   ]
 }
