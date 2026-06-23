@@ -70,6 +70,18 @@ class circular_buffer {
         ///@brief Default constructor creates a singular iterator.
         constexpr basic_iterator() noexcept = default;
 
+        ///@brief Copy constructor.
+        constexpr basic_iterator(const basic_iterator&) noexcept = default;
+
+        ///@brief Copy assignment operator.
+        constexpr basic_iterator& operator=(const basic_iterator&) noexcept = default;
+
+        ///@brief Move constructor.
+        constexpr basic_iterator(basic_iterator&&) noexcept = default;
+
+        ///@brief Move assignment operator.
+        constexpr basic_iterator& operator=(basic_iterator&&) noexcept = default;
+
         ///@brief Converts a mutable iterator to a const iterator.
         constexpr basic_iterator(const basic_iterator<false>& other) noexcept
             requires(IsConst)
