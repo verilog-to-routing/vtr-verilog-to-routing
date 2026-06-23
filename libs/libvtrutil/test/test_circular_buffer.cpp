@@ -82,6 +82,44 @@ TEST_CASE("Circular buffer supports wrapped iteration and popping", "[vtr_circul
     REQUIRE(buffer.capacity() == 3);
 }
 
+TEST_CASE("Circular buffer supports random-access iterators after wrapping", "[vtr_circular_buffer]") {
+    vtr::circular_buffer<int> buffer(4, {1, 2, 3, 4});
+
+    buffer.push_back(5);
+    buffer.push_back(6);
+
+    REQUIRE(to_vector(buffer) == std::vector<int>{3, 4, 5, 6});
+
+    auto begin = buffer.begin();
+    auto end = buffer.end();
+
+    REQUIRE(end - begin == 4);
+    REQUIRE(*(begin + 0) == 3);
+    REQUIRE(*(begin + 1) == 4);
+    REQUIRE(*(begin + 2) == 5);
+    REQUIRE(*(begin + 3) == 6);
+    REQUIRE(*(end - 1) == 6);
+    REQUIRE(end[-2] == 5);
+
+    REQUIRE(begin[0] == 3);
+    REQUIRE(begin[2] == 5);
+    REQUIRE(2 + begin == begin + 2);
+    REQUIRE(begin + 4 == end);
+    REQUIRE(begin < end);
+
+    const vtr::circular_buffer<int>& const_buffer = buffer;
+    auto const_begin = const_buffer.begin();
+    auto const_end = const_buffer.end();
+
+    REQUIRE(const_end - const_begin == 4);
+    REQUIRE(*(const_begin + 2) == 5);
+    REQUIRE(*(const_end - 1) == 6);
+
+    REQUIRE(const_buffer.rbegin()[0] == 6);
+    REQUIRE(const_buffer.rbegin()[1] == 5);
+    REQUIRE(const_buffer.rend() - const_buffer.rbegin() == 4);
+}
+
 TEST_CASE("Circular buffer checks bounds", "[vtr_circular_buffer]") {
     vtr::circular_buffer<int> buffer(2);
 
