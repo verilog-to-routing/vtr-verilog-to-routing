@@ -71,7 +71,7 @@ class InterposerCostHandler {
      */
     bool try_change_interposer_cost_model(double current_cost);
 
-    e_interposer_net_cost_type get_net_cost_type() const { return cost_type_; }
+    e_interposer_net_cost_type get_net_cost_type() const { return interposer_cost_type_; }
 
   private:
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
@@ -103,10 +103,10 @@ class InterposerCostHandler {
     /// Per-net interposer congestion cost (and temporary value during move evaluation).
     vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
 
-    e_interposer_net_cost_type cost_type_ = e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB;
+    e_interposer_net_cost_type interposer_cost_type_ = e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB;
 
     /// Current stage of interposet net cost when using two-stage cost mode
-    e_interposer_cost_stage cost_stage_ = e_interposer_cost_stage::FIRST;
+    e_interposer_cost_stage interposer_cost_stage_ = e_interposer_cost_stage::FIRST;
     /// Concrete interposer net cost type used during the first stage of two-stage mode.
     const e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type_;
     /// Concrete interposer net cost type used during the second stage of two-stage mode.
