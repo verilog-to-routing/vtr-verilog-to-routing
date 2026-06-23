@@ -53,8 +53,22 @@ class InterposerCostHandler {
     /// @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
     double compute_interposer_est_cong(bool compute_congestion_cost = true);
 
-    /// @brief Try switching to a more detailed interposer net cost model based on recent costs.
-    /// @return True if the interposer net cost model was changed.
+    /// @brief 
+    /// @return 
+
+
+
+    /**
+     * @brief Try switching to a more detailed interposer net cost model based on recent costs.
+     *
+     * This is done by keeping a history of the last 10 interposer costs given to this function
+     * with the current_cost argument. When the maximum deviation of the last 10 costs is
+     * less than interposer_net_cost_change_threshold_ (0.5% by default), the two stage interposer
+     * cost switches to the second stage cost. Only works for the two stage cost mode, is a NOP otherwise.
+     *
+     * @param current_cost Last interposer cost
+     * @return True if the interposer net cost model was changed.
+     */
     bool try_change_interposer_cost_model(double current_cost);
 
     e_interposer_net_cost_type get_net_cost_type() const { return cost_type_; }
