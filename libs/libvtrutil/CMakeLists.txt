@@ -151,4 +151,3 @@ add_test(NAME test_vtrutil
     COMMAND test_vtrutil
     --colour-mode ansi
     )
-            

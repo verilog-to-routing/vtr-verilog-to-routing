@@ -17,4 +17,6 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-track_memory_usage
+script_params_common=-track_memory_usage
+script_params_list_add =
+script_params_list_add = --pack --place --route --analysis

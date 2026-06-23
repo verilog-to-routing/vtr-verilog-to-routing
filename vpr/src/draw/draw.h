@@ -36,7 +36,7 @@
 #include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
-extern ezgl::application application;
+extern ezgl::application* application;
 
 #endif /* NO_GRAPHICS */
 
@@ -44,6 +44,21 @@ void update_screen(ScreenUpdatePriority priority,
                    const char* msg,
                    e_pic_type pic_on_screen_val,
                    std::shared_ptr<const SetupTimingInfo> timing_info);
+
+/**
+ * @brief Mark a stage as fully complete.
+ *
+ * Records that the given stage (PLACEMENT, ROUTING, ANALYTICAL_PLACEMENT, …)
+ * has finished. The `wait_for_stage <stage>_done` graphics-command barrier
+ * advances only when both the current pic_on_screen matches the requested
+ * stage AND that stage has been marked complete here. This lets scripted
+ * commands defer past per-iteration update_screen() checkpoints and run
+ * only on the post-stage update_screen() where the underlying contexts
+ * (route_ctx, place_ctx, …) are fully settled.
+ *
+ * Call once per stage immediately before that stage's final update_screen.
+ */
+void notify_stage_complete(e_pic_type stage);
 
 //FIXME: Currently broken if no rr-graph is loaded
 /**
@@ -77,6 +92,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
+                         std::string renderer_type,
                          bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
@@ -163,7 +179,7 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 /* Lightens a color's luminance [0, 1] by an absolute 'amount' */
 ezgl::color lighten_color(ezgl::color color, float amount);
 
-void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+void toggle_window_mode(QWidget* /*widget*/, ezgl::application* /*app*/);
 
 size_t get_max_fanout();
 
