@@ -299,7 +299,21 @@ struct DeviceContext : public Context {
      */
     vtr::NdMatrix<std::pair<int, int>, 2> vert_interposer_cut_bounds_;
 
+    /**
+     * @brief Minimum length of all routing wires that cross each horizontal interposer cut.
+     *
+     * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_horizontal_interposer_cuts()[layer]`.
+     */
     vtr::NdMatrix<uint16_t, 2> horz_min_interposer_segment_length_;
+
+    /**
+     * @brief Minimum length of all routing wires that cross each vertical interposer cut.
+     *
+     * Indexed as `[layer][cut_idx]`, where `cut_idx` refers to the entry in
+     * `DeviceGrid::get_vertical_interposer_cuts()[layer]`.
+     * This is similar to horz_min_interposer_segment_length_, but for vertical interposer cuts and wires.
+     */
     vtr::NdMatrix<uint16_t, 2> vert_min_interposer_segment_length_;
 
     /// Stores the maximum channel segment width in each horizontal/vertical channel
