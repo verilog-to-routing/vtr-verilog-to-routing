@@ -1709,6 +1709,14 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
 
         <mux name="datain2a" input="mult_27.datain[26:0] mult_27.datain[53:27]" output="one_mult_27x27.a" bus="true"/>
 
+    .. note::
+
+        ``bus="true"`` is currently a convenience shorthand: VPR expands it into a
+        set of independent single-bit muxes (one per output bit), rather than
+        modeling a true multi-bit bus. This means each single-bit mux gets its own
+        separate config bit, whereas in a true bus-based mux all of the bit-level
+        muxes would share a single config bit.
+
 
 
 A ``<complete>``, ``<direct>``, or ``<mux>`` tag may take one or more additional, optional, ``<pack_pattern>`` tags that are used to describe *molecules*.
