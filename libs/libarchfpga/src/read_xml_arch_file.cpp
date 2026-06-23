@@ -1847,7 +1847,7 @@ static void process_interconnect(vtr::string_internment& strings,
     for (auto child_name : {"complete", "direct", "mux"}) {
         pugi::xml_node cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
 
-        const bool is_mux = (0 == strcmp(child_name, "mux"));
+        const bool is_mux = (std::string_view(child_name) == "mux");
 
         // The optional 'bus' attribute is only valid on <mux> tags
         std::vector<std::string> expected_attributes = {"name", "input", "output"};
