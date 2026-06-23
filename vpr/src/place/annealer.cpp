@@ -832,7 +832,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     return swap_result;
 }
 
-void PlacementAnnealer::outer_loop_update_timing_info() {
+void PlacementAnnealer::outer_loop_update_timing_info_and_cost_terms() {
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         /* At each temperature change we update these values to be used
          * for normalizing the tradeoff between timing and wirelength (bb) */
@@ -882,6 +882,18 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
             interposer_cong_modeling_started_ = true;
         }
     }
+
+    // Interposer net cost has a two stage mode
+    // If interposer cost is active, try going to the second stage if case we're in the two stage mode.
+    if (interposer_cost_handler_ && interposer_cost_handler_->has_active_cost_terms()) {
+                if (interposer_cost_handler_->try_change_interposer_cost_model(costs_.interposer_cost)) {
+                    VTR_LOG("Changed interposer net cost model.\n");
+                    // Must recompute costs from scratch since cost formula has changed
+                    const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
+                    costs_.interposer_cost = interposer_cost;
+                    costs_.interposer_cong_cost = interposer_cong_cost;
+                }
+            }
 
     // Update the cost normalization factors
     costs_.update_norm_factors();
