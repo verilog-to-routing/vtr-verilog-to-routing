@@ -11,21 +11,16 @@
 #include <cmath>
 #include <utility>
 
-InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
-                                             double interposer_cong_threshold,
-                                             e_interposer_net_cost_type interposer_net_cost_type,
-                                             e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type,
-                                             e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type,
-                                             double interposer_net_cost_change_threshold,
+InterposerCostHandler::InterposerCostHandler(t_interposer_cost_params interposer_cost_params,
                                              std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb)
-    : interposer_cost_enabled_(interposer_cost_enabled)
+    : interposer_cost_enabled_(interposer_cost_params.net_cost_factor > 0.)
     , interposer_cong_modeling_started_(false)
-    , interposer_cong_threshold_(interposer_cong_threshold)
+    , interposer_cong_threshold_(interposer_cost_params.cong_cost_threshold)
     , get_net_bb_(std::move(get_net_bb))
-    , cost_type_(interposer_net_cost_type)
-    , two_stage_interposer_net_cost_first_stage_type_(two_stage_interposer_net_cost_first_stage_type)
-    , two_stage_interposer_net_cost_second_stage_type_(two_stage_interposer_net_cost_second_stage_type)
-    , interposer_net_cost_change_threshold_(interposer_net_cost_change_threshold) {
+    , cost_type_(interposer_cost_params.net_cost_type)
+    , two_stage_interposer_net_cost_first_stage_type_(interposer_cost_params.two_stage_net_cost_first_stage_type)
+    , two_stage_interposer_net_cost_second_stage_type_(interposer_cost_params.two_stage_net_cost_second_stage_type)
+    , interposer_net_cost_change_threshold_(interposer_cost_params.net_cost_change_threshold) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
@@ -33,10 +28,11 @@ InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
     VTR_ASSERT(grid.has_interposer_cuts());
     VTR_ASSERT(interposer_cong_threshold_ >= 0. || interposer_cost_enabled_);
 
-    VTR_ASSERT(interposer_net_cost_change_threshold_ >= 0.);
-    VTR_ASSERT(two_stage_interposer_net_cost_first_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
-    VTR_ASSERT(two_stage_interposer_net_cost_second_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
-
+    if (interposer_cost_enabled_ && cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
+        VTR_ASSERT(interposer_net_cost_change_threshold_ >= 0.);
+        VTR_ASSERT(two_stage_interposer_net_cost_first_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
+        VTR_ASSERT(two_stage_interposer_net_cost_second_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
+    }
     VTR_ASSERT(get_net_bb_);
 
     // TODO: the class seems to support multi-layer interposer cuts,

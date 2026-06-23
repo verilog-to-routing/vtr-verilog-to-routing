@@ -558,13 +558,13 @@ static void show_placer_opts(const t_placer_opts& placer_opts) {
             }
         };
 
-        VTR_LOG("placer_opts.interposer_net_cost_type: %s\n", interposer_net_cost_type_to_string(placer_opts.interposer_net_cost_type));
-        if (placer_opts.interposer_net_cost_type == e_interposer_net_cost_type::TWO_STAGE) {
-            VTR_LOG("placer_opts.two_stage_interposer_net_cost_first_stage_type: %s\n",
-                    interposer_net_cost_type_to_string(placer_opts.two_stage_interposer_net_cost_first_stage_type));
-            VTR_LOG("placer_opts.two_stage_interposer_net_cost_second_stage_type: %s\n",
-                    interposer_net_cost_type_to_string(placer_opts.two_stage_interposer_net_cost_second_stage_type));
-            VTR_LOG("placer_opts.interposer_net_cost_change_threshold: %f\n", placer_opts.interposer_net_cost_change_threshold);
+        VTR_LOG("placer_opts.interposer_cost_params.net_cost_type: %s\n", interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.net_cost_type));
+        if (placer_opts.interposer_cost_params.net_cost_type == e_interposer_net_cost_type::TWO_STAGE) {
+            VTR_LOG("placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type: %s\n",
+                    interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type));
+            VTR_LOG("placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type: %s\n",
+                    interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type));
+            VTR_LOG("placer_opts.interposer_cost_params.net_cost_change_threshold: %f\n", placer_opts.interposer_cost_params.net_cost_change_threshold);
         }
 
         if (placer_opts.place_algorithm.is_timing_driven()) {

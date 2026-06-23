@@ -27,12 +27,7 @@ class InterposerCostHandler {
     InterposerCostHandler(InterposerCostHandler&&) = delete;
     InterposerCostHandler& operator=(InterposerCostHandler&&) = delete;
 
-    InterposerCostHandler(bool interposer_cost_enabled,
-                          double interposer_cong_threshold,
-                          e_interposer_net_cost_type interposer_net_cost_type,
-                          e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type,
-                          e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type,
-                          double interposer_net_cost_change_threshold,
+    InterposerCostHandler(t_interposer_cost_params interposer_cost_params,
                           std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb);
 
     /// @brief Returns true when at least one interposer cost term is activated.

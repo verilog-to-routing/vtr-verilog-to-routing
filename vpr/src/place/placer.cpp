@@ -70,12 +70,7 @@ Placer::Placer(const Netlist<>& net_list,
     }
 
     if (device_ctx.grid.has_interposer_cuts()) {
-        interposer_cost_handler_.emplace(placer_opts.interposer_cost_factor > 0.,
-                                         placer_opts.interposer_cong_threshold,
-                                         placer_opts.interposer_net_cost_type,
-                                         placer_opts.two_stage_interposer_net_cost_first_stage_type,
-                                         placer_opts.two_stage_interposer_net_cost_second_stage_type,
-                                         placer_opts.interposer_net_cost_change_threshold,
+        interposer_cost_handler_.emplace(placer_opts.interposer_cost_params,
                                          [this](ClusterNetId net_id, bool use_ts) -> const t_bb& {
                                              return net_cost_handler_.cube_bb_coords(net_id, use_ts);
                                          });
