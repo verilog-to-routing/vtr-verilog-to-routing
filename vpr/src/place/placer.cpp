@@ -362,7 +362,7 @@ void Placer::place() {
         do {
             vtr::Timer temperature_timer;
 
-            annealer_->outer_loop_update_timing_info();
+            annealer_->outer_loop_update_timing_info_and_cost_terms();
 
             if (placer_opts_.place_algorithm.is_timing_driven()) {
                 critical_path_ = timing_info_->least_slack_critical_path();
@@ -378,15 +378,6 @@ void Placer::place() {
             // do a complete inner loop iteration
             annealer_->placement_inner_loop();
 
-            if (interposer_cost_handler_ && interposer_cost_handler_->has_active_cost_terms()) {
-                if (interposer_cost_handler_->try_change_interposer_cost_model(costs_.interposer_cost)) {
-                    VTR_LOG("Changed interposer net cost model.\n");
-                    const auto [interposer_cost, interposer_cong_cost] = interposer_cost_handler_->recompute_costs();
-                    costs_.interposer_cost = interposer_cost;
-                    costs_.interposer_cong_cost = interposer_cong_cost;
-                }
-            }
-
             log_printer_.print_place_status(temperature_timer.elapsed_sec());
 
             // Outer loop of the simulated annealing ends
@@ -400,7 +391,7 @@ void Placer::place() {
     { // Quench
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-        annealer_->outer_loop_update_timing_info();
+        annealer_->outer_loop_update_timing_info_and_cost_terms();
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
