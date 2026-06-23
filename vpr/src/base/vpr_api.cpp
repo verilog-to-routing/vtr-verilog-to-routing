@@ -744,6 +744,10 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                        vpr_setup.RoutingArch,
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
+    pre_cluster_timing_manager.generate_setup_timing_report(g_vpr_ctx.atom().netlist(),
+                                                            g_vpr_ctx.atom().lookup(),
+                                                            arch,
+                                                            vpr_setup.AnalysisOpts);
 
     // Estimate the device size before packing and build the RR graph if necessary.
     // When auto-sizing is used, this sets the device grid to the estimated size so
