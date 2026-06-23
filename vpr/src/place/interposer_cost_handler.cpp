@@ -252,9 +252,9 @@ bool InterposerCostHandler::try_change_interposer_cost_model(double current_cost
     avg_interposer_net_cost /= interposer_net_cost_history_.size();
 
     double max_percent_diff_from_avg = 0.;
-    if (std::fabs(avg_interposer_net_cost) > 0.) {
+    if (avg_interposer_net_cost > 0.) {
         for (double int_cost : interposer_net_cost_history_) {
-            double percent_diff_from_avg = std::fabs(int_cost - avg_interposer_net_cost) / std::fabs(avg_interposer_net_cost);
+            double percent_diff_from_avg = std::fabs(int_cost - avg_interposer_net_cost) / avg_interposer_net_cost;
             max_percent_diff_from_avg = std::max(max_percent_diff_from_avg, percent_diff_from_avg);
         }
     }
