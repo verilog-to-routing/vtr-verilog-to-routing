@@ -14,11 +14,6 @@
 #include <utility>
 #include <vector>
 
-enum class e_interposer_cost_stage {
-    FIRST,
-    SECOND
-};
-
 class InterposerCostHandler {
   public:
     InterposerCostHandler() = delete;
@@ -53,10 +48,8 @@ class InterposerCostHandler {
     /// @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
     double compute_interposer_est_cong(bool compute_congestion_cost = true);
 
-    /// @brief 
-    /// @return 
-
-
+    /// @brief
+    /// @return
 
     /**
      * @brief Try switching to a more detailed interposer net cost model based on recent costs.
@@ -74,6 +67,11 @@ class InterposerCostHandler {
     e_interposer_net_cost_type get_net_cost_type() const { return interposer_cost_type_; }
 
   private:
+    enum class e_interposer_cost_stage {
+        FIRST,
+        SECOND
+    };
+
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
     double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const;
     std::pair<int, int> count_bb_interposer_cut_crossings_(const t_bb& bb) const;
