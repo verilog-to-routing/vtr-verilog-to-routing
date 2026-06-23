@@ -335,8 +335,7 @@ def pretty_print_table(file, border=False):
                 row = row[:-1]
             if first:
                 table.field_names = list(row)
-                for head in list(row):
-                    table.align[head] = "l"
+                table.align = "l"
                 first = False
             else:
                 table.add_row(row)

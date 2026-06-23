@@ -155,19 +155,21 @@ void draw_place(ezgl::renderer* g) {
                         g->draw_rectangle(abs_clb_bbox);
                     }
 
+                    g->set_font_size(16);
                     if (draw_state->draw_block_text) {
                         // Draw text if the space has parts of the netlist
                         if (bnum) {
                             const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-                            g->draw_text(center, name, abs_clb_bbox.width(), abs_clb_bbox.height());
+                            // The drawing position is offset from the block center to avoid being overlapped with
+                            // another text drawn inside the same block (see below).
+                            g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
+                                         name, abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
 
                         // Draw text for block type so that user knows what block
                         std::string block_type_loc = type->name;
                         block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
-
-                        g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
-                                     block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
+                        g->draw_text(center, block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
                     }
                 }
             }
