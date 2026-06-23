@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstring>
 #include <queue>
+#include <unordered_set>
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -1923,6 +1924,36 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
     }
 
     return nullptr;
+}
+
+float calc_pb_graph_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* sink) {
+    if (src == nullptr || sink == nullptr) return -1.0f;
+    if (src == sink) return 0.0f;
+
+    std::queue<std::pair<const t_pb_graph_pin*, float>> queue;
+    std::unordered_set<const t_pb_graph_pin*> visited;
+
+    queue.push({src, 0.0f});
+    visited.insert(src);
+
+    while (!queue.empty()) {
+        auto [cur_pin, cur_delay] = queue.front();
+        queue.pop();
+
+        for (const t_pb_graph_edge* edge : cur_pin->output_edges) {
+            for (int op = 0; op < edge->num_output_pins; ++op) {
+                const t_pb_graph_pin* next = edge->output_pins[op];
+                if (next == sink) {
+                    return cur_delay + edge->delay_max;
+                }
+                if (visited.count(next) == 0) {
+                    visited.insert(next);
+                    queue.push({next, cur_delay + edge->delay_max});
+                }
+            }
+        }
+    }
+    return -1.0f;
 }
 
 /* Date:June 8th, 2024

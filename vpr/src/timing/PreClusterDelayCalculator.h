@@ -1,9 +1,5 @@
 #pragma once
 
-#include <queue>
-#include <unordered_set>
-#include <utility>
-
 #include "netlist_fwd.h"
 #include "vtr_assert.h"
 
@@ -17,6 +13,7 @@
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 #include "logic_types.h"
+#include "pb_type_graph.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "vtr_vector.h"
@@ -187,44 +184,11 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
         const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
 
-        float delay = find_pb_graph_path_delay(src_gpin, sink_gpin);
+        float delay = calc_pb_graph_path_delay(src_gpin, sink_gpin);
 
         // If a valid path was found through the pb_graph hierarchy, use it.
-        // Otherwise fall back to 0: still correct since intra-cluster delay
-        // is always less than the inter-cluster estimate.
+        // Otherwise we assume that it is a very low delay, close to 0.
         return tatum::Time(delay >= 0.0f ? delay : 0.0f);
-    }
-
-    // BFS through pb_graph output_edges to find the accumulated delay_max
-    // from src to sink. Returns -1.0f if no path exists.
-    float find_pb_graph_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* sink) const {
-        if (src == nullptr || sink == nullptr) return -1.0f;
-        if (src == sink) return 0.0f;
-
-        std::queue<std::pair<const t_pb_graph_pin*, float>> queue;
-        std::unordered_set<const t_pb_graph_pin*> visited;
-
-        queue.push({src, 0.0f});
-        visited.insert(src);
-
-        while (!queue.empty()) {
-            auto [cur_pin, cur_delay] = queue.front();
-            queue.pop();
-
-            for (const t_pb_graph_edge* edge : cur_pin->output_edges) {
-                for (int op = 0; op < edge->num_output_pins; ++op) {
-                    const t_pb_graph_pin* next = edge->output_pins[op];
-                    if (next == sink) {
-                        return cur_delay + edge->delay_max;
-                    }
-                    if (visited.count(next) == 0) {
-                        visited.insert(next);
-                        queue.push({next, cur_delay + edge->delay_max});
-                    }
-                }
-            }
-        }
-        return -1.0f;
     }
 
     const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId io_pin) const {
