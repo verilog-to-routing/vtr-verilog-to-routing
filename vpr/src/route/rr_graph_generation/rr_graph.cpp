@@ -1105,7 +1105,7 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                     std::pair<int, int>& cut_bounds = horz_interposer_cut_bounds[layer][cut_idx];
                     cut_bounds.first = std::min(cut_bounds.first, ylow);
                     cut_bounds.second = std::max(cut_bounds.second, yhigh);
-                    horz_interposer_cut_min_seg_length[layer][cut_idx] = std::min(horz_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(yhigh - ylow));
+                    horz_interposer_cut_min_seg_length[layer][cut_idx] = std::min(horz_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(yhigh - ylow + 1));
                 }
             }
         } else if (rr_type == e_rr_type::CHANX) {
@@ -1123,7 +1123,7 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                     cut_bounds.first = std::min(cut_bounds.first, xlow);
                     cut_bounds.second = std::max(cut_bounds.second, xhigh);
 
-                    vert_interposer_cut_min_seg_length[layer][cut_idx] = std::min(vert_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(xhigh - xlow));
+                    vert_interposer_cut_min_seg_length[layer][cut_idx] = std::min(vert_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(xhigh - xlow + 1));
                 }
             }
         }
