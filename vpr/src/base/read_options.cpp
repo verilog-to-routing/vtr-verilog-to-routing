@@ -2844,8 +2844,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerNetCostType>(args.place_interposer_net_cost_type, "--place_interposer_net_cost_type")
-        .help("Controls which interposer net cost model is used during placement. "
-              "Valid options are minimize_interposer_crossing_bb, interposer_wire_aware_crossing_bb, and two_stage.")
+        .help("Controls which interposer net cost model is used during placement. ")
         .default_value("two_stage")
         .choices({"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb", "two_stage"})
         .show_in(argparse::ShowIn::HELP_ONLY);
