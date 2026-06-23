@@ -1067,8 +1067,8 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
     vtr::NdMatrix<std::pair<int, int>, 2>& horz_interposer_cut_bounds = device_ctx.horz_interposer_cut_bounds_;
     vtr::NdMatrix<std::pair<int, int>, 2>& vert_interposer_cut_bounds = device_ctx.vert_interposer_cut_bounds_;
 
-    vtr::NdMatrix<uint16_t, 2>& horz_min_interposer_segment_length = device_ctx.horz_min_interposer_segment_length_;
-    vtr::NdMatrix<uint16_t, 2>& vert_min_interposer_segment_length_ = device_ctx.vert_min_interposer_segment_length_;
+    vtr::NdMatrix<uint16_t, 2>& horz_interposer_cut_min_seg_length = device_ctx.horz_interposer_cut_min_seg_length;
+    vtr::NdMatrix<uint16_t, 2>& vert_interposer_cut_min_seg_length = device_ctx.vert_interposer_cut_min_seg_length;
 
     // Matrices are sized to the maximum cut count across layers.
     // Layers with fewer cuts will leave the extra [cut_idx] planes at zero.
@@ -1081,10 +1081,10 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
     horz_interposer_cut_bounds.resize({num_layers, max_h_cuts}, default_bounds);
     vert_interposer_cut_bounds.resize({num_layers, max_v_cuts}, default_bounds);
 
-    horz_min_interposer_segment_length.resize({num_layers, max_h_cuts});
-    vert_min_interposer_segment_length_.resize({num_layers, max_v_cuts});
-    horz_min_interposer_segment_length.fill(std::numeric_limits<uint16_t>::max());
-    vert_min_interposer_segment_length_.fill(std::numeric_limits<uint16_t>::max());
+    horz_interposer_cut_min_seg_length.resize({num_layers, max_h_cuts});
+    vert_interposer_cut_min_seg_length.resize({num_layers, max_v_cuts});
+    horz_interposer_cut_min_seg_length.fill(std::numeric_limits<uint16_t>::max());
+    vert_interposer_cut_min_seg_length.fill(std::numeric_limits<uint16_t>::max());
 
     for (RRNodeId node_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(node_id);
@@ -1105,7 +1105,7 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                     std::pair<int, int>& cut_bounds = horz_interposer_cut_bounds[layer][cut_idx];
                     cut_bounds.first = std::min(cut_bounds.first, ylow);
                     cut_bounds.second = std::max(cut_bounds.second, yhigh);
-                    horz_min_interposer_segment_length[layer][cut_idx] = std::min(horz_min_interposer_segment_length[layer][cut_idx], static_cast<uint16_t>(yhigh - ylow));
+                    horz_interposer_cut_min_seg_length[layer][cut_idx] = std::min(horz_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(yhigh - ylow));
                 }
             }
         } else if (rr_type == e_rr_type::CHANX) {
@@ -1123,7 +1123,7 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                     cut_bounds.first = std::min(cut_bounds.first, xlow);
                     cut_bounds.second = std::max(cut_bounds.second, xhigh);
 
-                    vert_min_interposer_segment_length_[layer][cut_idx] = std::min(vert_min_interposer_segment_length_[layer][cut_idx], static_cast<uint16_t>(xhigh - xlow));
+                    vert_interposer_cut_min_seg_length[layer][cut_idx] = std::min(vert_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(xhigh - xlow));
                 }
             }
         }
