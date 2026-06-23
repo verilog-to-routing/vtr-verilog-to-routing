@@ -17,7 +17,7 @@ InterposerCostHandler::InterposerCostHandler(t_interposer_cost_params interposer
     , interposer_cong_modeling_started_(false)
     , interposer_cong_threshold_(interposer_cost_params.cong_cost_threshold)
     , get_net_bb_(std::move(get_net_bb))
-    , cost_type_(interposer_cost_params.net_cost_type)
+    , interposer_cost_type_(interposer_cost_params.net_cost_type)
     , two_stage_interposer_net_cost_first_stage_type_(interposer_cost_params.two_stage_net_cost_first_stage_type)
     , two_stage_interposer_net_cost_second_stage_type_(interposer_cost_params.two_stage_net_cost_second_stage_type)
     , interposer_net_cost_change_threshold_(interposer_cost_params.net_cost_change_threshold) {
@@ -28,7 +28,7 @@ InterposerCostHandler::InterposerCostHandler(t_interposer_cost_params interposer
     VTR_ASSERT(grid.has_interposer_cuts());
     VTR_ASSERT(interposer_cong_threshold_ >= 0. || interposer_cost_enabled_);
 
-    if (interposer_cost_enabled_ && cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
+    if (interposer_cost_enabled_ && interposer_cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
         VTR_ASSERT(interposer_net_cost_change_threshold_ >= 0.);
         VTR_ASSERT(two_stage_interposer_net_cost_first_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
         VTR_ASSERT(two_stage_interposer_net_cost_second_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
@@ -236,7 +236,7 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
 }
 
 bool InterposerCostHandler::try_change_interposer_cost_model(double current_cost) {
-    if (cost_type_ != e_interposer_net_cost_type::TWO_STAGE || cost_stage_ != e_interposer_cost_stage::FIRST) {
+    if (interposer_cost_type_ != e_interposer_net_cost_type::TWO_STAGE || interposer_cost_stage_ != e_interposer_cost_stage::FIRST) {
         return false;
     }
 
@@ -260,7 +260,7 @@ bool InterposerCostHandler::try_change_interposer_cost_model(double current_cost
     }
 
     if (max_percent_diff_from_avg < interposer_net_cost_change_threshold_) {
-        cost_stage_ = e_interposer_cost_stage::SECOND;
+        interposer_cost_stage_ = e_interposer_cost_stage::SECOND;
         return true;
     }
 
@@ -268,11 +268,11 @@ bool InterposerCostHandler::try_change_interposer_cost_model(double current_cost
 }
 
 e_interposer_net_cost_type InterposerCostHandler::get_active_net_cost_type_() const {
-    if (cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
-        return cost_stage_ == e_interposer_cost_stage::FIRST ? two_stage_interposer_net_cost_first_stage_type_ : two_stage_interposer_net_cost_second_stage_type_;
+    if (interposer_cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
+        return interposer_cost_stage_ == e_interposer_cost_stage::FIRST ? two_stage_interposer_net_cost_first_stage_type_ : two_stage_interposer_net_cost_second_stage_type_;
     }
 
-    return cost_type_;
+    return interposer_cost_type_;
 }
 
 double InterposerCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const {
