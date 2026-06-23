@@ -155,7 +155,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
     if (g_vpr_ctx.device().grid.has_interposer_cuts()) {
-        t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_factor + placer_opts.interposer_cong_factor);
+        t_exit *= (1. + placer_opts.congestion_factor + placer_opts.interposer_cost_params.net_cost_factor + placer_opts.interposer_cost_params.cong_cost_factor);
     } else {
         t_exit *= (1. + placer_opts.congestion_factor);
     }
@@ -632,8 +632,8 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
                       + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm;
             if (update_interposer_costs) {
-                delta_c += placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                           + placer_opts_.interposer_cong_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+                delta_c += placer_opts_.interposer_cost_params.net_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
+                           + placer_opts_.interposer_cost_params.net_cost_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
             }
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
@@ -677,8 +677,8 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            costs_.bb_cost_norm);
             delta_c = cost_terms_delta.bb_cost * costs_.bb_cost_norm;
             if (update_interposer_costs) {
-                delta_c += placer_opts_.interposer_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                           + placer_opts_.interposer_cong_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+                delta_c += placer_opts_.interposer_cost_params.net_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
+                           + placer_opts_.interposer_cost_params.cong_cost_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
             }
         }
 
@@ -871,7 +871,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     }
 
     // Similar to congestion modeling: trigger interposer congestion estimation once rlim shrinks enough (or once started, keep updating).
-    if ((placer_opts_.interposer_cong_factor > 0.
+    if ((placer_opts_.interposer_cost_params.cong_cost_factor > 0.
          && g_vpr_ctx.device().grid.has_interposer_cuts()
          && annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio)
         || interposer_cong_modeling_started_) {

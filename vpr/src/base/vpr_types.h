@@ -990,6 +990,26 @@ enum class e_interposer_net_cost_type {
     TWO_STAGE
 };
 
+struct t_interposer_cost_params {
+    /// Unitless scaling for interposer crossing cost after normalization. Tune like \c timing_tradeoff, which sets timing
+    /// versus wirelength emphasis: after normalization, similar numeric ranges apply so this term can be weighed against
+    /// those objectives. Zero disables. Additive in the total cost.
+    float net_cost_factor;
+    /// Formula used for interposer crossing cost; two-stage mode can switch formulas during placement.
+    e_interposer_net_cost_type net_cost_type;
+    /// Formula used before the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_net_cost_first_stage_type;
+    /// Formula used after the two-stage interposer cost model switches.
+    e_interposer_net_cost_type two_stage_net_cost_second_stage_type;
+
+    /// Maximum recent cost deviation threshold used to switch the two-stage interposer cost model.
+    float net_cost_change_threshold;
+    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
+    float cong_cost_threshold;
+    /// Unitless scaling for interposer congestion after normalization. Comparable in tuning to \c congestion_factor.
+    float cong_cost_factor;
+};
+
 /**
  * @brief Enumeration of the different initial temperature estimators available
  *        for the placer.
@@ -1025,22 +1045,8 @@ struct t_placer_opts {
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
-    /// Unitless scaling for interposer crossing cost after normalization. Tune like \c timing_tradeoff, which sets timing
-    /// versus wirelength emphasis: after normalization, similar numeric ranges apply so this term can be weighed against
-    /// those objectives. Zero disables. Additive in the total cost.
-    float interposer_cost_factor;
-    /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
-    float interposer_cong_threshold;
-    /// Unitless scaling for interposer congestion after normalization. Comparable in tuning to \c congestion_factor.
-    float interposer_cong_factor;
-    /// Formula used for interposer crossing cost; two-stage mode can switch formulas during placement.
-    e_interposer_net_cost_type interposer_net_cost_type;
-    /// Formula used before the two-stage interposer cost model switches.
-    e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type;
-    /// Formula used after the two-stage interposer cost model switches.
-    e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type;
-    /// Maximum recent cost deviation threshold used to switch the two-stage interposer cost model.
-    float interposer_net_cost_change_threshold;
+    /// Interposer-related placement cost parameters
+    t_interposer_cost_params interposer_cost_params;
 
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;
