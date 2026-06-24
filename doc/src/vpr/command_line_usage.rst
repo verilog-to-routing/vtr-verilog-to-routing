@@ -853,7 +853,7 @@ For people not working on CAD, you can probably leave all the options to their d
     This can reduce router runtime when many candidate molecules are tried and rejected: after a failed molecule is removed, the cluster returns to a known-good state without re-routing nets that did not change.
     Enabling this option should not significantly affect circuit quality metrics like routed wirelength or critical path delay, though minor variations are possible.
 
-    **Default:** ``off``
+    **Default:** ``on``
 
 .. option:: --pack_verbosity <int>
 
@@ -2181,7 +2181,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
 .. option:: --router_lookahead_interposer_base_cut_multiplier
     .. note:: This option only works affects the map router lookahead and devices that have interposer cuts
-    
+
     A multiplier that's applied to the base cost of interposer wires for the router lookahead.
 
     **Default:** ``2``

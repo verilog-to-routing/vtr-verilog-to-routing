@@ -2386,7 +2386,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
               "Note: Use of this feature with `--analytical_place` is experimental.\n"
               "For now, `--memoize_cluster_packings` is unsupported if\n"
               "`--ap_full_legalizer` is set to `flat-recon`, and will be ignored.\n")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     pack_grp.add_argument<bool, ParseOnOff>(args.cluster_router_hot_start, "--cluster_router_hot_start")
