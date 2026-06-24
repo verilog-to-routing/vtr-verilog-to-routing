@@ -37,7 +37,7 @@ static constexpr int LABEL_HEIGHT = 13;
 
 /**
  * @brief The percentage of the total edge length that a delay label can be offset in the edge direction.
- */ 
+ */
 static constexpr double EDGE_OFFSET_PERCENT = 0.1;
 
 /**
@@ -158,8 +158,8 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
  * Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
  */
 static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
-                                                std::vector<t_label_drawing_info>& label_drawing_info,
-                                                double pixels_per_world_unit);
+                                               std::vector<t_label_drawing_info>& label_drawing_info,
+                                               double pixels_per_world_unit);
 
 /**
  * @brief Chooses label positions that result in the least number of overlaps between visible labels.
@@ -174,7 +174,7 @@ static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
  * Passed to helper calculate_label_bbox_from_relative_pos() which uses values in pixels to offset label bounding boxes.
  */
 static void calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info>& label_drawing_info,
-                                                    double pixels_per_world_unit);
+                                                double pixels_per_world_unit);
 
 /**
  * @brief Hides labels that still overlap after calculate_least_cluttered_label_pos() has tried all candidates.
@@ -195,8 +195,7 @@ static void hide_still_cluttered_labels(std::vector<t_label_drawing_info>& label
  * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
  * Used to convert values specified in pixels that determine the offset of label bounding boxes.
  */
-static void calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos,
-                                                    double pixels_per_world_unit);
+static void calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos, double pixels_per_world_unit);
 
 /**
  * @brief Returns true if two label bounding boxes overlap.
@@ -213,7 +212,6 @@ static bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::re
  * @param g Pointer to the ezgl::renderer object.
  */
 static void draw_labels(std::vector<t_label_drawing_info>& label_drawing_info, ezgl::renderer* g);
-
 
 void draw_crit_path(ezgl::renderer* g) {
     tatum::TimingPathCollector path_collector;
@@ -235,7 +233,7 @@ void draw_crit_path(ezgl::renderer* g) {
         *timing_ctx.graph,
         *(draw_state->setup_timing_info->setup_analyzer()), 1);
     tatum::TimingPath path = paths[0];
-    
+
     // Subtract 1 so that we get the number of edges instead of nodes.
     // Cast elements().size() from size_t to int to avoid zero wrapping around to SIZE_MAX
     int num_edges = int(path.data_arrival_path().elements().size()) - 1;
@@ -284,14 +282,14 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
                 // Draw an arrow at the edge center.
                 draw_triangle_along_line_fixed_px(g, start, end, EDGE_CENTER, TIMING_EDGE_ARROW_SCALE * DEFAULT_ARROW_SIZE);
             }
-            
+
             edge_idx++;
         }
         prev_node = node;
     }
 
     g->set_line_dash(ezgl::line_dash::none);
-    g->set_line_width(0); 
+    g->set_line_width(0);
 }
 
 static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::renderer* g) {
@@ -403,9 +401,9 @@ void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g)
 }
 
 static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
-                                                        std::vector<t_label_drawing_info>& label_drawing_info,
-                                                        double pixels_per_world_unit) {
-    
+                                               std::vector<t_label_drawing_info>& label_drawing_info,
+                                               double pixels_per_world_unit) {
+
     tatum::NodeId prev_node;
     float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
     std::size_t edge_idx = 0;
@@ -443,7 +441,7 @@ static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
             // After this operation, start and end are just a relative concept.
             // This step is to ensure that start is always physically to the left of end,
             // which later helps facilitate the math.
-            if(start.x > end.x) {
+            if (start.x > end.x) {
                 std::swap(start, end);
             }
 
@@ -451,9 +449,9 @@ static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
             double max_y = std::max(start.y, end.y);
             // It is already ensured in the previous step that start.x < end.x.
             ezgl::rectangle edge_bbox({start.x, min_y}, {end.x, max_y});
-            
+
             drawing_info.edge_length = std::sqrt(std::pow(edge_bbox.width(), 2) + std::pow(edge_bbox.height(), 2));
-            
+
             // Since start.x < end.x, the result from atan2() is always between - pi / 2 and pi/ 2.
             double rotation_angle = (180 / std::numbers::pi) * atan2(end.y - start.y, end.x - start.x);
             drawing_info.rotation_angle = rotation_angle;
@@ -469,12 +467,12 @@ static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
             //      .................
 
             // LABEL_WIDTH and LABEL_HEIGHT correspond to a string that has exactly three decimals (e.g 1.500). Unit is pixel.
-            double label_bbox_width = (LABEL_WIDTH * cos(rotation_angle * (std::numbers::pi / 180)) 
-                                    + LABEL_HEIGHT * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
-                                    / pixels_per_world_unit;
+            double label_bbox_width = (LABEL_WIDTH * cos(rotation_angle * (std::numbers::pi / 180))
+                                       + LABEL_HEIGHT * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
+                                      / pixels_per_world_unit;
             double label_bbox_height = (LABEL_WIDTH * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
-                                    + LABEL_HEIGHT * cos(rotation_angle * (std::numbers::pi / 180)))
-                                    / pixels_per_world_unit;
+                                        + LABEL_HEIGHT * cos(rotation_angle * (std::numbers::pi / 180)))
+                                       / pixels_per_world_unit;
 
             ezgl::point2d bbox_bottom_left = edge_bbox.center() - ezgl::point2d(label_bbox_width / 2, label_bbox_height / 2);
             // Calculates a virtual bounding box centered on the timing edge before offsets are applied.
@@ -490,43 +488,43 @@ static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
 }
 
 static void calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info>& label_drawing_info,
-                                                            double pixels_per_world_unit) {
-    
+                                                double pixels_per_world_unit) {
+
     // The label position candidates are ordered in an implied priority which the placement algorithm will follow.
     std::vector<e_label_relative_pos> label_pos_candidates = {e_label_relative_pos::CENTER_ABOVE,
-                                                                e_label_relative_pos::LEFT_ABOVE,
-                                                                e_label_relative_pos::RIGHT_ABOVE,
-                                                                e_label_relative_pos::CENTER_BELOW,
-                                                                e_label_relative_pos::LEFT_BELOW,
-                                                                e_label_relative_pos::RIGHT_BELOW,
-                                                                e_label_relative_pos::FAR_LEFT_ABOVE,
-                                                                e_label_relative_pos::FAR_RIGHT_ABOVE,
-                                                                e_label_relative_pos::FAR_LEFT_BELOW,
-                                                                e_label_relative_pos::FAR_RIGHT_BELOW};
+                                                              e_label_relative_pos::LEFT_ABOVE,
+                                                              e_label_relative_pos::RIGHT_ABOVE,
+                                                              e_label_relative_pos::CENTER_BELOW,
+                                                              e_label_relative_pos::LEFT_BELOW,
+                                                              e_label_relative_pos::RIGHT_BELOW,
+                                                              e_label_relative_pos::FAR_LEFT_ABOVE,
+                                                              e_label_relative_pos::FAR_RIGHT_ABOVE,
+                                                              e_label_relative_pos::FAR_LEFT_BELOW,
+                                                              e_label_relative_pos::FAR_RIGHT_BELOW};
 
-    for(std::size_t edge_idx = 0; edge_idx < label_drawing_info.size(); edge_idx++) {
+    for (std::size_t edge_idx = 0; edge_idx < label_drawing_info.size(); edge_idx++) {
         t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
 
         // At this stage, hidden labels are due to their corresponding flylines being invisible. Therefore, we skip them.
-        if(drawing_info.hide_label) {
+        if (drawing_info.hide_label) {
             continue;
         }
 
         // The position candidate to start with is CENTER_ABOVE, which aligns with the order in label_pos_candidates.
         e_label_relative_pos candidate_with_least_overlaps = e_label_relative_pos::CENTER_ABOVE;
-        
+
         // This is a good upper bound for the maximum number of overlaps a label can have.
         int least_num_overlaps = label_drawing_info.size();
 
         // Try all possible position candidates unless finding one with zero overlap.
-        for(const e_label_relative_pos& pos_candidate : label_pos_candidates) {
+        for (const e_label_relative_pos& pos_candidate : label_pos_candidates) {
             // Update the label bounding box stored in drawing_info, which is tied to the current label being processed.
             calculate_label_bbox_from_relative_pos(drawing_info, pos_candidate, pixels_per_world_unit);
 
             int curr_num_overlaps = 0;
 
             // Check for overlaps with all other labels.
-            for(std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < label_drawing_info.size(); edge_idx_to_compare++) {
+            for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < label_drawing_info.size(); edge_idx_to_compare++) {
                 const t_label_drawing_info& drawing_info_to_compare = label_drawing_info[edge_idx_to_compare];
 
                 // Skip self-comparison and / or the label to compare being invisible.
@@ -556,11 +554,11 @@ static void calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info
 }
 
 static void hide_still_cluttered_labels(std::vector<t_label_drawing_info>& label_drawing_info) {
-    for(std::size_t edge_idx = 0; edge_idx < label_drawing_info.size(); edge_idx++) {
+    for (std::size_t edge_idx = 0; edge_idx < label_drawing_info.size(); edge_idx++) {
         t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
 
         // Skip if the label is already hidden.
-        if(drawing_info.hide_label) {
+        if (drawing_info.hide_label) {
             continue;
         }
 
@@ -568,7 +566,7 @@ static void hide_still_cluttered_labels(std::vector<t_label_drawing_info>& label
         // Note: For every label we completely redo the overlap calculation, therefore hiding a label might
         // change the fate of subsequent labels.
         bool has_overlap = false;
-        for(std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < label_drawing_info.size(); edge_idx_to_compare++) {
+        for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < label_drawing_info.size(); edge_idx_to_compare++) {
             const t_label_drawing_info& drawing_info_to_compare = label_drawing_info[edge_idx_to_compare];
 
             // Skip self-comparison and / or the label to compare being invisible.
@@ -581,18 +579,17 @@ static void hide_still_cluttered_labels(std::vector<t_label_drawing_info>& label
                 break;
             }
         }
-        if(has_overlap) {
+        if (has_overlap) {
             drawing_info.hide_label = true;
         }
     }
 }
 
-static void calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos,
-                                                            double pixels_per_world_unit) {
+static void calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos, double pixels_per_world_unit) {
     double edge_length = label_to_update.edge_length;
     // The unit length for a scalable edge-direction offset in world coordinates.
     double edge_offset_unit = edge_length * EDGE_OFFSET_PERCENT;
-    
+
     // Convert MAX_EDGE_OFFSET_UNIT to world coordinates.
     if (edge_offset_unit > MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit) {
         edge_offset_unit = MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit;
@@ -605,38 +602,38 @@ static void calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_t
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
             break;
         case e_label_relative_pos::CENTER_BELOW:
-            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit;
+            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
             break;
         case e_label_relative_pos::LEFT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = - edge_offset_unit;
+            edge_offset = -edge_offset_unit;
             break;
         case e_label_relative_pos::LEFT_BELOW:
-            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = - edge_offset_unit;
+            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
+            edge_offset = -edge_offset_unit;
             break;
         case e_label_relative_pos::RIGHT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
             edge_offset = edge_offset_unit;
             break;
         case e_label_relative_pos::RIGHT_BELOW:
-            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit;
+            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
             edge_offset = edge_offset_unit;
             break;
         case e_label_relative_pos::FAR_LEFT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = - edge_offset_unit * 2;
+            edge_offset = -edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_LEFT_BELOW:
-            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = - edge_offset_unit * 2;
+            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
+            edge_offset = -edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_RIGHT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
             edge_offset = edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_RIGHT_BELOW:
-            perpendicular_offset = - LABEL_HEIGHT / pixels_per_world_unit;
+            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
             edge_offset = edge_offset_unit * 2;
             break;
         default:
@@ -645,7 +642,7 @@ static void calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_t
 
     double rotation_angle_in_deg = label_to_update.rotation_angle * (std::numbers::pi / 180);
     // Apply the perpendicular offset
-    double x_offset = - perpendicular_offset * sin(rotation_angle_in_deg);
+    double x_offset = -perpendicular_offset * sin(rotation_angle_in_deg);
     double y_offset = perpendicular_offset * cos(rotation_angle_in_deg);
     // Apply the edge offset.
     x_offset += edge_offset * cos(rotation_angle_in_deg);
@@ -701,12 +698,12 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
     const int contour_line_width{1};
 
     auto draw_server_mode_flylines_and_labels_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay,
-                                                 const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays = false) {
+                                                             const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays = false) {
         renderer->set_color(color);
         renderer->set_line_dash(line_style);
         renderer->set_line_width(line_width);
         draw_server_mode_flylines_and_labels(tnode_draw_coord(prev_node),
-                                 tnode_draw_coord(node), delay, renderer, skip_draw_delays);
+                                             tnode_draw_coord(node), delay, renderer, skip_draw_delays);
 
         renderer->set_line_dash(ezgl::line_dash::none);
         renderer->set_line_width(0);

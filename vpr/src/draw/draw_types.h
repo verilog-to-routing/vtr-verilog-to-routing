@@ -179,7 +179,6 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
-
 struct PartialPlacement;
 
 /**

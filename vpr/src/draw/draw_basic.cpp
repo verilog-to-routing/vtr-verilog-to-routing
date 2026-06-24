@@ -953,14 +953,12 @@ void draw_routing_util(ezgl::renderer* g) {
  * b) during routing, critical path is shown by both flylines and routed net connections.
  */
 
-
 /**
  * @brief Draw critical path elements.
  *
  * This function draws critical path elements based on the provided timing paths
  * and indexes map. It is primarily used in server mode, where items are drawn upon request.
  */
-
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {
     t_draw_state* draw_state = get_draw_state_vars();
