@@ -2416,7 +2416,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-
     pack_grp.add_argument<bool, ParseOnOff>(args.use_ram_mapper, "--use_ram_premapper")
         .help("Controls whether a separate RAM pre-mapping algorithm is invoked\n"
               "before the main packing stage.\n"
