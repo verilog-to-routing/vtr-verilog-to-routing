@@ -855,6 +855,12 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``off``
 
+.. option:: --pack_verify_external_connection_legality {on | off}
+
+    Enable to verify the legality on external connection for each net in the packed netlist. When enabled, each net mapped on an external pin of a cluster must have at least one valid fan-in/fan-out in global routing resource graph.
+
+    **Default:** ``on``
+
 .. option:: --pack_verbosity <int>
 
     Controls the verbosity of clustering output.
