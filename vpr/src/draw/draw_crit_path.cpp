@@ -264,7 +264,7 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
 
     for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
-        // Skip the first iteration becuase prev_node is not yet assigned to an actual node.
+        // Skip the first iteration because prev_node is not yet assigned to an actual node.
         if (prev_node) {
             //We draw each 'edge' in a different color, this allows users to identify the stages and
             //any routing which corresponds to the edge.
@@ -300,7 +300,7 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
 
     for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
-        // Skip the first iteration becuase prev_node is not yet assigned to an actual node.
+        // Skip the first iteration because prev_node is not yet assigned to an actual node.
         if (prev_node) {
             ezgl::color color = kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
             draw_routed_connections_between_nodes(prev_node, node, color, g);
@@ -413,7 +413,7 @@ static void calculate_basic_label_drawing_info(const tatum::TimingPath& path,
     for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
         float arr_time = elem.tag().time();
-        // Skip the first iteration becuase prev_node is not yet assigned to an actual node.
+        // Skip the first iteration because prev_node is not yet assigned to an actual node.
         if (prev_node) {
             t_label_drawing_info& drawing_info = label_drawing_info[edge_idx];
 
