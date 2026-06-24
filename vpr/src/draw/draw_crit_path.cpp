@@ -25,7 +25,7 @@ static constexpr float EDGE_CENTER = 0.5;
 /** 
  * @brief The width of a critical path time delay label that has exactly three decimals (e.g 1.500), in pixels (screen coordinates).
  * 
- * TODO: Create a method to expose ezgl's internal Cario function that returns the width and height
+ * TODO: Create a function to expose ezgl's internal Cairo function that returns the width and height
  * of a string so that hardcoding can be avoided.
  */
 static constexpr int LABEL_WIDTH = 40;
