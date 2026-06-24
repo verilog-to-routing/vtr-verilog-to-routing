@@ -815,7 +815,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_post_pack();
 
     // Sanity check the resulting netlist
-    check_netlist(vpr_setup.PackerOpts.pack_verbosity, arch);
+    check_netlist(vpr_setup.PackerOpts.pack_verbosity, arch, vpr_setup.PackerOpts.verify_external_connection_legality);
 
     // Independently verify the clustering to ensure the clustering can be
     // used for the rest of the VPR flow.
