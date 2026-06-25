@@ -174,7 +174,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
  * @return Per-edge delay label drawing information that has each label's position updated.
  */
 static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info> basic_label_drawing_info,
-                                                                            double pixels_per_world_unit);
+                                                                             double pixels_per_world_unit);
 
 /**
  * @brief Hides labels that still overlap after calculate_least_cluttered_label_pos() has tried all candidates.
@@ -184,7 +184,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
  * Visibility of hidden labels are updated to label_drawing_info.
  *
  * @param post_decluttering_label_drawing_info Per-edge label drawing information that includes each label's updated position.
- * @return Per-edge label drawing information that has updates on what labels are newly hidden due to still exisiting overlaps.
+ * @return Per-edge label drawing information that has updates on what labels are newly hidden due to still existing overlaps.
  */
 static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector<t_label_drawing_info> post_decluttering_label_drawing_info);
 
@@ -197,8 +197,7 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
  * Used to convert values specified in pixels that determine the offset of label bounding boxes.
  * @return The rectangle used to replace the current bounding box associated with label_to_update.
  */
-static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos,
-                                                                double pixels_per_world_unit);
+static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos, double pixels_per_world_unit);
 
 /**
  * @brief Returns true if two label bounding boxes overlap.
@@ -386,16 +385,16 @@ void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g)
     double pixels_per_world_unit = get_pixels_per_world_unit(g);
 
     // Calculate basic information needed for resolving overlap and drawing.
-    std::vector<t_label_drawing_info> basic_label_drawing_info = 
-    calculate_basic_label_drawing_info(path, pixels_per_world_unit);
+    std::vector<t_label_drawing_info> basic_label_drawing_info =
+        calculate_basic_label_drawing_info(path, pixels_per_world_unit);
 
     // Update the drawing info vector by trying to resolve all overlaps first.
-    std::vector<t_label_drawing_info> post_decluttering_label_drawing_info = 
-    calculate_least_cluttered_label_pos(std::move(basic_label_drawing_info), pixels_per_world_unit);
+    std::vector<t_label_drawing_info> post_decluttering_label_drawing_info =
+        calculate_least_cluttered_label_pos(std::move(basic_label_drawing_info), pixels_per_world_unit);
 
     // Get the final drawing info vector by hiding labels with inevitable overlaps;
-    std::vector<t_label_drawing_info> final_label_drawing_info = 
-    hide_still_cluttered_labels(std::move(post_decluttering_label_drawing_info));
+    std::vector<t_label_drawing_info> final_label_drawing_info =
+        hide_still_cluttered_labels(std::move(post_decluttering_label_drawing_info));
 
     draw_labels(final_label_drawing_info, g);
 }
@@ -494,7 +493,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
 }
 
 static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info> basic_label_drawing_info,
-                                                                            double pixels_per_world_unit) {
+                                                                             double pixels_per_world_unit) {
 
     // The label position candidates are ordered in an implied priority which the placement algorithm will follow.
     std::vector<e_label_relative_pos> label_pos_candidates = {e_label_relative_pos::CENTER_ABOVE,
@@ -594,7 +593,8 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
 }
 
 static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update,
-                                                            e_label_relative_pos label_relative_pos, double pixels_per_world_unit) {
+                                                              e_label_relative_pos label_relative_pos,
+                                                              double pixels_per_world_unit) {
     double edge_length = label_to_update.edge_length;
     // The unit length for a scalable edge-direction offset in world coordinates.
     double edge_offset_unit = edge_length * EDGE_OFFSET_PERCENT;
