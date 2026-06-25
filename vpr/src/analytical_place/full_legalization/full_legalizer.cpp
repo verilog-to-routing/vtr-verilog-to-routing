@@ -915,7 +915,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     vpr_load_packing(vpr_setup_, arch_);
 
     // Verify the packing
-    check_netlist(vpr_setup_.PackerOpts.pack_verbosity, arch_, true);
+    check_netlist(vpr_setup_.PackerOpts.pack_verbosity, arch_);
     write_clustered_netlist_stats(vpr_setup_.FileNameOpts.write_block_usage);
 }
 
@@ -1142,7 +1142,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Verify the packing and print some info
-    check_netlist(vpr_setup_.PackerOpts.pack_verbosity, arch_, true);
+    check_netlist(vpr_setup_.PackerOpts.pack_verbosity, arch_);
     write_clustered_netlist_stats(vpr_setup_.FileNameOpts.write_block_usage);
     print_pb_type_count(clb_nlist);
 }

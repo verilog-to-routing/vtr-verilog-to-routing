@@ -811,7 +811,6 @@ struct t_packer_opts {
     std::string device_layout;
     e_timing_update_type timing_update_type;
     bool load_flat_placement = false;
-    bool verify_external_connection_legality = true;
 };
 
 /**

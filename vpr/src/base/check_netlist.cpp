@@ -67,7 +67,7 @@ struct t_external_directs_legality_violation {
 
 /*********************** Subroutine definitions *****************************/
 
-void check_netlist(int verbosity, const t_arch& arch, const bool& verify_external_direct_legality) {
+void check_netlist(int verbosity, const t_arch& arch) {
     int error = 0;
     int num_conn;
     t_hash **net_hash_table, *h_net_ptr;
@@ -116,9 +116,7 @@ void check_netlist(int verbosity, const t_arch& arch, const bool& verify_externa
 
     error += check_for_duplicated_names();
 
-    if (verify_external_direct_legality) {
-        error += check_external_directs_legality(arch);
-    }
+    error += check_external_directs_legality(arch);
 
     if (error != 0) {
         VPR_ERROR(VPR_ERROR_OTHER,
