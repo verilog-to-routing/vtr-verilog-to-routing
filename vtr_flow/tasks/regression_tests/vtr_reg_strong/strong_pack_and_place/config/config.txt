@@ -25,5 +25,3 @@ pass_requirements_file=pass_requirements.txt
 
 # Script parameters
 script_params = --pack --place
-# Disable external connection legalizer
-script_params_list_add = --pack --place --pack_verify_external_connection_legality off
