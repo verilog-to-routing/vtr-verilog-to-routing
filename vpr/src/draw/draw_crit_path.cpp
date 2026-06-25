@@ -442,7 +442,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             ezgl::point2d start = tnode_draw_coord(prev_node);
             ezgl::point2d end = tnode_draw_coord(node);
 
-            // After this operation, start and end are just a relative concept.
+            // After this step, start and end are just a relative concept.
             // This step is to ensure that start is always physically to the left of end,
             // which later helps facilitate the math.
             if (start.x > end.x) {
@@ -495,7 +495,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
 static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info> basic_label_drawing_info,
                                                                              double pixels_per_world_unit) {
 
-    // The label position candidates are ordered in an implied priority which the placement algorithm will follow.
+    // The label position candidates are ordered in an implied priority which the decluttering algorithm will follow.
     std::vector<e_label_relative_pos> label_pos_candidates = {e_label_relative_pos::CENTER_ABOVE,
                                                               e_label_relative_pos::LEFT_ABOVE,
                                                               e_label_relative_pos::RIGHT_ABOVE,
