@@ -50,8 +50,8 @@ bool WindowedBiMatchingDetailedPlacer::window_has_no_empty_physical_tiles(const 
 
 bool WindowedBiMatchingDetailedPlacer::window_has_all_placed_blocks(const BlkLocRegistry& blk_loc_registry, int x, int y, int layer) {
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-    for (int dx = 0; dx < window_size_++; dx++) {
-        for (int dy = 0; dy < window_size_++; dy++) {
+    for (int dx = 0; dx < window_size_; dx++) {
+        for (int dy = 0; dy < window_size_; dy++) {
             t_pl_loc loc = make_pl_loc(x + dx, y + dy, placement_sub_tile_, layer);
             ClusterBlockId blk = grid_blocks.block_at_location(loc);
             if (blk == ClusterBlockId::INVALID()) {
@@ -147,17 +147,16 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
     }
     if (num_swaps > 0) {
         post_place_sync();
-
-        // Verify that the placement remains valid after the detailed-placement swaps.
-        unsigned num_placement_errors = verify_placement(g_vpr_ctx);
-        if (num_placement_errors == 0) {
-            VTR_LOG("Completed placement consistency check successfully.\n");
-        } else {
-            VPR_ERROR(VPR_ERROR_AP,
-                      "Completed placement consistency check, %u errors found.\n"
-                      "Aborting program.\n",
-                      num_placement_errors);
-        }
+    }
+    // Verify that the placement remains valid after the detailed-placement swaps.
+    unsigned num_placement_errors = verify_placement(g_vpr_ctx);
+    if (num_placement_errors == 0) {
+        VTR_LOG("Completed placement consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_AP,
+                    "Completed placement consistency check, %u errors found.\n"
+                    "Aborting program.\n",
+                    num_placement_errors);
     }
     VTR_LOG("Windowed BiMatching DP: committed %d neighbor swaps.\n", num_swaps);
 }
