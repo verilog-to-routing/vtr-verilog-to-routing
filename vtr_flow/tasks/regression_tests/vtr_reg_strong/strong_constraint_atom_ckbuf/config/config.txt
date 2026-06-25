@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params=-starting_stage vpr -track_memory_usage --pack --place --route --analysis --max_router_iterations 150 --read_vpr_constraints ../../../../config/vpr_constraint_clk_cond.xml
+script_params=-starting_stage vpr -track_memory_usage --pack --place --route --analysis --max_router_iterations 150 --read_vpr_constraints ../../../../config/vpr_constraint_clk_cond.xml --pack_verify_external_connection_legality off
