@@ -644,6 +644,7 @@ void setup_packer_opts(const t_options& Options,
     PackerOpts->device_layout = Options.device_layout;
 
     PackerOpts->timing_update_type = Options.timing_update_type;
+    PackerOpts->verify_external_connection_legality = Options.pack_verify_external_connection_legality;
 }
 
 static void setup_netlist_opts(const t_options& Options, t_netlist_opts& NetlistOpts) {
