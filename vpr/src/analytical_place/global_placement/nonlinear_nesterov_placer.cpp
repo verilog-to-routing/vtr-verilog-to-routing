@@ -229,6 +229,11 @@ const double kPreconditionStrength = env_or("VTR_NESTEROV_PRECOND_ALPHA", 1.0);
 const double kPreconditionMaxRatio = env_or("VTR_NESTEROV_PRECOND_RATIO", 0.0);
 
 /**
+ * @brief Pi constant for portable math; M_PI is not guaranteed by <cmath>.
+ */
+constexpr double kPi = 3.141592653589793238462643383279502884;
+
+/**
  * @brief Small value used to avoid division by zero.
  */
 constexpr double kEpsilon = 1e-9;
@@ -257,7 +262,7 @@ void dct_ii(const std::vector<double>& input, std::vector<double>& output) {
 
     output.resize(size);
     for (size_t frequency = 0; frequency < size; frequency++) {
-        double angle = M_PI * frequency / (2. * size);
+        double angle = kPi * frequency / (2. * size);
         std::complex<double> phase(std::cos(angle), -std::sin(angle));
         output[frequency] = 0.5 * std::real(phase * spectrum[frequency]);
     }
@@ -272,7 +277,7 @@ void idct_iii(const std::vector<double>& input, std::vector<double>& output) {
     size_t size = input.size();
     std::vector<std::complex<double>> spectrum(2 * size, 0.);
     for (size_t frequency = 0; frequency < size; frequency++) {
-        double angle = M_PI * frequency / (2. * size);
+        double angle = kPi * frequency / (2. * size);
         std::complex<double> phase(std::cos(angle), std::sin(angle));
         spectrum[frequency] = 2. * phase * input[frequency];
         if (frequency != 0)
@@ -323,10 +328,10 @@ void solve_neumann_poisson_dct(const std::vector<double>& charge,
     }
 
     for (size_t y_frequency = 0; y_frequency < height; y_frequency++) {
-        double y_eigenvalue = 2. * (1. - std::cos(M_PI * y_frequency / height));
+        double y_eigenvalue = 2. * (1. - std::cos(kPi * y_frequency / height));
         for (size_t x_frequency = 0; x_frequency < width; x_frequency++) {
             size_t idx = y_frequency * width + x_frequency;
-            double x_eigenvalue = 2. * (1. - std::cos(M_PI * x_frequency / width));
+            double x_eigenvalue = 2. * (1. - std::cos(kPi * x_frequency / width));
             double eigenvalue = x_eigenvalue + y_eigenvalue;
             spectrum[idx] = eigenvalue > kEpsilon ? spectrum[idx] / eigenvalue : 0.;
         }
