@@ -154,9 +154,9 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
         VTR_LOG("Completed placement consistency check successfully.\n");
     } else {
         VPR_ERROR(VPR_ERROR_AP,
-                    "Completed placement consistency check, %u errors found.\n"
-                    "Aborting program.\n",
-                    num_placement_errors);
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_placement_errors);
     }
     VTR_LOG("Windowed BiMatching DP: committed %d neighbor swaps.\n", num_swaps);
 }
