@@ -39,7 +39,7 @@ static constexpr float FRACTION_TEXT_PADDING = 0.01;
 
 // The minimum permissible ratio of a drawing instance's area over screen area (both in the world coordinates),
 // below which the drawing instance should be decluttered (hidden). This value was tested and determined through experimentation.
-static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.0008;
+static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.003;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -65,7 +65,8 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
  */
 static int get_num_child_blocks(const t_mode& mode);
 /**
- * @brief A helper function for draw_internal_load_coords. 
+ * @brief A helper function for draw_internal_load_coords.
+ * 
  * Calculates the coordinates of a internal block and stores its bounding box inside global variables. 
  * The calculated width and height of the block are also assigned to the pointers blk_width and blk_height.
  * @param type_descrip_index The index of the logical block type.
@@ -84,7 +85,33 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
 
 #ifndef NO_GRAPHICS
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
+/**
+ * @brief Checks whether a block is large enough to draw at the current zoom level.
+ *
+ * @param pb_bbox Bounding box of the physical block in world coordinates.
+ * @param g Main renderer.
+ * @return True if the block covers at least the minimum screen-area ratio; otherwise false.
+ */
+static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
+
+/**
+ * @brief Helper subroutine to recursively draw sub-blocks.
+ *
+ * This function traverses through the pb_graph which a netlist block can map to,
+ * and draws each sub-block inside its parent block (any pb block owing children block(s) in the pb_graph,
+ * not necessarily the root block). A level of detail check (to determine whether the current block
+ * should be drawn or not) is also implemented. The parent block recursively calls this function on its children,
+ * and uses the returned boolean to determine if its children were drawn inside itself, in which case
+ * the parent block's name needs to be drawn at the top. Otherwise, its name can be safely drawn in the center.
+ *
+ * @param clb_index ID of the clustered block containing pb.
+ * @param pb Block to draw.
+ * @param parent_bbox Absolute bounding box of the parent block. For the root block, it is an empty rectangle at the origin.
+ * @param type Logical block type of the containing clustered block.
+ * @param g Main renderer.
+ * @return True if this block is drawn; false if it is hidden by the block internal depth or the decluttering method.
+ */
+static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g);
 #endif /* NO_GRAPHICS */
@@ -381,11 +408,22 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 }
 
 #ifndef NO_GRAPHICS
-/* Helper subroutine to draw all sub-blocks. This function traverses through the pb_graph
- * which a netlist block can map to, and draws each sub-block inside its parent block. With
- * each click on the "Blk Internal" button, a new level is shown.
- */
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
+static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
+    // Calculate the block bounding box's area in the world coordinates.
+    double pb_bbox_area = pb_bbox.area();
+    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
+    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
+    double screen_area = g->get_visible_world().area();
+    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the block
+    // because it would be very tiny on the screen, and it would also get cluttered with other blocks.
+    if (pb_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
@@ -399,29 +437,22 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-    // if we've gone too far, don't draw anything
+    // If we've gone too far, don't draw anything.
     if (pb_type->depth > draw_state->show_blk_internal) {
-        return;
+        return false;
     }
 
-    // Calculate the bounding box's area in the world coordinates.
-    double abs_bbox_area = abs_bbox.width() * abs_bbox.height();
-    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
-    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
-    double screen_area = g->get_visible_world().area();
-    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the box
-    // because it would otherwise be very tiny on the screen, and it would also get cluttered with other boxes.
-    if (abs_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
-        return;
+    // If the block's area is too small relative to the screen, don't draw anything.
+    if (!large_enough_to_draw(abs_bbox, g)) {
+        return false;
     }
 
-    // first draw box
-
+    // First draw box.
     if (pb->name != nullptr) {
         // If block is used, draw it in colour with solid border.
         g->set_line_dash(ezgl::line_dash::none);
 
-        // determine default background color
+        // Determine default background color.
         if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
             g->set_color(SELECTED_COLOR, transparency_factor);
         } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
@@ -445,11 +476,62 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->draw_rectangle(abs_bbox);
     }
 
+    // Now recurse on the child pbs.
+    // Note: we make the recursive function calls before drawing text,
+    // because the text position depends on whether or not the children blocks were drawn.
+    // So, the overall drawing order is: parent-box -> child-box -> (further recursion) -> child-text -> parent-text.
+
+    bool at_least_one_child_pb_drawn = false;
+
+    // Only when the current block has valid children blocks and the block internal depth
+    // does not exceed the limit do we keep recursing.
+    if (pb->child_pbs != nullptr && pb->name != nullptr && pb_type->depth < draw_state->show_blk_internal) {
+        int num_child_types = pb->get_num_child_types();
+        bool current_child_pb_drawn = false;
+        for (int i = 0; i < num_child_types; ++i) {
+            if (pb->child_pbs[i] == nullptr) {
+                continue;
+            }
+
+            int num_pb = pb->get_num_children_of_type(i);
+            for (int j = 0; j < num_pb; ++j) {
+                t_pb* child_pb = &pb->child_pbs[i][j];
+
+                VTR_ASSERT(child_pb != nullptr);
+
+                t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
+
+                if (pb_child_type == nullptr) {
+                    continue;
+                }
+
+                // Now recurse. The return value will indicate if this child block is actually drawn or not.
+                current_child_pb_drawn = draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
+
+                if (current_child_pb_drawn) {
+                    at_least_one_child_pb_drawn = true;
+                }
+            }
+        }
+    }
+
     // Display text for each physical block.
     std::string pb_display_text(pb_type->name);
     std::string pb_type_name(pb_type->name);
 
-    if (!pb->is_primitive()) {
+    // This is a special case: blocks that correspond to pb_type->depth == 0 are essentially the top-level clustered blocks,
+    // and in each drawing cycle they are already drawn in draw_place() in draw_basic.cpp. The reason of that is,
+    // draw_internal_pb() is not called anymore when we zoom out too much. However, the naming convention for clustered blocks
+    // has been historically different between the two functions, and when level of detail is on (the children of clustered blocks
+    // are drawn), we will use the naming convention specified under the else if statement below. And when level of detail
+    // is off (!at_least_one_child_pb_drawn), we will still use the naming convention originated from draw_place()
+    // to ensure consistency. That one is specified under the if statement just below.
+    if (pb_type->depth == 0 && !at_least_one_child_pb_drawn) {
+        const t_pl_loc& loc = block_locs[clb_index].loc;
+        // loc.x and loc.y are the x and y coordinates of the containing subtile.
+        pb_display_text += vtr::string_fmt(" (%d,%d)", loc.x, loc.y);
+
+    } else if (!pb->is_primitive()) {
         // Format for non-primitives: <block_type_name>[<placement_index>]:<mode_name>
         std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
         pb_display_text += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
@@ -467,20 +549,18 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     g->set_font_size(16);
-    if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
-        // If this pb is at the lowest displayed level, or has no more children, then
-        // label it in the center with its type and name
-
+    if (!at_least_one_child_pb_drawn) {
+        // If no child block was drawn, we can safely draw the text in the middle
         if (draw_state->draw_block_text) {
             g->draw_text(
                 abs_bbox.center(),
-                pb_display_text.c_str(),
+                pb_display_text,
                 abs_bbox.width(),
                 abs_bbox.height());
         }
 
     } else {
-        // else (ie. has children, and isn't at the lowest displayed level)
+        // Else (ie. at least one child block was drawn inside)
         // just label its type, and put it up at the top so we can see it
         if (draw_state->draw_block_text) {
             // draw_coords->get_tile_height() * FRACTION_TEXT_PADDING represents the vertical padding from the block's ceiling.
@@ -488,43 +568,12 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             g->draw_text(
                 ezgl::point2d(abs_bbox.center_x(),
                               abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
-                pb_display_text.c_str(),
+                pb_display_text,
                 abs_bbox.width(),
                 draw_coords->get_tile_height() * FRACTION_TEXT_PADDING * 2);
         }
     }
-
-    // now recurse on the child pbs.
-
-    // return if no children, or this is an unusused pb,
-    // or if going down will be too far down (this one is redundant, but for optimazition)
-    if (pb->child_pbs == nullptr || pb->name == nullptr
-        || pb_type->depth == draw_state->show_blk_internal) {
-        return;
-    }
-
-    int num_child_types = pb->get_num_child_types();
-    for (int i = 0; i < num_child_types; ++i) {
-        if (pb->child_pbs[i] == nullptr) {
-            continue;
-        }
-
-        int num_pb = pb->get_num_children_of_type(i);
-        for (int j = 0; j < num_pb; ++j) {
-            t_pb* child_pb = &pb->child_pbs[i][j];
-
-            VTR_ASSERT(child_pb != nullptr);
-
-            t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
-
-            if (pb_child_type == nullptr) {
-                continue;
-            }
-
-            // now recurse
-            draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
-        }
-    }
+    return true;
 }
 
 void draw_selected_pb_flylines(ezgl::renderer* g) {
@@ -568,8 +617,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
             ezgl::point2d start = atom_pin_draw_coord(net_driver);
             ezgl::point2d end = atom_pin_draw_coord(ipin);
             g->draw_line(start, end);
-            draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-            draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+            draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
         }
 
         for (AtomPinId opin : atom_nl.block_output_pins(blk)) {
@@ -587,8 +636,8 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
                 ezgl::point2d start = atom_pin_draw_coord(opin);
                 ezgl::point2d end = atom_pin_draw_coord(net_sink);
                 g->draw_line(start, end);
-                draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-                draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
+                draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
             }
         }
     }
@@ -832,9 +881,11 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             // get the bbox for this child
             const ezgl::rectangle& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
-            // If child block is being used, check if it intersects
-            if (child_pb->name != nullptr && bbox.contains(local_pt)) {
-                // check farther down the graph, see if we can find
+            ezgl::renderer* g = application->get_renderer();
+            // If child block is being used, check if it intersects. Check also if it is visible (drawn) on screen,
+            // because otherwise it would be unavailable for selection.
+            if (child_pb->name != nullptr && bbox.contains(local_pt) && large_enough_to_draw(bbox, g)) {
+                // Check farther down the graph, see if we can find
                 // something more specific.
                 t_pb* subtree_result = highlight_sub_block_helper(
                     clb_index, child_pb, local_pt - bbox.bottom_left(), max_depth);

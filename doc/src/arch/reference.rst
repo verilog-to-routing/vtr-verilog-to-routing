@@ -1668,13 +1668,16 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
 
         Direct interconnect example.
 
-.. arch:tag:: <mux name="string" input="string" output="string"/>
+.. arch:tag:: <mux name="string" input="string" output="string" bus="{true|false}"/>
 
     :req_param name: Identifier for the interconnect.
     :req_param input: Pins that are inputs to this interconnect. Different data lines are separated by a space.
     :req_param output: Pins that are outputs of this interconnect.
+    :opt_param bus: Whether this mux selects between multi-bit (bus) data lines.
 
-    This tag supports both single-bit muxes and bus-based muxes. Note that the bit width of each mux input must match the bit width of the mux output.
+        When ``true``, each data line may be a multi-bit bus and the bit width of every mux input must match the bit width of the mux output.
+
+        When ``false`` (the default), every data line and the output must be a single pin.
 
     **Example:**
 
@@ -1685,6 +1688,34 @@ The following describes the tags that are accepted in the ``<interconnect>`` tag
     .. figure:: mux_example.*
 
         Mux interconnect example.
+
+    **Bus-based example:**
+
+    With ``bus="true"`` each data line may be a multi-bit bus. Every input data
+    line and the output must have the same bit width. In the example below the
+    27-bit buses ``one_mult_27x27.a`` and ``one_mult_27x27.b`` are the two data
+    lines selected onto the 27-bit output ``mult_27x27.a``:
+
+    .. code-block:: xml
+
+        <mux name="a2a" input="one_mult_27x27.a one_mult_27x27.b" output="mult_27x27.a" bus="true"/>
+
+    A data line may also be a bit-slice of a wider port, or a concatenation of
+    pins using ``{...}``; in every case the width of each data line must match
+    the output width. Here each data line is a 27-bit slice of the 54-bit
+    ``mult_27.datain`` bus:
+
+    .. code-block:: xml
+
+        <mux name="datain2a" input="mult_27.datain[26:0] mult_27.datain[53:27]" output="one_mult_27x27.a" bus="true"/>
+
+    .. note::
+
+        ``bus="true"`` is currently a convenience shorthand: VPR expands it into a
+        set of independent single-bit muxes (one per output bit), rather than
+        modeling a true multi-bit bus. This means each single-bit mux gets its own
+        separate config bit, whereas in a true bus-based mux all of the bit-level
+        muxes would share a single config bit.
 
 
 

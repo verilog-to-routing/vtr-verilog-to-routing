@@ -103,25 +103,6 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
         write_setup_timing_graph_dot(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH) + std::string(".dot"),
                                      *timing_info_, debug_tnode);
     }
-
-    // Write a timing report.
-    {
-        auto& timing_ctx = g_vpr_ctx.timing();
-        PreClusterTimingGraphResolver resolver(atom_netlist,
-                                               atom_lookup,
-                                               arch.models,
-                                               *timing_ctx.graph,
-                                               *clustering_delay_calc_);
-        resolver.set_detail_level(analysis_opts.timing_report_detail);
-
-        tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
-                                              *timing_ctx.constraints);
-
-        timing_reporter.report_timing_setup(
-            "pre_pack.report_timing.setup.rpt",
-            *timing_info_->setup_analyzer(),
-            analysis_opts.timing_report_npaths);
-    }
 }
 
 static float approximate_inter_cluster_delay(const t_arch& arch,
@@ -269,6 +250,30 @@ static void get_intercluster_switch_fanin_estimates(const t_arch& arch,
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unrecognized directionality: %d\n",
                         (int)routing_arch.directionality);
     }
+}
+
+void PreClusterTimingManager::generate_setup_timing_report(const AtomNetlist& atom_netlist,
+                                                           const AtomLookup& atom_lookup,
+                                                           const t_arch& arch,
+                                                           const t_analysis_opts& analysis_opts) const {
+    if (!is_valid_)
+        return;
+
+    auto& timing_ctx = g_vpr_ctx.timing();
+    PreClusterTimingGraphResolver resolver(atom_netlist,
+                                           atom_lookup,
+                                           arch.models,
+                                           *timing_ctx.graph,
+                                           *clustering_delay_calc_);
+    resolver.set_detail_level(analysis_opts.timing_report_detail);
+
+    tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
+                                          *timing_ctx.constraints);
+
+    timing_reporter.report_timing_setup(
+        "pre_pack.report_timing.setup.rpt",
+        *timing_info_->setup_analyzer(),
+        analysis_opts.timing_report_npaths);
 }
 
 float PreClusterTimingManager::calc_atom_setup_criticality(AtomBlockId blk_id,

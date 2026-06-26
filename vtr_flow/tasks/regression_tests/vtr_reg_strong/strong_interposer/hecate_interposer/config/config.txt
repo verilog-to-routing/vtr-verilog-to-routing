@@ -6,14 +6,14 @@
 circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/multi_die/hecate/interposer
+archs_dir=arch/multi_die/hecate
 
 # Add circuits to list to sweep
 circuit_list_add=ch_intrinsics.v
 
 # Add architectures to list to sweep
-arch_list_add=hecate_25d_L17_int_10um_bump_fanin_12.xml
-
+arch_list_add=interposer/hecate_25d_L17_int_10um_bump_fanin_12.xml
+arch_list_add=2d/hecate_2d_k6FracN10LB_mem20K_complexDSP_customSB_7nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_fixed_chan_width.txt
@@ -25,6 +25,6 @@ qor_parse_file=qor_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_strict_rr_graph.txt
 
 # Script parameters
-script_params_common = -track_memory_usage --route_chan_width 80 --device hecate_small
+script_params_common = -track_memory_usage --route_chan_width 80 --device_width 40
 script_params_list_add = --pack --place --route --analysis
 script_params_list_add = --analytical_place --route --analysis

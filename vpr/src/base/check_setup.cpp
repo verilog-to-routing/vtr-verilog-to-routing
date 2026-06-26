@@ -1,30 +1,44 @@
 
-#include "CheckSetup.h"
+#include "check_setup.h"
 
 #include "vtr_log.h"
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "globals.h"
+#include "setup_grid.h"
 
 static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
 static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
 
-void CheckSetup(const t_packer_opts& packer_opts,
-                const t_placer_opts& placer_opts,
-                const t_ap_opts& ap_opts,
-                const t_router_opts& router_opts,
-                const t_server_opts& server_opts,
-                const t_det_routing_arch& routing_arch,
-                const std::vector<t_segment_inf>& segments,
-                const t_timing_inf& timing,
-                const t_chan_width_dist& chans) {
+void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
+    const t_packer_opts& packer_opts = vpr_setup.PackerOpts;
+    const t_placer_opts& placer_opts = vpr_setup.PlacerOpts;
+    const t_ap_opts& ap_opts = vpr_setup.APOpts;
+    const t_router_opts& router_opts = vpr_setup.RouterOpts;
+    const t_server_opts& server_opts = vpr_setup.ServerOpts;
+    const t_det_routing_arch& routing_arch = vpr_setup.RoutingArch;
+    const std::vector<t_segment_inf>& segments = vpr_setup.Segments;
+    const t_timing_inf& timing = vpr_setup.Timing;
+    const int device_width = vpr_setup.device_width;
+    const std::string& device_layout = vpr_setup.device_layout;
+
     if (!timing.timing_analysis_enabled && packer_opts.timing_driven) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Packing cannot be timing driven without timing analysis enabled\n");
     }
 
+    if (device_width > 0 && device_layout != "auto") {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--device_width is only valid when --device is 'auto'\n");
+    }
+
+    if (device_width < 0 && device_layout == "auto") {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--device_width must be non-negative when --device is 'auto'\n");
+    }
+
     if (packer_opts.load_flat_placement) {
-        if (packer_opts.device_layout == "auto") {
+        if (!has_fixed_device_size(vpr_setup)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Legalization requires a fixed device layout.\n");
         }
