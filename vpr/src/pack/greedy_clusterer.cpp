@@ -338,12 +338,7 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
     // to skipping routing on clusters that are known to be legal from the
     // PackingSignatureTree. In this case, routing must be run at least once on
     // the final cluster for later stages to use.
-    VTR_LOG("Final routing check (strategy: %s, type: %s, molecules: %zu)\n",
-            strategy == ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE ? "SKIP_INTRA_LB_ROUTE" : "FULL",
-            cluster_legalizer.get_cluster_type(legalization_cluster_id)->name.c_str(),
-            cluster_legalizer.get_num_molecules_in_cluster(legalization_cluster_id));
     if (!cluster_legalizer.ensure_legal_final_routing(legalization_cluster_id)) {
-        VTR_LOG("  --> FAILED final routing\n");
         // If the cluster is not legal, undo the cluster.
         // Update the used type instances.
         num_used_type_instances[cluster_legalizer.get_cluster_type(legalization_cluster_id)]--;
@@ -353,7 +348,6 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
         // Cluster failed to grow.
         return LegalizationClusterId();
     }
-    VTR_LOG("  --> PASSED final routing\n");
 
     // A legal cluster must have been created by this point.
     VTR_ASSERT(legalization_cluster_id.is_valid());

@@ -22,13 +22,14 @@
  * LUTs FI = 5, the soft logic block sees 6 pins instead of 5 pins for the dual LUT mode messing up the pin counter.
  * The packer still produces correct results but runs slower than its best (experiment on a modified architecture
  * file that forces correct pin counting shows 40x speedup vs VPR 6.0 as opposed to 3x speedup at the time)
+ * 
+ * TODO (for Haydar myself): You can try to add reference to the Jason Luu PhD Thesis if doi available.
  *
  * Author: Jason Luu
  * Date: May 16, 2012
  */
 
 #include <queue>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "physical_types.h"
@@ -40,12 +41,6 @@
 
 /* header functions that identify pin classes */
 static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node);
-static int get_max_depth_of_pb_graph_node(const t_pb_graph_node* pb_graph_node);
-static void load_pin_class_by_depth(t_pb_graph_node* pb_graph_node,
-                                    const int depth,
-                                    int* input_count,
-                                    int* output_count,
-                                    std::unordered_map<t_pb_graph_pin*, int>& pin_marker);
 static void load_list_of_connectable_input_pin_ptrs(t_pb_graph_node* pb_graph_node);
 static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph_pin* current_pb_graph_pin,
                                                                       t_pb_graph_pin* reference_pin,
@@ -53,24 +48,7 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
                                                                       std::unordered_set<t_pb_graph_pin*>& seen_pins);
 static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pin,
                                              std::unordered_set<t_pb_graph_pin*>& seen_pins);
-static void expand_pb_graph_node_and_load_pin_class_by_depth(t_pb_graph_pin* current_pb_graph_pin,
-                                                             const t_pb_graph_pin* reference_pb_graph_pin,
-                                                             const int depth,
-                                                             int* input_count,
-                                                             int* output_count,
-                                                             std::unordered_map<t_pb_graph_pin*, int>& pin_marker);
 static void sum_pin_class(t_pb_graph_node* pb_graph_node);
-static void assign_pin_classes_for_primitives(t_pb_graph_node* pb_graph_node,
-                                              const int depth,
-                                              int* input_count,
-                                              int* output_count,
-                                              std::unordered_map<t_pb_graph_pin*, int>& pin_marker);
-static void load_pin_classes_at_depth(t_pb_graph_node* pb_graph_node,
-                                      const int depth,
-                                      int* input_count,
-                                      int* output_count,
-                                      std::unordered_map<t_pb_graph_pin*, int>& pin_marker);
-
 static void bfs_and_assign_class(t_pb_graph_pin* seed_pin,
                                  const int node_depth,
                                  const int class_id,
@@ -80,29 +58,6 @@ static void load_all_pin_classes(t_pb_graph_node* pb_graph_node);
 static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node);
 static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin);
 
-
-static void print_pb_hierarchy(t_pb_graph_node* pb_graph_node, int depth, const std::string& prefix = "", const std::string& child_prefix = "") {
-    VTR_LOG("%s%s (depth = %d, accessed_depth = %d)\n",
-            prefix.c_str(),
-            pb_graph_node->hierarchical_type_name().c_str(),
-            depth,
-            pb_graph_node->pb_type->depth);
-
-    std::vector<t_pb_graph_node*> children;
-    for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++)
-        for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++)
-            for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++)
-                children.push_back(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-
-    for (int i = 0; i < (int)children.size(); i++) {
-        bool last = (i == (int)children.size() - 1);
-        print_pb_hierarchy(children[i], depth + 1,
-                           child_prefix + (last ? "└── " : "├── "),
-                           child_prefix + (last ? "    " : "│   "));
-    }
-}
-
-
 /**
  * Identify all pin class information for complex block
  */
@@ -110,18 +65,7 @@ void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node) {
     /* Allocate memory for primitives */
     alloc_pin_classes_in_pb_graph_node(pb_graph_node);
 
-    /* Load pin classes using the simplified single-pass implementation. */
     load_all_pin_classes(pb_graph_node);
-
-    /* Old depth-loop implementation kept for reference:
-    int i, depth, input_count, output_count;
-    depth = get_max_depth_of_pb_graph_node(pb_graph_node);
-    for (i = 0; i < depth; i++) {
-        input_count = output_count = 0;
-        std::unordered_map<t_pb_graph_pin*, int> pin_marker;
-        load_pin_class_by_depth(pb_graph_node, i, &input_count, &output_count, pin_marker);
-    }
-    */
 
     /* Load internal output-to-input connections within each cluster */
     load_list_of_connectable_input_pin_ptrs(pb_graph_node);
@@ -173,262 +117,6 @@ static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
                 }
             }
         }
-    }
-}
-
-/* determine maximum depth of pb_graph_node */
-static int get_max_depth_of_pb_graph_node(const t_pb_graph_node* pb_graph_node) {
-    int i, j, k;
-    int max_depth, depth;
-
-    max_depth = 0;
-
-    /* If primitive, allocate space, else go to primitive */
-    if (pb_graph_node->is_primitive()) {
-        return pb_graph_node->pb_type->depth;
-    } else {
-        for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-            for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-                for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                    depth = get_max_depth_of_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                    if (depth > max_depth) {
-                        max_depth = depth;
-                    }
-                }
-            }
-        }
-    }
-
-    return max_depth;
-}
-
-/* load pin class based on limited depth */
-static void load_pin_class_by_depth(t_pb_graph_node* pb_graph_node,
-                                    const int depth,
-                                    int* input_count,
-                                    int* output_count,
-                                    std::unordered_map<t_pb_graph_pin*, int>& pin_marker) {
-    VTR_LOG("load_pin_class_by_depth called on %s on depth %d (primitive %d, node depth %d)\n", 
-        pb_graph_node->hierarchical_type_name().c_str(), depth, pb_graph_node->is_primitive(), pb_graph_node->pb_type->depth);
-    int i, j, k;
-
-    if (pb_graph_node->is_primitive()) {
-        if (pb_graph_node->pb_type->depth > depth) {
-            /* At primitive, determine which pin class each of its pins belong to */
-            for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-                for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-                    if (pb_graph_node->input_pins[i][j].parent_pin_class[depth] == UNDEFINED) {
-                        expand_pb_graph_node_and_load_pin_class_by_depth(&pb_graph_node->input_pins[i][j],
-                                                                         &pb_graph_node->input_pins[i][j], depth,
-                                                                         input_count, output_count,
-                                                                         pin_marker);
-                        (*input_count)++;
-                    }
-                }
-            }
-            for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-                for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-                    if (pb_graph_node->output_pins[i][j].parent_pin_class[depth] == UNDEFINED) {
-                        expand_pb_graph_node_and_load_pin_class_by_depth(&pb_graph_node->output_pins[i][j],
-                                                                         &pb_graph_node->output_pins[i][j], depth,
-                                                                         input_count, output_count,
-                                                                         pin_marker);
-                        (*output_count)++;
-                    }
-                }
-            }
-            for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-                for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-                    if (pb_graph_node->clock_pins[i][j].parent_pin_class[depth] == UNDEFINED) {
-                        expand_pb_graph_node_and_load_pin_class_by_depth(&pb_graph_node->clock_pins[i][j],
-                                                                         &pb_graph_node->clock_pins[i][j], depth,
-                                                                         input_count, output_count,
-                                                                         pin_marker);
-                        (*input_count)++;
-                    }
-                }
-            }
-        }
-    }
-
-    if (pb_graph_node->pb_type->depth == depth) {
-        VTR_LOG("Depth of pb node is equal to given depth, assign pin class of current node as UNDEFINED\n");
-        /* Load pin classes for all pb_graph_nodes of this depth, therefore, at a particular pb_graph_node of this depth, set # of pin classes to be 0 */
-        *input_count = 0;
-        *output_count = 0;
-        for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-            for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-                pb_graph_node->input_pins[i][j].pin_class = UNDEFINED;
-            }
-        }
-        for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-            for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-                pb_graph_node->output_pins[i][j].pin_class = UNDEFINED;
-            }
-        }
-        for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-            for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-                pb_graph_node->clock_pins[i][j].pin_class = UNDEFINED;
-            }
-        }
-    }
-
-    /* Expand down to primitives */
-    for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                load_pin_class_by_depth(&pb_graph_node->child_pb_graph_nodes[i][j][k], depth,
-                                        input_count, output_count, pin_marker);
-            }
-        }
-    }
-
-    if (pb_graph_node->pb_type->depth == depth && !pb_graph_node->is_primitive()) {
-        VTR_LOG("Recoding the pin class information for cluster %s (depth %d and node depth %d and not primitive)\n",
-            pb_graph_node->hierarchical_type_name().c_str(), depth, pb_graph_node->pb_type->depth);
-        /* Record pin class information for cluster */
-        pb_graph_node->num_input_pin_class = *input_count + 1; /* number of input pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
-        pb_graph_node->input_pin_class_size = new int[*input_count + 1];
-        for (i = 0; i < *input_count + 1; i++) /* zero-initializing */
-            pb_graph_node->input_pin_class_size[i] = 0;
-        pb_graph_node->num_output_pin_class = *output_count + 1; /* number of output pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
-        pb_graph_node->output_pin_class_size = new int[*output_count + 1];
-        for (i = 0; i < *output_count + 1; i++) /* zero-initializing */
-            pb_graph_node->output_pin_class_size[i] = 0;
-        sum_pin_class(pb_graph_node);
-    }
-}
-
-/**
- * @brief Recursively visits all primitive nodes in the subtree rooted at
- *        pb_graph_node and assigns a pin class to each unassigned primitive pin,
- *        as seen from the cluster node at the given depth.
- *
- * For each primitive pin that has not yet been assigned a class at this depth
- * (parent_pin_class[depth] == UNDEFINED), a DFS is launched via
- * expand_pb_graph_node_and_load_pin_class_by_depth. All primitive pins reachable
- * from each other through the pb_graph are grouped into the same class.
- * input_count and output_count are incremented for each new class discovered.
- *
- * This function is meant to be called on the subtree of a cluster node at the
- * target depth, after that cluster node's counters have been reset to zero.
- *
- * @param pb_graph_node  Root of the subtree to search for primitives.
- * @param depth          The hierarchy depth of the cluster node whose pin classes
- *                       are being computed. Primitives must have pb_type->depth > depth.
- * @param input_count    Running count of input pin classes discovered so far.
- * @param output_count   Running count of output pin classes discovered so far.
- * @param pin_marker     Visited-pin map used by the DFS to avoid revisiting pins.
- */
-static void assign_pin_classes_for_primitives(t_pb_graph_node* pb_graph_node,
-                                              const int depth,
-                                              int* input_count,
-                                              int* output_count,
-                                              std::unordered_map<t_pb_graph_pin*, int>& pin_marker) {
-    if (pb_graph_node->is_primitive()) {
-        if (pb_graph_node->pb_type->depth > depth) {
-            for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
-                for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-                    if (pb_graph_node->input_pins[i][j].parent_pin_class[depth] == UNDEFINED) {
-                        expand_pb_graph_node_and_load_pin_class_by_depth(&pb_graph_node->input_pins[i][j],
-                                                                         &pb_graph_node->input_pins[i][j],
-                                                                         depth, input_count, output_count, pin_marker);
-                        (*input_count)++;
-                    }
-                }
-            }
-            for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
-                for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-                    if (pb_graph_node->output_pins[i][j].parent_pin_class[depth] == UNDEFINED) {
-                        expand_pb_graph_node_and_load_pin_class_by_depth(&pb_graph_node->output_pins[i][j],
-                                                                         &pb_graph_node->output_pins[i][j],
-                                                                         depth, input_count, output_count, pin_marker);
-                        (*output_count)++;
-                    }
-                }
-            }
-            for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
-                for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-                    if (pb_graph_node->clock_pins[i][j].parent_pin_class[depth] == UNDEFINED) {
-                        expand_pb_graph_node_and_load_pin_class_by_depth(&pb_graph_node->clock_pins[i][j],
-                                                                         &pb_graph_node->clock_pins[i][j],
-                                                                         depth, input_count, output_count, pin_marker);
-                        (*input_count)++;
-                    }
-                }
-            }
-        }
-    } else {
-        for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-            for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-                for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                    assign_pin_classes_for_primitives(&pb_graph_node->child_pb_graph_nodes[i][j][k],
-                                                      depth, input_count, output_count, pin_marker);
-                }
-            }
-        }
-    }
-}
-
-/**
- * @brief Finds every cluster node at the given depth in the pb_graph tree and
- *        computes its pin classes.
- *
- * For each cluster node at the target depth this function:
- *   1. Resets input_count and output_count to zero and clears pin_class on the
- *      node's own pins (so each cluster instance gets independent class numbering).
- *   2. Calls assign_pin_classes_for_primitives on the cluster's subtree to
- *      discover and assign a class ID to every reachable primitive pin.
- *   3. Allocates num_input_pin_class / num_output_pin_class on the cluster node
- *      and calls sum_pin_class to record how many primitive pins belong to each class.
- *
- * Nodes above the target depth are passed through transparently via recursion.
- * Primitives (which are leaves) are handled entirely by assign_pin_classes_for_primitives.
- *
- * @param pb_graph_node  Current node being visited in the top-down traversal.
- * @param depth          The hierarchy depth of the cluster nodes to process.
- * @param input_count    Shared counter for input pin classes; reset at each target-depth node.
- * @param output_count   Shared counter for output pin classes; reset at each target-depth node.
- * @param pin_marker     Visited-pin map passed through to the DFS inside assign_pin_classes_for_primitives.
- */
-static void load_pin_classes_at_depth(t_pb_graph_node* pb_graph_node,
-                                      const int depth,
-                                      int* input_count,
-                                      int* output_count,
-                                      std::unordered_map<t_pb_graph_pin*, int>& pin_marker) {
-    if (pb_graph_node->is_primitive())
-        return;
-
-    if (pb_graph_node->pb_type->depth == depth) {
-        /* Reset counters and clear pin_class so this cluster node starts fresh. */
-        *input_count = 0;
-        *output_count = 0;
-        for (int i = 0; i < pb_graph_node->num_input_ports; i++)
-            for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++)
-                pb_graph_node->input_pins[i][j].pin_class = UNDEFINED;
-        for (int i = 0; i < pb_graph_node->num_output_ports; i++)
-            for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++)
-                pb_graph_node->output_pins[i][j].pin_class = UNDEFINED;
-        for (int i = 0; i < pb_graph_node->num_clock_ports; i++)
-            for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++)
-                pb_graph_node->clock_pins[i][j].pin_class = UNDEFINED;
-
-        /* Assign a class to every primitive pin reachable from this cluster node. */
-        assign_pin_classes_for_primitives(pb_graph_node, depth, input_count, output_count, pin_marker);
-
-        /* Record the total number of classes found and their sizes. */
-        pb_graph_node->num_input_pin_class = *input_count + 1;
-        pb_graph_node->input_pin_class_size = new int[*input_count + 1]();
-        pb_graph_node->num_output_pin_class = *output_count + 1;
-        pb_graph_node->output_pin_class_size = new int[*output_count + 1]();
-        sum_pin_class(pb_graph_node);
-    } else {
-        /* Above the target depth — just recurse down. */
-        for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++)
-            for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++)
-                for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++)
-                    load_pin_classes_at_depth(&pb_graph_node->child_pb_graph_nodes[i][j][k],
-                                              depth, input_count, output_count, pin_marker);
     }
 }
 
@@ -522,95 +210,6 @@ static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pi
             VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
             unmark_fanout_intermediate_nodes(current_pb_graph_pin->output_edges[i]->output_pins[0],
                                              seen_pins);
-        }
-    }
-}
-
-/**
- * Determine other primitive pins that belong to the same pin class as reference pin
- */
-static void expand_pb_graph_node_and_load_pin_class_by_depth(t_pb_graph_pin* current_pb_graph_pin,
-                                                             const t_pb_graph_pin* reference_pb_graph_pin,
-                                                             const int depth,
-                                                             int* input_count,
-                                                             int* output_count,
-                                                             std::unordered_map<t_pb_graph_pin*, int>& pin_marker) {
-    int i;
-    int marker;
-    int active_pin_class;
-
-    if (reference_pb_graph_pin->port->type == IN_PORT) {
-        marker = *input_count + 10;
-        active_pin_class = *input_count;
-    } else {
-        marker = -10 - *output_count;
-        active_pin_class = *output_count;
-    }
-    VTR_ASSERT(reference_pb_graph_pin->is_primitive_pin());
-    VTR_ASSERT(current_pb_graph_pin->parent_node->pb_type->depth >= depth);
-    VTR_ASSERT(current_pb_graph_pin->port->type != INOUT_PORT);
-    if (pin_marker.count(current_pb_graph_pin) == 0 || pin_marker[current_pb_graph_pin] != marker) {
-        if (current_pb_graph_pin->is_primitive_pin()) {
-            pin_marker[current_pb_graph_pin] = marker;
-            /* This is a primitive, determine what pins cans share the same pin class as the reference pin */
-            if (current_pb_graph_pin->parent_pin_class[depth] == UNDEFINED
-                && reference_pb_graph_pin->port->is_clock == current_pb_graph_pin->port->is_clock
-                && reference_pb_graph_pin->port->type == current_pb_graph_pin->port->type) {
-                current_pb_graph_pin->parent_pin_class[depth] = active_pin_class;
-            }
-            for (i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
-                VTR_ASSERT(current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
-                expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0],
-                                                                 reference_pb_graph_pin, depth, input_count,
-                                                                 output_count, pin_marker);
-            }
-            for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-                VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-                expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0],
-                                                                 reference_pb_graph_pin, depth, input_count,
-                                                                 output_count, pin_marker);
-            }
-        } else if (current_pb_graph_pin->parent_node->pb_type->depth == depth) {
-            pin_marker[current_pb_graph_pin] = marker;
-            if (current_pb_graph_pin->port->type == OUT_PORT) {
-                if (reference_pb_graph_pin->port->type == OUT_PORT) {
-                    /* This cluster's output pin can be driven by primitive outputs belonging to this pin class */
-                    current_pb_graph_pin->pin_class = active_pin_class;
-                }
-                for (i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
-                    VTR_ASSERT(current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
-                    expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0],
-                                                                     reference_pb_graph_pin, depth, input_count,
-                                                                     output_count, pin_marker);
-                }
-            }
-            if (current_pb_graph_pin->port->type == IN_PORT) {
-                if (reference_pb_graph_pin->port->type == IN_PORT) {
-                    /* This cluster's input pin can drive the primitive input pins belonging to this pin class */
-                    current_pb_graph_pin->pin_class = active_pin_class;
-                }
-                for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-                    VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-                    expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0],
-                                                                     reference_pb_graph_pin, depth, input_count,
-                                                                     output_count, pin_marker);
-                }
-            }
-        } else if (current_pb_graph_pin->parent_node->pb_type->depth > depth) {
-            /* Inside an intermediate cluster, traverse to either a primitive or to the cluster we're interested in populating */
-            pin_marker[current_pb_graph_pin] = marker;
-            for (i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
-                VTR_ASSERT(current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
-                expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0],
-                                                                 reference_pb_graph_pin, depth, input_count,
-                                                                 output_count, pin_marker);
-            }
-            for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
-                VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-                expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0],
-                                                                 reference_pb_graph_pin, depth, input_count,
-                                                                 output_count, pin_marker);
-            }
         }
     }
 }
