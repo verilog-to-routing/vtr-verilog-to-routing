@@ -48,8 +48,8 @@ static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pi
                                              std::unordered_set<t_pb_graph_pin*>& seen_pins);
 static void sum_pin_class(t_pb_graph_node* pb_graph_node);
 static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
-                                 t_pb_graph_node* pb_graph_node,
-                                 const int class_id);
+                                        t_pb_graph_node* pb_graph_node,
+                                        const int class_id);
 static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node);
 
 static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node);
@@ -278,8 +278,8 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
  * @param class_id      The class ID to assign to all pins in this equivalence group.
  */
 static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
-                                 t_pb_graph_node* pb_graph_node,
-                                 const int class_id) {
+                                        t_pb_graph_node* pb_graph_node,
+                                        const int class_id) {
     const int node_depth = pb_graph_node->pb_type->depth;
 
     std::unordered_set<t_pb_graph_pin*> visited;
@@ -298,7 +298,7 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                 && pin->parent_pin_class[node_depth] == UNDEFINED) {
                 pin->parent_pin_class[node_depth] = class_id;
             }
-        // Assign class_id to same-type boundary pins of pb_graph_node via pin_class.
+            // Assign class_id to same-type boundary pins of pb_graph_node via pin_class.
         } else if (pin->parent_node == pb_graph_node) {
             if (pin->port->type == seed_pin->port->type
                 && pin->port->is_clock == seed_pin->port->is_clock) {
