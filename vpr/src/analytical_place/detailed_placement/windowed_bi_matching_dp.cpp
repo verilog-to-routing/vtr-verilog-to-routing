@@ -16,6 +16,7 @@
 #include "vtr_log.h"
 #include "vtr_time.h"
 #include "verify_placement.h"
+#include "place_constraints.h"
 
 t_pl_loc WindowedBiMatchingDetailedPlacer::make_pl_loc(int x, int y, int sub_tile, int layer) {
     t_pl_loc loc;
@@ -98,6 +99,11 @@ bool WindowedBiMatchingDetailedPlacer::try_swap_blocks(BlkLocRegistry& blk_loc_r
         blocks_affected.clear_move_blocks();
         return false;
     }
+    if (!floorplan_legal(blocks_affected)) {
+        blocks_affected.clear_move_blocks();
+        return false;
+    }
+
     blk_loc_registry.apply_move_blocks(blocks_affected);
     blk_loc_registry.commit_move_blocks(blocks_affected);
     blocks_affected.clear_move_blocks();
