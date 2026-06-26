@@ -22,8 +22,6 @@
  * LUTs FI = 5, the soft logic block sees 6 pins instead of 5 pins for the dual LUT mode messing up the pin counter.
  * The packer still produces correct results but runs slower than its best (experiment on a modified architecture
  * file that forces correct pin counting shows 40x speedup vs VPR 6.0 as opposed to 3x speedup at the time)
- * 
- * TODO (for Haydar myself): You can try to add reference to the Jason Luu PhD Thesis if doi available.
  *
  * Author: Jason Luu
  * Date: May 16, 2012
@@ -49,25 +47,25 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
 static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pin,
                                              std::unordered_set<t_pb_graph_pin*>& seen_pins);
 static void sum_pin_class(t_pb_graph_node* pb_graph_node);
-static void bfs_and_assign_class(t_pb_graph_pin* seed_pin,
-                                 const int node_depth,
-                                 const int class_id,
-                                 std::unordered_set<t_pb_graph_pin*>& visited);
+static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
+                                 t_pb_graph_node* pb_graph_node,
+                                 const int class_id);
 static void load_all_pin_classes(t_pb_graph_node* pb_graph_node);
 
 static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node);
 static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin);
 
 /**
- * Identify all pin class information for complex block
+ * @brief Identify all pin class information for complex block
  */
 void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node) {
-    /* Allocate memory for primitives */
+    // Allocate memory for primitives
     alloc_pin_classes_in_pb_graph_node(pb_graph_node);
 
+    // Assign pin classes at every level of the pb_graph hierarchy.
     load_all_pin_classes(pb_graph_node);
 
-    /* Load internal output-to-input connections within each cluster */
+    // Load internal output-to-input connections within each cluster
     load_list_of_connectable_input_pin_ptrs(pb_graph_node);
     discover_all_forced_connections(pb_graph_node);
 }
@@ -264,26 +262,27 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
 }
 
 /**
- * @brief BFS from a primitive seed_pin in all directions.
+ * @brief Assigns class_id to all same-type pins reachable from seed_pin
+ *        within pb_graph_node and its subtree.
  *
- * Assigns class_id to:
- *  - Every reachable primitive pin of the same type (input/clock or output)
- *    that is still UNDEFINED at node_depth  →  parent_pin_class[node_depth]
- *  - Every reachable boundary pin of the cluster node at node_depth that is
- *    of the same type  →  pin_class
+ * Starting from seed_pin, the BFS follows edges in both directions freely inside the
+ * subtree. At the boundary of pb_graph_node it only follows edges going inward, preventing
+ * the BFS from escaping into sibling or ancestor subtrees.
  *
- * Intermediate (non-primitive, non-boundary) pins are traversed but not assigned.
- * visited prevents re-entering the same pin within one BFS call.
+ * All reachable primitive pins of the same type as seed_pin are assigned class_id via
+ * parent_pin_class[depth]. All reachable boundary pins of pb_graph_node of the same type
+ * are assigned class_id via pin_class. Intermediate pins are traversed but not assigned.
  *
- * @param seed_pin   A primitive pin that seeds the BFS. Must be a primitive pin.
- * @param node_depth Depth of the cluster node whose pin classes are being computed.
- * @param class_id   The class ID to assign to all pins in this equivalence group.
- * @param visited    Set of already-visited pins for this BFS call.
+ * @param seed_pin      A primitive pin that seeds the BFS.
+ * @param pb_graph_node The pb_graph node whose subtree the BFS is confined to.
+ * @param class_id      The class ID to assign to all pins in this equivalence group.
  */
-static void bfs_and_assign_class(t_pb_graph_pin* seed_pin,
-                                 const int node_depth,
-                                 const int class_id,
-                                 std::unordered_set<t_pb_graph_pin*>& visited) {
+static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
+                                 t_pb_graph_node* pb_graph_node,
+                                 const int class_id) {
+    const int node_depth = pb_graph_node->pb_type->depth;
+
+    std::unordered_set<t_pb_graph_pin*> visited;
     std::queue<t_pb_graph_pin*> queue;
     queue.push(seed_pin);
     visited.insert(seed_pin);
@@ -292,54 +291,63 @@ static void bfs_and_assign_class(t_pb_graph_pin* seed_pin,
         t_pb_graph_pin* pin = queue.front();
         queue.pop();
 
-        const int pin_node_depth = pin->parent_node->pb_type->depth;
-
+        // Assign class_id to same-type primitive pins via parent_pin_class.
         if (pin->is_primitive_pin()) {
-            /* Assign class to same-type primitive pins. */
             if (pin->port->type == seed_pin->port->type
                 && pin->port->is_clock == seed_pin->port->is_clock
                 && pin->parent_pin_class[node_depth] == UNDEFINED) {
                 pin->parent_pin_class[node_depth] = class_id;
             }
-        } else if (pin_node_depth == node_depth) {
-            /* Assign class to same-type cluster boundary pins. */
+        // Assign class_id to same-type boundary pins of pb_graph_node via pin_class.
+        } else if (pin->parent_node == pb_graph_node) {
             if (pin->port->type == seed_pin->port->type
                 && pin->port->is_clock == seed_pin->port->is_clock) {
                 pin->pin_class = class_id;
             }
         }
 
-        /* Decide which edges to follow based on depth relative to the cluster boundary.
-         *
-         * Inside the cluster (depth > node_depth): follow both directions freely.
-         * At the cluster boundary (depth == node_depth): only follow edges going
-         *   inward — output_edges for input/clock pins, input_edges for output pins.
-         *   This prevents the BFS from escaping into sibling or ancestor subtrees.
-         * Above the cluster (depth < node_depth): do not follow any edges.
-         */
+        // Inside the subtree: follow edges in both directions.
+        // At the boundary: only follow edges going inward to stay within the subtree.
+        // Above the boundary: do not follow any edges.
+        const int pin_node_depth = pin->parent_node->pb_type->depth;
         if (pin_node_depth > node_depth) {
-            for (int i = 0; i < pin->num_input_edges; i++) {
-                t_pb_graph_pin* n = pin->input_edges[i]->input_pins[0];
-                if (!visited.count(n)) { visited.insert(n); queue.push(n); }
+            for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
+                VTR_ASSERT(pin->input_edges[edge_idx]->num_input_pins == 1);
+                t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pins[0];
+                if (!visited.count(neighbor_pin)) {
+                    visited.insert(neighbor_pin);
+                    queue.push(neighbor_pin);
+                }
             }
-            for (int i = 0; i < pin->num_output_edges; i++) {
-                t_pb_graph_pin* n = pin->output_edges[i]->output_pins[0];
-                if (!visited.count(n)) { visited.insert(n); queue.push(n); }
+            for (int edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
+                VTR_ASSERT(pin->output_edges[edge_idx]->num_output_pins == 1);
+                t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pins[0];
+                if (!visited.count(neighbor_pin)) {
+                    visited.insert(neighbor_pin);
+                    queue.push(neighbor_pin);
+                }
             }
-        } else if (pin_node_depth == node_depth) {
+        } else if (pin->parent_node == pb_graph_node) {
             if (pin->port->type == IN_PORT || pin->port->is_clock) {
-                for (int i = 0; i < pin->num_output_edges; i++) {
-                    t_pb_graph_pin* n = pin->output_edges[i]->output_pins[0];
-                    if (!visited.count(n)) { visited.insert(n); queue.push(n); }
+                for (int edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
+                    VTR_ASSERT(pin->output_edges[edge_idx]->num_output_pins == 1);
+                    t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pins[0];
+                    if (!visited.count(neighbor_pin)) {
+                        visited.insert(neighbor_pin);
+                        queue.push(neighbor_pin);
+                    }
                 }
             } else {
-                for (int i = 0; i < pin->num_input_edges; i++) {
-                    t_pb_graph_pin* n = pin->input_edges[i]->input_pins[0];
-                    if (!visited.count(n)) { visited.insert(n); queue.push(n); }
+                for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
+                    VTR_ASSERT(pin->input_edges[edge_idx]->num_input_pins == 1);
+                    t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pins[0];
+                    if (!visited.count(neighbor_pin)) {
+                        visited.insert(neighbor_pin);
+                        queue.push(neighbor_pin);
+                    }
                 }
             }
         }
-        /* depth < node_depth: pin is above the cluster boundary — do not follow any edges. */
     }
 }
 
@@ -361,7 +369,7 @@ static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
     if (pb_graph_node->is_primitive())
         return;
 
-    int node_depth = pb_graph_node->pb_type->depth;
+    const int node_depth = pb_graph_node->pb_type->depth;
     int input_class = 0;
     int output_class = 0;
 
@@ -398,8 +406,7 @@ static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
         for (int port_idx = 0; port_idx < prim->num_input_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < prim->num_input_pins[port_idx]; pin_idx++) {
                 if (prim->input_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
-                    std::unordered_set<t_pb_graph_pin*> visited;
-                    bfs_and_assign_class(&prim->input_pins[port_idx][pin_idx], node_depth, input_class, visited);
+                    assign_pin_class_in_subtree(&prim->input_pins[port_idx][pin_idx], pb_graph_node, input_class);
                     input_class++;
                 }
             }
@@ -407,8 +414,7 @@ static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
         for (int port_idx = 0; port_idx < prim->num_clock_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < prim->num_clock_pins[port_idx]; pin_idx++) {
                 if (prim->clock_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
-                    std::unordered_set<t_pb_graph_pin*> visited;
-                    bfs_and_assign_class(&prim->clock_pins[port_idx][pin_idx], node_depth, input_class, visited);
+                    assign_pin_class_in_subtree(&prim->clock_pins[port_idx][pin_idx], pb_graph_node, input_class);
                     input_class++;
                 }
             }
@@ -416,8 +422,7 @@ static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
         for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
                 if (prim->output_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
-                    std::unordered_set<t_pb_graph_pin*> visited;
-                    bfs_and_assign_class(&prim->output_pins[port_idx][pin_idx], node_depth, output_class, visited);
+                    assign_pin_class_in_subtree(&prim->output_pins[port_idx][pin_idx], pb_graph_node, output_class);
                     output_class++;
                 }
             }
