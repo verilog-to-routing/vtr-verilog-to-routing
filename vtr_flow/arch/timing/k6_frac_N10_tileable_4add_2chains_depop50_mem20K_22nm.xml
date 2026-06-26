@@ -726,8 +726,8 @@
             <delay_constant max="1.848e-9" in_port="mult_27x27.b" out_port="mult_27x27.out"/>
           </pb_type>
           <interconnect>
-            <mux name="a2a" input="one_mult_27x27.a one_mult_27x27.b" output="mult_27x27.a"/>
-            <mux name="b2b" input="one_mult_27x27.a one_mult_27x27.b" output="mult_27x27.b"/>
+            <mux name="a2a" input="one_mult_27x27.a one_mult_27x27.b" output="mult_27x27.a" bus="true"/>
+            <mux name="b2b" input="one_mult_27x27.a one_mult_27x27.b" output="mult_27x27.b" bus="true"/>
             <direct name="out2out" input="mult_27x27.out" output="one_mult_27x27.out"/>
           </interconnect>
           <power method="pin-toggle">
@@ -741,11 +741,11 @@
               Subtract 72.5 ps delay, which is already in the connection block input mux, leading
               to a 134 ps delay.
                  -->
-          <mux name="datain2a" input="mult_27.datain[26:0] mult_27.datain[53:27]" output="one_mult_27x27.a">
+          <mux name="datain2a" input="mult_27.datain[26:0] mult_27.datain[53:27]" output="one_mult_27x27.a" bus="true">
             <delay_constant max="134e-12" in_port="mult_27.datain[26:0]" out_port="one_mult_27x27.a"/>
             <delay_constant max="134e-12" in_port="mult_27.datain[53:27]" out_port="one_mult_27x27.a"/>
           </mux>
-          <mux name="datain2b" input="mult_27.datain[26:0] mult_27.datain[53:27]" output="one_mult_27x27.b">
+          <mux name="datain2b" input="mult_27.datain[26:0] mult_27.datain[53:27]" output="one_mult_27x27.b" bus="true">
             <delay_constant max="134e-12" in_port="mult_27.datain[26:0]" out_port="one_mult_27x27.b"/>
             <delay_constant max="134e-12" in_port="mult_27.datain[53:27]" out_port="one_mult_27x27.b"/>
           </mux>

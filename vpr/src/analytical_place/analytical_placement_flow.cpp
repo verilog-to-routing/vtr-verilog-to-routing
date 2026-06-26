@@ -310,6 +310,13 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                   device_height,
                                   device_ctx.grid.get_num_layers()));
 
+    // Generate the pre-cluster timing report now that global placement has
+    // updated the timing arc delays to reflect the flat placement.
+    pre_cluster_timing_manager.generate_setup_timing_report(atom_nlist,
+                                                            g_vpr_ctx.atom().lookup(),
+                                                            *device_ctx.arch,
+                                                            vpr_setup.AnalysisOpts);
+
     // Run the Full Legalizer.
     std::unique_ptr<FullLegalizer> full_legalizer = make_full_legalizer(ap_opts.full_legalizer_type,
                                                                         ap_netlist,
