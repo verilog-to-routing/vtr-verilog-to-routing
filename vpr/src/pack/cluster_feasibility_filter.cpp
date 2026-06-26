@@ -265,10 +265,6 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
  * @brief Assigns class_id to all same-type pins reachable from seed_pin
  *        within pb_graph_node and its subtree.
  *
- * Starting from seed_pin, the BFS follows edges in both directions freely inside the
- * subtree. At the boundary of pb_graph_node it only follows edges going inward, preventing
- * the BFS from escaping into sibling or ancestor subtrees.
- *
  * All reachable primitive pins of the same type as seed_pin are assigned class_id via
  * parent_pin_class[depth]. All reachable boundary pins of pb_graph_node of the same type
  * are assigned class_id via pin_class. Intermediate pins are traversed but not assigned.
@@ -291,15 +287,15 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
         t_pb_graph_pin* pin = queue.front();
         queue.pop();
 
-        // Assign class_id to same-type primitive pins via parent_pin_class.
         if (pin->is_primitive_pin()) {
+            // Assign class_id to same-type primitive pins via parent_pin_class.
             if (pin->port->type == seed_pin->port->type
                 && pin->port->is_clock == seed_pin->port->is_clock
                 && pin->parent_pin_class[node_depth] == UNDEFINED) {
                 pin->parent_pin_class[node_depth] = class_id;
             }
-            // Assign class_id to same-type boundary pins of pb_graph_node via pin_class.
         } else if (pin->parent_node == pb_graph_node) {
+            // Assign class_id to same-type boundary pins of pb_graph_node via pin_class.
             if (pin->port->type == seed_pin->port->type
                 && pin->port->is_clock == seed_pin->port->is_clock) {
                 pin->pin_class = class_id;
