@@ -370,13 +370,13 @@ void Placer::place() {
 
                 // see if we should save the current placement solution as a checkpoint
                 if (placer_opts_.place_checkpointing && annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
-                    
+
                     // Must record the current cost stage in 2.5D devices when two stage interposer cost is active
                     std::optional<e_interposer_cost_stage> interposer_cost_stage;
                     if (interposer_cost_handler_) {
                         interposer_cost_stage = interposer_cost_handler_->get_net_cost_stage();
                     }
-                    
+
                     save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
                                                         placement_checkpoint_,
                                                         timing_info_, costs_, critical_path_.delay(),
