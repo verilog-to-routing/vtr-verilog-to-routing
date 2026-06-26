@@ -50,7 +50,7 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node);
 static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                                  t_pb_graph_node* pb_graph_node,
                                  const int class_id);
-static void load_all_pin_classes(t_pb_graph_node* pb_graph_node);
+static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node);
 
 static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node);
 static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin);
@@ -63,7 +63,7 @@ void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node) {
     alloc_pin_classes_in_pb_graph_node(pb_graph_node);
 
     // Assign pin classes at every level of the pb_graph hierarchy.
-    load_all_pin_classes(pb_graph_node);
+    load_pin_classes_in_pb_graph_node(pb_graph_node);
 
     // Load internal output-to-input connections within each cluster
     load_list_of_connectable_input_pin_ptrs(pb_graph_node);
@@ -365,7 +365,7 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
  *  - parent_pin_class[depth] on primitive pins (which class they belong to as seen
  *    from the ancestor pb_graph node at this depth)
  */
-static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
+static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
     if (pb_graph_node->is_primitive())
         return;
 
@@ -440,7 +440,7 @@ static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
     for (int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++)
         for (int pb_type_idx = 0; pb_type_idx < pb_graph_node->pb_type->modes[mode_idx].num_pb_type_children; pb_type_idx++)
             for (int pb_num_idx = 0; pb_num_idx < pb_graph_node->pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb; pb_num_idx++)
-                load_all_pin_classes(&pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_num_idx]);
+                load_pin_classes_in_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_num_idx]);
 }
 
 /* Recursively visit all pb_graph_pins and determine primitive output pins that
