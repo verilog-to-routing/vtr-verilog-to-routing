@@ -267,6 +267,18 @@ bool InterposerCostHandler::try_change_interposer_cost_model(double current_cost
     return false;
 }
 
+void InterposerCostHandler::change_interposer_cost_stage(e_interposer_cost_stage new_stage) {
+    interposer_cost_stage_ = new_stage;
+}
+
+std::optional<e_interposer_cost_stage> InterposerCostHandler::get_net_cost_stage() {
+    if (interposer_cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
+        return std::make_optional(interposer_cost_stage_);
+    } else {
+        return std::nullopt;
+    }
+}
+
 e_interposer_net_cost_type InterposerCostHandler::get_active_net_cost_type_() const {
     if (interposer_cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
         return interposer_cost_stage_ == e_interposer_cost_stage::FIRST ? two_stage_interposer_net_cost_first_stage_type_ : two_stage_interposer_net_cost_second_stage_type_;
