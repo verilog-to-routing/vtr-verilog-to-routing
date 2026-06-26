@@ -339,49 +339,44 @@ static void bfs_and_assign_class(t_pb_graph_pin* seed_pin,
                 }
             }
         }
-        /* depth < node_depth: do not follow edges — stay within the cluster. */
+        /* depth < node_depth: pin is above the cluster boundary — do not follow any edges. */
     }
 }
 
 /**
- * @brief Compute pin classes for every non-primitive node in the pb_graph tree
- *        rooted at pb_graph_node, in a single recursive pass.
+ * @brief Assigns pin classes to every non-primitive node in the pb_graph tree
+ *        rooted at pb_graph_node.
  *
- * For each non-primitive node N at depth D:
- *  1. Clear pin_class on N's own boundary pins.
- *  2. For each primitive input/clock pin under N that is still UNDEFINED at
- *     depth D: seed a BFS via bfs_and_assign_class, which tags all connected
- *     same-type primitive pins and boundary pins with the same class ID.
- *     Increment input_class after each BFS.
- *  3. Same for primitive output pins, incrementing output_class.
- *  4. Allocate num_input_pin_class / num_output_pin_class (+1 catch-all for
- *     primitive pins not reachable from any boundary pin) and call sum_pin_class.
- *  5. Recurse into children so every level of the hierarchy is processed.
+ * A pin class is a group of pins on a pb_graph node that are mutually reachable
+ * through the interconnect within that node's subtree (ignoring edge directionality)
+ * and of the same type (input/clock or output). Each class gets a unique ID.
  *
- * Starting BFS from unassigned primitive pins (rather than boundary pins) ensures
- * that equivalent boundary pins — multiple boundary pins reaching the same set of
- * primitives — are grouped into the same class, matching the original semantics.
+ * The function recurses into children so that pin classes are computed independently
+ * at every level of the hierarchy. Each level records:
+ *  - pin_class on its own boundary pins (which class they belong to)
+ *  - parent_pin_class[depth] on primitive pins (which class they belong to as seen
+ *    from the ancestor pb_graph node at this depth)
  */
 static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
     if (pb_graph_node->is_primitive())
         return;
 
-    const int node_depth = pb_graph_node->pb_type->depth;
+    int node_depth = pb_graph_node->pb_type->depth;
     int input_class = 0;
     int output_class = 0;
 
-    /* Clear pin_class on all boundary pins of this node. */
-    for (int i = 0; i < pb_graph_node->num_input_ports; i++)
-        for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++)
-            pb_graph_node->input_pins[i][j].pin_class = UNDEFINED;
-    for (int i = 0; i < pb_graph_node->num_output_ports; i++)
-        for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++)
-            pb_graph_node->output_pins[i][j].pin_class = UNDEFINED;
-    for (int i = 0; i < pb_graph_node->num_clock_ports; i++)
-        for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++)
-            pb_graph_node->clock_pins[i][j].pin_class = UNDEFINED;
+    // Clear pin_class on all boundary pins of this node.
+    for (int port_idx = 0; port_idx < pb_graph_node->num_input_ports; port_idx++)
+        for (int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[port_idx]; pin_idx++)
+            pb_graph_node->input_pins[port_idx][pin_idx].pin_class = UNDEFINED;
+    for (int port_idx = 0; port_idx < pb_graph_node->num_output_ports; port_idx++)
+        for (int pin_idx = 0; pin_idx < pb_graph_node->num_output_pins[port_idx]; pin_idx++)
+            pb_graph_node->output_pins[port_idx][pin_idx].pin_class = UNDEFINED;
+    for (int port_idx = 0; port_idx < pb_graph_node->num_clock_ports; port_idx++)
+        for (int pin_idx = 0; pin_idx < pb_graph_node->num_clock_pins[port_idx]; pin_idx++)
+            pb_graph_node->clock_pins[port_idx][pin_idx].pin_class = UNDEFINED;
 
-    /* Collect all primitive nodes in the subtree. */
+    // Collect all primitive nodes in the subtree.
     std::vector<t_pb_graph_node*> primitives;
     std::queue<t_pb_graph_node*> node_queue;
     node_queue.push(pb_graph_node);
@@ -391,61 +386,56 @@ static void load_all_pin_classes(t_pb_graph_node* pb_graph_node) {
         if (node->is_primitive()) {
             primitives.push_back(node);
         } else {
-            for (int i = 0; i < node->pb_type->num_modes; i++)
-                for (int j = 0; j < node->pb_type->modes[i].num_pb_type_children; j++)
-                    for (int k = 0; k < node->pb_type->modes[i].pb_type_children[j].num_pb; k++)
-                        node_queue.push(&node->child_pb_graph_nodes[i][j][k]);
+            for (int mode_idx = 0; mode_idx < node->pb_type->num_modes; mode_idx++)
+                for (int pb_type_idx = 0; pb_type_idx < node->pb_type->modes[mode_idx].num_pb_type_children; pb_type_idx++)
+                    for (int pb_num_idx = 0; pb_num_idx < node->pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb; pb_num_idx++)
+                        node_queue.push(&node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_num_idx]);
         }
     }
 
-    /* For each unassigned primitive input/clock pin, BFS to discover its class. */
+    // For each unassigned primitive input, clock, and output pin; BFS to discover its class.
     for (t_pb_graph_node* prim : primitives) {
-        for (int i = 0; i < prim->num_input_ports; i++) {
-            for (int j = 0; j < prim->num_input_pins[i]; j++) {
-                if (prim->input_pins[i][j].parent_pin_class[node_depth] == UNDEFINED) {
+        for (int port_idx = 0; port_idx < prim->num_input_ports; port_idx++) {
+            for (int pin_idx = 0; pin_idx < prim->num_input_pins[port_idx]; pin_idx++) {
+                if (prim->input_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
                     std::unordered_set<t_pb_graph_pin*> visited;
-                    bfs_and_assign_class(&prim->input_pins[i][j], node_depth, input_class, visited);
+                    bfs_and_assign_class(&prim->input_pins[port_idx][pin_idx], node_depth, input_class, visited);
                     input_class++;
                 }
             }
         }
-        for (int i = 0; i < prim->num_clock_ports; i++) {
-            for (int j = 0; j < prim->num_clock_pins[i]; j++) {
-                if (prim->clock_pins[i][j].parent_pin_class[node_depth] == UNDEFINED) {
+        for (int port_idx = 0; port_idx < prim->num_clock_ports; port_idx++) {
+            for (int pin_idx = 0; pin_idx < prim->num_clock_pins[port_idx]; pin_idx++) {
+                if (prim->clock_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
                     std::unordered_set<t_pb_graph_pin*> visited;
-                    bfs_and_assign_class(&prim->clock_pins[i][j], node_depth, input_class, visited);
+                    bfs_and_assign_class(&prim->clock_pins[port_idx][pin_idx], node_depth, input_class, visited);
                     input_class++;
                 }
             }
         }
-    }
-
-    /* For each unassigned primitive output pin, BFS to discover its class. */
-    for (t_pb_graph_node* prim : primitives) {
-        for (int i = 0; i < prim->num_output_ports; i++) {
-            for (int j = 0; j < prim->num_output_pins[i]; j++) {
-                if (prim->output_pins[i][j].parent_pin_class[node_depth] == UNDEFINED) {
+        for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
+            for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
+                if (prim->output_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
                     std::unordered_set<t_pb_graph_pin*> visited;
-                    bfs_and_assign_class(&prim->output_pins[i][j], node_depth, output_class, visited);
+                    bfs_and_assign_class(&prim->output_pins[port_idx][pin_idx], node_depth, output_class, visited);
                     output_class++;
                 }
             }
         }
     }
 
-    /* Allocate class size arrays. +1 for the catch-all class that holds
-     * primitive pins not reachable from any cluster boundary pin. */
-    pb_graph_node->num_input_pin_class = input_class + 1;
-    pb_graph_node->input_pin_class_size = new int[input_class + 1]();
-    pb_graph_node->num_output_pin_class = output_class + 1;
-    pb_graph_node->output_pin_class_size = new int[output_class + 1]();
+    // Allocate class size arrays.
+    pb_graph_node->num_input_pin_class = input_class;
+    pb_graph_node->input_pin_class_size = new int[input_class]();
+    pb_graph_node->num_output_pin_class = output_class;
+    pb_graph_node->output_pin_class_size = new int[output_class]();
     sum_pin_class(pb_graph_node);
 
-    /* Recurse into children so every level of the hierarchy is processed. */
-    for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++)
-        for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++)
-            for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++)
-                load_all_pin_classes(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+    // Recurse into children so every level of the hierarchy is processed.
+    for (int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++)
+        for (int pb_type_idx = 0; pb_type_idx < pb_graph_node->pb_type->modes[mode_idx].num_pb_type_children; pb_type_idx++)
+            for (int pb_num_idx = 0; pb_num_idx < pb_graph_node->pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb; pb_num_idx++)
+                load_all_pin_classes(&pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_num_idx]);
 }
 
 /* Recursively visit all pb_graph_pins and determine primitive output pins that
