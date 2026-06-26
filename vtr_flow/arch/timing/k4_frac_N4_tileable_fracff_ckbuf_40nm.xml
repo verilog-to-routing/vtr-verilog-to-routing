@@ -7,7 +7,7 @@
     K = 4, N = 4, fracturable 4 LUTs (can operate as one 4-LUT or two 3-LUTs with all 3 inputs shared) 
     with optionally registered outputs
   - Routing architecture: L = 4, fc_in = 0.15, Fc_out = 0.1
-
+  - Added clock buffer primitive per CLB as subtiles to route global clocks. The detailed clock routing architecture is appended in OpenFPGA. Therefore, Fc = 0 is forced on clock buffer outputs
   Authors: Xifan Tang
 -->
 <architecture>
