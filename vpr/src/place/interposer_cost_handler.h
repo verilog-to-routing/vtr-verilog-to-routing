@@ -11,8 +11,14 @@
 #include "vtr_vector.h"
 
 #include <functional>
+#include <optional>
 #include <utility>
 #include <vector>
+
+enum class e_interposer_cost_stage {
+    FIRST,
+    SECOND
+};
 
 class InterposerCostHandler {
   public:
@@ -48,9 +54,6 @@ class InterposerCostHandler {
     /// @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
     double compute_interposer_est_cong(bool compute_congestion_cost = true);
 
-    /// @brief
-    /// @return
-
     /**
      * @brief Try switching to a more detailed interposer net cost model based on recent costs.
      *
@@ -58,20 +61,33 @@ class InterposerCostHandler {
      * with the current_cost argument. When the maximum deviation of the last 10 costs is
      * less than interposer_net_cost_change_threshold_ (0.5% by default), the two stage interposer
      * cost switches to the second stage cost. Only works for the two stage cost mode, is a NOP otherwise.
+     * If cost model was changed, you probably want to recompute costs from scratch.
      *
      * @param current_cost Last interposer cost
      * @return True if the interposer net cost model was changed.
      */
     bool try_change_interposer_cost_model(double current_cost);
 
+    /**
+     * @brief Changes the interposer cost stage by force. Only effective
+     * in the two stage cost model. Users should generally use 'try_change_interposer_cost_model'
+     * if possible. This function is useful in contexts such as placement checkpoints where
+     * you must change the cost function to what it was before.
+     */
+    void change_interposer_cost_stage(e_interposer_cost_stage new_stage);
+
+    /**
+     * @brief Returns the active stage when using the two-stage interposer net cost model.
+     *
+     * @return Current interposer cost stage if the two-stage cost model is enabled,
+     * otherwise std::nullopt.
+     */
+    std::optional<e_interposer_cost_stage> get_net_cost_stage();
+
+    /// @brief Returns the configured interposer net cost type.
     e_interposer_net_cost_type get_net_cost_type() const { return interposer_cost_type_; }
 
   private:
-    enum class e_interposer_cost_stage {
-        FIRST,
-        SECOND
-    };
-
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
     double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const;
     std::pair<int, int> count_bb_interposer_cut_crossings_(const t_bb& bb) const;
