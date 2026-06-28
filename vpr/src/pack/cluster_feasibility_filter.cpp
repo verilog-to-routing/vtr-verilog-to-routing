@@ -47,17 +47,43 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
 static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pin,
                                              std::unordered_set<t_pb_graph_pin*>& seen_pins);
 static void sum_pin_class(t_pb_graph_node* pb_graph_node);
+
+/**
+ * @brief Assigns class_id to all same-type pins (input, output or clock,
+ *        and in the boundry of given pb_graph_node) reachable from
+ *        seed_pin within pb_graph_node and its subtree.
+ *
+ * All reachable primitive pins of the same type as seed_pin are assigned class_id via
+ * parent_pin_class[depth]. All reachable boundary pins of pb_graph_node of the same type
+ * are assigned class_id via pin_class. Intermediate pins are traversed but not assigned.
+ *
+ * @param seed_pin      A primitive pin that seeds the BFS.
+ * @param pb_graph_node The pb_graph node whose subtree the BFS is confined to.
+ * @param class_id      The class ID to assign to all pins in this equivalence group.
+ */
 static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                                         t_pb_graph_node* pb_graph_node,
                                         const int class_id);
+
+/**
+ * @brief Assigns pin classes to every non-primitive node in the pb_graph tree
+ *        rooted at pb_graph_node.
+ *
+ * A pin class is a group of pins on a pb_graph node that are mutually reachable
+ * through the interconnect within that node's subtree (ignoring edge directionality)
+ * and of the same type (input/clock or output). Each class gets a unique ID.
+ *
+ * The function recurses into children so that pin classes are computed independently
+ * at every level of the hierarchy. Each level records:
+ *  - pin_class on its own boundary pins (which class they belong to)
+ *  - parent_pin_class[depth] on primitive pins (which class they belong to as seen
+ *    from the ancestor pb_graph node at this depth)
+ */
 static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node);
 
 static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node);
 static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin);
 
-/**
- * @brief Identify all pin class information for complex block
- */
 void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node) {
     // Allocate memory for primitives
     alloc_pin_classes_in_pb_graph_node(pb_graph_node);
@@ -261,18 +287,6 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
     }
 }
 
-/**
- * @brief Assigns class_id to all same-type pins reachable from seed_pin
- *        within pb_graph_node and its subtree.
- *
- * All reachable primitive pins of the same type as seed_pin are assigned class_id via
- * parent_pin_class[depth]. All reachable boundary pins of pb_graph_node of the same type
- * are assigned class_id via pin_class. Intermediate pins are traversed but not assigned.
- *
- * @param seed_pin      A primitive pin that seeds the BFS.
- * @param pb_graph_node The pb_graph node whose subtree the BFS is confined to.
- * @param class_id      The class ID to assign to all pins in this equivalence group.
- */
 static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                                         t_pb_graph_node* pb_graph_node,
                                         const int class_id) {
@@ -307,6 +321,8 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
         // Above the boundary: do not follow any edges.
         const int pin_node_depth = pin->parent_node->pb_type->depth;
         if (pin_node_depth > node_depth) {
+            // Pin inside the subtree of provided pb_graph_node. Expand in both
+            // directions (input and output edges) from that pin.
             for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
                 VTR_ASSERT(pin->input_edges[edge_idx]->num_input_pins == 1);
                 t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pins[0];
@@ -324,7 +340,11 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                 }
             }
         } else if (pin->parent_node == pb_graph_node) {
+            // Pin at the boundry of provided pb_graph_node. Expand towards the
+            // subtree inside that boundry to stay within the given pb_graph_node.
             if (pin->port->type == IN_PORT || pin->port->is_clock) {
+                // Expand using the output edges if this pin is an input or
+                // clock pin of the provided pb_graph_node.
                 for (int edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
                     VTR_ASSERT(pin->output_edges[edge_idx]->num_output_pins == 1);
                     t_pb_graph_pin* neighbor_pin = pin->output_edges[edge_idx]->output_pins[0];
@@ -334,6 +354,8 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                     }
                 }
             } else {
+                // Expand using the input edges if this pin is an output pin of
+                // the provided pb_graph_node.
                 for (int edge_idx = 0; edge_idx < pin->num_input_edges; edge_idx++) {
                     VTR_ASSERT(pin->input_edges[edge_idx]->num_input_pins == 1);
                     t_pb_graph_pin* neighbor_pin = pin->input_edges[edge_idx]->input_pins[0];
@@ -347,20 +369,6 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
     }
 }
 
-/**
- * @brief Assigns pin classes to every non-primitive node in the pb_graph tree
- *        rooted at pb_graph_node.
- *
- * A pin class is a group of pins on a pb_graph node that are mutually reachable
- * through the interconnect within that node's subtree (ignoring edge directionality)
- * and of the same type (input/clock or output). Each class gets a unique ID.
- *
- * The function recurses into children so that pin classes are computed independently
- * at every level of the hierarchy. Each level records:
- *  - pin_class on its own boundary pins (which class they belong to)
- *  - parent_pin_class[depth] on primitive pins (which class they belong to as seen
- *    from the ancestor pb_graph node at this depth)
- */
 static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
     if (pb_graph_node->is_primitive())
         return;
