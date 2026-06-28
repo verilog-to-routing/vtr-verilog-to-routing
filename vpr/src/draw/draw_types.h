@@ -125,19 +125,6 @@ enum class e_edge_type {
     NUM_EDGE_TYPES
 };
 
-enum class e_delay_text_relative_pos {
-    CENTER_ABOVE,
-    CENTER_BELOW,
-    LEFT_ABOVE,
-    LEFT_BELOW,
-    RIGHT_ABOVE,
-    RIGHT_BELOW,
-    FAR_LEFT_ABOVE,
-    FAR_LEFT_BELOW,
-    FAR_RIGHT_ABOVE,
-    FAR_RIGHT_BELOW,
-};
-
 /// Maps edge types to the color with which they are visualized
 inline const vtr::array<e_edge_type, ezgl::color, (size_t)e_edge_type::NUM_EDGE_TYPES> EDGE_COLOR_MAP{
     ezgl::LIGHT_PINK,

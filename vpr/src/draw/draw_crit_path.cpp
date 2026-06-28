@@ -3,6 +3,7 @@
 #include <numbers>
 #include <sstream>
 #include <limits>
+#include <array>
 
 #include "draw_crit_path.h"
 #include "draw.h"
@@ -11,6 +12,7 @@
 #include "draw_triangle.h"
 #include "globals.h"
 #include "vpr_utils.h"
+#include "vtr_assert.h"
 
 /**
  * @brief A scaling factor applied to DEFAULT_ARROW_SIZE.
@@ -161,12 +163,12 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                                                                             double pixels_per_world_unit);
 
 /**
- * @brief Chooses label positions that result in the least number of overlaps between visible labels.
+ * @brief Chooses label positions in a way that greedily tries to minimize overlaps among visible labels.
  *
- * There can be cases where no position candidate of a label satisfies zero overlap. The algorithm still chooses the
- * least overlapped position instead of hiding the label, because its presence still affects the placement of subsequent labels.
- * Inevitable overlaps will be eventually handled by hide_still_cluttered_labels().
- * Chosen bounding box positions are updated to label_drawing_info.
+ * There can be cases where no position candidate of a label satisfies zero overlap. The algorithm will still choose the
+ * least overlapped (in a greedy perspective) position instead of hiding the label, because its presence will positively affect
+ * the placement of subsequent labels. Inevitable overlaps will be eventually handled by hide_still_cluttered_labels().
+ * Chosen bounding box positions are updated to basic_label_drawing_info.
  * 
  * @param basic_label_drawing_info Basic per-edge label drawing information needed to perform the decluttering algorithm.
  * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
@@ -181,7 +183,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
  * 
  * Hiding is performed in sequence from start to end (of the crit. path). Hiding one label may free up space for other labels
  * and so they no longer need to be hidden.
- * Visibility of hidden labels are updated to label_drawing_info.
+ * Visibility of hidden labels are updated to post_decluttering_label_drawing_info.
  *
  * @param post_decluttering_label_drawing_info Per-edge label drawing information that includes each label's updated position.
  * @return Per-edge label drawing information that has updates on what labels are newly hidden due to still existing overlaps.
@@ -403,8 +405,9 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                                                                             double pixels_per_world_unit) {
 
     std::vector<t_label_drawing_info> basic_label_drawing_info;
+    // The callers of this function have ensured that path is not empty, but having a safety check is still decent.
+    VTR_ASSERT_SAFE(path.data_arrival_path().elements().size() > 0);
     // Subtract 1 to get the number of edges instead of nodes.
-    // The callers of this function have ensured that path is not empty.
     std::size_t num_edges = path.data_arrival_path().elements().size() - 1;
     basic_label_drawing_info.resize(num_edges);
 
@@ -496,16 +499,16 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
                                                                              double pixels_per_world_unit) {
 
     // The label position candidates are ordered in an implied priority which the decluttering algorithm will follow.
-    std::vector<e_label_relative_pos> label_pos_candidates = {e_label_relative_pos::CENTER_ABOVE,
-                                                              e_label_relative_pos::LEFT_ABOVE,
-                                                              e_label_relative_pos::RIGHT_ABOVE,
-                                                              e_label_relative_pos::CENTER_BELOW,
-                                                              e_label_relative_pos::LEFT_BELOW,
-                                                              e_label_relative_pos::RIGHT_BELOW,
-                                                              e_label_relative_pos::FAR_LEFT_ABOVE,
-                                                              e_label_relative_pos::FAR_RIGHT_ABOVE,
-                                                              e_label_relative_pos::FAR_LEFT_BELOW,
-                                                              e_label_relative_pos::FAR_RIGHT_BELOW};
+    constexpr std::array<e_label_relative_pos, 10> label_pos_candidates = {e_label_relative_pos::CENTER_ABOVE,
+                                                                           e_label_relative_pos::LEFT_ABOVE,
+                                                                           e_label_relative_pos::RIGHT_ABOVE,
+                                                                           e_label_relative_pos::CENTER_BELOW,
+                                                                           e_label_relative_pos::LEFT_BELOW,
+                                                                           e_label_relative_pos::RIGHT_BELOW,
+                                                                           e_label_relative_pos::FAR_LEFT_ABOVE,
+                                                                           e_label_relative_pos::FAR_RIGHT_ABOVE,
+                                                                           e_label_relative_pos::FAR_LEFT_BELOW,
+                                                                           e_label_relative_pos::FAR_RIGHT_BELOW};
 
     for (std::size_t edge_idx = 0; edge_idx < basic_label_drawing_info.size(); edge_idx++) {
         t_label_drawing_info& drawing_info = basic_label_drawing_info[edge_idx];
@@ -518,8 +521,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
         // The position candidate to start with is CENTER_ABOVE, which aligns with the order in label_pos_candidates.
         e_label_relative_pos candidate_with_least_overlaps = e_label_relative_pos::CENTER_ABOVE;
 
-        // This is a good upper bound for the maximum number of overlaps a label can have.
-        int least_num_overlaps = basic_label_drawing_info.size();
+        int least_num_overlaps = std::numeric_limits<int>::max();
 
         // Try all possible position candidates unless finding one with zero overlap.
         for (const e_label_relative_pos& pos_candidate : label_pos_candidates) {
@@ -528,7 +530,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
 
             int curr_num_overlaps = 0;
 
-            // Check for overlaps with all other labels.
+            // Check for potential overlaps with all other labels.
             for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < basic_label_drawing_info.size(); edge_idx_to_compare++) {
                 const t_label_drawing_info& drawing_info_to_compare = basic_label_drawing_info[edge_idx_to_compare];
 
@@ -553,7 +555,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
                 candidate_with_least_overlaps = pos_candidate;
             }
         }
-        // Update the label bounding box using the determined position candidate.
+        // Update the label bounding box using the chosen position candidate.
         drawing_info.label_bbox = calculate_label_bbox_from_relative_pos(drawing_info, candidate_with_least_overlaps, pixels_per_world_unit);
     }
     return basic_label_drawing_info;
@@ -569,13 +571,14 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
         }
 
         // As long as there is one overlap associated with this label, we hide it.
-        // Note: For every label we completely redo the overlap calculation, therefore hiding a label might
-        // change the fate of subsequent labels.
+        // Note: A label being hidden may change the fate of subsequent labels, and since we redo the overlap calculation
+        // for every label, the update will always be reflected in subsequent iterations and save labels that do not
+        // have overlaps amymore.
         bool has_overlap = false;
         for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < post_decluttering_label_drawing_info.size(); edge_idx_to_compare++) {
             const t_label_drawing_info& drawing_info_to_compare = post_decluttering_label_drawing_info[edge_idx_to_compare];
 
-            // Skip self-comparison and / or the label to compare being invisible.
+            // Skip self-comparison and / or if the label to compare is invisible.
             if (edge_idx == edge_idx_to_compare || drawing_info_to_compare.hide_label) {
                 continue;
             }
@@ -599,13 +602,17 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
     // The unit length for a scalable edge-direction offset in world coordinates.
     double edge_offset_unit = edge_length * EDGE_OFFSET_PERCENT;
 
-    // Convert MAX_EDGE_OFFSET_UNIT to world coordinates.
+    // For ultra long timing edges, using percentage may result in labels jumping drastically.
+    // Therefore, we want to cap the edge offset unit at a certain threshold.
+    // Convert MAX_EDGE_OFFSET_UNIT (defined in pixels) to world coordinates.
     if (edge_offset_unit > MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit) {
         edge_offset_unit = MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit;
     }
 
     double perpendicular_offset = 0;
     double edge_offset = 0.0;
+
+    // Apply perpendicular offset associated with the specified relative position.
     switch (label_relative_pos) {
         case e_label_relative_pos::CENTER_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
@@ -615,38 +622,66 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
             break;
         case e_label_relative_pos::LEFT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = -edge_offset_unit;
             break;
         case e_label_relative_pos::LEFT_BELOW:
             perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = -edge_offset_unit;
             break;
         case e_label_relative_pos::RIGHT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = edge_offset_unit;
             break;
         case e_label_relative_pos::RIGHT_BELOW:
             perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = edge_offset_unit;
             break;
         case e_label_relative_pos::FAR_LEFT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = -edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_LEFT_BELOW:
             perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = -edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_RIGHT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_RIGHT_BELOW:
             perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            edge_offset = edge_offset_unit * 2;
             break;
         default:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
+    }
+
+    // Apply edge offset associated with the specified relative position.
+    switch (label_relative_pos) {
+        case e_label_relative_pos::CENTER_ABOVE:
+            edge_offset = 0.0;
+            break;
+        case e_label_relative_pos::CENTER_BELOW:
+            edge_offset = 0.0;
+            break;
+        case e_label_relative_pos::LEFT_ABOVE:
+            edge_offset = -edge_offset_unit;
+            break;
+        case e_label_relative_pos::LEFT_BELOW:
+            edge_offset = -edge_offset_unit;
+            break;
+        case e_label_relative_pos::RIGHT_ABOVE:
+            edge_offset = edge_offset_unit;
+            break;
+        case e_label_relative_pos::RIGHT_BELOW:
+            edge_offset = edge_offset_unit;
+            break;
+        case e_label_relative_pos::FAR_LEFT_ABOVE:
+            edge_offset = -edge_offset_unit * 2;
+            break;
+        case e_label_relative_pos::FAR_LEFT_BELOW:
+            edge_offset = -edge_offset_unit * 2;
+            break;
+        case e_label_relative_pos::FAR_RIGHT_ABOVE:
+            edge_offset = edge_offset_unit * 2;
+            break;
+        case e_label_relative_pos::FAR_RIGHT_BELOW:
+            edge_offset = edge_offset_unit * 2;
+            break;
+        default:
+            edge_offset = 0.0;
     }
 
     double rotation_angle_in_deg = label_to_update.rotation_angle * (std::numbers::pi / 180);
