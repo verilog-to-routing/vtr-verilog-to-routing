@@ -615,72 +615,51 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
     // Apply perpendicular offset associated with the specified relative position.
     switch (label_relative_pos) {
         case e_label_relative_pos::CENTER_ABOVE:
-            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            break;
-        case e_label_relative_pos::CENTER_BELOW:
-            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            break;
         case e_label_relative_pos::LEFT_ABOVE:
-            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            break;
-        case e_label_relative_pos::LEFT_BELOW:
-            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            break;
         case e_label_relative_pos::RIGHT_ABOVE:
-            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            break;
-        case e_label_relative_pos::RIGHT_BELOW:
-            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            break;
         case e_label_relative_pos::FAR_LEFT_ABOVE:
-            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
-            break;
-        case e_label_relative_pos::FAR_LEFT_BELOW:
-            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
-            break;
         case e_label_relative_pos::FAR_RIGHT_ABOVE:
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
             break;
+        case e_label_relative_pos::CENTER_BELOW:
+        case e_label_relative_pos::LEFT_BELOW:
+        case e_label_relative_pos::RIGHT_BELOW:
+        case e_label_relative_pos::FAR_LEFT_BELOW:
         case e_label_relative_pos::FAR_RIGHT_BELOW:
             perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
             break;
         default:
+            // Unidentified e_label_relative_pos provided (could be due to modifying the original enum
+            // while forgetting to update this function). Output a failure.
+            VTR_ASSERT(false);
             perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
     }
 
     // Apply edge offset associated with the specified relative position.
     switch (label_relative_pos) {
         case e_label_relative_pos::CENTER_ABOVE:
-            edge_offset = 0.0;
-            break;
         case e_label_relative_pos::CENTER_BELOW:
             edge_offset = 0.0;
             break;
         case e_label_relative_pos::LEFT_ABOVE:
-            edge_offset = -edge_offset_unit;
-            break;
         case e_label_relative_pos::LEFT_BELOW:
             edge_offset = -edge_offset_unit;
             break;
         case e_label_relative_pos::RIGHT_ABOVE:
-            edge_offset = edge_offset_unit;
-            break;
         case e_label_relative_pos::RIGHT_BELOW:
             edge_offset = edge_offset_unit;
             break;
         case e_label_relative_pos::FAR_LEFT_ABOVE:
-            edge_offset = -edge_offset_unit * 2;
-            break;
         case e_label_relative_pos::FAR_LEFT_BELOW:
             edge_offset = -edge_offset_unit * 2;
             break;
         case e_label_relative_pos::FAR_RIGHT_ABOVE:
-            edge_offset = edge_offset_unit * 2;
-            break;
         case e_label_relative_pos::FAR_RIGHT_BELOW:
             edge_offset = edge_offset_unit * 2;
             break;
         default:
+            // Unidentified e_label_relative_pos provided. Output a failure.
+            VTR_ASSERT(false);
             edge_offset = 0.0;
     }
 
