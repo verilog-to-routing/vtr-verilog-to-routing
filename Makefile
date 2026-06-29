@@ -38,9 +38,36 @@ CMAKE_BUILD_TYPE := $(shell echo $(BUILD_TYPE) | sed 's/_\?pgo//' | sed 's/_\?st
 #Detect the operating system
 UNAME_S := $(shell uname -s)
 
+# Cmake generator has to be Ninja on MSVC
+CMAKE_GEN = Unix Makefiles
+ifeq ($(OS), Windows_NT)
+CMAKE_GEN = Ninja
+# Msys2 can still use Linux gcc
+ifeq ($(MSYSTEM), MINGW64)
+CMAKE_GEN = Unix Makefiles
+endif
+endif
+
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
-override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
+override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G '${CMAKE_GEN}' ${CMAKE_PARAMS}
+
+# The curl path should be defined by user. Try to get one from system
+CURL_PATH=
+VCPKG_ROOT=
+ifeq ($(OS), Windows_NT)
+	# Msys2 can still use Linux gcc
+	ifeq ($(MSYSTEM), MINGW64)
+		@echo "Detected Mingw64 system, auto disable Parmys, slang, IPO build and ABC..."
+		override CMAKE_PARAMS := -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF ${CMAKE_PARAMS}
+	endif
+	# Get the default curl path 
+	CURL_PATH:=$(shell where curl 2>nul)
+	@echo "Detected windows platform, use curl: ${CURL_PATH}"
+	VCPKG_ROOT:=$(shell vcpkg fetch root)
+	@echo "Detected windows platform, use vcpkg_root: ${VCPKG_ROOT}"
+	override CMAKE_PARAMS := -DWGET=${CURL_PATH} -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT} ${CMAKE_PARAMS}
+endif
 
 #Are we doing a strict (i.e. warnings as errors) build?
 ifneq (,$(findstring strict,$(BUILD_TYPE)))
