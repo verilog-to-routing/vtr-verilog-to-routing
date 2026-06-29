@@ -50,7 +50,7 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node);
 
 /**
  * @brief Assigns class_id to all same-type pins (input, output or clock,
- *        and in the boundry of given pb_graph_node) reachable from
+ *        and in the boundary of given pb_graph_node) reachable from
  *        seed_pin within pb_graph_node and its subtree.
  *
  * All reachable primitive pins of the same type as seed_pin are assigned class_id via
@@ -74,10 +74,59 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
  * and of the same type (input/clock or output). Each class gets a unique ID.
  *
  * The function recurses into children so that pin classes are computed independently
- * at every level of the hierarchy. Each level records:
+ * at every level of the hierarchy. Class IDs are node-local: each node assigns its
+ * own IDs independently, so the same ID at different levels refers to different classes.
+ * Each level records:
  *  - pin_class on its own boundary pins (which class they belong to)
- *  - parent_pin_class[depth] on primitive pins (which class they belong to as seen
- *    from the ancestor pb_graph node at this depth)
+ *  - parent_pin_class[depth] on primitive pins: the class ID this primitive pin
+ *    belongs to as grouped by the ancestor node at that depth (e.g., in the
+ *    example below, i2_0.parent_pin_class[0] corresponds to pb_0's input class 1)
+ *
+ * For example, consider the below case where there is 3 hierarchical blocks while one
+ * of them being a primitive (PrimA). The depth of each block is pb_0 = 0, pb_1 = 1,
+ * and PrimA = 2. The function is being called on the pb_0 complex block. First, the
+ * pin classes of pb_0 are assigned as below using the interconnect graph connectivity.
+ *
+ * First, for pb_0:
+ *     - input class 1: i0_0, i0_1
+ *     - input class 2: i0_2, i0_3
+ *     - output class 1: o0_0, o0_1
+ *     - parent pin class of PrimA i2_0 and i2_1 at depth 0: input class 1
+ *     - parent pin class of PrimA i2_2 and i2_3 at depth 0: input class 2
+ *     - parent pin class of PrimA o2_0 and o2_1 at depth 0: output class 1
+ *
+ * Then, called for pb_1:
+ *     - input class 1: i1_0, i1_1
+ *     - input class 2: i1_2, i1_3
+ *     - output class 1: o1_0
+ *     - output class 2: o1_1
+ *     - parent pin class of PrimA i2_0 and i2_1 at depth 1: input class 1
+ *     - parent pin class of PrimA i2_2 and i2_3 at depth 1: input class 2
+ *     - parent pin class of PrimA o2_0 at depth 1: output class 1
+ *     - parent pin class of PrimA o2_1 at depth 1: output class 2
+ *
+ *
+ *   +-- pb_0 -------------------------------------------------------------------+
+ *   |                                                                           |
+ *   |        +-- pb_1 -----------------------------------------+                |
+ *   |        |                          +--- PrimA----+        |                |
+ * [i0_0]---[i1_0]--------\---/--------[i2_0]          |        |                |
+ *   |        |            \ /           |             |        |                |
+ *   |        |             X            |             |        |                |
+ *   |        |            / \           |             |        |                |
+ * [i0_1]---[i1_1]--------/---\--------[i2_1]        [o2_0]---[o1_0]---\---/---[o0_0]
+ *   |        |                          |             |        |       \ /      |
+ *   |        |                          |             |        |        X       |
+ *   |        |                          |             |        |       / \      |
+ * [i0_2]---[i1_2]--------\---/--------[i2_2]        [o2_1]---[o1_1]---/---\---[o0_1]
+ *   |        |            \ /           |             |        |                |
+ *   |        |             X            |             |        |                |
+ *   |        |            / \           |             |        |                |
+ * [i0_3]---[i1_3]--------/---\--------[i2_3]          |        |                |
+ *   |        |                          +-------------+        |                |
+ *   |        +-------------------------------------------------+                |
+ *   +---------------------------------------------------------------------------+
+ *
  */
 static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node);
 
