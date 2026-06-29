@@ -1423,7 +1423,9 @@ static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
     VTR_ASSERT(rr_switch_id.is_valid());
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    for (int iswitch = 0; iswitch < (int)device_ctx.arch_switch_inf.size(); iswitch++) {
+    // Loop over switch_fanin_remap, not arch_switch_inf: the flat router and tileable (crr)
+    // generator append internal switches to switch_fanin_remap past the arch switch count.
+    for (int iswitch = 0; iswitch < (int)device_ctx.switch_fanin_remap.size(); iswitch++) {
         for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
             if (itr->second == rr_switch_id) {
                 return {iswitch, itr->first};
@@ -1489,6 +1491,10 @@ void print_switch_usage() {
         for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
             float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
+            // Skip unmappable switches rather than indexing switch_fanin_count[-1].
+            if (arch_switch_id < 0 || arch_switch_id >= (int)switch_fanin_count.size()) {
+                continue;
+            }
             if (!switch_fanin_count[arch_switch_id].contains(fanin)) {
                 switch_fanin_count[arch_switch_id][fanin] = 0;
             }
