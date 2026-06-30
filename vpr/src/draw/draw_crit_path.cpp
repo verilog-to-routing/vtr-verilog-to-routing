@@ -162,6 +162,14 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
 #endif /* NO_SERVER */
 
 /**
+ * @brief Calculate label positions that give the least number of overlaps and then draws all visible delay labels.
+ *
+ * @param path Timing path whose consecutive node pairs define the timing edges to place delay labels.
+ * @param g Pointer to the ezgl::renderer object.
+ */
+static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g);
+
+/**
  * @brief Calculates delay, visibility, rotation, and initial bounding-box information for each timing edge.
  * 
  * Calculated results are stored in a vector and returned by the function.
@@ -229,6 +237,14 @@ static bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::re
  */
 static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_info, ezgl::renderer* g);
 
+/**
+ * @brief Calculates the color tied to a timing edge index deterministically. For long critical paths there may be repeats.
+ * 
+ * @param edge_idx The timing edge index.
+ * @return Color associated with the provided timing edge.
+ */
+static ezgl::color get_color_from_edge_idx(std::size_t edge_idx);
+
 void draw_crit_path(ezgl::renderer* g) {
     tatum::TimingPathCollector path_collector;
 
@@ -240,11 +256,11 @@ void draw_crit_path(ezgl::renderer* g) {
     }
 
     if (!draw_state->setup_timing_info) {
-        //No timing to draw
+        // No timing to draw
         return;
     }
 
-    //Get the worst timing path
+    // Get the worst timing path
     auto paths = path_collector.collect_worst_setup_timing_paths(
         *timing_ctx.graph,
         *(draw_state->setup_timing_info->setup_analyzer()), 1);
@@ -282,8 +298,7 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
         if (prev_node) {
             //We draw each 'edge' in a different color, this allows users to identify the stages and
             //any routing which corresponds to the edge.
-            //We pick colors from the kelly max-contrast list, for long paths there may be repeats.
-            ezgl::color color = kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
+            ezgl::color color = get_color_from_edge_idx(edge_idx);
 
             // Check visibility of layers where source and sink reside.
             int src_block_layer = get_timing_path_node_layer_num(prev_node);
@@ -316,7 +331,7 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
         tatum::NodeId node = elem.node();
         // Skip the first iteration because prev_node is not yet assigned to an actual node.
         if (prev_node) {
-            ezgl::color color = kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
+            ezgl::color color = get_color_from_edge_idx(edge_idx);
             draw_routed_connections_between_nodes(prev_node, node, color, g);
             edge_idx++;
         }
@@ -393,7 +408,7 @@ static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum
     }
 }
 
-void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g) {
+static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g) {
     // The ratio between pixels and world units spanning the screen width.
     // Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
     double pixels_per_world_unit = get_pixels_per_world_unit(g);
@@ -701,9 +716,9 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
     for (std::size_t edge_idx = 0; edge_idx < final_label_drawing_info.size(); edge_idx++) {
         t_label_drawing_info& drawing_info = final_label_drawing_info[edge_idx];
 
-        // In draw_timing_edge_flylines(), flylines share the same edge_idx with the labels here,
-        // so they are also paired with the same color.
-        ezgl::color color = kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
+        // Timing-edge flylines share the same edge_idx with the labels here,
+        // so they are always paired with the same color because get_color_from_edge_idx() is deterministic.
+        ezgl::color color = get_color_from_edge_idx(edge_idx);
 
         if (!drawing_info.hide_label) {
             std::stringstream ss;
@@ -722,6 +737,10 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
 
     g->set_font_size(14);
     g->set_text_rotation(0);
+}
+
+static ezgl::color get_color_from_edge_idx(std::size_t edge_idx) {
+    return kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
 }
 
 #ifndef NO_SERVER

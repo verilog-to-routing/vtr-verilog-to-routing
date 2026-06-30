@@ -2,14 +2,15 @@
 /**
  * @file draw_crit_path.h
  * 
- * @brief This file contains drawing routines related to visualizing critical paths in a placed and / or routed design.
+ * @brief This file contains two drawing routines related to visualizing critical paths in a placed and / or routed design.
  * 
- * Critical Path visualization includes timing-edge flyline, time delay label
- * and routed timing connection (available in a routed design only).
- * The drawing routines can be mostly split into two groups: server mode and non-server mode (the main flow).
- * The major differences between them are types of inputs (server mode receives customized inputs from a VPR server that can
- * include multiple timing paths, while non-server mode only fetches the single worst timing path) and the drawing style
- * of delay labels (a label decluttering algorithm is implemented for non-server mode, but server mode does not have that).
+ * Critical Path visualization includes timing-edge flylines, time delay labels
+ * and routed timing connections (available in a routed design only).
+ * draw_crit_path() and draw_crit_path_elements() are tied to non-server mode (the main flow) and server mode, respectively.
+ * The major differences are types of inputs (server mode can receive multiple critical paths from a VPR server
+ * plus customized inputs to control the exact parts to draw, while non-server mode only fetches the single worst timing path
+ * and does not customize what to draw) and the drawing style of delay labels (a label decluttering algorithm is implemented
+ * for non-server mode, but server mode does not have that).
  */
 
 #ifndef NO_GRAPHICS
@@ -31,14 +32,6 @@
  * @param g Pointer to the ezgl::renderer object.
  */
 void draw_crit_path(ezgl::renderer* g);
-
-/**
- * @brief Calculate label positions that give the least number of overlaps and then draws all visible delay labels.
- *
- * @param path Timing path whose consecutive node pairs define the timing edges to place delay labels.
- * @param g Pointer to the ezgl::renderer object.
- */
-void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::renderer* g);
 
 #ifndef NO_SERVER
 
