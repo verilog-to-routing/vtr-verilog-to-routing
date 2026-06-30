@@ -520,12 +520,12 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     std::string pb_type_name(pb_type->name);
 
     // This is a special case: blocks that correspond to pb_type->depth == 0 are essentially the top-level clustered blocks,
-    // and in each drawing cycle they are already drawn in draw_place() in draw_basic.cpp. The reason of that is,
-    // draw_internal_pb() is not called anymore when we zoom out too much. However, the naming convention for clustered blocks
+    // and in each drawing cycle they are drawn already in draw_place() in draw_basic.cpp. The reason for that is,
+    // draw_internal_pb() is not called anymore when we zoom out too much. This said, the naming convention for clustered blocks
     // has been historically different between the two functions, and when level of detail is on (the children of clustered blocks
-    // are drawn), we will use the naming convention specified under the else if statement below. And when level of detail
-    // is off (!at_least_one_child_pb_drawn), we will still use the naming convention originated from draw_place()
-    // to ensure consistency. That one is specified under the if statement just below.
+    // are drawn), we want to use the naming convention specified under the else if statement below. And when level of detail
+    // is off (!at_least_one_child_pb_drawn), we still want to use the naming convention from draw_place()
+    // to ensure consistency. This one is specified under the if statement just below.
     if (pb_type->depth == 0 && !at_least_one_child_pb_drawn) {
         const t_pl_loc& loc = block_locs[clb_index].loc;
         // loc.x and loc.y are the x and y coordinates of the containing subtile.
@@ -548,7 +548,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         }
     }
 
-    g->set_font_size(16);
+    g->set_font_size(14);
     if (!at_least_one_child_pb_drawn) {
         // If no child block was drawn, we can safely draw the text in the middle
         if (draw_state->draw_block_text) {
