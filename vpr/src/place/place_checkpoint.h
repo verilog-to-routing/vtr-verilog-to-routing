@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+#include "interposer_cost_handler.h"
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 #include "place_util.h"
@@ -26,6 +28,9 @@ class t_placement_checkpoint {
     float cpd_;
     bool valid_ = false;
     t_placer_costs costs_;
+    // 2.5D architectures support a two-stage cost term. Placement checkpoints should
+    // know which stage they were at properly restore the placement context.
+    std::optional<e_interposer_cost_stage> interposer_cost_stage_;
 
   public:
     /**
@@ -36,7 +41,8 @@ class t_placement_checkpoint {
      */
     void save_placement(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                         const t_placer_costs& placement_costs,
-                        const float critical_path_delay);
+                        const float critical_path_delay,
+                        std::optional<e_interposer_cost_stage> interposer_cost_stage);
 
     /**
      * @brief Restores the placement solution saved in the checkpoint and update the placement context accordingly
@@ -55,6 +61,10 @@ class t_placement_checkpoint {
 
     //return true if the checkpoint is valid
     bool cp_is_valid() const;
+
+    inline std::optional<e_interposer_cost_stage> get_interposer_cost_stage() {
+        return interposer_cost_stage_;
+    }
 };
 
 //save placement checkpoint if checkpointing is enabled and checkpoint conditions occurred
@@ -62,7 +72,8 @@ void save_placement_checkpoint_if_needed(const vtr::vector_map<ClusterBlockId, t
                                          t_placement_checkpoint& placement_checkpoint,
                                          const std::shared_ptr<SetupTimingInfo>& timing_info,
                                          t_placer_costs& costs,
-                                         float cpd);
+                                         float cpd,
+                                         std::optional<e_interposer_cost_stage> interposer_cost_stage);
 
 //restore the checkpoint if it's better than the latest placement solution
 void restore_best_placement(PlacerState& placer_state,
@@ -74,4 +85,5 @@ void restore_best_placement(PlacerState& placer_state,
                             std::shared_ptr<PlaceDelayModel>& place_delay_model,
                             std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
                             PlaceCritParams crit_params,
-                            std::optional<NocCostHandler>& noc_cost_handler);
+                            std::optional<NocCostHandler>& noc_cost_handler,
+                            std::optional<InterposerCostHandler>& interposer_cost_handler);

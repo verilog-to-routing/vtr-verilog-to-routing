@@ -1,0 +1,29 @@
+##############################################
+# Configuration for vtr_reg_gui / gui_set_routing_util
+#
+# Purpose
+# -------
+# Regression guard for the `set_routing_util` graphics command
+# (post-route congestion / utilisation overlay setter). VPR runs
+# the full pack+place+route flow then applies the state setter
+# and exits cleanly. As with gui_set_nets, this guards parser
+# acceptance and clean shutdown — visible-effect verification is
+# blocked by DEF-009.
+#
+# R7 mitigation: -start vpr (see gui_disp_off_smoke/config).
+# Offscreen Qt: caller exports QT_QPA_PLATFORM=offscreen.
+##############################################
+
+circuits_dir=benchmarks/microbenchmarks
+archs_dir=arch/timing
+
+circuit_list_add=mult_4x4.blif
+
+arch_list_add=k6_N10_40nm.xml
+
+parse_file=vpr_standard.txt
+qor_parse_file=qor_standard.txt
+pass_requirements_file=pass_requirements.txt
+
+# See gui_set_nets/config/config.txt for the --route_chan_width rationale.
+script_params_common=-start vpr -track_memory_usage false --pack --place --route --route_chan_width 100 --disp off --graphics_commands "set_routing_util 1; exit 0"

@@ -600,6 +600,72 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParseInterposerNetCostType {
+    ConvertedValue<e_interposer_net_cost_type> from_str(const std::string& str) {
+        ConvertedValue<e_interposer_net_cost_type> conv_value;
+        if (str == "minimize_interposer_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB);
+        } else if (str == "interposer_wire_aware_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB);
+        } else if (str == "two_stage") {
+            conv_value.set_value(e_interposer_net_cost_type::TWO_STAGE);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_interposer_net_cost_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_interposer_net_cost_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB) {
+            conv_value.set_value("minimize_interposer_crossing_bb");
+        } else if (val == e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB) {
+            conv_value.set_value("interposer_wire_aware_crossing_bb");
+        } else {
+            VTR_ASSERT(val == e_interposer_net_cost_type::TWO_STAGE);
+            conv_value.set_value("two_stage");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb", "two_stage"};
+    }
+};
+
+struct ParseInterposerStageNetCostType {
+    ConvertedValue<e_interposer_net_cost_type> from_str(const std::string& str) {
+        ConvertedValue<e_interposer_net_cost_type> conv_value;
+        if (str == "minimize_interposer_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB);
+        } else if (str == "interposer_wire_aware_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_interposer_net_cost_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_interposer_net_cost_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB) {
+            conv_value.set_value("minimize_interposer_crossing_bb");
+        } else {
+            VTR_ASSERT(val == e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB);
+            conv_value.set_value("interposer_wire_aware_crossing_bb");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb"};
+    }
+};
+
 struct ParsePlaceBoundingBox {
     ConvertedValue<e_place_bounding_box_mode> from_str(const std::string& str) {
         ConvertedValue<e_place_bounding_box_mode> conv_value;
@@ -1626,7 +1692,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
     gfx_grp.add_argument<bool, ParseOnOff>(args.show_graphics, "--disp")
-        .help("Enable or disable interactive graphics")
+        .help(
+            "Enable or disable interactive graphics."
+            " When 'off' and QT_QPA_PLATFORM is not already set, VPR sets"
+            " QT_QPA_PLATFORM=offscreen so Qt does not try to connect to"
+            " an X11/Wayland display. Offscreen means no interactive window"
+            " is opened, but graphics are still rendered, so scripted output"
+            " (e.g. --save_graphics and --graphics_commands) still works."
+            " Note that the offscreen platform typically disables the RHI"
+            " (GPU) renderer; rendering falls back to the QPainter (immediate)"
+            " path. To override, set QT_QPA_PLATFORM in the environment before"
+            " invoking VPR.")
         .default_value("off");
 
     gfx_grp.add_argument(args.GraphPause, "--auto")
@@ -1641,6 +1717,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
         .help("Save all graphical contents to PDF files")
         .default_value("off");
+
+    gfx_grp.add_argument(args.graphics_renderer, "--renderer")
+        .help(
+            "Select the rendering backend used by the graphics window.\n"
+            "   * rhi:       GPU hardware rendering. Gives the highest\n"
+            "                performance but requires a GPU (uses VRAM),\n"
+            "                and uses the most RAM.\n"
+            "   * deferred:  SW renderer (no GPU). Like 'immediate' but\n"
+            "                batches draw calls, giving the next highest\n"
+            "                performance at the cost of more RAM.\n"
+            "   * immediate: SW renderer (no GPU). The most compatible path\n"
+            "                (CPU-only QPainter, no batching); lowest\n"
+            "                performance and lowest memory use.")
+        .default_value("rhi")
+        .choices({"immediate", "deferred", "rhi"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
@@ -1723,6 +1815,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " 'auto' uses the smallest device which satisfies the circuit's resource requirements.")
         .metavar("DEVICE_NAME")
         .default_value("auto");
+
+    gen_grp.add_argument<int>(args.device_width, "--device_width")
+        .help("When --device is 'auto', use a fixed grid width instead of auto-sizing."
+              " Grid height is derived from the architecture aspect ratio.")
+        .default_value("0");
 
     gen_grp.add_argument<size_t>(args.num_workers, "--num_workers", "-j")
         .help(
@@ -2759,6 +2856,29 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerNetCostType>(args.place_interposer_net_cost_type, "--place_interposer_net_cost_type")
+        .help("Controls which interposer net cost model is used during placement. ")
+        .default_value("two_stage")
+        .choices({"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb", "two_stage"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerStageNetCostType>(args.place_two_stage_interposer_net_cost_first_stage_type, "--place_two_stage_interposer_net_cost_first_stage_type")
+        .help("Controls the first-stage interposer net cost model when --place_interposer_net_cost_type is two_stage.")
+        .default_value("minimize_interposer_crossing_bb")
+        .choices({"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerStageNetCostType>(args.place_two_stage_interposer_net_cost_second_stage_type, "--place_two_stage_interposer_net_cost_second_stage_type")
+        .help("Controls the second-stage interposer net cost model when --place_interposer_net_cost_type is two_stage.")
+        .default_value("interposer_wire_aware_crossing_bb")
+        .choices({"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_interposer_net_cost_change_threshold, "--place_interposer_net_cost_change_threshold")
+        .help("Maximum recent interposer net cost deviation threshold used to switch the two-stage interposer net cost model.")
+        .default_value("0.005")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
         .help("Weighting factor for congestion cost during placement. "
               "Higher values prioritize congestion avoidance over bounding box and timing costs. "
@@ -3034,7 +3154,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             ""
             "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do"
             " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing."
-            " This option helps router convergence for such architectures.")
+            " This option helps router convergence for such architectures."
+            " Note that this option only affects routing when the flat router (--flat_routing on) is used.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

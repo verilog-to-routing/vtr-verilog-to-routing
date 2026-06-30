@@ -64,6 +64,7 @@ struct t_options {
     argparse::ArgValue<int> GraphPause;
     argparse::ArgValue<bool> save_graphics;
     argparse::ArgValue<std::string> graphics_commands;
+    argparse::ArgValue<std::string> graphics_renderer;
 
     // General options
     argparse::ArgValue<bool> show_help;
@@ -76,6 +77,7 @@ struct t_options {
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<bool> verify_route_file_switch_id;
     argparse::ArgValue<std::string> device_layout;
+    argparse::ArgValue<int> device_width;
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
     argparse::ArgValue<e_clock_modeling> clock_modeling;
@@ -181,6 +183,10 @@ struct t_options {
     argparse::ArgValue<float> place_interposer_cost_factor;
     argparse::ArgValue<float> place_interposer_cong_cost_factor;
     argparse::ArgValue<float> place_interposer_cong_threshold;
+    argparse::ArgValue<e_interposer_net_cost_type> place_interposer_net_cost_type;
+    argparse::ArgValue<e_interposer_net_cost_type> place_two_stage_interposer_net_cost_first_stage_type;
+    argparse::ArgValue<e_interposer_net_cost_type> place_two_stage_interposer_net_cost_second_stage_type;
+    argparse::ArgValue<float> place_interposer_net_cost_change_threshold;
 
     argparse::ArgValue<float> place_congestion_factor;
     argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;

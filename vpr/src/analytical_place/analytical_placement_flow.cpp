@@ -17,6 +17,7 @@
 #include "detailed_placer.h"
 #include "device_size_estimate.h"
 #include "full_legalizer.h"
+#include "setup_grid.h"
 #include "logical_ram_infer.h"
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
@@ -261,7 +262,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                pre_cluster_timing_manager,
                                device_size_estimator.ram_groups(),
                                ap_opts.log_verbosity,
-                               vpr_setup.PackerOpts.device_layout != "auto" /*is_fixed_device*/);
+                               /*is_fixed_device=*/has_fixed_device_size(vpr_setup));
     }
 
     // Create the ap netlist from the atom netlist using the result from the
@@ -309,6 +310,13 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                   device_width,
                                   device_height,
                                   device_ctx.grid.get_num_layers()));
+
+    // Generate the pre-cluster timing report now that global placement has
+    // updated the timing arc delays to reflect the flat placement.
+    pre_cluster_timing_manager.generate_setup_timing_report(atom_nlist,
+                                                            g_vpr_ctx.atom().lookup(),
+                                                            *device_ctx.arch,
+                                                            vpr_setup.AnalysisOpts);
 
     // Run the Full Legalizer.
     std::unique_ptr<FullLegalizer> full_legalizer = make_full_legalizer(ap_opts.full_legalizer_type,
