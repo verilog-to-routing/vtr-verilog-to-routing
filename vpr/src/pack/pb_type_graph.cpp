@@ -1240,6 +1240,11 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
         }
     }
 
+    if (!interconnect->bus && num_output_ptrs[0] != 1) {
+        vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
+                  "Bus-based mux requires the 'bus' attribute to be set to true on the <mux> tag\n");
+    }
+
     /* One edge per (input_set, pin) pair so every edge remains single-pin.
      * For a 1-bit mux this is identical to the original behaviour. */
     const int pins_per_set = num_output_ptrs[0];
