@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include "netlist_fwd.h"
 #include "vtr_assert.h"
 
@@ -26,12 +28,15 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
                               const AtomLookup& netlist_lookup,
                               const LogicalModels& models,
                               const vtr::vector<AtomPinId, float>& timing_arc_delays,
-                              const Prepacker& prepacker) noexcept
+                              const Prepacker& prepacker,
+                              const tatum::TimingGraph& timing_graph)
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
         , models_(models)
         , timing_arc_delays_(timing_arc_delays)
-        , prepacker_(prepacker) {
+        , prepacker_(prepacker)
+        , intra_molecule_delay_cache_(timing_graph.edges().size(), tatum::Time(NAN))
+        , chain_delay_cache_(timing_graph.edges().size(), tatum::Time(NAN)) {
 
         // Timing arcs are uniquely identified by sink pins, ensure that every
         // timing arc delay has an entry for each pin in the atom netlist.
@@ -70,7 +75,11 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
                 PackMoleculeId sink_mol = prepacker_.get_atom_molecule(sink_blk);
 
                 if (src_mol == sink_mol) {
-                    return calc_intra_molecule_delay(atom_src_pin, atom_sink_pin);
+                    tatum::Time cached = intra_molecule_delay_cache_[edge_id];
+                    if (!std::isnan(cached.value())) return cached;
+                    tatum::Time delay = calc_intra_molecule_delay(atom_src_pin, atom_sink_pin);
+                    intra_molecule_delay_cache_[edge_id] = delay;
+                    return delay;
                 }
 
                 // If the source and sink atoms belong to different molecules
@@ -81,7 +90,11 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
                 const t_pack_molecule& src_mol_info = prepacker_.get_molecule(src_mol);
                 const t_pack_molecule& sink_mol_info = prepacker_.get_molecule(sink_mol);
                 if (src_mol_info.chain_id.is_valid() && src_mol_info.chain_id == sink_mol_info.chain_id) {
-                    return calc_inter_molecule_chain_delay(atom_src_pin, atom_sink_pin);
+                    tatum::Time cached = chain_delay_cache_[edge_id];
+                    if (!std::isnan(cached.value())) return cached;
+                    tatum::Time delay = calc_inter_molecule_chain_delay(atom_src_pin, atom_sink_pin);
+                    chain_delay_cache_[edge_id] = delay;
+                    return delay;
                 }
             }
 
@@ -247,4 +260,12 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     const LogicalModels& models_;
     const vtr::vector<AtomPinId, float>& timing_arc_delays_;
     const Prepacker& prepacker_;
+
+    // Delay caches indexed by tatum::EdgeId, NaN-initialised. Lazily populated
+    // on the first call to max_edge_delay() for each edge and then read-only for
+    // that edge. Thread-safe under the parallel timing walker because tatum's
+    // DAG guarantee ensures each edge is visited by exactly one node (its sink),
+    // and nodes at the same level are never assigned the same incoming edge.
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> intra_molecule_delay_cache_;
+    mutable vtr::vector<tatum::EdgeId, tatum::Time> chain_delay_cache_;
 };
