@@ -746,7 +746,8 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     ///        Currently 1 (single pass). Increase for multi-pass FM to iteratively
     ///        refine net-cut quality; future passes would also allow net-cut-improving
     ///        swaps when overfill is already zero.
-    int num_fm_passes_ = 1;
+    // FIXME: Increased this to 5 to give it the best chance for now. Will need to sweep.
+    int num_fm_passes_ = 5;
 
     /// @brief The number of times a window was partitioned in the legalizer.
     unsigned num_windows_partitioned_ = 0;

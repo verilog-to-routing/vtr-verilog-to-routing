@@ -52,7 +52,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
                                                          PreClusterTimingManager& timing_manager,
-                                                         float ap_timing_tradeoff,
+                                                         float /*ap_timing_tradeoff*/,
                                                          float ap_interposer_net_cut_tradeoff,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
@@ -71,7 +71,8 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                                     prepacker,
                                                                     models,
                                                                     timing_manager,
-                                                                    ap_timing_tradeoff,
+                                                                    // FIXME: Turning this off now for testing.
+                                                                    0.0 /*ap_timing_tradeoff*/,
                                                                     ap_interposer_net_cut_tradeoff,
                                                                     log_verbosity);
         default:
@@ -2244,7 +2245,9 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     std::vector<APBlockId> upper_blocks_to_move;
     upper_blocks_to_move.reserve(upper_contained_blocks.size());
 
-    for (int fm_pass = 0; fm_pass < num_fm_passes_; fm_pass++) {
+    int num_fm_passes_actual = use_fm ? num_fm_passes_ : 1;
+
+    for (int fm_pass = 0; fm_pass < num_fm_passes_actual; fm_pass++) {
         // Rebuild net counts from the current block assignments. On pass 0 this
         // is the initial position-sorted assignment; on subsequent passes it
         // reflects all moves made so far.
