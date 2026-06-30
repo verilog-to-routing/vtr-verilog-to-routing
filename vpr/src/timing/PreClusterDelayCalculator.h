@@ -72,6 +72,17 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
                 if (src_mol == sink_mol) {
                     return calc_intra_molecule_delay(atom_src_pin, atom_sink_pin);
                 }
+
+                // If the source and sink atoms belong to different molecules
+                // that are part of the same chain (e.g. a long carry chain
+                // split across multiple clusters), the connection uses
+                // dedicated chain wiring between clusters rather than
+                // general-purpose inter-cluster routing.
+                const t_pack_molecule& src_mol_info = prepacker_.get_molecule(src_mol);
+                const t_pack_molecule& sink_mol_info = prepacker_.get_molecule(sink_mol);
+                if (src_mol_info.chain_id.is_valid() && src_mol_info.chain_id == sink_mol_info.chain_id) {
+                    return calc_inter_molecule_chain_delay(atom_src_pin, atom_sink_pin);
+                }
             }
 
             // External net delay
@@ -189,6 +200,32 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         // If a valid path was found through the pb_graph hierarchy, use it.
         // Otherwise we assume that it is a very low delay, close to 0.
         return tatum::Time(delay >= 0.0f ? delay : 0.0f);
+    }
+
+    tatum::Time calc_inter_molecule_chain_delay(AtomPinId src_pin, AtomPinId sink_pin) const {
+        const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
+        const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
+
+        // Estimate the delay as the intra-cluster routing from the source
+        // pin out to the source cluster's boundary, plus the intra-cluster
+        // routing from the sink cluster's boundary in to the sink pin. The
+        // delay of the dedicated chain wiring between clusters is not
+        // included here: at this point in the flow no RR graph exists to
+        // measure it from, and chain direct connections in VTR architectures
+        // commonly use a delayless switch by default. Omitting it is still
+        // far more accurate than the pessimistic general inter-cluster delay.
+        float src_to_boundary = calc_pb_graph_delay_to_root_pin(src_gpin);
+        float boundary_to_sink = calc_pb_graph_delay_from_root_pin(sink_gpin);
+
+        if (src_to_boundary < 0.0f || boundary_to_sink < 0.0f) {
+            // Could not find a path to/from the cluster boundary; fall back
+            // to 0, which is still more accurate than the pessimistic
+            // inter-cluster delay since chain connections use dedicated
+            // low-delay wiring.
+            return tatum::Time(0.0f);
+        }
+
+        return tatum::Time(src_to_boundary + boundary_to_sink);
     }
 
     const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId io_pin) const {

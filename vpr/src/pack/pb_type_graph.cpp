@@ -1961,6 +1961,66 @@ float calc_pb_graph_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* 
     return -1.0f;
 }
 
+float calc_pb_graph_delay_to_root_pin(const t_pb_graph_pin* src) {
+    if (src == nullptr) return -1.0f;
+    if (src->is_root_block_pin()) return 0.0f;
+
+    std::queue<std::pair<const t_pb_graph_pin*, float>> queue;
+    std::unordered_set<const t_pb_graph_pin*> visited;
+
+    queue.push({src, 0.0f});
+    visited.insert(src);
+
+    while (!queue.empty()) {
+        auto [cur_pin, cur_delay] = queue.front();
+        queue.pop();
+
+        for (const t_pb_graph_edge* edge : cur_pin->output_edges) {
+            for (int op = 0; op < edge->num_output_pins; ++op) {
+                const t_pb_graph_pin* next = edge->output_pins[op];
+                if (next->is_root_block_pin()) {
+                    return cur_delay + edge->delay_max;
+                }
+                if (visited.count(next) == 0) {
+                    visited.insert(next);
+                    queue.push({next, cur_delay + edge->delay_max});
+                }
+            }
+        }
+    }
+    return -1.0f;
+}
+
+float calc_pb_graph_delay_from_root_pin(const t_pb_graph_pin* sink) {
+    if (sink == nullptr) return -1.0f;
+    if (sink->is_root_block_pin()) return 0.0f;
+
+    std::queue<std::pair<const t_pb_graph_pin*, float>> queue;
+    std::unordered_set<const t_pb_graph_pin*> visited;
+
+    queue.push({sink, 0.0f});
+    visited.insert(sink);
+
+    while (!queue.empty()) {
+        auto [cur_pin, cur_delay] = queue.front();
+        queue.pop();
+
+        for (const t_pb_graph_edge* edge : cur_pin->input_edges) {
+            for (int ip = 0; ip < edge->num_input_pins; ++ip) {
+                const t_pb_graph_pin* prev = edge->input_pins[ip];
+                if (prev->is_root_block_pin()) {
+                    return cur_delay + edge->delay_max;
+                }
+                if (visited.count(prev) == 0) {
+                    visited.insert(prev);
+                    queue.push({prev, cur_delay + edge->delay_max});
+                }
+            }
+        }
+    }
+    return -1.0f;
+}
+
 /* Date:June 8th, 2024
  * Author: Kate Thurmer
  * Purpose: This subroutine computes the index of a pb graph node at its
