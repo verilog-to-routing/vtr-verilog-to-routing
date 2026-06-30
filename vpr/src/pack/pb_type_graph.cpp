@@ -1989,7 +1989,7 @@ static float calc_pb_graph_delay(const t_pb_graph_pin* start, bool forward, cons
             }
         }
     }
-    return -1.0f;  // no matching pin reachable from start
+    return -1.0f; // no matching pin reachable from start
 }
 
 float calc_pb_graph_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* sink) {
