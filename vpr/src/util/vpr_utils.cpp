@@ -1465,6 +1465,11 @@ void print_switch_usage() {
         return;
     }
 
+    // convert_switch_index returns an index into switch_fanin_remap, which is used below
+    // to index switch_fanin_count (sized to all_sw_inf). The two are kept in sync during
+    // rr-graph generation; assert that here so the indexing stays in bounds.
+    VTR_ASSERT(device_ctx.switch_fanin_remap.size() <= device_ctx.all_sw_inf.size());
+
     std::vector<std::map<int, int>> switch_fanin_count(device_ctx.all_sw_inf.size());
     std::vector<std::map<int, float>> switch_fanin_delay(device_ctx.all_sw_inf.size());
     // a node can have multiple inward switches, so
