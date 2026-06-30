@@ -53,17 +53,15 @@ endif
 override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G '${CMAKE_GEN}' ${CMAKE_PARAMS}
 
 # The curl path should be defined by user. Try to get one from system
-CURL_PATH=
-VCPKG_ROOT=
+CURL_PATH:=$(shell where curl.exe 2>nul | head -n 1)
+# VCPKG root is a system variable env:VCPKG in power shell. User can override by using VCPKG_PATH when calling the makefile
+VCPKG_PATH:=$(VCPKG_ROOT)
 ifeq ($(OS),Windows_NT)
 # Msys2 can still use Linux gcc
 ifeq ($(MSYSTEM),MINGW64)
 	override CMAKE_PARAMS := -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF ${CMAKE_PARAMS}
 else
-	# Get the default curl path 
-	CURL_PATH:=$(shell where curl 2>nul)
-	VCPKG_ROOT:=$(shell vcpkg fetch root)
-	override CMAKE_PARAMS := -DWGET=${CURL_PATH} -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT} ${CMAKE_PARAMS}
+	override CMAKE_PARAMS := -DWGET=${CURL_PATH} -DCMAKE_TOOLCHAIN_FILE=${VCPKG_PATH}/scripts/buildsystems/vcpkg.cmake ${CMAKE_PARAMS}
 	override CMAKE_PARAMS := -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF ${CMAKE_PARAMS}
 endif
 endif
