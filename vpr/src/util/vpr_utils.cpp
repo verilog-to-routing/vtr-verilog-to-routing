@@ -1433,7 +1433,6 @@ static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
         }
     }
 
-    VTR_LOG_ERROR("\n\nerror converting switch index ! \n\n");
     return {-1, -1};
 }
 
@@ -1491,10 +1490,10 @@ void print_switch_usage() {
         for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
             float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
-            // Skip unmappable switches rather than indexing switch_fanin_count[-1].
-            if (arch_switch_id < 0 || arch_switch_id >= (int)switch_fanin_count.size()) {
-                continue;
-            }
+            // convert_switch_index scans the full switch_fanin_remap, which is kept the
+            // same size as all_sw_inf, so every in-use rr_switch maps to a valid index.
+            VTR_ASSERT_MSG(arch_switch_id >= 0 && arch_switch_id < (int)switch_fanin_count.size(),
+                           "converted arch switch index out of range");
             if (!switch_fanin_count[arch_switch_id].contains(fanin)) {
                 switch_fanin_count[arch_switch_id][fanin] = 0;
             }
