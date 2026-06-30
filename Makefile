@@ -58,16 +58,12 @@ VCPKG_ROOT=
 ifeq ($(OS),Windows_NT)
 # Msys2 can still use Linux gcc
 ifeq ($(MSYSTEM),MINGW64)
-	@echo "Detected Mingw64 system, auto disable Parmys, slang, IPO build and ABC..."
 	override CMAKE_PARAMS := -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF ${CMAKE_PARAMS}
 else
 	# Get the default curl path 
 	CURL_PATH:=$(shell where curl 2>nul)
-	@echo "Detected windows platform, use curl: ${CURL_PATH}"
 	VCPKG_ROOT:=$(shell vcpkg fetch root)
-	@echo "Detected Windows platform, use vcpkg_root: ${VCPKG_ROOT}"
 	override CMAKE_PARAMS := -DWGET=${CURL_PATH} -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT} ${CMAKE_PARAMS}
-	@echo "Detected Windows system, auto disable Parmys, slang, IPO build and ABC..."
 	override CMAKE_PARAMS := -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF ${CMAKE_PARAMS}
 endif
 endif
