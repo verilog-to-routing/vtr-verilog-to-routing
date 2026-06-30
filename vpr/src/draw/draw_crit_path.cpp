@@ -20,7 +20,7 @@
 static constexpr int TIMING_EDGE_ARROW_SCALE = 30;
 
 /**
- * @brief Indicates the relative position on a timing edge. 0 and 1 represent the two endpoints.
+ * @brief Indicates the relative position on a timing edge. 0 (start) and 1 (end) represent the two endpoints.
  */
 static constexpr float EDGE_CENTER = 0.5;
 
@@ -38,15 +38,18 @@ static constexpr int LABEL_WIDTH = 40;
 static constexpr int LABEL_HEIGHT = 13;
 
 /**
- * @brief The percentage of the total edge length that a delay label can be offset in the edge direction.
+ * @brief The fraction of the total edge length used to offset a delay label from the center, along the edge.
  */
-static constexpr double EDGE_OFFSET_PERCENT = 0.1;
+static constexpr double EDGE_OFFSET_FRACTION = 0.1;
 
 /**
- * @brief The maximum unit distance that a label can be offset along the edge in pixels.
+ * @brief The maximum unit distance (in pixels) that a label can be offset from the center, along the edge.
  */
 static constexpr int MAX_EDGE_OFFSET_UNIT = 40;
 
+/**
+ * @brief Highly contrasting colours that are useful for visualization.
+ */
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
     ezgl::color(34, 34, 34),    //black
@@ -74,6 +77,15 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 
 /**
  * @brief Candidate positions for placing a delay label relative to its timing-edge flyline.
+ * 
+ * For a flyline, we define start as the endpoint whose X coordinate is less, and end as the other.
+ * Note: this convention only applies here. Other usage of start and end in this file may not follow this.
+ * If the flyline is vertical, start and end are determined by the actual signal direction from src to sink.
+ * Define a vector from start to end. ABOVE and BELOW are perpendicular offset from the vector. ABOVE goes towards
+ * the vector's left hand side and BELOW goes towards the right. CENTER, LEFT and RIGHT are offset along the vector.
+ * While CENTER means no offset, LEFT goes towards start and RIGHT goes towards end. The keyword FAR means doubling
+ * the edgewise offset while keeping the same perpendicular offset. For example, if LEFT means 10 pixels
+ * towards start, FAR_LEFT is 20 pixels towards start.
  */
 enum class e_label_relative_pos {
     CENTER_ABOVE,
@@ -89,7 +101,7 @@ enum class e_label_relative_pos {
 };
 
 /**
- * @brief Contains all attributes of one timing edge delay label needed for calculating the least cluttered label position.
+ * @brief Contains all attributes of one timing edge delay label needed for finding a label position that minimizes overlaps.
  */
 struct t_label_drawing_info {
     /// @brief Delay time across this timing edge, in seconds.
@@ -157,7 +169,7 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
  * @param path Timing path whose consecutive node pairs define the timing edges to place delay labels.
  * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
  * Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
- * @return Per-edge delay label drawing information that does not yet tell where each label will be drawn.
+ * @return Per-edge delay label drawing information that does not yet tell where each label will be eventually drawn.
  */
 static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(const tatum::TimingPath& path,
                                                                             double pixels_per_world_unit);
@@ -166,14 +178,14 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
  * @brief Chooses label positions in a way that greedily tries to minimize overlaps among visible labels.
  *
  * There can be cases where no position candidate of a label satisfies zero overlap. The algorithm will still choose the
- * least overlapped (in a greedy perspective) position instead of hiding the label, because its presence will positively affect
+ * least overlapped position (in a greedy perspective) instead of hiding the label, because its presence will positively affect
  * the placement of subsequent labels. Inevitable overlaps will be eventually handled by hide_still_cluttered_labels().
  * Chosen bounding box positions are updated to basic_label_drawing_info.
  * 
  * @param basic_label_drawing_info Basic per-edge label drawing information needed to perform the decluttering algorithm.
  * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
  * Passed to helper calculate_label_bbox_from_relative_pos() which uses values in pixels to offset label bounding boxes.
- * @return Per-edge delay label drawing information that has each label's position updated.
+ * @return Per-edge delay label drawing information that has each label's updated position.
  */
 static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std::vector<t_label_drawing_info> basic_label_drawing_info,
                                                                              double pixels_per_world_unit);
@@ -191,13 +203,13 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
 static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector<t_label_drawing_info> post_decluttering_label_drawing_info);
 
 /**
- * @brief Calculates a label bounding box using the requested position relative to its timing-edge flyline.
+ * @brief Calculates a label bounding box using the provided position relative to its timing-edge flyline.
  *
  * @param label_to_update Single Label drawing information whose bounding box waits to be updated.
- * @param label_relative_pos Candidate position to apply relative to the timing-edge flyline.
+ * @param label_relative_pos Candidate position to apply, relative to the timing-edge flyline.
  * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
- * Used to convert values specified in pixels that determine the offset of label bounding boxes.
- * @return The rectangle used to replace the current bounding box associated with label_to_update.
+ * Used to convert values specified in pixels that determine the offset of the label bounding box.
+ * @return The rectangle associated with label_to_update. Used to replace the current bounding box .
  */
 static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_info& label_to_update, e_label_relative_pos label_relative_pos, double pixels_per_world_unit);
 
@@ -239,7 +251,7 @@ void draw_crit_path(ezgl::renderer* g) {
     tatum::TimingPath path = paths[0];
 
     // Subtract 1 so that we get the number of edges instead of nodes.
-    // Cast elements().size() from size_t to int to avoid 0 wrapping around to SIZE_MAX
+    // Cast from size_t to int to avoid -1 wrapping around to SIZE_MAX
     int num_edges = int(path.data_arrival_path().elements().size()) - 1;
     if (num_edges <= 0) {
         return;
@@ -274,8 +286,8 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
             ezgl::color color = kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
 
             // Check visibility of layers where source and sink reside.
-            int src_block_layer = get_timing_path_node_layer_num(node);
-            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
+            int src_block_layer = get_timing_path_node_layer_num(prev_node);
+            int sink_block_layer = get_timing_path_node_layer_num(node);
             t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
 
             if (flyline_visibility.visible) {
@@ -425,8 +437,8 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             drawing_info.delay_time = arr_time - prev_arr_time;
 
             // Check visibility of layers where source and sink reside.
-            int src_block_layer = get_timing_path_node_layer_num(node);
-            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
+            int src_block_layer = get_timing_path_node_layer_num(prev_node);
+            int sink_block_layer = get_timing_path_node_layer_num(node);
             t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
 
             // Hide the label if the corresponding timing edge flyline is not visible
@@ -473,7 +485,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             //      .//////         .
             //      .................
 
-            // LABEL_WIDTH and LABEL_HEIGHT correspond to a string that has exactly three decimals (e.g 1.500). Unit is pixel.
+            // LABEL_WIDTH and LABEL_HEIGHT (in pixels) correspond to a string that has exactly three decimals (e.g 1.500).
             double label_bbox_width = (LABEL_WIDTH * cos(rotation_angle * (std::numbers::pi / 180))
                                        + LABEL_HEIGHT * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
                                       / pixels_per_world_unit;
@@ -534,7 +546,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
             for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < basic_label_drawing_info.size(); edge_idx_to_compare++) {
                 const t_label_drawing_info& drawing_info_to_compare = basic_label_drawing_info[edge_idx_to_compare];
 
-                // Skip self-comparison and / or the label to compare being invisible.
+                // Skip self-comparison and / or if the label to compare is invisible.
                 if (edge_idx == edge_idx_to_compare || drawing_info_to_compare.hide_label) {
                     continue;
                 }
@@ -571,9 +583,8 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
         }
 
         // As long as there is one overlap associated with this label, we hide it.
-        // Note: A label being hidden may change the fate of subsequent labels, and since we redo the overlap calculation
-        // for every label, the update will always be reflected in subsequent iterations and save labels that do not
-        // have overlaps amymore.
+        // Note: A label being hidden may change the fate of subsequent labels (always positively), and since we redo the overlap calculation
+        // for every label, the update will always be reflected in subsequent iterations and save labels that do not have overlaps amymore.
         bool has_overlap = false;
         for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < post_decluttering_label_drawing_info.size(); edge_idx_to_compare++) {
             const t_label_drawing_info& drawing_info_to_compare = post_decluttering_label_drawing_info[edge_idx_to_compare];
@@ -599,11 +610,11 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
                                                               e_label_relative_pos label_relative_pos,
                                                               double pixels_per_world_unit) {
     double edge_length = label_to_update.edge_length;
-    // The unit length for a scalable edge-direction offset in world coordinates.
-    double edge_offset_unit = edge_length * EDGE_OFFSET_PERCENT;
+    // The unit length in world coordinates that can be doubled or directly used as the edgewise offset.
+    double edge_offset_unit = edge_length * EDGE_OFFSET_FRACTION;
 
-    // For ultra long timing edges, using percentage may result in labels jumping drastically.
-    // Therefore, we want to cap the edge offset unit at a certain threshold.
+    // For ultra long timing edges, using a fraction of the total edge length (see above) may result in
+    // labels jumping drastically. Therefore, we want to cap the edge offset unit at a certain threshold.
     // Convert MAX_EDGE_OFFSET_UNIT (defined in pixels) to world coordinates.
     if (edge_offset_unit > MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit) {
         edge_offset_unit = MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit;

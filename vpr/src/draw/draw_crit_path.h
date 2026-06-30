@@ -1,4 +1,16 @@
 #pragma once
+/**
+ * @file draw_crit_path.h
+ * 
+ * @brief This file contains drawing routines related to visualizing critical paths in a placed and / or routed design.
+ * 
+ * Critical Path visualization includes timing-edge flyline, time delay label
+ * and routed timing connection (available in a routed design only).
+ * The drawing routines can be mostly split into two groups: server mode and non-server mode (the main flow).
+ * The major differences between them are types of inputs (server mode receives customized inputs from a VPR server that can
+ * include multiple timing paths, while non-server mode only fetches the single worst timing path) and the drawing style
+ * of delay labels (a label decluttering algorithm is implemented for non-server mode, but server mode does not have that).
+ */
 
 #ifndef NO_GRAPHICS
 
