@@ -528,6 +528,13 @@ class SdcParseCallback : public sdcparse::Callback {
             // Create the netlist clock (a clock net which ultimately drives a
             // clock pin on some block in the design netlist).
             create_clock_object(clock_name, clock_source, new_create_clock_cmd);
+
+            // Record the master→generated relationship so that
+            // update_generated_clock_source_latencies() can compute the source
+            // latency (routing delay from master source through clk-to-Q).
+            tatum::DomainId new_domain = tc_.find_clock_domain(clock_name);
+            VTR_ASSERT(new_domain.is_valid());
+            tc_.set_generated_clock_master(new_domain, source_domain_id);
         }
     }
 
@@ -926,10 +933,17 @@ class SdcParseCallback : public sdcparse::Callback {
 
         for (auto clock : clocks) {
             if (is_early) {
+                // set_source_latency is used directly for non-generated clocks and as the
+                // initial value for generated clocks (overwritten by
+                // update_generated_clock_source_latencies). set_user_source_latency stores
+                // the user-specified value so that update_generated_clock_source_latencies
+                // can stack it on top of the computed network delay without double-counting.
                 tc_.set_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency));
+                tc_.set_user_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency));
             }
             if (is_late) {
                 tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency));
+                tc_.set_user_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency));
             }
         }
     }
