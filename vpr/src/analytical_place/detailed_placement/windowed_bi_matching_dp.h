@@ -7,6 +7,8 @@
  */
 
 #include "detailed_placer.h"
+#include "net_cost_handler.h"
+#include "placer_state.h"
 
 /**
  * @brief Detailed placer that optimizes legalized placements using local bipartite matching.
@@ -17,14 +19,17 @@
 
 class WindowedBiMatchingDetailedPlacer : public DetailedPlacer {
   public:
-    using DetailedPlacer::DetailedPlacer;
+    WindowedBiMatchingDetailedPlacer(const BlkLocRegistry& curr_clustered_placement,
+                                     const t_placer_opts& placer_opts);
 
     void optimize_placement() final;
 
   private:
-    int window_size_ = 2;        ///< @brief Size of local placement window, forced to 2 temporarily
-    int placement_layer_ = 0;    ///< @brief Device layer processed by placer, forced to 0 temporarily
-    int placement_sub_tile_ = 0; ///< @brief Sub-tile processed by placer.
+    PlacerState placer_state_;
+    NetCostHandler net_cost_handler_;
+    int window_size_ = 2;        ///< Size of local placement window, forced to 2 temporarily
+    int placement_layer_ = 0;    ///< Device layer processed by placer, forced to 0 temporarily
+    int placement_sub_tile_ = 0; ///< Sub-tile processed by placer.
 
     /**
      * @brief Creates a placement location from grid coordinates.

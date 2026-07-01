@@ -18,6 +18,25 @@
 #include "verify_placement.h"
 #include "place_constraints.h"
 
+WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
+    const BlkLocRegistry& curr_clustered_placement,
+    const t_placer_opts& placer_opts)
+    : placer_state_(false)
+    , net_cost_handler_(placer_state_,
+                        g_vpr_ctx.placement().cube_bb,
+                        e_place_algorithm::BOUNDING_BOX_PLACE,
+                        placer_opts.congestion_chan_util_threshold) {
+    BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
+    blk_loc_registry = curr_clustered_placement;
+
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    for (ClusterBlockId block_id : clb_nlist.blocks()) {
+        blk_loc_registry.place_sync_external_block_connections(block_id);
+    }
+    // PlacerState(false) for now because timing cost updates are not needed
+    (void)net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
+}
+
 t_pl_loc WindowedBiMatchingDetailedPlacer::make_pl_loc(int x, int y, int sub_tile, int layer) {
     t_pl_loc loc;
     loc.x = x;
@@ -105,17 +124,38 @@ bool WindowedBiMatchingDetailedPlacer::try_swap_blocks(BlkLocRegistry& blk_loc_r
     }
 
     blk_loc_registry.apply_move_blocks(blocks_affected);
-    blk_loc_registry.commit_move_blocks(blocks_affected);
+
+    t_net_cost_terms cost_terms_delta;
+    double timing_delta_cost = 0.;
+
+    net_cost_handler_.find_affected_nets_and_update_costs(
+        nullptr,
+        nullptr,
+        blocks_affected,
+        cost_terms_delta,
+        timing_delta_cost);
+
+    if (cost_terms_delta.bb_cost < 0.) {
+        net_cost_handler_.update_move_nets();
+        blk_loc_registry.commit_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
+        return true;
+    }
+
+    net_cost_handler_.reset_move_nets();
+    blk_loc_registry.revert_move_blocks(blocks_affected);
     blocks_affected.clear_move_blocks();
-    return true;
+    return false;
 }
 
 void WindowedBiMatchingDetailedPlacer::optimize_placement() {
     vtr::ScopedStartFinishTimer timer("Windowed Bipartite Matching Detailed Placer");
     VTR_LOG("Running Windowed Bipartite Matching detailed placer.\n");
 
+    g_vpr_ctx.mutable_placement().lock_loc_vars();
+
     BlkLocRegistry& blk_loc_registry =
-        g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        placer_state_.mutable_blk_loc_registry();
 
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
@@ -134,7 +174,7 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
                 continue;
             }
 
-            ///Temporary test: fixed swap between top left and top right block (no cost function)
+            // Temporarily evaluate swaps between the top-left and top-right blocks
             t_pl_loc left_loc = make_pl_loc(x, y, placement_sub_tile_, placement_layer_);
             t_pl_loc right_loc = make_pl_loc(x + 1, y, placement_sub_tile_, placement_layer_);
 
@@ -151,6 +191,9 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
             num_swaps++;
         }
     }
+    auto& placement_ctx = g_vpr_ctx.mutable_placement();
+    placement_ctx.unlock_loc_vars();
+    placement_ctx.mutable_blk_loc_registry() = placer_state_.blk_loc_registry();
     if (num_swaps > 0) {
         post_place_sync();
     }
