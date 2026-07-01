@@ -155,6 +155,10 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
  */
 static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer* g);
 
+static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g);
+
+static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g);
+
 #ifndef NO_SERVER
 
 static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/);
@@ -332,7 +336,9 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
         // Skip the first iteration because prev_node is not yet assigned to an actual node.
         if (prev_node) {
             ezgl::color color = get_color_from_edge_idx(edge_idx);
+
             draw_routed_connections_between_nodes(prev_node, node, color, g);
+            
             edge_idx++;
         }
         prev_node = node;
@@ -341,8 +347,8 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
 
 static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer* g) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const TimingContext& timing_ctx = g_vpr_ctx.timing();
+    const RoutingContext& routing_ctx = g_vpr_ctx.routing();
 
     AtomPinId atom_src_pin = atom_ctx.lookup().tnode_atom_pin(src_tnode);
     AtomPinId atom_sink_pin = atom_ctx.lookup().tnode_atom_pin(sink_tnode);
@@ -350,61 +356,92 @@ static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum
     tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
     tatum::EdgeType edge_type = timing_ctx.graph->edge_type(tedge);
 
-    ClusterNetId net_id = ClusterNetId::INVALID();
-
     //We currently only trace interconnect edges in detail, and treat all others
     //as flylines
     if (edge_type == tatum::EdgeType::INTERCONNECT) {
-        //All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
-
-        //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
-        //      into a common method for walking the clustered netlist, this would also (potentially)
-        //      allow us to grab the component delays
-        AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(atom_src_pin);
-        AtomBlockId atom_sink_block = atom_ctx.netlist().pin_block(atom_sink_pin);
-
-        ClusterBlockId clb_src_block = atom_ctx.lookup().atom_clb(atom_src_block);
-        VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
-        ClusterBlockId clb_sink_block = atom_ctx.lookup().atom_clb(
-            atom_sink_block);
-        VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
-
-        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(
-            atom_sink_pin);
-        VTR_ASSERT(sink_gpin);
-
-        int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
-
-        int sink_block_pin_index = -1;
-        int sink_net_pin_index = -1;
-
-        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block,
-                                                                                                     sink_pb_route_id);
-        if (net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
-            && sink_net_pin_index != -1) {
-            //Connection leaves the CLB
-            //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-            VTR_ASSERT(
-                cluster_ctx.clb_nlist.net_driver_block(net_id)
-                == clb_src_block);
-
-            t_draw_state* draw_state = get_draw_state_vars();
-
-            std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
-
-            //Mark all the nodes highlighted
-
-            for (RRNodeId inode : routed_rr_nodes) {
-                draw_state->draw_rr_node[inode].color = color;
-                draw_state->draw_rr_node[inode].node_highlighted = true;
-            }
-
-            //draw_partial_route() takes care of layer visibility and cross-layer settings
-            draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
+        if (routing_ctx.is_flat) {
+            draw_connections_from_atom_netlist(atom_sink_pin, color, g);
         } else {
-            //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
-            VTR_ASSERT(clb_src_block == clb_sink_block);
+            draw_connections_from_cluster_netlist(atom_src_pin, atom_sink_pin, color, g);
         }
+    }
+}
+
+static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g) {
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    AtomNetId atom_net_id = atom_ctx.netlist().pin_net(atom_sink_pin);
+    VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
+    int sink_net_pin_index = atom_ctx.netlist().pin_net_index(atom_sink_pin);
+    VTR_ASSERT(sink_net_pin_index >= 1);
+
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(atom_net_id, 0, sink_net_pin_index);
+
+    //Mark all the nodes highlighted
+
+    for (RRNodeId inode : routed_rr_nodes) {
+        draw_state->draw_rr_node[inode].color = color;
+        draw_state->draw_rr_node[inode].node_highlighted = true;
+    }
+
+    //draw_partial_route() takes care of layer visibility and cross-layer settings
+    draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
+}
+
+static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g) {
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+
+    //All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
+    //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
+    //      into a common method for walking the clustered netlist, this would also (potentially)
+    //      allow us to grab the component delays
+    AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(atom_src_pin);
+    AtomBlockId atom_sink_block = atom_ctx.netlist().pin_block(atom_sink_pin);
+
+    ClusterBlockId clb_src_block = atom_ctx.lookup().atom_clb(atom_src_block);
+    VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
+    ClusterBlockId clb_sink_block = atom_ctx.lookup().atom_clb(
+        atom_sink_block);
+    VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
+
+    const t_pb_graph_pin* sink_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(
+        atom_sink_pin);
+    VTR_ASSERT(sink_gpin);
+
+    int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
+
+    ClusterNetId cluster_net_id = ClusterNetId::INVALID();
+    int sink_block_pin_index = -1;
+    int sink_net_pin_index = -1;
+
+    std::tie(cluster_net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block,
+                                                                                                    sink_pb_route_id);
+    if (cluster_net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
+        && sink_net_pin_index != -1) {
+        //Connection leaves the CLB
+        //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
+        VTR_ASSERT(
+            cluster_ctx.clb_nlist.net_driver_block(cluster_net_id)
+            == clb_src_block);
+
+        t_draw_state* draw_state = get_draw_state_vars();
+
+        std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(cluster_net_id, 0, sink_net_pin_index);
+
+        //Mark all the nodes highlighted
+
+        for (RRNodeId inode : routed_rr_nodes) {
+            draw_state->draw_rr_node[inode].color = color;
+            draw_state->draw_rr_node[inode].node_highlighted = true;
+        }
+
+        //draw_partial_route() takes care of layer visibility and cross-layer settings
+        draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
+    } else {
+        //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
+        VTR_ASSERT(clb_src_block == clb_sink_block);
     }
 }
 

@@ -1023,7 +1023,7 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 
 //Returns the set of rr nodes which connect driver to sink
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
+    ParentNetId net_id,
     int driver_pin,
     int sink_pin) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();

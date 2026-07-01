@@ -136,7 +136,7 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
  * fan-in/fan-out of a highlighted node. */
 bool draw_if_net_highlighted(ParentNetId inet);
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
+    ParentNetId net_id,
     int driver_pin,
     int sink_pin);
 
