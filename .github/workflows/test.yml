@@ -1194,7 +1194,7 @@ jobs:
           CMAKE_PARAMS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
           CCACHE_DIR: ${{ github.workspace }}/.ccache
         run: |
-          make CURL_PATH="${{ env.CURL_PATH }}" VCPKG_PATH=${{ github.workspace }}/vcpkg -j${{ steps.cpu-cores.outputs.count}}
+          make CURL_PATH="${{ env.CURL_PATH }}" VCPKG_PATH="${{ github.workspace }}/vcpkg" -j${{ steps.cpu-cores.outputs.count}}
 
       - name: Create Python virtual environment
         shell: powershell
