@@ -98,7 +98,9 @@ BUILD_DIR ?= build
 CMAKE := $(shell command -v cmake 2> /dev/null)
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM),MINGW64)
-CMAKE := \"$(shell where cmake.exe 2>nul | head -n 1)\"
+CMAKE := $(shell where cmake.exe 2>nul | head -n 1)
+# Convert to Windows-native backslashes
+CMAKE := $(subst /,\,$(CMAKE))
 endif
 endif
 
