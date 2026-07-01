@@ -16,6 +16,7 @@
 #include "partial_legalizer.h"
 #include "vtr_vector.h"
 
+class AnalyticalSolver;
 class AtomNetlist;
 class DeviceGrid;
 class LogicalModels;
@@ -54,26 +55,19 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                             int log_verbosity);
 
     /**
+     * @brief Out-of-line destructor.
+     *
+     * Defined in the .cpp so the unique_ptr<AnalyticalSolver> member (the type is
+     * only forward-declared here) is destroyed where AnalyticalSolver is complete.
+     */
+    ~NonlinearNesterovPlacer();
+
+    /**
      * @brief Run accelerated smooth global placement and final partial legalization.
      */
     PartialPlacement place() final;
 
   private:
-    /**
-     * @brief Mobile field-only filler particles for one optimization run.
-     *
-     * Fillers emulate the elfPlace/RePlAce filler-cell technique: each primitive
-     * dimension owns a set of massed particles that occupy whitespace so the
-     * electrostatic field reaches a compact target-density equilibrium without an
-     * isotropic anchor. Fillers are deposited into the density field and pushed by
-     * density forces only; they never enter the AP netlist or the legalizer.
-     */
-    struct FillerSet {
-        std::vector<std::vector<double>> x;     ///< Filler x location for each [dim][filler].
-        std::vector<std::vector<double>> y;     ///< Filler y location for each [dim][filler].
-        std::vector<std::vector<size_t>> layer; ///< Filler layer index for each [dim][filler].
-        std::vector<double> unit_mass;          ///< Mass each filler deposits in its dimension.
-    };
 
     /**
      * @brief Per-block placement gradient.
@@ -104,18 +98,27 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
         double proximity = 0.;                ///< Unweighted proximity penalty to a legalized anchor.
         double total_overflow = 0.;           ///< Sum of normalized tile overflows.
         double max_overflow = 0.;             ///< Largest normalized tile overflow.
+        double overflow_ratio = 0.;           ///< Overflow mass / total deposited mass (legality in [0,~1]).
     };
 
     /**
      * @brief Run one full accelerated optimization (epoch loop) from a fresh
      *        initial placement and return the legalized result.
      *
-     * Reads @ref precond_active_ / @ref precond_alpha_active_ so the same core can
-     * be run with and without the preconditioner for the portfolio.
+     * Reads @ref precond_active_ / @ref precond_alpha_active_ to size-gate the
+     * preconditioner for the current design.
      */
     PartialPlacement run_global_optimization_(const std::vector<PrimitiveVectorDim>& density_dimensions,
                                               double device_span,
                                               double convergence_displacement);
+
+    /**
+     * @brief Run the augmented-Lagrangian epoch loop from a fixed seed placement.
+     */
+    PartialPlacement optimize_from_seed_(const PartialPlacement& seed,
+                                         const std::vector<PrimitiveVectorDim>& density_dimensions,
+                                         double device_span,
+                                         double convergence_displacement);
 
     /**
      * @brief Initialize all block locations before first-order optimization.
@@ -152,34 +155,18 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                  std::vector<double>& density_energies,
                                  double& total_overflow,
                                  double& max_overflow,
+                                 double& overflow_ratio,
                                  std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
-     * @brief Compute a per-block mass inflation factor from pin density.
+     * @brief Physical-overflow ratio: mass exceeding tile capacity over capacity.
      *
-     * Pin-dense blocks are given more electrostatic mass so they claim more area
-     * and spread further, emulating the elfPlace routability/pin area-adjustment
-     * step. Whitespace (and therefore filler mass) shrinks accordingly.
+     * Bins physical block mass onto the tile grid and returns
+     * sum(max(0, utilization - target)) / sum(target) across dimensions.
+     * Used as the WL-favoring penalty stop signal; cheap (no Poisson solve).
      */
-    void compute_area_inflation_();
-
-    /**
-     * @brief Initialize mobile filler particles for each primitive dimension.
-     *
-     * Filler mass per dimension is the target capacity minus deposited physical
-     * mass; particles are scattered uniformly across the device. Returns the
-     * total number of fillers created across all dimensions.
-     */
-    size_t initialize_fillers_(const std::vector<PrimitiveVectorDim>& dimensions);
-
-    /**
-     * @brief Advance filler particles down the buffered density force.
-     *
-     * Each dimension's fillers flow along the RMS-normalized density gradient so a
-     * typically forced filler moves @p move_cap tiles. Fillers are clamped to the
-     * device interior and never touch the AP netlist or legalizer.
-     */
-    void move_fillers_(double move_cap);
+    double compute_physical_overflow_ratio_(const PartialPlacement& p_placement,
+                                            const std::vector<PrimitiveVectorDim>& dimensions) const;
 
     /**
      * @brief Recompute the diagonal preconditioner for the current epoch.
@@ -252,17 +239,26 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     std::vector<APBlockId> optimizable_blocks_; ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_;  ///< Smooth wirelength weight for each AP net.
 
-    vtr::vector<APBlockId, double> block_mass_scale_;        ///< Per-block electrostatic mass inflation factor (default 1).
     vtr::vector<APBlockId, double> block_precond_;           ///< Per-block diagonal preconditioner (objective curvature estimate).
     bool precond_active_ = false;                            ///< Whether the preconditioner is applied in the current optimization run.
     double precond_alpha_active_ = 1.0;                      ///< Preconditioner strength exponent for the current optimization run.
-    FillerSet fillers_;                                      ///< Mobile field-only filler particles per dimension.
-    bool fillers_active_ = false;                            ///< When true, fillers are deposited into the density field.
-    mutable std::vector<std::vector<double>> filler_grad_x_; ///< Buffered filler density force in x for each [dim][filler].
-    mutable std::vector<std::vector<double>> filler_grad_y_; ///< Buffered filler density force in y for each [dim][filler].
 
     size_t device_grid_width_ = 0;      ///< Width of the placement region.
     size_t device_grid_height_ = 0;     ///< Height of the placement region.
     size_t device_grid_num_layers_ = 0; ///< Number of device layers.
     float ap_timing_tradeoff_ = 0.f;    ///< User timing tradeoff value.
+    float effective_timing_tradeoff_ = 0.f; ///< Timing tradeoff after design-size adaptation.
+
+    /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
+    ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
+    ///        QP initialization) instead of a block-ID grid spread. Always built in
+    ///        the constructor.
+    std::unique_ptr<AnalyticalSolver> warmstart_solver_;
+    size_t warmstart_iters_ = 0;     ///< Minimum solve+legalize cycles (warm-start floor).
+    size_t warmstart_max_iters_ = 0; ///< Cap on the convergence-based warm-start loop.
+
+    /// @brief Active wirelength-smoothing fraction (gamma / device span). Seeded at
+    ///        the fixed default, then annealed coarse->sharp per epoch by
+    ///        run_global_optimization_ (gamma continuation).
+    double current_gamma_fraction_ = 0.02;
 };
