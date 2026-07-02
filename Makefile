@@ -100,7 +100,7 @@ ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM),MINGW64)
 CMAKE := $(shell where cmake.exe 2>nul | head -n 1)
 # Convert to Windows-native backslashes
-CMAKE := $(subst /,\,$(CMAKE))
+CMAKE := $(subst /,\ ,$(CMAKE))
 endif
 endif
 
