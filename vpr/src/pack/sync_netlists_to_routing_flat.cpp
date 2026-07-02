@@ -318,6 +318,8 @@ static void sync_clustered_netlist_to_routing(void) {
      * Add the associated net and port too if they don't exist */
     for (auto parent_net_id : atom_ctx.netlist().nets()) {
         auto& tree = route_ctx.route_trees[parent_net_id];
+        if (!tree)
+            continue;
         AtomNetId atom_net_id = convert_to_atom_net_id(parent_net_id);
 
         ClusterNetId clb_net_id;
@@ -376,8 +378,7 @@ static void sync_clustered_netlist_to_routing(void) {
                              clb_netlist.block_name(clb).c_str());
                 continue;
             }
-            ClusterPinId new_pin = clb_netlist.create_pin(port_id, pb_graph_pin->pin_number, clb_net_id, pin_type, pb_graph_pin->pin_count_in_cluster);
-            clb_netlist.set_pin_net(new_pin, pin_type, clb_net_id);
+            clb_netlist.create_pin(port_id, pb_graph_pin->pin_number, clb_net_id, pin_type, pb_graph_pin->pin_count_in_cluster);
         }
     }
     /* 4. Rebuild internal cluster netlist lookups */
