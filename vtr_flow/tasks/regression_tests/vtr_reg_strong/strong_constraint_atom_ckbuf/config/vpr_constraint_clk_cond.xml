@@ -1,0 +1,8 @@
+<vpr_constraints tool_name="vpr">
+  <partition_list>
+    <partition name="int_clk_part">
+      <add_atom name_pattern="int_clk_ckbuf" is_regex="false"/>
+      <add_region x_low="1" y_low="1" x_high="1" y_high="1" subtile="2"/>
+    </partition>
+  </partition_list>
+</vpr_constraints>
