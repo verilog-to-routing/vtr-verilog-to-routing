@@ -991,22 +991,29 @@ enum class e_interposer_net_cost_type {
 };
 
 struct t_interposer_cost_params {
-    /// Unitless scaling for interposer crossing cost after normalization. Tune like \c timing_tradeoff, which sets timing
-    /// versus wirelength emphasis: after normalization, similar numeric ranges apply so this term can be weighed against
-    /// those objectives. Zero disables. Additive in the total cost.
+    /// Unitless scaling for interposer crossing cost after normalization. Additive in the total cost.
+    /// Valid range is from 0 to infinity, with 0 completely ignoring the term and infinity completely
+    /// dominating all other terms. Setting this to 1 would make this term roughly as important as the
+    /// timing and wiring cost.
     float net_cost_factor;
     /// Formula used for interposer crossing cost; two-stage mode can switch formulas during placement.
     e_interposer_net_cost_type net_cost_type;
+
     /// Formula used before the two-stage interposer cost model switches.
     e_interposer_net_cost_type two_stage_net_cost_first_stage_type;
     /// Formula used after the two-stage interposer cost model switches.
     e_interposer_net_cost_type two_stage_net_cost_second_stage_type;
-
     /// Maximum recent cost deviation threshold used to switch the two-stage interposer cost model.
+    /// A value of 0.01 means that when the last 10 interposer costs have less than 1% deviation from
+    /// mean, we change the cost term from the first stage to the second stage.
     float net_cost_change_threshold;
+
     /// Interposer-cut congestion threshold; penalize only demand above this value (0 disables).
+    /// For example, if set to 0.9, we only add the interposer congestion cost term when we approximate
+    /// that more than 90% of interposer wires in a channel will be used.
     float cong_cost_threshold;
-    /// Unitless scaling for interposer congestion after normalization. Comparable in tuning to \c congestion_factor.
+    /// Unitless scaling factor for interposer congestion after normalization. Valid range and reasonable
+    /// values are the same as 'net_cost_factor'.
     float cong_cost_factor;
 };
 
