@@ -32,6 +32,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
 
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                          int route_verbosity,
                                           bool device_model_warnings);
 
 /**
@@ -91,6 +92,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name,
+                                    int route_verbosity,
                                     bool device_model_warnings) {
     const size_t total_num_segment = segment_inf_x.size() + segment_inf_y.size() + segment_inf_z.size();
 
@@ -159,7 +161,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[index].seg_index = seg_ptr->seg_index;
     }
 
-    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data, device_model_warnings);
+    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data, route_verbosity, device_model_warnings);
 
     fixup_rr_indexed_data_T_values(rr_indexed_data, total_num_segment);
 
@@ -517,6 +519,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  */
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                          int route_verbosity,
                                           bool device_model_warnings) {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
 
@@ -537,6 +540,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
 
     size_t ipin_switch_count = 0;
     float ipin_switch_T_total = 0.;
+    size_t num_nodes_without_outgoing_switches = 0;
 
     // Walk through the RR graph and collect all R and C values of all the nodes,
     // as well as their fan-in switches R, T_del, and Cinternal values.
@@ -578,8 +582,9 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
 
         if (num_switches == 0) {
             if (num_shorts == 0) {
+                num_nodes_without_outgoing_switches++;
                 std::string node_cords = rr_graph.node_coordinate_to_string(RRNodeId(rr_id));
-                VTR_LOGV_WARN(device_model_warnings, "Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
+                VTR_LOGV_WARN(device_model_warnings && route_verbosity > 1, "Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
                               rr_graph.node_type_string(rr_id), node_cords.c_str());
             }
             continue;
@@ -674,6 +679,9 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     VTR_LOGV_WARN(device_model_warnings && num_occurences_of_no_instances_with_cost_index > 0,
                   "Found %u cost indices where no instances of RR nodes could be found\n",
                   num_occurences_of_no_instances_with_cost_index);
+    VTR_LOGV_WARN(device_model_warnings && route_verbosity <= 1 && num_nodes_without_outgoing_switches > 0,
+                  "Found %zu nodes with no out-going switches. Run VTR with route_verbosity > 1 to see details.\n",
+                  num_nodes_without_outgoing_switches);
 }
 
 static void calculate_average_switch(const RRGraphView& rr_graph,
