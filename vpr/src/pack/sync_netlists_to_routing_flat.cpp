@@ -338,17 +338,6 @@ static void sync_clustered_netlist_to_routing(void) {
             if (!is_pin_on_tile(physical_tile, pin_index))
                 continue;
 
-            /* OPIN on the tile: create a new clb_net_id and add all ports & pins into here
-             * Due to how the route tree is traversed, all nodes until the next OPIN on the tile will
-             * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
-            if (node_type == e_rr_type::OPIN) {
-                std::string net_name;
-                net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
-                clb_net_id = clb_netlist.create_net(net_name);
-                atom_ctx.mutable_lookup().add_atom_clb_net(atom_net_id, clb_net_id);
-                clb_nets_so_far++;
-            }
-
             t_pb_graph_pin* pb_graph_pin = get_pb_graph_node_pin_from_block_pin(clb, pin_index);
 
             /* Get or create port */
@@ -367,15 +356,35 @@ static void sync_clustered_netlist_to_routing(void) {
             }
             PinType pin_type = node_type == e_rr_type::OPIN ? PinType::DRIVER : PinType::SINK;
 
-            /* Pin already exists. This means a global net that was not routed (i.e. 'ideal' mode). */
-            if (clb_netlist.port_pin(port_id, pb_graph_pin->pin_number)) {
+            /* Pin already exists. This means a global net that was not routed (i.e. 'ideal' mode).
+             * Check this before creating a net for an OPIN: otherwise we would create a net whose
+             * driver pin is never added (skipped below), leaving it undriven and corrupting the
+             * netlist during compress(). */
+            if (ClusterPinId existing_pin = clb_netlist.port_pin(port_id, pb_graph_pin->pin_number)) {
                 VTR_LOG_WARN("Pin %s of block %s has a global or clock net"
                              " connected and it has a routing clash with the flat router."
                              " This may cause inconsistent results.\n",
                              pb_graph_pin->to_string().c_str(),
                              clb_netlist.block_name(clb).c_str());
+                /* The driver pin (and hence its net) already exists. Reuse that net so any sinks
+                 * appearing under this OPIN in the route tree connect to it instead of a new,
+                 * undriven net. */
+                if (node_type == e_rr_type::OPIN)
+                    clb_net_id = clb_netlist.pin_net(existing_pin);
                 continue;
             }
+
+            /* OPIN on the tile: create a new clb_net_id and add all ports & pins into here
+             * Due to how the route tree is traversed, all nodes until the next OPIN on the tile will
+             * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
+            if (node_type == e_rr_type::OPIN) {
+                std::string net_name;
+                net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+                clb_net_id = clb_netlist.create_net(net_name);
+                atom_ctx.mutable_lookup().add_atom_clb_net(atom_net_id, clb_net_id);
+                clb_nets_so_far++;
+            }
+
             ClusterPinId new_pin = clb_netlist.create_pin(port_id, pb_graph_pin->pin_number, clb_net_id, pin_type, pb_graph_pin->pin_count_in_cluster);
             clb_netlist.set_pin_net(new_pin, pin_type, clb_net_id);
         }
