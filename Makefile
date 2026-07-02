@@ -185,6 +185,7 @@ else
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	$(CMAKE) --build $(BUILD_DIR) --target $(MAKECMDGOALS) --parallel
 endif # final build in windows
+else
 # Linux build is based on Makefile
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
