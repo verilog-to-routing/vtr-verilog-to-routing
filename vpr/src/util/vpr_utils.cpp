@@ -1423,7 +1423,9 @@ static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
     VTR_ASSERT(rr_switch_id.is_valid());
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    for (int iswitch = 0; iswitch < (int)device_ctx.arch_switch_inf.size(); iswitch++) {
+    // Loop over switch_fanin_remap, not arch_switch_inf: the flat router and tileable (crr)
+    // generator append internal switches to switch_fanin_remap past the arch switch count.
+    for (int iswitch = 0; iswitch < (int)device_ctx.switch_fanin_remap.size(); iswitch++) {
         for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
             if (itr->second == rr_switch_id) {
                 return {iswitch, itr->first};
@@ -1431,7 +1433,6 @@ static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
         }
     }
 
-    VTR_LOG_ERROR("\n\nerror converting switch index ! \n\n");
     return {-1, -1};
 }
 
@@ -1464,6 +1465,11 @@ void print_switch_usage() {
         return;
     }
 
+    // convert_switch_index returns an index into switch_fanin_remap, which is used below
+    // to index switch_fanin_count (sized to all_sw_inf). The two are kept in sync during
+    // rr-graph generation; assert that here so the indexing stays in bounds.
+    VTR_ASSERT(device_ctx.switch_fanin_remap.size() <= device_ctx.all_sw_inf.size());
+
     std::vector<std::map<int, int>> switch_fanin_count(device_ctx.all_sw_inf.size());
     std::vector<std::map<int, float>> switch_fanin_delay(device_ctx.all_sw_inf.size());
     // a node can have multiple inward switches, so
@@ -1489,6 +1495,10 @@ void print_switch_usage() {
         for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
             float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
+            // convert_switch_index scans the full switch_fanin_remap, which is kept the
+            // same size as all_sw_inf, so every in-use rr_switch maps to a valid index.
+            VTR_ASSERT_MSG(arch_switch_id >= 0 && arch_switch_id < (int)switch_fanin_count.size(),
+                           "converted arch switch index out of range");
             if (!switch_fanin_count[arch_switch_id].contains(fanin)) {
                 switch_fanin_count[arch_switch_id][fanin] = 0;
             }
