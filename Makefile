@@ -94,7 +94,7 @@ MAKEFLAGS := -s
 SOURCE_DIR := $(PWD)
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM),MINGW64)
-SOURCE_DIR := (pwd).path
+SOURCE_DIR := $(shell powershell -NoProfile -Command "(Get-Location).Path")
 endif
 endif
 BUILD_DIR ?= build
