@@ -92,6 +92,11 @@ endif
 MAKEFLAGS := -s
 
 SOURCE_DIR := $(PWD)
+ifeq ($(OS),Windows_NT)
+ifneq ($(MSYSTEM),MINGW64)
+SOURCE_DIR := (pwd).path
+endif
+endif
 BUILD_DIR ?= build
 
 #Check for the cmake executable
