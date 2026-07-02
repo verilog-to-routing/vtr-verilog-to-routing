@@ -2192,6 +2192,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<float>(args.ap_interdie_crossing_penalty_scale, "--ap_interdie_crossing_penalty_scale")
+        .help(
+            "Multiplier applied to the inter-die crossing penalty in the B2B analytical solver.\n"
+            "Nets whose blocks reside on different dies in the legalized solution are penalized to "
+            "discourage unnecessary interposer crossings. This multiplier scales that base penalty: "
+            "a value of 0.0 disables the penalty entirely, while larger values apply stronger "
+            "pressure to keep nets on a single die. Only has effect on interposer-based architectures.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
         .help(
             "Defines the threshold for high fanout nets within AP flow.\n"

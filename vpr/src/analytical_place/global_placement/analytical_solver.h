@@ -176,6 +176,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
+                                                         float ap_interdie_crossing_penalty_scale,
                                                          unsigned num_threads,
                                                          int log_verbosity);
 
@@ -559,6 +560,7 @@ class B2BSolver : public AnalyticalSolver {
               const PreClusterTimingManager& pre_cluster_timing_manager,
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
+              float ap_interdie_crossing_penalty_scale,
               int log_verbosity)
         : AnalyticalSolver(ap_netlist,
                            atom_netlist,
@@ -567,7 +569,8 @@ class B2BSolver : public AnalyticalSolver {
                            log_verbosity)
         , pre_cluster_timing_manager_(pre_cluster_timing_manager)
         , place_delay_model_(place_delay_model)
-        , device_grid_(device_grid) {}
+        , device_grid_(device_grid)
+        , interdie_crossing_penalty_scale_(ap_interdie_crossing_penalty_scale) {}
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -868,6 +871,12 @@ class B2BSolver : public AnalyticalSolver {
     ///        (has_interposer_cuts, are_locs_on_same_die) when computing
     ///        inter-die crossing penalties.
     const DeviceGrid& device_grid_;
+
+    /// @brief User-supplied multiplier for the inter-die crossing penalty.
+    ///        Scales the base penalty computed each iteration. A value of 0
+    ///        disables the penalty entirely; larger values apply stronger
+    ///        pressure to keep nets on a single die.
+    float interdie_crossing_penalty_scale_ = 1.0f;
 };
 
 #endif // EIGEN_INSTALLED

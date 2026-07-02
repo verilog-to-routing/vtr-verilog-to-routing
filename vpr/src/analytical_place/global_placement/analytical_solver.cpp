@@ -55,6 +55,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
+                                                         float ap_interdie_crossing_penalty_scale,
                                                          unsigned num_threads,
                                                          int log_verbosity) {
 #ifdef EIGEN_INSTALLED
@@ -107,6 +108,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                pre_cluster_timing_manager,
                                                place_delay_model,
                                                ap_timing_tradeoff,
+                                               ap_interdie_crossing_penalty_scale,
                                                log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -1427,7 +1429,8 @@ void B2BSolver::update_interdie_crossing_penalties(unsigned iteration) {
     if (!device_grid_.has_interposer_cuts())
         return;
 
-    double base_penalty = interdie_crossing_penalty_mult_
+    double base_penalty = interdie_crossing_penalty_scale_
+                          * interdie_crossing_penalty_mult_
                           * std::exp((double)iteration / interdie_crossing_penalty_exp_fac_);
 
     for (APNetId net_id : netlist_.nets()) {

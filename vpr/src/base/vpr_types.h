@@ -1202,6 +1202,11 @@ struct t_ap_opts {
     /// A trade-off parameter used to decide how focused the AP flow should be on optimizing timing over wirelength.
     float ap_timing_tradeoff;
 
+    /// Multiplier applied to the inter-die crossing penalty in the B2B analytical solver.
+    /// A value of 0.0 disables the penalty entirely; larger values increase pressure to
+    /// keep nets on a single die. Only has effect on interposer-based architectures.
+    float ap_interdie_crossing_penalty_scale;
+
     /// The threshold to ignore nets with higher fanout than that value while constructing the solver.
     int ap_high_fanout_threshold;
 
