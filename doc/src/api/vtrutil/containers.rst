@@ -110,3 +110,9 @@ vtr_dynamic_bitset
 .. doxygenclass:: vtr::dynamic_bitset
    :project: vtr
    :members:
+
+vtr_circular_buffer
+------------------
+.. doxygenfile:: vtr_circular_buffer.h
+   :project: vtr
+   :sections: innernamespace briefdescription detaileddescription user-defined public-func typedef
