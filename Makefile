@@ -183,7 +183,7 @@ ifeq ($(MSYSTEM),MINGW64)
 else
 # MSVC is based on Ninja, use cmake native build
 	@echo "Building target(s): $(MAKECMDGOALS)"
-	$(CMAKE) --build $(BUILD_DIR) --target $(MAKECMDGOALS)
+	$(CMAKE) --build $(BUILD_DIR)
 endif # final build in windows
 else
 # Linux build is based on Makefile
