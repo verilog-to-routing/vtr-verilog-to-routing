@@ -96,7 +96,7 @@ ifeq ($(MSYSTEM),MINGW64)
 SOURCE_DIR := $(PWD)
 else
 SOURCE_DIR := $(shell powershell -NoProfile -Command "(Get-Location).Path")
-SOURCE_DIR := $(strip $(SOURCE_DIR))
+SOURCE_DIR := $(subst \,/,$(SOURCE_DIR))
 endif
 else
 SOURCE_DIR := $(PWD)
