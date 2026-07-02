@@ -300,8 +300,8 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
         tatum::NodeId node = elem.node();
         // Skip the first iteration because prev_node is not yet assigned to an actual node.
         if (prev_node) {
-            //We draw each 'edge' in a different color, this allows users to identify the stages and
-            //any routing which corresponds to the edge.
+            // We draw each 'edge' in a different color, this allows users to identify the stages and
+            // any routing which corresponds to the edge.
             ezgl::color color = get_color_from_edge_idx(edge_idx);
 
             // Check visibility of layers where source and sink reside.
@@ -356,8 +356,7 @@ static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum
     tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
     tatum::EdgeType edge_type = timing_ctx.graph->edge_type(tedge);
 
-    //We currently only trace interconnect edges in detail, and treat all others
-    //as flylines
+    // We currently only trace interconnect edges in detail, and treat all others as flylines.
     if (edge_type == tatum::EdgeType::INTERCONNECT) {
         if (routing_ctx.is_flat) {
             draw_connections_from_atom_netlist(atom_sink_pin, color, g);
@@ -378,23 +377,23 @@ static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::co
 
     std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(atom_net_id, 0, sink_net_pin_index);
 
-    //Mark all the nodes highlighted
+    // Mark all the nodes highlighted
 
     for (RRNodeId inode : routed_rr_nodes) {
         draw_state->draw_rr_node[inode].color = color;
         draw_state->draw_rr_node[inode].node_highlighted = true;
     }
 
-    //draw_partial_route() takes care of layer visibility and cross-layer settings
-    draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
+    // draw_partial_route() takes care of layer visibility and cross-layer settings
+    draw_partial_route(routed_rr_nodes, g);
 }
 
 static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
-    //All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
-    //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
+    // All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
+    // TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
     //      into a common method for walking the clustered netlist, this would also (potentially)
     //      allow us to grab the component delays
     AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(atom_src_pin);
@@ -420,8 +419,8 @@ static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPi
                                                                                                     sink_pb_route_id);
     if (cluster_net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
         && sink_net_pin_index != -1) {
-        //Connection leaves the CLB
-        //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
+        // Connection leaves the CLB
+        // Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
         VTR_ASSERT(
             cluster_ctx.clb_nlist.net_driver_block(cluster_net_id)
             == clb_src_block);
@@ -430,17 +429,17 @@ static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPi
 
         std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(cluster_net_id, 0, sink_net_pin_index);
 
-        //Mark all the nodes highlighted
+        // Mark all the nodes highlighted
 
         for (RRNodeId inode : routed_rr_nodes) {
             draw_state->draw_rr_node[inode].color = color;
             draw_state->draw_rr_node[inode].node_highlighted = true;
         }
 
-        //draw_partial_route() takes care of layer visibility and cross-layer settings
+        // draw_partial_route() takes care of layer visibility and cross-layer settings
         draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
     } else {
-        //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
+        // Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
         VTR_ASSERT(clb_src_block == clb_sink_block);
     }
 }
@@ -804,7 +803,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
         if (path_index < paths.size()) {
             const tatum::TimingPath& path = paths[path_index];
 
-            //Walk through the timing path drawing each edge
+            // Walk through the timing path drawing each edge
             tatum::NodeId prev_node;
             float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
             std::size_t element_counter = 0;
@@ -815,10 +814,10 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                 tatum::NodeId node = elem.node();
                 float arr_time = elem.tag().time();
 
-                //We draw each 'edge' in a different color, this allows users to identify the stages and
-                //any routing which corresponds to the edge
+                // We draw each 'edge' in a different color, this allows users to identify the stages and
+                // any routing which corresponds to the edge
                 //
-                //We pick colors from the kelly max-contrast list, for long paths there may be repeats
+                // We pick colors from the kelly max-contrast list, for long paths there may be repeats
                 ezgl::color color = kelly_max_contrast_colors[element_counter % kelly_max_contrast_colors.size()];
 
                 if (prev_node) {
@@ -856,14 +855,14 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
     bool draw_delays = get_draw_state_vars()->show_crit_path_delays && !skip_draw_delays;
 
     if (draw_delays) {
-        //Determine the strict bounding box based on the lines start/end
+        // Determine the strict bounding box based on the lines start/end
         float min_x = std::min(start.x, end.x);
         float max_x = std::max(start.x, end.x);
         float min_y = std::min(start.y, end.y);
         float max_y = std::max(start.y, end.y);
 
-        //If we have a nearly horizontal/vertical line the bbox is too
-        //small to draw the text, so widen it by a tile (i.e. CLB) width
+        // If we have a nearly horizontal/vertical line the bbox is too
+        // small to draw the text, so widen it by a tile (i.e. CLB) width
         float tile_width = get_draw_coords_vars()->get_tile_width();
         if (max_x - min_x < tile_width) {
             max_x += tile_width / 2;
@@ -874,7 +873,7 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
             min_y -= tile_width / 2;
         }
 
-        //TODO: draw the delays nicer
+        // TODO: draw the delays nicer
         //   * rotate to match edge
         //   * offset from line
         //   * track visible in window
