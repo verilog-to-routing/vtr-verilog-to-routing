@@ -533,6 +533,25 @@ class B2BSolver : public AnalyticalSolver {
     ///        number, the solver will focus more on timing and less on wirelength.
     static constexpr double timing_slope_fac_ = 0.75;
 
+    // The following constants configure the interposer crossing penalty.
+    // Interposer architectures have scarce resources for crossing between dies;
+    // nets whose blocks are on different dies in the legalized solution are
+    // penalized to discourage interposer crossings. The penalty grows exponentially
+    // each outer GP iteration:
+    //      crossing_penalty = 1.0 + interdie_crossing_penalty_mult_
+    //                         * e^(iter / interdie_crossing_penalty_exp_fac_)
+    // and is attenuated by (1 - timing_criticality) so that timing-critical
+    // nets may still use the interposer when needed.
+    // Has no effect on architectures that lack interposer cuts.
+
+    /// @brief Multiplier for the interposer crossing penalty. Smaller values
+    ///        give a weaker initial penalty.
+    static constexpr double interdie_crossing_penalty_mult_ = 0.01;
+
+    /// @brief Factor controlling how quickly the interposer crossing penalty
+    ///        grows. Larger values cause the penalty to grow more slowly.
+    static constexpr double interdie_crossing_penalty_exp_fac_ = 10.0;
+
   public:
     B2BSolver(const APNetlist& ap_netlist,
               const DeviceGrid& device_grid,
@@ -547,7 +566,8 @@ class B2BSolver : public AnalyticalSolver {
                            ap_timing_tradeoff,
                            log_verbosity)
         , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-        , place_delay_model_(place_delay_model) {}
+        , place_delay_model_(place_delay_model)
+        , device_grid_(device_grid) {}
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -713,6 +733,22 @@ class B2BSolver : public AnalyticalSolver {
     std::tuple<double, double, double> get_delay_normalization_facs(APBlockId driver_blk);
 
     /**
+     * @brief Update net weights for each net based on the current
+     *        legalized solution.
+     *
+     * For architectures with interposer cuts, any net whose blocks span more
+     * than one die in the legalized solution receives an interposer
+     * crossing penalty that grows exponentially with iteration. The penalty
+     * is attenuated by (1 - timing_criticality) so that timing-critical nets
+     * may still use the interposer when necessary. Non-crossing nets and nets
+     * in architectures without interposer cuts are not penalized.
+     *
+     *  @param iteration
+     *      The current outer iteration of Global Placement.
+     */
+    void update_interdie_crossing_penalties(unsigned iteration);
+
+    /**
      * @brief Initializes the linear system with the given partial placement.
      *
      * Blocks will be connected to the bounding blocks of their nets using
@@ -827,6 +863,11 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief The place delay model used for calculating the delay between
     ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+
+    /// @brief The device grid. Stored to query interposer-cut geometry
+    ///        (has_interposer_cuts, are_locs_on_same_die) when computing
+    ///        inter-die crossing penalties.
+    const DeviceGrid& device_grid_;
 };
 
 #endif // EIGEN_INSTALLED

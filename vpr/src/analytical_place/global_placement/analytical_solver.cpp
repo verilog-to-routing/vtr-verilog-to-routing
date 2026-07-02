@@ -628,6 +628,10 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
             block_z_locs_legalized = p_placement.block_layer_nums;
         }
 
+        // Update inter-die crossing penalties from the freshly-saved legalized
+        // positions. Must be called after the legalized positions are populated.
+        update_interdie_crossing_penalties(iteration);
+
         // Store last solved position into p_placement for b2b model
         p_placement.block_x_locs = block_x_locs_solved;
         p_placement.block_y_locs = block_y_locs_solved;
@@ -1416,6 +1420,60 @@ void B2BSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_ti
     // Currently does not do anything. Eventually should investigate updating the
     // net weights.
     return;
+}
+
+void B2BSolver::update_interdie_crossing_penalties(unsigned iteration) {
+    // Only applies to architectures with interposer cuts.
+    if (!device_grid_.has_interposer_cuts())
+        return;
+
+    double base_penalty = interdie_crossing_penalty_mult_
+                          * std::exp((double)iteration / interdie_crossing_penalty_exp_fac_);
+
+    for (APNetId net_id : netlist_.nets()) {
+        if (netlist_.net_is_ignored(net_id)) {
+            net_weights_[net_id] = 1.0f;
+            continue;
+        }
+
+        // Check whether any two blocks in this net cross an interposer cut in
+        // the legalized solution by comparing their die identities.
+        bool first_pin = true;
+        t_physical_tile_loc ref_loc;
+        bool crosses = false;
+        for (APPinId pin_id : netlist_.net_pins(net_id)) {
+            APBlockId blk_id = netlist_.pin_block(pin_id);
+            int blk_z_loc = is_multi_die() ? (int)std::floor(block_z_locs_legalized[blk_id]) : 0;
+            t_physical_tile_loc blk_loc(
+                (int)std::floor(block_x_locs_legalized[blk_id]),
+                (int)std::floor(block_y_locs_legalized[blk_id]),
+                blk_z_loc);
+            if (first_pin) {
+                ref_loc = blk_loc;
+                first_pin = false;
+            } else if (!device_grid_.are_locs_on_same_die(ref_loc, blk_loc)) {
+                crosses = true;
+                break;
+            }
+        }
+
+        if (!crosses) {
+            net_weights_[net_id] = 1.0f;
+            continue;
+        }
+
+        // Attenuate by timing criticality so that nets on critical paths are
+        // still allowed to use the interposer when timing demands it.
+        float crit = 0.0f;
+        if (pre_cluster_timing_manager_.is_valid()) {
+            AtomNetId atom_net_id = netlist_.net_atom_net(net_id);
+            if (atom_net_id.is_valid()) {
+                crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
+            }
+        }
+
+        net_weights_[net_id] = 1.0 + (float)(base_penalty * (1.0 - crit));
+    }
 }
 
 void B2BSolver::print_statistics() {
