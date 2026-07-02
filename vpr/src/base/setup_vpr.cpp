@@ -683,9 +683,13 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
 
     PlacerOpts->recompute_crit_iter = Options.recompute_crit_iter;
 
-    PlacerOpts->interposer_cost_factor = Options.place_interposer_cost_factor;
-    PlacerOpts->interposer_cong_factor = Options.place_interposer_cong_cost_factor;
-    PlacerOpts->interposer_cong_threshold = Options.place_interposer_cong_threshold;
+    PlacerOpts->interposer_cost_params.net_cost_factor = Options.place_interposer_cost_factor;
+    PlacerOpts->interposer_cost_params.cong_cost_factor = Options.place_interposer_cong_cost_factor;
+    PlacerOpts->interposer_cost_params.cong_cost_threshold = Options.place_interposer_cong_threshold;
+    PlacerOpts->interposer_cost_params.net_cost_type = Options.place_interposer_net_cost_type;
+    PlacerOpts->interposer_cost_params.two_stage_net_cost_first_stage_type = Options.place_two_stage_interposer_net_cost_first_stage_type;
+    PlacerOpts->interposer_cost_params.two_stage_net_cost_second_stage_type = Options.place_two_stage_interposer_net_cost_second_stage_type;
+    PlacerOpts->interposer_cost_params.net_cost_change_threshold = Options.place_interposer_net_cost_change_threshold;
 
     PlacerOpts->congestion_factor = Options.place_congestion_factor;
     PlacerOpts->congestion_rlim_trigger_ratio = Options.place_congestion_rlim_trigger_ratio;

@@ -29,3 +29,6 @@ pass_requirements_file=pass_requirements_strict_rr_graph.txt
 script_params_common = -track_memory_usage --route_chan_width 60 --pack --place --route --analysis
 script_params_list_add = --device vtr_homogeneous_extra_small
 script_params_list_add = --device auto
+script_params_list_add = --device vtr_homogeneous_extra_small --place_interposer_net_cost_type two_stage
+script_params_list_add = --device vtr_homogeneous_extra_small --place_interposer_net_cost_type interposer_wire_aware_crossing_bb
+script_params_list_add = --device vtr_homogeneous_extra_small --place_interposer_net_cost_type minimize_interposer_crossing_bb
