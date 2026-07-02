@@ -91,11 +91,14 @@ endif
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
-SOURCE_DIR := $(PWD)
 ifeq ($(OS),Windows_NT)
-ifneq ($(MSYSTEM),MINGW64)
-SOURCE_DIR := $(shell (Get-Location).Path)
+ifeq ($(MSYSTEM),MINGW64)
+SOURCE_DIR := $(PWD)
+else
+SOURCE_DIR := $(shell powershell -NoProfile -Command "(Get-Location).Path")
 endif
+else
+SOURCE_DIR := $(PWD)
 endif
 BUILD_DIR ?= build
 
