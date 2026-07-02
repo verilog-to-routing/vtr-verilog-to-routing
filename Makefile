@@ -175,8 +175,20 @@ endif #BUILD_TYPE
 	#
 	#Final build
 	#
+ifeq ($(OS),Windows_NT)
+# MSYS2 is based on Makefile
+ifeq ($(MSYSTEM),MINGW64)
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+else
+# MSVC is based on Ninja, use cmake native build
+	@echo "Building target(s): $(MAKECMDGOALS)"
+	$(CMAKE) --build $(BUILD_DIR) --target $(MAKECMDGOALS) --parallel
+endif # final build in windows
+# Linux build is based on Makefile
+	@echo "Building target(s): $(MAKECMDGOALS)"
+	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+endif # final build
 endif #ensure-headless
 endif #ensure-gui
 endif #clean
