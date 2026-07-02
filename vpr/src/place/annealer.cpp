@@ -633,7 +633,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                       + placer_opts_.congestion_factor * cost_terms_delta.cong_cost * costs_.congestion_cost_norm;
             if (update_interposer_costs) {
                 delta_c += placer_opts_.interposer_cost_params.net_cost_factor * cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                           + placer_opts_.interposer_cost_params.net_cost_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+                           + placer_opts_.interposer_cost_params.cong_cost_factor * cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
             }
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
