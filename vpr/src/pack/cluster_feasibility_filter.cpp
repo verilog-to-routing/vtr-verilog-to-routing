@@ -60,8 +60,10 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node);
  * @param seed_pin      A primitive pin that seeds the BFS.
  * @param pb_graph_node The pb_graph node whose subtree the BFS is confined to.
  * @param class_id      The class ID to assign to all pins in this equivalence group.
+ *
+ * @return Number of pins in this class for the given pb_graph_node.
  */
-static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
+static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                                         t_pb_graph_node* pb_graph_node,
                                         const int class_id);
 
@@ -336,7 +338,7 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
     }
 }
 
-static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
+static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                                         t_pb_graph_node* pb_graph_node,
                                         const int class_id) {
     const int node_depth = pb_graph_node->pb_type->depth;
@@ -345,6 +347,7 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
     std::queue<t_pb_graph_pin*> queue;
     queue.push(seed_pin);
     visited.insert(seed_pin);
+    size_t num_pins_in_class = 1;
 
     while (!queue.empty()) {
         t_pb_graph_pin* pin = queue.front();
@@ -358,10 +361,12 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                 pin->parent_pin_class[node_depth] = class_id;
             }
         } else if (pin->parent_node == pb_graph_node) {
-            // Assign class_id to same-type boundary pins of pb_graph_node via pin_class.
+            // Assign class_id to same-type boundary pins of pb_graph_node via
+            // pin_class. Increment the pin counter of this class.
             if (pin->port->type == seed_pin->port->type
                 && pin->port->is_clock == seed_pin->port->is_clock) {
                 pin->pin_class = class_id;
+                num_pins_in_class++;
             }
         }
 
@@ -416,6 +421,8 @@ static void assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
             }
         }
     }
+
+    return num_pins_in_class;
 }
 
 static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
@@ -459,7 +466,8 @@ static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
         for (int port_idx = 0; port_idx < prim->num_input_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < prim->num_input_pins[port_idx]; pin_idx++) {
                 if (prim->input_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
-                    assign_pin_class_in_subtree(&prim->input_pins[port_idx][pin_idx], pb_graph_node, input_class);
+                    size_t num_pins_in_class = assign_pin_class_in_subtree(&prim->input_pins[port_idx][pin_idx], pb_graph_node, input_class);
+                    pb_graph_node->input_pin_class_sizes.push_back(num_pins_in_class);
                     input_class++;
                 }
             }
@@ -467,7 +475,8 @@ static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
         for (int port_idx = 0; port_idx < prim->num_clock_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < prim->num_clock_pins[port_idx]; pin_idx++) {
                 if (prim->clock_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
-                    assign_pin_class_in_subtree(&prim->clock_pins[port_idx][pin_idx], pb_graph_node, input_class);
+                    size_t num_pins_in_class = assign_pin_class_in_subtree(&prim->clock_pins[port_idx][pin_idx], pb_graph_node, input_class);
+                    pb_graph_node->input_pin_class_sizes.push_back(num_pins_in_class);
                     input_class++;
                 }
             }
@@ -475,7 +484,8 @@ static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
         for (int port_idx = 0; port_idx < prim->num_output_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < prim->num_output_pins[port_idx]; pin_idx++) {
                 if (prim->output_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
-                    assign_pin_class_in_subtree(&prim->output_pins[port_idx][pin_idx], pb_graph_node, output_class);
+                    size_t num_pins_in_class = assign_pin_class_in_subtree(&prim->output_pins[port_idx][pin_idx], pb_graph_node, output_class);
+                    pb_graph_node->output_pin_class_sizes.push_back(num_pins_in_class);
                     output_class++;
                 }
             }

@@ -1341,6 +1341,9 @@ class t_pb_graph_node {
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
+    std::vector<size_t> input_pin_class_sizes; /* Stores the number of pins in each input pin class indexed by input pin class number */
+    std::vector<size_t> output_pin_class_sizes; /* Stores the number of pins in each output pin class indexed by output pin class number */
+
     int total_primitive_count; /* total number of this primitive type in the cluster */
     int flat_site_index;       /* index of this primitive within sites of its type in this cluster  */
 

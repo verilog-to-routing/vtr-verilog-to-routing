@@ -938,8 +938,8 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
     if (!pb_type->is_primitive() && cur_pb->name) {
-        for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
-            size_t class_size = cur_pb->pb_graph_node->input_pin_class_size[i];
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
+            size_t class_size = cur_pb->pb_graph_node->input_pin_class_sizes[class_id];
 
             if (cur_pb->is_root()) {
                 // Scale the class size by the maximum external pin utilization factor
@@ -951,16 +951,16 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
                 // used as 1.0 allowing molecules that are using up to all the cluster inputs to be
                 // packed legally. Therefore, if the seed block is already using more inputs than
                 // the allowed maximum utilization, this should become the new maximum pin utilization.
-                class_size = std::max<size_t>(class_size, cur_pb->pb_stats->input_pins_used[i].size());
+                class_size = std::max<size_t>(class_size, cur_pb->pb_stats->input_pins_used[class_id].size());
             }
 
-            if (cur_pb->pb_stats->lookahead_input_pins_used[i].size() > class_size) {
+            if (cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() > class_size) {
                 return false;
             }
         }
 
-        for (int i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
-            size_t class_size = cur_pb->pb_graph_node->output_pin_class_size[i];
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->output_pin_class_sizes.size(); class_id++) {
+            size_t class_size = cur_pb->pb_graph_node->output_pin_class_sizes[class_id];
             if (cur_pb->is_root()) {
                 // Scale the class size by the maximum external pin utilization factor
                 // Use ceil to avoid classes of size 1 from being scaled to zero
@@ -971,10 +971,10 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
                 // used as 1.0 allowing molecules that are using up to all the cluster inputs to be
                 // packed legally. Therefore, if the seed block is already using more inputs than
                 // the allowed maximum utilization, this should become the new maximum pin utilization.
-                class_size = std::max<size_t>(class_size, cur_pb->pb_stats->output_pins_used[i].size());
+                class_size = std::max<size_t>(class_size, cur_pb->pb_stats->output_pins_used[class_id].size());
             }
 
-            if (cur_pb->pb_stats->lookahead_output_pins_used[i].size() > class_size) {
+            if (cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() > class_size) {
                 return false;
             }
         }
@@ -1105,19 +1105,19 @@ static void commit_lookahead_pins_used(t_pb* cur_pb) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
     if (!pb_type->is_primitive() && cur_pb->name) {
-        for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
-            VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]);
-            for (size_t j = 0; j < cur_pb->pb_stats->lookahead_input_pins_used[i].size(); j++) {
-                VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i][j]);
-                cur_pb->pb_stats->input_pins_used[i].insert({j, cur_pb->pb_stats->lookahead_input_pins_used[i][j]});
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
+            VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() <= cur_pb->pb_graph_node->input_pin_class_sizes[class_id]);
+            for (size_t net_id = 0; net_id < cur_pb->pb_stats->lookahead_input_pins_used[class_id].size(); net_id++) {
+                VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[class_id][net_id]);
+                cur_pb->pb_stats->input_pins_used[class_id].insert({net_id, cur_pb->pb_stats->lookahead_input_pins_used[class_id][net_id]});
             }
         }
 
-        for (int i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
-            VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->output_pin_class_size[i]);
-            for (size_t j = 0; j < cur_pb->pb_stats->lookahead_output_pins_used[i].size(); j++) {
-                VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[i][j]);
-                cur_pb->pb_stats->output_pins_used[i].insert({j, cur_pb->pb_stats->lookahead_output_pins_used[i][j]});
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->output_pin_class_sizes.size(); class_id++) {
+            VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() <= cur_pb->pb_graph_node->output_pin_class_sizes[class_id]);
+            for (size_t net_id = 0; net_id < cur_pb->pb_stats->lookahead_output_pins_used[class_id].size(); net_id++) {
+                VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[class_id][net_id]);
+                cur_pb->pb_stats->output_pins_used[class_id].insert({net_id, cur_pb->pb_stats->lookahead_output_pins_used[class_id][net_id]});
             }
         }
 
