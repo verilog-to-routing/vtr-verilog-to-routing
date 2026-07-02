@@ -74,7 +74,8 @@ class GlobalPlacer {
 /**
  * @brief A factory method which creates a Global Placer of the given type.
  */
-std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
+std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_placer_type,
+                                                 e_ap_analytical_solver analytical_solver_type,
                                                  e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
@@ -90,6 +91,17 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
                                                  int log_verbosity);
+
+/**
+ * @brief Update pre-cluster timing using a partial placement and delay model.
+ *
+ * This associates each AP sink pin with the delay estimated between its driver
+ * and sink locations, then runs STA to refresh timing criticalities.
+ */
+void update_timing_info_with_partial_placement(PreClusterTimingManager& pre_cluster_timing_manager,
+                                               const PlaceDelayModel& place_delay_model,
+                                               const PartialPlacement& p_placement,
+                                               const APNetlist& ap_netlist);
 
 /**
  * @brief A Global Placer based on the SimPL work for analytical ASIC placement.

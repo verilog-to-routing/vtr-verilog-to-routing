@@ -136,6 +136,41 @@ struct ParseCircuitFormat {
     }
 };
 
+struct ParseAPGlobalPlacer {
+    ConvertedValue<e_ap_global_placer> from_str(const std::string& str) {
+        ConvertedValue<e_ap_global_placer> conv_value;
+        if (str == "simpl")
+            conv_value.set_value(e_ap_global_placer::SimPL);
+        else if (str == "nonlinear-nesterov")
+            conv_value.set_value(e_ap_global_placer::NonlinearNesterov);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_global_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_global_placer val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_global_placer::SimPL:
+                conv_value.set_value("simpl");
+                break;
+            case e_ap_global_placer::NonlinearNesterov:
+                conv_value.set_value("nonlinear-nesterov");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"simpl", "nonlinear-nesterov"};
+    }
+};
+
 struct ParseAPAnalyticalSolver {
     ConvertedValue<e_ap_analytical_solver> from_str(const std::string& str) {
         ConvertedValue<e_ap_analytical_solver> conv_value;
@@ -2084,12 +2119,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     auto& ap_grp = parser.add_argument_group("analytical placement options");
 
+    ap_grp.add_argument<e_ap_global_placer, ParseAPGlobalPlacer>(args.ap_global_placer, "--ap_global_placer")
+        .help(
+            "Controls which Global Placer the AP Flow will use.\n"
+            " * simpl: Alternates the selected analytical solver with partial legalization.\n"
+            " * nonlinear-nesterov: Uses nonlinear Nesterov optimization of smooth wirelength and density objectives with the selected partial legalizer.")
+        .default_value("simpl")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<e_ap_analytical_solver, ParseAPAnalyticalSolver>(args.ap_analytical_solver, "--ap_analytical_solver")
         .help(
-            "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
+            "Controls which Analytical Solver the SimPL Global Placer will use in the AP Flow.\n"
             " * identity: Does not formulate any equations and just passes the last legalized solution through. This solver is only used for testing and debugging.\n"
             " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
-            " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
+            " * lp-b2b: Solves for a placement that minimizes the linear HPWL of the flat placement using the Bound2Bound net model.")
         .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
