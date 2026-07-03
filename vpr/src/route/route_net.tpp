@@ -2,6 +2,8 @@
 
 /** @file Header implementations for templated net routing fns. */
 
+#include "device_grid.h"
+#include "physical_types.h"
 #include "route_net.h"
 
 #include <tuple>
@@ -130,9 +132,60 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                                         is_flat);
     }
 
-    // compare the criticality of different sink nodes
+    // Determines the order remaining_targets is routed in. Starts as a copy of
+    // pin_criticality, but may be further adjusted (e.g. for interposer die crossings
+    // below) to influence routing order without disturbing pin_criticality itself,
+    // which is also used downstream (e.g. cost_params.criticality) to drive the
+    // router's cost function.
+    std::vector<float> pin_sort_priority = pin_criticality;
+
+    const DeviceGrid& device_grid = device_ctx.grid;
+    if (device_grid.has_interposer_cuts()) {
+        // Sort-priority bonuses for sinks that cross an interposer die boundary.
+        // kDieCrossingBonus rewards any die crossing; kInlineAlignmentBonus additionally
+        // rewards being inline with the driver along the crossed cut (scaled down to 0
+        // as the perpendicular offset grows, see dx/dy below).
+        constexpr float kDieCrossingBonus = 1.0f;
+        constexpr float kInlineAlignmentBonus = 1.0f;
+
+        RRNodeId driver_rr = route_ctx.net_rr_terminals[net_id][0];
+        t_physical_tile_loc driver_loc(rr_graph.node_xlow(driver_rr),
+                                       rr_graph.node_ylow(driver_rr),
+                                       rr_graph.node_layer_low(driver_rr));
+
+        // net_bb is used to normalize the inline-alignment bonus below. Note it is slightly
+        // larger than the net's true pin bounding box, since it is expanded by bb_factor
+        // for routing search purposes.
+        int bb_width = net_bb.xmax - net_bb.xmin;
+        int bb_height = net_bb.ymax - net_bb.ymin;
+
+        for (int ipin : remaining_targets) {
+            RRNodeId sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
+            t_physical_tile_loc sink_loc(rr_graph.node_xlow(sink_rr),
+                                         rr_graph.node_ylow(sink_rr),
+                                         rr_graph.node_layer_low(sink_rr));
+
+            bool crosses_vertical = device_grid.do_locs_cross_vertical_cut(driver_loc, sink_loc);
+            bool crosses_horizontal = device_grid.do_locs_cross_horizontal_cut(driver_loc, sink_loc);
+
+            if (crosses_vertical || crosses_horizontal) {
+                pin_sort_priority[ipin] += kDieCrossingBonus;
+
+                if (crosses_vertical) {
+                    int dy = std::abs(driver_loc.y - sink_loc.y);
+                    pin_sort_priority[ipin] += (bb_height > 0) ? kInlineAlignmentBonus * (1.0f - float(dy) / bb_height) : kInlineAlignmentBonus;
+                }
+                if (crosses_horizontal) {
+                    int dx = std::abs(driver_loc.x - sink_loc.x);
+                    pin_sort_priority[ipin] += (bb_width > 0) ? kInlineAlignmentBonus * (1.0f - float(dx) / bb_width) : kInlineAlignmentBonus;
+                }
+            }
+        }
+    }
+
+    // compare the sort priority of different sink nodes
     std::stable_sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
-        return pin_criticality[a] > pin_criticality[b];
+        return pin_sort_priority[a] > pin_sort_priority[b];
     });
 
     /* Update base costs according to fanout and criticality rules */
