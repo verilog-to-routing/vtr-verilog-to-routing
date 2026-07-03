@@ -1,7 +1,6 @@
 
 #include "placer.h"
 
-#include <algorithm>
 #include <functional>
 #include <optional>
 #include <utility>

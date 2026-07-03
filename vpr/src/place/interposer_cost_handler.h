@@ -4,7 +4,6 @@
  * @brief Tracks placement cost terms associated with interposer.
  */
 
-#include "place_util.h"
 #include "vpr_types.h"
 #include "vtr_circular_buffer.h"
 #include "vtr_ndmatrix.h"
