@@ -1336,11 +1336,6 @@ class t_pb_graph_node {
 
     int total_pb_pins; /* only valid for top-level */
 
-    int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
-    int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
-    int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
-    int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
-
     std::vector<size_t> input_pin_class_sizes; /* Stores the number of pins in each input pin class indexed by input pin class number */
     std::vector<size_t> output_pin_class_sizes; /* Stores the number of pins in each output pin class indexed by output pin class number */
 

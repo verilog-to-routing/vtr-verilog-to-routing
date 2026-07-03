@@ -46,7 +46,6 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
                                                                       std::unordered_set<t_pb_graph_pin*>& seen_pins);
 static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pin,
                                              std::unordered_set<t_pb_graph_pin*>& seen_pins);
-static void sum_pin_class(t_pb_graph_node* pb_graph_node);
 
 /**
  * @brief Assigns class_id to all same-type pins (input, output or clock,
@@ -289,55 +288,6 @@ static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pi
     }
 }
 
-/* count up pin classes of the same number for the given cluster */
-static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
-    int i, j;
-
-    /* This is a primitive, for each pin in primitive, sum appropriate pin class */
-    for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-        for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-            VTR_ASSERT(pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
-            if (pb_graph_node->input_pins[i][j].pin_class == UNDEFINED) {
-                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
-                             pb_graph_node->pb_type->name,
-                             pb_graph_node->placement_index,
-                             pb_graph_node->input_pins[i][j].port->name,
-                             pb_graph_node->input_pins[i][j].pin_number);
-                continue;
-            }
-            pb_graph_node->input_pin_class_size[pb_graph_node->input_pins[i][j].pin_class]++;
-        }
-    }
-    for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-        for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-            VTR_ASSERT(pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
-            if (pb_graph_node->output_pins[i][j].pin_class == UNDEFINED) {
-                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
-                             pb_graph_node->pb_type->name,
-                             pb_graph_node->placement_index,
-                             pb_graph_node->output_pins[i][j].port->name,
-                             pb_graph_node->output_pins[i][j].pin_number);
-                continue;
-            }
-            pb_graph_node->output_pin_class_size[pb_graph_node->output_pins[i][j].pin_class]++;
-        }
-    }
-    for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-        for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-            VTR_ASSERT(pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
-            if (pb_graph_node->clock_pins[i][j].pin_class == UNDEFINED) {
-                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
-                             pb_graph_node->pb_type->name,
-                             pb_graph_node->placement_index,
-                             pb_graph_node->clock_pins[i][j].port->name,
-                             pb_graph_node->clock_pins[i][j].pin_number);
-                continue;
-            }
-            pb_graph_node->input_pin_class_size[pb_graph_node->clock_pins[i][j].pin_class]++;
-        }
-    }
-}
-
 static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                                           t_pb_graph_node* pb_graph_node,
                                           const int class_id) {
@@ -347,7 +297,8 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
     std::queue<t_pb_graph_pin*> queue;
     queue.push(seed_pin);
     visited.insert(seed_pin);
-    size_t num_pins_in_class = 1;
+    size_t num_pins_in_class = 0;
+    VTR_ASSERT_MSG(seed_pin->parent_node->is_primitive(), "Seed pin should be a primitive pin.");
 
     while (!queue.empty()) {
         t_pb_graph_pin* pin = queue.front();
@@ -394,8 +345,8 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                 }
             }
         } else if (pin->parent_node == pb_graph_node) {
-            // Pin at the boundry of provided pb_graph_node. Expand towards the
-            // subtree inside that boundry to stay within the given pb_graph_node.
+            // Pin at the boundary of provided pb_graph_node. Expand towards the
+            // subtree inside that boundary to stay within the given pb_graph_node.
             if (pin->port->type == IN_PORT || pin->port->is_clock) {
                 // Expand using the output edges if this pin is an input or
                 // clock pin of the provided pb_graph_node.
@@ -491,13 +442,6 @@ static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
             }
         }
     }
-
-    // Allocate class size arrays.
-    pb_graph_node->num_input_pin_class = input_class;
-    pb_graph_node->input_pin_class_size = new int[input_class]();
-    pb_graph_node->num_output_pin_class = output_class;
-    pb_graph_node->output_pin_class_size = new int[output_class]();
-    sum_pin_class(pb_graph_node);
 
     // Recurse into children so every level of the hierarchy is processed.
     for (int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++)
