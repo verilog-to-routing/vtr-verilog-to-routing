@@ -573,7 +573,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             // Note: This illustration is for reference only; the tilted rectangle should have square corners.
 
             // This specifies the dimension of the "tilted rectangle" in pixels.
-            ezgl::text_dimension_t delay_label_dimension = g->get_text_dimension(delay_label_str);
+            ezgl::t_text_dimension delay_label_dimension = g->get_text_dimension(delay_label_str);
             // The bbox is defined in world coordinates so we need to perform a conversion at the end.
             double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
                                        + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
