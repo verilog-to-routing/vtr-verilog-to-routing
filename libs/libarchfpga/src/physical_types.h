@@ -1336,7 +1336,7 @@ class t_pb_graph_node {
 
     int total_pb_pins; /* only valid for top-level */
 
-    std::vector<size_t> input_pin_class_sizes; /* Stores the number of pins in each input pin class indexed by input pin class number */
+    std::vector<size_t> input_pin_class_sizes;  /* Stores the number of pins in each input pin class indexed by input pin class number */
     std::vector<size_t> output_pin_class_sizes; /* Stores the number of pins in each output pin class indexed by output pin class number */
 
     int total_primitive_count; /* total number of this primitive type in the cluster */
