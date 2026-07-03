@@ -149,13 +149,10 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                 log_verbosity_);
 }
 
-/**
- * @brief Helper method to print the statistics on the given partial placement.
- */
-static void print_placement_stats(const PartialPlacement& p_placement,
-                                  const APNetlist& ap_netlist,
-                                  FlatPlacementDensityManager& density_manager,
-                                  const PreClusterTimingManager& pre_cluster_timing_manager) {
+void print_placement_stats(const PartialPlacement& p_placement,
+                           const APNetlist& ap_netlist,
+                           FlatPlacementDensityManager& density_manager,
+                           const PreClusterTimingManager& pre_cluster_timing_manager) {
     // Print the placement HPWL
     VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
     VTR_LOG("\tPlacement estimated wirelength: %g\n", p_placement.estimate_post_placement_wirelength(ap_netlist));

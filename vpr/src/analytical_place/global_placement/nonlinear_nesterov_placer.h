@@ -102,6 +102,26 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     };
 
     /**
+     * @brief Dynamic elfPlace-style filler locations.
+     *
+     * Fillers are per-resource movable whitespace particles. They carry density
+     * mass but no nets and never enter legalization, packing, or timing.
+     */
+    struct FillerState {
+        std::vector<std::vector<double>> x; ///< [dim][filler] x coordinate.
+        std::vector<std::vector<double>> y; ///< [dim][filler] y coordinate.
+        std::vector<std::vector<int>> layer; ///< [dim][filler] fixed device layer.
+    };
+
+    /**
+     * @brief Density-only gradients for dynamic fillers.
+     */
+    struct FillerGradient {
+        std::vector<std::vector<double>> dx; ///< [dim][filler] derivative wrt x.
+        std::vector<std::vector<double>> dy; ///< [dim][filler] derivative wrt y.
+    };
+
+    /**
      * @brief Run one full accelerated optimization (epoch loop) from a fresh
      *        initial placement and return the legalized result.
      *
@@ -122,8 +142,11 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
 
     /**
      * @brief Initialize all block locations before first-order optimization.
+     *
+     * Sets @ref sparse_seed_ when the warm-start seed's physical overflow is
+     * already below the sparse gate (electrostatic-inert design).
      */
-    PartialPlacement initialize_placement_() const;
+    PartialPlacement initialize_placement_();
 
     /**
      * @brief Evaluate the smooth objective, optionally accumulating gradients.
@@ -133,7 +156,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                        const std::vector<double>& density_penalties,
                                        std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
                                        double proximity_weight,
-                                       std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
+                                       std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                                       const FillerState& fillers,
+                                       FillerGradient* filler_grad) const;
 
     /**
      * @brief Add smooth weighted-average wirelength value and gradient.
@@ -156,7 +181,32 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                  double& total_overflow,
                                  double& max_overflow,
                                  double& overflow_ratio,
-                                 std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
+                                 std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                                 const FillerState& fillers,
+                                 FillerGradient* filler_grad) const;
+
+    /**
+     * @brief Build dynamic filler particles from seed whitespace.
+     *
+     * Fillers approximate movable whitespace in the electrostatic system: each
+     * resource dimension receives particles carrying @p whitespace_fraction of
+     * target_capacity - movable_mass, initialized into capacity-bearing seed
+     * whitespace. A non-positive fraction disables fillers (empty state).
+     */
+    void initialize_dynamic_fillers_(const PartialPlacement& seed,
+                                     const std::vector<PrimitiveVectorDim>& dimensions,
+                                     double whitespace_fraction,
+                                     FillerState& fillers);
+
+    /**
+     * @brief Copy dynamic filler positions.
+     */
+    void copy_fillers_(const FillerState& src, FillerState& dst) const;
+
+    /**
+     * @brief Project dynamic filler locations into device bounds.
+     */
+    void project_fillers_(FillerState& fillers) const;
 
     /**
      * @brief Physical-overflow ratio: mass exceeding tile capacity over capacity.
@@ -203,16 +253,22 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      */
     void gradient_step_(const PartialPlacement& y_placement,
                         const PlacementGradient& grad,
+                        const FillerState& y_fillers,
+                        const FillerGradient& filler_grad,
                         double step_size,
-                        PartialPlacement& next_placement) const;
+                        PartialPlacement& next_placement,
+                        FillerState& next_fillers) const;
 
     /**
      * @brief Apply the Nesterov extrapolation y = x_next + beta * (x_next - x).
      */
     void extrapolate_(const PartialPlacement& current,
                       const PartialPlacement& next,
+                      const FillerState& current_fillers,
+                      const FillerState& next_fillers,
                       double beta,
-                      PartialPlacement& y_placement) const;
+                      PartialPlacement& y_placement,
+                      FillerState& y_fillers) const;
 
     /**
      * @brief Compute the squared norm of a placement gradient.
@@ -220,10 +276,21 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     double gradient_norm_squared_(const PlacementGradient& grad) const;
 
     /**
+     * @brief Compute the squared norm of a filler gradient.
+     */
+    double filler_gradient_norm_squared_(const FillerGradient& grad) const;
+
+    /**
      * @brief Return the largest x-y displacement between two placements.
      */
     double max_block_displacement_(const PartialPlacement& from,
                                    const PartialPlacement& to) const;
+
+    /**
+     * @brief Return the largest x-y displacement between two filler states.
+     */
+    double max_filler_displacement_(const FillerState& from,
+                                    const FillerState& to) const;
 
     /**
      * @brief Return true if the block should be moved by the continuous optimizer.
@@ -242,6 +309,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     vtr::vector<APBlockId, double> block_precond_;           ///< Per-block diagonal preconditioner (objective curvature estimate).
     bool precond_active_ = false;                            ///< Whether the preconditioner is applied in the current optimization run.
     double precond_alpha_active_ = 1.0;                      ///< Preconditioner strength exponent for the current optimization run.
+    std::vector<double> filler_unit_mass_;                   ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                     ///< [dim] density-only filler preconditioner.
 
     size_t device_grid_width_ = 0;      ///< Width of the placement region.
     size_t device_grid_height_ = 0;     ///< Height of the placement region.
@@ -261,4 +330,12 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        the fixed default, then annealed coarse->sharp per epoch by
     ///        run_global_optimization_ (gamma continuation).
     double current_gamma_fraction_ = 0.02;
+
+    /// @brief True when the warm-start seed's physical overflow is already below
+    ///        the sparse gate. The electrostatic field then has nothing to spread,
+    ///        so the epoch loop is capped to a cheap filler-free probe instead of
+    ///        the full schedule (whose result was measured to be discarded in
+    ///        favor of the seed on sparse Titanium designs, at up to 11x the
+    ///        lp-b2b global-placement runtime).
+    bool sparse_seed_ = false;
 };

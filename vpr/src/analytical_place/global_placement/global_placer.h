@@ -189,3 +189,18 @@ class SimPLGlobalPlacer : public GlobalPlacer {
      */
     PartialPlacement place() final;
 };
+
+/**
+ * @brief Print the standard post-global-placement statistics block (estimated
+ *        wirelength / CPD / sTNS and bin-overfill counts) for the given
+ *        placement.
+ *
+ * Every global placer should emit this block once for its final placement: the
+ * QoR parse configs match these exact log lines (post_gp_* metrics). The timing
+ * manager must already be updated for @p p_placement for the CPD/sTNS lines to
+ * be meaningful. Imports @p p_placement into the density manager's bins.
+ */
+void print_placement_stats(const PartialPlacement& p_placement,
+                           const APNetlist& ap_netlist,
+                           FlatPlacementDensityManager& density_manager,
+                           const PreClusterTimingManager& pre_cluster_timing_manager);

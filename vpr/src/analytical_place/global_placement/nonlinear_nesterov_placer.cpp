@@ -157,6 +157,26 @@ constexpr double kPreconditionFloor = 1.0;
 constexpr bool kUseResidualDensityCharge = true;
 
 /**
+ * @brief Fraction of per-resource whitespace represented by dynamic fillers.
+ *
+ * elfPlace uses movable filler instances to let the density system balance real
+ * cells against whitespace. Full whitespace was too aggressive in the VTR flow
+ * because APPack/annealing already perform downstream spreading, so this default
+ * keeps the filler mechanism active while limiting CPD-damaging over-spread.
+ */
+constexpr double kDynamicFillerWhitespaceFraction = 0.35;
+
+/**
+ * @brief Target dynamic filler mass in units of average per-site target capacity.
+ */
+constexpr double kDynamicFillerUnitFraction = 1.0;
+
+/**
+ * @brief Cap dynamic filler particles per resource dimension.
+ */
+constexpr size_t kMaxDynamicFillersPerDim = 60000;
+
+/**
  * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
  *
  * The nonlinear Nesterov placer seeds itself from a wirelength-aware B2B/QP solve
@@ -200,6 +220,28 @@ constexpr double kSparseGateOverflow = 0.0007;
  * @brief Deep warm-start cycle count used when the sparse-overflow gate trips.
  */
 constexpr size_t kSparseWarmStartIters = 24;
+
+/**
+ * @brief Epoch cap for the electrostatic phase on sparse seeds.
+ *
+ * On sparse-seed designs (overflow below @ref kSparseGateOverflow) the density
+ * field has nothing to spread, and the full epoch schedule was measured to be
+ * pure waste on the 2026-07-03 titanium head-to-head: all seven sparse-seed
+ * circuits ran 2 epochs with 40k-318k fillers (up to 5098 s of GP, 11.5x lp-b2b)
+ * and then selected the warm-start seed anyway. One cheap filler-free
+ * wirelength-refinement epoch is kept because it can still beat the seed
+ * (fft1d: epoch placement 4.2% lower HPWL than seed).
+ */
+constexpr size_t kSparseSeedMaxEpochs = 1;
+
+/**
+ * @brief Inner-iteration cap for the sparse-seed probe epoch.
+ *
+ * The probe refines wirelength near an already density-feasible seed, so it does
+ * not need the full inner budget; each iteration still pays the per-resource
+ * Poisson solves, which dominate sparse-seed epoch cost once fillers are gone.
+ */
+constexpr size_t kSparseSeedProbeIterations = 12;
 
 /**
  * @brief Minimum AP block count for high-pin designs that need one more B2B seed
@@ -576,7 +618,7 @@ bool NonlinearNesterovPlacer::block_is_optimizable_(APBlockId blk_id) const {
     return ap_netlist_.block_mobility(blk_id) == APBlockMobility::MOVEABLE;
 }
 
-PartialPlacement NonlinearNesterovPlacer::initialize_placement_() const {
+PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     PartialPlacement p_placement(ap_netlist_);
 
     if (optimizable_blocks_.empty()) {
@@ -618,6 +660,7 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() const {
         std::vector<PrimitiveVectorDim> dims = density_manager_->get_used_dims_mask().get_non_zero_dims();
         double seed_overflow = compute_physical_overflow_ratio_(p_placement, dims);
         if (seed_overflow < kSparseGateOverflow) {
+            sparse_seed_ = true;
             for (; cycles < kSparseWarmStartIters; cycles++) {
                 warmstart_solver_->solve(cycles, p_placement);
                 partial_legalizer_->legalize(p_placement);
@@ -659,7 +702,11 @@ PartialPlacement NonlinearNesterovPlacer::place() {
 PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::vector<PrimitiveVectorDim>& density_dimensions,
                                                                    double device_span,
                                                                    double convergence_displacement) {
+    vtr::Timer warmstart_timer;
     PartialPlacement seed = initialize_placement_();
+    if (log_verbosity_ >= 1)
+        VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
+
     PartialPlacement result = optimize_from_seed_(seed, density_dimensions, device_span, convergence_displacement);
 
     // Leave the pre-cluster timing manager consistent with the returned placement,
@@ -670,6 +717,15 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
                                                   result,
                                                   ap_netlist_);
     }
+
+    // Print the same post-global-placement statistics block as the SimPL placer,
+    // so the standard QoR parse regexes (post_gp_hpwl/cpd/sTNS/overfill) are
+    // populated for this placer as well.
+    VTR_LOG("Placement after Global Placement:\n");
+    print_placement_stats(result,
+                          ap_netlist_,
+                          *density_manager_,
+                          pre_cluster_timing_manager_);
     return result;
 }
 
@@ -684,6 +740,28 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // form a proximity anchor, then raises the density multipliers (subgradient
     // ascent) so the following epoch enforces density more strongly.
     PartialPlacement current = seed;
+    vtr::Timer epoch_phase_timer;
+    double legalizer_time_sec = 0.;
+    double timing_update_time_sec = 0.;
+
+    // Sparse-seed guard: the seed already satisfies the density stop target, so
+    // the full filler/epoch schedule can only waste runtime (its result loses the
+    // HPWL selection to the seed on these designs). Run a short filler-free
+    // wirelength-refinement probe instead; the seed-vs-epoch selection below
+    // still protects quality either way.
+    size_t num_epochs = sparse_seed_ ? kSparseSeedMaxEpochs : kNesterovEpochs;
+    size_t iterations_per_epoch = sparse_seed_ ? kSparseSeedProbeIterations : kNesterovIterationsPerEpoch;
+    if (sparse_seed_ && log_verbosity_ >= 1) {
+        VTR_LOG("Nonlinear Nesterov sparse-seed guard: capping electrostatic phase to %zu filler-free epoch(s) of %zu iterations.\n",
+                num_epochs, iterations_per_epoch);
+    }
+
+    FillerState current_fillers;
+    initialize_dynamic_fillers_(seed,
+                                density_dimensions,
+                                sparse_seed_ ? 0. : kDynamicFillerWhitespaceFraction,
+                                current_fillers);
+
     // The initial density weight is derived from the seed's smooth wirelength, which
     // is net-weighted, so start from unit weights before the epoch loop refreshes
     // timing at epoch 0.
@@ -706,7 +784,9 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                         density_penalties,
                                                         std::nullopt,
                                                         0.,
-                                                        std::nullopt);
+                                                        std::nullopt,
+                                                        current_fillers,
+                                                        nullptr);
         initial_density_weight = 1e-3;
         if (components.density > kEpsilon) {
             initial_density_weight = kInitialDensityToWirelengthRatio * std::max(components.wirelength, 1.0) / components.density;
@@ -734,21 +814,26 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // Augmented-Lagrangian outer loop. Penalty weights are held fixed within an
     // epoch and raised between epochs; timing net weights and the preconditioner
     // are refreshed against the current placement at the start of each one.
-    for (size_t epoch = 0; epoch < kNesterovEpochs; epoch++) {
+    for (size_t epoch = 0; epoch < num_epochs; epoch++) {
         // Anneal the wirelength smoothing fraction geometrically from coarse
         // (smooth global gradient) to sharp (near true HPWL) across epochs, so
         // early epochs spread on an easy landscape and later epochs recover real
-        // wirelength.
-        if (kNesterovEpochs > 1) {
+        // wirelength. The sparse-seed probe refines wirelength near an already
+        // spread seed, so it goes straight to the sharp end of the schedule.
+        if (sparse_seed_) {
+            current_gamma_fraction_ = kGammaEndFraction;
+        } else if (kNesterovEpochs > 1) {
             double schedule = static_cast<double>(epoch) / static_cast<double>(kNesterovEpochs - 1);
             current_gamma_fraction_ = kGammaStartFraction
                                       * std::pow(kGammaEndFraction / kGammaStartFraction, schedule);
         }
         if (effective_timing_tradeoff_ != 0.f && place_delay_model_) {
+            vtr::Timer timing_update_timer;
             update_timing_info_with_partial_placement(pre_cluster_timing_manager_,
                                                       *place_delay_model_,
                                                       current,
                                                       ap_netlist_);
+            timing_update_time_sec += timing_update_timer.elapsed_sec();
         }
         update_timing_net_weights_();
         compute_preconditioner_(density_dimensions, density_multipliers);
@@ -756,7 +841,12 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         PartialPlacement legal_anchor = current;
         PartialPlacement y_placement = current;
         PartialPlacement next = current;
+        FillerState y_fillers;
+        FillerState next_fillers;
+        copy_fillers_(current_fillers, y_fillers);
+        copy_fillers_(current_fillers, next_fillers);
         PlacementGradient grad(ap_netlist_);
+        FillerGradient filler_grad;
         double proximity_scale = optimizable_blocks_.size() < kProximitySizeThreshold ? kProximityScale : 1.0;
         double proximity_weight = legalizer_feedback_proximity_weight * proximity_scale;
         // A preconditioned gradient already carries position units (a near-Newton
@@ -771,19 +861,23 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                          density_penalties,
                                                          std::cref(legal_anchor),
                                                          proximity_weight,
-                                                         std::nullopt);
+                                                         std::nullopt,
+                                                         current_fillers,
+                                                         nullptr);
 
         // Nesterov accelerated-gradient inner solve. The gradient is taken at the
         // extrapolated look-ahead point y_placement; a backtracking line search
         // halves the step until the objective decreases.
-        for (size_t iter = 0; iter < kNesterovIterationsPerEpoch; iter++) {
+        for (size_t iter = 0; iter < iterations_per_epoch; iter++) {
             ObjectiveValue y_obj = evaluate_objective_(y_placement,
                                                        density_multipliers,
                                                        density_penalties,
                                                        std::cref(legal_anchor),
                                                        proximity_weight,
-                                                       std::ref(grad));
-            double grad_norm_sq = gradient_norm_squared_(grad);
+                                                       std::ref(grad),
+                                                       y_fillers,
+                                                       &filler_grad);
+            double grad_norm_sq = gradient_norm_squared_(grad) + filler_gradient_norm_squared_(filler_grad);
             if (grad_norm_sq < kEpsilon)
                 break;
 
@@ -791,13 +885,15 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             ObjectiveValue next_obj;
             bool accepted = false;
             while (accepted_step >= kMinStepSize) {
-                gradient_step_(y_placement, grad, accepted_step, next);
+                gradient_step_(y_placement, grad, y_fillers, filler_grad, accepted_step, next, next_fillers);
                 next_obj = evaluate_objective_(next,
                                                density_multipliers,
                                                density_penalties,
                                                std::cref(legal_anchor),
                                                proximity_weight,
-                                               std::nullopt);
+                                               std::nullopt,
+                                               next_fillers,
+                                               nullptr);
                 if (next_obj.total <= y_obj.total - kArmijoC * accepted_step * grad_norm_sq
                     || accepted_step == kMinStepSize) {
                     accepted = true;
@@ -809,7 +905,8 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             if (!accepted)
                 break;
 
-            double max_step_displacement = max_block_displacement_(y_placement, next);
+            double max_step_displacement = std::max(max_block_displacement_(y_placement, next),
+                                                    max_filler_displacement_(y_fillers, next_fillers));
 
             // FISTA momentum: the t-sequence sets the extrapolation weight beta.
             double next_t = 0.5 * (1.0 + std::sqrt(1.0 + 4.0 * nesterov_t * nesterov_t));
@@ -820,13 +917,15 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                 // momentum and continue from the new point without extrapolation.
                 nesterov_t = 1.0;
                 copy_placement_(next, y_placement);
+                copy_fillers_(next_fillers, y_fillers);
             } else {
                 // Extrapolate the look-ahead point ahead of the accepted step.
-                extrapolate_(current, next, beta, y_placement);
+                extrapolate_(current, next, current_fillers, next_fillers, beta, y_placement, y_fillers);
                 nesterov_t = next_t;
             }
 
             copy_placement_(next, current);
+            copy_fillers_(next_fillers, current_fillers);
             current_obj = next_obj;
 
             step_size = std::min(device_span, accepted_step * 1.05);
@@ -842,19 +941,25 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                               density_penalties,
                                                               std::cref(legal_anchor),
                                                               proximity_weight,
-                                                              std::nullopt);
+                                                              std::nullopt,
+                                                              current_fillers,
+                                                              nullptr);
         // Partially legalize the smooth result. This both cleans up overlap and
         // produces the anchor that the next epoch's proximity term pulls toward;
         // the per-epoch displacement it causes also drives the proximity weight.
         PartialPlacement before_legalization = current;
         double pre_leg_overflow = compute_physical_overflow_ratio_(before_legalization, density_dimensions);
+        vtr::Timer legalizer_timer;
         partial_legalizer_->legalize(current);
+        legalizer_time_sec += legalizer_timer.elapsed_sec();
         ObjectiveValue post_legalization = evaluate_objective_(current,
                                                                density_multipliers,
                                                                density_penalties,
                                                                std::cref(legal_anchor),
                                                                proximity_weight,
-                                                               std::nullopt);
+                                                               std::nullopt,
+                                                               current_fillers,
+                                                               nullptr);
 
         // Subgradient ascent on the per-resource density multipliers: each
         // resource's weight grows with its remaining (post-legalization) density
@@ -918,7 +1023,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // further density tightening only costs wirelength, so end the loop.
         if (kTargetOverflow > 0.
             && epoch + 1 >= kMinEpochsBeforeOverflowStop
-            && epoch + 1 < kNesterovEpochs) {
+            && epoch + 1 < num_epochs) {
             if (pre_leg_overflow <= kTargetOverflow) {
                 if (log_verbosity_ >= 1) {
                     VTR_LOG("Nonlinear Nesterov: physical overflow %.4f <= target %.4f after epoch %zu; stopping density tightening.\n",
@@ -936,6 +1041,10 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     else
         VTR_LOG("\tSelected placement HPWL: %g (epoch %d)\n", best_hpwl, best_source);
     VTR_LOG("\tFinal first density multiplier: %g\n", density_multipliers.empty() ? 0. : density_multipliers.front());
+    if (log_verbosity_ >= 1) {
+        VTR_LOG("Nonlinear Nesterov phase time: epoch loop took %.2f seconds (partial legalization %.2f, timing updates %.2f).\n",
+                epoch_phase_timer.elapsed_sec(), legalizer_time_sec, timing_update_time_sec);
+    }
     partial_legalizer_->print_statistics();
 
     return best_placement;
@@ -946,7 +1055,9 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
                                                                                      const std::vector<double>& density_penalties,
                                                                                      std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
                                                                                      double proximity_weight,
-                                                                                     std::optional<std::reference_wrapper<PlacementGradient>> grad) const {
+                                                                                     std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                                                                                     const FillerState& fillers,
+                                                                                     FillerGradient* filler_grad) const {
     if (grad)
         grad->get().clear();
 
@@ -959,7 +1070,9 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
                                           value.total_overflow,
                                           value.max_overflow,
                                           value.overflow_ratio,
-                                          grad);
+                                          grad,
+                                          fillers,
+                                          filler_grad);
     if (legal_anchor)
         value.proximity = add_proximity_gradient_(p_placement,
                                                   legal_anchor->get(),
@@ -1090,7 +1203,9 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                                                       double& total_overflow,
                                                       double& max_overflow,
                                                       double& overflow_ratio,
-                                                      std::optional<std::reference_wrapper<PlacementGradient>> grad) const {
+                                                      std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                                                      const FillerState& fillers,
+                                                      FillerGradient* filler_grad) const {
     total_overflow = 0.;
     max_overflow = 0.;
     overflow_ratio = 0.;
@@ -1211,6 +1326,75 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         }
     }
 
+    // Overflow and stopping use only real physical block mass. Fillers are
+    // movable whitespace in the density objective, not legal instances.
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double dim_overflow_area = 0.;
+        double dim_deposited_mass = 0.;
+        for (size_t idx = 0; idx < num_sites; idx++) {
+            double target = target_capacity[dim_idx][idx];
+            double utilization_at_site = utilization[dim_idx][idx];
+            if (target <= kEpsilon) {
+                if (utilization_at_site <= kEpsilon)
+                    continue;
+                total_overflow += utilization_at_site;
+                max_overflow = std::max(max_overflow, utilization_at_site);
+                dim_overflow_area += utilization_at_site;
+                dim_deposited_mass += utilization_at_site;
+            } else {
+                double normalized_utilization = utilization_at_site / std::max(target, target_norm_floor[dim_idx]);
+                double normalized_overflow = std::max(0., normalized_utilization - 1.0);
+                total_overflow += normalized_overflow;
+                max_overflow = std::max(max_overflow, normalized_overflow);
+                dim_overflow_area += std::max(0., utilization_at_site - target);
+                dim_deposited_mass += utilization_at_site;
+            }
+        }
+        overflow_area += dim_overflow_area;
+        total_deposited_mass += dim_deposited_mass;
+    }
+
+    // Deposit dynamic fillers into the electrostatic field. They carry density
+    // charge but are deliberately excluded from overflow accounting above.
+    for (size_t dim_idx = 0; dim_idx < dimensions.size() && dim_idx < fillers.x.size(); dim_idx++) {
+        double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
+        if (unit_mass <= 0.)
+            continue;
+        size_t n = fillers.x[dim_idx].size();
+        for (size_t filler_idx = 0; filler_idx < n; filler_idx++) {
+            double x = std::clamp(fillers.x[dim_idx][filler_idx], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+            double y = std::clamp(fillers.y[dim_idx][filler_idx], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+            size_t layer = static_cast<size_t>(std::clamp(fillers.layer[dim_idx][filler_idx],
+                                                          0,
+                                                          static_cast<int>(device_grid_num_layers_ - 1)));
+            size_t x0 = static_cast<size_t>(std::floor(x));
+            size_t y0 = static_cast<size_t>(std::floor(y));
+            size_t x1 = std::min(x0 + 1, width - 1);
+            size_t y1 = std::min(y0 + 1, height - 1);
+            double fx = x - x0;
+            double fy = y - y0;
+            double wx[2] = {1. - fx, fx};
+            double wy[2] = {1. - fy, fy};
+            size_t xs[2] = {x0, x1};
+            size_t ys[2] = {y0, y1};
+            if (x0 == x1) {
+                wx[0] = 1.;
+                wx[1] = 0.;
+            }
+            if (y0 == y1) {
+                wy[0] = 1.;
+                wy[1] = 0.;
+            }
+            for (size_t xi = 0; xi < 2; xi++) {
+                for (size_t yi = 0; yi < 2; yi++) {
+                    double weight = wx[xi] * wy[yi];
+                    if (weight != 0.)
+                        utilization[dim_idx][site_index(layer, xs[xi], ys[yi])] += unit_mass * weight;
+                }
+            }
+        }
+    }
+
     // Electrostatic density model (ePlace/elfPlace), solved independently per
     // resource dimension. Treat the excess block density at each tile as electric
     // charge; solving Poisson's equation gives a potential whose negative
@@ -1224,8 +1408,6 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         std::vector<bool> active(num_sites, false);
         double charge_sum = 0.;
         size_t active_sites = 0;
-        double dim_overflow_area = 0.;
-        double dim_deposited_mass = 0.;
 
         for (size_t idx = 0; idx < num_sites; idx++) {
             double target = target_capacity[dim_idx][idx];
@@ -1238,30 +1420,16 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                 charge[idx] = kUseResidualDensityCharge
                                   ? utilization_at_site / residual_charge_scale[dim_idx]
                                   : utilization_at_site;
-                total_overflow += utilization_at_site;
-                max_overflow = std::max(max_overflow, utilization_at_site);
-                dim_overflow_area += utilization_at_site;
-                dim_deposited_mass += utilization_at_site;
             } else {
                 double normalized_utilization = utilization_at_site / std::max(target, target_norm_floor[dim_idx]);
                 charge[idx] = kUseResidualDensityCharge
                                   ? (utilization_at_site - target) / residual_charge_scale[dim_idx]
                                   : normalized_utilization - 1.0;
-
-                double normalized_overflow = std::max(0., normalized_utilization - 1.0);
-                total_overflow += normalized_overflow;
-                max_overflow = std::max(max_overflow, normalized_overflow);
-                dim_overflow_area += std::max(0., utilization_at_site - target);
-                dim_deposited_mass += utilization_at_site;
             }
             active[idx] = true;
             charge_sum += charge[idx];
             active_sites++;
         }
-
-        // Scalar overflow (combined, for logging only).
-        overflow_area += dim_overflow_area;
-        total_deposited_mass += dim_deposited_mass;
 
         if (active_sites == 0)
             continue;
@@ -1379,7 +1547,207 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         }
     }
 
+    if (filler_grad) {
+        filler_grad->dx.assign(dimensions.size(), {});
+        filler_grad->dy.assign(dimensions.size(), {});
+        for (size_t dim_idx = 0; dim_idx < dimensions.size() && dim_idx < fillers.x.size(); dim_idx++) {
+            double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
+            size_t n = fillers.x[dim_idx].size();
+            filler_grad->dx[dim_idx].assign(n, 0.);
+            filler_grad->dy[dim_idx].assign(n, 0.);
+            if (unit_mass <= 0.)
+                continue;
+            double coefficient = density_multipliers[dim_idx] * (1. + density_penalties[dim_idx] * density_energies[dim_idx]);
+            double normalized_mass = kUseResidualDensityCharge
+                                         ? unit_mass / residual_charge_scale[dim_idx]
+                                         : unit_mass;
+            for (size_t filler_idx = 0; filler_idx < n; filler_idx++) {
+                double x = std::clamp(fillers.x[dim_idx][filler_idx], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+                double y = std::clamp(fillers.y[dim_idx][filler_idx], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+                size_t layer = static_cast<size_t>(std::clamp(fillers.layer[dim_idx][filler_idx],
+                                                              0,
+                                                              static_cast<int>(device_grid_num_layers_ - 1)));
+                size_t x0 = static_cast<size_t>(std::floor(x));
+                size_t y0 = static_cast<size_t>(std::floor(y));
+                size_t x1 = std::min(x0 + 1, width - 1);
+                size_t y1 = std::min(y0 + 1, height - 1);
+                double fx = x - x0;
+                double fy = y - y0;
+                double wx[2] = {1. - fx, fx};
+                double wy[2] = {1. - fy, fy};
+                size_t xs[2] = {x0, x1};
+                size_t ys[2] = {y0, y1};
+                if (x0 == x1) {
+                    wx[0] = 1.;
+                    wx[1] = 0.;
+                }
+                if (y0 == y1) {
+                    wy[0] = 1.;
+                    wy[1] = 0.;
+                }
+
+                double local_field_x = 0.;
+                double local_field_y = 0.;
+                for (size_t xi = 0; xi < 2; xi++) {
+                    for (size_t yi = 0; yi < 2; yi++) {
+                        double weight = wx[xi] * wy[yi];
+                        size_t idx = site_index(layer, xs[xi], ys[yi]);
+                        local_field_x += weight * field_x[dim_idx][idx];
+                        local_field_y += weight * field_y[dim_idx][idx];
+                    }
+                }
+                filler_grad->dx[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_x;
+                filler_grad->dy[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_y;
+            }
+        }
+    }
+
     return density_energy;
+}
+
+void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement& seed,
+                                                          const std::vector<PrimitiveVectorDim>& dimensions,
+                                                          double whitespace_fraction,
+                                                          FillerState& fillers) {
+    fillers.x.assign(dimensions.size(), {});
+    fillers.y.assign(dimensions.size(), {});
+    fillers.layer.assign(dimensions.size(), {});
+    filler_unit_mass_.assign(dimensions.size(), 0.);
+    filler_precond_.assign(dimensions.size(), kPreconditionFloor);
+    if (dimensions.empty() || whitespace_fraction <= 0.) {
+        if (log_verbosity_ >= 1)
+            VTR_LOG("Nonlinear Nesterov dynamic fillers: disabled (whitespace fraction %g).\n", whitespace_fraction);
+        return;
+    }
+
+    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
+    size_t width = device_grid_width_;
+    size_t height = device_grid_height_;
+    size_t num_layers = device_grid_num_layers_;
+    size_t num_sites = width * height * num_layers;
+    auto site_index = [width, height](size_t layer, size_t x, size_t y) {
+        return (layer * height + y) * width + x;
+    };
+
+    std::vector<std::vector<double>> target_capacity(dimensions.size(), std::vector<double>(num_sites, 0.));
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t x = 0; x < width; x++) {
+            for (size_t y = 0; y < height; y++) {
+                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+                const vtr::Rect<double>& region = bins.bin_region(bin_id);
+                double bin_area = std::max(1.0, region.width() * region.height());
+                double target_density = density_manager_->get_bin_target_density(bin_id);
+                size_t idx = site_index(layer, x, y);
+                for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+                    target_capacity[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
+                                                    * target_density / bin_area;
+                }
+            }
+        }
+    }
+
+    std::vector<std::vector<double>> utilization(dimensions.size(), std::vector<double>(num_sites, 0.));
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+        if (block_mass.is_zero())
+            continue;
+        double x = std::clamp(seed.block_x_locs[blk_id], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+        double y = std::clamp(seed.block_y_locs[blk_id], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+        size_t layer = static_cast<size_t>(std::clamp(std::round(seed.block_layer_nums[blk_id]),
+                                                      0.,
+                                                      static_cast<double>(device_grid_num_layers_ - 1)));
+        size_t x0 = static_cast<size_t>(std::floor(x));
+        size_t y0 = static_cast<size_t>(std::floor(y));
+        size_t x1 = std::min(x0 + 1, width - 1);
+        size_t y1 = std::min(y0 + 1, height - 1);
+        double fx = x - x0;
+        double fy = y - y0;
+        double wx[2] = {1. - fx, fx};
+        double wy[2] = {1. - fy, fy};
+        size_t xs[2] = {x0, x1};
+        size_t ys[2] = {y0, y1};
+        if (x0 == x1) {
+            wx[0] = 1.;
+            wx[1] = 0.;
+        }
+        if (y0 == y1) {
+            wy[0] = 1.;
+            wy[1] = 0.;
+        }
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
+            if (mass == 0.)
+                continue;
+            for (size_t xi = 0; xi < 2; xi++) {
+                for (size_t yi = 0; yi < 2; yi++) {
+                    double weight = wx[xi] * wy[yi];
+                    if (weight != 0.)
+                        utilization[dim_idx][site_index(layer, xs[xi], ys[yi])] += mass * weight;
+                }
+            }
+        }
+    }
+
+    std::mt19937 rng(0x51f17e5u);
+    size_t total_fillers = 0;
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double target_total = 0.;
+        double movable_total = 0.;
+        double target_sites = 0.;
+        std::vector<double> whitespace(num_sites, 0.);
+        for (size_t idx = 0; idx < num_sites; idx++) {
+            double target = target_capacity[dim_idx][idx];
+            target_total += target;
+            movable_total += utilization[dim_idx][idx];
+            if (target > kEpsilon)
+                target_sites += 1.;
+            whitespace[idx] = std::max(0., target - utilization[dim_idx][idx]);
+        }
+
+        double filler_total = whitespace_fraction * std::max(0., target_total - movable_total);
+        if (filler_total <= kEpsilon || target_sites <= 0.)
+            continue;
+
+        double average_target = std::max(kEpsilon, target_total / target_sites);
+        double unit_mass = average_target * kDynamicFillerUnitFraction;
+        if (filler_total / std::max(unit_mass, kEpsilon) > static_cast<double>(kMaxDynamicFillersPerDim))
+            unit_mass = filler_total / static_cast<double>(kMaxDynamicFillersPerDim);
+        size_t num_fillers = std::max<size_t>(1, static_cast<size_t>(std::llround(filler_total / unit_mass)));
+        filler_unit_mass_[dim_idx] = filler_total / static_cast<double>(num_fillers);
+
+        double whitespace_total = 0.;
+        for (double value : whitespace)
+            whitespace_total += value;
+        if (whitespace_total <= kEpsilon) {
+            for (size_t idx = 0; idx < num_sites; idx++)
+                whitespace[idx] = target_capacity[dim_idx][idx];
+        }
+
+        std::discrete_distribution<size_t> site_dist(whitespace.begin(), whitespace.end());
+        std::uniform_real_distribution<double> jitter(0.05, 0.95);
+        fillers.x[dim_idx].resize(num_fillers);
+        fillers.y[dim_idx].resize(num_fillers);
+        fillers.layer[dim_idx].resize(num_fillers);
+        for (size_t filler_idx = 0; filler_idx < num_fillers; filler_idx++) {
+            size_t idx = site_dist(rng);
+            size_t layer = idx / (width * height);
+            size_t rem = idx % (width * height);
+            size_t x = rem % width;
+            size_t y = rem / width;
+            fillers.x[dim_idx][filler_idx] = static_cast<double>(x) + jitter(rng);
+            fillers.y[dim_idx][filler_idx] = static_cast<double>(y) + jitter(rng);
+            fillers.layer[dim_idx][filler_idx] = static_cast<int>(layer);
+        }
+        total_fillers += num_fillers;
+    }
+    project_fillers_(fillers);
+
+    if (log_verbosity_ >= 1) {
+        VTR_LOG("Nonlinear Nesterov dynamic fillers: %zu particles across %zu resource dims (fraction=%g).\n",
+                total_fillers,
+                dimensions.size(),
+                whitespace_fraction);
+    }
 }
 
 void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<PrimitiveVectorDim>& dimensions,
@@ -1424,6 +1792,13 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
     if (precond_alpha_active_ != 1.0) {
         for (APBlockId blk_id : ap_netlist_.blocks())
             block_precond_[blk_id] = std::pow(block_precond_[blk_id], precond_alpha_active_);
+    }
+
+    filler_precond_.assign(dimensions.size(), kPreconditionFloor);
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
+        double curvature = std::max(kPreconditionFloor, density_multipliers[dim_idx] * unit_mass);
+        filler_precond_[dim_idx] = precond_alpha_active_ != 1.0 ? std::pow(curvature, precond_alpha_active_) : curvature;
     }
 }
 
@@ -1539,10 +1914,37 @@ void NonlinearNesterovPlacer::copy_placement_(const PartialPlacement& src, Parti
     dst.block_sub_tiles = src.block_sub_tiles;
 }
 
+void NonlinearNesterovPlacer::copy_fillers_(const FillerState& src, FillerState& dst) const {
+    dst.x = src.x;
+    dst.y = src.y;
+    dst.layer = src.layer;
+}
+
+void NonlinearNesterovPlacer::project_fillers_(FillerState& fillers) const {
+    double max_x = std::max(0.0, static_cast<double>(device_grid_width_) - kDeviceBoundaryEpsilon);
+    double max_y = std::max(0.0, static_cast<double>(device_grid_height_) - kDeviceBoundaryEpsilon);
+    int max_layer = std::max(0, static_cast<int>(device_grid_num_layers_) - 1);
+    for (std::vector<double>& dim_x : fillers.x) {
+        for (double& x : dim_x)
+            x = std::clamp(x, 0.0, max_x);
+    }
+    for (std::vector<double>& dim_y : fillers.y) {
+        for (double& y : dim_y)
+            y = std::clamp(y, 0.0, max_y);
+    }
+    for (std::vector<int>& dim_layer : fillers.layer) {
+        for (int& layer : dim_layer)
+            layer = std::clamp(layer, 0, max_layer);
+    }
+}
+
 void NonlinearNesterovPlacer::gradient_step_(const PartialPlacement& y_placement,
                                              const PlacementGradient& grad,
+                                             const FillerState& y_fillers,
+                                             const FillerGradient& filler_grad,
                                              double step_size,
-                                             PartialPlacement& next_placement) const {
+                                             PartialPlacement& next_placement,
+                                             FillerState& next_fillers) const {
     copy_placement_(y_placement, next_placement);
     if (precond_active_ && !block_precond_.empty()) {
         // Preconditioned (near-Newton) step: divide each block's gradient by its
@@ -1559,18 +1961,50 @@ void NonlinearNesterovPlacer::gradient_step_(const PartialPlacement& y_placement
         }
     }
     project_placement_(next_placement);
+
+    copy_fillers_(y_fillers, next_fillers);
+    for (size_t dim_idx = 0; dim_idx < next_fillers.x.size(); dim_idx++) {
+        double inv_precond = (dim_idx < filler_precond_.size() && filler_precond_[dim_idx] > 0.)
+                                 ? 1.0 / filler_precond_[dim_idx]
+                                 : 1.0;
+        for (size_t filler_idx = 0; filler_idx < next_fillers.x[dim_idx].size(); filler_idx++) {
+            double gx = (dim_idx < filler_grad.dx.size() && filler_idx < filler_grad.dx[dim_idx].size())
+                            ? filler_grad.dx[dim_idx][filler_idx]
+                            : 0.;
+            double gy = (dim_idx < filler_grad.dy.size() && filler_idx < filler_grad.dy[dim_idx].size())
+                            ? filler_grad.dy[dim_idx][filler_idx]
+                            : 0.;
+            next_fillers.x[dim_idx][filler_idx] = y_fillers.x[dim_idx][filler_idx] - step_size * gx * inv_precond;
+            next_fillers.y[dim_idx][filler_idx] = y_fillers.y[dim_idx][filler_idx] - step_size * gy * inv_precond;
+        }
+    }
+    project_fillers_(next_fillers);
 }
 
 void NonlinearNesterovPlacer::extrapolate_(const PartialPlacement& current,
                                            const PartialPlacement& next,
+                                           const FillerState& current_fillers,
+                                           const FillerState& next_fillers,
                                            double beta,
-                                           PartialPlacement& y_placement) const {
+                                           PartialPlacement& y_placement,
+                                           FillerState& y_fillers) const {
     copy_placement_(next, y_placement);
     for (APBlockId blk_id : optimizable_blocks_) {
         y_placement.block_x_locs[blk_id] = next.block_x_locs[blk_id] + beta * (next.block_x_locs[blk_id] - current.block_x_locs[blk_id]);
         y_placement.block_y_locs[blk_id] = next.block_y_locs[blk_id] + beta * (next.block_y_locs[blk_id] - current.block_y_locs[blk_id]);
     }
     project_placement_(y_placement);
+
+    copy_fillers_(next_fillers, y_fillers);
+    for (size_t dim_idx = 0; dim_idx < y_fillers.x.size(); dim_idx++) {
+        for (size_t filler_idx = 0; filler_idx < y_fillers.x[dim_idx].size(); filler_idx++) {
+            y_fillers.x[dim_idx][filler_idx] = next_fillers.x[dim_idx][filler_idx]
+                                               + beta * (next_fillers.x[dim_idx][filler_idx] - current_fillers.x[dim_idx][filler_idx]);
+            y_fillers.y[dim_idx][filler_idx] = next_fillers.y[dim_idx][filler_idx]
+                                               + beta * (next_fillers.y[dim_idx][filler_idx] - current_fillers.y[dim_idx][filler_idx]);
+        }
+    }
+    project_fillers_(y_fillers);
 }
 
 double NonlinearNesterovPlacer::gradient_norm_squared_(const PlacementGradient& grad) const {
@@ -1582,6 +2016,19 @@ double NonlinearNesterovPlacer::gradient_norm_squared_(const PlacementGradient& 
     return norm_squared;
 }
 
+double NonlinearNesterovPlacer::filler_gradient_norm_squared_(const FillerGradient& grad) const {
+    double norm_squared = 0.;
+    for (const std::vector<double>& dim_dx : grad.dx) {
+        for (double dx : dim_dx)
+            norm_squared += dx * dx;
+    }
+    for (const std::vector<double>& dim_dy : grad.dy) {
+        for (double dy : dim_dy)
+            norm_squared += dy * dy;
+    }
+    return norm_squared;
+}
+
 double NonlinearNesterovPlacer::max_block_displacement_(const PartialPlacement& from,
                                                         const PartialPlacement& to) const {
     double max_displacement = 0.;
@@ -1589,6 +2036,19 @@ double NonlinearNesterovPlacer::max_block_displacement_(const PartialPlacement& 
         double dx = to.block_x_locs[blk_id] - from.block_x_locs[blk_id];
         double dy = to.block_y_locs[blk_id] - from.block_y_locs[blk_id];
         max_displacement = std::max(max_displacement, std::hypot(dx, dy));
+    }
+    return max_displacement;
+}
+
+double NonlinearNesterovPlacer::max_filler_displacement_(const FillerState& from,
+                                                         const FillerState& to) const {
+    double max_displacement = 0.;
+    for (size_t dim_idx = 0; dim_idx < from.x.size() && dim_idx < to.x.size(); dim_idx++) {
+        for (size_t filler_idx = 0; filler_idx < from.x[dim_idx].size() && filler_idx < to.x[dim_idx].size(); filler_idx++) {
+            double dx = to.x[dim_idx][filler_idx] - from.x[dim_idx][filler_idx];
+            double dy = to.y[dim_idx][filler_idx] - from.y[dim_idx][filler_idx];
+            max_displacement = std::max(max_displacement, std::hypot(dx, dy));
+        }
     }
     return max_displacement;
 }
