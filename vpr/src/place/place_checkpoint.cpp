@@ -69,7 +69,7 @@ void restore_best_placement(PlacerState& placer_state,
         //restore the latest placement checkpoint
 
         costs = placement_checkpoint.restore_placement(placer_state.mutable_block_locs(), placer_state.mutable_grid_blocks());
-        
+
         net_cost_handler.comp_bb_cong_cost(e_cost_methods::NORMAL);
 
         //recompute timing from scratch
