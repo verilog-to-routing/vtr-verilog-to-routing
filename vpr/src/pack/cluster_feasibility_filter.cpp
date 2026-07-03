@@ -64,8 +64,8 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node);
  * @return Number of pins in this class for the given pb_graph_node.
  */
 static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
-                                        t_pb_graph_node* pb_graph_node,
-                                        const int class_id);
+                                          t_pb_graph_node* pb_graph_node,
+                                          const int class_id);
 
 /**
  * @brief Assigns pin classes to every non-primitive node in the pb_graph tree
@@ -339,8 +339,8 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
 }
 
 static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
-                                        t_pb_graph_node* pb_graph_node,
-                                        const int class_id) {
+                                          t_pb_graph_node* pb_graph_node,
+                                          const int class_id) {
     const int node_depth = pb_graph_node->pb_type->depth;
 
     std::unordered_set<t_pb_graph_pin*> visited;

@@ -98,10 +98,10 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 
     pb->pb_stats = new t_pb_stats;
 
-    pb->pb_stats->input_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
-    pb->pb_stats->output_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
-    pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
-    pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
+    pb->pb_stats->input_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->input_pin_class_sizes.size());
+    pb->pb_stats->output_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->output_pin_class_sizes.size());
+    pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->input_pin_class_sizes.size());
+    pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->output_pin_class_sizes.size());
 
     pb->pb_stats->num_child_blocks_in_pb = 0;
 }
@@ -653,12 +653,12 @@ static void reset_lookahead_pins_used(t_pb* cur_pb) {
     }
 
     if (!pb_type->is_primitive() && cur_pb->name != nullptr) {
-        for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
-            cur_pb->pb_stats->lookahead_input_pins_used[i].clear();
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
+            cur_pb->pb_stats->lookahead_input_pins_used[class_id].clear();
         }
 
-        for (int i = 0; i < cur_pb->pb_graph_node->num_output_pin_class; i++) {
-            cur_pb->pb_stats->lookahead_output_pins_used[i].clear();
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->output_pin_class_sizes.size(); class_id++) {
+            cur_pb->pb_stats->lookahead_output_pins_used[class_id].clear();
         }
 
         if (cur_pb->child_pbs != nullptr) {
@@ -1987,8 +1987,8 @@ size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId 
 
     // Count the number of inputs available per pin class.
     size_t inputs_avail = 0;
-    for (int i = 0; i < cluster.pb->pb_graph_node->num_input_pin_class; i++) {
-        inputs_avail += cluster.pb->pb_stats->input_pins_used[i].size();
+    for (size_t class_id = 0; class_id < cluster.pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
+        inputs_avail += cluster.pb->pb_stats->input_pins_used[class_id].size();
     }
 
     return inputs_avail;
