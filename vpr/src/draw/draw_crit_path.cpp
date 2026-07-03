@@ -24,18 +24,10 @@ static constexpr int TIMING_EDGE_ARROW_SCALE = 30;
  */
 static constexpr float EDGE_CENTER = 0.5;
 
-/** 
- * @brief The width of a critical path time delay label that has exactly three decimals (e.g 1.500), in pixels (screen coordinates).
- * 
- * TODO: Create a function to expose ezgl's internal Cairo function that returns the width and height
- * of a string so that hardcoding can be avoided.
- */
-static constexpr int LABEL_WIDTH = 40;
-
 /**
- * @brief The height of a time delay label in pixels.  
+ * @brief The distance in pixels used to offset a delay label from the center, perpendicular to the edge.
  */
-static constexpr int LABEL_HEIGHT = 13;
+static constexpr int PERPENDICULAR_OFFSET = 13;
 
 /**
  * @brief The fraction of the total edge length used to offset a delay label from the center, along the edge.
@@ -43,7 +35,7 @@ static constexpr int LABEL_HEIGHT = 13;
 static constexpr double EDGE_OFFSET_FRACTION = 0.1;
 
 /**
- * @brief The maximum unit distance (in pixels) that a label can be offset from the center, along the edge.
+ * @brief The maximum unit distance in pixels that a label can be offset from the center, along the edge.
  */
 static constexpr int MAX_EDGE_OFFSET_UNIT = 40;
 
@@ -101,13 +93,13 @@ enum class e_label_relative_pos {
 };
 
 /**
- * @brief Contains all attributes of one timing edge delay label needed for finding a label position that minimizes overlaps.
+ * @brief Contains all attributes of one timing edge delay label needed for drawing and finding a label position that minimizes overlaps.
  */
 struct t_label_drawing_info {
-    /// @brief Delay time across this timing edge, in seconds.
-    float delay_time = 0.0;
+    /// @brief Delay time across this timing edge in nanoseconds, represented in std::string and drawn on screen.
+    std::string delay_label_str;
 
-    /// @brief True when the label should not be drawn.
+    /// @brief True when the label is on an invisible layer and / or is shut off due to overlaps.
     bool hide_label = false;
 
     /// @brief Alpha value used when drawing the label.
@@ -205,10 +197,12 @@ static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::rende
  * @param path Timing path whose consecutive node pairs define the timing edges to place delay labels.
  * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
  * Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
+ * @param g Pointer to the ezgl::renderer object. Used to get the dimension of the delay label string in pixels.
  * @return Per-edge delay label drawing information that does not yet tell where each label will be eventually drawn.
  */
 static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(const tatum::TimingPath& path,
-                                                                            double pixels_per_world_unit);
+                                                                            double pixels_per_world_unit,
+                                                                            ezgl::renderer* g);
 
 /**
  * @brief Chooses label positions in a way that greedily tries to minimize overlaps among visible labels.
@@ -481,7 +475,7 @@ static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::rende
 
     // Calculate basic information needed for resolving overlap and drawing.
     std::vector<t_label_drawing_info> basic_label_drawing_info =
-        calculate_basic_label_drawing_info(path, pixels_per_world_unit);
+        calculate_basic_label_drawing_info(path, pixels_per_world_unit, g);
 
     // Update the drawing info vector by trying to resolve all overlaps first.
     std::vector<t_label_drawing_info> post_decluttering_label_drawing_info =
@@ -495,7 +489,8 @@ static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::rende
 }
 
 static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(const tatum::TimingPath& path,
-                                                                            double pixels_per_world_unit) {
+                                                                            double pixels_per_world_unit,
+                                                                            ezgl::renderer* g) {
 
     std::vector<t_label_drawing_info> basic_label_drawing_info;
     // The callers of this function have ensured that path is not empty, but having a safety check is still decent.
@@ -515,8 +510,6 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
         if (prev_node) {
             t_label_drawing_info& drawing_info = basic_label_drawing_info[edge_idx];
 
-            drawing_info.delay_time = arr_time - prev_arr_time;
-
             // Check visibility of layers where source and sink reside.
             int src_block_layer = get_timing_path_node_layer_num(prev_node);
             int sink_block_layer = get_timing_path_node_layer_num(node);
@@ -533,6 +526,18 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                 drawing_info.hide_label = false;
             }
             drawing_info.label_transparency = flyline_visibility.alpha;
+
+            // Delay time in seconds.
+            float delay_time = arr_time - prev_arr_time;
+            std::stringstream ss;
+            // Set precision to three decimals.
+            ss.precision(3);
+            // Store in nanoseconds. Use std::fixed to explicitly show three decimals for visual consistency among labels
+            // (e.g. 1.5 can pass std::stringstream::precision(3) but still needs to be extended to 1.500).
+            ss << std::fixed << 1e9 * delay_time;
+            // This local std::string will help construct the label bounding box later.
+            std::string delay_label_str = ss.str();
+            drawing_info.delay_label_str = delay_label_str;
 
             // Calculate the physical locations of the two nodes.
             ezgl::point2d start = tnode_draw_coord(prev_node);
@@ -557,7 +562,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             drawing_info.rotation_angle = rotation_angle;
 
             // Calculate the bounding box that inscribes the label. This can be imagined as a horizontal rectangle
-            // fitting in a smaller and tilted rectangle that represents the label:
+            // fitting in a tilted (not necessarily always) rectangle that represents the label:
             //      .................
             //      .        ////// .
             //      .      //////   .
@@ -565,13 +570,16 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             //      .  //////       .
             //      .//////         .
             //      .................
+            // Note: This illustration is for reference only; the tilted rectangle should have square corners.
 
-            // LABEL_WIDTH and LABEL_HEIGHT (in pixels) correspond to a string that has exactly three decimals (e.g 1.500).
-            double label_bbox_width = (LABEL_WIDTH * cos(rotation_angle * (std::numbers::pi / 180))
-                                       + LABEL_HEIGHT * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
+            // This specifies the dimension of the "tilted rectangle" in pixels.
+            ezgl::text_dimension_t delay_label_dimension = g->get_text_dimension(delay_label_str);
+            // The bbox is defined in world coordinates so we need to perform a conversion at the end.
+            double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
+                                       + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
                                       / pixels_per_world_unit;
-            double label_bbox_height = (LABEL_WIDTH * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
-                                        + LABEL_HEIGHT * cos(rotation_angle * (std::numbers::pi / 180)))
+            double label_bbox_height = (delay_label_dimension.width * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
+                                        + delay_label_dimension.height * cos(rotation_angle * (std::numbers::pi / 180)))
                                        / pixels_per_world_unit;
 
             ezgl::point2d bbox_bottom_left = edge_bbox.center() - ezgl::point2d(label_bbox_width / 2, label_bbox_height / 2);
@@ -711,20 +719,21 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
         case e_label_relative_pos::RIGHT_ABOVE:
         case e_label_relative_pos::FAR_LEFT_ABOVE:
         case e_label_relative_pos::FAR_RIGHT_ABOVE:
-            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
+            // Convert PERPENDICULAR_OFFSET (defined in pixels) to world coordinates.
+            perpendicular_offset = PERPENDICULAR_OFFSET / pixels_per_world_unit;
             break;
         case e_label_relative_pos::CENTER_BELOW:
         case e_label_relative_pos::LEFT_BELOW:
         case e_label_relative_pos::RIGHT_BELOW:
         case e_label_relative_pos::FAR_LEFT_BELOW:
         case e_label_relative_pos::FAR_RIGHT_BELOW:
-            perpendicular_offset = -LABEL_HEIGHT / pixels_per_world_unit;
+            perpendicular_offset = -PERPENDICULAR_OFFSET / pixels_per_world_unit;
             break;
         default:
             // Unidentified e_label_relative_pos provided (could be due to modifying the original enum
             // while forgetting to update this function). Output a failure.
             VTR_ASSERT(false);
-            perpendicular_offset = LABEL_HEIGHT / pixels_per_world_unit;
+            perpendicular_offset = PERPENDICULAR_OFFSET / pixels_per_world_unit;
     }
 
     // Apply edge offset associated with the specified relative position.
@@ -787,17 +796,9 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
         ezgl::color color = get_color_from_edge_idx(edge_idx);
 
         if (!drawing_info.hide_label) {
-            std::stringstream ss;
-
-            // Fix the number of decimals (1 -> 1.000) so that the hardcoded LABEL_WIDTH and LABEL_HEIGHT can work.
-            ss.precision(3);
-            ss << std::fixed << 1e9 * drawing_info.delay_time;
-
-            std::string incr_delay_str = ss.str();
-
             g->set_color(color, drawing_info.label_transparency);
             g->set_text_rotation(drawing_info.rotation_angle);
-            g->draw_text(drawing_info.label_bbox.center(), incr_delay_str);
+            g->draw_text(drawing_info.label_bbox.center(), drawing_info.delay_label_str);
         }
     }
 
