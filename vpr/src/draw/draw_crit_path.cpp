@@ -147,6 +147,8 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
  * 
  * Note: this function is used in both non-server and server mode, unlike flyline drawing
  * which has a unique function dedicated to each mode.
+ * The type of drawn connections depends on whether flat routing is on. When off, only the inter-cluster
+ * connections are drawn. When on, there can also be intra-cluster connections besides the inter-cluster ones.
  *
  * @param src_tnode Source timing graph node for the connection.
  * @param sink_tnode Sink timing graph node for the connection.
@@ -155,8 +157,30 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
  */
 static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, ezgl::color color, ezgl::renderer* g);
 
+/**
+ * @brief Draws the routed connection between an atom sink pin and its driver pin in a flat (atom) netlist. Used when flat routing is enabled.
+ *
+ * Note: We do not pass in atom_src_pin because what we eventually need to get the routed connection
+ * are the driver net pin id (src pin) and sink net pin id in the net they form, but the driver net pin id is always 0.
+ * 
+ * @param atom_sink_pin Atom sink pin whose routed connection should be drawn.
+ * @param color Color used to highlight the routed connection.
+ * @param g Pointer to the ezgl::renderer object.
+ */
 static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g);
 
+/**
+ * @brief Draws the routed connection between the two clbs associated with the atom src pin and sink pin through the clustered netlist.
+ *
+ * Note: If the connection is entirely internal to a cluster, nothing is drawn.
+ * Here, we need to pass in atom_src_pin because we want to know the clb that atom_src_pin belongs to so that
+ * we can correctly draw the inter-cluster routed connection.
+ * 
+ * @param atom_src_pin Atom source pin of the routed connection to be drawn.
+ * @param atom_sink_pin Atom sink pin of the routed connection to be drawn.
+ * @param color Color used to highlight the routed connection.
+ * @param g Pointer to the ezgl::renderer object.
+ */
 static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g);
 
 #ifndef NO_SERVER
@@ -338,7 +362,7 @@ static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::
             ezgl::color color = get_color_from_edge_idx(edge_idx);
 
             draw_routed_connections_between_nodes(prev_node, node, color, g);
-            
+
             edge_idx++;
         }
         prev_node = node;
@@ -358,9 +382,13 @@ static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum
 
     // We currently only trace interconnect edges in detail, and treat all others as flylines.
     if (edge_type == tatum::EdgeType::INTERCONNECT) {
+        // When flat routing is enabled, the route tree is derived from the atom netist which we need to query to get the routed connection.
+        // Otherwise, the route tree is derived from the cluster netlist.
         if (routing_ctx.is_flat) {
+            // See the function declaration for why atom_src_pin does not need to be passed in.
             draw_connections_from_atom_netlist(atom_sink_pin, color, g);
         } else {
+            // See the function declaration for why atom_src_pin is needed here.
             draw_connections_from_cluster_netlist(atom_src_pin, atom_sink_pin, color, g);
         }
     }
@@ -368,9 +396,11 @@ static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum
 
 static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::color color, ezgl::renderer* g) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    // Fetch the net connected the sink pin (there is only one unique net because the sink pin is an output here).
     AtomNetId atom_net_id = atom_ctx.netlist().pin_net(atom_sink_pin);
     VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
     int sink_net_pin_index = atom_ctx.netlist().pin_net_index(atom_sink_pin);
+    // A valid sink net pin index should be greater or equal to 1; 0 corresponds to the driver pin (src pin).
     VTR_ASSERT(sink_net_pin_index >= 1);
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -416,7 +446,7 @@ static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPi
     int sink_net_pin_index = -1;
 
     std::tie(cluster_net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block,
-                                                                                                    sink_pb_route_id);
+                                                                                                         sink_pb_route_id);
     if (cluster_net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
         && sink_net_pin_index != -1) {
         // Connection leaves the CLB
