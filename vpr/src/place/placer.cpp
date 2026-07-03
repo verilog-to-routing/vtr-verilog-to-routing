@@ -1,14 +1,15 @@
 
 #include "placer.h"
 
+#include <algorithm>
 #include <functional>
 #include <optional>
 #include <utility>
-#include <cmath>
 
 #include "echo_files.h"
 #include "flat_placement_types.h"
 #include "blk_loc_registry.h"
+#include "interposer_cost_handler.h"
 #include "place_macro.h"
 #include "vtr_time.h"
 #include "draw.h"
@@ -70,8 +71,7 @@ Placer::Placer(const Netlist<>& net_list,
     }
 
     if (device_ctx.grid.has_interposer_cuts()) {
-        interposer_cost_handler_.emplace(placer_opts.interposer_cost_factor > 0.,
-                                         placer_opts.interposer_cong_threshold,
+        interposer_cost_handler_.emplace(placer_opts.interposer_cost_params,
                                          [this](ClusterNetId net_id, bool use_ts) -> const t_bb& {
                                              return net_cost_handler_.cube_bb_coords(net_id, use_ts);
                                          });
@@ -363,16 +363,24 @@ void Placer::place() {
         do {
             vtr::Timer temperature_timer;
 
-            annealer_->outer_loop_update_timing_info();
+            annealer_->outer_loop_update_timing_info_and_cost_terms();
 
             if (placer_opts_.place_algorithm.is_timing_driven()) {
                 critical_path_ = timing_info_->least_slack_critical_path();
 
                 // see if we should save the current placement solution as a checkpoint
                 if (placer_opts_.place_checkpointing && annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
+
+                    // Must record the current cost stage in 2.5D devices when two stage interposer cost is active
+                    std::optional<e_interposer_cost_stage> interposer_cost_stage;
+                    if (interposer_cost_handler_) {
+                        interposer_cost_stage = interposer_cost_handler_->get_net_cost_stage();
+                    }
+
                     save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
                                                         placement_checkpoint_,
-                                                        timing_info_, costs_, critical_path_.delay());
+                                                        timing_info_, costs_, critical_path_.delay(),
+                                                        interposer_cost_stage);
                 }
             }
 
@@ -392,7 +400,7 @@ void Placer::place() {
     { // Quench
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-        annealer_->outer_loop_update_timing_info();
+        annealer_->outer_loop_update_timing_info_and_cost_terms();
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
@@ -428,7 +436,7 @@ void Placer::place() {
         restore_best_placement(placer_state_,
                                placement_checkpoint_, timing_info_, costs_,
                                placer_criticalities_, placer_setup_slacks_, place_delay_model_,
-                               pin_timing_invalidator_, crit_params, noc_cost_handler_);
+                               pin_timing_invalidator_, crit_params, noc_cost_handler_, interposer_cost_handler_);
     }
 
     if (placer_opts_.placement_saves_per_temperature >= 1) {
