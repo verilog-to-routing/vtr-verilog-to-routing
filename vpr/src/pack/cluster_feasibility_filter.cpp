@@ -423,6 +423,10 @@ static void load_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
                 }
             }
         }
+        // TODO: Clock pins are treated as input classes here, so they are counted against
+        // the input pin utilization cap in check_lookahead_pins_used. We can consider moving
+        // them into a separate clock_pin_class_sizes with its own utilization cap to avoid
+        // limiting clock nets the same way as other inputs.
         for (int port_idx = 0; port_idx < prim->num_clock_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < prim->num_clock_pins[port_idx]; pin_idx++) {
                 if (prim->clock_pins[port_idx][pin_idx].parent_pin_class[node_depth] == UNDEFINED) {
