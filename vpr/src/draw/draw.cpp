@@ -58,6 +58,7 @@
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
+#include "draw_crit_path.h"
 
 #include "ui_setup.h"
 #include "ezgl/qt/render_backend.hpp"
@@ -788,6 +789,7 @@ void set_initial_world_ap() {
 double get_pixels_per_world_unit(ezgl::renderer* g) {
     double world_width = g->get_visible_world().width();
     double screen_width = g->get_visible_screen().width();
+    // If using this function for decluttering purpose:
     // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
     // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
     // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
@@ -1021,7 +1023,7 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 
 //Returns the set of rr nodes which connect driver to sink
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
+    ParentNetId net_id,
     int driver_pin,
     int sink_pin) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
