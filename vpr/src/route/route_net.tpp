@@ -142,11 +142,11 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     const DeviceGrid& device_grid = device_ctx.grid;
     if (device_grid.has_interposer_cuts()) {
         // Sort-priority bonuses for sinks that cross an interposer die boundary.
-        // kDieCrossingBonus rewards any die crossing; kInlineAlignmentBonus additionally
+        // die_crossing_bonus rewards any die crossing; inline_alignment_bonus additionally
         // rewards being inline with the driver along the crossed cut (scaled down to 0
         // as the perpendicular offset grows, see dx/dy below).
-        constexpr float kDieCrossingBonus = 1.0f;
-        constexpr float kInlineAlignmentBonus = 1.0f;
+        float die_crossing_bonus = router_opts.router_interposer_die_crossing_bonus;
+        float inline_alignment_bonus = router_opts.router_interposer_inline_alignment_bonus;
 
         RRNodeId driver_rr = route_ctx.net_rr_terminals[net_id][0];
         t_physical_tile_loc driver_loc(rr_graph.node_xlow(driver_rr),
@@ -169,15 +169,15 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             bool crosses_horizontal = device_grid.do_locs_cross_horizontal_cut(driver_loc, sink_loc);
 
             if (crosses_vertical || crosses_horizontal) {
-                pin_sort_priority[ipin] += kDieCrossingBonus;
+                pin_sort_priority[ipin] += die_crossing_bonus;
 
                 if (crosses_vertical) {
                     int dy = std::abs(driver_loc.y - sink_loc.y);
-                    pin_sort_priority[ipin] += (bb_height > 0) ? kInlineAlignmentBonus * (1.0f - float(dy) / bb_height) : kInlineAlignmentBonus;
+                    pin_sort_priority[ipin] += (bb_height > 0) ? inline_alignment_bonus * (1.0f - float(dy) / bb_height) : inline_alignment_bonus;
                 }
                 if (crosses_horizontal) {
                     int dx = std::abs(driver_loc.x - sink_loc.x);
-                    pin_sort_priority[ipin] += (bb_width > 0) ? kInlineAlignmentBonus * (1.0f - float(dx) / bb_width) : kInlineAlignmentBonus;
+                    pin_sort_priority[ipin] += (bb_width > 0) ? inline_alignment_bonus * (1.0f - float(dx) / bb_width) : inline_alignment_bonus;
                 }
             }
         }

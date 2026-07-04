@@ -3379,6 +3379,24 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<float>(args.router_interposer_die_crossing_bonus, "--router_interposer_die_crossing_bonus")
+        .help(
+            "Sort-priority bonus given to a sink that is on the other side of an interposer die "
+            "crossing from the net's driver. Used to route die-crossing sinks earlier so their "
+            "route can be reused by other sinks on the same die. Only has effect on interposer-based "
+            "architectures.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<float>(args.router_interposer_inline_alignment_bonus, "--router_interposer_inline_alignment_bonus")
+        .help(
+            "Additional sort-priority bonus (on top of --router_interposer_die_crossing_bonus) given "
+            "to a die-crossing sink that is inline with the driver along the crossed cut. The bonus is "
+            "scaled down to 0 as the perpendicular offset (relative to the net's bounding box) grows. "
+            "Only has effect on interposer-based architectures.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
         .help(
             "Controls how many times the router is allowed to converge to a legal routing before halting."

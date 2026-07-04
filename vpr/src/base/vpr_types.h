@@ -1378,6 +1378,13 @@ struct t_router_opts {
     double initial_acc_cost_chan_congestion_threshold;
     double initial_acc_cost_chan_congestion_weight;
     float router_lookahead_interposer_base_cut_multiplier; ///< Multiplier to apply for base cost of interposer wires in the router lookahead
+    /// Sort-priority bonus given to a sink that is on the other side of an interposer die
+    /// crossing from the net's driver, used to influence the order sinks are routed in.
+    float router_interposer_die_crossing_bonus;
+    /// Additional sort-priority bonus (on top of router_interposer_die_crossing_bonus) given to a
+    /// die-crossing sink that is inline with the driver along the crossed cut; scaled down to 0 as
+    /// the perpendicular offset within the net's bounding box grows.
+    float router_interposer_inline_alignment_bonus;
     int max_convergence_count;
     int route_verbosity;
     float reconvergence_cpd_threshold;
