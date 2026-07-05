@@ -399,16 +399,16 @@ static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::co
 
     t_draw_state* draw_state = get_draw_state_vars();
 
+    // A src net pin is always 0.
     std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(atom_net_id, 0, sink_net_pin_index);
 
-    // Mark all the nodes highlighted
-
+    // Mark all the nodes highlighted.
     for (RRNodeId inode : routed_rr_nodes) {
         draw_state->draw_rr_node[inode].color = color;
         draw_state->draw_rr_node[inode].node_highlighted = true;
     }
 
-    // draw_partial_route() takes care of layer visibility and cross-layer settings
+    // draw_partial_route() takes care of layer visibility and cross-layer settings.
     draw_partial_route(routed_rr_nodes, g);
 }
 

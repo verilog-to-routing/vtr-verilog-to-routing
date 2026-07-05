@@ -520,12 +520,13 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     std::string pb_type_name(pb_type->name);
 
     // This is a special case: blocks that correspond to pb_type->depth == 0 are essentially the top-level clustered blocks,
-    // and in each drawing cycle they are drawn already in draw_place() in draw_basic.cpp. The reason for that is,
-    // draw_internal_pb() is not called anymore when we zoom out too much. This said, the naming convention for clustered blocks
-    // has been historically different between the two functions, and when level of detail is on (the children of clustered blocks
-    // are drawn), we want to use the naming convention specified under the else if statement below. And when level of detail
-    // is off (!at_least_one_child_pb_drawn), we still want to use the naming convention from draw_place()
-    // to ensure consistency. This one is specified under the if statement just below.
+    // and draw_place() already draws them in draw_basic.cpp. This duplicate drawing exists because
+    // draw_internal_pb() is no longer called when we zoom out too far, yet we still want the clustered blocks to be drawn.
+    // At other zoom levels, clustered blocks drawn in draw_internal_pb() are overlaid onto the same blocks drawn in draw_place().
+    // However, the two functions have historically used different naming conventions for clustered blocks (both have their own merits)
+    // and it can feel abrupt when the block names suddenly change from draw_place() style to draw_internal_pb() style due to the overlay,
+    // while the block drawing itself remains the same. Therefore, we keep using draw_place() style at this transition level.
+    // When the block drawing does differ (draw_internal_pb() starts drawing children blocks inside the clusters), we switch to draw_internal_pb() style.
     if (pb_type->depth == 0 && !at_least_one_child_pb_drawn) {
         const t_pl_loc& loc = block_locs[clb_index].loc;
         // loc.x and loc.y are the x and y coordinates of the containing subtile.
