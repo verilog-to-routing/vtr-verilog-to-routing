@@ -168,7 +168,7 @@ void draw_place(ezgl::renderer* g) {
                             g->draw_text(center, block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
 
-                        // Draw the cluster block name if "show block internal" is not toggled and the block is not empty.
+                        // Draw the cluster block name if "show block internals" is not toggled and the block is not empty.
                         if (!draw_state->show_blk_internal && bnum) {
                             const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
                             // The drawing position is offset from the block center to avoid being overlapped with the block type name.
