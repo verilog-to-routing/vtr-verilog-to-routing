@@ -140,24 +140,28 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     std::vector<float> pin_sort_priority = pin_criticality;
 
     const DeviceGrid& device_grid = device_ctx.grid;
-    if (device_grid.has_interposer_cuts()) {
-        // Sort-priority bonuses for sinks that cross an interposer die boundary.
-        // die_crossing_bonus rewards any die crossing; inline_alignment_bonus additionally
-        // rewards being inline with the driver along the crossed cut (scaled down to 0
-        // as the perpendicular offset grows, see dx/dy below).
-        float die_crossing_bonus = router_opts.router_interposer_die_crossing_bonus;
-        float inline_alignment_bonus = router_opts.router_interposer_inline_alignment_bonus;
+    bool has_interposer_cuts = device_grid.has_interposer_cuts();
+    bool has_multiple_layers = device_grid.get_num_layers() > 1;
+    if (has_interposer_cuts || has_multiple_layers) {
+        // Sort-priority terms for sinks that cross a die boundary (an interposer cut in
+        // the x/y plane, or a layer boundary in the z direction for 3D stacked devices).
+        // die_crossing_multiplier rewards any die crossing; die_alignment_multiplier additionally
+        // rewards being inline with the driver across the crossed boundary (scaled down to
+        // 0 as the offset perpendicular to that boundary grows, see dx/dy below).
+        float die_crossing_multiplier = router_opts.router_sink_order_die_crossing_multiplier;
+        float die_alignment_multiplier = router_opts.router_sink_order_die_alignment_multiplier;
 
         RRNodeId driver_rr = route_ctx.net_rr_terminals[net_id][0];
         t_physical_tile_loc driver_loc(rr_graph.node_xlow(driver_rr),
                                        rr_graph.node_ylow(driver_rr),
                                        rr_graph.node_layer_low(driver_rr));
 
-        // net_bb is used to normalize the inline-alignment bonus below. Note it is slightly
+        // net_bb is used to normalize the die-alignment term below. Note it is slightly
         // larger than the net's true pin bounding box, since it is expanded by bb_factor
         // for routing search purposes.
         int bb_width = net_bb.xmax - net_bb.xmin;
         int bb_height = net_bb.ymax - net_bb.ymin;
+        int bb_planar = bb_width + bb_height;
 
         for (int ipin : remaining_targets) {
             RRNodeId sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
@@ -165,19 +169,31 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                                          rr_graph.node_ylow(sink_rr),
                                          rr_graph.node_layer_low(sink_rr));
 
-            bool crosses_vertical = device_grid.do_locs_cross_vertical_cut(driver_loc, sink_loc);
-            bool crosses_horizontal = device_grid.do_locs_cross_horizontal_cut(driver_loc, sink_loc);
+            bool crosses_vertical = has_interposer_cuts && device_grid.do_locs_cross_vertical_cut(driver_loc, sink_loc);
+            bool crosses_horizontal = has_interposer_cuts && device_grid.do_locs_cross_horizontal_cut(driver_loc, sink_loc);
+            bool crosses_planar = has_multiple_layers && (driver_loc.layer_num != sink_loc.layer_num);
 
-            if (crosses_vertical || crosses_horizontal) {
-                pin_sort_priority[ipin] += die_crossing_bonus;
+            if (crosses_vertical || crosses_horizontal || crosses_planar) {
+                pin_sort_priority[ipin] += die_crossing_multiplier;
 
+                int dx = std::abs(driver_loc.x - sink_loc.x);
+                int dy = std::abs(driver_loc.y - sink_loc.y);
+
+                // NOTE: this assumes interposer cuts and layer boundaries never both apply to the
+                // same driver/sink pair (i.e. interposer architectures are not also 3D), so the
+                // vertical/horizontal terms below only normalize against their own boundary's
+                // offset (dy or dx), unlike the planar term which already folds in both.
+                // TODO: once a 3D interposer architecture exists to validate against, the vertical
+                // and horizontal terms should also fold in a dz/bb_depth component, matching how
+                // the planar term already folds in dx and dy.
                 if (crosses_vertical) {
-                    int dy = std::abs(driver_loc.y - sink_loc.y);
-                    pin_sort_priority[ipin] += (bb_height > 0) ? inline_alignment_bonus * (1.0f - float(dy) / bb_height) : inline_alignment_bonus;
+                    pin_sort_priority[ipin] += (bb_height > 0) ? die_alignment_multiplier * (1.0f - float(dy) / bb_height) : die_alignment_multiplier;
                 }
                 if (crosses_horizontal) {
-                    int dx = std::abs(driver_loc.x - sink_loc.x);
-                    pin_sort_priority[ipin] += (bb_width > 0) ? inline_alignment_bonus * (1.0f - float(dx) / bb_width) : inline_alignment_bonus;
+                    pin_sort_priority[ipin] += (bb_width > 0) ? die_alignment_multiplier * (1.0f - float(dx) / bb_width) : die_alignment_multiplier;
+                }
+                if (crosses_planar) {
+                    pin_sort_priority[ipin] += (bb_planar > 0) ? die_alignment_multiplier * (1.0f - float(dx + dy) / bb_planar) : die_alignment_multiplier;
                 }
             }
         }
