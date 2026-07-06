@@ -156,7 +156,7 @@ void draw_place(ezgl::renderer* g) {
 
                     g->set_font_size(14);
                     if (draw_state->draw_block_text) {
-                        // The function draw_internal_draw_subblk() in intra_logic_block.cpp is called after this function during every redraw, and it 
+                        // The function draw_internal_draw_subblk() in intra_logic_block.cpp is called after this function during every redraw, and it
                         // draws cluster blocks (which overlap with the ones drawn in this function), their child blocks and their block types when
                         // "show block internals" is toggled. In this case, we should no longer draw the block types here again, because in the deferred renderer
                         // or rhi renderer mode, all texts are queued and unleashed together after geometries are drawn, meaning that cluster blocks drawn in draw_internal_draw_subblk()
