@@ -59,8 +59,8 @@ double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_
     }
 
     total_cost += placer_opts.congestion_factor * congestion_cost * congestion_cost_norm;
-    total_cost += placer_opts.interposer_cost_factor * interposer_cost * interposer_cost_norm;
-    total_cost += placer_opts.interposer_cong_factor * interposer_cong_cost * interposer_cong_cost_norm;
+    total_cost += placer_opts.interposer_cost_params.net_cost_factor * interposer_cost * interposer_cost_norm;
+    total_cost += placer_opts.interposer_cost_params.cong_cost_factor * interposer_cong_cost * interposer_cong_cost_norm;
 
     if (noc_opts.noc) {
         // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
