@@ -216,12 +216,12 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
-
+    g->set_line_width(0);
     for (int layer_num = 0; layer_num < total_layer_num; layer_num++) {
         if (draw_state->draw_layer_display[layer_num].visible) {
             for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
                 for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                    /* Only the first block of a group should control drawing */
+                    // Only the first block of a group should control drawing.
                     const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                     int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
@@ -229,20 +229,20 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     if (width_offset > 0 || height_offset > 0)
                         continue;
 
-                    /* Don't draw if tile is empty. This includes corners. */
+                    // Don't draw if tile is empty. This includes corners.
                     if (is_empty_type(type))
                         continue;
 
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
-                        /* Don't draw if block is empty. */
+                        // Don't draw if block is empty.
                         if (!grid_blocks.block_at_location({i, j, k, layer_num})) {
                             continue;
                         }
 
-                        /* Get block ID */
+                        // Get block ID.
                         ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                        /* Safety check, that physical blocks exists in the CLB */
+                        // Safety check, that physical blocks exists in the CLB.
                         if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr) {
                             continue;
                         }

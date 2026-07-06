@@ -1679,7 +1679,7 @@ void highlight_moved_block_and_its_terminals(
     clear_colored_locations();
     set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc,
                        OLD_BLK_LOC_COLOR);
-    set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc,
+    set_draw_loc_color(blocks_affected.moved_blocks[0].new_loc,
                        NEW_BLK_LOC_COLOR);
 }
 
