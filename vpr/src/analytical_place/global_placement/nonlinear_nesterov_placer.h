@@ -68,7 +68,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     PartialPlacement place() final;
 
   private:
-
     /**
      * @brief Per-block placement gradient.
      */
@@ -108,8 +107,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * mass but no nets and never enter legalization, packing, or timing.
      */
     struct FillerState {
-        std::vector<std::vector<double>> x; ///< [dim][filler] x coordinate.
-        std::vector<std::vector<double>> y; ///< [dim][filler] y coordinate.
+        std::vector<std::vector<double>> x;  ///< [dim][filler] x coordinate.
+        std::vector<std::vector<double>> y;  ///< [dim][filler] y coordinate.
         std::vector<std::vector<int>> layer; ///< [dim][filler] fixed device layer.
     };
 
@@ -199,9 +198,26 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                      FillerState& fillers);
 
     /**
-     * @brief Copy dynamic filler positions.
+     * @brief Identify resource dimensions whose target capacity is almost entirely on the device boundary.
      */
-    void copy_fillers_(const FillerState& src, FillerState& dst) const;
+    std::vector<bool> identify_boundary_confined_dims_(const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    /**
+     * @brief Return true if a block has any mass in boundary-confined dimensions.
+     */
+    bool block_has_boundary_mass_(APBlockId blk_id,
+                                  const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    /**
+     * @brief Mark long I/O-related nets that should receive extra wirelength cohesion.
+     */
+    void update_boundary_net_flags_(const std::vector<PrimitiveVectorDim>& dimensions,
+                                    const PartialPlacement& seed);
+
+    /**
+     * @brief Return true if all atom primitives represented by the AP block are I/O-chain primitives.
+     */
+    bool block_is_io_chain_block_(APBlockId blk_id) const;
 
     /**
      * @brief Project dynamic filler locations into device bounds.
@@ -242,11 +258,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * @brief Project all block locations into device bounds and restore fixed blocks.
      */
     void project_placement_(PartialPlacement& p_placement) const;
-
-    /**
-     * @brief Copy a placement.
-     */
-    void copy_placement_(const PartialPlacement& src, PartialPlacement& dst) const;
 
     /**
      * @brief Apply x = y - step * grad for movable blocks.
@@ -302,20 +313,24 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     const AtomNetlist& atom_netlist_;                              ///< Atom netlist used for timing criticality lookup.
     PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager used to weight smooth wirelength nets.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;           ///< Delay model used to update timing criticalities.
+    const LogicalModels& models_;                                  ///< Logical models used to classify I/O-chain primitives.
 
     std::vector<APBlockId> optimizable_blocks_; ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_;  ///< Smooth wirelength weight for each AP net.
 
-    vtr::vector<APBlockId, double> block_precond_;           ///< Per-block diagonal preconditioner (objective curvature estimate).
-    bool precond_active_ = false;                            ///< Whether the preconditioner is applied in the current optimization run.
-    double precond_alpha_active_ = 1.0;                      ///< Preconditioner strength exponent for the current optimization run.
-    std::vector<double> filler_unit_mass_;                   ///< [dim] density mass per dynamic filler.
-    std::vector<double> filler_precond_;                     ///< [dim] density-only filler preconditioner.
+    vtr::vector<APBlockId, double> block_precond_;      ///< Per-block diagonal preconditioner (objective curvature estimate).
+    bool precond_active_ = false;                       ///< Whether the preconditioner is applied in the current optimization run.
+    double precond_alpha_active_ = 1.0;                 ///< Preconditioner strength exponent for the current optimization run.
+    std::vector<bool> boundary_confined_dims_;          ///< [dim index] true if target capacity lies almost entirely on the device boundary.
+    vtr::vector<APNetId, bool> boundary_cohesion_nets_; ///< AP nets that receive I/O-only cohesion weight.
+    vtr::vector<APNetId, bool> io_chain_cohesion_nets_; ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
+    std::vector<double> filler_unit_mass_;              ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                ///< [dim] density-only filler preconditioner.
 
-    size_t device_grid_width_ = 0;      ///< Width of the placement region.
-    size_t device_grid_height_ = 0;     ///< Height of the placement region.
-    size_t device_grid_num_layers_ = 0; ///< Number of device layers.
-    float ap_timing_tradeoff_ = 0.f;    ///< User timing tradeoff value.
+    size_t device_grid_width_ = 0;          ///< Width of the placement region.
+    size_t device_grid_height_ = 0;         ///< Height of the placement region.
+    size_t device_grid_num_layers_ = 0;     ///< Number of device layers.
+    float ap_timing_tradeoff_ = 0.f;        ///< User timing tradeoff value.
     float effective_timing_tradeoff_ = 0.f; ///< Timing tradeoff after design-size adaptation.
 
     /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear

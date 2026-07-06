@@ -8,6 +8,7 @@
 #include "nonlinear_nesterov_placer.h"
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <complex>
@@ -177,6 +178,48 @@ constexpr double kDynamicFillerUnitFraction = 1.0;
 constexpr size_t kMaxDynamicFillersPerDim = 60000;
 
 /**
+ * @brief Device-edge band used to identify resources confined to the boundary.
+ *
+ * Several architectures leave the true perimeter empty and place I/O-capable
+ * tiles one tile in from the edge, so use a two-tile band rather than only x/y
+ * equals 0 or max.
+ */
+constexpr size_t kBoundaryConfinedBandTiles = 2;
+
+/**
+ * @brief Fraction of a resource dimension's capacity that must lie in the edge
+ *        band before it is treated as boundary-confined.
+ */
+constexpr double kBoundaryConfinedCapacityFraction = 0.95;
+
+/**
+ * @brief Extra wirelength weight for I/O-related AP nets.
+ *
+ * Values above 1.0 were tested as a nesterov-local LU_Network repair, but the
+ * broad long-net variant regressed guard circuits and the boundary-only variant
+ * did not improve routed CPD. Keep this neutral by default; the flagged nets are
+ * still reported by the telemetry below.
+ */
+constexpr double kBoundaryNetCohesionWeight = 1.0;
+
+/**
+ * @brief Minimum warm-start HPWL, as a fraction of device span, for applying
+ *        boundary-net cohesion.
+ */
+constexpr double kBoundaryNetCohesionMinSeedHpwlFraction = 0.25;
+
+/**
+ * @brief Extra smooth-WL weight for direct I/O-chain AP nets.
+ *
+ * LU_Network's failure mode is not generic boundary spreading; it is specific
+ * pad/obuf/OCT/termination chains being split before APPack can form compact
+ * I/O clusters. Prior broad boundary-net weighting regressed guard circuits, so
+ * this stronger weight is applied only to two-pin nets whose endpoints are both
+ * I/O-chain primitives on boundary-confined resources.
+ */
+constexpr double kIoChainNetCohesionWeight = 2.0;
+
+/**
  * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
  *
  * The nonlinear Nesterov placer seeds itself from a wirelength-aware B2B/QP solve
@@ -203,8 +246,6 @@ constexpr size_t kWarmStartMaxIters = 24;
  * more cycles automatically.
  */
 constexpr double kWarmStartTol = 0.01;
-
-constexpr double kArmijoC = 0.;
 
 /**
  * @brief Seed-overflow gate below which the warm start is deepened.
@@ -458,25 +499,27 @@ void solve_neumann_poisson_dct(const std::vector<double>& charge,
     }
 }
 
+using OptionalWeightVectorRef = std::optional<std::reference_wrapper<std::vector<double>>>;
+
 /**
  * @brief Evaluate the weighted-average approximation of a coordinate extremum.
  *
  * With @p negate false, this approximates the maximum coordinate. With @p
- * negate true, this approximates the minimum coordinate. The returned weights
- * are reused by the caller to form the analytical derivative.
+ * negate true, this approximates the minimum coordinate. The optional returned
+ * weights are reused by the caller to form the analytical derivative.
  *
  * @param values Coordinate values for one net dimension. Must be non-empty.
  * @param gamma Positive smoothing factor: smaller values more closely
  *              approximate the extremum, while larger values smooth it more.
  * @param negate When true, negate each value before computing log-sum-exp to
  *               approximate the negated minimum instead of the maximum.
- * @param weights Optional normalized exponential weights.
+ * @param weights Optional storage for normalized exponential weights.
  * @return The weighted-average coordinate.
  */
 double weighted_average_coordinate(const std::vector<double>& values,
                                    double gamma,
                                    bool negate,
-                                   std::vector<double>* weights) {
+                                   OptionalWeightVectorRef weights) {
     VTR_ASSERT(!values.empty());
     VTR_ASSERT(gamma > 0.);
 
@@ -488,22 +531,44 @@ double weighted_average_coordinate(const std::vector<double>& values,
 
     double exp_sum = 0.;
     double weighted_sum = 0.;
-    for (double value : values) {
+    if (weights)
+        weights->get().assign(values.size(), 0.);
+
+    for (size_t idx = 0; idx < values.size(); idx++) {
+        double value = values[idx];
         double scaled_value = negate ? -value / gamma : value / gamma;
         double exponential = std::exp(scaled_value - max_scaled);
         exp_sum += exponential;
         weighted_sum += value * exponential;
+        if (weights)
+            weights->get()[idx] = exponential;
     }
 
     VTR_ASSERT_SAFE(exp_sum > 0.);
     if (weights) {
-        weights->resize(values.size());
-        for (size_t idx = 0; idx < values.size(); idx++) {
-            double scaled_value = negate ? -values[idx] / gamma : values[idx] / gamma;
-            (*weights)[idx] = std::exp(scaled_value - max_scaled) / exp_sum;
-        }
+        for (double& weight : weights->get())
+            weight /= exp_sum;
     }
     return weighted_sum / exp_sum;
+}
+
+std::string lower_copy(const std::string& value) {
+    std::string lowered = value;
+    for (char& c : lowered)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return lowered;
+}
+
+bool model_name_is_io_chain(const std::string& model_name) {
+    if (model_name == LogicalModels::MODEL_INPUT || model_name == LogicalModels::MODEL_OUTPUT)
+        return true;
+
+    std::string lowered = lower_copy(model_name);
+    return lowered.find("io") != std::string::npos
+           || lowered.find("pad") != std::string::npos
+           || lowered.find("obuf") != std::string::npos
+           || lowered.find("oct") != std::string::npos
+           || lowered.find("termination") != std::string::npos;
 }
 
 } // namespace
@@ -535,7 +600,10 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , atom_netlist_(atom_netlist)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , place_delay_model_(place_delay_model)
+    , models_(models)
     , net_weights_(ap_netlist.nets().size(), 1.0)
+    , boundary_cohesion_nets_(ap_netlist.nets().size(), false)
+    , io_chain_cohesion_nets_(ap_netlist.nets().size(), false)
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
@@ -634,49 +702,76 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     // places every block (including solver-disconnected ones), so all optimizable
     // blocks have a valid location afterward.
     double previous_hpwl = std::numeric_limits<double>::infinity();
-    size_t cycles = 0;
-    for (; cycles < warmstart_max_iters_; cycles++) {
-        warmstart_solver_->solve(cycles, p_placement);
+    size_t solver_iteration = 0;
+    size_t min_cycles = warmstart_iters_;
+    size_t max_cycles = warmstart_max_iters_;
+    bool sparse_checked = false;
+    bool reached_sparse_deepening = false;
+    bool stopped_by_convergence = false;
+    double sparse_seed_overflow = 0.;
+
+    while (solver_iteration < max_cycles) {
+        warmstart_solver_->solve(solver_iteration, p_placement);
         partial_legalizer_->legalize(p_placement);
+        size_t cycles_done = solver_iteration + 1;
+
         double hpwl = p_placement.get_hpwl(ap_netlist_);
         bool converged = hpwl > previous_hpwl * (1.0 - kWarmStartTol);
         previous_hpwl = hpwl;
-        if (cycles + 1 >= warmstart_iters_ && converged)
-            break;
+
+        if (cycles_done < min_cycles) {
+            solver_iteration++;
+            continue;
+        }
+
+        bool reached_max_cycles = cycles_done >= max_cycles;
+        if (!converged && !reached_max_cycles) {
+            solver_iteration++;
+            continue;
+        }
+
+        // Sparsity-gated deep warm start. When the seed is so sparse that physical
+        // mass barely exceeds tile capacity (overflow below the gate), the
+        // electrostatic field has nothing to spread, so the smooth stage no-ops and
+        // the placement is left at this loose seed -- APPack then cannot pack distant
+        // molecules into shared logic blocks, inflating routed wirelength (measured
+        // on sparse Stratix-10 designs fft2d/sobel: +21% routed WL). The cure is to
+        // keep compacting with more B2B solve+legalize cycles (what SimPL does
+        // implicitly), which the HPWL-plateau convergence stops too early. Dense
+        // designs, where the field does real work, keep the short warm start so the
+        // electrostatic stage is not handed an over-compacted seed.
+        if (!sparse_checked && kSparseGateOverflow > 0. && solver_iteration < kSparseWarmStartIters) {
+            project_placement_(p_placement);
+            std::vector<PrimitiveVectorDim> dims = density_manager_->get_used_dims_mask().get_non_zero_dims();
+            sparse_seed_overflow = compute_physical_overflow_ratio_(p_placement, dims);
+            sparse_checked = true;
+            if (sparse_seed_overflow < kSparseGateOverflow) {
+                sparse_seed_ = true;
+                min_cycles = kSparseWarmStartIters;
+                max_cycles = std::max(max_cycles, kSparseWarmStartIters);
+                reached_sparse_deepening = true;
+                continue;
+            }
+        }
+
+        stopped_by_convergence = converged;
+        break;
     }
     project_placement_(p_placement);
 
-    // Sparsity-gated deep warm start. When the seed is so sparse that physical
-    // mass barely exceeds tile capacity (overflow below the gate), the
-    // electrostatic field has nothing to spread, so the smooth stage no-ops and
-    // the placement is left at this loose seed -- APPack then cannot pack distant
-    // molecules into shared logic blocks, inflating routed wirelength (measured
-    // on sparse Stratix-10 designs fft2d/sobel: +21% routed WL). The cure is to
-    // keep compacting with more B2B solve+legalize cycles (what SimPL does
-    // implicitly), which the HPWL-plateau convergence stops too early. Dense
-    // designs, where the field does real work, keep the short warm start so the
-    // electrostatic stage is not handed an over-compacted seed.
-    if (kSparseGateOverflow > 0. && cycles < kSparseWarmStartIters) {
-        std::vector<PrimitiveVectorDim> dims = density_manager_->get_used_dims_mask().get_non_zero_dims();
-        double seed_overflow = compute_physical_overflow_ratio_(p_placement, dims);
-        if (seed_overflow < kSparseGateOverflow) {
-            sparse_seed_ = true;
-            for (; cycles < kSparseWarmStartIters; cycles++) {
-                warmstart_solver_->solve(cycles, p_placement);
-                partial_legalizer_->legalize(p_placement);
-            }
-            project_placement_(p_placement);
-            if (log_verbosity_ >= 1) {
-                VTR_LOG("Nonlinear Nesterov warm start: sparse seed (overflow %.4f < %.4f); deepened to %zu cycles, HPWL %g.\n",
-                        seed_overflow, kSparseGateOverflow, cycles, p_placement.get_hpwl(ap_netlist_));
-            }
-            return p_placement;
-        }
-    }
-
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov warm start: %zu B2B solve+legalize cycles (converged), seed HPWL %g.\n",
-                std::min(cycles + 1, warmstart_max_iters_), p_placement.get_hpwl(ap_netlist_));
+        if (reached_sparse_deepening) {
+            VTR_LOG("Nonlinear Nesterov warm start: sparse seed (overflow %.4f < %.4f); deepened to %zu cycles, HPWL %g.\n",
+                    sparse_seed_overflow,
+                    kSparseGateOverflow,
+                    kSparseWarmStartIters,
+                    p_placement.get_hpwl(ap_netlist_));
+        } else {
+            VTR_LOG("Nonlinear Nesterov warm start: %zu B2B solve+legalize cycles (%s), seed HPWL %g.\n",
+                    std::min(solver_iteration + 1, warmstart_max_iters_),
+                    stopped_by_convergence ? "converged" : "max iterations",
+                    p_placement.get_hpwl(ap_netlist_));
+        }
     }
     return p_placement;
 }
@@ -685,6 +780,7 @@ PartialPlacement NonlinearNesterovPlacer::place() {
     vtr::ScopedStartFinishTimer global_placer_time("AP Nonlinear Nesterov Global Placer");
 
     std::vector<PrimitiveVectorDim> density_dimensions = density_manager_->get_used_dims_mask().get_non_zero_dims();
+    boundary_confined_dims_ = identify_boundary_confined_dims_(density_dimensions);
 
     double device_span = std::max<double>(device_grid_width_, device_grid_height_);
     double convergence_displacement = std::max(kMinConvergenceDisplacement,
@@ -706,6 +802,7 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     PartialPlacement seed = initialize_placement_();
     if (log_verbosity_ >= 1)
         VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
+    update_boundary_net_flags_(density_dimensions, seed);
 
     PartialPlacement result = optimize_from_seed_(seed, density_dimensions, device_span, convergence_displacement);
 
@@ -739,7 +836,11 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // Nesterov solve at fixed penalty weights, partially legalizes the result to
     // form a proximity anchor, then raises the density multipliers (subgradient
     // ascent) so the following epoch enforces density more strongly.
-    PartialPlacement current = seed;
+    PartialPlacement current(ap_netlist_);
+    current.block_x_locs = seed.block_x_locs;
+    current.block_y_locs = seed.block_y_locs;
+    current.block_layer_nums = seed.block_layer_nums;
+    current.block_sub_tiles = seed.block_sub_tiles;
     vtr::Timer epoch_phase_timer;
     double legalizer_time_sec = 0.;
     double timing_update_time_sec = 0.;
@@ -807,9 +908,19 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     }
 
     double legalizer_feedback_proximity_weight = 0.;
-    PartialPlacement best_placement = current;
+    PartialPlacement best_placement(ap_netlist_);
+    best_placement.block_x_locs = current.block_x_locs;
+    best_placement.block_y_locs = current.block_y_locs;
+    best_placement.block_layer_nums = current.block_layer_nums;
+    best_placement.block_sub_tiles = current.block_sub_tiles;
     double best_hpwl = current.get_hpwl(ap_netlist_);
     int best_source = -1; // -1 = warm-start seed, otherwise epoch index.
+    PartialPlacement legal_anchor(ap_netlist_);
+    PartialPlacement y_placement(ap_netlist_);
+    PartialPlacement next(ap_netlist_);
+    PartialPlacement before_legalization(ap_netlist_);
+    FillerState y_fillers;
+    FillerState next_fillers;
 
     // Augmented-Lagrangian outer loop. Penalty weights are held fixed within an
     // epoch and raised between epochs; timing net weights and the preconditioner
@@ -838,13 +949,24 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         update_timing_net_weights_();
         compute_preconditioner_(density_dimensions, density_multipliers);
 
-        PartialPlacement legal_anchor = current;
-        PartialPlacement y_placement = current;
-        PartialPlacement next = current;
-        FillerState y_fillers;
-        FillerState next_fillers;
-        copy_fillers_(current_fillers, y_fillers);
-        copy_fillers_(current_fillers, next_fillers);
+        legal_anchor.block_x_locs = current.block_x_locs;
+        legal_anchor.block_y_locs = current.block_y_locs;
+        legal_anchor.block_layer_nums = current.block_layer_nums;
+        legal_anchor.block_sub_tiles = current.block_sub_tiles;
+        y_placement.block_x_locs = current.block_x_locs;
+        y_placement.block_y_locs = current.block_y_locs;
+        y_placement.block_layer_nums = current.block_layer_nums;
+        y_placement.block_sub_tiles = current.block_sub_tiles;
+        next.block_x_locs = current.block_x_locs;
+        next.block_y_locs = current.block_y_locs;
+        next.block_layer_nums = current.block_layer_nums;
+        next.block_sub_tiles = current.block_sub_tiles;
+        y_fillers.x = current_fillers.x;
+        y_fillers.y = current_fillers.y;
+        y_fillers.layer = current_fillers.layer;
+        next_fillers.x = current_fillers.x;
+        next_fillers.y = current_fillers.y;
+        next_fillers.layer = current_fillers.layer;
         PlacementGradient grad(ap_netlist_);
         FillerGradient filler_grad;
         double proximity_scale = optimizable_blocks_.size() < kProximitySizeThreshold ? kProximityScale : 1.0;
@@ -881,6 +1003,8 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             if (grad_norm_sq < kEpsilon)
                 break;
 
+            // Monotone backtracking line search: halve the step until the objective
+            // does not increase (or the minimum step is reached).
             double accepted_step = step_size;
             ObjectiveValue next_obj;
             bool accepted = false;
@@ -894,8 +1018,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                std::nullopt,
                                                next_fillers,
                                                nullptr);
-                if (next_obj.total <= y_obj.total - kArmijoC * accepted_step * grad_norm_sq
-                    || accepted_step == kMinStepSize) {
+                if (next_obj.total <= y_obj.total || accepted_step == kMinStepSize) {
                     accepted = true;
                     break;
                 }
@@ -916,16 +1039,26 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                 // Adaptive restart: the step worsened the objective, so drop the
                 // momentum and continue from the new point without extrapolation.
                 nesterov_t = 1.0;
-                copy_placement_(next, y_placement);
-                copy_fillers_(next_fillers, y_fillers);
+                y_placement.block_x_locs = next.block_x_locs;
+                y_placement.block_y_locs = next.block_y_locs;
+                y_placement.block_layer_nums = next.block_layer_nums;
+                y_placement.block_sub_tiles = next.block_sub_tiles;
+                y_fillers.x = next_fillers.x;
+                y_fillers.y = next_fillers.y;
+                y_fillers.layer = next_fillers.layer;
             } else {
                 // Extrapolate the look-ahead point ahead of the accepted step.
                 extrapolate_(current, next, current_fillers, next_fillers, beta, y_placement, y_fillers);
                 nesterov_t = next_t;
             }
 
-            copy_placement_(next, current);
-            copy_fillers_(next_fillers, current_fillers);
+            current.block_x_locs = next.block_x_locs;
+            current.block_y_locs = next.block_y_locs;
+            current.block_layer_nums = next.block_layer_nums;
+            current.block_sub_tiles = next.block_sub_tiles;
+            current_fillers.x = next_fillers.x;
+            current_fillers.y = next_fillers.y;
+            current_fillers.layer = next_fillers.layer;
             current_obj = next_obj;
 
             step_size = std::min(device_span, accepted_step * 1.05);
@@ -947,7 +1080,10 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // Partially legalize the smooth result. This both cleans up overlap and
         // produces the anchor that the next epoch's proximity term pulls toward;
         // the per-epoch displacement it causes also drives the proximity weight.
-        PartialPlacement before_legalization = current;
+        before_legalization.block_x_locs = current.block_x_locs;
+        before_legalization.block_y_locs = current.block_y_locs;
+        before_legalization.block_layer_nums = current.block_layer_nums;
+        before_legalization.block_sub_tiles = current.block_sub_tiles;
         double pre_leg_overflow = compute_physical_overflow_ratio_(before_legalization, density_dimensions);
         vtr::Timer legalizer_timer;
         partial_legalizer_->legalize(current);
@@ -1001,7 +1137,10 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         double post_legalization_hpwl = current.get_hpwl(ap_netlist_);
         if (post_legalization_hpwl < best_hpwl) {
             best_hpwl = post_legalization_hpwl;
-            copy_placement_(current, best_placement);
+            best_placement.block_x_locs = current.block_x_locs;
+            best_placement.block_y_locs = current.block_y_locs;
+            best_placement.block_layer_nums = current.block_layer_nums;
+            best_placement.block_sub_tiles = current.block_sub_tiles;
             best_source = static_cast<int>(epoch);
         }
 
@@ -1120,14 +1259,21 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
         std::vector<double> negative_x_weights;
         std::vector<double> positive_y_weights;
         std::vector<double> negative_y_weights;
-        std::vector<double>* positive_x_weights_ptr = grad ? &positive_x_weights : nullptr;
-        std::vector<double>* negative_x_weights_ptr = grad ? &negative_x_weights : nullptr;
-        std::vector<double>* positive_y_weights_ptr = grad ? &positive_y_weights : nullptr;
-        std::vector<double>* negative_y_weights_ptr = grad ? &negative_y_weights : nullptr;
-        double positive_x = weighted_average_coordinate(x_locs, gamma, false, positive_x_weights_ptr);
-        double negative_x = weighted_average_coordinate(x_locs, gamma, true, negative_x_weights_ptr);
-        double positive_y = weighted_average_coordinate(y_locs, gamma, false, positive_y_weights_ptr);
-        double negative_y = weighted_average_coordinate(y_locs, gamma, true, negative_y_weights_ptr);
+        OptionalWeightVectorRef positive_x_weights_ref;
+        OptionalWeightVectorRef negative_x_weights_ref;
+        OptionalWeightVectorRef positive_y_weights_ref;
+        OptionalWeightVectorRef negative_y_weights_ref;
+        if (grad) {
+            positive_x_weights_ref = std::ref(positive_x_weights);
+            negative_x_weights_ref = std::ref(negative_x_weights);
+            positive_y_weights_ref = std::ref(positive_y_weights);
+            negative_y_weights_ref = std::ref(negative_y_weights);
+        }
+
+        double positive_x = weighted_average_coordinate(x_locs, gamma, false, positive_x_weights_ref);
+        double negative_x = weighted_average_coordinate(x_locs, gamma, true, negative_x_weights_ref);
+        double positive_y = weighted_average_coordinate(y_locs, gamma, false, positive_y_weights_ref);
+        double negative_y = weighted_average_coordinate(y_locs, gamma, true, negative_y_weights_ref);
 
         smooth_wirelength += net_weight * (positive_x - negative_x + positive_y - negative_y);
 
@@ -1155,13 +1301,10 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
 void NonlinearNesterovPlacer::update_timing_net_weights_() {
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
 
-    if (effective_timing_tradeoff_ == 0.f)
-        return;
-
-    if (!pre_cluster_timing_manager_.is_valid()) {
+    bool use_timing_weights = effective_timing_tradeoff_ != 0.f && pre_cluster_timing_manager_.is_valid();
+    if (effective_timing_tradeoff_ != 0.f && !pre_cluster_timing_manager_.is_valid()) {
         VTR_LOG_WARN("Nonlinear Nesterov analytical placement requested timing tradeoff %g, but pre-cluster timing is unavailable; using unit net weights.\n",
                      effective_timing_tradeoff_);
-        return;
     }
 
     double total_weight = 0.;
@@ -1173,11 +1316,19 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
         if (ap_netlist_.net_is_ignored(net_id))
             continue;
 
-        AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
-        VTR_ASSERT_SAFE(atom_net_id.is_valid());
+        double weight = 1.0;
+        if (use_timing_weights) {
+            AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
+            VTR_ASSERT_SAFE(atom_net_id.is_valid());
 
-        double crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
-        double weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
+            double crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
+            weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
+        }
+
+        if (static_cast<size_t>(net_id) < boundary_cohesion_nets_.size() && boundary_cohesion_nets_[net_id])
+            weight *= kBoundaryNetCohesionWeight;
+        if (static_cast<size_t>(net_id) < io_chain_cohesion_nets_.size() && io_chain_cohesion_nets_[net_id])
+            weight *= kIoChainNetCohesionWeight;
         net_weights_[net_id] = weight;
 
         total_weight += weight;
@@ -1187,8 +1338,10 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
     }
 
     if (log_verbosity_ >= 1 && weighted_nets > 0) {
-        VTR_LOG("Nonlinear Nesterov timing net weights: tradeoff=%g min=%g avg=%g max=%g nets=%zu\n",
+        VTR_LOG("Nonlinear Nesterov timing/cohesion net weights: tradeoff=%g boundary_cohesion=%g io_chain_cohesion=%g min=%g avg=%g max=%g nets=%zu\n",
                 effective_timing_tradeoff_,
+                kBoundaryNetCohesionWeight,
+                kIoChainNetCohesionWeight,
                 min_weight,
                 total_weight / weighted_nets,
                 max_weight,
@@ -1261,7 +1414,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
             }
         }
     }
-
+    //
     std::vector<double> target_norm_floor(dimensions.size(), kEpsilon);
     std::vector<double> residual_charge_scale(dimensions.size(), 1.0);
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
@@ -1481,7 +1634,6 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                 }
             }
         }
-
     }
 
     overflow_ratio = total_deposited_mass > kEpsilon ? overflow_area / total_deposited_mass : 0.;
@@ -1750,6 +1902,163 @@ void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement
     }
 }
 
+std::vector<bool> NonlinearNesterovPlacer::identify_boundary_confined_dims_(const std::vector<PrimitiveVectorDim>& dimensions) const {
+    std::vector<bool> boundary_confined(dimensions.size(), false);
+    if (dimensions.empty())
+        return boundary_confined;
+
+    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
+    size_t width = device_grid_width_;
+    size_t height = device_grid_height_;
+    size_t num_layers = device_grid_num_layers_;
+
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double target_total = 0.;
+        double boundary_target_total = 0.;
+        for (size_t layer = 0; layer < num_layers; layer++) {
+            for (size_t x = 0; x < width; x++) {
+                for (size_t y = 0; y < height; y++) {
+                    FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+                    const vtr::Rect<double>& region = bins.bin_region(bin_id);
+                    double bin_area = std::max(1.0, region.width() * region.height());
+                    double target_density = density_manager_->get_bin_target_density(bin_id);
+                    double target = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
+                                    * target_density / bin_area;
+                    target_total += target;
+                    bool in_boundary_band = x < kBoundaryConfinedBandTiles
+                                            || y < kBoundaryConfinedBandTiles
+                                            || x + kBoundaryConfinedBandTiles >= width
+                                            || y + kBoundaryConfinedBandTiles >= height;
+                    if (in_boundary_band)
+                        boundary_target_total += target;
+                }
+            }
+        }
+        boundary_confined[dim_idx] = target_total > kEpsilon
+                                     && boundary_target_total >= kBoundaryConfinedCapacityFraction * target_total;
+    }
+
+    if (log_verbosity_ >= 1) {
+        size_t num_boundary_dims = 0;
+        for (bool is_boundary : boundary_confined) {
+            if (is_boundary)
+                num_boundary_dims++;
+        }
+        VTR_LOG("Nonlinear Nesterov boundary-confined resource dims: %zu / %zu (edge band=%zu, threshold=%g).\n",
+                num_boundary_dims,
+                dimensions.size(),
+                kBoundaryConfinedBandTiles,
+                kBoundaryConfinedCapacityFraction);
+    }
+
+    return boundary_confined;
+}
+
+bool NonlinearNesterovPlacer::block_has_boundary_mass_(APBlockId blk_id,
+                                                       const std::vector<PrimitiveVectorDim>& dimensions) const {
+    if (boundary_confined_dims_.size() != dimensions.size())
+        return false;
+
+    PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double mass = block_mass.get_dim_val(dimensions[dim_idx]);
+        if (mass != 0. && boundary_confined_dims_[dim_idx])
+            return true;
+    }
+    return false;
+}
+
+void NonlinearNesterovPlacer::update_boundary_net_flags_(const std::vector<PrimitiveVectorDim>& dimensions,
+                                                         const PartialPlacement& seed) {
+    boundary_cohesion_nets_.resize(ap_netlist_.nets().size(), false);
+    std::fill(boundary_cohesion_nets_.begin(), boundary_cohesion_nets_.end(), false);
+    io_chain_cohesion_nets_.resize(ap_netlist_.nets().size(), false);
+    std::fill(io_chain_cohesion_nets_.begin(), io_chain_cohesion_nets_.end(), false);
+
+    size_t boundary_blocks = 0;
+    size_t io_chain_blocks = 0;
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        bool has_boundary_mass = block_has_boundary_mass_(blk_id, dimensions);
+        if (has_boundary_mass)
+            boundary_blocks++;
+        if (has_boundary_mass && block_is_io_chain_block_(blk_id))
+            io_chain_blocks++;
+    }
+
+    size_t boundary_nets = 0;
+    size_t io_chain_nets = 0;
+    for (APNetId net_id : ap_netlist_.nets()) {
+        if (ap_netlist_.net_is_ignored(net_id))
+            continue;
+        if (ap_netlist_.net_pins(net_id).size() != 2)
+            continue;
+
+        bool has_boundary_endpoint = false;
+        APBlockId first_blk_id = APBlockId::INVALID();
+        APBlockId second_blk_id = APBlockId::INVALID();
+        for (APPinId pin_id : ap_netlist_.net_pins(net_id)) {
+            APBlockId blk_id = ap_netlist_.pin_block(pin_id);
+            if (!first_blk_id.is_valid())
+                first_blk_id = blk_id;
+            else
+                second_blk_id = blk_id;
+            has_boundary_endpoint = has_boundary_endpoint || block_has_boundary_mass_(blk_id, dimensions);
+        }
+        if (!has_boundary_endpoint)
+            continue;
+
+        double seed_hpwl = std::abs(seed.block_x_locs[first_blk_id] - seed.block_x_locs[second_blk_id])
+                           + std::abs(seed.block_y_locs[first_blk_id] - seed.block_y_locs[second_blk_id]);
+        double device_span = std::max<double>(device_grid_width_, device_grid_height_);
+        if (seed_hpwl < kBoundaryNetCohesionMinSeedHpwlFraction * device_span)
+            continue;
+
+        boundary_cohesion_nets_[net_id] = true;
+        boundary_nets++;
+
+        if (block_has_boundary_mass_(first_blk_id, dimensions)
+            && block_has_boundary_mass_(second_blk_id, dimensions)
+            && block_is_io_chain_block_(first_blk_id)
+            && block_is_io_chain_block_(second_blk_id)) {
+            io_chain_cohesion_nets_[net_id] = true;
+            io_chain_nets++;
+        }
+    }
+
+    if (log_verbosity_ >= 1) {
+        VTR_LOG("Nonlinear Nesterov boundary-net cohesion: %zu boundary-mass blocks, %zu long two-pin boundary-related nets, weight=%g, min_seed_hpwl_frac=%g.\n",
+                boundary_blocks,
+                boundary_nets,
+                kBoundaryNetCohesionWeight,
+                kBoundaryNetCohesionMinSeedHpwlFraction);
+        VTR_LOG("Nonlinear Nesterov I/O-chain cohesion: %zu boundary I/O-chain blocks, %zu long direct I/O-chain nets, weight=%g.\n",
+                io_chain_blocks,
+                io_chain_nets,
+                kIoChainNetCohesionWeight);
+    }
+}
+
+bool NonlinearNesterovPlacer::block_is_io_chain_block_(APBlockId blk_id) const {
+    bool saw_atom = false;
+
+    for (APPinId pin_id : ap_netlist_.block_pins(blk_id)) {
+        AtomPinId atom_pin_id = ap_netlist_.pin_atom_pin(pin_id);
+        if (!atom_pin_id.is_valid())
+            continue;
+
+        AtomBlockId atom_blk_id = atom_netlist_.pin_block(atom_pin_id);
+        if (!atom_blk_id.is_valid())
+            continue;
+
+        saw_atom = true;
+        LogicalModelId model_id = atom_netlist_.block_model(atom_blk_id);
+        if (!model_name_is_io_chain(models_.model_name(model_id)))
+            return false;
+    }
+
+    return saw_atom;
+}
+
 void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<PrimitiveVectorDim>& dimensions,
                                                       const std::vector<double>& density_multipliers) {
     block_precond_.resize(ap_netlist_.blocks().size(), 1.0);
@@ -1907,19 +2216,6 @@ void NonlinearNesterovPlacer::project_placement_(PartialPlacement& p_placement) 
     }
 }
 
-void NonlinearNesterovPlacer::copy_placement_(const PartialPlacement& src, PartialPlacement& dst) const {
-    dst.block_x_locs = src.block_x_locs;
-    dst.block_y_locs = src.block_y_locs;
-    dst.block_layer_nums = src.block_layer_nums;
-    dst.block_sub_tiles = src.block_sub_tiles;
-}
-
-void NonlinearNesterovPlacer::copy_fillers_(const FillerState& src, FillerState& dst) const {
-    dst.x = src.x;
-    dst.y = src.y;
-    dst.layer = src.layer;
-}
-
 void NonlinearNesterovPlacer::project_fillers_(FillerState& fillers) const {
     double max_x = std::max(0.0, static_cast<double>(device_grid_width_) - kDeviceBoundaryEpsilon);
     double max_y = std::max(0.0, static_cast<double>(device_grid_height_) - kDeviceBoundaryEpsilon);
@@ -1945,7 +2241,10 @@ void NonlinearNesterovPlacer::gradient_step_(const PartialPlacement& y_placement
                                              double step_size,
                                              PartialPlacement& next_placement,
                                              FillerState& next_fillers) const {
-    copy_placement_(y_placement, next_placement);
+    next_placement.block_x_locs = y_placement.block_x_locs;
+    next_placement.block_y_locs = y_placement.block_y_locs;
+    next_placement.block_layer_nums = y_placement.block_layer_nums;
+    next_placement.block_sub_tiles = y_placement.block_sub_tiles;
     if (precond_active_ && !block_precond_.empty()) {
         // Preconditioned (near-Newton) step: divide each block's gradient by its
         // objective-curvature estimate so step length is size-independent.
@@ -1960,14 +2259,25 @@ void NonlinearNesterovPlacer::gradient_step_(const PartialPlacement& y_placement
             next_placement.block_y_locs[blk_id] = y_placement.block_y_locs[blk_id] - step_size * grad.dy[blk_id];
         }
     }
+    // Projected-gradient box constraint, not legalization. ePlace/elfPlace keep
+    // electrostatic density forces well behaved at the placement-region boundary
+    // with Neumann boundary conditions, but the full AP objective also includes
+    // wirelength/proximity terms and FISTA/backtracking trial points. Clamp here
+    // so every evaluated candidate remains inside the physical device domain.
     project_placement_(next_placement);
 
-    copy_fillers_(y_fillers, next_fillers);
-    for (size_t dim_idx = 0; dim_idx < next_fillers.x.size(); dim_idx++) {
+    next_fillers.x.resize(y_fillers.x.size());
+    next_fillers.y.resize(y_fillers.y.size());
+    next_fillers.layer = y_fillers.layer;
+    for (size_t dim_idx = 0; dim_idx < y_fillers.x.size(); dim_idx++) {
+        VTR_ASSERT_SAFE(dim_idx < y_fillers.y.size());
+        next_fillers.x[dim_idx].resize(y_fillers.x[dim_idx].size());
+        next_fillers.y[dim_idx].resize(y_fillers.y[dim_idx].size());
         double inv_precond = (dim_idx < filler_precond_.size() && filler_precond_[dim_idx] > 0.)
                                  ? 1.0 / filler_precond_[dim_idx]
                                  : 1.0;
-        for (size_t filler_idx = 0; filler_idx < next_fillers.x[dim_idx].size(); filler_idx++) {
+        for (size_t filler_idx = 0; filler_idx < y_fillers.x[dim_idx].size(); filler_idx++) {
+            VTR_ASSERT_SAFE(filler_idx < y_fillers.y[dim_idx].size());
             double gx = (dim_idx < filler_grad.dx.size() && filler_idx < filler_grad.dx[dim_idx].size())
                             ? filler_grad.dx[dim_idx][filler_idx]
                             : 0.;
@@ -1988,16 +2298,31 @@ void NonlinearNesterovPlacer::extrapolate_(const PartialPlacement& current,
                                            double beta,
                                            PartialPlacement& y_placement,
                                            FillerState& y_fillers) const {
-    copy_placement_(next, y_placement);
+    y_placement.block_x_locs = next.block_x_locs;
+    y_placement.block_y_locs = next.block_y_locs;
+    y_placement.block_layer_nums = next.block_layer_nums;
+    y_placement.block_sub_tiles = next.block_sub_tiles;
     for (APBlockId blk_id : optimizable_blocks_) {
         y_placement.block_x_locs[blk_id] = next.block_x_locs[blk_id] + beta * (next.block_x_locs[blk_id] - current.block_x_locs[blk_id]);
         y_placement.block_y_locs[blk_id] = next.block_y_locs[blk_id] + beta * (next.block_y_locs[blk_id] - current.block_y_locs[blk_id]);
     }
+    // FISTA extrapolation can overshoot the device rectangle; keep the look-ahead
+    // point in the same box-constrained smooth domain before evaluating gradients.
     project_placement_(y_placement);
 
-    copy_fillers_(next_fillers, y_fillers);
-    for (size_t dim_idx = 0; dim_idx < y_fillers.x.size(); dim_idx++) {
-        for (size_t filler_idx = 0; filler_idx < y_fillers.x[dim_idx].size(); filler_idx++) {
+    y_fillers.x.resize(next_fillers.x.size());
+    y_fillers.y.resize(next_fillers.y.size());
+    y_fillers.layer = next_fillers.layer;
+    for (size_t dim_idx = 0; dim_idx < next_fillers.x.size(); dim_idx++) {
+        VTR_ASSERT_SAFE(dim_idx < next_fillers.y.size());
+        VTR_ASSERT_SAFE(dim_idx < current_fillers.x.size());
+        VTR_ASSERT_SAFE(dim_idx < current_fillers.y.size());
+        y_fillers.x[dim_idx].resize(next_fillers.x[dim_idx].size());
+        y_fillers.y[dim_idx].resize(next_fillers.y[dim_idx].size());
+        for (size_t filler_idx = 0; filler_idx < next_fillers.x[dim_idx].size(); filler_idx++) {
+            VTR_ASSERT_SAFE(filler_idx < next_fillers.y[dim_idx].size());
+            VTR_ASSERT_SAFE(filler_idx < current_fillers.x[dim_idx].size());
+            VTR_ASSERT_SAFE(filler_idx < current_fillers.y[dim_idx].size());
             y_fillers.x[dim_idx][filler_idx] = next_fillers.x[dim_idx][filler_idx]
                                                + beta * (next_fillers.x[dim_idx][filler_idx] - current_fillers.x[dim_idx][filler_idx]);
             y_fillers.y[dim_idx][filler_idx] = next_fillers.y[dim_idx][filler_idx]
