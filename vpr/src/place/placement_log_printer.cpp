@@ -18,6 +18,9 @@
 #include "tatum/echo_writer.hpp"
 #include "vpr_context.h"
 #include "vtr_util.h"
+#include "atom_netlist.h"
+#include "logic_types.h"
+#include "vtr_vector.h"
 
 #include <cmath>
 #include <functional>
@@ -260,6 +263,86 @@ void PlacementLogPrinter::print_resources_utilization() const {
     VTR_LOG("\n");
 }
 
+void PlacementLogPrinter::print_resources_utilization_per_die() const {
+    if (quiet_) {
+        return;
+    }
+
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
+
+    // The per-die breakdown is only meaningful on multi-die (2.5D/3D) devices.
+    if (grid.get_die_count() <= 1) {
+        return;
+    }
+
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = device_ctx.arch->models;
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_.placer_state_.block_locs();
+
+    // DeviceDieId, t_logical_block_type::index, and LogicalModelId are all contiguous
+    // ranges starting at 0, so the counts are stored in vectors indexed by these ids
+    // instead of maps. They are zero-initialized; only non-zero entries are printed below.
+    const size_t num_dice = grid.get_die_count();
+    const size_t num_logical_block_types = device_ctx.logical_block_types.size();
+    const size_t num_models = models.all_models().size();
+
+    // Number of placed clustered blocks on each die, indexed by [die][logical block type index].
+    vtr::vector<DeviceDieId, std::vector<size_t>> clb_per_die(num_dice, std::vector<size_t>(num_logical_block_types, 0));
+    // Number of placed atom blocks on each die, indexed by [die][model id].
+    vtr::vector<DeviceDieId, vtr::vector<LogicalModelId, size_t>> atom_per_die(num_dice, vtr::vector<LogicalModelId, size_t>(num_models, 0));
+
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        const t_pl_loc& loc = block_locs[blk_id].loc;
+        DeviceDieId die_id = grid.get_loc_die_id({loc.x, loc.y, loc.layer});
+
+        t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        clb_per_die[die_id][logical_block->index]++;
+
+        // Every atom contained in this cluster is placed on the same die as the cluster.
+        for (AtomBlockId atom_blk : cluster_ctx.atoms_lookup[blk_id]) {
+            LogicalModelId model = atom_ctx.netlist().block_model(atom_blk);
+            atom_per_die[die_id][model]++;
+        }
+    }
+
+    VTR_LOG("\n");
+    VTR_LOG("Placement resource usage per die:\n");
+
+    // Iterate the dies in die-region order
+    for (const t_die_region& die_region : grid.all_die_regions()) {
+        DeviceDieId die_id = grid.get_die_region_id(die_region);
+
+        VTR_LOG("  Die (x=%d, y=%d, layer=%d):\n",
+                die_region.x_die, die_region.y_die, die_region.layer);
+
+        // Clustered blocks placed on this die.
+        size_t total_clbs = 0;
+        VTR_LOG("    Clustered blocks:\n");
+        for (const t_logical_block_type& block_type : device_ctx.logical_block_types) {
+            if (block_type.is_empty()) {
+                continue;
+            }
+            size_t num_placed = clb_per_die[die_id][block_type.index];
+            VTR_LOG("      %s: %zu\n", block_type.name.c_str(), num_placed);
+            total_clbs += num_placed;
+        }
+        VTR_LOG("      Total: %zu\n", total_clbs);
+
+        // Atom blocks placed on this die.
+        size_t total_atoms = 0;
+        VTR_LOG("    Atom blocks:\n");
+        for (LogicalModelId model_id : models.all_models()) {
+            size_t num_placed = atom_per_die[die_id][model_id];
+            VTR_LOG("      %s: %zu\n", models.model_name(model_id).c_str(), num_placed);
+            total_atoms += num_placed;
+        }
+        VTR_LOG("      Total: %zu\n", total_atoms);
+    }
+    VTR_LOG("\n");
+}
+
 void PlacementLogPrinter::print_placement_swaps_stats() const {
     if (quiet_) {
         return;
@@ -431,6 +514,7 @@ void PlacementLogPrinter::print_post_placement_stats() const {
 
     // Print out swap statistics and resource utilization
     print_resources_utilization();
+    print_resources_utilization_per_die();
     print_placement_swaps_stats();
 
     move_type_stats.print_placement_move_types_stats(placer_.placer_state_.blk_loc_registry().movable_blocks_per_type());
