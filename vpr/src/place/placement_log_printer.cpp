@@ -335,7 +335,7 @@ void PlacementLogPrinter::print_resources_utilization_per_die() const {
         VTR_LOG("    Atom blocks:\n");
         for (LogicalModelId model_id : models.all_models()) {
             size_t num_placed = atom_per_die[die_id][model_id];
-            VTR_LOG("      %s: %zu\n", models.model_name(model_id).c_str(), num_placed);
+            VTR_LOG("      %s -> %zu\n", models.model_name(model_id).c_str(), num_placed);
             total_atoms += num_placed;
         }
         VTR_LOG("      Total: %zu\n", total_atoms);
