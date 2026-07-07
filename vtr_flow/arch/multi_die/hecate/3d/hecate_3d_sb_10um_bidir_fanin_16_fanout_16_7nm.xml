@@ -290,82 +290,141 @@
     <switch type="mux" name="ipin_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="5.636e-11" mux_trans_size="2.008" buf_size="9.624436045683868"/>
     <switch type="mux" name="ipin_inter_layer_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="130e-12" mux_trans_size="1.508" buf_size="11.71"/>
 
-    <switch type="mux" name="inter_die_switch_1um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="2"  delay="68.02566667e-12"/>
-      <Tdel num_inputs="4"  delay="70.1185e-12"/>
-      <Tdel num_inputs="8"  delay="77.566e-12"/>
-      <Tdel num_inputs="16" delay="79.87633333e-12"/>
-      <Tdel num_inputs="32" delay="85.949e-12"/>
-      <Tdel num_inputs="64" delay="94.748e-12"/>
+    <!-- Delays below come from gmux_buffer_area_delay.csv (per-pitch gmux buffer characterization).
+         For unidir switches, num_inputs maps directly to the csv "fifo" fanin/fanout size.
+         For bidir switches, num_inputs is twice the csv "fifo" size (shared in/out port). -->
+    <switch type="mux" name="inter_die_switch_1um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="75.9e-12"/>
+      <Tdel num_inputs="8"  delay="113.0e-12"/>
+      <Tdel num_inputs="16" delay="120.6e-12"/>
+      <Tdel num_inputs="32" delay="132.8e-12"/>
+      <Tdel num_inputs="64" delay="140.8e-12"/>
     </switch>
 
-    <switch type="mux" name="bidir_inter_die_switch_1um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="4"   delay="68.02566667e-12"/>
-      <Tdel num_inputs="8"   delay="70.1185e-12"/>
-      <Tdel num_inputs="16"  delay="77.566e-12"/>
-      <Tdel num_inputs="32"  delay="79.87633333e-12"/>
-      <Tdel num_inputs="64"  delay="85.949e-12"/>
-      <Tdel num_inputs="128" delay="94.748e-12"/>
+    <switch type="mux" name="inter_die_switch_1um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="49.3e-12"/>
+      <Tdel num_inputs="8"  delay="83.4e-12"/>
+      <Tdel num_inputs="16" delay="90.4e-12"/>
+      <Tdel num_inputs="32" delay="103.1e-12"/>
+      <Tdel num_inputs="64" delay="119.3e-12"/>
     </switch>
 
-    <switch type="mux" name="inter_die_switch_5um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="2"  delay="64.49283333e-12"/>
-      <Tdel num_inputs="4"  delay="66.7455e-12"/>
-      <Tdel num_inputs="8"  delay="72.7335e-12"/>
-      <Tdel num_inputs="16" delay="76.40783333e-12"/>
-      <Tdel num_inputs="32" delay="82.30133333e-12"/>
-      <Tdel num_inputs="64" delay="90.1e-12"/>
+    <switch type="mux" name="bidir_inter_die_switch_1um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="92.7e-12"/>
+      <Tdel num_inputs="16"  delay="130.6e-12"/>
+      <Tdel num_inputs="32"  delay="139.8e-12"/>
+      <Tdel num_inputs="64"  delay="157.2e-12"/>
+      <Tdel num_inputs="128" delay="174.0e-12"/>
     </switch>
 
-    <switch type="mux" name="bidir_inter_die_switch_5um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="4"   delay="64.49283333e-12"/>
-      <Tdel num_inputs="8"   delay="66.7455e-12"/>
-      <Tdel num_inputs="16"  delay="72.7335e-12"/>
-      <Tdel num_inputs="32"  delay="76.40783333e-12"/>
-      <Tdel num_inputs="64"  delay="82.30133333e-12"/>
-      <Tdel num_inputs="128" delay="90.1e-12"/>
+    <switch type="mux" name="bidir_inter_die_switch_1um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="63.4e-12"/>
+      <Tdel num_inputs="16"  delay="100.0e-12"/>
+      <Tdel num_inputs="32"  delay="109.5e-12"/>
+      <Tdel num_inputs="64"  delay="127.1e-12"/>
+      <Tdel num_inputs="128" delay="148.1e-12"/>
     </switch>
 
-    <switch type="mux" name="inter_die_switch_10um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="2"  delay="69.60866667e-12"/>
-      <Tdel num_inputs="4"  delay="70.37833333e-12"/>
-      <Tdel num_inputs="8"  delay="79.27366667e-12"/>
-      <Tdel num_inputs="16" delay="81.4625e-12"/>
-      <Tdel num_inputs="32" delay="87.41566667e-12"/>
-      <Tdel num_inputs="64" delay="97.09e-12"/>
+    <switch type="mux" name="inter_die_switch_5um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="72.9e-12"/>
+      <Tdel num_inputs="8"  delay="109.4e-12"/>
+      <Tdel num_inputs="16" delay="117.0e-12"/>
+      <Tdel num_inputs="32" delay="125.6e-12"/>
+      <Tdel num_inputs="64" delay="139.0e-12"/>
     </switch>
 
-    <switch type="mux" name="bidir_inter_die_switch_10um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="4"   delay="69.60866667e-12"/>
-      <Tdel num_inputs="8"   delay="70.37833333e-12"/>
-      <Tdel num_inputs="16"  delay="79.27366667e-12"/>
-      <Tdel num_inputs="32"  delay="81.4625e-12"/>
-      <Tdel num_inputs="64"  delay="87.41566667e-12"/>
-      <Tdel num_inputs="128" delay="97.09e-12"/>
+    <switch type="mux" name="inter_die_switch_5um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="48.4e-12"/>
+      <Tdel num_inputs="8"  delay="82.1e-12"/>
+      <Tdel num_inputs="16" delay="89.1e-12"/>
+      <Tdel num_inputs="32" delay="101.7e-12"/>
+      <Tdel num_inputs="64" delay="115.8e-12"/>
     </switch>
 
-    <switch type="mux" name="inter_die_switch_25um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="2"  delay="78.712e-12"/>
-      <Tdel num_inputs="4"  delay="81.583e-12"/>
-      <Tdel num_inputs="8"  delay="83.234e-12"/>
-      <Tdel num_inputs="16" delay="88.59816667e-12"/>
-      <Tdel num_inputs="32" delay="94.7205e-12"/>
-      <Tdel num_inputs="64" delay="103.7835e-12"/>
+    <switch type="mux" name="bidir_inter_die_switch_5um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="89.6e-12"/>
+      <Tdel num_inputs="16"  delay="127.4e-12"/>
+      <Tdel num_inputs="32"  delay="136.6e-12"/>
+      <Tdel num_inputs="64"  delay="153.4e-12"/>
+      <Tdel num_inputs="128" delay="169.0e-12"/>
     </switch>
 
-    <switch type="mux" name="bidir_inter_die_switch_25um" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="4"   delay="78.712e-12"/>
-      <Tdel num_inputs="8"   delay="81.583e-12"/>
-      <Tdel num_inputs="16"  delay="83.234e-12"/>
-      <Tdel num_inputs="32"  delay="88.59816667e-12"/>
-      <Tdel num_inputs="64"  delay="94.7205e-12"/>
-      <Tdel num_inputs="128" delay="103.7835e-12"/>
+    <switch type="mux" name="bidir_inter_die_switch_5um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="62.5e-12"/>
+      <Tdel num_inputs="16"  delay="98.9e-12"/>
+      <Tdel num_inputs="32"  delay="108.4e-12"/>
+      <Tdel num_inputs="64"  delay="125.4e-12"/>
+      <Tdel num_inputs="128" delay="145.5e-12"/>
+    </switch>
+
+    <switch type="mux" name="inter_die_switch_10um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="78.2e-12"/>
+      <Tdel num_inputs="8"  delay="115.0e-12"/>
+      <Tdel num_inputs="16" delay="122.7e-12"/>
+      <Tdel num_inputs="32" delay="130.3e-12"/>
+      <Tdel num_inputs="64" delay="144.5e-12"/>
+    </switch>
+
+    <switch type="mux" name="inter_die_switch_10um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="51.7e-12"/>
+      <Tdel num_inputs="8"  delay="85.9e-12"/>
+      <Tdel num_inputs="16" delay="93.8e-12"/>
+      <Tdel num_inputs="32" delay="106.7e-12"/>
+      <Tdel num_inputs="64" delay="120.7e-12"/>
+    </switch>
+
+    <switch type="mux" name="bidir_inter_die_switch_10um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="94.6e-12"/>
+      <Tdel num_inputs="16"  delay="132.7e-12"/>
+      <Tdel num_inputs="32"  delay="142.0e-12"/>
+      <Tdel num_inputs="64"  delay="159.3e-12"/>
+      <Tdel num_inputs="128" delay="175.9e-12"/>
+    </switch>
+
+    <switch type="mux" name="bidir_inter_die_switch_10um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="66.1e-12"/>
+      <Tdel num_inputs="16"  delay="102.7e-12"/>
+      <Tdel num_inputs="32"  delay="112.4e-12"/>
+      <Tdel num_inputs="64"  delay="130.2e-12"/>
+      <Tdel num_inputs="128" delay="150.6e-12"/>
+    </switch>
+
+    <switch type="mux" name="inter_die_switch_25um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="85.7e-12"/>
+      <Tdel num_inputs="8"  delay="123.0e-12"/>
+      <Tdel num_inputs="16" delay="130.1e-12"/>
+      <Tdel num_inputs="32" delay="143.1e-12"/>
+      <Tdel num_inputs="64" delay="153.2e-12"/>
+    </switch>
+
+    <switch type="mux" name="inter_die_switch_25um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="4"  delay="69.2e-12"/>
+      <Tdel num_inputs="8"  delay="103.5e-12"/>
+      <Tdel num_inputs="16" delay="111.5e-12"/>
+      <Tdel num_inputs="32" delay="124.2e-12"/>
+      <Tdel num_inputs="64" delay="136.1e-12"/>
+    </switch>
+
+    <switch type="mux" name="bidir_inter_die_switch_25um_with_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="111.8e-12"/>
+      <Tdel num_inputs="16"  delay="149.9e-12"/>
+      <Tdel num_inputs="32"  delay="152.2e-12"/>
+      <Tdel num_inputs="64"  delay="168.4e-12"/>
+      <Tdel num_inputs="128" delay="182.9e-12"/>
+    </switch>
+
+    <switch type="mux" name="bidir_inter_die_switch_25um_without_esd" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
+      <Tdel num_inputs="8"   delay="84.6e-12"/>
+      <Tdel num_inputs="16"  delay="128.9e-12"/>
+      <Tdel num_inputs="32"  delay="131.6e-12"/>
+      <Tdel num_inputs="64"  delay="148.8e-12"/>
+      <Tdel num_inputs="128" delay="166.1e-12"/>
     </switch>
 
   </switchlist>
   <segmentlist>
     <segment name="z_segment" freq="0" length="1" axis="z" type="unidir" Rmetal="0.0" Cmetal="0.0">
-      <mux name="inter_die_switch_25um"/>
+      <mux name="inter_die_switch_25um_with_esd"/>
       <sb type="pattern">0 0</sb>
       <cb type="pattern">0</cb>
     </segment>
@@ -1673,8 +1732,8 @@
         <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rtlb"/>
       </scatter>
       <sg_link_list>
-        <sg_link name="L_UP"   z_offset="1"  mux="bidir_inter_die_switch_10um" seg_type="z_segment"/>
-        <sg_link name="L_DOWN" z_offset="-1" mux="bidir_inter_die_switch_10um" seg_type="z_segment"/>
+        <sg_link name="L_UP"   z_offset="1"  mux="bidir_inter_die_switch_10um_with_esd" seg_type="z_segment"/>
+        <sg_link name="L_DOWN" z_offset="-1" mux="bidir_inter_die_switch_10um_with_esd" seg_type="z_segment"/>
       </sg_link_list>
 
       
