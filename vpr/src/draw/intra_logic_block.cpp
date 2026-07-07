@@ -216,12 +216,12 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
-
+    g->set_line_width(0);
     for (int layer_num = 0; layer_num < total_layer_num; layer_num++) {
         if (draw_state->draw_layer_display[layer_num].visible) {
             for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
                 for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                    /* Only the first block of a group should control drawing */
+                    // Only the first block of a group should control drawing.
                     const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                     int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
@@ -229,20 +229,20 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     if (width_offset > 0 || height_offset > 0)
                         continue;
 
-                    /* Don't draw if tile is empty. This includes corners. */
+                    // Don't draw if tile is empty. This includes corners.
                     if (is_empty_type(type))
                         continue;
 
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
-                        /* Don't draw if block is empty. */
+                        // Don't draw if block is empty.
                         if (!grid_blocks.block_at_location({i, j, k, layer_num})) {
                             continue;
                         }
 
-                        /* Get block ID */
+                        // Get block ID.
                         ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                        /* Safety check, that physical blocks exists in the CLB */
+                        // Safety check, that physical blocks exists in the CLB.
                         if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr) {
                             continue;
                         }
@@ -520,12 +520,13 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     std::string pb_type_name(pb_type->name);
 
     // This is a special case: blocks that correspond to pb_type->depth == 0 are essentially the top-level clustered blocks,
-    // and in each drawing cycle they are drawn already in draw_place() in draw_basic.cpp. The reason for that is,
-    // draw_internal_pb() is not called anymore when we zoom out too much. This said, the naming convention for clustered blocks
-    // has been historically different between the two functions, and when level of detail is on (the children of clustered blocks
-    // are drawn), we want to use the naming convention specified under the else if statement below. And when level of detail
-    // is off (!at_least_one_child_pb_drawn), we still want to use the naming convention from draw_place()
-    // to ensure consistency. This one is specified under the if statement just below.
+    // and draw_place() already draws them in draw_basic.cpp. This duplicate drawing exists because draw_internal_pb()
+    // is not called when "show block internals" is not toggled. At other times, clustered blocks drawn in this function
+    // are overlaid onto the same blocks drawn in draw_place(). However, the two functions have historically used different
+    // naming conventions for clustered blocks (both have their own merits), and it can feel abrupt when the block names suddenly
+    // change from draw_place() style to draw_internal_pb() style when we toggle "show block internals" at a zoom level where
+    // the block drawing remains the same (child blocks not drawn yet). Therefore, we keep using draw_place() style at this transition level.
+    // When draw_internal_pb() starts drawing child blocks inside the clusters, we switch to draw_internal_pb() style because things have meaningfully changed.
     if (pb_type->depth == 0 && !at_least_one_child_pb_drawn) {
         const t_pl_loc& loc = block_locs[clb_index].loc;
         // loc.x and loc.y are the x and y coordinates of the containing subtile.

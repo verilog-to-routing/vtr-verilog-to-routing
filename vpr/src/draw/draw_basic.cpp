@@ -127,7 +127,6 @@ void draw_place(ezgl::renderer* g) {
                 for (int k = 0; k < num_sub_tiles; ++k) {
                     // Look at the tile at start of large block
                     ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                    // Fill background for the clb. Do not fill if "show_blk_internal" is toggled.
 
                     // Determine the block color and logical type
                     ezgl::color block_color;
@@ -155,21 +154,27 @@ void draw_place(ezgl::renderer* g) {
                         g->draw_rectangle(abs_clb_bbox);
                     }
 
-                    g->set_font_size(16);
+                    g->set_font_size(14);
                     if (draw_state->draw_block_text) {
-                        // Draw text if the space has parts of the netlist
-                        if (bnum) {
+                        // The function draw_internal_draw_subblk() in intra_logic_block.cpp is called after this function during every redraw, and it
+                        // draws cluster blocks (which overlap with the ones drawn in this function), their child blocks and their block types when
+                        // "show block internals" is toggled. In this case, we should no longer draw the block types here again, because in the deferred renderer
+                        // or rhi renderer mode, all texts are queued and unleashed together after geometries are drawn, meaning that cluster blocks drawn in draw_internal_draw_subblk()
+                        // cannot effectively hide the block types drawn in this function. However, draw_internal_draw_subblk() skips drawing empty cluster blocks (i.e. !bnum),
+                        // and therefore we should still draw their block types here.
+                        if (!draw_state->show_blk_internal || !bnum) {
+                            std::string block_type_loc = type->name;
+                            block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
+                            g->draw_text(center, block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
+                        }
+
+                        // Draw the cluster block name if "show block internals" is not toggled and the block is not empty.
+                        if (!draw_state->show_blk_internal && bnum) {
                             const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-                            // The drawing position is offset from the block center to avoid being overlapped with
-                            // another text drawn inside the same block (see below).
+                            // The drawing position is offset from the block center to avoid being overlapped with the block type name.
                             g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
                                          name, abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
-
-                        // Draw text for block type so that user knows what block
-                        std::string block_type_loc = type->name;
-                        block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
-                        g->draw_text(center, block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
                     }
                 }
             }
