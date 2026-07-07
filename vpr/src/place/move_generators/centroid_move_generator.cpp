@@ -241,9 +241,6 @@ t_pl_loc CentroidMoveGenerator::calculate_centroid_loc_(ClusterBlockId b_from,
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-                continue;
-
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 /* Ignore if one of the sinks is the block itself      *
                  * This case rarely happens but causes QoR degradation */
