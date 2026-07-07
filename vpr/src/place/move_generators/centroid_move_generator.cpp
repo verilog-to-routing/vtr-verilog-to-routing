@@ -39,11 +39,11 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   float rlim,
                                                   const t_placer_opts& placer_opts,
                                                   const PlacerCriticalities* criticalities) {
-    auto& placer_state = placer_state_.get();
-    const auto& block_locs = placer_state.block_locs();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& blk_loc_registry = placer_state.blk_loc_registry();
+    PlacerState& placer_state = placer_state_.get();
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = placer_state.block_locs();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const BlkLocRegistry& blk_loc_registry = placer_state.blk_loc_registry();
 
     // Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
@@ -107,8 +107,8 @@ NocGroupId CentroidMoveGenerator::get_cluster_noc_group(ClusterBlockId blk_id) {
 }
 
 void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& noc_ctx = g_vpr_ctx.noc();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
 
     noc_group_clusters_.clear();
     noc_group_routers_.clear();
@@ -135,8 +135,8 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
     cluster_to_noc_grp_.resize(cluster_ctx.clb_nlist.blocks().size(), NocGroupId ::INVALID());
 
     // Get all the router clusters and the NoC router logical block type
-    const auto& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
-    const auto router_block_type = cluster_ctx.clb_nlist.block_type(router_blk_ids[0]);
+    const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    const t_logical_block_type_ptr router_block_type = cluster_ctx.clb_nlist.block_type(router_blk_ids[0]);
 
     // iterate over logical NoC routers and start a BFS
     for (ClusterBlockId router_blk_id : router_blk_ids) {
@@ -162,7 +162,7 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
             q.pop();
 
             // get the logical block type for the block extracted from the frontier queue
-            auto block_type = cluster_ctx.clb_nlist.block_type(current_block_id);
+            t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(current_block_id);
 
             if (block_type->index == router_block_type->index) {
                 noc_group_routers_[noc_group_id].push_back(current_block_id);
@@ -207,9 +207,9 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
 
 t_pl_loc CentroidMoveGenerator::calculate_centroid_loc_(ClusterBlockId b_from,
                                                         const PlacerCriticalities* criticalities) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
-    const auto& block_locs = blk_loc_registry.block_locs();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const BlkLocRegistry& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = blk_loc_registry.block_locs();
 
     float acc_weight = 0;
     float acc_x = 0;
@@ -241,7 +241,7 @@ t_pl_loc CentroidMoveGenerator::calculate_centroid_loc_(ClusterBlockId b_from,
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-            for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+            for (ClusterPinId sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 /* Ignore if one of the sinks is the block itself      *
                  * This case rarely happens but causes QoR degradation */
                 if (pin_id == sink_pin_id)
@@ -288,7 +288,7 @@ t_pl_loc CentroidMoveGenerator::calculate_centroid_loc_(ClusterBlockId b_from,
         // check if the block belongs to a NoC group
         if (noc_grp_id != NocGroupId::INVALID()) {
             // get the routers in the associated NoC group
-            const auto& noc_routers = CentroidMoveGenerator::get_noc_group_routers(noc_grp_id);
+            const std::vector<ClusterBlockId>& noc_routers = CentroidMoveGenerator::get_noc_group_routers(noc_grp_id);
             float single_noc_weight = (acc_weight * noc_attraction_weight_) / (float)noc_routers.size();
 
             acc_x *= (1.0f - noc_attraction_weight_);
