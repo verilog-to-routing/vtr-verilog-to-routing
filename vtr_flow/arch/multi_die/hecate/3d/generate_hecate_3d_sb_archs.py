@@ -13,7 +13,7 @@ SCATTER_GATHER_END = "  </scatter_gather_list>"
 
 def _mux_name(pitch_um: str, connectivity: str) -> str:
     prefix = "bidir_inter_die_switch" if connectivity == "bidir" else "inter_die_switch"
-    return f"{prefix}_{pitch_um}um"
+    return f"{prefix}_{pitch_um}um_with_esd"
 
 
 def _split_conn_num(num: float) -> tuple[int, bool]:
