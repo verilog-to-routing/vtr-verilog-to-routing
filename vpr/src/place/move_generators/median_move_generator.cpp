@@ -23,7 +23,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                 const t_placer_opts& placer_opts,
                                                 const PlacerCriticalities* /*criticalities*/) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
     auto& placer_state = placer_state_.get();
     const auto& block_locs = placer_state.block_locs();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
@@ -45,8 +44,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    const int num_layers = device_ctx.grid.get_num_layers();
-
     t_pl_loc from = block_locs[b_from].loc;
     int from_layer = from.layer;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -64,7 +61,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     X_coord.clear();
     Y_coord.clear();
     layer_coord.clear();
-    std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself
     bool skip_net;

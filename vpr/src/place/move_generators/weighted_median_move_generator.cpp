@@ -46,8 +46,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
     t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
@@ -64,7 +62,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     X_coord.clear();
     Y_coord.clear();
     layer_coord.clear();
-    std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //iterate over block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
