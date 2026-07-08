@@ -9,8 +9,8 @@
 
 #include <unordered_map>
 
+#include "vtr_geometry.h"
 #include "vtr_vector.h"
-#include "rr_gsb.h"
 #include "rr_graph_builder.h"
 
 #include "crr_connection_builder.h"
@@ -29,11 +29,11 @@ std::unordered_map<int, RRSwitchId> pre_create_crr_switches(const int min_delay_
                                                             const int verbosity);
 
 /**
- * @brief Builds edges for a CRR GSB
+ * @brief Builds edges for the GSB at the given coordinate from the CRR templates
  * @param rr_graph_builder The RR graph builder
  * @param num_edges_to_create The number of edges created
  * @param rr_node_driver_switches The driver switches for each RR node
- * @param rr_gsb The GSB for which edges are to be built
+ * @param gsb_coord Coordinate of the GSB for which edges are to be built
  * @param connection_builder The connection builder to use to get the connections at each tile
  * @param delay_to_switch_id Map from delay (ps) to a pre-created RRSwitchId.
  * @param verbosity The verbosity level of the log
@@ -41,7 +41,7 @@ std::unordered_map<int, RRSwitchId> pre_create_crr_switches(const int min_delay_
 void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          size_t& num_edges_to_create,
                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                         const RRGSB& rr_gsb,
+                         const vtr::Point<size_t>& gsb_coord,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
                          const std::unordered_map<int, RRSwitchId>& delay_to_switch_id,
                          const int verbosity);
