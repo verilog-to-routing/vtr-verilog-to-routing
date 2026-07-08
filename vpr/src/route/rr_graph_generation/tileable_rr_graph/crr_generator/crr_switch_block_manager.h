@@ -67,12 +67,6 @@ class SwitchBlockManager {
     void print_statistics() const;
 
     /**
-     * @brief Get the total number of connections across all switch blocks
-     * @return Total connection count
-     */
-    size_t get_total_connections() const;
-
-    /**
      * @brief Get the minimum switch delay (ps) observed across all loaded
      *        template files. Only valid when the manager was constructed
      *        with annotated_rr_graph = true.

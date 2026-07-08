@@ -128,7 +128,6 @@ void SwitchBlockManager::print_statistics() const {
     VTR_LOG("=== CRR Generator Switch Block Manager Statistics ===\n");
     VTR_LOG("Patterns loaded: %zu\n", dataframes_.size());
     VTR_LOG("Unique switch template files: %zu\n", file_cache_.size());
-    VTR_LOG("Total connections: %zu\n", get_total_connections());
 
     // Print file details
     for (const auto& [file, df] : file_cache_) {
@@ -136,14 +135,6 @@ void SwitchBlockManager::print_statistics() const {
                 std::filesystem::path(file).filename().string().c_str(),
                 df.connections, df.rows(), df.cols());
     }
-}
-
-size_t SwitchBlockManager::get_total_connections() const {
-    size_t total = 0;
-    for (const auto& [file, df] : file_cache_) {
-        total += df.connections;
-    }
-    return total;
 }
 
 void SwitchBlockManager::validate_yaml_structure(const YAML::Node& root) {
