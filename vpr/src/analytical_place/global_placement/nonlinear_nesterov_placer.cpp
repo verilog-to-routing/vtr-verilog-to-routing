@@ -738,7 +738,7 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
 
         // Sparsity-gated deep warm start. When the seed is so sparse that physical
         // mass barely exceeds tile capacity (overflow below the gate), the
-        // electrostatic field has nothing to spread, so the smooth stage no-ops and
+        // electrostatic field has nothing to spread, so the Nesterov epoch loop no-ops and
         // the placement is left at this loose seed -- APPack then cannot pack distant
         // molecules into shared logic blocks, inflating routed wirelength (measured
         // on sparse Stratix-10 designs fft2d/sobel: +21% routed WL). The cure is to
@@ -894,7 +894,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                         0.,
                                                         std::nullopt,
                                                         current_fillers,
-                                                        nullptr);
+                                                        std::nullopt);
         initial_density_weight = 1e-3;
         if (components.density > kEpsilon) {
             initial_density_weight = kInitialDensityToWirelengthRatio * std::max(components.wirelength, 1.0) / components.density;
@@ -995,7 +995,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                          proximity_weight,
                                                          std::nullopt,
                                                          current_fillers,
-                                                         nullptr);
+                                                         std::nullopt);
 
         // Nesterov accelerated-gradient inner solve. The gradient is taken at the
         // extrapolated look-ahead point y_placement; a backtracking line search
@@ -1007,7 +1007,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                        proximity_weight,
                                                        std::ref(grad),
                                                        y_fillers,
-                                                       &filler_grad);
+                                                       std::ref(filler_grad));
             double grad_norm_sq = gradient_norm_squared_(grad) + filler_gradient_norm_squared_(filler_grad);
             if (grad_norm_sq < kEpsilon)
                 break;
@@ -1025,7 +1025,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                proximity_weight,
                                                std::nullopt,
                                                next_fillers,
-                                               nullptr);
+                                               std::nullopt);
                 if (next_obj.total <= y_obj.total || accepted_step == kMinStepSize) {
                     accepted = true;
                     break;
@@ -1083,7 +1083,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                               proximity_weight,
                                                               std::nullopt,
                                                               current_fillers,
-                                                              nullptr);
+                                                              std::nullopt);
         // Partially legalize the smooth result. This both cleans up overlap and
         // produces the anchor that the next epoch's proximity term pulls toward;
         // the per-epoch displacement it causes also drives the proximity weight.
@@ -1101,7 +1101,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                                proximity_weight,
                                                                std::nullopt,
                                                                current_fillers,
-                                                               nullptr);
+                                                               std::nullopt);
 
         double total_displacement = 0.;
         double max_displacement = 0.;
@@ -1178,7 +1178,7 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
                                                                                      double proximity_weight,
                                                                                      std::optional<std::reference_wrapper<PlacementGradient>> grad,
                                                                                      const FillerState& fillers,
-                                                                                     FillerGradient* filler_grad) const {
+                                                                                     std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const {
     if (grad)
         grad->get().clear();
 
@@ -1217,7 +1217,7 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
     // gamma controls the smoothing (smaller gamma -> closer to true HPWL, sharper
     // gradient). gamma scales with the device so smoothing is grid-relative.
     double gamma = std::max(1.0, std::max<double>(device_grid_width_, device_grid_height_) * current_gamma_fraction_);
-    double smooth_wirelength = 0.;
+    double smooth_wirelength = 0.; // "smooth" == differentiable here: the WA surrogate above.
 
     for (APNetId net_id : ap_netlist_.nets()) {
         if (ap_netlist_.net_is_ignored(net_id))
@@ -1305,13 +1305,21 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
             AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
             VTR_ASSERT_SAFE(atom_net_id.is_valid());
 
+            // Linearly interpolate, via effective_timing_tradeoff_, between unit weight
+            // (tradeoff -> 0: minimize wirelength only, every net weighted equally) and
+            // criticality weight (tradeoff -> 1: weight == crit, so nets on the most
+            // timing-critical paths pull harder on the wirelength term than slack nets
+            // do). Same interpolation the B2B/QP-Hybrid warm-start solver uses to update
+            // its own net weights (see QPHybridSolver's net-weight update in
+            // analytical_solver.cpp), so both stages agree on how timing trades off
+            // against wirelength.
             double crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
             weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
         }
 
         // Nets flagged by update_boundary_net_flags_/block_is_io_chain_block_ get extra
         // wirelength weight so their pin blocks are pulled tightly together; this counteracts
-        // the smooth objective's tendency to let long boundary-anchored and I/O-chain nets
+        // the differentiable wirelength term's tendency to let long boundary-anchored and I/O-chain nets
         // spread out, which otherwise fragments those chains across the AP-to-APPack handoff.
         if (static_cast<size_t>(net_id) < boundary_cohesion_nets_.size() && boundary_cohesion_nets_[net_id])
             weight *= kBoundaryNetCohesionWeight;
@@ -1419,7 +1427,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                                                       double& overflow_ratio,
                                                       std::optional<std::reference_wrapper<PlacementGradient>> grad,
                                                       const FillerState& fillers,
-                                                      FillerGradient* filler_grad) const {
+                                                      std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const {
     total_overflow = 0.;
     max_overflow = 0.;
     overflow_ratio = 0.;
@@ -1760,13 +1768,13 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     }
 
     if (filler_grad) {
-        filler_grad->dx.assign(dimensions.size(), {});
-        filler_grad->dy.assign(dimensions.size(), {});
+        filler_grad->get().dx.assign(dimensions.size(), {});
+        filler_grad->get().dy.assign(dimensions.size(), {});
         for (size_t dim_idx = 0; dim_idx < dimensions.size() && dim_idx < fillers.x.size(); dim_idx++) {
             double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
             size_t n = fillers.x[dim_idx].size();
-            filler_grad->dx[dim_idx].assign(n, 0.);
-            filler_grad->dy[dim_idx].assign(n, 0.);
+            filler_grad->get().dx[dim_idx].assign(n, 0.);
+            filler_grad->get().dy[dim_idx].assign(n, 0.);
             if (unit_mass <= 0.)
                 continue;
             double coefficient = density_multipliers[dim_idx];
@@ -1808,8 +1816,8 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                         local_field_y += weight * field_y[dim_idx][idx];
                     }
                 }
-                filler_grad->dx[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_x;
-                filler_grad->dy[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_y;
+                filler_grad->get().dx[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_x;
+                filler_grad->get().dy[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_y;
             }
         }
     }
@@ -2379,7 +2387,8 @@ void NonlinearNesterovPlacer::extrapolate_(const PartialPlacement& current,
         y_placement.block_y_locs[blk_id] = next.block_y_locs[blk_id] + beta * (next.block_y_locs[blk_id] - current.block_y_locs[blk_id]);
     }
     // FISTA extrapolation can overshoot the device rectangle; keep the look-ahead
-    // point in the same box-constrained smooth domain before evaluating gradients.
+    // point within the same device bounds the objective is evaluated over before
+    // evaluating gradients.
     project_placement_(y_placement);
 
     y_fillers.x.resize(next_fillers.x.size());

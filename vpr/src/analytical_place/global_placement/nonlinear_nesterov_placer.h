@@ -29,7 +29,7 @@ struct t_physical_tile_type;
 /**
  * @brief Analytical global placer using accelerated first-order updates.
  *
- * This placer directly optimizes a smooth nonlinear objective consisting of
+ * This placer directly optimizes a differentiable nonlinear objective consisting of
  * weighted-average wirelength and a continuous bin-density penalty. The result
  * is then passed through the existing partial legalizer to clean up discrete
  * architecture constraints before full legalization.
@@ -89,11 +89,11 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     };
 
     /**
-     * @brief Objective components from a smooth placement evaluation.
+     * @brief Objective components from a placement evaluation.
      */
     struct ObjectiveValue {
         double total = 0.;                    ///< Weighted total objective.
-        double wirelength = 0.;               ///< Unweighted smooth wirelength.
+        double wirelength = 0.;               ///< Unweighted differentiable wirelength.
         double density = 0.;                  ///< Unweighted electrostatic density energy.
         std::vector<double> density_energies; ///< Electrostatic energy for each primitive dimension.
         double pack_pattern_cohesion = 0.;    ///< Unweighted cohesion penalty for multi-block pack-pattern chains.
@@ -151,7 +151,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     PartialPlacement initialize_placement_();
 
     /**
-     * @brief Evaluate the smooth objective, optionally accumulating gradients.
+     * @brief Evaluate the differentiable objective, optionally accumulating gradients.
      */
     ObjectiveValue evaluate_objective_(const PartialPlacement& p_placement,
                                        const std::vector<double>& density_multipliers,
@@ -159,16 +159,16 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                        double proximity_weight,
                                        std::optional<std::reference_wrapper<PlacementGradient>> grad,
                                        const FillerState& fillers,
-                                       FillerGradient* filler_grad) const;
+                                       std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
 
     /**
-     * @brief Add smooth weighted-average wirelength value and gradient.
+     * @brief Add differentiable weighted-average wirelength value and gradient.
      */
     double add_wirelength_gradient_(const PartialPlacement& p_placement,
                                     std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
-     * @brief Update smooth wirelength net weights from pre-cluster timing criticalities.
+     * @brief Update differentiable wirelength net weights from pre-cluster timing criticalities.
      */
     void update_timing_net_weights_();
 
@@ -194,7 +194,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                  double& overflow_ratio,
                                  std::optional<std::reference_wrapper<PlacementGradient>> grad,
                                  const FillerState& fillers,
-                                 FillerGradient* filler_grad) const;
+                                 std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
 
     /**
      * @brief Build dynamic filler particles from seed whitespace.
@@ -321,9 +321,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     bool block_is_optimizable_(APBlockId blk_id) const;
 
     std::shared_ptr<FlatPlacementDensityManager> density_manager_; ///< Owns the per-tile capacity/mass model that add_density_gradient_ deposits charge onto and legalization consumes.
-    std::unique_ptr<PartialLegalizer> partial_legalizer_;          ///< Cleans up discrete architecture-legality violations (overlaps, resource mismatches) the continuous optimizer's placement leaves behind, before full legalization.
+    std::unique_ptr<PartialLegalizer> partial_legalizer_;          ///< Repeatedly cleans up discrete architecture-legality violations (overlaps, resource mismatches) the continuous optimizer's placement leaves behind during "epochs", before full legalization.
     const AtomNetlist& atom_netlist_;                              ///< Atom netlist used for timing criticality lookup.
-    PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager used to weight smooth wirelength nets.
+    PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager used to weight differentiable wirelength nets.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;           ///< Delay model used to update timing criticalities.
     const LogicalModels& models_;                                  ///< Logical models used to classify I/O-chain primitives.
 
