@@ -630,29 +630,29 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                                 models,
                                                 log_verbosity_);
 
-    optimizable_blocks_.reserve(ap_netlist_.blocks().size());
+    moveable_blocks_.reserve(ap_netlist_.blocks().size());
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        if (block_is_optimizable_(blk_id))
-            optimizable_blocks_.push_back(blk_id);
+        if (block_is_moveable_(blk_id))
+            moveable_blocks_.push_back(blk_id);
     }
 
-    size_t optimizable_pins = 0;
-    for (APBlockId blk_id : optimizable_blocks_)
-        optimizable_pins += ap_netlist_.block_pins(blk_id).size();
-    double pins_per_optimizable_block = optimizable_blocks_.empty()
-                                            ? 0.
-                                            : static_cast<double>(optimizable_pins) / optimizable_blocks_.size();
+    size_t moveable_pins = 0;
+    for (APBlockId blk_id : moveable_blocks_)
+        moveable_pins += ap_netlist_.block_pins(blk_id).size();
+    double pins_per_moveable_block = moveable_blocks_.empty()
+                                         ? 0.
+                                         : static_cast<double>(moveable_pins) / moveable_blocks_.size();
 
     effective_timing_tradeoff_ = ap_timing_tradeoff_;
     if (ap_timing_tradeoff_ > 0.f
-        && optimizable_blocks_.size() >= kAdaptiveTimingMinBlocks
-        && optimizable_blocks_.size() <= kAdaptiveTimingMaxBlocks) {
+        && moveable_blocks_.size() >= kAdaptiveTimingMinBlocks
+        && moveable_blocks_.size() <= kAdaptiveTimingMaxBlocks) {
         effective_timing_tradeoff_ = std::max(ap_timing_tradeoff_, static_cast<float>(kAdaptiveTimingTradeoff));
     }
 
-    bool high_pin_seed = optimizable_blocks_.size() >= kHighPinWarmStartBlockThreshold
-                         && pins_per_optimizable_block >= kHighPinWarmStartPinsPerBlock;
-    bool huge_seed = optimizable_blocks_.size() >= kHugeWarmStartBlockThreshold;
+    bool high_pin_seed = moveable_blocks_.size() >= kHighPinWarmStartBlockThreshold
+                         && pins_per_moveable_block >= kHighPinWarmStartPinsPerBlock;
+    bool huge_seed = moveable_blocks_.size() >= kHugeWarmStartBlockThreshold;
     if (high_pin_seed || huge_seed)
         warmstart_iters_ = std::max(kWarmStartIters, kAdaptiveWarmStartIters);
     else
@@ -661,8 +661,8 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
 
     if (log_verbosity_ >= 1) {
         VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g io_chain_cohesion=%g pack_pattern_cohesion=%g groups=%zu.\n",
-                optimizable_blocks_.size(),
-                pins_per_optimizable_block,
+                moveable_blocks_.size(),
+                pins_per_moveable_block,
                 warmstart_iters_,
                 effective_timing_tradeoff_,
                 io_chain_net_cohesion_weight_,
@@ -686,7 +686,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
 
 NonlinearNesterovPlacer::~NonlinearNesterovPlacer() = default;
 
-bool NonlinearNesterovPlacer::block_is_optimizable_(APBlockId blk_id) const {
+bool NonlinearNesterovPlacer::block_is_moveable_(APBlockId blk_id) const {
     return ap_netlist_.block_mobility(blk_id) == APBlockMobility::MOVEABLE;
 }
 
@@ -695,7 +695,7 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
 
     // No movable blocks: every block is fixed, so there is nothing for the
     // optimizer to do. Snap fixed blocks into device bounds and return.
-    if (optimizable_blocks_.empty()) {
+    if (moveable_blocks_.empty()) {
         project_placement_(p_placement);
         return p_placement;
     }
@@ -705,7 +705,7 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     // designs run enough cycles to produce a tight, clusterable seed -- the post-
     // APPack clustering inflation that drove the Titan/Titanium wirelength gap --
     // while small designs that converge fast stop at the floor. The legalizer
-    // places every block (including solver-disconnected ones), so all optimizable
+    // places every block (including solver-disconnected ones), so all moveable
     // blocks have a valid location afterward.
     double previous_hpwl = std::numeric_limits<double>::infinity();
     size_t solver_iteration = 0;
@@ -796,7 +796,7 @@ PartialPlacement NonlinearNesterovPlacer::place() {
     // proximity-anchor threshold) at the timing-safe alpha, where it fixes the
     // large-device over-spread. Small/homogeneous designs are left unpreconditioned
     // (it is a pure perturbation there).
-    precond_active_ = optimizable_blocks_.size() >= kProximitySizeThreshold;
+    precond_active_ = moveable_blocks_.size() >= kProximitySizeThreshold;
     precond_alpha_active_ = kPreconditionLargeAlpha;
     return run_global_optimization_(density_dimensions, device_span, convergence_displacement);
 }
@@ -980,7 +980,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         next_fillers.layer = current_fillers.layer;
         PlacementGradient grad(ap_netlist_);
         FillerGradient filler_grad;
-        double proximity_scale = optimizable_blocks_.size() < kProximitySizeThreshold ? kProximityScale : 1.0;
+        double proximity_scale = moveable_blocks_.size() < kProximitySizeThreshold ? kProximityScale : 1.0;
         double proximity_weight = legalizer_feedback_proximity_weight * proximity_scale;
         // A preconditioned gradient already carries position units (a near-Newton
         // step), so its natural step length is ~1; the raw gradient instead needs
@@ -1105,14 +1105,14 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
         double total_displacement = 0.;
         double max_displacement = 0.;
-        for (APBlockId blk_id : optimizable_blocks_) {
+        for (APBlockId blk_id : moveable_blocks_) {
             double dx = current.block_x_locs[blk_id] - before_legalization.block_x_locs[blk_id];
             double dy = current.block_y_locs[blk_id] - before_legalization.block_y_locs[blk_id];
             double displacement = std::hypot(dx, dy);
             total_displacement += displacement;
             max_displacement = std::max(max_displacement, displacement);
         }
-        double mean_displacement = optimizable_blocks_.empty() ? 0. : total_displacement / optimizable_blocks_.size();
+        double mean_displacement = moveable_blocks_.empty() ? 0. : total_displacement / moveable_blocks_.size();
         legalizer_feedback_proximity_weight = std::min(kMaxLegalizerFeedbackProximityWeight,
                                                        std::max(kLegalizerFeedbackRetention * legalizer_feedback_proximity_weight,
                                                                 kProximityWeightPerLegalizationTile * mean_displacement));
@@ -1267,7 +1267,7 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
         size_t pin_idx = 0;
         for (APPinId pin_id : ap_netlist_.net_pins(net_id)) {
             APBlockId blk_id = ap_netlist_.pin_block(pin_id);
-            if (block_is_optimizable_(blk_id)) {
+            if (block_is_moveable_(blk_id)) {
                 double positive_x_gradient = positive_x_weights[pin_idx] * (1. + (x_locs[pin_idx] - positive_x) / gamma);
                 double negative_x_gradient = negative_x_weights[pin_idx] * (1. - (x_locs[pin_idx] - negative_x) / gamma);
                 double positive_y_gradient = positive_y_weights[pin_idx] * (1. + (y_locs[pin_idx] - positive_y) / gamma);
@@ -1285,11 +1285,10 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
 void NonlinearNesterovPlacer::update_timing_net_weights_() {
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
 
+    // --ap_timing_tradeoff defaults to a nonzero value (0.5), so falling back to unit
+    // net weights on architectures without timing data is the expected common case,
+    // not something worth warning about.
     bool use_timing_weights = effective_timing_tradeoff_ != 0.f && pre_cluster_timing_manager_.is_valid();
-    if (effective_timing_tradeoff_ != 0.f && !pre_cluster_timing_manager_.is_valid()) {
-        VTR_LOG_WARN("Nonlinear Nesterov analytical placement requested timing tradeoff %g, but pre-cluster timing is unavailable; using unit net weights.\n",
-                     effective_timing_tradeoff_);
-    }
 
     double total_weight = 0.;
     double min_weight = std::numeric_limits<double>::infinity();
@@ -1409,7 +1408,7 @@ double NonlinearNesterovPlacer::add_pack_pattern_cohesion_gradient_(const Partia
             double dx = p_placement.block_x_locs[blk_id] - centroid_x;
             double dy = p_placement.block_y_locs[blk_id] - centroid_y;
             cohesion_penalty += 0.5 * inv_group_size * (dx * dx + dy * dy);
-            if (grad && block_is_optimizable_(blk_id)) {
+            if (grad && block_is_moveable_(blk_id)) {
                 grad->get().dx[blk_id] += pack_pattern_cohesion_weight_ * inv_group_size * dx;
                 grad->get().dy[blk_id] += pack_pattern_cohesion_weight_ * inv_group_size * dy;
             }
@@ -1482,7 +1481,20 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
             }
         }
     }
-    //
+    // Per-dimension normalization constants, each derived from the average target
+    // capacity across that dimension's own capacity-bearing sites (so a sparse
+    // resource dimension isn't normalized against a dense one's scale):
+    //  - target_norm_floor: a floor added wherever utilization is divided by target
+    //    capacity. Bin-footprint spreading and target_density above can leave a site
+    //    with a vanishingly small (but nonzero) fractional capacity for this
+    //    dimension; without this floor, dividing by it would spike the normalized
+    //    utilization/overflow numerically even though barely any mass sits there.
+    //  - residual_charge_scale: used in the residual-charge mode below to express
+    //    (utilization - target) in units of "typical site capacity for this
+    //    dimension" rather than raw mass. Resource dimensions can have very
+    //    different natural capacity magnitudes on a heterogeneous grid (e.g. an
+    //    abundant LUT dimension vs. a sparse DSP/BRAM one); this keeps their charge
+    //    contributions comparably scaled before they feed the shared Poisson solve.
     std::vector<double> target_norm_floor(dimensions.size(), kEpsilon);
     std::vector<double> residual_charge_scale(dimensions.size(), 1.0);
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
@@ -1710,7 +1722,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         return density_energy;
 
     // Turn the grid field into a block gradient
-    for (APBlockId blk_id : optimizable_blocks_) {
+    for (APBlockId blk_id : moveable_blocks_) {
         PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         if (block_mass.is_zero())
             continue;
@@ -2259,7 +2271,7 @@ double NonlinearNesterovPlacer::add_proximity_gradient_(const PartialPlacement& 
         return 0.;
 
     double proximity_penalty = 0.;
-    for (APBlockId blk_id : optimizable_blocks_) {
+    for (APBlockId blk_id : moveable_blocks_) {
         double dx = p_placement.block_x_locs[blk_id] - legal_anchor.block_x_locs[blk_id];
         double dy = p_placement.block_y_locs[blk_id] - legal_anchor.block_y_locs[blk_id];
         proximity_penalty += 0.5 * (dx * dx + dy * dy);
@@ -2328,13 +2340,13 @@ void NonlinearNesterovPlacer::gradient_step_(const PartialPlacement& y_placement
     if (precond_active_ && !block_precond_.empty()) {
         // Preconditioned (near-Newton) step: divide each block's gradient by its
         // objective-curvature estimate so step length is size-independent.
-        for (APBlockId blk_id : optimizable_blocks_) {
+        for (APBlockId blk_id : moveable_blocks_) {
             double inv_precond = 1.0 / block_precond_[blk_id];
             next_placement.block_x_locs[blk_id] = y_placement.block_x_locs[blk_id] - step_size * grad.dx[blk_id] * inv_precond;
             next_placement.block_y_locs[blk_id] = y_placement.block_y_locs[blk_id] - step_size * grad.dy[blk_id] * inv_precond;
         }
     } else {
-        for (APBlockId blk_id : optimizable_blocks_) {
+        for (APBlockId blk_id : moveable_blocks_) {
             next_placement.block_x_locs[blk_id] = y_placement.block_x_locs[blk_id] - step_size * grad.dx[blk_id];
             next_placement.block_y_locs[blk_id] = y_placement.block_y_locs[blk_id] - step_size * grad.dy[blk_id];
         }
@@ -2382,7 +2394,7 @@ void NonlinearNesterovPlacer::extrapolate_(const PartialPlacement& current,
     y_placement.block_y_locs = next.block_y_locs;
     y_placement.block_layer_nums = next.block_layer_nums;
     y_placement.block_sub_tiles = next.block_sub_tiles;
-    for (APBlockId blk_id : optimizable_blocks_) {
+    for (APBlockId blk_id : moveable_blocks_) {
         y_placement.block_x_locs[blk_id] = next.block_x_locs[blk_id] + beta * (next.block_x_locs[blk_id] - current.block_x_locs[blk_id]);
         y_placement.block_y_locs[blk_id] = next.block_y_locs[blk_id] + beta * (next.block_y_locs[blk_id] - current.block_y_locs[blk_id]);
     }
@@ -2415,7 +2427,7 @@ void NonlinearNesterovPlacer::extrapolate_(const PartialPlacement& current,
 
 double NonlinearNesterovPlacer::gradient_norm_squared_(const PlacementGradient& grad) const {
     double norm_squared = 0.;
-    for (APBlockId blk_id : optimizable_blocks_) {
+    for (APBlockId blk_id : moveable_blocks_) {
         norm_squared += grad.dx[blk_id] * grad.dx[blk_id];
         norm_squared += grad.dy[blk_id] * grad.dy[blk_id];
     }
@@ -2438,7 +2450,7 @@ double NonlinearNesterovPlacer::filler_gradient_norm_squared_(const FillerGradie
 double NonlinearNesterovPlacer::max_block_displacement_(const PartialPlacement& from,
                                                         const PartialPlacement& to) const {
     double max_displacement = 0.;
-    for (APBlockId blk_id : optimizable_blocks_) {
+    for (APBlockId blk_id : moveable_blocks_) {
         double dx = to.block_x_locs[blk_id] - from.block_x_locs[blk_id];
         double dy = to.block_y_locs[blk_id] - from.block_y_locs[blk_id];
         max_displacement = std::max(max_displacement, std::hypot(dx, dy));

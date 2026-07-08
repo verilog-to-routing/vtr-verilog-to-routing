@@ -318,7 +318,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     /**
      * @brief Return true if the block should be moved by the continuous optimizer.
      */
-    bool block_is_optimizable_(APBlockId blk_id) const;
+    bool block_is_moveable_(APBlockId blk_id) const;
 
     std::shared_ptr<FlatPlacementDensityManager> density_manager_; ///< Owns the per-tile capacity/mass model that add_density_gradient_ deposits charge onto and legalization consumes.
     std::unique_ptr<PartialLegalizer> partial_legalizer_;          ///< Repeatedly cleans up discrete architecture-legality violations (overlaps, resource mismatches) the continuous optimizer's placement leaves behind during "epochs", before full legalization.
@@ -327,8 +327,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     std::shared_ptr<PlaceDelayModel> place_delay_model_;           ///< Delay model used to update timing criticalities.
     const LogicalModels& models_;                                  ///< Logical models used to classify I/O-chain primitives.
 
-    std::vector<APBlockId> optimizable_blocks_; ///< Movable AP blocks touched by the optimizer.
-    vtr::vector<APNetId, double> net_weights_;  ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
+    std::vector<APBlockId> moveable_blocks_;   ///< Movable AP blocks touched by the optimizer.
+    vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
 
     vtr::vector<APBlockId, double> block_precond_;                     ///< Per-block diagonal preconditioner (objective curvature estimate).
     bool precond_active_ = false;                                      ///< Whether the preconditioner is applied in the current optimization run.
