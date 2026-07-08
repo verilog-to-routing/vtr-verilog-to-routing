@@ -67,6 +67,7 @@ class PlacementLogPrinter {
     /// Reports the resource utilization for each block type.
     void print_resources_utilization() const;
     /// @brief Reports the number of placed blocks on each die, broken down by block type.
+    ///        Reported for both clustered blocks and primitive blocks.
     void print_resources_utilization_per_die() const;
     /// Reports the number of tried temperatures, total swaps, and how many were accepted or rejected.
     void print_placement_swaps_stats() const;
