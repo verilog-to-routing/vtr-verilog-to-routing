@@ -12,7 +12,7 @@ archs_dir=arch/multi_die/hecate/3d
 circuit_list_add=ch_intrinsics.v
 
 # Add architectures to list to sweep
-arch_list_add=hecate_3d_sb_10um_bidir_fanin_16_fanout_16_7nm.xml
+arch_list_add=hecate_3d_sb_10um_bidir_fanin_16_fanout_16_with_esd_7nm.xml
 
 
 # Parse info and how to parse

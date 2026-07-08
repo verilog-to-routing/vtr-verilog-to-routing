@@ -48,7 +48,6 @@
 #include "vtr_prefix_sum.h"
 #include "stats.h"
 
-#include <algorithm>
 #include <array>
 #include <vector>
 
