@@ -47,7 +47,6 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
         }
 
         // Handle escaped asterisks (replace \* with *)
-        // Handle escaped asterisks (replace \* with *)
         size_t escape_pos = 0;
         while ((escape_pos = pattern.find("\\*", escape_pos)) != std::string::npos) {
             pattern.erase(escape_pos, 1);
