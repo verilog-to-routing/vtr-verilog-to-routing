@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """Generate Hecate 3D switch-block architecture variants from a CSV description
-and the base 'hecate_3d_sb_10um_bidir_fanin_16_fanout_16_7nm.xml' architecture."""
+and the base 'hecate_3d_sb_10um_bidir_fanin_16_fanout_16_with_esd_7nm.xml' architecture."""
 
 import csv
 import os
@@ -353,5 +353,6 @@ def generate_hecate_3d_sb_archs(
 
 if __name__ == "__main__":
     generate_hecate_3d_sb_archs(
-        "hecate_3d_sb_connectivity.csv", "hecate_3d_sb_10um_bidir_fanin_16_fanout_16_7nm.xml"
+        "hecate_3d_sb_connectivity.csv",
+        "hecate_3d_sb_10um_bidir_fanin_16_fanout_16_with_esd_7nm.xml",
     )
