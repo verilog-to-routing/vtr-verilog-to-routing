@@ -41,37 +41,25 @@ class SwitchBlockManager {
                        const int log_verbosity);
 
     /**
-     * @brief Get the switch template file name for a given pattern
+     * @brief Number of registered switch block patterns (in SB_MAPS order)
      */
-    std::string get_pattern_file_name(const std::string& pattern) const;
+    size_t num_patterns() const { return ordered_switch_block_patterns_.size(); }
 
     /**
-     * @brief Get DataFrame for a specific switch block pattern
-     * @param pattern Switch block pattern name (e.g., "SB_1__2_")
-     * @return Pointer to DataFrame or nullptr if not found
+     * @brief Get the DataFrame of the pattern with the given index
+     * @param pattern_idx Pattern index (in SB_MAPS order)
+     * @return The pattern's switch template DataFrame, or nullptr when the
+     *         pattern has no template file (no connections)
      */
-    const DataFrame* get_switch_block_dataframe(const std::string& pattern) const;
-
-    /**
-     * @brief Check if a pattern exists in the switch block mapping
-     * @param pattern Pattern to check
-     * @return true if pattern exists
-     */
-    bool has_pattern(const std::string& pattern) const;
-
-    /**
-     * @brief Get all available patterns
-     * @return Vector of all pattern names
-     */
-    std::vector<std::string> get_all_patterns() const;
+    const DataFrame* get_dataframe_by_index(size_t pattern_idx) const;
 
     /**
      * @brief Find the first matching pattern for the switch block at the given location
      * @param x X coordinate of the switch block location
      * @param y Y coordinate of the switch block location
-     * @return Matching pattern or empty string if no match
+     * @return Index of the matching pattern (in SB_MAPS order), or -1 if no match
      */
-    std::string find_matching_pattern(size_t x, size_t y) const;
+    int find_matching_pattern_index(size_t x, size_t y) const;
 
     /**
      * @brief Print statistics about loaded switch blocks
