@@ -43,12 +43,12 @@ namespace {
 /**
  * @brief Maximum number of accelerated first-order iterations.
  */
-constexpr size_t kMaxNesterovIterations = 200;
+constexpr size_t kMaxNesterovIterations = 80;
 
 /**
  * @brief Number of optimization/legalization epochs in the nonlinear Nesterov placer.
  */
-constexpr size_t kNesterovEpochs = 4;
+constexpr size_t kNesterovEpochs = 2;
 
 /**
  * @brief Number of first-order iterations performed before each legalization.
@@ -220,6 +220,15 @@ constexpr double kBoundaryNetCohesionMinSeedHpwlFraction = 0.25;
 constexpr double kIoChainNetCohesionWeight = 2.0;
 
 /**
+ * @brief Long-chain pack-pattern cohesion weight for direct I/O-chain designs.
+ *
+ * Gated to designs with long direct I/O-chain nets, where LU_Network needs extra
+ * AP-to-APPack chain coherence. Designs without that pathology disable the term
+ * after boundary/I/O-chain classification.
+ */
+constexpr double kPackPatternCohesionWeight = 0.02;
+
+/**
  * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
  *
  * The nonlinear Nesterov placer seeds itself from a wirelength-aware B2B/QP solve
@@ -332,34 +341,22 @@ constexpr double kGammaEndFraction = 0.008;
 /**
  * @brief Initial target ratio of density pressure to wirelength pressure.
  *
- * A smaller ratio starts the density penalty weaker so the optimizer refines
- * wirelength near the seed instead of spreading away from it.
+ * A small fixed linear density weight keeps the first Nesterov pass close to the
+ * warm-start seed while still letting the electrostatic field relieve overlap.
  */
 constexpr double kInitialDensityToWirelengthRatio = 0.05;
 
 /**
- * @brief Reference scale for the augmented-Lagrangian quadratic density penalty.
- *
- * The per-resource penalty is set to kDensityPenaltyReference / initial_energy, so
- * the quadratic term `0.5*penalty*energy^2` at initialization equals
- * `0.5*kDensityPenaltyReference*energy`, i.e. (0.5*kDensityPenaltyReference) times
- * the linear term. The legacy value 2000 made the quadratic penalty ~1000x the
- * linear term -- ~50x the wirelength -- so the optimizer minimized density and
- * spread the good warm-start seed apart (the epoch-0 HPWL blow-up). An O(1) value
- * keeps density a gentle force comparable to the linear term, letting wirelength
- * lead while the growing multiplier tightens density over epochs.
+ * @brief Final density-weight multiplier for the simple continuation schedule.
  */
-constexpr double kDensityPenaltyReference = 1.0;
+constexpr double kFinalDensityWeightMultiplier = 4.0;
 
 /**
  * @brief Target physical-overflow ratio for the WL-favoring penalty stop.
  *
- * Each epoch raises the density multipliers (subgradient ascent), which spreads
- * blocks and costs wirelength. Once the *physical* placement is already spread
- * enough -- the mass exceeding tile capacity falls below this fraction of total
- * capacity -- further tightening only adds wirelength, so the outer loop stops.
- * This returns the loosest-density legal placement, which is also the
- * lowest-wirelength one.
+ * Once the *physical* placement is already spread enough -- the mass exceeding
+ * tile capacity falls below this fraction of total capacity -- further density
+ * continuation only adds wirelength, so the outer loop stops.
  */
 constexpr double kTargetOverflow = 0.1;
 
@@ -511,8 +508,8 @@ using OptionalWeightVectorRef = std::optional<std::reference_wrapper<std::vector
  * @param values Coordinate values for one net dimension. Must be non-empty.
  * @param gamma Positive smoothing factor: smaller values more closely
  *              approximate the extremum, while larger values smooth it more.
- * @param negate When true, negate each value before computing log-sum-exp to
- *               approximate the negated minimum instead of the maximum.
+ * @param negate When true, negate each value before forming the weighted
+ *               average to approximate the negated minimum instead of the maximum.
  * @param weights Optional storage for normalized exponential weights.
  * @return The weighted-average coordinate.
  */
@@ -607,7 +604,9 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
-    , ap_timing_tradeoff_(ap_timing_tradeoff) {
+    , ap_timing_tradeoff_(ap_timing_tradeoff)
+    , io_chain_net_cohesion_weight_(kIoChainNetCohesionWeight)
+    , pack_pattern_cohesion_weight_(kPackPatternCohesionWeight) {
     vtr::ScopedStartFinishTimer nonlinear_nesterov_placer_building_timer("Constructing Nonlinear Nesterov Global Placer");
 
     density_manager_ = std::make_shared<FlatPlacementDensityManager>(ap_netlist_,
@@ -621,6 +620,8 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                                                      log_verbosity_);
     if (generate_mass_report)
         density_manager_->generate_mass_report();
+
+    initialize_pack_pattern_cohesion_groups_(prepacker);
 
     partial_legalizer_ = make_partial_legalizer(partial_legalizer_type,
                                                 ap_netlist_,
@@ -659,11 +660,14 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     warmstart_max_iters_ = std::max(kWarmStartMaxIters, warmstart_iters_);
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g.\n",
+        VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g io_chain_cohesion=%g pack_pattern_cohesion=%g groups=%zu.\n",
                 optimizable_blocks_.size(),
                 pins_per_optimizable_block,
                 warmstart_iters_,
-                effective_timing_tradeoff_);
+                effective_timing_tradeoff_,
+                io_chain_net_cohesion_weight_,
+                pack_pattern_cohesion_weight_,
+                pack_pattern_cohesion_groups_.size());
     }
 
     // Build the B2B warm-start solver. Constructed here because the DeviceGrid is
@@ -803,6 +807,13 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     if (log_verbosity_ >= 1)
         VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
     update_boundary_net_flags_(density_dimensions, seed);
+    if (pack_pattern_cohesion_weight_ > 0. && num_io_chain_cohesion_nets_ == 0) {
+        if (log_verbosity_ >= 1) {
+            VTR_LOG("Nonlinear Nesterov pack-pattern cohesion disabled: no long direct I/O-chain nets were found.\n");
+        }
+        pack_pattern_cohesion_weight_ = 0.;
+        pack_pattern_cohesion_groups_.clear();
+    }
 
     PartialPlacement result = optimize_from_seed_(seed, density_dimensions, device_span, convergence_displacement);
 
@@ -830,12 +841,11 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                               const std::vector<PrimitiveVectorDim>& density_dimensions,
                                                               double device_span,
                                                               double convergence_displacement) {
-    // Smooth global placement by accelerated gradient descent on an augmented
-    // Lagrangian objective: minimize weighted-average wirelength subject to a
-    // per-resource electrostatic density penalty. Each epoch runs an inner
-    // Nesterov solve at fixed penalty weights, partially legalizes the result to
-    // form a proximity anchor, then raises the density multipliers (subgradient
-    // ascent) so the following epoch enforces density more strongly.
+    // Smooth global placement by accelerated gradient descent on a simple
+    // weighted objective: smooth wirelength plus a per-resource electrostatic
+    // density penalty. Each epoch runs an inner Nesterov solve, partially
+    // legalizes the result to form a proximity anchor, then optionally increases
+    // the fixed density weight through a short continuation schedule.
     PartialPlacement current(ap_netlist_);
     current.block_x_locs = seed.block_x_locs;
     current.block_y_locs = seed.block_y_locs;
@@ -871,18 +881,13 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // with the annealed coarse->sharp schedule below.
     current_gamma_fraction_ = kWirelengthGammaFraction;
     std::vector<double> density_multipliers(density_dimensions.size(), 1.);
-    std::vector<double> density_penalties(density_dimensions.size(), 0.);
     // Seed the density multiplier so the density term starts at a small fixed
-    // fraction of the initial wirelength, and scale each resource's quadratic
-    // penalty to a common energy reference so heterogeneous resource types
-    // (LUT, BRAM, DSP, ...) begin balanced rather than dominated by one type.
+    // fraction of the initial wirelength.
     double initial_density_weight = 1e-3;
     auto reset_density_weights = [&](const PartialPlacement& placement) {
         std::fill(density_multipliers.begin(), density_multipliers.end(), 1.);
-        std::fill(density_penalties.begin(), density_penalties.end(), 0.);
         ObjectiveValue components = evaluate_objective_(placement,
                                                         density_multipliers,
-                                                        density_penalties,
                                                         std::nullopt,
                                                         0.,
                                                         std::nullopt,
@@ -893,14 +898,10 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             initial_density_weight = kInitialDensityToWirelengthRatio * std::max(components.wirelength, 1.0) / components.density;
         }
         initial_density_weight = std::clamp(initial_density_weight, 1e-5, 1e3);
-        for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++) {
+        for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++)
             density_multipliers[dim_idx] = initial_density_weight;
-            double energy_divisor = std::max(components.density_energies[dim_idx], kEpsilon);
-            density_penalties[dim_idx] = kDensityPenaltyReference / energy_divisor;
-        }
-        return components;
     };
-    ObjectiveValue initial_components = reset_density_weights(current);
+    reset_density_weights(current);
 
     if (log_verbosity_ >= 1) {
         VTR_LOG("Epoch  Pre HPWL  Post HPWL  Pre Oflow  Post Oflow  Pre Max  Post Max  Mean Move  Max Move  Density Wt  Prox Wt\n");
@@ -922,9 +923,10 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     FillerState y_fillers;
     FillerState next_fillers;
 
-    // Augmented-Lagrangian outer loop. Penalty weights are held fixed within an
-    // epoch and raised between epochs; timing net weights and the preconditioner
-    // are refreshed against the current placement at the start of each one.
+    // Short continuation loop. Density weights are fixed within an epoch and
+    // follow a simple geometric ramp between epochs; timing net weights and the
+    // preconditioner are refreshed against the current placement at the start of
+    // each one.
     for (size_t epoch = 0; epoch < num_epochs; epoch++) {
         // Anneal the wirelength smoothing fraction geometrically from coarse
         // (smooth global gradient) to sharp (near true HPWL) across epochs, so
@@ -947,6 +949,13 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             timing_update_time_sec += timing_update_timer.elapsed_sec();
         }
         update_timing_net_weights_();
+        double density_weight_scale = 1.0;
+        if (!sparse_seed_ && num_epochs > 1) {
+            double schedule = static_cast<double>(epoch) / static_cast<double>(num_epochs - 1);
+            density_weight_scale = std::pow(kFinalDensityWeightMultiplier, schedule);
+        }
+        for (double& multiplier : density_multipliers)
+            multiplier = initial_density_weight * density_weight_scale;
         compute_preconditioner_(density_dimensions, density_multipliers);
 
         legal_anchor.block_x_locs = current.block_x_locs;
@@ -980,7 +989,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         double nesterov_t = 1.0;
         ObjectiveValue current_obj = evaluate_objective_(current,
                                                          density_multipliers,
-                                                         density_penalties,
                                                          std::cref(legal_anchor),
                                                          proximity_weight,
                                                          std::nullopt,
@@ -993,7 +1001,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         for (size_t iter = 0; iter < iterations_per_epoch; iter++) {
             ObjectiveValue y_obj = evaluate_objective_(y_placement,
                                                        density_multipliers,
-                                                       density_penalties,
                                                        std::cref(legal_anchor),
                                                        proximity_weight,
                                                        std::ref(grad),
@@ -1012,7 +1019,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                 gradient_step_(y_placement, grad, y_fillers, filler_grad, accepted_step, next, next_fillers);
                 next_obj = evaluate_objective_(next,
                                                density_multipliers,
-                                               density_penalties,
                                                std::cref(legal_anchor),
                                                proximity_weight,
                                                std::nullopt,
@@ -1071,7 +1077,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
         ObjectiveValue pre_legalization = evaluate_objective_(current,
                                                               density_multipliers,
-                                                              density_penalties,
                                                               std::cref(legal_anchor),
                                                               proximity_weight,
                                                               std::nullopt,
@@ -1090,35 +1095,11 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         legalizer_time_sec += legalizer_timer.elapsed_sec();
         ObjectiveValue post_legalization = evaluate_objective_(current,
                                                                density_multipliers,
-                                                               density_penalties,
                                                                std::cref(legal_anchor),
                                                                proximity_weight,
                                                                std::nullopt,
                                                                current_fillers,
                                                                nullptr);
-
-        // Subgradient ascent on the per-resource density multipliers: each
-        // resource's weight grows with its remaining (post-legalization) density
-        // energy, so resources that are still over-packed are penalized harder
-        // next epoch. The step is normalized across resources and grows with the
-        // epoch so the density constraint tightens steadily over the schedule.
-        double normalized_subgradient_norm_squared = 0.;
-        std::vector<double> normalized_subgradients(density_dimensions.size(), 0.);
-        for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++) {
-            double normalized_energy = post_legalization.density_energies[dim_idx]
-                                       / std::max(initial_components.density_energies[dim_idx], kEpsilon);
-            normalized_subgradients[dim_idx] = normalized_energy
-                                               + 0.5 * density_penalties[dim_idx]
-                                                     * initial_components.density_energies[dim_idx]
-                                                     * normalized_energy * normalized_energy;
-            normalized_subgradient_norm_squared += normalized_subgradients[dim_idx] * normalized_subgradients[dim_idx];
-        }
-        if (normalized_subgradient_norm_squared > kEpsilon) {
-            double multiplier_step = initial_density_weight * std::pow(1.05, epoch);
-            double inverse_norm = 1. / std::sqrt(normalized_subgradient_norm_squared);
-            for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++)
-                density_multipliers[dim_idx] += multiplier_step * normalized_subgradients[dim_idx] * inverse_norm;
-        }
 
         double total_displacement = 0.;
         double max_displacement = 0.;
@@ -1179,7 +1160,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         VTR_LOG("\tSelected placement HPWL: %g (warm-start seed)\n", best_hpwl);
     else
         VTR_LOG("\tSelected placement HPWL: %g (epoch %d)\n", best_hpwl, best_source);
-    VTR_LOG("\tFinal first density multiplier: %g\n", density_multipliers.empty() ? 0. : density_multipliers.front());
+    VTR_LOG("\tFinal first density weight: %g\n", density_multipliers.empty() ? 0. : density_multipliers.front());
     if (log_verbosity_ >= 1) {
         VTR_LOG("Nonlinear Nesterov phase time: epoch loop took %.2f seconds (partial legalization %.2f, timing updates %.2f).\n",
                 epoch_phase_timer.elapsed_sec(), legalizer_time_sec, timing_update_time_sec);
@@ -1191,7 +1172,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
 NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_objective_(const PartialPlacement& p_placement,
                                                                                      const std::vector<double>& density_multipliers,
-                                                                                     const std::vector<double>& density_penalties,
                                                                                      std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
                                                                                      double proximity_weight,
                                                                                      std::optional<std::reference_wrapper<PlacementGradient>> grad,
@@ -1204,7 +1184,6 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
     value.wirelength = add_wirelength_gradient_(p_placement, grad);
     value.density = add_density_gradient_(p_placement,
                                           density_multipliers,
-                                          density_penalties,
                                           value.density_energies,
                                           value.total_overflow,
                                           value.max_overflow,
@@ -1217,10 +1196,13 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
                                                   legal_anchor->get(),
                                                   proximity_weight,
                                                   grad);
-    value.total = value.wirelength + proximity_weight * value.proximity;
+    value.pack_pattern_cohesion = add_pack_pattern_cohesion_gradient_(p_placement, grad);
+    value.total = value.wirelength
+                  + pack_pattern_cohesion_weight_ * value.pack_pattern_cohesion
+                  + proximity_weight * value.proximity;
     for (size_t dim_idx = 0; dim_idx < value.density_energies.size(); dim_idx++) {
         double energy = value.density_energies[dim_idx];
-        value.total += density_multipliers[dim_idx] * (energy + 0.5 * density_penalties[dim_idx] * energy * energy);
+        value.total += density_multipliers[dim_idx] * energy;
     }
     return value;
 }
@@ -1328,7 +1310,7 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
         if (static_cast<size_t>(net_id) < boundary_cohesion_nets_.size() && boundary_cohesion_nets_[net_id])
             weight *= kBoundaryNetCohesionWeight;
         if (static_cast<size_t>(net_id) < io_chain_cohesion_nets_.size() && io_chain_cohesion_nets_[net_id])
-            weight *= kIoChainNetCohesionWeight;
+            weight *= io_chain_net_cohesion_weight_;
         net_weights_[net_id] = weight;
 
         total_weight += weight;
@@ -1341,7 +1323,7 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
         VTR_LOG("Nonlinear Nesterov timing/cohesion net weights: tradeoff=%g boundary_cohesion=%g io_chain_cohesion=%g min=%g avg=%g max=%g nets=%zu\n",
                 effective_timing_tradeoff_,
                 kBoundaryNetCohesionWeight,
-                kIoChainNetCohesionWeight,
+                io_chain_net_cohesion_weight_,
                 min_weight,
                 total_weight / weighted_nets,
                 max_weight,
@@ -1349,9 +1331,82 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
     }
 }
 
+void NonlinearNesterovPlacer::initialize_pack_pattern_cohesion_groups_(const Prepacker& prepacker) {
+    pack_pattern_cohesion_groups_.clear();
+    if (pack_pattern_cohesion_weight_ == 0.)
+        return;
+
+    std::vector<std::vector<APBlockId>> chain_groups(prepacker.get_num_molecule_chains());
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        std::vector<MoleculeChainId> block_chain_ids;
+        for (PackMoleculeId mol_id : ap_netlist_.block_molecules(blk_id)) {
+            const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
+            if (!molecule.is_chain() || !molecule.chain_id.is_valid())
+                continue;
+            if (!prepacker.get_molecule_chain_info(molecule.chain_id).is_long_chain)
+                continue;
+            if (std::find(block_chain_ids.begin(), block_chain_ids.end(), molecule.chain_id) != block_chain_ids.end())
+                continue;
+
+            size_t chain_idx = static_cast<size_t>(molecule.chain_id);
+            VTR_ASSERT_SAFE(chain_idx < chain_groups.size());
+            chain_groups[chain_idx].push_back(blk_id);
+            block_chain_ids.push_back(molecule.chain_id);
+        }
+    }
+
+    for (std::vector<APBlockId>& group : chain_groups) {
+        if (group.size() < 2)
+            continue;
+        pack_pattern_cohesion_groups_.push_back(std::move(group));
+    }
+
+    if (log_verbosity_ >= 1) {
+        size_t grouped_blocks = 0;
+        for (const std::vector<APBlockId>& group : pack_pattern_cohesion_groups_)
+            grouped_blocks += group.size();
+        VTR_LOG("Nonlinear Nesterov pack-pattern cohesion: %zu long-chain groups, %zu grouped AP blocks, weight=%g.\n",
+                pack_pattern_cohesion_groups_.size(),
+                grouped_blocks,
+                pack_pattern_cohesion_weight_);
+    }
+}
+
+double NonlinearNesterovPlacer::add_pack_pattern_cohesion_gradient_(const PartialPlacement& p_placement,
+                                                                    std::optional<std::reference_wrapper<PlacementGradient>> grad) const {
+    if (pack_pattern_cohesion_weight_ == 0. || pack_pattern_cohesion_groups_.empty())
+        return 0.;
+
+    double cohesion_penalty = 0.;
+    for (const std::vector<APBlockId>& group : pack_pattern_cohesion_groups_) {
+        VTR_ASSERT_SAFE(group.size() >= 2);
+        double centroid_x = 0.;
+        double centroid_y = 0.;
+        for (APBlockId blk_id : group) {
+            centroid_x += p_placement.block_x_locs[blk_id];
+            centroid_y += p_placement.block_y_locs[blk_id];
+        }
+
+        double inv_group_size = 1. / static_cast<double>(group.size());
+        centroid_x *= inv_group_size;
+        centroid_y *= inv_group_size;
+
+        for (APBlockId blk_id : group) {
+            double dx = p_placement.block_x_locs[blk_id] - centroid_x;
+            double dy = p_placement.block_y_locs[blk_id] - centroid_y;
+            cohesion_penalty += 0.5 * inv_group_size * (dx * dx + dy * dy);
+            if (grad && block_is_optimizable_(blk_id)) {
+                grad->get().dx[blk_id] += pack_pattern_cohesion_weight_ * inv_group_size * dx;
+                grad->get().dy[blk_id] += pack_pattern_cohesion_weight_ * inv_group_size * dy;
+            }
+        }
+    }
+
+    return cohesion_penalty;
+}
+
 double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_placement,
                                                       const std::vector<double>& density_multipliers,
-                                                      const std::vector<double>& density_penalties,
                                                       std::vector<double>& density_energies,
                                                       double& total_overflow,
                                                       double& max_overflow,
@@ -1373,7 +1428,6 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     if (dimensions.empty())
         return 0.;
     VTR_ASSERT(density_multipliers.size() == dimensions.size());
-    VTR_ASSERT(density_penalties.size() == dimensions.size());
     density_energies.assign(dimensions.size(), 0.);
 
     size_t width = device_grid_width_;
@@ -1693,7 +1747,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
             double normalized_mass = kUseResidualDensityCharge
                                          ? mass / residual_charge_scale[dim_idx]
                                          : mass / std::max(local_target, target_norm_floor[dim_idx]);
-            double coefficient = density_multipliers[dim_idx] * (1. + density_penalties[dim_idx] * density_energies[dim_idx]);
+            double coefficient = density_multipliers[dim_idx];
             grad->get().dx[blk_id] += coefficient * normalized_mass * local_field_x;
             grad->get().dy[blk_id] += coefficient * normalized_mass * local_field_y;
         }
@@ -1709,7 +1763,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
             filler_grad->dy[dim_idx].assign(n, 0.);
             if (unit_mass <= 0.)
                 continue;
-            double coefficient = density_multipliers[dim_idx] * (1. + density_penalties[dim_idx] * density_energies[dim_idx]);
+            double coefficient = density_multipliers[dim_idx];
             double normalized_mass = kUseResidualDensityCharge
                                          ? unit_mass / residual_charge_scale[dim_idx]
                                          : unit_mass;
@@ -1974,6 +2028,7 @@ void NonlinearNesterovPlacer::update_boundary_net_flags_(const std::vector<Primi
     std::fill(boundary_cohesion_nets_.begin(), boundary_cohesion_nets_.end(), false);
     io_chain_cohesion_nets_.resize(ap_netlist_.nets().size(), false);
     std::fill(io_chain_cohesion_nets_.begin(), io_chain_cohesion_nets_.end(), false);
+    num_io_chain_cohesion_nets_ = 0;
 
     size_t boundary_blocks = 0;
     size_t io_chain_blocks = 0;
@@ -2024,6 +2079,7 @@ void NonlinearNesterovPlacer::update_boundary_net_flags_(const std::vector<Primi
             io_chain_nets++;
         }
     }
+    num_io_chain_cohesion_nets_ = io_chain_nets;
 
     if (log_verbosity_ >= 1) {
         VTR_LOG("Nonlinear Nesterov boundary-net cohesion: %zu boundary-mass blocks, %zu long two-pin boundary-related nets, weight=%g, min_seed_hpwl_frac=%g.\n",
@@ -2034,7 +2090,7 @@ void NonlinearNesterovPlacer::update_boundary_net_flags_(const std::vector<Primi
         VTR_LOG("Nonlinear Nesterov I/O-chain cohesion: %zu boundary I/O-chain blocks, %zu long direct I/O-chain nets, weight=%g.\n",
                 io_chain_blocks,
                 io_chain_nets,
-                kIoChainNetCohesionWeight);
+                io_chain_net_cohesion_weight_);
     }
 }
 
@@ -2078,8 +2134,18 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
         }
     }
 
-    // Density Hessian diagonal: the per-dimension penalty multiplier weights the
-    // block mass it deposits into that resource's field. Heavier blocks under a
+    if (pack_pattern_cohesion_weight_ > 0.) {
+        for (const std::vector<APBlockId>& group : pack_pattern_cohesion_groups_) {
+            if (group.empty())
+                continue;
+            double curvature = pack_pattern_cohesion_weight_ / static_cast<double>(group.size());
+            for (APBlockId blk_id : group)
+                block_precond_[blk_id] += curvature;
+        }
+    }
+
+    // Density Hessian diagonal: the per-dimension density weight scales the block
+    // mass it deposits into that resource's field. Heavier blocks under a
     // stronger density push have larger curvature and so take proportionally
     // smaller steps.
     const auto& mass_calculator = density_manager_->mass_calculator();

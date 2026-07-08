@@ -94,6 +94,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
         double wirelength = 0.;               ///< Unweighted smooth wirelength.
         double density = 0.;                  ///< Unweighted electrostatic density energy.
         std::vector<double> density_energies; ///< Electrostatic energy for each primitive dimension.
+        double pack_pattern_cohesion = 0.;    ///< Unweighted cohesion penalty for multi-block pack-pattern chains.
         double proximity = 0.;                ///< Unweighted proximity penalty to a legalized anchor.
         double total_overflow = 0.;           ///< Sum of normalized tile overflows.
         double max_overflow = 0.;             ///< Largest normalized tile overflow.
@@ -132,7 +133,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                               double convergence_displacement);
 
     /**
-     * @brief Run the augmented-Lagrangian epoch loop from a fixed seed placement.
+     * @brief Run the Nesterov epoch loop from a fixed seed placement.
      */
     PartialPlacement optimize_from_seed_(const PartialPlacement& seed,
                                          const std::vector<PrimitiveVectorDim>& density_dimensions,
@@ -152,7 +153,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      */
     ObjectiveValue evaluate_objective_(const PartialPlacement& p_placement,
                                        const std::vector<double>& density_multipliers,
-                                       const std::vector<double>& density_penalties,
                                        std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
                                        double proximity_weight,
                                        std::optional<std::reference_wrapper<PlacementGradient>> grad,
@@ -171,11 +171,21 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     void update_timing_net_weights_();
 
     /**
+     * @brief Build groups of AP blocks that belong to the same long prepacker chain.
+     */
+    void initialize_pack_pattern_cohesion_groups_(const Prepacker& prepacker);
+
+    /**
+     * @brief Add a quadratic cohesion term for long prepacker chains spanning multiple AP blocks.
+     */
+    double add_pack_pattern_cohesion_gradient_(const PartialPlacement& p_placement,
+                                               std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
+
+    /**
      * @brief Add electrostatic density value and gradient.
      */
     double add_density_gradient_(const PartialPlacement& p_placement,
                                  const std::vector<double>& density_multipliers,
-                                 const std::vector<double>& density_penalties,
                                  std::vector<double>& density_energies,
                                  double& total_overflow,
                                  double& max_overflow,
@@ -318,20 +328,24 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     std::vector<APBlockId> optimizable_blocks_; ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_;  ///< Smooth wirelength weight for each AP net.
 
-    vtr::vector<APBlockId, double> block_precond_;      ///< Per-block diagonal preconditioner (objective curvature estimate).
-    bool precond_active_ = false;                       ///< Whether the preconditioner is applied in the current optimization run.
-    double precond_alpha_active_ = 1.0;                 ///< Preconditioner strength exponent for the current optimization run.
-    std::vector<bool> boundary_confined_dims_;          ///< [dim index] true if target capacity lies almost entirely on the device boundary.
-    vtr::vector<APNetId, bool> boundary_cohesion_nets_; ///< AP nets that receive I/O-only cohesion weight.
-    vtr::vector<APNetId, bool> io_chain_cohesion_nets_; ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
-    std::vector<double> filler_unit_mass_;              ///< [dim] density mass per dynamic filler.
-    std::vector<double> filler_precond_;                ///< [dim] density-only filler preconditioner.
+    vtr::vector<APBlockId, double> block_precond_;                     ///< Per-block diagonal preconditioner (objective curvature estimate).
+    bool precond_active_ = false;                                      ///< Whether the preconditioner is applied in the current optimization run.
+    double precond_alpha_active_ = 1.0;                                ///< Preconditioner strength exponent for the current optimization run.
+    std::vector<bool> boundary_confined_dims_;                         ///< [dim index] true if target capacity lies almost entirely on the device boundary.
+    vtr::vector<APNetId, bool> boundary_cohesion_nets_;                ///< AP nets that receive I/O-only cohesion weight.
+    vtr::vector<APNetId, bool> io_chain_cohesion_nets_;                ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
+    std::vector<std::vector<APBlockId>> pack_pattern_cohesion_groups_; ///< Multi-block long-chain AP block groups.
+    size_t num_io_chain_cohesion_nets_ = 0;                            ///< Number of flagged direct I/O-chain AP nets.
+    std::vector<double> filler_unit_mass_;                             ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                               ///< [dim] density-only filler preconditioner.
 
-    size_t device_grid_width_ = 0;          ///< Width of the placement region.
-    size_t device_grid_height_ = 0;         ///< Height of the placement region.
-    size_t device_grid_num_layers_ = 0;     ///< Number of device layers.
-    float ap_timing_tradeoff_ = 0.f;        ///< User timing tradeoff value.
-    float effective_timing_tradeoff_ = 0.f; ///< Timing tradeoff after design-size adaptation.
+    size_t device_grid_width_ = 0;             ///< Width of the placement region.
+    size_t device_grid_height_ = 0;            ///< Height of the placement region.
+    size_t device_grid_num_layers_ = 0;        ///< Number of device layers.
+    float ap_timing_tradeoff_ = 0.f;           ///< User timing tradeoff value.
+    float effective_timing_tradeoff_ = 0.f;    ///< Timing tradeoff after design-size adaptation.
+    double io_chain_net_cohesion_weight_ = 2.; ///< Weight multiplier for direct I/O-chain AP nets.
+    double pack_pattern_cohesion_weight_ = 0.; ///< Weight of the optional pack-pattern chain cohesion objective.
 
     /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
     ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
