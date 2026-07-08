@@ -1,26 +1,5 @@
 #pragma once
 
-/**
- * @file crr_compiled_template.h
- * @brief Numeric, pre-parsed form of a switch-block template dataframe.
- *
- * A switch template CSV describes which routing
- * segments / pins (the dataframe rows are connection sources, the columns are
- * connection sinks) are connected and with what delay. The raw DataFrame holds
- * strings, and the original implementation re-parsed those strings for every
- * switch-block tile on the device. A CompiledTemplate is built once per
- * template and captures everything that is tile-independent:
- *
- *  - each valid row/column parsed into a CompiledSegSpec (side, segment
- *    length, starting PTC including the stateful PTC-assignment chain,
- *    direction, or pin name for IPIN/OPIN specs),
- *  - each non-empty cell reduced to (source spec, sink spec, delay).
- *
- * Resolving a spec to a concrete RRNodeId (which depends on the tile
- * coordinate) is done per tile by the CRRConnectionBuilder using pure integer
- * arithmetic and a numeric node lookup.
- */
-
 #include <string>
 #include <vector>
 
