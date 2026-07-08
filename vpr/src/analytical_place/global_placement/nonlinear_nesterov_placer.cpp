@@ -693,6 +693,8 @@ bool NonlinearNesterovPlacer::block_is_optimizable_(APBlockId blk_id) const {
 PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     PartialPlacement p_placement(ap_netlist_);
 
+    // No movable blocks: every block is fixed, so there is nothing for the
+    // optimizer to do. Snap fixed blocks into device bounds and return.
     if (optimizable_blocks_.empty()) {
         project_placement_(p_placement);
         return p_placement;
@@ -1307,6 +1309,10 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
             weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
         }
 
+        // Nets flagged by update_boundary_net_flags_/block_is_io_chain_block_ get extra
+        // wirelength weight so their pin blocks are pulled tightly together; this counteracts
+        // the smooth objective's tendency to let long boundary-anchored and I/O-chain nets
+        // spread out, which otherwise fragments those chains across the AP-to-APPack handoff.
         if (static_cast<size_t>(net_id) < boundary_cohesion_nets_.size() && boundary_cohesion_nets_[net_id])
             weight *= kBoundaryNetCohesionWeight;
         if (static_cast<size_t>(net_id) < io_chain_cohesion_nets_.size() && io_chain_cohesion_nets_[net_id])

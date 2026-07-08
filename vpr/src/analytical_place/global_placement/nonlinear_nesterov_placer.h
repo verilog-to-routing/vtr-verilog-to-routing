@@ -63,7 +63,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ~NonlinearNesterovPlacer();
 
     /**
-     * @brief Run accelerated smooth global placement and final partial legalization.
+     * @brief Run global placement with weighted average smooth/differentiable wirelength
+     *        and electrostatic density formulation using Nesterov Accelerated Gradient optimizer
+     *        then hand the result to the partial legalizer.
      */
     PartialPlacement place() final;
 
@@ -318,15 +320,15 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      */
     bool block_is_optimizable_(APBlockId blk_id) const;
 
-    std::shared_ptr<FlatPlacementDensityManager> density_manager_; ///< Architecture-aware density metadata.
-    std::unique_ptr<PartialLegalizer> partial_legalizer_;          ///< Existing partial legalizer used after smooth optimization.
+    std::shared_ptr<FlatPlacementDensityManager> density_manager_; ///< Owns the per-tile capacity/mass model that add_density_gradient_ deposits charge onto and legalization consumes.
+    std::unique_ptr<PartialLegalizer> partial_legalizer_;          ///< Cleans up discrete architecture-legality violations (overlaps, resource mismatches) the continuous optimizer's placement leaves behind, before full legalization.
     const AtomNetlist& atom_netlist_;                              ///< Atom netlist used for timing criticality lookup.
     PreClusterTimingManager& pre_cluster_timing_manager_;          ///< Timing manager used to weight smooth wirelength nets.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;           ///< Delay model used to update timing criticalities.
     const LogicalModels& models_;                                  ///< Logical models used to classify I/O-chain primitives.
 
     std::vector<APBlockId> optimizable_blocks_; ///< Movable AP blocks touched by the optimizer.
-    vtr::vector<APNetId, double> net_weights_;  ///< Smooth wirelength weight for each AP net.
+    vtr::vector<APNetId, double> net_weights_;  ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
 
     vtr::vector<APBlockId, double> block_precond_;                     ///< Per-block diagonal preconditioner (objective curvature estimate).
     bool precond_active_ = false;                                      ///< Whether the preconditioner is applied in the current optimization run.
