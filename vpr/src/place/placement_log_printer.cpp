@@ -288,9 +288,9 @@ void PlacementLogPrinter::print_resources_utilization_per_die() const {
     const size_t num_logical_block_types = device_ctx.logical_block_types.size();
     const size_t num_models = models.all_models().size();
 
-    // Number of placed clustered blocks on each die, indexed by [die][logical block type index].
+    // Number of placed clustered blocks of each type on each die, indexed by [die][logical block type index].
     vtr::vector<DeviceDieId, std::vector<size_t>> clb_per_die(num_dice, std::vector<size_t>(num_logical_block_types, 0));
-    // Number of placed atom blocks on each die, indexed by [die][model id].
+    // Number of placed atom (primitive) blocks of each model type on each die, indexed by [die][model id].
     vtr::vector<DeviceDieId, vtr::vector<LogicalModelId, size_t>> atom_per_die(num_dice, vtr::vector<LogicalModelId, size_t>(num_models, 0));
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -314,7 +314,9 @@ void PlacementLogPrinter::print_resources_utilization_per_die() const {
     for (const t_die_region& die_region : grid.all_die_regions()) {
         DeviceDieId die_id = grid.get_die_region_id(die_region);
 
-        VTR_LOG("  Die (x=%d, y=%d, layer=%d):\n",
+        // x_die/y_die identify the die's position within the grid of dies on this layer;
+        // they are not tile grid (x, y) coordinates.
+        VTR_LOG("  Die (x_die=%d, y_die=%d, layer=%d):\n",
                 die_region.x_die, die_region.y_die, die_region.layer);
 
         // Clustered blocks placed on this die.
