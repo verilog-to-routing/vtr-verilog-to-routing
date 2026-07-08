@@ -155,8 +155,6 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
             RRNodeId sink_node = sink_it->second;
             e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
 
-            std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
-
             // If the source node is an IPIN, then it should be considered as
             // a sink of the connection.
             if (source_node_type == e_rr_type::IPIN) {
@@ -165,7 +163,7 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
                                                        sink_node,
                                                        source_node);
 
-                connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
+                connections.emplace_back(source_node, sink_node, delay_ps);
             } else {
                 int segment_length = -1;
                 if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
@@ -177,7 +175,7 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
                                                        sink_node,
                                                        segment_length);
 
-                connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
+                connections.emplace_back(sink_node, source_node, delay_ps);
             }
         }
     }
