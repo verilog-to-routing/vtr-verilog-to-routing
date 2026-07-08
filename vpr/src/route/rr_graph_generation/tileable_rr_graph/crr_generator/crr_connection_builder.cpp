@@ -368,6 +368,8 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const CompiledSegSpec& 
     // VPR does not allow routing tracks on the perimeter of the device; the
     // minimum coordinate of a track depends on the channel type.
     bool is_chanx = spec.side == e_sw_template_dir::LEFT || spec.side == e_sw_template_dir::RIGHT;
+    int min_x = (is_chanx ? 1 : 0);
+    int min_y = (is_chanx ? 0 : 1);
     int max_x = fpga_grid_x_ - 2;
     int max_y = fpga_grid_y_ - 2;
 
