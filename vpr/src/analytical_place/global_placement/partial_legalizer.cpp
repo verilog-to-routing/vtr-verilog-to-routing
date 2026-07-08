@@ -1577,17 +1577,21 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     float best_score = -1.0f;
     const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
 
-    // If the device has interposer die boundaries, always try to partition
-    // along them first. Even an unbalanced die-boundary cut is preferable to
+    // If the device has interposer cuts, always try to partition
+    // along them first. Even an unbalanced interposer cut is preferable to
     // spreading blocks across an interposer; the recursive partitioner will
     // re-balance each sub-window on subsequent splits. We pick the most
-    // balanced interposer cut when multiple boundaries fall in the window.
+    // balanced interposer cut when multiple cuts fall in the window.
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     if (device_grid.has_interposer_cuts()) {
         float best_interposer_score = -1.0f;
         PartitionedWindow best_interposer_partition;
 
-        // Try vertical interposer cuts (die boundaries at constant x).
+        // Below we try different interposer cuts as partition lines.
+        // This iterates over interposer cuts that are contained inside the window
+        // and finds the one that results in a more balanced partition.
+
+        // Try vertical interposer cuts (cut at constant x).
         int min_pivot_x = (int)std::floor(window.region.xmin()) + 1;
         int max_pivot_x = (int)std::ceil(window.region.xmax()) - 1;
         std::unordered_set<int> vert_cut_xs;
@@ -1673,8 +1677,8 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
             }
         }
 
-        // If any interposer boundary falls within this window, return the
-        // best-balanced one immediately without evaluating non-boundary cuts.
+        // If any interposer cuts falls within this window, return the
+        // best-balanced one immediately without evaluating other partitions.
         if (best_interposer_score >= 0.0f)
             return best_interposer_partition;
     }
