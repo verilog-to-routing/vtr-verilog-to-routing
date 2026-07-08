@@ -33,56 +33,52 @@ ChanNodeDetails::ChanNodeDetails() {
  *  Accessors
  ***********************************************************************/
 size_t ChanNodeDetails::get_chan_width() const {
-    VTR_ASSERT(validate_chan_width());
+    VTR_ASSERT_SAFE(validate_chan_width());
     return track_node_ids_.size();
 }
 
 size_t ChanNodeDetails::get_track_node_id(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < track_node_ids_.size());
     return track_node_ids_[track_id];
 }
 
 /* Return a copy of vector */
 std::vector<size_t> ChanNodeDetails::get_track_node_ids() const {
-    std::vector<size_t> copy;
-    for (size_t inode = 0; inode < get_chan_width(); ++inode) {
-        copy.push_back(track_node_ids_[inode]);
-    }
-    return copy;
+    return track_node_ids_;
 }
 
 Direction ChanNodeDetails::get_track_direction(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < track_direction_.size());
     return track_direction_[track_id];
 }
 
 size_t ChanNodeDetails::get_track_segment_length(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < seg_length_.size());
     return seg_length_[track_id];
 }
 
 size_t ChanNodeDetails::get_track_segment_id(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < seg_ids_.size());
     return seg_ids_[track_id];
 }
 
 bool ChanNodeDetails::is_track_start(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < track_start_.size());
     return track_start_[track_id];
 }
 
 bool ChanNodeDetails::is_track_end(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < track_end_.size());
     return track_end_[track_id];
 }
 
 size_t ChanNodeDetails::get_track_bend_start(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < track_bend_start_.size());
     return track_bend_start_[track_id];
 }
 
 size_t ChanNodeDetails::get_track_bend_end(const size_t& track_id) const {
-    VTR_ASSERT(validate_track_id(track_id));
+    VTR_ASSERT(track_id < track_bend_end_.size());
     return track_bend_end_[track_id];
 }
 
@@ -191,7 +187,7 @@ void ChanNodeDetails::add_track(const size_t& track_node_id, const Direction& tr
 
 /* Update the node_id of a given track */
 void ChanNodeDetails::set_track_node_id(const size_t& track_index, const size_t& track_node_id) {
-    VTR_ASSERT(validate_track_id(track_index));
+    VTR_ASSERT(track_index < track_node_ids_.size());
     track_node_ids_[track_index] = track_node_id;
 }
 
