@@ -975,6 +975,12 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
         max_seg_length = grids.width();
     }
 
+    // Track rotation pattern of a regular (non-border) channel. It only depends
+    // on the channel width and segment definitions, so it is built once and its
+    // node ids are refreshed for every location that needs a rotation.
+    ChanNodeDetails chanx_details_tt = build_unidir_chan_node_details(chan_width, max_seg_length,
+                                                                      false, false, segment_infs);
+
     // For X-direction Channel: CHANX
     for (size_t iy = 0; iy < grids.height() - 1; ++iy) {
         // Keep a vector of node_ids for the channels, because we will rotate them when walking through ix
@@ -1023,8 +1029,6 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 // Rotate should be done based on a typical case of routing tracks.
                 // Tracks on the borders are not regularly started and ended,
                 // which causes the node_rotation malfunction
-                ChanNodeDetails chanx_details_tt = build_unidir_chan_node_details(chan_width, max_seg_length,
-                                                                                  false, false, segment_infs);
                 chanx_details_tt.set_track_node_ids(track_node_ids);
 
                 // TODO:
@@ -1107,6 +1111,12 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
         max_seg_length = grids.height();
     }
 
+    // Track rotation pattern of a regular (non-border) channel. It only depends
+    // on the channel width and segment definitions, so it is built once and its
+    // node ids are refreshed for every location that needs a rotation.
+    ChanNodeDetails chany_details_tt = build_unidir_chan_node_details(chan_width, max_seg_length,
+                                                                      false, false, segment_infs);
+
     // For Y-direction Channel: CHANY
     for (size_t ix = 0; ix < grids.width() - 1; ++ix) {
         // Keep a vector of node_ids for the channels, because we will rotate them when walking through ix
@@ -1156,9 +1166,6 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 // Rotate should be done based on a typical case of routing tracks.
                 // Tracks on the borders are not regularly started and ended,
                 // which causes the node_rotation malfunction
-                ChanNodeDetails chany_details_tt = build_unidir_chan_node_details(chan_width, max_seg_length,
-                                                                                  false, false, segment_infs);
-
                 chany_details_tt.set_track_node_ids(track_node_ids);
 
                 // TODO:
