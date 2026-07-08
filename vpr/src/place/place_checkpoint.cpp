@@ -4,6 +4,7 @@
 
 #include "globals.h"
 #include "interposer_cost_handler.h"
+#include "net_cost_handler.h"
 #include "noc_place_utils.h"
 #include "placer_state.h"
 #include "grid_block.h"
@@ -49,6 +50,7 @@ void save_placement_checkpoint_if_needed(const vtr::vector_map<ClusterBlockId, t
 
 void restore_best_placement(PlacerState& placer_state,
                             t_placement_checkpoint& placement_checkpoint,
+                            NetCostHandler& net_cost_handler,
                             std::shared_ptr<SetupTimingInfo>& timing_info,
                             t_placer_costs& costs,
                             std::unique_ptr<PlacerCriticalities>& placer_criticalities,
@@ -67,6 +69,8 @@ void restore_best_placement(PlacerState& placer_state,
         //restore the latest placement checkpoint
 
         costs = placement_checkpoint.restore_placement(placer_state.mutable_block_locs(), placer_state.mutable_grid_blocks());
+
+        net_cost_handler.comp_bb_cong_cost(e_cost_methods::NORMAL);
 
         //recompute timing from scratch
         placer_criticalities.get()->set_recompute_required();
@@ -93,7 +97,7 @@ void restore_best_placement(PlacerState& placer_state,
 
         if (interposer_cost_handler) {
             VTR_ASSERT_SAFE(g_vpr_ctx.device().grid.has_interposer_cuts());
-            interposer_cost_handler->compute_interposer_est_cong(false);
+            costs.interposer_cong_cost = interposer_cost_handler->compute_interposer_est_cong(true);
             std::optional<e_interposer_cost_stage> checkpoint_interposer_cost_stage = placement_checkpoint.get_interposer_cost_stage();
             if (checkpoint_interposer_cost_stage) {
                 interposer_cost_handler->change_interposer_cost_stage(checkpoint_interposer_cost_stage.value());
