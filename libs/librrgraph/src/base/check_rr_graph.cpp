@@ -125,18 +125,20 @@ void check_rr_graph(const RRGraphView& rr_graph,
             return lhs.first < rhs.first;
         });
 
-        //Check that multiple edges between the same from/to nodes make sense
-        for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
-
-            auto range = std::equal_range(edges.begin(), edges.end(),
-                                          to_node, node_edge_sorter());
+        // Check that multiple edges between the same from/to nodes make sense.
+        // Walk the sorted edge list one group of same-destination edges at a time.
+        for (auto group_first = edges.cbegin(); group_first != edges.cend();) {
+            int to_node = group_first->first;
+            auto group_last = group_first + 1;
+            while (group_last != edges.cend() && group_last->first == to_node) {
+                ++group_last;
+            }
+            auto range = std::make_pair(group_first, group_last);
+            group_first = group_last;
 
             size_t num_edges_to_node = std::distance(range.first, range.second);
 
             if (num_edges_to_node == 1) continue; //Single edges are always OK
-
-            VTR_ASSERT_MSG(num_edges_to_node > 1, "Expect multiple edges");
 
             e_rr_type to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
