@@ -10,10 +10,12 @@ from typing import Mapping
 SCATTER_GATHER_START = "  <scatter_gather_list>"
 SCATTER_GATHER_END = "  </scatter_gather_list>"
 
+ESD_VARIANTS = ("with_esd", "without_esd")
 
-def _mux_name(pitch_um: str, connectivity: str) -> str:
+
+def _mux_name(pitch_um: str, connectivity: str, esd: str) -> str:
     prefix = "bidir_inter_die_switch" if connectivity == "bidir" else "inter_die_switch"
-    return f"{prefix}_{pitch_um}um"
+    return f"{prefix}_{pitch_um}um_{esd}"
 
 
 def _split_conn_num(num: float) -> tuple[int, bool]:
@@ -246,7 +248,7 @@ def _build_locations(pitch_um: str, clb_num: float, dsp_num: float, mem_num: flo
     return lines
 
 
-def build_scatter_gather_section(row: Mapping[str, str]) -> str:
+def build_scatter_gather_section(row: Mapping[str, str], esd: str) -> str:
     """Build the scatter_gather_list XML section for one Hecate 3D variant."""
     pitch_um = row["pitch_um"]
     connectivity = row["connectivity"]
@@ -258,7 +260,7 @@ def build_scatter_gather_section(row: Mapping[str, str]) -> str:
     assert dsp_num * 2 == int(dsp_num * 2), f"dsp_num * 2 must be an integer, got {dsp_num}"
     assert mem_num * 2 == int(mem_num * 2), f"mem_num * 2 must be an integer, got {mem_num}"
 
-    mux_name = _mux_name(pitch_um, connectivity)
+    mux_name = _mux_name(pitch_um, connectivity, esd)
     fanin = row["fanin"]
     fanout = row["fanout"]
 
@@ -309,22 +311,24 @@ def _replace_xml_section(template_text: str, start_tag: str, end_tag: str, new_c
 def generate_hecate_arch_for_row(
     row: Mapping[str, str], template_text: str, output_dir: str
 ) -> None:
-    """Generate one Hecate 3D switch-block architecture variant."""
+    """Generate the with_esd and without_esd Hecate 3D switch-block architecture variants."""
     variant_id = row["variant_id"]
-    scatter_gather_section = build_scatter_gather_section(row)
-    arch_text = _replace_xml_section(
-        template_text, SCATTER_GATHER_START, SCATTER_GATHER_END, scatter_gather_section
-    )
 
-    output_filename = (
-        f"hecate_3d_sb_{variant_id}_fanin_{row['fanin']}_fanout_{row['fanout']}_7nm.xml"
-    )
-    output_path = os.path.join(output_dir, output_filename)
+    for esd in ESD_VARIANTS:
+        scatter_gather_section = build_scatter_gather_section(row, esd)
+        arch_text = _replace_xml_section(
+            template_text, SCATTER_GATHER_START, SCATTER_GATHER_END, scatter_gather_section
+        )
 
-    with open(output_path, "w", encoding="utf-8") as output_file:
-        output_file.write(arch_text)
+        output_filename = (
+            f"hecate_3d_sb_{variant_id}_fanin_{row['fanin']}_fanout_{row['fanout']}_{esd}_7nm.xml"
+        )
+        output_path = os.path.join(output_dir, output_filename)
 
-    print(f"Generated: {output_path}")
+        with open(output_path, "w", encoding="utf-8") as output_file:
+            output_file.write(arch_text)
+
+        print(f"Generated: {output_path}")
 
 
 def generate_hecate_3d_sb_archs(

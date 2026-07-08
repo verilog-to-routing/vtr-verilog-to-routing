@@ -1000,7 +1000,7 @@ static void build_rr_graph(e_graph_type graph_type,
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type, device_model_warnings);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type, route_verbosity, device_model_warnings);
 
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
@@ -1067,6 +1067,9 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
     vtr::NdMatrix<std::pair<int, int>, 2>& horz_interposer_cut_bounds = device_ctx.horz_interposer_cut_bounds_;
     vtr::NdMatrix<std::pair<int, int>, 2>& vert_interposer_cut_bounds = device_ctx.vert_interposer_cut_bounds_;
 
+    vtr::NdMatrix<uint16_t, 2>& horz_interposer_cut_min_seg_length = device_ctx.horz_interposer_cut_min_seg_length;
+    vtr::NdMatrix<uint16_t, 2>& vert_interposer_cut_min_seg_length = device_ctx.vert_interposer_cut_min_seg_length;
+
     // Matrices are sized to the maximum cut count across layers.
     // Layers with fewer cuts will leave the extra [cut_idx] planes at zero.
     horz_interposer_capacity.resize({num_layers, max_h_cuts, grid.width()});
@@ -1077,6 +1080,11 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
     const std::pair<int, int> default_bounds = {std::numeric_limits<int>::max(), std::numeric_limits<int>::min()};
     horz_interposer_cut_bounds.resize({num_layers, max_h_cuts}, default_bounds);
     vert_interposer_cut_bounds.resize({num_layers, max_v_cuts}, default_bounds);
+
+    horz_interposer_cut_min_seg_length.resize({num_layers, max_h_cuts});
+    vert_interposer_cut_min_seg_length.resize({num_layers, max_v_cuts});
+    horz_interposer_cut_min_seg_length.fill(std::numeric_limits<uint16_t>::max());
+    vert_interposer_cut_min_seg_length.fill(std::numeric_limits<uint16_t>::max());
 
     for (RRNodeId node_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(node_id);
@@ -1097,6 +1105,7 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                     std::pair<int, int>& cut_bounds = horz_interposer_cut_bounds[layer][cut_idx];
                     cut_bounds.first = std::min(cut_bounds.first, ylow);
                     cut_bounds.second = std::max(cut_bounds.second, yhigh);
+                    horz_interposer_cut_min_seg_length[layer][cut_idx] = std::min(horz_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(yhigh - ylow + 1));
                 }
             }
         } else if (rr_type == e_rr_type::CHANX) {
@@ -1113,6 +1122,8 @@ static void init_interposer_per_cut_tables_from_rr_graph(DeviceContext& device_c
                     std::pair<int, int>& cut_bounds = vert_interposer_cut_bounds[layer][cut_idx];
                     cut_bounds.first = std::min(cut_bounds.first, xlow);
                     cut_bounds.second = std::max(cut_bounds.second, xhigh);
+
+                    vert_interposer_cut_min_seg_length[layer][cut_idx] = std::min(vert_interposer_cut_min_seg_length[layer][cut_idx], static_cast<uint16_t>(xhigh - xlow + 1));
                 }
             }
         }
@@ -1211,6 +1222,7 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_y,
                         const std::vector<t_segment_inf>& segment_inf_z,
                         e_base_cost_type base_cost_type,
+                        int route_verbosity,
                         bool device_model_warnings) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
@@ -1221,7 +1233,7 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     add_rr_graph_C_from_switches();
     alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x, segment_inf_y, segment_inf_z,
-                                   rr_indexed_data, base_cost_type, echo_enabled, echo_file_name, device_model_warnings);
+                                   rr_indexed_data, base_cost_type, echo_enabled, echo_file_name, route_verbosity, device_model_warnings);
     //load_rr_index_segments(segment_inf.size());
 }
 

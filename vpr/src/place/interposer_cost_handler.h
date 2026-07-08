@@ -5,12 +5,20 @@
  */
 
 #include "place_util.h"
+#include "vpr_types.h"
+#include "vtr_circular_buffer.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
 #include <functional>
+#include <optional>
 #include <utility>
 #include <vector>
+
+enum class e_interposer_cost_stage {
+    FIRST,
+    SECOND
+};
 
 class InterposerCostHandler {
   public:
@@ -20,8 +28,7 @@ class InterposerCostHandler {
     InterposerCostHandler(InterposerCostHandler&&) = delete;
     InterposerCostHandler& operator=(InterposerCostHandler&&) = delete;
 
-    InterposerCostHandler(bool interposer_cost_enabled,
-                          double interposer_cong_threshold,
+    InterposerCostHandler(t_interposer_cost_params interposer_cost_params,
                           std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb);
 
     /// @brief Returns true when at least one interposer cost term is activated.
@@ -47,10 +54,44 @@ class InterposerCostHandler {
     /// @return Total interposer congestion cost when compute_congestion_cost is true, otherwise 0.
     double compute_interposer_est_cong(bool compute_congestion_cost = true);
 
+    /**
+     * @brief Try switching to a more detailed interposer net cost model based on recent costs.
+     *
+     * This is done by keeping a history of the last 10 interposer costs given to this function
+     * with the current_cost argument. When the maximum deviation of the last 10 costs is
+     * less than interposer_net_cost_change_threshold_ (0.5% by default), the two stage interposer
+     * cost switches to the second stage cost. Only works for the two stage cost mode, is a NOP otherwise.
+     * If cost model was changed, you probably want to recompute costs from scratch.
+     *
+     * @param current_cost Last interposer cost
+     * @return True if the interposer net cost model was changed.
+     */
+    bool try_change_interposer_cost_model(double current_cost);
+
+    /**
+     * @brief Changes the interposer cost stage by force. Only effective
+     * in the two stage cost model. Users should generally use 'try_change_interposer_cost_model'
+     * if possible. This function is useful in contexts such as placement checkpoints where
+     * you must change the cost function to what it was before.
+     */
+    void change_interposer_cost_stage(e_interposer_cost_stage new_stage);
+
+    /**
+     * @brief Returns the active stage when using the two-stage interposer net cost model.
+     *
+     * @return Current interposer cost stage if the two-stage cost model is enabled,
+     * otherwise std::nullopt.
+     */
+    std::optional<e_interposer_cost_stage> get_net_cost_stage();
+
+    /// @brief Returns the configured interposer net cost type.
+    e_interposer_net_cost_type get_net_cost_type() const { return interposer_cost_type_; }
+
   private:
     double get_net_interposer_cost_(ClusterNetId net_id, bool use_ts) const;
     double get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const;
     std::pair<int, int> count_bb_interposer_cut_crossings_(const t_bb& bb) const;
+    e_interposer_net_cost_type get_active_net_cost_type_() const;
 
   private:
     /// Enables interposer crossing cost term.
@@ -75,4 +116,17 @@ class InterposerCostHandler {
     vtr::vector<ClusterNetId, double> net_interposer_cost_, proposed_net_interposer_cost_;
     /// Per-net interposer congestion cost (and temporary value during move evaluation).
     vtr::vector<ClusterNetId, double> net_interposer_cong_cost_, proposed_net_interposer_cong_cost_;
+
+    e_interposer_net_cost_type interposer_cost_type_ = e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB;
+
+    /// Current stage of interposet net cost when using two-stage cost mode
+    e_interposer_cost_stage interposer_cost_stage_ = e_interposer_cost_stage::FIRST;
+    /// Concrete interposer net cost type used during the first stage of two-stage mode.
+    const e_interposer_net_cost_type two_stage_interposer_net_cost_first_stage_type_;
+    /// Concrete interposer net cost type used during the second stage of two-stage mode.
+    const e_interposer_net_cost_type two_stage_interposer_net_cost_second_stage_type_;
+    /// Threshold used to switch from first to second stage in two-stage mode.
+    double interposer_net_cost_change_threshold_;
+    /// Recent interposer net costs used to decide when to switch cost models.
+    vtr::circular_buffer<double> interposer_net_cost_history_ = vtr::circular_buffer<double>(10);
 };

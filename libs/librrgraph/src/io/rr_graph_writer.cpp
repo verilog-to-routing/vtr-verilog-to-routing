@@ -81,6 +81,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
         &arch->strings,
         schema_file_id,
         is_flat,
+        route_verbosity,
         device_model_warnings);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {

@@ -1239,6 +1239,11 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
         }
     }
 
+    if (!interconnect->bus && num_output_ptrs[0] != 1) {
+        vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
+                  "Bus-based mux requires the 'bus' attribute to be set to true on the <mux> tag\n");
+    }
+
     /* One edge per (input_set, pin) pair so every edge remains single-pin.
      * For a 1-bit mux this is identical to the original behaviour. */
     const int pins_per_set = num_output_ptrs[0];
@@ -1652,15 +1657,15 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
     echo_pb_pins(pb_graph_node->clock_pins, pb_graph_node->num_clock_ports,
                  level, fp);
     print_tabs(fp, level);
-    for (i = 0; i < pb_graph_node->num_input_pin_class; i++) {
-        fprintf(fp, "Input class %d: %d pins, ", i,
-                pb_graph_node->input_pin_class_size[i]);
+    for (size_t class_id = 0; class_id < pb_graph_node->input_pin_class_sizes.size(); class_id++) {
+        fprintf(fp, "Input class %zu: %zu pins, ", class_id,
+                pb_graph_node->input_pin_class_sizes[class_id]);
     }
     fprintf(fp, "\n");
     print_tabs(fp, level);
-    for (i = 0; i < pb_graph_node->num_output_pin_class; i++) {
-        fprintf(fp, "Output class %d: %d pins, ", i,
-                pb_graph_node->output_pin_class_size[i]);
+    for (size_t class_id = 0; class_id < pb_graph_node->output_pin_class_sizes.size(); class_id++) {
+        fprintf(fp, "Output class %zu: %zu pins, ", class_id,
+                pb_graph_node->output_pin_class_sizes[class_id]);
     }
     fprintf(fp, "\n");
 

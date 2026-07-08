@@ -127,7 +127,6 @@ void draw_place(ezgl::renderer* g) {
                 for (int k = 0; k < num_sub_tiles; ++k) {
                     // Look at the tile at start of large block
                     ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                    // Fill background for the clb. Do not fill if "show_blk_internal" is toggled.
 
                     // Determine the block color and logical type
                     ezgl::color block_color;
@@ -155,19 +154,27 @@ void draw_place(ezgl::renderer* g) {
                         g->draw_rectangle(abs_clb_bbox);
                     }
 
+                    g->set_font_size(14);
                     if (draw_state->draw_block_text) {
-                        // Draw text if the space has parts of the netlist
-                        if (bnum) {
-                            const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-                            g->draw_text(center, name, abs_clb_bbox.width(), abs_clb_bbox.height());
+                        // The function draw_internal_draw_subblk() in intra_logic_block.cpp is called after this function during every redraw, and it
+                        // draws cluster blocks (which overlap with the ones drawn in this function), their child blocks and their block types when
+                        // "show block internals" is toggled. In this case, we should no longer draw the block types here again, because in the deferred renderer
+                        // or rhi renderer mode, all texts are queued and unleashed together after geometries are drawn, meaning that cluster blocks drawn in draw_internal_draw_subblk()
+                        // cannot effectively hide the block types drawn in this function. However, draw_internal_draw_subblk() skips drawing empty cluster blocks (i.e. !bnum),
+                        // and therefore we should still draw their block types here.
+                        if (!draw_state->show_blk_internal || !bnum) {
+                            std::string block_type_loc = type->name;
+                            block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
+                            g->draw_text(center, block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
 
-                        // Draw text for block type so that user knows what block
-                        std::string block_type_loc = type->name;
-                        block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
-
-                        g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
-                                     block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
+                        // Draw the cluster block name if "show block internals" is not toggled and the block is not empty.
+                        if (!draw_state->show_blk_internal && bnum) {
+                            const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+                            // The drawing position is offset from the block center to avoid being overlapped with the block type name.
+                            g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
+                                         name, abs_clb_bbox.width(), abs_clb_bbox.height());
+                        }
                     }
                 }
             }
@@ -950,73 +957,6 @@ void draw_routing_util(ezgl::renderer* g) {
  * a) during placement, critical path only shown as flylines
  * b) during routing, critical path is shown by both flylines and routed net connections.
  */
-void draw_crit_path(ezgl::renderer* g) {
-    tatum::TimingPathCollector path_collector;
-
-    t_draw_state* draw_state = get_draw_state_vars();
-    const TimingContext& timing_ctx = g_vpr_ctx.timing();
-
-    if (!draw_state->show_crit_path) {
-        return;
-    }
-
-    if (!draw_state->setup_timing_info) {
-        return; //No timing to draw
-    }
-
-    //Get the worst timing path
-    auto paths = path_collector.collect_worst_setup_timing_paths(
-        *timing_ctx.graph,
-        *(draw_state->setup_timing_info->setup_analyzer()), 1);
-    tatum::TimingPath path = paths[0];
-
-    //Walk through the timing path drawing each edge
-    tatum::NodeId prev_node;
-    float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
-    int i = 0;
-    for (tatum::TimingPathElem elem : path.data_arrival_path().elements()) {
-        tatum::NodeId node = elem.node();
-        float arr_time = elem.tag().time();
-
-        if (prev_node) {
-            //We draw each 'edge' in a different color, this allows users to identify the stages and
-            //any routing which corresponds to the edge
-            //
-            //We pick colors from the kelly max-contrast list, for long paths there may be repeats
-            ezgl::color color = kelly_max_contrast_colors[i++
-                                                          % kelly_max_contrast_colors.size()];
-
-            float delay = arr_time - prev_arr_time;
-
-            int src_block_layer = get_timing_path_node_layer_num(node);
-            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
-
-            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
-
-            if (draw_state->show_crit_path_flylines) {
-                // FLylines for critical path are drawn based on the layer visibility of the source and sink
-                if (flyline_visibility.visible) {
-                    g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-                    g->set_line_width(3);
-                    g->set_color(color, flyline_visibility.alpha);
-
-                    draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
-                                             (ezgl::point2d)tnode_draw_coord(node), (float)delay,
-                                             (ezgl::renderer*)g);
-                    g->set_line_dash(ezgl::line_dash::none);
-                    g->set_line_width(0);
-                }
-            }
-
-            if (draw_state->show_crit_path_routing) {
-                //Draw the routed version of the timing edge
-                draw_routed_timing_edge_connection(prev_node, node, color, g);
-            }
-        }
-        prev_node = node;
-        prev_arr_time = arr_time;
-    }
-}
 
 /**
  * @brief Draw critical path elements.
@@ -1024,71 +964,6 @@ void draw_crit_path(ezgl::renderer* g) {
  * This function draws critical path elements based on the provided timing paths
  * and indexes map. It is primarily used in server mode, where items are drawn upon request.
  */
-void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    const ezgl::color contour_color{0, 0, 0, 40};
-    const ezgl::line_dash contour_line_style{ezgl::line_dash::none};
-    const int contour_line_width{1};
-
-    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay,
-                                                 const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays = false) {
-        renderer->set_color(color);
-        renderer->set_line_dash(line_style);
-        renderer->set_line_width(line_width);
-        draw_flyline_timing_edge(tnode_draw_coord(prev_node),
-                                 tnode_draw_coord(node), delay, renderer, skip_draw_delays);
-
-        renderer->set_line_dash(ezgl::line_dash::none);
-        renderer->set_line_width(0);
-    };
-
-    for (const auto& [path_index, element_indexes] : indexes) {
-        if (path_index < paths.size()) {
-            const tatum::TimingPath& path = paths[path_index];
-
-            //Walk through the timing path drawing each edge
-            tatum::NodeId prev_node;
-            float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
-            int element_counter = 0;
-            for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
-                bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
-
-                // draw element
-                tatum::NodeId node = elem.node();
-                float arr_time = elem.tag().time();
-
-                //We draw each 'edge' in a different color, this allows users to identify the stages and
-                //any routing which corresponds to the edge
-                //
-                //We pick colors from the kelly max-contrast list, for long paths there may be repeats
-                ezgl::color color = kelly_max_contrast_colors[element_counter % kelly_max_contrast_colors.size()];
-
-                if (prev_node) {
-                    float delay = arr_time - prev_arr_time;
-                    if (draw_state->show_crit_path_flylines) {
-                        if (draw_current_element) {
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/ 3, delay, prev_node, node);
-                        } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
-                        }
-                    }
-                    if (draw_state->show_crit_path_routing) {
-                        if (draw_current_element) {
-                            //Draw the routed version of the timing edge
-                            draw_routed_timing_edge_connection(prev_node, node, color, g);
-                        }
-                    }
-                }
-
-                prev_node = node;
-                prev_arr_time = arr_time;
-                // end draw element
-
-                element_counter++;
-            }
-        }
-    }
-}
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -1112,152 +987,6 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
     }
 
     return true;
-}
-
-//Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/) {
-    g->draw_line(start, end);
-    draw_triangle_along_line_fixed_px(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
-    draw_triangle_along_line_fixed_px(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
-
-    bool draw_delays = get_draw_state_vars()->show_crit_path_delays && !skip_draw_delays;
-
-    if (draw_delays) {
-        //Determine the strict bounding box based on the lines start/end
-        float min_x = std::min(start.x, end.x);
-        float max_x = std::max(start.x, end.x);
-        float min_y = std::min(start.y, end.y);
-        float max_y = std::max(start.y, end.y);
-
-        //If we have a nearly horizontal/vertical line the bbox is too
-        //small to draw the text, so widen it by a tile (i.e. CLB) width
-        float tile_width = get_draw_coords_vars()->get_tile_width();
-        if (max_x - min_x < tile_width) {
-            max_x += tile_width / 2;
-            min_x -= tile_width / 2;
-        }
-        if (max_y - min_y < tile_width) {
-            max_y += tile_width / 2;
-            min_y -= tile_width / 2;
-        }
-
-        //TODO: draw the delays nicer
-        //   * track visible in window
-        ezgl::rectangle text_bbox({min_x, min_y}, {max_x, max_y});
-
-        std::stringstream ss;
-        ss.precision(3);
-        ss << 1e9 * incr_delay; //In nanoseconds
-        std::string incr_delay_str = ss.str();
-
-        // Get the angle of line, to rotate the text
-        float text_angle = (180 / std::numbers::pi)
-                           * atan((end.y - start.y) / (end.x - start.x));
-
-        // Offset the label perpendicular to the line by a fixed SCREEN-
-        // pixel amount via set_text_screen_offset. The offset is applied
-        // at paint time AFTER world→screen transform, so its visible size
-        // is always exactly kOffsetPx regardless of zoom — and crucially
-        // it's preserved through the camera-only redraw path (zoom/pan
-        // operations that replay cached overlay commands without re-running
-        // this code). The angle is in screen space: +X right, +Y down (Qt
-        // convention), which is why cos is negated here vs. world-Y-up.
-        constexpr float kFontPx = 16.0f;
-        constexpr float kOffsetPx = 12.0f;
-        const float angle_rad = text_angle * (std::numbers::pi / 180.0f);
-        const ezgl::point2d screen_offset{
-            -kOffsetPx * std::sin(angle_rad),
-            -kOffsetPx * std::cos(angle_rad)};
-
-        g->set_text_rotation(text_angle);
-        g->set_font_size(kFontPx);
-        g->set_color(ezgl::color(0, 0, 0));
-        g->set_text_screen_offset(screen_offset);
-
-        g->draw_text(text_bbox.center(), incr_delay_str,
-                     text_bbox.width(), text_bbox.height());
-
-        g->set_font_size(14);
-        g->set_text_rotation(0);
-    }
-}
-
-//Collect all the drawing locations associated with the timing edge between start and end
-void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
-                                        tatum::NodeId sink_tnode,
-                                        ezgl::color color,
-                                        ezgl::renderer* g) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    const TimingContext& timing_ctx = g_vpr_ctx.timing();
-
-    AtomPinId atom_src_pin = atom_ctx.lookup().tnode_atom_pin(src_tnode);
-    AtomPinId atom_sink_pin = atom_ctx.lookup().tnode_atom_pin(sink_tnode);
-
-    std::vector<ezgl::point2d> points;
-    points.push_back(atom_pin_draw_coord(atom_src_pin));
-
-    tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
-    tatum::EdgeType edge_type = timing_ctx.graph->edge_type(tedge);
-
-    ClusterNetId net_id = ClusterNetId::INVALID();
-
-    //We currently only trace interconnect edges in detail, and treat all others
-    //as flylines
-    if (edge_type == tatum::EdgeType::INTERCONNECT) {
-        //All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
-
-        //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
-        //      into a common method for walking the clustered netlist, this would also (potentially)
-        //      allow us to grab the component delays
-        AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(atom_src_pin);
-        AtomBlockId atom_sink_block = atom_ctx.netlist().pin_block(atom_sink_pin);
-
-        ClusterBlockId clb_src_block = atom_ctx.lookup().atom_clb(atom_src_block);
-        VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
-        ClusterBlockId clb_sink_block = atom_ctx.lookup().atom_clb(
-            atom_sink_block);
-        VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
-
-        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(
-            atom_sink_pin);
-        VTR_ASSERT(sink_gpin);
-
-        int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
-
-        int sink_block_pin_index = -1;
-        int sink_net_pin_index = -1;
-
-        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block,
-                                                                                                     sink_pb_route_id);
-        if (net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
-            && sink_net_pin_index != -1) {
-            //Connection leaves the CLB
-            //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-            VTR_ASSERT(
-                cluster_ctx.clb_nlist.net_driver_block(net_id)
-                == clb_src_block);
-
-            t_draw_state* draw_state = get_draw_state_vars();
-
-            std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
-
-            //Mark all the nodes highlighted
-
-            for (RRNodeId inode : routed_rr_nodes) {
-                draw_state->draw_rr_node[inode].color = color;
-                draw_state->draw_rr_node[inode].node_highlighted = true;
-            }
-
-            //draw_partial_route() takes care of layer visibility and cross-layer settings
-            draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
-        } else {
-            //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
-            VTR_ASSERT(clb_src_block == clb_sink_block);
-        }
-    }
-
-    points.push_back(atom_pin_draw_coord(atom_sink_pin));
 }
 
 void draw_color_map_legend(const vtr::ColorMap& cmap,

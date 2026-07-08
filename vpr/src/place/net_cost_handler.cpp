@@ -1679,6 +1679,40 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     return estimated_wirelength;
 }
 
+int NetCostHandler::get_num_nets_spanning_multiple_layers() const {
+    if (!is_multi_layer_) {
+        return 0;
+    }
+
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    int num_nets_spanning_multiple_layers = 0;
+
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        if (clb_nlist.net_is_ignored(net_id)) {
+            continue;
+        }
+
+        if (cube_bb_) {
+            const t_bb& bb = bb_coords_[net_id];
+            if (bb.layer_min != bb.layer_max) {
+                num_nets_spanning_multiple_layers++;
+            }
+        } else {
+            int num_layers_with_bb = 0;
+            for (const t_2D_bb& layer_bb : layer_bb_coords_[net_id]) {
+                if (layer_bb.xmin != UNDEFINED) {
+                    num_layers_with_bb++;
+                }
+            }
+            if (num_layers_with_bb > 1) {
+                num_nets_spanning_multiple_layers++;
+            }
+        }
+    }
+
+    return num_nets_spanning_multiple_layers;
+}
+
 const std::vector<ClusterNetId>& NetCostHandler::affected_nets() const {
     return ts_nets_to_update_;
 }

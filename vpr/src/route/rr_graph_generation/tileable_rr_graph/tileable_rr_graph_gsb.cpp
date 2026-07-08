@@ -1685,8 +1685,19 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
         /* This opin is specified to connect directly to an ipin,
          * now compute which ipin to connect to
          */
-        vtr::Point<size_t> to_grid_coordinate(from_grid_coordinate.x() + directs[i].x_offset,
-                                              from_grid_coordinate.y() + directs[i].y_offset);
+        int to_grid_x = int(from_grid_coordinate.x()) + directs[i].x_offset;
+        int to_grid_y = int(from_grid_coordinate.y()) + directs[i].y_offset;
+
+        /* Bypass directs that reach outside the device grid.
+         * Must be checked with signed arithmetic before indexing the grid:
+         * a negative offset near the device boundary would underflow size_t
+         * and access the grid out of bounds
+         */
+        if (to_grid_x < 0 || to_grid_x >= int(grids.width())
+            || to_grid_y < 0 || to_grid_y >= int(grids.height())) {
+            continue;
+        }
+        vtr::Point<size_t> to_grid_coordinate(to_grid_x, to_grid_y);
 
         /* Bypass unmatched direct clb-to-clb connections */
         t_physical_tile_type_ptr to_grid_type = grids.get_physical_type(t_physical_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer));

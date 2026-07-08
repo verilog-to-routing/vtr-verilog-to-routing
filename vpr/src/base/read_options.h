@@ -183,6 +183,10 @@ struct t_options {
     argparse::ArgValue<float> place_interposer_cost_factor;
     argparse::ArgValue<float> place_interposer_cong_cost_factor;
     argparse::ArgValue<float> place_interposer_cong_threshold;
+    argparse::ArgValue<e_interposer_net_cost_type> place_interposer_net_cost_type;
+    argparse::ArgValue<e_interposer_net_cost_type> place_two_stage_interposer_net_cost_first_stage_type;
+    argparse::ArgValue<e_interposer_net_cost_type> place_two_stage_interposer_net_cost_second_stage_type;
+    argparse::ArgValue<float> place_interposer_net_cost_change_threshold;
 
     argparse::ArgValue<float> place_congestion_factor;
     argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;

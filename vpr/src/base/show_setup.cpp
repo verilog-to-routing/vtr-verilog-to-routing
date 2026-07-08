@@ -545,6 +545,28 @@ static void show_placer_opts(const t_placer_opts& placer_opts) {
             VTR_LOG("placer_opts.congestion_chan_util_threshold: %f\n", placer_opts.congestion_chan_util_threshold);
         }
 
+        auto interposer_net_cost_type_to_string = [](e_interposer_net_cost_type cost_type) {
+            switch (cost_type) {
+                case e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB:
+                    return "minimize_interposer_crossing_bb";
+                case e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB:
+                    return "interposer_wire_aware_crossing_bb";
+                case e_interposer_net_cost_type::TWO_STAGE:
+                    return "two_stage";
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown interposer net cost type\n");
+            }
+        };
+
+        VTR_LOG("placer_opts.interposer_cost_params.net_cost_type: %s\n", interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.net_cost_type));
+        if (placer_opts.interposer_cost_params.net_cost_type == e_interposer_net_cost_type::TWO_STAGE) {
+            VTR_LOG("placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type: %s\n",
+                    interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type));
+            VTR_LOG("placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type: %s\n",
+                    interposer_net_cost_type_to_string(placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type));
+            VTR_LOG("placer_opts.interposer_cost_params.net_cost_change_threshold: %f\n", placer_opts.interposer_cost_params.net_cost_change_threshold);
+        }
+
         if (placer_opts.place_algorithm.is_timing_driven()) {
             VTR_LOG("placer_opts.inner_loop_recompute_divider: %d\n", placer_opts.inner_loop_recompute_divider);
             VTR_LOG("placer_opts.recompute_crit_iter: %d\n", placer_opts.recompute_crit_iter);
