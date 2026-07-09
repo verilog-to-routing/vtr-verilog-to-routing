@@ -4,23 +4,35 @@
 #include "device_grid.h"
 #include "globals.h"
 #include "vpr_context.h"
+#include "vpr_types.h"
+#include "vtr_assert.h"
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
-InterposerCostHandler::InterposerCostHandler(bool interposer_cost_enabled,
-                                             double interposer_cong_threshold,
+InterposerCostHandler::InterposerCostHandler(t_interposer_cost_params interposer_cost_params,
                                              std::function<const t_bb&(ClusterNetId net_id, bool use_ts)> get_net_bb)
-    : interposer_cost_enabled_(interposer_cost_enabled)
+    : interposer_cost_enabled_(interposer_cost_params.net_cost_factor > 0.)
     , interposer_cong_modeling_started_(false)
-    , interposer_cong_threshold_(interposer_cong_threshold)
-    , get_net_bb_(std::move(get_net_bb)) {
+    , interposer_cong_threshold_(interposer_cost_params.cong_cost_threshold)
+    , get_net_bb_(std::move(get_net_bb))
+    , interposer_cost_type_(interposer_cost_params.net_cost_type)
+    , two_stage_interposer_net_cost_first_stage_type_(interposer_cost_params.two_stage_net_cost_first_stage_type)
+    , two_stage_interposer_net_cost_second_stage_type_(interposer_cost_params.two_stage_net_cost_second_stage_type)
+    , interposer_net_cost_change_threshold_(interposer_cost_params.net_cost_change_threshold) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
     const size_t num_layers = grid.get_num_layers();
     VTR_ASSERT(grid.has_interposer_cuts());
     VTR_ASSERT(interposer_cong_threshold_ >= 0. || interposer_cost_enabled_);
+
+    if (interposer_cost_enabled_ && interposer_cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
+        VTR_ASSERT(interposer_net_cost_change_threshold_ >= 0.);
+        VTR_ASSERT(two_stage_interposer_net_cost_first_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
+        VTR_ASSERT(two_stage_interposer_net_cost_second_stage_type_ != e_interposer_net_cost_type::TWO_STAGE);
+    }
     VTR_ASSERT(get_net_bb_);
 
     // TODO: the class seems to support multi-layer interposer cuts,
@@ -171,19 +183,108 @@ double InterposerCostHandler::get_net_interposer_cost_(ClusterNetId net_id, bool
 
     const t_bb& bb = get_net_bb_(net_id, use_ts);
     const auto [num_horizontal_crossings, num_vertical_crossings] = count_bb_interposer_cut_crossings_(bb);
+    const e_interposer_net_cost_type active_cost_type = get_active_net_cost_type_();
 
-    // Weight crossings by the normalized BB span orthogonal to the cut direction:
-    // - a horizontal cut spans X, so we scale by BB height / grid height
-    // - a vertical cut spans Y, so we scale by BB width / grid width
-    // Intuition: a tight BB that barely straddles a cut incurs less cost than a large BB that
-    // spans most of the die; placement is nudged to shrink the BB so a later move can
-    // pull the net off the interposer entirely.
-    // TODO: compare against a constant per-crossing cost and pick whichever gives better QoR.
-    const double bb_width_factor = double(bb.xmax - bb.xmin + 1) * inv_device_grid_width_;
-    const double bb_height_factor = double(bb.ymax - bb.ymin + 1) * inv_device_grid_height_;
+    if (active_cost_type == e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB) {
+        // Weight crossings by the normalized BB span orthogonal to the cut direction:
+        // - a horizontal cut spans X, so we scale by BB height / grid height
+        // - a vertical cut spans Y, so we scale by BB width / grid width
+        // Intuition: a tight BB that barely straddles a cut incurs less cost than a large BB that
+        // spans most of the die; placement is nudged to shrink the BB so a later move can
+        // pull the net off the interposer entirely.
+        // TODO: compare against a constant per-crossing cost and pick whichever gives better QoR.
+        const double bb_width_factor = double(bb.xmax - bb.xmin + 1) * inv_device_grid_width_;
+        const double bb_height_factor = double(bb.ymax - bb.ymin + 1) * inv_device_grid_height_;
 
-    double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
-    return cost;
+        double cost = num_horizontal_crossings * bb_height_factor + num_vertical_crossings * bb_width_factor;
+        return cost;
+    } else {
+        VTR_ASSERT_SAFE(active_cost_type == e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB);
+
+        if (num_horizontal_crossings == 0 && num_vertical_crossings == 0) {
+            return 0;
+        }
+
+        const DeviceGrid& grid = g_vpr_ctx.device().grid;
+        const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
+        const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
+
+        double bb_width_factor = 0;
+        double bb_height_factor = 0;
+
+        for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+            const std::vector<int>& layer_h_cuts = horizontal_cuts[layer];
+            for (size_t i_cut = 0; i_cut < layer_h_cuts.size(); i_cut++) {
+                int cut_y = layer_h_cuts[i_cut];
+                if (cut_y >= bb.ymin && cut_y < bb.ymax) {
+                    bb_height_factor += std::abs(g_vpr_ctx.device().horz_interposer_cut_min_seg_length[layer][i_cut] - (bb.ymax - bb.ymin + 1)) * inv_device_grid_height_;
+                }
+            }
+
+            const std::vector<int>& layer_v_cuts = vertical_cuts[layer];
+            for (size_t i_cut = 0; i_cut < layer_v_cuts.size(); i_cut++) {
+                int cut_x = layer_v_cuts[i_cut];
+                if (cut_x >= bb.xmin && cut_x < bb.xmax) {
+                    bb_width_factor += std::abs(g_vpr_ctx.device().vert_interposer_cut_min_seg_length[layer][i_cut] - (bb.xmax - bb.xmin + 1)) * inv_device_grid_width_;
+                }
+            }
+        }
+
+        double cost = bb_height_factor + bb_width_factor;
+        return cost;
+    }
+}
+
+bool InterposerCostHandler::try_change_interposer_cost_model(double current_cost) {
+    if (interposer_cost_type_ != e_interposer_net_cost_type::TWO_STAGE || interposer_cost_stage_ != e_interposer_cost_stage::FIRST) {
+        return false;
+    }
+
+    interposer_net_cost_history_.push_back(current_cost);
+    if (!interposer_net_cost_history_.full()) {
+        return false;
+    }
+
+    double avg_interposer_net_cost = 0.;
+    for (double int_cost : interposer_net_cost_history_) {
+        avg_interposer_net_cost += int_cost;
+    }
+    avg_interposer_net_cost /= interposer_net_cost_history_.size();
+
+    double max_percent_diff_from_avg = 0.;
+    if (avg_interposer_net_cost > 0.) {
+        for (double int_cost : interposer_net_cost_history_) {
+            double percent_diff_from_avg = std::fabs(int_cost - avg_interposer_net_cost) / avg_interposer_net_cost;
+            max_percent_diff_from_avg = std::max(max_percent_diff_from_avg, percent_diff_from_avg);
+        }
+    }
+
+    if (max_percent_diff_from_avg < interposer_net_cost_change_threshold_) {
+        interposer_cost_stage_ = e_interposer_cost_stage::SECOND;
+        return true;
+    }
+
+    return false;
+}
+
+void InterposerCostHandler::change_interposer_cost_stage(e_interposer_cost_stage new_stage) {
+    interposer_cost_stage_ = new_stage;
+}
+
+std::optional<e_interposer_cost_stage> InterposerCostHandler::get_net_cost_stage() {
+    if (interposer_cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
+        return std::make_optional(interposer_cost_stage_);
+    } else {
+        return std::nullopt;
+    }
+}
+
+e_interposer_net_cost_type InterposerCostHandler::get_active_net_cost_type_() const {
+    if (interposer_cost_type_ == e_interposer_net_cost_type::TWO_STAGE) {
+        return interposer_cost_stage_ == e_interposer_cost_stage::FIRST ? two_stage_interposer_net_cost_first_stage_type_ : two_stage_interposer_net_cost_second_stage_type_;
+    }
+
+    return interposer_cost_type_;
 }
 
 double InterposerCostHandler::get_net_cube_interposer_cong_cost_(ClusterNetId net_id, bool use_ts) const {

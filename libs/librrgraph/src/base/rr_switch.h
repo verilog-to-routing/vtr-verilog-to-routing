@@ -44,16 +44,16 @@ struct t_rr_switch_inf {
 
   public: // Getters
     /// Returns the type of switch
-    e_switch_type type() const;
+    e_switch_type type() const { return type_; }
 
     /// Returns true if this switch type isolates its input and output into
     /// separate DC-connected subcircuits
-    bool buffered() const;
+    bool buffered() const { return switch_type_is_buffered(type()); }
 
     /// Returns true if this switch type is configurable (i.e. can the switch can be turned on or off)
     /// This allows modelling of non-optional switches (e.g. fixed buffers, or shorted connections)
     /// which must be used (e.g. expanded by the router) if a connected segment is used.
-    bool configurable() const;
+    bool configurable() const { return switch_type_is_configurable(type()); }
 
     bool operator==(const t_rr_switch_inf& other) const;
 

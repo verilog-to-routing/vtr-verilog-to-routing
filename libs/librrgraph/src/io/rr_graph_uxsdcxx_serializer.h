@@ -294,6 +294,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::string_internment* strings,
         unsigned long schema_file_id,
         bool is_flat,
+        int route_verbosity,
         bool device_model_warnings)
         : chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
@@ -321,6 +322,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , report_error_(nullptr)
         , schema_file_id_(schema_file_id)
         , is_flat_(is_flat)
+        , route_verbosity_(route_verbosity)
         , device_model_warnings_(device_model_warnings) {
         // Initialize internal data
         init_side_map();
@@ -1829,6 +1831,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             base_cost_type_,
             echo_enabled_,
             echo_file_name_,
+            route_verbosity_,
             device_model_warnings_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
@@ -2212,6 +2215,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const std::function<void(const char*)>* report_error_;
     unsigned long schema_file_id_;
     bool is_flat_;
+    int route_verbosity_;
     bool device_model_warnings_;
 
     // Temporary data to check grid block types
