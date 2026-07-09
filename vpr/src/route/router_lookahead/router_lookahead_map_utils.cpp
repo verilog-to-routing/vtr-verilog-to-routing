@@ -56,13 +56,15 @@ static void run_dijkstra(RRNodeId start_node,
                          util::t_routing_cost_map& routing_cost_map,
                          util::t_dijkstra_data& data,
                          const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
-                         bool sample_all_locs);
+                         bool sample_all_locs,
+                         const t_bb& bb);
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq,
+                                       const t_bb& bb,
                                        bool has_interposer_cuts = false);
 
 /**
@@ -732,10 +734,14 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
                                         int route_verbosity,
-                                        bool device_model_warnings) {
+                                        bool device_model_warnings,
+                                        const t_bb* bb) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
+
+    t_bb full_device_bb(0, grid.width() - 1, 0, grid.height() - 1, 0, grid.get_num_layers() - 1);
+    const t_bb& search_bb = bb ? *bb : full_device_bb;
 
     // Start sampling at the lower left non-corner
     int ref_x = 1;
@@ -850,7 +856,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                          routing_cost_map,
                          dijkstra_data,
                          sample_locs,
-                         sample_all_locs);
+                         sample_all_locs,
+                         search_bb);
         }
     }
 
@@ -1334,7 +1341,8 @@ static void run_dijkstra(RRNodeId start_node,
                          util::t_routing_cost_map& routing_cost_map,
                          util::t_dijkstra_data& data,
                          const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
-                         bool sample_all_locs) {
+                         bool sample_all_locs,
+                         const t_bb& bb) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -1405,7 +1413,7 @@ static void run_dijkstra(RRNodeId start_node,
             }
         }
 
-        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, has_interposer_cuts);
+        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, bb, has_interposer_cuts);
         node_expanded[curr_node] = true;
     }
 }
@@ -1414,6 +1422,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq,
+                                       const t_bb& bb,
                                        bool has_interposer_cuts /*=false*/) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -1427,6 +1436,13 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
+
+        // Don't expand nodes whose adjusted position falls outside of the bounding box.
+        auto [child_x, child_y] = util::get_adjusted_rr_position(child_node);
+        if (child_x < bb.xmin || child_x > bb.xmax || child_y < bb.ymin || child_y > bb.ymax) {
+            continue;
+        }
+
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
 
         if (rr_graph.node_type(child_node) == e_rr_type::SINK) return;
