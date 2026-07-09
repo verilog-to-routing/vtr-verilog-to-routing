@@ -56,6 +56,10 @@ static void unmark_fanout_intermediate_nodes(t_pb_graph_pin* current_pb_graph_pi
  * parent_pin_class[depth]. All reachable boundary pins of pb_graph_node of the same type
  * are assigned class_id via pin_class. Intermediate pins are traversed but not assigned.
  *
+ * Note: boundary pins are matched on port type only (is_clock is ignored), since we do
+ * not expect every connection to a primitive clock pin to be declared <clock> at all
+ * levels of the hierarchy.
+ *
  * @param seed_pin      A primitive pin that seeds the BFS.
  * @param pb_graph_node The pb_graph node whose subtree the BFS is confined to.
  * @param class_id      The class ID to assign to all pins in this equivalence group.
@@ -312,10 +316,23 @@ static size_t assign_pin_class_in_subtree(t_pb_graph_pin* seed_pin,
                 pin->parent_pin_class[node_depth] = class_id;
             }
         } else if (pin->parent_node == pb_graph_node) {
-            // Assign class_id to same-type boundary pins of pb_graph_node via
-            // pin_class. Increment the pin counter of this class.
-            if (pin->port->type == seed_pin->port->type
-                && pin->port->is_clock == seed_pin->port->is_clock) {
+            // Assign class_id to boundary pins of pb_graph_node with the same port
+            // type via pin_class. Increment the pin counter of this class.
+            //
+            // Note: Boundary pins are matched on port type only and not on is_clock.
+            // There is no separate clock port type: a <clock> port is an IN_PORT
+            // with is_clock set, and we assume a primitive <clock> pin may be
+            // fed through an intermediate <input> port (the architecture format
+            // does not require the port to be declared <clock> at every level
+            // of the hierarchy). Requiring is_clock to match here would give
+            // such a class demand (the labeled primitive seed pin) but zero supply,
+            // which check_lookahead_pins_used() can never satisfy.
+            // TODO: Currently only input and output class lists exist
+            //       (input_pin_class_sizes / output_pin_class_sizes), and clock-seeded
+            //       classes are stored in input_pin_class_sizes. Revisit this rule if
+            //       clock classes ever get their own list and utilization cap (see
+            //       TODO in load_pin_classes_in_pb_graph_node).
+            if (pin->port->type == seed_pin->port->type) {
                 pin->pin_class = class_id;
                 num_pins_in_class++;
             }
