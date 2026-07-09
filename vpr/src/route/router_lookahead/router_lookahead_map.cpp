@@ -419,6 +419,76 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong_from_deltas(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    int from_layer_num = rr_graph.node_layer_low(from_node);
+    // Since there is no actual target node, we don't know its layer; assume it is
+    // on the same layer as from_node.
+    int to_layer_num = from_layer_num;
+
+    delta_x = abs(delta_x);
+    delta_y = abs(delta_y);
+
+    float expected_delay_cost = std::numeric_limits<float>::infinity();
+    float expected_cong_cost = std::numeric_limits<float>::infinity();
+
+    e_rr_type from_type = rr_graph.node_type(from_node);
+    if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
+        t_physical_tile_type_ptr from_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
+                                                                                     rr_graph.node_ylow(from_node),
+                                                                                     from_layer_num});
+
+        auto from_tile_index = std::distance(&device_ctx.physical_tile_types[0], from_tile_type);
+        int from_ptc = rr_graph.node_ptc_num(from_node);
+
+        for (size_t layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+            const auto [this_delay_cost, this_cong_cost] = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][layer_num],
+                                                                                        delta_x,
+                                                                                        delta_y,
+                                                                                        to_layer_num,
+                                                                                        get_wire_cost_entry);
+            expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
+            expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
+        }
+    } else if (from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY || from_type == e_rr_type::CHANZ) {
+        if (from_type == e_rr_type::CHANZ) {
+            Direction chanz_node_dir = rr_graph.node_direction(from_node);
+            if (chanz_node_dir == Direction::INC) {
+                from_layer_num = rr_graph.node_layer_high(from_node);
+                to_layer_num = from_layer_num;
+            }
+            // For BIDIR CHANZ nodes we would normally pick the target's layer; since there is
+            // no actual target node here, we just leave from_layer_num/to_layer_num as-is.
+        }
+
+        RRIndexedDataId from_cost_index = rr_graph.node_cost_index(from_node);
+        int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
+
+        VTR_ASSERT(from_seg_index >= 0);
+
+        util::Cost_Entry cost_entry = get_wire_cost_entry(from_type,
+                                                          from_seg_index,
+                                                          from_layer_num,
+                                                          delta_x,
+                                                          delta_y,
+                                                          to_layer_num);
+
+        expected_delay_cost = cost_entry.delay;
+        expected_cong_cost = cost_entry.congestion;
+    } else if (from_type == e_rr_type::IPIN) { // Change if you're allowing route-throughs
+        return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
+    } else { // Change this if you want to investigate route-throughs
+        return std::make_pair(0., 0.);
+    }
+
+    expected_delay_cost *= params.criticality;
+    expected_cong_cost *= (1.0f - params.criticality);
+
+    return std::make_pair(expected_delay_cost, expected_cong_cost);
+}
+
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 

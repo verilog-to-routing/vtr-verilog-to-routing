@@ -12,6 +12,8 @@
 #include "d_ary_heap.h"
 #include "globals.h"
 #include "router_lookahead.h"
+#include "router_lookahead_map.h"
+#include "router_lookahead_map_utils.h"
 #include "rr_graph_view.h"
 #include "serial_connection_router.h"
 #include "vpr_context.h"
@@ -82,6 +84,12 @@ struct t_overestimation_info {
  *      The current trial number this is. This is used for writing status logs.
  *  @param max_overestimation_per_type
  *      Information on the maximum overestimation per RR node type.
+ *  @param sep_squared_error_sum
+ *      Accumulator (across all trials) for the sum of squared errors between the
+ *      separable delay estimate and the actual path delay.
+ *  @param num_sep_targets
+ *      Accumulator (across all trials) for the number of targets used to compute
+ *      sep_squared_error_sum.
  */
 static void profile_sample_routes(std::ofstream& os,
                                   RRNodeId sample_rr_node,
@@ -91,7 +99,9 @@ static void profile_sample_routes(std::ofstream& os,
                                   const t_router_opts& router_opts,
                                   float& max_difference,
                                   size_t num_trials,
-                                  vtr::array<e_rr_type, t_overestimation_info, (size_t)e_rr_type::NUM_RR_TYPES>& max_overestimation_per_type) {
+                                  vtr::array<e_rr_type, t_overestimation_info, (size_t)e_rr_type::NUM_RR_TYPES>& max_overestimation_per_type,
+                                  double& sep_squared_error_sum,
+                                  size_t& num_sep_targets) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
     RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
@@ -122,6 +132,12 @@ static void profile_sample_routes(std::ofstream& os,
     cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
 
+    // If the router lookahead being profiled is the MapLookahead, we can also
+    // compare its estimate against a "separable" estimate: the sum of the cost
+    // estimated for traveling delta_x in x only and delta_y in y only. This
+    // helps gauge how separable (in x and y) the lookahead's delay estimate is.
+    const MapLookahead* map_lookahead = dynamic_cast<const MapLookahead*>(router_lookahead);
+
     // Get all the path delays from this sample node.
     RouteTree tree(sample_rr_node);
     e_rr_type sample_rr_node_type = rr_graph.node_type(sample_rr_node);
@@ -142,6 +158,9 @@ static void profile_sample_routes(std::ofstream& os,
     float total_heur_cost = 0.0f;
     float max_overestimation_this_iter = 0.0f;
     double squared_error_sum = 0.0;
+    double sep_squared_error_sum_this_iter = 0.0;
+    float total_sep_cost = 0.0f;
+    size_t num_sep_targets_this_iter = 0;
     for (RRNodeId rr_node_id : sink_rr_nodes) {
         VTR_ASSERT_SAFE(rr_graph.node_type(rr_node_id) == e_rr_type::SINK);
         VTR_ASSERT_SAFE(rr_node_id != sample_rr_node);
@@ -159,6 +178,25 @@ static void profile_sample_routes(std::ofstream& os,
                                                                     rr_node_id,
                                                                     cost_params,
                                                                     0);
+
+        // If the lookahead being profiled is the MapLookahead, also compute the
+        // "separable" estimate of the cost: the cost of traveling delta_x (with
+        // delta_y = 0) plus the cost of traveling delta_y (with delta_x = 0).
+        // Comparing this against the actual delay estimates how separable (in x
+        // and y) the lookahead's cost function is.
+        if (map_lookahead != nullptr) {
+            auto [delta_x, delta_y] = util::get_xy_deltas(sample_rr_node, rr_node_id);
+
+            auto [delay_x, cong_x] = map_lookahead->get_expected_delay_and_cong_from_deltas(sample_rr_node, delta_x, 0, cost_params);
+            auto [delay_y, cong_y] = map_lookahead->get_expected_delay_and_cong_from_deltas(sample_rr_node, 0, delta_y, cost_params);
+            float separable_delay = (delay_x + cong_x) + (delay_y + cong_y);
+
+            double sep_error = separable_delay - path_delay;
+            sep_squared_error_sum_this_iter += (sep_error * sep_error);
+            total_sep_cost += separable_delay;
+            num_sep_targets_this_iter++;
+        }
+
         // If the heuristic estimate of the path cost is higher than the actual
         // path cost, this means that the router lookahead overestimated on this
         // path.
@@ -191,6 +229,11 @@ static void profile_sample_routes(std::ofstream& os,
         num_targets++;
     }
 
+    // Fold this trial's separable delay statistics into the running totals
+    // across all trials.
+    sep_squared_error_sum += sep_squared_error_sum_this_iter;
+    num_sep_targets += num_sep_targets_this_iter;
+
     // Reset the global path costs to prepare for the next route.
     router.reset_path_costs();
     router.clear_modified_rr_node_info();
@@ -210,7 +253,13 @@ static void profile_sample_routes(std::ofstream& os,
         average_heur_cost = total_heur_cost / (float)num_targets;
         mean_squared_error = squared_error_sum / (double)num_targets;
     }
-    os << vtr::string_fmt("%10zu  %20.3g  %11s  %12zu  %14.3g  %15.3g  %12.3g  %18zu  %14.3g  %14.3g\n",
+    float average_sep_cost = 0.0f;
+    double sep_mean_squared_error = 0.0f;
+    if (num_sep_targets_this_iter > 0) {
+        average_sep_cost = total_sep_cost / (float)num_sep_targets_this_iter;
+        sep_mean_squared_error = sep_squared_error_sum_this_iter / (double)num_sep_targets_this_iter;
+    }
+    os << vtr::string_fmt("%10zu  %20.3g  %11s  %12zu  %14.3g  %15.3g  %12.3g  %18zu  %14.3g  %14.3g  %15.3g  %16.3g\n",
                           num_trials,
                           max_difference,
                           source_node_type.c_str(),
@@ -220,7 +269,9 @@ static void profile_sample_routes(std::ofstream& os,
                           mean_squared_error,
                           num_overestimations,
                           average_overestimation,
-                          max_overestimation_this_iter);
+                          max_overestimation_this_iter,
+                          average_sep_cost,
+                          sep_mean_squared_error);
 }
 
 /**
@@ -266,6 +317,15 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     os << "be aware that these results entirely focus on the delay component of the\n";
     os << "costs of the paths.\n";
     os << "\n";
+    os << "If the router lookahead being profiled is the MapLookahead, this report also\n";
+    os << "computes a \'separable\' cost estimate for each path: the cost of covering\n";
+    os << "delta_x (with delta_y = 0) plus the cost of covering delta_y (with delta_x = 0),\n";
+    os << "as estimated by the lookahead. Comparing this separable estimate against the\n";
+    os << "actual path cost (via its own MSE) indicates how separable the lookahead's\n";
+    os << "cost function is in x and y; a high separable MSE relative to the heuristic's\n";
+    os << "MSE suggests the lookahead's cost is not well-approximated as the sum of an\n";
+    os << "independent x-cost and y-cost.\n";
+    os << "\n";
 
     // Variables for the profiling.
     //  The target number of random source (sample) nodes to use.
@@ -303,10 +363,10 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     vtr::array<e_rr_type, t_overestimation_info, (size_t)e_rr_type::NUM_RR_TYPES> max_overestimation_per_type;
 
     // Print some header information on what each column of the status bar means.
-    os << "----------  --------------------  -----------  ------------  --------------  ---------------  ------------  ------------------  --------------  --------------\n";
-    os << "Trial Num.  Worst Overestimation  Source Node  Num. Targets  Avg. Path Cost  Avg. Heur. Cost  Mean Squared  Num. Overestimated  Avg.            Max           \n";
-    os << "            So Far                Type         Found                                          Error         Paths               Overestimation  Overestimation\n";
-    os << "----------  --------------------  -----------  ------------  --------------  ---------------  ------------  ------------------  --------------  --------------\n";
+    os << "----------  --------------------  -----------  ------------  --------------  ---------------  ------------  ------------------  --------------  --------------  ---------------  ----------------\n";
+    os << "Trial Num.  Worst Overestimation  Source Node  Num. Targets  Avg. Path Cost  Avg. Heur. Cost  Mean Squared  Num. Overestimated  Avg.            Max             Avg. Separable  Separable Mean  \n";
+    os << "            So Far                Type         Found                                          Error         Paths               Overestimation  Overestimation  Cost            Squared Error   \n";
+    os << "----------  --------------------  -----------  ------------  --------------  ---------------  ------------  ------------------  --------------  --------------  ---------------  ----------------\n";
 
     // Perform random trial routes. These routes are single-source-all-destination
     // Dijkstra's algorithm. After all of these routes are found, the cost of each
@@ -318,6 +378,8 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     size_t num_trials = 0;
     std::set<RRNodeId> tried_nodes;
     float max_difference = 0.0f;
+    double sep_squared_error_sum = 0.0;
+    size_t num_sep_targets = 0;
     auto rng = vtr::RandomNumberGenerator(0);
     for (unsigned i = 0; i < max_attempts; i++) {
         // If the number of successful trials is equal to our target number of
@@ -352,7 +414,9 @@ static void profile_lookahead_overestimation(std::ofstream& os,
                               router_opts,
                               max_difference,
                               num_trials,
-                              max_overestimation_per_type);
+                              max_overestimation_per_type,
+                              sep_squared_error_sum,
+                              num_sep_targets);
 
         num_trials++;
     }
@@ -364,6 +428,12 @@ static void profile_lookahead_overestimation(std::ofstream& os,
 
     // Print the total maximum difference.
     os << vtr::string_fmt("Worst overestimation between heuristic and actual: %.3g\n", max_difference);
+
+    // Print the overall separable-delay MSE (across all trials), if computed.
+    if (num_sep_targets > 0) {
+        double overall_sep_mse = sep_squared_error_sum / (double)num_sep_targets;
+        os << vtr::string_fmt("Overall Separable Delay Mean Squared Error (across all trials): %.3g\n", overall_sep_mse);
+    }
 
     // Print the overestimation per node type.
     for (size_t l = 0; l < max_overestimation_per_type.size(); l++) {

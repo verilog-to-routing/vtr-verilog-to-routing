@@ -14,6 +14,21 @@ class MapLookahead : public RouterLookahead {
   public:
     explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier);
 
+    /**
+     * @brief Get the delay and congestion cost estimated by the lookahead map for a node that
+     *        is (delta_x, delta_y) away from from_node, without reference to an actual target node.
+     * @attention This does not account for effects that depend on an actual target node (e.g. the
+     *            interposer lookahead, or the target's layer when it differs from from_node's layer).
+     *            It is intended for profiling/reporting purposes (e.g. checking how separable the
+     *            lookahead's delay estimate is in x and y), not for use during routing.
+     * @param from_node The source node from which the cost is estimated.
+     * @param delta_x Horizontal distance (in tiles) to the (hypothetical) target node.
+     * @param delta_y Vertical distance (in tiles) to the (hypothetical) target node.
+     * @param params Contains the router parameters such as connection criticality, etc.
+     * @return A pair of (delay cost, congestion cost).
+     */
+    std::pair<float, float> get_expected_delay_and_cong_from_deltas(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const;
+
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
