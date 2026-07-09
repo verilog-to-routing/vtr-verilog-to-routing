@@ -109,6 +109,8 @@ enum class e_router_lookahead {
     EXTENDED_MAP,
     ///@brief Simple distance-based lookahead
     SIMPLE,
+    ///@brief Lookahead which treats the x and y components of a route as separable
+    SEPARABLE,
     ///@brief A no-operation lookahead which always returns zero
     NO_OP
 };

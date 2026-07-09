@@ -433,6 +433,9 @@ static void show_router_opts(const t_router_opts& router_opts) {
             case e_router_lookahead::SIMPLE:
                 VTR_LOG("SIMPLE\n");
                 break;
+            case e_router_lookahead::SEPARABLE:
+                VTR_LOG("SEPARABLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
