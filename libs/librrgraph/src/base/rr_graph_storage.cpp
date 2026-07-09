@@ -405,8 +405,9 @@ bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, co
 
 bool t_rr_graph_storage::validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
    t_edge_size iedge = 0;
+   const t_edge_size configurable_edge_count = num_configurable_edges(node_id, rr_switches);
    for (auto edge : edges(node_id)) {
-       if (edge < num_configurable_edges(node_id, rr_switches)) {
+       if (edge < configurable_edge_count) {
            if (!edge_is_configurable(node_id, edge, rr_switches)) {
                VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
            }
