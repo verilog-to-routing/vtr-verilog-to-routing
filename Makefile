@@ -52,17 +52,16 @@ endif
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
 override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G '${CMAKE_GEN}' ${CMAKE_PARAMS}
 
+ifeq ($(OS),Windows_NT)
 # The curl path should be defined by user. Try to get one from system
 CURL_PATH:=$(shell where curl.exe 2>nul | head -n 1)
 # VCPKG root is a system variable env:VCPKG in power shell. User can override by using VCPKG_PATH when calling the makefile
 VCPKG_CMAKE_PATH:=$(subst \,/,$(VCPKG_PATH))
-ifeq ($(OS),Windows_NT)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
 # Msys2 can still use Linux gcc
-ifeq ($(MSYSTEM),MINGW64)
-	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
-else
-	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWGET="${CURL_PATH}" -DCMAKE_TOOLCHAIN_FILE="${VCPKG_CMAKE_PATH}/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=OFF
-	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
+ifneq ($(MSYSTEM),MINGW64)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWGET="${CURL_PATH}" -DCMAKE_TOOLCHAIN_FILE="${VCPKG_CMAKE_PATH}/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=OFF
+#	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
 endif
 endif
 
