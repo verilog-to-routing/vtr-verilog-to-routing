@@ -1458,36 +1458,18 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     // Potential: solved electrostatic potential
     // field_x, field_y: components of the potential gradient
     std::vector<std::vector<double>> utilization(dimensions.size(), std::vector<double>(num_sites, 0.));
-    std::vector<std::vector<double>> target_capacity(dimensions.size(), std::vector<double>(num_sites, 0.));
     std::vector<std::vector<double>> potential(dimensions.size(), std::vector<double>(num_sites, 0.));
     std::vector<std::vector<double>> field_x(dimensions.size(), std::vector<double>(num_sites, 0.));
     std::vector<std::vector<double>> field_y(dimensions.size(), std::vector<double>(num_sites, 0.));
 
-    // Spread each bin's capacity over its footprint, so hard blocks do not
-    // create an artificially large electrostatic charge at their root tile.
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        for (size_t x = 0; x < width; x++) {
-            for (size_t y = 0; y < height; y++) {
-                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-                const vtr::Rect<double>& region = bins.bin_region(bin_id);
-                double bin_area = std::max(1.0, region.width() * region.height());
-                double target_density = density_manager_->get_bin_target_density(bin_id);
-                size_t idx = site_index(layer, x, y);
-                for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-                    PrimitiveVectorDim dim = dimensions[dim_idx];
-                    target_capacity[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim)
-                                                    * target_density / bin_area;
-                }
-            }
-        }
-    }
-    // Per-dimension normalization constants, each derived from the average target
-    // capacity across that dimension's own capacity-bearing sites (so a sparse
-    // resource dimension isn't normalized against a dense one's scale):
+    // The target capacity spread over each bin's footprint, and the per-dimension
+    // normalization constants derived from it, depend only on the (fixed) device
+    // grid, bin capacity, and target density -- not on the placement. Build them
+    // once and reuse across every objective evaluation.
     //  - target_norm_floor: a floor added wherever utilization is divided by target
-    //    capacity. Bin-footprint spreading and target_density above can leave a site
-    //    with a vanishingly small (but nonzero) fractional capacity for this
-    //    dimension; without this floor, dividing by it would spike the normalized
+    //    capacity. Bin-footprint spreading and target_density can leave a site with
+    //    a vanishingly small (but nonzero) fractional capacity for this dimension;
+    //    without this floor, dividing by it would spike the normalized
     //    utilization/overflow numerically even though barely any mass sits there.
     //  - residual_charge_scale: used in the residual-charge mode below to express
     //    (utilization - target) in units of "typical site capacity for this
@@ -1495,23 +1477,48 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     //    different natural capacity magnitudes on a heterogeneous grid (e.g. an
     //    abundant LUT dimension vs. a sparse DSP/BRAM one); this keeps their charge
     //    contributions comparably scaled before they feed the shared Poisson solve.
-    std::vector<double> target_norm_floor(dimensions.size(), kEpsilon);
-    std::vector<double> residual_charge_scale(dimensions.size(), 1.0);
-    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        double target_sum = 0.;
-        size_t target_sites = 0;
-        for (double target : target_capacity[dim_idx]) {
-            if (target <= kEpsilon)
-                continue;
-            target_sum += target;
-            target_sites++;
+    if (cached_target_capacity_.size() != dimensions.size()
+        || (!dimensions.empty() && cached_target_capacity_.front().size() != num_sites)) {
+        cached_target_capacity_.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
+        cached_target_norm_floor_.assign(dimensions.size(), kEpsilon);
+        cached_residual_charge_scale_.assign(dimensions.size(), 1.0);
+        // Spread each bin's capacity over its footprint, so hard blocks do not
+        // create an artificially large electrostatic charge at their root tile.
+        for (size_t layer = 0; layer < num_layers; layer++) {
+            for (size_t x = 0; x < width; x++) {
+                for (size_t y = 0; y < height; y++) {
+                    FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+                    const vtr::Rect<double>& region = bins.bin_region(bin_id);
+                    double bin_area = std::max(1.0, region.width() * region.height());
+                    double target_density = density_manager_->get_bin_target_density(bin_id);
+                    size_t idx = site_index(layer, x, y);
+                    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+                        PrimitiveVectorDim dim = dimensions[dim_idx];
+                        cached_target_capacity_[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim)
+                                                                * target_density / bin_area;
+                    }
+                }
+            }
         }
-        if (target_sites != 0) {
-            target_norm_floor[dim_idx] = std::max(kEpsilon,
-                                                  kDensityTargetFloorFraction * target_sum / target_sites);
-            residual_charge_scale[dim_idx] = std::max(kEpsilon, target_sum / target_sites);
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+            double target_sum = 0.;
+            size_t target_sites = 0;
+            for (double target : cached_target_capacity_[dim_idx]) {
+                if (target <= kEpsilon)
+                    continue;
+                target_sum += target;
+                target_sites++;
+            }
+            if (target_sites != 0) {
+                cached_target_norm_floor_[dim_idx] = std::max(kEpsilon,
+                                                              kDensityTargetFloorFraction * target_sum / target_sites);
+                cached_residual_charge_scale_[dim_idx] = std::max(kEpsilon, target_sum / target_sites);
+            }
         }
     }
+    const std::vector<std::vector<double>>& target_capacity = cached_target_capacity_;
+    const std::vector<double>& target_norm_floor = cached_target_norm_floor_;
+    const std::vector<double>& residual_charge_scale = cached_residual_charge_scale_;
 
     // Deposit each primitive-vector mass bilinearly onto the tile grid.
     for (APBlockId blk_id : ap_netlist_.blocks()) {

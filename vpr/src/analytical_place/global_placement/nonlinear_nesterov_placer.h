@@ -340,6 +340,12 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     size_t num_io_chain_cohesion_nets_ = 0;                            ///< Number of flagged direct I/O-chain AP nets.
     std::vector<double> filler_unit_mass_;                             ///< [dim] density mass per dynamic filler.
     std::vector<double> filler_precond_;                               ///< [dim] density-only filler preconditioner.
+    // Placement-invariant density-grid constants, cached once (device grid,
+    // bin capacity, and target density are fixed across the optimization) and
+    // reused across every objective evaluation instead of being rebuilt.
+    mutable std::vector<std::vector<double>> cached_target_capacity_; ///< [dim][site] target capacity spread over each bin's footprint.
+    mutable std::vector<double> cached_target_norm_floor_;            ///< [dim] floor added when dividing by target capacity.
+    mutable std::vector<double> cached_residual_charge_scale_;        ///< [dim] typical site capacity used to scale residual charge.
 
     size_t device_grid_width_ = 0;             ///< Width of the placement region.
     size_t device_grid_height_ = 0;            ///< Height of the placement region.
