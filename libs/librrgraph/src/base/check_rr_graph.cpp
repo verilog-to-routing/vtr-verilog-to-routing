@@ -121,20 +121,17 @@ void check_rr_graph(const RRGraphView& rr_graph,
             }
         } /* End for all edges of node. */
 
-        std::sort(edges.begin(), edges.end(), [](const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) {
+        auto edge_dest_less = [](const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) {
             return lhs.first < rhs.first;
-        });
+        };
+        std::sort(edges.begin(), edges.end(), edge_dest_less);
 
         // Check that multiple edges between the same from/to nodes make sense.
         // Walk the sorted edge list one group of same-destination edges at a time.
         for (auto group_first = edges.cbegin(); group_first != edges.cend();) {
             int to_node = group_first->first;
-            auto group_last = group_first + 1;
-            while (group_last != edges.cend() && group_last->first == to_node) {
-                ++group_last;
-            }
-            auto range = std::make_pair(group_first, group_last);
-            group_first = group_last;
+            auto range = std::equal_range(group_first, edges.cend(), *group_first, edge_dest_less);
+            group_first = range.second;
 
             size_t num_edges_to_node = std::distance(range.first, range.second);
 
