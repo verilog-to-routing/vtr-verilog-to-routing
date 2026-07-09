@@ -38,9 +38,32 @@ CMAKE_BUILD_TYPE := $(shell echo $(BUILD_TYPE) | sed 's/_\?pgo//' | sed 's/_\?st
 #Detect the operating system
 UNAME_S := $(shell uname -s)
 
+# Cmake generator has to be Ninja on MSVC
+CMAKE_GEN = Unix Makefiles
+ifeq ($(OS),Windows_NT)
+CMAKE_GEN = Ninja
+# Msys2 can still use Linux gcc
+ifeq ($(MSYSTEM),MINGW64)
+CMAKE_GEN = Unix Makefiles
+endif
+endif
+
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
-override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
+override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G '${CMAKE_GEN}' ${CMAKE_PARAMS}
+
+ifeq ($(OS),Windows_NT)
+# The curl path should be defined by user. Try to get one from system
+CURL_PATH:=$(shell where curl.exe 2>nul | head -n 1)
+# VCPKG root is a system variable env:VCPKG in power shell. User can override by using VCPKG_PATH when calling the makefile
+VCPKG_CMAKE_PATH:=$(subst \,/,$(VCPKG_PATH))
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
+# Msys2 can still use Linux gcc
+ifneq ($(MSYSTEM),MINGW64)
+override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWGET="${CURL_PATH}" -DCMAKE_TOOLCHAIN_FILE="${VCPKG_CMAKE_PATH}/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_MANIFEST_MODE=OFF
+#	override CMAKE_PARAMS := ${CMAKE_PARAMS} -DWITH_PARMYS=OFF -DSLANG_SYSTEMVERILOG=OFF -DVTR_IPO_BUILD=OFF -DWITH_ABC=OFF
+endif
+endif
 
 #Are we doing a strict (i.e. warnings as errors) build?
 ifneq (,$(findstring strict,$(BUILD_TYPE)))
@@ -67,11 +90,25 @@ endif
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
+ifeq ($(OS),Windows_NT)
+ifeq ($(MSYSTEM),MINGW64)
 SOURCE_DIR := $(PWD)
+else
+SOURCE_DIR := $(shell powershell -NoProfile -Command "(Get-Location).Path")
+SOURCE_DIR := $(subst \,/,$(SOURCE_DIR))
+endif
+else
+SOURCE_DIR := $(PWD)
+endif
 BUILD_DIR ?= build
 
 #Check for the cmake executable
 CMAKE := $(shell command -v cmake 2> /dev/null)
+ifeq ($(OS),Windows_NT)
+ifneq ($(MSYSTEM),MINGW64)
+CMAKE := cmake.exe
+endif
+endif
 
 #Show test log on failures with 'make test'
 export CTEST_OUTPUT_ON_FAILURE=TRUE
@@ -137,8 +174,21 @@ endif #BUILD_TYPE
 	#
 	#Final build
 	#
+ifeq ($(OS),Windows_NT)
+# MSYS2 is based on Makefile
+ifeq ($(MSYSTEM),MINGW64)
 	@echo "Building target(s): $(MAKECMDGOALS)"
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+else
+# MSVC is based on Ninja, use cmake native build
+	@echo "Building target(s): $(MAKECMDGOALS)"
+	$(CMAKE) --build $(BUILD_DIR)
+endif # final build in windows
+else
+# Linux build is based on Makefile
+	@echo "Building target(s): $(MAKECMDGOALS)"
+	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+endif # final build
 endif #ensure-headless
 endif #ensure-gui
 endif #clean
