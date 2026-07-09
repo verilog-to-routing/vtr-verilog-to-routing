@@ -42,8 +42,8 @@ size_t ChanNodeDetails::get_track_node_id(const size_t& track_id) const {
     return track_node_ids_[track_id];
 }
 
-/* Return a copy of vector */
-std::vector<size_t> ChanNodeDetails::get_track_node_ids() const {
+/* Return a const reference to the vector */
+const std::vector<size_t>& ChanNodeDetails::get_track_node_ids() const {
     return track_node_ids_;
 }
 

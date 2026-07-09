@@ -1058,8 +1058,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                     chanx_details_tt.rotate_track_node_id(1, Direction::DEC, false);
                 }
 
-                track_node_ids = chanx_details_tt.get_track_node_ids();
-                chanx_details.set_track_node_ids(track_node_ids);
+                chanx_details.set_track_node_ids(chanx_details_tt.get_track_node_ids());
             }
 
             // Configure CHANX in this channel
@@ -1196,8 +1195,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                     chany_details_tt.rotate_track_node_id(1, Direction::DEC, false);
                 }
 
-                track_node_ids = chany_details_tt.get_track_node_ids();
-                chany_details.set_track_node_ids(track_node_ids);
+                chany_details.set_track_node_ids(chany_details_tt.get_track_node_ids());
             }
             // Configure CHANX in this channel
             load_one_chan_rr_nodes_basic_info(rr_graph,
