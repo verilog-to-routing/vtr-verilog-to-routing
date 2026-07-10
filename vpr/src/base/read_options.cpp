@@ -3386,7 +3386,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "3D stacked architectures), to influence the order in which a net's sinks are routed. "
             "Used to route die-crossing sinks earlier so their route can be reused by other sinks "
             "on the same die. Only has effect on interposer-based or multi-layer (3D) architectures.")
-        .default_value("1.0")
+        .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<float>(args.router_sink_order_die_alignment_multiplier, "--router_sink_order_die_alignment_multiplier")
@@ -3396,7 +3396,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "to influence the order in which a net's sinks are routed. Scaled down to 0 as the offset "
             "perpendicular to that boundary (relative to the net's bounding box) grows. Only has effect "
             "on interposer-based or multi-layer (3D) architectures.")
-        .default_value("1.0")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
