@@ -285,6 +285,8 @@ struct t_options {
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_threshold;
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_weight;
     argparse::ArgValue<float> router_lookahead_interposer_base_cut_multiplier;
+    argparse::ArgValue<float> router_sink_order_die_crossing_multiplier;
+    argparse::ArgValue<float> router_sink_order_die_alignment_multiplier;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<bool> router_update_lower_bound_delays;

@@ -162,6 +162,28 @@ bool DeviceGrid::are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile
     return first_id == second_id;
 }
 
+bool DeviceGrid::do_locs_cross_vertical_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const {
+    // Dice are guaranteed to be axis-aligned rectangles, so checking the die at loc_a's row
+    // is sufficient to tell whether a vertical cut separates the two locations' x coordinates;
+    // this is well-defined even when loc_a.y != loc_b.y.
+    int y = loc_a.y;
+    const DeviceDieId first_id = die_id_matrix_[loc_a.layer_num][loc_a.x][y];
+    const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][loc_b.x][y];
+
+    return first_id != second_id;
+}
+
+bool DeviceGrid::do_locs_cross_horizontal_cut(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const {
+    // Dice are guaranteed to be axis-aligned rectangles, so checking the die at loc_a's column
+    // is sufficient to tell whether a horizontal cut separates the two locations' y coordinates;
+    // this is well-defined even when loc_a.x != loc_b.x.
+    int x = loc_a.x;
+    const DeviceDieId first_id = die_id_matrix_[loc_a.layer_num][x][loc_a.y];
+    const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][x][loc_b.y];
+
+    return first_id != second_id;
+}
+
 DeviceDieId DeviceGrid::get_loc_die_id(t_physical_tile_loc loc) const {
     return die_id_matrix_[loc.layer_num][loc.x][loc.y];
 }

@@ -1378,6 +1378,14 @@ struct t_router_opts {
     double initial_acc_cost_chan_congestion_threshold;
     double initial_acc_cost_chan_congestion_weight;
     float router_lookahead_interposer_base_cut_multiplier; ///< Multiplier to apply for base cost of interposer wires in the router lookahead
+    /// Sort-priority term added for a sink that is on the other side of a die boundary from the
+    /// net's driver (an interposer cut in the x/y plane, or a layer boundary for 3D stacked
+    /// architectures), used to influence the order sinks are routed in.
+    float router_sink_order_die_crossing_multiplier;
+    /// Additional sort-priority term (on top of router_sink_order_die_crossing_multiplier) added for a
+    /// die-crossing sink that is inline with the driver across the crossed boundary; scaled down
+    /// to 0 as the offset perpendicular to that boundary within the net's bounding box grows.
+    float router_sink_order_die_alignment_multiplier;
     int max_convergence_count;
     int route_verbosity;
     float reconvergence_cpd_threshold;

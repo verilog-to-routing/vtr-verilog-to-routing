@@ -535,6 +535,8 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->initial_acc_cost_chan_congestion_threshold = Options.router_initial_acc_cost_chan_congestion_threshold;
     RouterOpts->initial_acc_cost_chan_congestion_weight = Options.router_initial_acc_cost_chan_congestion_weight;
     RouterOpts->router_lookahead_interposer_base_cut_multiplier = Options.router_lookahead_interposer_base_cut_multiplier;
+    RouterOpts->router_sink_order_die_crossing_multiplier = Options.router_sink_order_die_crossing_multiplier;
+    RouterOpts->router_sink_order_die_alignment_multiplier = Options.router_sink_order_die_alignment_multiplier;
 
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
