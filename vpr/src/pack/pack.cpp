@@ -334,6 +334,16 @@ bool try_pack(const t_packer_opts& packer_opts,
                              device_ctx.logical_block_types,
                              device_ctx.grid);
 
+    // For APPack, we do a low-effort unrelated clustering.
+    // We found that this can increase density in a way that
+    // better matches how a traditional flow may pack; but with
+    // improved spatial awareness.
+    if (appack_ctx.appack_options.use_appack) {
+        if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+            allow_unrelated_clustering = true;
+        }
+    }
+
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(packer_opts,
                               analysis_opts,
