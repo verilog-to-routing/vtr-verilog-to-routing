@@ -325,6 +325,14 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 
 /* returns index of a node from which to start routing */
 RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
+
+/**
+ * @brief Same as get_chanxy_start_node(), but takes the desired wire direction directly instead of
+ * inferring it by comparing start/target coordinates. Unlike get_chanxy_start_node(), this only matches
+ * nodes whose direction is exactly @p direction (i.e. BIDIR nodes are not treated as a match for INC/DEC).
+ */
+RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, Direction direction, e_rr_type rr_type, int seg_index, int track_offset);
+
 RRNodeId get_chanz_start_node(int start_x, int start_y, int seg_index, int track_offset, Direction dir);
 
 /**

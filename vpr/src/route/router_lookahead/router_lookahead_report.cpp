@@ -18,6 +18,7 @@
 #include "serial_connection_router.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
+#include "vtr_log.h"
 #include "vtr_random.h"
 #include "vtr_time.h"
 #include "vtr_util.h"
@@ -137,7 +138,6 @@ static void profile_sample_routes(std::ofstream& os,
     // estimated for traveling delta_x in x only and delta_y in y only. This
     // helps gauge how separable (in x and y) the lookahead's delay estimate is.
     const MapLookahead* map_lookahead = dynamic_cast<const MapLookahead*>(router_lookahead);
-
     // Get all the path delays from this sample node.
     RouteTree tree(sample_rr_node);
     e_rr_type sample_rr_node_type = rr_graph.node_type(sample_rr_node);
@@ -148,7 +148,6 @@ static void profile_sample_routes(std::ofstream& os,
                                                                                                                         bounding_box,
                                                                                                                         router_stats,
                                                                                                                         conn_params);
-
     // Get the max difference between the heuristic delay and the actual delay
     // for each possible sink node on the device.
     size_t num_targets = 0;
@@ -164,7 +163,6 @@ static void profile_sample_routes(std::ofstream& os,
     for (RRNodeId rr_node_id : sink_rr_nodes) {
         VTR_ASSERT_SAFE(rr_graph.node_type(rr_node_id) == e_rr_type::SINK);
         VTR_ASSERT_SAFE(rr_node_id != sample_rr_node);
-
         // Get the delay of this path. The delay of the path is just equal
         // to the backward path cost at the target node.
         float path_delay = route_ctx.rr_node_route_inf[rr_node_id].backward_path_cost;
@@ -178,7 +176,6 @@ static void profile_sample_routes(std::ofstream& os,
                                                                     rr_node_id,
                                                                     cost_params,
                                                                     0);
-
         // If the lookahead being profiled is the MapLookahead, also compute the
         // "separable" estimate of the cost: the cost of traveling delta_x (with
         // delta_y = 0) plus the cost of traveling delta_y (with delta_x = 0).

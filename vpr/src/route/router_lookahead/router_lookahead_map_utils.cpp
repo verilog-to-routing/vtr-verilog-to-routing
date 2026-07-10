@@ -593,6 +593,38 @@ RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x
     return result;
 }
 
+RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, Direction direction, e_rr_type rr_type, int seg_index, int track_offset) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& node_lookup = rr_graph.node_lookup();
+
+    VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
+
+    RRNodeId result = RRNodeId::INVALID();
+
+    // Find first node in channel that has specified segment index and goes in the desired direction.
+    // Unlike get_chanxy_start_node(int, int, int, int, int, e_rr_type, int, int), this only matches nodes
+    // whose direction is exactly the requested one (a BIDIR node is not treated as a match for INC/DEC).
+    for (const RRNodeId node_id : node_lookup.find_channel_nodes(layer, start_x, start_y, rr_type)) {
+        VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
+
+        Direction node_direction = rr_graph.node_direction(node_id);
+        RRIndexedDataId node_cost_ind = rr_graph.node_cost_index(node_id);
+        int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
+
+        if (node_direction == direction && node_seg_ind == seg_index) {
+            // Found first track that has the specified segment index and goes in the desired direction
+            result = node_id;
+            if (track_offset == 0) {
+                break;
+            }
+            track_offset -= 2;
+        }
+    }
+
+    return result;
+}
+
 RRNodeId get_chanz_start_node(int start_x, int start_y, int seg_index, int track_offset, Direction dir) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
