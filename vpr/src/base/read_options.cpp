@@ -3379,6 +3379,26 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<float>(args.router_sink_order_die_crossing_multiplier, "--router_sink_order_die_crossing_multiplier")
+        .help(
+            "Sort-priority term added for a sink that is on the other side of a die boundary "
+            "from the net's driver (an interposer cut in the x/y plane, or a layer boundary for "
+            "3D stacked architectures), to influence the order in which a net's sinks are routed. "
+            "Used to route die-crossing sinks earlier so their route can be reused by other sinks "
+            "on the same die. Only has effect on interposer-based or multi-layer (3D) architectures.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<float>(args.router_sink_order_die_alignment_multiplier, "--router_sink_order_die_alignment_multiplier")
+        .help(
+            "Additional sort-priority term (on top of --router_sink_order_die_crossing_multiplier) "
+            "added for a die-crossing sink that is inline with the driver across the crossed boundary, "
+            "to influence the order in which a net's sinks are routed. Scaled down to 0 as the offset "
+            "perpendicular to that boundary (relative to the net's bounding box) grows. Only has effect "
+            "on interposer-based or multi-layer (3D) architectures.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
         .help(
             "Controls how many times the router is allowed to converge to a legal routing before halting."
