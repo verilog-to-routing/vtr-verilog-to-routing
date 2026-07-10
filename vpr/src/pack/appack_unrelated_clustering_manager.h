@@ -12,6 +12,9 @@
 #include "physical_types.h"
 #include "vtr_assert.h"
 
+// Forward declarations.
+class DeviceGrid;
+
 /**
  * @brief Manager class for unrelated clustering in APPack.
  *
@@ -55,6 +58,12 @@ class APPackUnrelatedClusteringManager {
      */
     static constexpr int default_max_unrelated_clustering_attempts_ = 1;
 
+    // Logic blocks (such as CLBs and LABs) were found to benefit from a larger
+    // search distance and number of attempts than the default. These numbers
+    // were found empirically to work well.
+    static constexpr float logic_block_max_unrelated_tile_distance_ = 2.0f;
+    static constexpr int logic_block_max_unrelated_clustering_attempts_ = 1;
+
   public:
     /**
      * @brief When the packing is particularly difficult, and it has failed enough
@@ -77,9 +86,11 @@ class APPackUnrelatedClusteringManager {
      *      behavior.
      *  @param logical_block_types
      *      A vector of all logical block types in the architecture.
+     *  @param device_grid
      */
     void init(const std::vector<std::string>& unrelated_clustering_args,
-              const std::vector<t_logical_block_type>& logical_block_types);
+              const std::vector<t_logical_block_type>& logical_block_types,
+              const DeviceGrid& device_grid);
 
     /**
      * @brief Get the max search distance for the given logical block type.
@@ -137,6 +148,14 @@ class APPackUnrelatedClusteringManager {
     }
 
   private:
+    /**
+     * @brief Helper method that initializes the unrelated clustering parameters
+     *        of all logical block types to reasonable numbers based on the
+     *        characteristics of the logical block type.
+     */
+    void auto_set_unrelated_clustering_params(const std::vector<t_logical_block_type>& logical_block_types,
+                                              const DeviceGrid& device_grid);
+
     /// @brief A flag which shows if the data within this class has been initialized
     ///        or not.
     bool is_initialized_ = false;

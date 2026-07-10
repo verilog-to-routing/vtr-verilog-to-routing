@@ -104,7 +104,8 @@ struct APPackContext : public Context {
                                                 device_grid);
 
             unrelated_clustering_manager.init(ap_opts.appack_unrelated_clustering_args,
-                                              logical_block_types);
+                                              logical_block_types,
+                                              device_grid);
         }
     }
 
