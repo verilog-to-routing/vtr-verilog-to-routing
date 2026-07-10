@@ -6,7 +6,9 @@
  */
 
 #include "router_lookahead_report.h"
+#include <cstdlib>
 #include <fstream>
+#include <map>
 #include <memory>
 #include "connection_router_interface.h"
 #include "d_ary_heap.h"
@@ -91,6 +93,16 @@ struct t_overestimation_info {
  *  @param num_sep_targets
  *      Accumulator (across all trials) for the number of targets used to compute
  *      sep_squared_error_sum.
+ *  @param heur_squared_error_sum
+ *      Accumulator (across all trials) for the sum of squared errors between the
+ *      heuristic delay estimate and the actual path delay.
+ *  @param num_heur_targets
+ *      Accumulator (across all trials) for the number of targets used to compute
+ *      heur_squared_error_sum.
+ *  @param mse_per_manhattan_distance
+ *      Accumulator (across all trials) mapping a target's Manhattan distance
+ *      (|delta_x| + |delta_y|) to the sum of squared heuristic errors and the
+ *      number of targets at that distance.
  */
 static void profile_sample_routes(std::ofstream& os,
                                   RRNodeId sample_rr_node,
@@ -102,7 +114,10 @@ static void profile_sample_routes(std::ofstream& os,
                                   size_t num_trials,
                                   vtr::array<e_rr_type, t_overestimation_info, (size_t)e_rr_type::NUM_RR_TYPES>& max_overestimation_per_type,
                                   double& sep_squared_error_sum,
-                                  size_t& num_sep_targets) {
+                                  size_t& num_sep_targets,
+                                  double& heur_squared_error_sum,
+                                  size_t& num_heur_targets,
+                                  std::map<int, std::pair<double, size_t>>& mse_per_manhattan_distance) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
     RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
@@ -218,7 +233,17 @@ static void profile_sample_routes(std::ofstream& os,
 
         // Keep track of the sum of the squared errors.
         double error = heuristic_delay - path_delay;
-        squared_error_sum += (error * error);
+        double squared_error = error * error;
+        squared_error_sum += squared_error;
+
+        // Bin the squared error by the Manhattan distance (|delta_x| + |delta_y|)
+        // between the source and the target so the report can show how the
+        // lookahead's accuracy varies with distance.
+        auto [dx, dy] = util::get_xy_deltas(sample_rr_node, rr_node_id);
+        int manhattan_distance = std::abs(dx) + std::abs(dy);
+        auto& manhattan_bin = mse_per_manhattan_distance[manhattan_distance];
+        manhattan_bin.first += squared_error;
+        manhattan_bin.second++;
 
         // Keep track of the total path and heuristic costs of each path.
         total_path_cost += path_delay;
@@ -230,6 +255,11 @@ static void profile_sample_routes(std::ofstream& os,
     // across all trials.
     sep_squared_error_sum += sep_squared_error_sum_this_iter;
     num_sep_targets += num_sep_targets_this_iter;
+
+    // Fold this trial's heuristic squared error statistics into the running
+    // totals across all trials.
+    heur_squared_error_sum += squared_error_sum;
+    num_heur_targets += num_targets;
 
     // Reset the global path costs to prepare for the next route.
     router.reset_path_costs();
@@ -377,6 +407,9 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     float max_difference = 0.0f;
     double sep_squared_error_sum = 0.0;
     size_t num_sep_targets = 0;
+    double heur_squared_error_sum = 0.0;
+    size_t num_heur_targets = 0;
+    std::map<int, std::pair<double, size_t>> mse_per_manhattan_distance;
     auto rng = vtr::RandomNumberGenerator(0);
     for (unsigned i = 0; i < max_attempts; i++) {
         // If the number of successful trials is equal to our target number of
@@ -413,7 +446,10 @@ static void profile_lookahead_overestimation(std::ofstream& os,
                               num_trials,
                               max_overestimation_per_type,
                               sep_squared_error_sum,
-                              num_sep_targets);
+                              num_sep_targets,
+                              heur_squared_error_sum,
+                              num_heur_targets,
+                              mse_per_manhattan_distance);
 
         num_trials++;
     }
@@ -425,6 +461,12 @@ static void profile_lookahead_overestimation(std::ofstream& os,
 
     // Print the total maximum difference.
     os << vtr::string_fmt("Worst overestimation between heuristic and actual: %.3g\n", max_difference);
+
+    // Print the overall (average) heuristic MSE across all samples/trials.
+    if (num_heur_targets > 0) {
+        double overall_heur_mse = heur_squared_error_sum / (double)num_heur_targets;
+        os << vtr::string_fmt("Total Average Mean Squared Error (across all samples): %.3g\n", overall_heur_mse);
+    }
 
     // Print the overall separable-delay MSE (across all trials), if computed.
     if (num_sep_targets > 0) {
@@ -454,6 +496,25 @@ static void profile_lookahead_overestimation(std::ofstream& os,
         os << vtr::string_fmt("\t\t\tHeuristic Cost: %g\n", overestimation_info.heuristic_delay);
         os << vtr::string_fmt("\t\t\tActual Path Cost: %g\n", overestimation_info.path_delay);
     }
+
+    // Print a table of the heuristic MSE broken down by the Manhattan distance
+    // between the source and the target. This shows how the lookahead's accuracy
+    // varies with distance.
+    os << "\n";
+    os << "Mean Squared Error per Manhattan Distance:\n";
+    os << "--------------------  ------------  --------------------\n";
+    os << "Manhattan Distance    Num. Targets  Mean Squared Error  \n";
+    os << "--------------------  ------------  --------------------\n";
+    for (const auto& [manhattan_distance, error_info] : mse_per_manhattan_distance) {
+        double sum_squared_error = error_info.first;
+        size_t num_targets = error_info.second;
+        double mean_squared_error = sum_squared_error / (double)num_targets;
+        os << vtr::string_fmt("%20d  %12zu  %20.3g\n",
+                              manhattan_distance,
+                              num_targets,
+                              mean_squared_error);
+    }
+    os << "--------------------  ------------  --------------------\n";
 
     os << "=================================================================\n";
     os << "\n";

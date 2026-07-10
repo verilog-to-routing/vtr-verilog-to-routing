@@ -254,7 +254,7 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                         const int sample_y = profile_x ? fixed_coord : coord;
                         RRNodeId start_node;
                         if (is_chanxy(chan_type)) {
-                            start_node = util::get_chanxy_start_node(from_layer_num, sample_x, sample_y,
+                            start_node = get_chanxy_start_node_sep(from_layer_num, sample_x, sample_y,
                                                                      direction, chan_type, segment_inf.seg_index, 0);
                         } else {
                             VTR_ASSERT(is_chanz(chan_type));
