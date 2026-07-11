@@ -50,10 +50,10 @@ static RRNodeId get_chanxy_start_node_sep(int layer, int start_x, int start_y, D
  * to always restrict the expansion to a bounding box (no interposer-cut handling, since that is not yet
  * supported by this lookahead). */
 static void expand_separable_wire_dijkstra_neighbours(util::PQ_Entry parent_entry,
-                                                       vtr::vector<RRNodeId, float>& node_visited_costs,
-                                                       vtr::vector<RRNodeId, bool>& node_expanded,
-                                                       std::priority_queue<util::PQ_Entry>& pq,
-                                                       const t_bb& bb) {
+                                                      vtr::vector<RRNodeId, float>& node_visited_costs,
+                                                      vtr::vector<RRNodeId, bool>& node_expanded,
+                                                      std::priority_queue<util::PQ_Entry>& pq,
+                                                      const t_bb& bb) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -255,7 +255,7 @@ static void compute_wire_cost_map_for_axis(const std::vector<t_segment_inf>& seg
                         RRNodeId start_node;
                         if (is_chanxy(chan_type)) {
                             start_node = get_chanxy_start_node_sep(from_layer_num, sample_x, sample_y,
-                                                                     direction, chan_type, segment_inf.seg_index, 0);
+                                                                   direction, chan_type, segment_inf.seg_index, 0);
                         } else {
                             VTR_ASSERT(is_chanz(chan_type));
                             start_node = util::get_chanz_start_node(sample_x, sample_y, segment_inf.seg_index, 0, direction);
