@@ -56,13 +56,15 @@ static void run_dijkstra(RRNodeId start_node,
                          util::t_routing_cost_map& routing_cost_map,
                          util::t_dijkstra_data& data,
                          const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
-                         bool sample_all_locs);
+                         bool sample_all_locs,
+                         const t_bb& bb);
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq,
+                                       const t_bb& bb,
                                        bool has_interposer_cuts = false);
 
 /**
@@ -591,6 +593,38 @@ RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x
     return result;
 }
 
+RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, Direction direction, e_rr_type rr_type, int seg_index, int track_offset) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& node_lookup = rr_graph.node_lookup();
+
+    VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
+
+    RRNodeId result = RRNodeId::INVALID();
+
+    // Find first node in channel that has specified segment index and goes in the desired direction.
+    // Unlike get_chanxy_start_node(int, int, int, int, int, e_rr_type, int, int), this only matches nodes
+    // whose direction is exactly the requested one (a BIDIR node is not treated as a match for INC/DEC).
+    for (const RRNodeId node_id : node_lookup.find_channel_nodes(layer, start_x, start_y, rr_type)) {
+        VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
+
+        Direction node_direction = rr_graph.node_direction(node_id);
+        RRIndexedDataId node_cost_ind = rr_graph.node_cost_index(node_id);
+        int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
+
+        if (node_direction == direction && node_seg_ind == seg_index) {
+            // Found first track that has the specified segment index and goes in the desired direction
+            result = node_id;
+            if (track_offset == 0) {
+                break;
+            }
+            track_offset -= 2;
+        }
+    }
+
+    return result;
+}
+
 RRNodeId get_chanz_start_node(int start_x, int start_y, int seg_index, int track_offset, Direction dir) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -732,10 +766,14 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
                                         int route_verbosity,
-                                        bool device_model_warnings) {
+                                        bool device_model_warnings,
+                                        const t_bb* bb) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
+
+    t_bb full_device_bb(0, grid.width() - 1, 0, grid.height() - 1, 0, grid.get_num_layers() - 1);
+    const t_bb& search_bb = bb ? *bb : full_device_bb;
 
     // Start sampling at the lower left non-corner
     int ref_x = 1;
@@ -850,7 +888,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                          routing_cost_map,
                          dijkstra_data,
                          sample_locs,
-                         sample_all_locs);
+                         sample_all_locs,
+                         search_bb);
         }
     }
 
@@ -1334,7 +1373,8 @@ static void run_dijkstra(RRNodeId start_node,
                          util::t_routing_cost_map& routing_cost_map,
                          util::t_dijkstra_data& data,
                          const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
-                         bool sample_all_locs) {
+                         bool sample_all_locs,
+                         const t_bb& bb) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -1405,7 +1445,7 @@ static void run_dijkstra(RRNodeId start_node,
             }
         }
 
-        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, has_interposer_cuts);
+        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, bb, has_interposer_cuts);
         node_expanded[curr_node] = true;
     }
 }
@@ -1414,6 +1454,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq,
+                                       const t_bb& bb,
                                        bool has_interposer_cuts /*=false*/) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -1427,6 +1468,13 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
+
+        // Don't expand nodes whose adjusted position falls outside of the bounding box.
+        auto [child_x, child_y] = util::get_adjusted_rr_position(child_node);
+        if (child_x < bb.xmin || child_x > bb.xmax || child_y < bb.ymin || child_y > bb.ymax) {
+            continue;
+        }
+
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
 
         if (rr_graph.node_type(child_node) == e_rr_type::SINK) return;

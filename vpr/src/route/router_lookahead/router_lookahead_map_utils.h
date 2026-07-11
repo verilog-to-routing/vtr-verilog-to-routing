@@ -23,6 +23,8 @@
 #include "rr_graph_view.h"
 #include "router_lookahead_constants.h"
 
+struct t_bb;
+
 namespace util {
 
 class Cost_Entry;
@@ -323,6 +325,14 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 
 /* returns index of a node from which to start routing */
 RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
+
+/**
+ * @brief Same as get_chanxy_start_node(), but takes the desired wire direction directly instead of
+ * inferring it by comparing start/target coordinates. Unlike get_chanxy_start_node(), this only matches
+ * nodes whose direction is exactly @p direction (i.e. BIDIR nodes are not treated as a match for INC/DEC).
+ */
+RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, Direction direction, e_rr_type rr_type, int seg_index, int track_offset);
+
 RRNodeId get_chanz_start_node(int start_x, int start_y, int seg_index, int track_offset, Direction dir);
 
 /**
@@ -349,6 +359,13 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
  */
 std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr);
 
+/**
+ * @brief Computes the routing cost map for a given wire segment/channel type by running a Dijkstra flood
+ * from a set of representative sample locations.
+ * @param bb Optional bounding box restricting the Dijkstra expansion: nodes whose adjusted position
+ * (see get_adjusted_rr_position()) falls outside this box are not expanded. If nullptr, the bounding
+ * box spans the whole device (0..grid.width()-1, 0..grid.height()-1).
+ */
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         unsigned from_layer_num,
                                         const e_rr_type chan_type,
@@ -356,7 +373,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
                                         int route_verbosity,
-                                        bool device_model_warnings);
+                                        bool device_model_warnings,
+                                        const t_bb* bb = nullptr);
 
 /**
  * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink
