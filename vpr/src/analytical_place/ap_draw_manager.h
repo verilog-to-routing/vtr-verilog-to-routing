@@ -61,7 +61,7 @@ class APDrawManager {
     void update_graphics(unsigned int iteration, enum APDrawType draw_type);
 
     /**
-     * @brief Pause and wait at the intial setup scene before any solving begins.
+     * @brief Pause and wait at the initial setup scene before any solving begins.
      * 
      * Inside the function, the shared timing info pointer is passed to draw state
      * to prepare for critical path drawing.
