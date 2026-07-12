@@ -167,6 +167,7 @@ struct t_draw_layer_display {
 };
 
 struct PartialPlacement;
+class APNetlist;
 
 /**
  * @brief Structure used to store variables related to highlighting/drawing
@@ -445,11 +446,18 @@ struct t_draw_state {
      */
     std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
 
+    std::optional<std::reference_wrapper<const APNetlist>> ap_netlist_ref_;
+
   public:
     // Set/clear/get the AP partial placement reference used during AP drawing
     void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
     void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
     const PartialPlacement* get_ap_partial_placement_ref() const { return ap_partial_placement_ref_ ? &ap_partial_placement_ref_->get() : nullptr; }
+
+    // Set/clear/get the AP netlist reference used during AP drawing
+    void set_ap_netlist_ref(const APNetlist& apn) { ap_netlist_ref_ = std::cref(apn); }
+    void clear_ap_netlist_ref() { ap_netlist_ref_.reset(); }
+    const APNetlist* get_ap_netlist_ref() const { return ap_netlist_ref_ ? &ap_netlist_ref_->get() : nullptr; }
 };
 
 /* For each cluster type, this structure stores drawing

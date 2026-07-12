@@ -951,31 +951,6 @@ void draw_routing_util(ezgl::renderer* g) {
     draw_state->color_map = std::move(cmap);
 }
 
-/* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
- * pins is shown in a different colour.
- * User can toggle between two different visualizations:
- * a) during placement, critical path only shown as flylines
- * b) during routing, critical path is shown by both flylines and routed net connections.
- */
-
-/**
- * @brief Draw critical path elements.
- *
- * This function draws critical path elements based on the provided timing paths
- * and indexes map. It is primarily used in server mode, where items are drawn upon request.
- */
-
-int get_timing_path_node_layer_num(tatum::NodeId node) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
-    AtomPinId atom_pin = atom_ctx.lookup().tnode_atom_pin(node);
-    AtomBlockId atom_block = atom_ctx.netlist().pin_block(atom_pin);
-    ClusterBlockId clb_block = atom_ctx.lookup().atom_clb(atom_block);
-    return block_locs[clb_block].loc.layer;
-}
-
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -1116,6 +1091,17 @@ void draw_reset_blk_colors() {
 void draw_reset_blk_color(ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->reset_block_color(blk_id);
+}
+
+ezgl::point2d get_ap_block_draw_coord(APBlockId ap_block) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    const PartialPlacement* p_placement = draw_state->get_ap_partial_placement_ref();
+    VTR_ASSERT(p_placement != nullptr);
+
+    // Safety check.
+    VTR_ASSERT(static_cast<std::size_t>(ap_block) < p_placement->block_x_locs.size());
+    VTR_ASSERT(static_cast<std::size_t>(ap_block) < p_placement->block_y_locs.size());
+    return ezgl::point2d{p_placement->block_x_locs[ap_block], p_placement->block_y_locs[ap_block]};
 }
 
 #endif

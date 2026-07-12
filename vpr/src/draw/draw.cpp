@@ -307,6 +307,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
         }
     } else {
         draw_analytical_place(g);
+        // Note: during the AP stage, only the critical path flylines and delay labels are available.
+        draw_crit_path(g);
     }
 
     // Zoom-Select preview: while the user is in window mode and has clicked
@@ -1649,13 +1651,6 @@ static void run_graphics_commands(const std::string& commands) {
 
     //Advance the sequence number
     ++draw_state->sequence_number;
-}
-
-ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
-    AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
-    return atom_pin_draw_coord(pin);
 }
 
 /* This routine highlights the blocks affected in the latest move      *

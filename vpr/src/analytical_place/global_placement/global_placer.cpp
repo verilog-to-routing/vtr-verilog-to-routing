@@ -397,12 +397,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
     PartialPlacement best_p_placement(ap_netlist_);
     double best_ub_hpwl = std::numeric_limits<double>::max();
 
-    // Initialize graphics for analytical placement, setting the reference in
-    // the draw state.
-    APDrawManager draw_manager(p_placement);
+    // Initialize graphics for analytical placement, setting the references in the draw state.
+    APDrawManager draw_manager(p_placement, ap_netlist_);
 
-    // Pause to show initial FPGA state before any solving begins.
-    draw_manager.pause("Analytical Placement: Starting Global Placement");
+    // Pause to show initial FPGA state before any solving begins. Also pass in the shared timing info pointer
+    // so that the drawing code can prepare for critical path drawing.
+    draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", pre_cluster_timing_manager_.get_timing_info_ptr());
 
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
@@ -423,9 +423,6 @@ PartialPlacement SimPLGlobalPlacer::place() {
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
 
-        // Update graphics after legalizer
-        draw_manager.update_graphics(i, APDrawType::Legalizer);
-
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();
         update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
@@ -434,6 +431,9 @@ PartialPlacement SimPLGlobalPlacer::place() {
                                              ap_netlist_);
         solver_->update_net_weights(pre_cluster_timing_manager_);
         float timing_update_end_time = runtime_timer.elapsed_sec();
+
+        // Update graphics after legalizer and timing update
+        draw_manager.update_graphics(i, APDrawType::Legalizer);
 
         total_time_spent_in_solver += solver_end_time - solver_start_time;
         total_time_spent_in_legalizer += legalizer_end_time - legalizer_start_time;
@@ -502,7 +502,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
     VTR_LOG("\tTime spent updating timing: %g seconds\n", total_time_spent_updating_timing);
 
     // Pause to show the final global placement result before handing off.
-    draw_manager.pause("Analytical Placement: Global Placement Complete");
+    draw_manager.pause_at_final_scene("Analytical Placement: Global Placement Complete");
 
     // Print some statistics on the final placement.
     VTR_LOG("Placement after Global Placement:\n");

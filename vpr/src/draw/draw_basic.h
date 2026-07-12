@@ -22,6 +22,9 @@
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
 
+// Forward Declaration
+class APBlockId;
+
 /**
  * @brief Draws all placed blocks on the device grid across visible layers.
  *
@@ -65,13 +68,6 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
                         ezgl::renderer* g);
 
 /**
- * @brief Returns the layer number of a timing path node
- * @param node
- * @return layer number the node is situated on.
- */
-int get_timing_path_node_layer_num(tatum::NodeId node);
-
-/**
  * @brief Returns true if both the current_node and prev_node are on the same layer and it is visible,
  *        or they're on different layers that are both visible and cross-layer connections are visible.
  *        Otherwise returns false.
@@ -111,5 +107,7 @@ void draw_reset_blk_colors();
 
 //Reset a specific block's colour.
 void draw_reset_blk_color(ClusterBlockId blk_id);
+
+ezgl::point2d get_ap_block_draw_coord(APBlockId ap_block);
 
 #endif /* NO_GRAPHICS */
