@@ -237,7 +237,8 @@ bool try_pack(const t_packer_opts& packer_opts,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
               const t_vpr_setup& vpr_setup,
-              const RamMapper& ram_mapper) {
+              const RamMapper& ram_mapper,
+              const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     // The clusterer modifies the device context by increasing the size of the
@@ -334,13 +335,51 @@ bool try_pack(const t_packer_opts& packer_opts,
                              device_ctx.logical_block_types,
                              device_ctx.grid);
 
-    // For APPack, we do a low-effort unrelated clustering.
-    // We found that this can increase density in a way that
-    // better matches how a traditional flow may pack; but with
-    // improved spatial awareness.
-    if (appack_ctx.appack_options.use_appack) {
-        if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+    // For APPack, we do a low-effort unrelated clustering for block types
+    // that the pre-packing device size estimate predicts will not fit
+    // densely enough on the device. We found that this can increase density
+    // in a way that better matches how a traditional flow may pack; but with
+    // improved spatial awareness. We only want to pay this quality cost for
+    // block types that actually look tight, so types the estimate does not
+    // flag are left at their normal (higher quality) settings on this first
+    // attempt.
+    if (appack_ctx.appack_options.use_appack && packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+        std::unordered_set<t_logical_block_type_ptr> tight_block_types;
+        for (const t_logical_block_type& type : device_ctx.logical_block_types) {
+            if (is_empty_type(&type))
+                continue;
+
+            size_t num_total_instances = 0;
+            for (const t_physical_tile_type_ptr equivalent_tile : type.equivalent_tiles)
+                num_total_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
+
+            auto itr = estimated_type_instance_counts.find(&type);
+            size_t estimated_instances = (itr != estimated_type_instance_counts.end()) ? itr->second : 0;
+
+            if (estimated_instances > num_total_instances)
+                tight_block_types.insert(&type);
+        }
+
+        if (!tight_block_types.empty()) {
             allow_unrelated_clustering = true;
+
+            // Restrict unrelated clustering to only the block types the
+            // estimate flagged as tight; other types keep their default
+            // (higher quality) unrelated clustering settings off.
+            for (const t_logical_block_type& type : device_ctx.logical_block_types) {
+                if (is_empty_type(&type))
+                    continue;
+                if (!tight_block_types.count(&type))
+                    appack_ctx.unrelated_clustering_manager.set_max_unrelated_clustering_attempts(type, 0);
+            }
+
+            VTR_LOG("Device size estimate predicts a tight packing for block type(s): ");
+            bool first = true;
+            for (t_logical_block_type_ptr type : tight_block_types) {
+                VTR_LOG("%s%s", first ? "" : ", ", type->name.c_str());
+                first = false;
+            }
+            VTR_LOG(". Enabling unrelated clustering for these type(s) from the start.\n");
         }
     }
 
@@ -412,13 +451,16 @@ bool try_pack(const t_packer_opts& packer_opts,
             case e_packer_state::SET_UNRELATED_AND_BALANCED: {
                 // 1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
                 //
-                // Turn it on to increase packing density
+                // Turn it on to increase packing density.
+                // NOTE: allow_unrelated_clustering may already be true here (e.g. APPack
+                //       may have pre-enabled it for specific block types before the first
+                //       attempt based on the pre-packing density estimate) if this state was
+                //       reached only because balance_block_type_utilization needed enabling;
+                //       setting it again is a harmless no-op in that case.
                 if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
-                    VTR_ASSERT(allow_unrelated_clustering == false);
                     allow_unrelated_clustering = true;
                 }
                 if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO) {
-                    VTR_ASSERT(balance_block_type_util == false);
                     balance_block_type_util = true;
                 }
                 if (appack_ctx.appack_options.use_appack) {

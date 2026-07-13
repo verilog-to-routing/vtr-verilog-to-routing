@@ -754,7 +754,8 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     // that downstream stages (e.g. RAM mapper) can query realistic device
     // dimensions before packing. The packer may later grow or shrink the device
     // size to match the actual resource requirements after packing completes.
-    DeviceSizeEstimator device_size_estimator(vpr_setup, arch, prepacker);
+    DeviceSizeEstimator device_size_estimator(vpr_setup, arch, prepacker,
+                                              /*always_estimate_resource_requirement=*/g_vpr_ctx.atom().flat_placement_info().valid);
 
     // Infer logical RAMs and assign to physical types to prioritize during packing.
     // For the auto-device flow, reuse the groups already computed by the estimator.
@@ -775,7 +776,8 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                     pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info(),
                     vpr_setup,
-                    ram_mapper);
+                    ram_mapper,
+                    device_size_estimator.estimated_type_instance_counts());
 }
 
 void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
