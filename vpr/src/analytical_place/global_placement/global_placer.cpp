@@ -401,8 +401,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
     APDrawManager draw_manager(p_placement, ap_netlist_);
 
     // Pause to show initial FPGA state before any solving begins. Also pass in the shared timing info pointer
-    // so that the drawing code can prepare for critical path drawing.
-    draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", pre_cluster_timing_manager_.get_timing_info_ptr());
+    // when timing analysis is on so that the drawing code can prepare for critical path drawing.
+    if (pre_cluster_timing_manager_.is_valid()) {
+        draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", pre_cluster_timing_manager_.get_timing_info_ptr());
+    } else {
+        draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", nullptr);
+    }
 
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
