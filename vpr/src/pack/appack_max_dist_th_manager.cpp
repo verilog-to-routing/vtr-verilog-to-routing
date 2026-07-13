@@ -24,7 +24,12 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
                                   const DeviceGrid& device_grid) {
     // Compute the max device distance based on the width and height of the
     // device. This is the L1 (manhattan) distance.
-    max_distance_on_device_ = device_grid.width() + device_grid.height();
+    // TODO: These should really be width - 1 and height - 1 since the largest
+    //       span would be (0,0) to (W-1, H-1). Need to update the default values
+    //       accordingly. This would then allow us to clean up the following layers
+    //       code.
+    float layer_span_contr = device_grid.get_num_layers() > 1 ? device_grid.get_num_layers() : 0;
+    max_distance_on_device_ = device_grid.width() + device_grid.height() + layer_span_contr;
 
     // Automatically set the max distance thresholds.
     auto_set_max_distance_thresholds(logical_block_types, device_grid);
