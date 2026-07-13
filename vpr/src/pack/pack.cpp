@@ -335,16 +335,18 @@ bool try_pack(const t_packer_opts& packer_opts,
                              device_ctx.logical_block_types,
                              device_ctx.grid);
 
-    // For APPack, we do a low-effort unrelated clustering for block types
-    // that the pre-packing device size estimate predicts will not fit
-    // densely enough on the device. We found that this can increase density
-    // in a way that better matches how a traditional flow may pack; but with
-    // improved spatial awareness. We only want to pay this quality cost for
-    // block types that actually look tight, so types the estimate does not
-    // flag are left at their normal (higher quality) settings on this first
-    // attempt.
+    // For APPack, use the pre-packing device size estimate to react, per block
+    // type, to types that look like they will not fit densely enough on the
+    // device. This is a graduated response: mild overage (estimated instances
+    // a bit above what's available) just widens that type's max candidate
+    // distance threshold, which finds related candidates a bit further away.
+    // Severe overage additionally falls back to low-effort unrelated
+    // clustering, since widening the threshold alone is not expected to be
+    // enough -- unrelated clustering has a real quality cost, so we only pay
+    // it for the block type(s) that actually need it.
     if (appack_ctx.appack_options.use_appack && packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
-        std::unordered_set<t_logical_block_type_ptr> tight_block_types;
+        std::unordered_set<t_logical_block_type_ptr> severe_block_types;
+        bool any_type_needs_denser_packing = false;
         for (const t_logical_block_type& type : device_ctx.logical_block_types) {
             if (is_empty_type(&type))
                 continue;
@@ -356,26 +358,46 @@ bool try_pack(const t_packer_opts& packer_opts,
             auto itr = estimated_type_instance_counts.find(&type);
             size_t estimated_instances = (itr != estimated_type_instance_counts.end()) ? itr->second : 0;
 
-            if (estimated_instances > num_total_instances)
-                tight_block_types.insert(&type);
+            if (estimated_instances <= num_total_instances)
+                continue; // Estimate predicts this type comfortably fits; leave its settings untouched.
+
+            any_type_needs_denser_packing = true;
+
+            if (num_total_instances == 0) {
+                // No capacity at all for this type on the device; widening the
+                // search radius cannot help, so go straight to unrelated clustering.
+                severe_block_types.insert(&type);
+                continue;
+            }
+
+            float utilization = static_cast<float>(estimated_instances) / static_cast<float>(num_total_instances);
+            float new_max_dist_th = appack_ctx.max_distance_threshold_manager.get_utilization_scaled_max_dist_threshold(type, utilization);
+            appack_ctx.max_distance_threshold_manager.set_max_dist_threshold(type, new_max_dist_th);
+
+            if (appack_ctx.max_distance_threshold_manager.is_utilization_severe(utilization))
+                severe_block_types.insert(&type);
         }
 
-        if (!tight_block_types.empty()) {
+        if (any_type_needs_denser_packing) {
+            VTR_LOG("Device size estimate predicts a tight packing; increased the max candidate distance threshold for the affected block type(s).\n");
+        }
+
+        if (!severe_block_types.empty()) {
             allow_unrelated_clustering = true;
 
             // Restrict unrelated clustering to only the block types the
-            // estimate flagged as tight; other types keep their default
-            // (higher quality) unrelated clustering settings off.
+            // estimate flagged as severely tight; other types keep their
+            // default (higher quality) unrelated clustering settings off.
             for (const t_logical_block_type& type : device_ctx.logical_block_types) {
                 if (is_empty_type(&type))
                     continue;
-                if (!tight_block_types.count(&type))
+                if (!severe_block_types.count(&type))
                     appack_ctx.unrelated_clustering_manager.set_max_unrelated_clustering_attempts(type, 0);
             }
 
-            VTR_LOG("Device size estimate predicts a tight packing for block type(s): ");
+            VTR_LOG("Device size estimate predicts a severe overage for block type(s): ");
             bool first = true;
-            for (t_logical_block_type_ptr type : tight_block_types) {
+            for (t_logical_block_type_ptr type : severe_block_types) {
                 VTR_LOG("%s%s", first ? "" : ", ", type->name.c_str());
                 first = false;
             }
