@@ -1,6 +1,7 @@
 
 #include "pack.h"
 
+#include <algorithm>
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
 #include "device_grid.h"
@@ -344,7 +345,28 @@ bool try_pack(const t_packer_opts& packer_opts,
     // clustering, since widening the threshold alone is not expected to be
     // enough -- unrelated clustering has a real quality cost, so we only pay
     // it for the block type(s) that actually need it.
+    //
+    // TODO: These are tuning knobs; expect to adjust them as more benchmarks
+    //       are evaluated.
+    //  - kMinUtilizationForThresholdBump: AP's clustering tends to come out
+    //    around 10% less dense than the pre-packing estimate predicts, so
+    //    start widening the max distance threshold once the estimate is
+    //    within 10% of a type's capacity, rather than waiting until the
+    //    estimate actually predicts an overflow.
+    //  - kMaxDistThUtilizationScaleMultiplier: a type's max distance
+    //    threshold is linearly scaled from 1x (at
+    //    kMinUtilizationForThresholdBump) up to this multiple of its normal
+    //    (auto-computed) value (at kSevereUtilizationCutoff).
+    //  - kSevereUtilizationCutoff: estimated utilization (estimated
+    //    instances needed / instances available) at or above which a type is
+    //    considered severely over capacity: widening the threshold alone is
+    //    not expected to be enough, so unrelated clustering is also used for
+    //    that type.
     if (appack_ctx.appack_options.use_appack && packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+        constexpr float kMinUtilizationForThresholdBump = 0.9f;
+        constexpr float kMaxDistThUtilizationScaleMultiplier = 5.0f;
+        constexpr float kSevereUtilizationCutoff = 1.2f;
+
         std::unordered_set<t_logical_block_type_ptr> severe_block_types;
         bool any_type_needs_denser_packing = false;
         for (const t_logical_block_type& type : device_ctx.logical_block_types) {
@@ -358,23 +380,34 @@ bool try_pack(const t_packer_opts& packer_opts,
             auto itr = estimated_type_instance_counts.find(&type);
             size_t estimated_instances = (itr != estimated_type_instance_counts.end()) ? itr->second : 0;
 
-            if (estimated_instances <= num_total_instances)
-                continue; // Estimate predicts this type comfortably fits; leave its settings untouched.
-
-            any_type_needs_denser_packing = true;
-
             if (num_total_instances == 0) {
+                if (estimated_instances == 0)
+                    continue; // Nothing of this type needed; leave untouched.
                 // No capacity at all for this type on the device; widening the
                 // search radius cannot help, so go straight to unrelated clustering.
+                any_type_needs_denser_packing = true;
                 severe_block_types.insert(&type);
                 continue;
             }
 
             float utilization = static_cast<float>(estimated_instances) / static_cast<float>(num_total_instances);
-            float new_max_dist_th = appack_ctx.max_distance_threshold_manager.get_utilization_scaled_max_dist_threshold(type, utilization);
-            appack_ctx.max_distance_threshold_manager.set_max_dist_threshold(type, new_max_dist_th);
+            if (utilization < kMinUtilizationForThresholdBump)
+                continue; // Comfortably fits, even accounting for AP packing less densely than estimated.
 
-            if (appack_ctx.max_distance_threshold_manager.is_utilization_severe(utilization))
+            any_type_needs_denser_packing = true;
+
+            // Linearly scale the multiplier applied to this type's normal max
+            // distance threshold from 1x to kMaxDistThUtilizationScaleMultiplier
+            // as utilization goes from kMinUtilizationForThresholdBump to
+            // kSevereUtilizationCutoff.
+            float utilization_clamped = std::min(utilization, kSevereUtilizationCutoff);
+            float th_multiplier = 1.0f + (utilization_clamped - kMinUtilizationForThresholdBump)
+                                              / (kSevereUtilizationCutoff - kMinUtilizationForThresholdBump)
+                                              * (kMaxDistThUtilizationScaleMultiplier - 1.0f);
+            float base_max_dist_th = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(type);
+            appack_ctx.max_distance_threshold_manager.set_max_dist_threshold(type, base_max_dist_th * th_multiplier);
+
+            if (utilization >= kSevereUtilizationCutoff)
                 severe_block_types.insert(&type);
         }
 

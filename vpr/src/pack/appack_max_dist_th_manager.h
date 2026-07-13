@@ -7,7 +7,6 @@
  *          thresholding optimization used within APPack.
  */
 
-#include <algorithm>
 #include <string>
 #include <vector>
 #include "physical_types.h"
@@ -45,7 +44,7 @@ class APPackMaxDistThManager {
 
     // Logic blocks (such as CLBs and LABs) tend to have more resources on the
     // device, thus they have tighter thresholds. This was found to work well.
-    static constexpr float logic_block_max_dist_th_scale_ = 0.05f;
+    static constexpr float logic_block_max_dist_th_scale_ = 0.02f;
     static constexpr float logic_block_max_dist_th_offset_ = 10.0f;
 
     // Memory blocks (i.e. blocks that contain pb_types of the memory class)
@@ -65,22 +64,6 @@ class APPackMaxDistThManager {
     // logical block type. Increasing this value will reduce the number of fallbacks
     // but may yield worse quality. This is expected to be a number larger than 0.
     static constexpr float max_dist_th_fail_increase_scale = 10.0f;
-
-    // Before packing begins, a pre-packing density estimate may predict that a
-    // logical block type will not fit densely enough on the device (i.e. its
-    // estimated utilization -- estimated instances needed divided by instances
-    // available on the device -- is above 1.0). In that case, the max distance
-    // threshold for that type is scaled up towards this multiple of its normal
-    // (auto-computed) threshold, the amount of scaling depending on how far over
-    // capacity the type looks. See get_utilization_scaled_max_dist_threshold().
-    static constexpr float max_dist_th_utilization_scale_multiplier_ = 4.0f;
-
-    // Estimated utilization (see above) at or above which a logical block type
-    // is considered severely over capacity: widening the max distance threshold
-    // alone is not expected to be enough, so unrelated clustering should also be
-    // used for that type. Below this cutoff, only the max distance threshold is
-    // scaled up (a lighter touch than unrelated clustering).
-    static constexpr float severe_utilization_cutoff_ = 1.5f;
 
   public:
     APPackMaxDistThManager() = default;
@@ -135,51 +118,6 @@ class APPackMaxDistThManager {
                             "Logical block type does not have a max distance threshold");
 
         logical_block_dist_thresholds_[logical_block_ty.index] = new_threshold;
-    }
-
-    /**
-     * @brief Given a logical block type's estimated utilization (estimated
-     *        instances needed divided by instances available on the device),
-     *        returns a max distance threshold scaled up from the type's
-     *        current threshold, interpolating towards
-     *        max_dist_th_utilization_scale_multiplier_ times that threshold
-     *        as utilization approaches severe_utilization_cutoff_.
-     *
-     *        Intended to be called once before packing begins, using a
-     *        pre-packing density estimate, to preemptively widen the
-     *        candidate search radius for block types that look tight -- a
-     *        lighter touch than falling back to unrelated clustering.
-     *
-     *  @param logical_block_ty
-     *      The logical block type whose threshold is being scaled.
-     *  @param utilization
-     *      Estimated instances needed for this type divided by instances
-     *      available on the device. Values <= 1.0 return the threshold
-     *      unchanged.
-     *  @return
-     *      The scaled max distance threshold. Once utilization reaches
-     *      severe_utilization_cutoff_, this saturates at the ceiling value;
-     *      see is_utilization_severe().
-     */
-    inline float get_utilization_scaled_max_dist_threshold(const t_logical_block_type& logical_block_ty,
-                                                            float utilization) const {
-        float base_th = get_max_dist_threshold(logical_block_ty);
-        if (utilization <= 1.0f)
-            return base_th;
-
-        float ceiling_th = base_th * max_dist_th_utilization_scale_multiplier_;
-        float overage_fraction = std::min((utilization - 1.0f) / (severe_utilization_cutoff_ - 1.0f), 1.0f);
-        return base_th + overage_fraction * (ceiling_th - base_th);
-    }
-
-    /**
-     * @brief Returns true if the given estimated utilization is high enough
-     *        that get_utilization_scaled_max_dist_threshold() has saturated
-     *        at its ceiling, meaning unrelated clustering should also be
-     *        used for the corresponding block type.
-     */
-    inline bool is_utilization_severe(float utilization) const {
-        return utilization >= severe_utilization_cutoff_;
     }
 
   private:
