@@ -1099,6 +1099,7 @@ ezgl::point2d get_ap_block_draw_coord(APBlockId ap_block) {
     VTR_ASSERT(p_placement != nullptr);
 
     // Safety check.
+    VTR_ASSERT(ap_block.is_valid());
     VTR_ASSERT(static_cast<std::size_t>(ap_block) < p_placement->block_x_locs.size());
     VTR_ASSERT(static_cast<std::size_t>(ap_block) < p_placement->block_y_locs.size());
     return ezgl::point2d{p_placement->block_x_locs[ap_block], p_placement->block_y_locs[ap_block]};

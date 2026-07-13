@@ -169,9 +169,10 @@ void APNetlist::build_atom_block_ap_block(const std::size_t num_atom_blocks, con
  * Reverse Lookup Accessor
  */
 APBlockId APNetlist::atom_block_ap_block(const AtomBlockId atom_block_id) const {
-    VTR_ASSERT(atom_block_id.is_valid());
     // Safety check.
+    VTR_ASSERT(atom_block_id.is_valid());
     VTR_ASSERT(static_cast<std::size_t>(atom_block_id) < atom_block_ap_block_.size());
+    
     return atom_block_ap_block_[atom_block_id];
 }
 
