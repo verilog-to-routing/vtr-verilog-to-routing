@@ -12,6 +12,7 @@
 
 #include "prepack.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <map>
@@ -24,6 +25,7 @@
 #include "echo_files.h"
 #include "logic_types.h"
 #include "physical_types.h"
+#include "physical_types_util.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -36,7 +38,8 @@
 /*****************************************/
 /*Local Function Declaration			 */
 /*****************************************/
-static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vector<t_logical_block_type>& logical_block_types);
+static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vector<t_logical_block_type>& logical_block_types,
+                                                                 int verbosity);
 
 static void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pack_patterns);
 
@@ -96,6 +99,35 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
 
 static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_pb_graph_node* root_block);
 
+/**
+ * @brief Get all input pins of the given root (cluster-level) pb_graph_node that
+ *        feed the given chain pack pattern, i.e. have an output edge annotated
+ *        with the pattern (Ex. the cin pin of a CLB for a carry chain pattern).
+ */
+static std::vector<t_pb_graph_pin*> get_root_block_chain_input_pins(const int pattern_index,
+                                                                    const t_pb_graph_node* root_block);
+
+/**
+ * @brief Determine whether every cluster-level input pin feeding the given chain
+ *        pack pattern has Fc = 0 on the representative physical tile of the given
+ *        logical block type (pick_physical_type, as used by place_macro).
+ *
+ *        If true, the inter-cluster chain link (Ex. cout -> cin) can only be
+ *        realized through the dedicated direct connection, so nets on this link
+ *        must be considered for molecule creation even when they have a fanout
+ *        greater than one.
+ */
+static bool pattern_chain_input_has_zero_fc(const t_pack_patterns& pattern,
+                                            const t_logical_block_type& type);
+
+/**
+ * @brief True if the given pattern connection is the dedicated (Fc = 0) chain
+ *        link of the given pack pattern, i.e. its sink pin is a chain input
+ *        port of a pattern marked chain_link_fc_zero.
+ */
+static bool connection_is_fc0_chain_link(const t_pack_pattern_connections& connection,
+                                         const t_pack_patterns* pack_pattern);
+
 static void update_chain_root_pins(t_pack_patterns* chain_pattern,
                                    const std::vector<t_pb_graph_pin*>& chain_input_pins);
 
@@ -124,7 +156,8 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
-                                     const AtomNetlist& atom_nlist);
+                                     const AtomNetlist& atom_nlist,
+                                     const t_pack_patterns* pack_pattern);
 
 /**
  * @brief Get an unordered set of all pb_types in the given pack pattern
@@ -149,8 +182,11 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern);
  * More complicated structures should probably be handled either downstream
  * (general packing) or upstream (in tech mapping).
  * If this limitation is too constraining, code is designed so that this limitation can be removed.
+ * Exception: the dedicated (Fc = 0) chain link of chain patterns marked
+ * chain_link_fc_zero accepts multi-fanout nets (see pattern_chain_input_has_zero_fc).
  */
-static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vector<t_logical_block_type>& logical_block_types) {
+static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vector<t_logical_block_type>& logical_block_types,
+                                                                 int verbosity) {
     int L_num_blocks;
     t_pb_graph_edge* expansion_edge;
 
@@ -201,6 +237,14 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
             if (packing_patterns[i].is_chain) {
                 find_all_equivalent_chains(&packing_patterns[i], type.pb_graph_head);
                 print_chain_starting_points(&packing_patterns[i]);
+
+                // if the cluster pins feeding this chain cannot reach the general routing
+                // fabric (Fc = 0), the chain link is a dedicated connection and multi-fanout
+                // nets on it must still be considered for molecule creation
+                packing_patterns[i].chain_link_fc_zero = pattern_chain_input_has_zero_fc(packing_patterns[i], type);
+                VTR_LOGV(verbosity > 1 && packing_patterns[i].chain_link_fc_zero,
+                         "Chain pack pattern %s uses dedicated inter-cluster routing (Fc = 0); multi-fanout chain-link nets will be considered for prepacking.\n",
+                         packing_patterns[i].name);
             }
 
             // if pack pattern i is found to belong to current block type, go to next pack pattern
@@ -974,6 +1018,9 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
  *              structures should probably be handled either downstream (general packing)
  *              or upstream (in tech mapping).
  *              If this limitation is too constraining, code is designed so that this limitation can be removed
+ *              Exception: dedicated (Fc = 0) chain links accept multi-fanout nets,
+ *              since such nets can only be realized through the direct connection
+ *              (see connection_is_fc0_chain_link)
  *
  * Side Effect: If successful, link atom to molecule
  */
@@ -1111,7 +1158,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
                 // this block is being driven by this connection
             } else if (block_connection->to_block == pattern_block) {
                 // find the block that is driving this connection and it to the queue
-                auto driver_blk_id = get_driving_block(block_id, *block_connection, atom_nlist);
+                auto driver_blk_id = get_driving_block(block_id, *block_connection, atom_nlist, molecule.pack_pattern);
                 // add this driver block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
             }
@@ -1125,6 +1172,27 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
     // if all non-optional positions in the pack pattern have atoms
     // mapped to them, then this molecule is valid
     return true;
+}
+
+static bool connection_is_fc0_chain_link(const t_pack_pattern_connections& connection,
+                                         const t_pack_patterns* pack_pattern) {
+    if (pack_pattern == nullptr || !pack_pattern->chain_link_fc_zero) {
+        return false;
+    }
+
+    // the connection is a chain link iff its sink pin is one of the chain input
+    // ports. chain_root_pins can be empty (when find_all_equivalent_chains could
+    // not resolve independent chains), in which case no connection matches.
+    const t_model_ports* to_model_port = connection.to_pin->port->model_port;
+    for (const std::vector<t_pb_graph_pin*>& chain : pack_pattern->chain_root_pins) {
+        for (const t_pb_graph_pin* root_pin : chain) {
+            if (root_pin->port->model_port == to_model_port) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -1189,13 +1257,16 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
 /**
  * Find the atom block in the netlist driving this pin of the input atom block
  * If doesn't exist return AtomBlockId::INVALID()
- * Limitation: This driving block should be driving only the input block
+ * Limitation: This driving block should be driving only the input block,
+ *             except on dedicated (Fc = 0) chain links where any fanout is accepted
  *      block_id   : id of the atom block that is connected to a net driven by the driving block
  *      connections : pack pattern connections from the given block
+ *      pack_pattern : pack pattern the connections belong to
  */
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
-                                     const AtomNetlist& atom_nlist) {
+                                     const AtomNetlist& atom_nlist,
+                                     const t_pack_patterns* pack_pattern) {
     auto to_port_model = connections.to_pin->port->model_port;
     auto to_pin_number = connections.to_pin->pin_number;
     auto to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
@@ -1205,7 +1276,12 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     }
 
     auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
-    if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+
+    // Multi-fanout nets are normally not considered for pack patterns, except on a
+    // dedicated (Fc = 0) chain link, where the net can only be realized through the
+    // direct connection regardless of its fanout (e.g. a cout driving the next cin
+    // plus look-ahead logic).
+    if (net_id && (atom_nlist.net_sinks(net_id).size() == 1 || connection_is_fc0_chain_link(connections, pack_pattern))) {
         auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
         if (to_port_model->is_clock) {
@@ -1566,22 +1642,8 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
  *  with all the pin that represent a starting point for this pattern.
  */
 static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_pb_graph_node* root_block) {
-    // this vector will be updated with all root_block input
-    // pins that are annotated with this chain pattern
-    std::vector<t_pb_graph_pin*> chain_input_pins;
-
-    // iterate over all the input pins of the root_block and populate
-    // the chain_input_pins vector
-    for (int iports = 0; iports < root_block->num_input_ports; iports++) {
-        for (int ipins = 0; ipins < root_block->num_input_pins[iports]; ipins++) {
-            auto& input_pin = root_block->input_pins[iports][ipins];
-            for (int iedge = 0; iedge < input_pin.num_output_edges; iedge++) {
-                if (input_pin.output_edges[iedge]->belongs_to_pattern(chain_pattern->index)) {
-                    chain_input_pins.push_back(&input_pin);
-                }
-            }
-        }
-    }
+    // all root_block input pins that are annotated with this chain pattern
+    std::vector<t_pb_graph_pin*> chain_input_pins = get_root_block_chain_input_pins(chain_pattern->index, root_block);
 
     // if this chain has only one cluster input, then
     // there is no need to proceed with the search
@@ -1625,6 +1687,67 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
         // with all the possible starting points of the chain.
         update_chain_root_pins(chain_pattern, chain_input_pins);
     }
+}
+
+static std::vector<t_pb_graph_pin*> get_root_block_chain_input_pins(const int pattern_index,
+                                                                    const t_pb_graph_node* root_block) {
+    std::vector<t_pb_graph_pin*> chain_input_pins;
+
+    // iterate over all the input pins of the root_block and populate
+    // the chain_input_pins vector
+    for (int iports = 0; iports < root_block->num_input_ports; iports++) {
+        for (int ipins = 0; ipins < root_block->num_input_pins[iports]; ipins++) {
+            auto& input_pin = root_block->input_pins[iports][ipins];
+            for (int iedge = 0; iedge < input_pin.num_output_edges; iedge++) {
+                if (input_pin.output_edges[iedge]->belongs_to_pattern(pattern_index)) {
+                    chain_input_pins.push_back(&input_pin);
+                }
+            }
+        }
+    }
+
+    return chain_input_pins;
+}
+
+static bool pattern_chain_input_has_zero_fc(const t_pack_patterns& pattern,
+                                            const t_logical_block_type& type) {
+    VTR_ASSERT(pattern.is_chain);
+
+    std::vector<t_pb_graph_pin*> chain_input_pins = get_root_block_chain_input_pins(pattern.index, type.pb_graph_head);
+
+    // conservative: without chain input pins to check, the all-pins
+    // quantifier below would hold vacuously
+    if (chain_input_pins.empty() || type.equivalent_tiles.empty()) {
+        return false;
+    }
+
+    // Check the same representative tile place_macro resolves pins through when
+    // detecting macros, so prepacking and macro formation agree on the chain link.
+    t_physical_tile_type_ptr tile = pick_physical_type(&type);
+
+    for (const t_pb_graph_pin* input_pin : chain_input_pins) {
+        int physical_pin = get_physical_pin(tile, &type, input_pin->pin_count_in_cluster);
+
+        // Zero Fc iff every Fc spec covering the pin has fc_value == 0 (the RR
+        // builder's dedicated-pin idiom). Fractional near-zero Fc counts as routable
+        // since the track count is channel-width dependent. A pin with no spec is
+        // conservatively treated as routable.
+        bool found_spec = false;
+        for (const t_fc_specification& fc_spec : tile->fc_specs) {
+            if (std::find(fc_spec.pins.begin(), fc_spec.pins.end(), physical_pin) == fc_spec.pins.end()) {
+                continue;
+            }
+            found_spec = true;
+            if (fc_spec.fc_value != 0) {
+                return false;
+            }
+        }
+        if (!found_spec) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -1771,11 +1894,12 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
 
 Prepacker::Prepacker(const AtomNetlist& atom_nlist,
                      const LogicalModels& models,
-                     const std::vector<t_logical_block_type>& logical_block_types) {
+                     const std::vector<t_logical_block_type>& logical_block_types,
+                     int verbosity) {
     vtr::ScopedStartFinishTimer prepacker_timer("Prepacker");
 
     // Allocate the pack patterns from the logical block types.
-    list_of_pack_patterns = alloc_and_load_pack_patterns(logical_block_types);
+    list_of_pack_patterns = alloc_and_load_pack_patterns(logical_block_types, verbosity);
     // Use the pack patterns to allocate and load the pack molecules.
     std::multimap<AtomBlockId, PackMoleculeId> atom_molecules_multimap;
     expected_lowest_cost_pb_gnode.resize(atom_nlist.blocks().size(), nullptr);
