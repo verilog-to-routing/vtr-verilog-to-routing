@@ -202,10 +202,13 @@ class Prepacker {
      *  @param atom_nlist           The atom netlist to prepack.
      *  @param models
      *  @param logical_block_types  A list of the logical block types on the device.
+     *  @param verbosity            Packer verbosity level; levels above 1 print
+     *                              extra pack pattern information.
      */
     Prepacker(const AtomNetlist& atom_nlist,
               const LogicalModels& models,
-              const std::vector<t_logical_block_type>& logical_block_types);
+              const std::vector<t_logical_block_type>& logical_block_types,
+              int verbosity);
 
     /**
      * @brief A range of all prepacked molecules. Every atom should exist in one
