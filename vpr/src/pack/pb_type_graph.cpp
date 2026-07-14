@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstring>
 #include <queue>
+#include <unordered_set>
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -176,6 +177,23 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 static int compute_flat_index_for_child_node(int num_children_of_type,
                                              int parent_flat_index,
                                              int child_index);
+
+/**
+ * @brief BFS through the pb_graph, accumulating delay_max, until either
+ *        target is reached (if non-null) or a root-block pin is reached
+ *        (if target is nullptr).
+ *
+ * @param start    Pin to search from.
+ * @param forward  If true, traverse output_edges/output_pins (search
+ *                 downstream of start). If false, traverse input_edges/
+ *                 input_pins (search upstream of start).
+ * @param target   If non-null, search stops at this specific pin. If
+ *                 nullptr, search stops at the nearest root-block pin.
+ *
+ * @return The accumulated delay_max along the path found, or -1.0f if no
+ *         such path exists.
+ */
+static float calc_pb_graph_delay(const t_pb_graph_pin* start, bool forward, const t_pb_graph_pin* target);
 
 /**
  * Allocate memory into types and load the pb graph with interconnect edges
@@ -1928,6 +1946,63 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
     }
 
     return nullptr;
+}
+
+// target == nullptr means "stop at the nearest root-block pin" instead of
+// "stop at a specific pin".
+static bool is_search_target(const t_pb_graph_pin* pin, const t_pb_graph_pin* target) {
+    if (target != nullptr) {
+        return pin == target;
+    }
+    return pin->is_root_block_pin();
+}
+
+static float calc_pb_graph_delay(const t_pb_graph_pin* start, bool forward, const t_pb_graph_pin* target) {
+    if (start == nullptr) return -1.0f;
+    if (is_search_target(start, target)) return 0.0f;
+
+    std::queue<std::pair<const t_pb_graph_pin*, float>> queue;
+    std::unordered_set<const t_pb_graph_pin*> visited;
+
+    queue.push({start, 0.0f});
+    visited.insert(start);
+
+    while (!queue.empty()) {
+        auto [cur_pin, cur_delay] = queue.front();
+        queue.pop();
+
+        // forward searches downstream via output_edges/output_pins;
+        // !forward searches upstream via input_edges/input_pins.
+        size_t num_edges = forward ? cur_pin->output_edges.size() : cur_pin->input_edges.size();
+        for (size_t ie = 0; ie < num_edges; ++ie) {
+            const t_pb_graph_edge* edge = forward ? cur_pin->output_edges[ie] : cur_pin->input_edges[ie];
+            int num_pins = forward ? edge->num_output_pins : edge->num_input_pins;
+            for (int ip = 0; ip < num_pins; ++ip) {
+                const t_pb_graph_pin* next = forward ? edge->output_pins[ip] : edge->input_pins[ip];
+                if (is_search_target(next, target)) {
+                    return cur_delay + edge->delay_max;
+                }
+                if (visited.count(next) == 0) {
+                    visited.insert(next);
+                    queue.push({next, cur_delay + edge->delay_max});
+                }
+            }
+        }
+    }
+    return -1.0f; // no matching pin reachable from start
+}
+
+float calc_pb_graph_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* sink) {
+    if (sink == nullptr) return -1.0f;
+    return calc_pb_graph_delay(src, /*forward=*/true, sink);
+}
+
+float calc_pb_graph_delay_to_root_pin(const t_pb_graph_pin* src) {
+    return calc_pb_graph_delay(src, /*forward=*/true, nullptr);
+}
+
+float calc_pb_graph_delay_from_root_pin(const t_pb_graph_pin* sink) {
+    return calc_pb_graph_delay(sink, /*forward=*/false, nullptr);
 }
 
 /* Date:June 8th, 2024
