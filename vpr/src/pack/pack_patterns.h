@@ -79,6 +79,13 @@ struct t_pack_pattern_connections {
  *                          when forming a short adder chain.
  *      is_chain          : does this pack pattern go across clusters. For example, carry chains can normally cross
  *                          between logic blocks.
+ *      chain_link_fc_zero : true if this chain pattern's inter-cluster link uses dedicated routing only,
+ *                          i.e. every cluster-level input pin that feeds the chain has Fc = 0 on all
+ *                          equivalent physical tiles. When set, multi-fanout nets on the chain-link
+ *                          connection must still be considered for molecule creation (e.g. a cout that
+ *                          drives the next cin plus look-ahead logic): such a net can only be realized
+ *                          through the direct connection, so dropping the molecule cannot help routing.
+ *                          Always false for non-chain patterns.
  *      chain_root_pins   : this is only non-empty for pack_patterns with is_chain set. It points to a specific
  *                          pin of the root_block primitive (Ex. cin of an adder primitive) that is directly
  *                          connected to a cluster-level block pin that can be drive from the preceding cluster.
@@ -102,6 +109,7 @@ struct t_pack_patterns {
     bool* is_block_optional;
 
     bool is_chain;
+    bool chain_link_fc_zero; ///< True if the chain's cluster-level input pins all have Fc = 0 (dedicated inter-cluster link); see struct comment.
     std::vector<std::vector<t_pb_graph_pin*>> chain_root_pins;
 
     // default constructor initializing to an invalid pack pattern
@@ -113,5 +121,6 @@ struct t_pack_patterns {
         num_blocks = 0;
         is_block_optional = nullptr;
         is_chain = false;
+        chain_link_fc_zero = false;
     }
 };
