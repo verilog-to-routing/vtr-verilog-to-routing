@@ -345,26 +345,9 @@ bool try_pack(const t_packer_opts& packer_opts,
     // clustering, since widening the threshold alone is not expected to be
     // enough -- unrelated clustering has a real quality cost, so we only pay
     // it for the block type(s) that actually need it.
-    //
-    // TODO: These are tuning knobs; expect to adjust them as more benchmarks
-    //       are evaluated.
-    //  - kMinUtilizationForThresholdBump: AP's clustering tends to come out
-    //    around 10% less dense than the pre-packing estimate predicts, so
-    //    start widening the max distance threshold once the estimate is
-    //    within 10% of a type's capacity, rather than waiting until the
-    //    estimate actually predicts an overflow.
-    //  - kMaxDistThUtilizationScaleMultiplier: a type's max distance
-    //    threshold is linearly scaled from 1x (at
-    //    kMinUtilizationForThresholdBump) up to this multiple of its normal
-    //    (auto-computed) value (at kSevereUtilizationCutoff).
-    //  - kSevereUtilizationCutoff: estimated utilization (estimated
-    //    instances needed / instances available) at or above which a type is
-    //    considered severely over capacity: widening the threshold alone is
-    //    not expected to be enough, so unrelated clustering is also used for
-    //    that type.
     if (appack_ctx.appack_options.use_appack && packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
         constexpr float kMinUtilizationForThresholdBump = 0.9f;
-        constexpr float kMaxDistThUtilizationScaleMultiplier = 5.0f;
+        constexpr float kMaxDistThUtilizationScaleMultiplier = 10.0f;
         constexpr float kSevereUtilizationCutoff = 1.2f;
 
         std::unordered_set<t_logical_block_type_ptr> severe_block_types;

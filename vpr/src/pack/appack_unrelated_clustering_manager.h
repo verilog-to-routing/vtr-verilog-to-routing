@@ -61,7 +61,7 @@ class APPackUnrelatedClusteringManager {
     // Logic blocks (such as CLBs and LABs) were found to benefit from a larger
     // search distance and number of attempts than the default. These numbers
     // were found empirically to work well.
-    static constexpr float logic_block_max_unrelated_tile_distance_ = 2.0f;
+    static constexpr float logic_block_max_unrelated_tile_distance_ = 4.0f;
     static constexpr int logic_block_max_unrelated_clustering_attempts_ = 1;
 
   public:
