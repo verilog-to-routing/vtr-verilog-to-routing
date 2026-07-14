@@ -45,6 +45,13 @@ using t_logical_block_type_ptr = const t_logical_block_type*;
  *              Pre-computed logical RAM groups with assigned physical types.
  *              Used to guide packing for memory clusters. Defaults to an empty
  *              mapper if not provided.
+ *  @param estimated_type_instance_counts
+ *              Estimated number of instances required for each logical block
+ *              type, computed before packing (see DeviceSizeEstimator). Used
+ *              by APPack to decide, per block type, whether unrelated
+ *              clustering should be enabled from the start. Defaults to an
+ *              empty map if not provided, in which case unrelated clustering
+ *              is left off on the first packing attempt.
  */
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
@@ -55,7 +62,8 @@ bool try_pack(const t_packer_opts& packer_opts,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info,
               const t_vpr_setup& vpr_setup,
-              const RamMapper& ram_mapper = RamMapper{});
+              const RamMapper& ram_mapper = RamMapper{},
+              const std::map<t_logical_block_type_ptr, size_t>& estimated_type_instance_counts = {});
 
 /**
  * @brief Try to fit the block type instances on the given architecture. Will

@@ -44,8 +44,8 @@ class APPackMaxDistThManager {
 
     // Logic blocks (such as CLBs and LABs) tend to have more resources on the
     // device, thus they have tighter thresholds. This was found to work well.
-    static constexpr float logic_block_max_dist_th_scale_ = 0.08f;
-    static constexpr float logic_block_max_dist_th_offset_ = 10.0f;
+    static constexpr float logic_block_max_dist_th_scale_ = 0.02f;
+    static constexpr float logic_block_max_dist_th_offset_ = 5.0f;
 
     // Memory blocks (i.e. blocks that contain pb_types of the memory class)
     // seem to have very touchy packing; thus these do not have the max

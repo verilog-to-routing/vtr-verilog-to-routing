@@ -250,7 +250,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // that downstream stages (e.g. RAM mapper, global placement) can query realistic
     // device dimensions before packing. The packer may later grow or shrink the device
     // size to match the actual resource requirements after packing completes.
-    DeviceSizeEstimator device_size_estimator(vpr_setup, *device_ctx.arch, prepacker);
+    DeviceSizeEstimator device_size_estimator(vpr_setup, *device_ctx.arch, prepacker,
+                                              /*always_estimate_resource_requirement=*/ap_opts.full_legalizer_type == e_ap_full_legalizer::APPack);
 
     // Infer logical RAMs and assign to physical types to prioritize during packing.
     // For the auto-device flow, reuse the groups already computed by the estimator.
@@ -326,7 +327,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         ram_mapper,
                                                                         vpr_setup,
                                                                         *device_ctx.arch,
-                                                                        device_ctx.grid);
+                                                                        device_ctx.grid,
+                                                                        device_size_estimator.estimated_type_instance_counts());
     full_legalizer->legalize(p_placement);
 
     // Print the number of resources in netlist and number of resources available in architecture
