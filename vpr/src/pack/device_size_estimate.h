@@ -83,7 +83,8 @@ class DeviceSizeEstimator {
      * @return Map from logical block type to estimated cluster instance count.
      */
     std::map<t_logical_block_type_ptr, size_t> estimate_resource_requirement(
-        const Prepacker& prepacker, bool store_ram_groups = true);
+        const Prepacker& prepacker,
+        bool store_ram_groups = true);
 
     /// @brief RAM groups computed during estimation; exposed via ram_groups()
     ///        for reuse by RamMapper to avoid redundant grouping and area assignment.

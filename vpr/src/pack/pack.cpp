@@ -384,9 +384,7 @@ bool try_pack(const t_packer_opts& packer_opts,
             // as utilization goes from kMinUtilizationForThresholdBump to
             // kSevereUtilizationCutoff.
             float utilization_clamped = std::min(utilization, kSevereUtilizationCutoff);
-            float th_multiplier = 1.0f + (utilization_clamped - kMinUtilizationForThresholdBump)
-                                              / (kSevereUtilizationCutoff - kMinUtilizationForThresholdBump)
-                                              * (kMaxDistThUtilizationScaleMultiplier - 1.0f);
+            float th_multiplier = 1.0f + (utilization_clamped - kMinUtilizationForThresholdBump) / (kSevereUtilizationCutoff - kMinUtilizationForThresholdBump) * (kMaxDistThUtilizationScaleMultiplier - 1.0f);
             float base_max_dist_th = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(type);
             appack_ctx.max_distance_threshold_manager.set_max_dist_threshold(type, base_max_dist_th * th_multiplier);
 
