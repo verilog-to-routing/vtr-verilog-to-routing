@@ -239,17 +239,17 @@ class PlaceMacros {
                              const std::vector<t_physical_tile_type>& physical_tile_types,
                              const ClusteredNetlist& clb_nlist) const;
 
-    /** 
-     * @brief Checks if a net is a direct connection, both driver and receiver should match the direclist specified in the architecture file
-     * 
-     *  @param clb_net The clustered net to check if it is a direct connection.
-     *  @param idirect The index of the direct connection to match with the driver and receiver of the net.
-     *  @param clb_nlist The clustered netlist.
-     * 
-     * 
-     * @return True if the net is a direct connection, false otherwise.
+    /**
+     * @brief Finds the sink pin of a net that receives the given direct connection.
+     *
+     * The driver pin and exactly one sink pin must be annotated with idirect. Other
+     * sinks are ignored: a chain link (e.g. cout -> cin) may also fan out to regular
+     * pins served through general routing, which must not break the macro.
+     *
+     * @return The sink pin receiving the direct, or ClusterPinId::INVALID() if the
+     *         net is not a direct connection.
      */
-    bool is_net_direct_connection(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist);
+    ClusterPinId net_direct_connection_sink_(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist);
 
     /**
      * @brief Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.
