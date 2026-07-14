@@ -245,8 +245,7 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
 LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                                                                           PackMoleculeId molecule_id,
                                                                                                           std::vector<t_pb_graph_node*>& primitives_list,
-                                                                                                          const Prepacker& prepacker,
-                                                                                                          int force_site) {
+                                                                                                          const Prepacker& prepacker) {
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive;
     if (cluster_placement_stats->curr_molecule != molecule_id) {
         // New block, requeue tried primitives and in-flight primitives
@@ -275,11 +274,6 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
     //        - Lower placement cost is preferred.
     //        - Higher total_primitive_count breaks ties.
     //        - Earlier encountered primitives break remaining ties.
-    //   4. If force_site >= 0:
-    //        - Only the primitive matching flat_site_index == force_site
-    //          is considered.
-    //        - The returned priority queue contains at most one element.
-    //        - If the forced site is infeasible, the returned priority queue is empty.
     // The returned priority queue may be empty if no feasible primitive exists.
 
     // Initialize variables
@@ -298,34 +292,6 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
                     if (!it->second->valid) {
                         cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it); //iterator is incremented here
                         continue;
-                    }
-
-                    // Check for force site match, if applicable
-                    if (force_site > -1) {
-                        // Check that the forced site index is within the available range
-                        int max_site = it->second->pb_graph_node->total_primitive_count - 1;
-                        if (force_site > max_site) {
-                            VTR_LOG("The specified primitive site (%d) is out of range (max %d)\n",
-                                    force_site, max_site);
-                            break;
-                        }
-                        if (force_site == it->second->pb_graph_node->flat_site_index) {
-                            cost = try_place_molecule(cluster_placement_stats,
-                                                      molecule_id,
-                                                      it->second->pb_graph_node,
-                                                      primitives_list,
-                                                      prepacker);
-                            primitives_alive.clear();
-                            if (cost < std::numeric_limits<float>::max()) {
-                                int total_primitive_count = it->second->pb_graph_node->total_primitive_count;
-                                primitives_alive.push(it->second->pb_graph_node,
-                                                      std::make_tuple(-cost, total_primitive_count, -encounter_order));
-                            }
-                            return primitives_alive;
-                        } else {
-                            ++it;
-                            continue;
-                        }
                     }
 
                     // Try place molecule at current root location
