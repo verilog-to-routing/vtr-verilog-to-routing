@@ -63,7 +63,6 @@ static void print_flat_cluster(FILE* fp,
                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                                const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     // Atom context used to get the atom_pb for each atom in the cluster.
-    // NOTE: This is only used for getting the flat site index.
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // Get the location of this cluster.
