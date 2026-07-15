@@ -244,9 +244,14 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                         while (direct_sink_pin.is_valid()) {
                             ClusterBlockId next_blk_id = clb_nlist.pin_block(direct_sink_pin);
 
-                            // Assume that the from_iblk_pin index is the same for the next block
-                            VTR_ASSERT(idirect_from_blk_pin_[physical_tile->index][from_physical_pin] == from_idirect
-                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == e_pin_type::DRIVER);
+                            // from_iblk_pin is a pin index on the head block. Pin indices are only
+                            // meaningful within one logical block type, so reusing it on next_blk_id
+                            // (below) is only correct if next_blk_id has the same type as the head.
+                            // No architecture can violate this (it would need a direct
+                            // between two block types with Fc = 0 pins, which none has), but assert
+                            // it so such an architecture fails here instead of silently
+                            // reading the wrong pin.
+                            VTR_ASSERT(clb_nlist.block_type(next_blk_id) == logical_block);
                             ClusterNetId next_net_id = clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
@@ -682,9 +687,9 @@ ClusterPinId PlaceMacros::net_direct_connection_sink_(ClusterNetId clb_net, int 
         ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
         int sink_pin_index = clb_nlist.pin_logical_index(net_sink);
 
-        auto sink_logical_block = clb_nlist.block_type(sink_block_id);
-        auto sink_physical_tile = pick_physical_type(sink_logical_block);
-        auto sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
+        t_logical_block_type_ptr sink_logical_block = clb_nlist.block_type(sink_block_id);
+        t_physical_tile_type_ptr sink_physical_tile = pick_physical_type(sink_logical_block);
+        int sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
 
         int receiver_direct = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
         if (receiver_direct != idirect) {
@@ -692,9 +697,9 @@ ClusterPinId PlaceMacros::net_direct_connection_sink_(ClusterNetId clb_net, int 
         }
 
         if (sink_block_id == block_id) {
-            //net is connected back to the same block, should not be counted as a direct connection
+            // net is connected back to the same block, should not be counted as a direct connection
             VTR_LOG_WARN(
-                "Block '%s'have a direct connection to itself, this connection will not be counted as a direct connection to form a macro.\n",
+                "Block '%s' has a direct connection to itself, this connection will not be counted as a direct connection to form a macro.\n",
                 clb_nlist.block_name(block_id).c_str());
             return ClusterPinId::INVALID();
         }
