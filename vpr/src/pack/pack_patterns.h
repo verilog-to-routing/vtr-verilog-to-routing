@@ -44,10 +44,8 @@ struct t_pack_pattern_block {
  *                          adder's cin) of a pattern that has chain_link_fc_zero set (see
  *                          t_pack_patterns below). The prepacker normally refuses to grow a
  *                          molecule across a net that has more than one sink; on these
- *                          connections it grows the molecule anyway, because the chain hop has
- *                          to use the dedicated wire no matter where the extra fanout goes.
- *                          Exception: a net that also drives a register still splits the
- *                          molecule (see get_sink_block in prepack.cpp). Set by
+ *                          connections it grows the molecule anyway, because the chain hop 
+ *                          has to use the dedicated wire no matter what. Set by
  *                          mark_fc0_chain_link_connections in prepack.cpp.
  *      next       : next connection in the linked list
  */
@@ -95,13 +93,12 @@ struct t_pack_pattern_connections {
  *                          is the dedicated chain wiring, because the cluster input pins that
  *                          feed the chain (Ex. a CLB's cin pin) cannot reach general routing at
  *                          all (Fc = 0). When true, the prepacker keeps chains together even if
- *                          the chain net has extra fanout: the hop has to use the dedicated wire
- *                          no matter what, so splitting the chain would not make the net any
- *                          easier to route. Two caveats: only the representative tile
- *                          (pick_physical_type) of the block type the pattern was found in is
- *                          checked (see pattern_chain_input_has_zero_fc in prepack.cpp), and a
- *                          chain net that also drives a register still splits the chain (see
- *                          get_sink_block in prepack.cpp) - an accepted limitation for now.
+ *                          the chain net has extra fanout, regardless of what that fanout
+ *                          drives: the hop has to use the dedicated wire no matter what, so
+ *                          splitting the chain would not make the net any easier to route.
+ *                          Caveat: only the representative tile (pick_physical_type) of the
+ *                          block type the pattern was found in is checked (see
+ *                          pattern_chain_input_has_zero_fc in prepack.cpp).
  *                          Always false for non-chain patterns.
  *      chain_root_pins   : this is only non-empty for pack_patterns with is_chain set. It points to a specific
  *                          pin of the root_block primitive (Ex. cin of an adder primitive) that is directly
