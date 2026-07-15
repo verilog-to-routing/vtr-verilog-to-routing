@@ -163,6 +163,9 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
     const int grid_width = static_cast<int>(grid.width());
     const int grid_height = static_cast<int>(grid.height());
 
+    const double initial_bb_wirelength_estimate =
+        net_cost_handler_.get_total_wirelength_estimate();
+
     int num_swaps = 0;
 
     for (int x = 0; x + window_size_ - 1 < grid_width; x += window_size_) {
@@ -191,6 +194,10 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
             num_swaps++;
         }
     }
+
+    const double final_bb_wirelength_estimate =
+        net_cost_handler_.get_total_wirelength_estimate();
+
     auto& placement_ctx = g_vpr_ctx.mutable_placement();
     placement_ctx.unlock_loc_vars();
     placement_ctx.mutable_blk_loc_registry() = placer_state_.blk_loc_registry();
@@ -208,4 +215,11 @@ void WindowedBiMatchingDetailedPlacer::optimize_placement() {
                   num_placement_errors);
     }
     VTR_LOG("Windowed BiMatching DP: committed %d neighbor swaps.\n", num_swaps);
+    VTR_LOG("--Initial wirelength estimate: %g\n",
+            initial_bb_wirelength_estimate);
+    VTR_LOG("--Final wirelength estimate: %g\n",
+            final_bb_wirelength_estimate);
+    VTR_LOG("--BB wirelength estimate delta: %g\n",
+            final_bb_wirelength_estimate - initial_bb_wirelength_estimate);
+    VTR_LOG("--Swaps committed: %d\n", num_swaps);
 }
