@@ -84,7 +84,9 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      int log_verbosity)
     : GlobalPlacer(ap_netlist, log_verbosity)
     , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-    , place_delay_model_(place_delay_model) {
+    , place_delay_model_(place_delay_model)
+    , atom_netlist_(atom_netlist) 
+    , prepacker_(prepacker){
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
@@ -398,16 +400,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
     double best_ub_hpwl = std::numeric_limits<double>::max();
 
     // Initialize graphics for analytical placement, setting the references in the draw state.
-    APDrawManager draw_manager(p_placement, ap_netlist_);
+    APDrawManager draw_manager(atom_netlist_, prepacker_, ap_netlist_, p_placement);
 
-    // Pause to show initial FPGA state before any solving begins. Also pass in the shared timing info pointer
-    // when timing analysis is on so that the drawing code can prepare for critical path drawing.
-    if (pre_cluster_timing_manager_.is_valid()) {
-        draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", pre_cluster_timing_manager_.get_timing_info_ptr());
-    } else {
-        draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", nullptr);
-    }
-
+    // Pause to show initial FPGA state before any solving begins. Also pass in the pre-cluster timing manager
+    // so that the drawing code can prepare for critical path drawing.
+    draw_manager.pause_at_initial_scene("Analytical Placement: Starting Global Placement", pre_cluster_timing_manager_);
+    
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();

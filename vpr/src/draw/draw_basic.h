@@ -108,6 +108,12 @@ void draw_reset_blk_colors();
 //Reset a specific block's colour.
 void draw_reset_blk_color(ClusterBlockId blk_id);
 
-ezgl::point2d get_ap_block_draw_coord(APBlockId ap_block);
+/**
+ * @brief Returns the drawing coordinates for an analytical placement block.
+ *
+ * @param ap_block AP block whose current drawing location is requested.
+ * @return 2D coordinates associated with the given AP block.
+ */
+ezgl::point2d get_ap_block_draw_coords(APBlockId ap_block);
 
 #endif /* NO_GRAPHICS */

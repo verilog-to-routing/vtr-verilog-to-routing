@@ -159,26 +159,6 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
      */
     APNetId create_net(const std::string& name, const AtomNetId atom_net_id);
 
-  public: // Public Reverse Lookup Builder
-    /**
-     * @brief Builds the reverse lookup from AtomBlockId to APBlockId.
-     *
-     * This lookup is derived from each AP block's molecules and should be built
-     * after the AP netlist has been compressed so APBlockIds are stable.
-     *
-     * @param num_atom_blocks Number of atom blocks in the atom netlist. Used to precisely resize the lookup container.
-     * @param prepacker Prepacker used to expand each molecule into atoms.
-     */
-    void build_atom_block_ap_block(const std::size_t num_atom_blocks, const Prepacker& prepacker);
-
-  public: // Public Reverse Lookup Accessor
-    /**
-     * @brief Returns the AP block that contains the given atom block.
-     *
-     * @param atom_block_id Atom block to look up.
-     */
-    APBlockId atom_block_ap_block(const AtomBlockId atom_block_id) const;
-
   private: // Private Members
     /*
      * Netlist compression / optimization
@@ -228,6 +208,4 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
     vtr::vector_map<APPinId, AtomPinId> pin_atom_pin_;
     /// @brief Atom net associated with each AP net.
     vtr::vector_map<APNetId, AtomNetId> net_atom_net_;
-    /// @brief AP block that contains each atom block. Used as a reverse lookup.
-    vtr::vector<AtomBlockId, APBlockId> atom_block_ap_block_;
 };

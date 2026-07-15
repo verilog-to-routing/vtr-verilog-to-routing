@@ -146,6 +146,10 @@ class SimPLGlobalPlacer : public GlobalPlacer {
     ///        of connections in the AP netlist.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
 
+    const AtomNetlist& atom_netlist_;
+
+    const Prepacker& prepacker_;
+
   public:
     /**
      * @brief Constructor for the SimPL Global Placer

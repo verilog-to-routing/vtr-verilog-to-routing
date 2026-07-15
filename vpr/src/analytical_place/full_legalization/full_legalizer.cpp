@@ -21,6 +21,7 @@
 #include "show_setup.h"
 #include "ap_flow_enums.h"
 #include "ap_netlist_fwd.h"
+#include "ap_netlist_utils.h"
 #include "blk_loc_registry.h"
 #include "check_netlist.h"
 #include "cluster_legalizer.h"
@@ -1150,6 +1151,10 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
 void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
                                         const PlaceMacros& place_macros,
                                         const PartialPlacement& p_placement) {
+
+    AtomBlockAPBlockLookup atom_block_ap_block_lookup(atom_netlist_, prepacker_, ap_netlist_);
+    atom_block_ap_block_lookup.verify(prepacker_, ap_netlist_);
+
     // Move the clusters to where they want to be first.
     // TODO: The fixed clusters should probably be moved first for legality
     //       reasons.
@@ -1163,7 +1168,7 @@ void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
         const std::unordered_set<AtomBlockId>& atoms_in_cluster = g_vpr_ctx.clustering().atoms_lookup[cluster_blk_id];
         VTR_ASSERT(atoms_in_cluster.size() > 0);
         AtomBlockId first_atom_blk = *atoms_in_cluster.begin();
-        APBlockId first_ap_blk = ap_netlist_.atom_block_ap_block(first_atom_blk);
+        APBlockId first_ap_blk = atom_block_ap_block_lookup.get_ap_block(first_atom_blk);
         size_t blk_sub_tile = p_placement.block_sub_tiles[first_ap_blk];
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(first_ap_blk);
         bool placed = ap_cluster_placer.place_cluster(cluster_blk_id, tile_loc, blk_sub_tile);

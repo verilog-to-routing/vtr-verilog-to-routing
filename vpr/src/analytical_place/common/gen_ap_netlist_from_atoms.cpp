@@ -264,9 +264,6 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     // Verify that the netlist was created correctly.
     VTR_ASSERT(ap_netlist.verify());
-
-    // Build a reverse lookup from atom block Id to AP block Id. Used by the full legalizer and external drawing code.
-    ap_netlist.build_atom_block_ap_block(atom_netlist.blocks().size(), prepacker);
-
+    
     return ap_netlist;
 }

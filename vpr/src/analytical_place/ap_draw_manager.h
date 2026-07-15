@@ -9,11 +9,11 @@
 
 #include <string>
 #include <memory>
-
-class APNetlist;
-class SetupTimingInfo;
+#include "ap_netlist_utils.h"
 
 // Forward declarations
+class Prepacker;
+class PreClusterTimingManager;
 struct PartialPlacement;
 struct t_arch;
 struct t_vpr_setup;
@@ -48,7 +48,7 @@ class APDrawManager {
      * @brief Constructor initializes the draw manager with references to the
      *        current partial placement and AP netlist.
      */
-    explicit APDrawManager(const PartialPlacement& p_placement, const APNetlist& ap_netlist);
+    explicit APDrawManager(const AtomNetlist& atom_netlist, const Prepacker& prepacker, const APNetlist& ap_netlist, const PartialPlacement& p_placement);
 
     /**
      * @brief Destructor cleans up the reference in the draw state.
@@ -66,10 +66,14 @@ class APDrawManager {
      * Inside the function, the shared timing info pointer is passed to draw state
      * to prepare for critical path drawing.
      */
-    void pause_at_initial_scene(const std::string& msg, std::shared_ptr<const SetupTimingInfo> setup_timing_info);
+    void pause_at_initial_scene(const std::string& msg, PreClusterTimingManager& timing_manager);
 
     /**
      * @brief Pause and wait at the final global placement scene.
      */
     void pause_at_final_scene(const std::string& msg);
+
+  private:
+
+    AtomBlockAPBlockLookup atom_block_ap_block_lookup_;
 };

@@ -13,7 +13,7 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
-#include "ap_netlist.h"
+#include "ap_netlist_utils.h"
 
 /**
  * @brief A scaling factor applied to DEFAULT_ARROW_SIZE.
@@ -291,6 +291,22 @@ static t_draw_layer_display get_timing_flyline_visibility(tatum::NodeId src_node
 static int get_tnode_layer_num(tatum::NodeId node);
 
 /**
+ * @brief Returns the drawing coordinates for a timing edge flyline.
+ *
+ * In analytical placement, timing nodes are mapped to the centers of their associated AP blocks.
+ * If both endpoints collapse to the same AP block, there is no meaningful flyline to draw, so this returns std::nullopt.
+ *
+ * In non-AP drawing stages, timing nodes are mapped to their atom pin drawing coordinates.
+ *
+ * @param src_node Source timing node of the timing edge.
+ * @param sink_node Sink timing node of the timing edge.
+ *
+ * @return The start/end drawing coordinates for the flyline, or std::nullopt if the flyline is skipped.
+ */
+static std::optional<t_flyline_draw_coords> get_timing_flyline_draw_coords(tatum::NodeId src_node,
+                                                                        tatum::NodeId sink_node);
+
+/**
  * @brief Returns the drawing coordinates of a timing node.
  *
  * The timing node is mapped to its corresponding atom pin, then to the normal
@@ -353,8 +369,6 @@ void draw_crit_path(ezgl::renderer* g) {
 }
 
 static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::renderer* g) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
     g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
     g->set_line_width(3);
 
@@ -369,34 +383,26 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
             // any routing which corresponds to the edge.
             ezgl::color color = get_color_from_edge_idx(edge_idx);
 
-            // Check visibility of layers where source and sink reside.
+            // Check visibility of layers where source (prev_node) and sink (node) reside.
             t_draw_layer_display flyline_visibility = get_timing_flyline_visibility(prev_node, node);
 
             if (flyline_visibility.visible) {
                 g->set_color(color, flyline_visibility.alpha);
 
-                // Calculate the physical locations of the two nodes.
-                ezgl::point2d start, end;
-                // In analytical placement, the timing nodes are drawn at the center of their associated
-                // AP blocks. If the two timing nodes collapse to the same AP block, drawing is skipped.
-                if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
-                    APBlockId prev_node_ap_block = get_tnode_ap_block(prev_node);
-                    APBlockId node_ap_block = get_tnode_ap_block(node);
-                    if (prev_node_ap_block == node_ap_block) {
-                        edge_idx++;
-                        prev_node = node;
-                        continue;
-                    }
-                    start = get_ap_block_draw_coord(prev_node_ap_block);
-                    end = get_ap_block_draw_coord(node_ap_block);
-                } else {
-                    // In other stages, timing nodes are drawn at their corresponding atom pin coordinates.
-                    start = get_tnode_draw_coord(prev_node);
-                    end = get_tnode_draw_coord(node);
+                // Calculate the drawing coordinates for the flyline.
+                // The function may return std::nullopt (see the function definition for details),
+                // in which case the label is skipped.
+                std::optional<t_flyline_draw_coords> timing_flyline_draw_coords = get_timing_flyline_draw_coords(prev_node, node);
+                if (!timing_flyline_draw_coords) {
+                    edge_idx++;
+                    prev_node = node;
+                    continue;
                 }
+                ezgl::point2d start = timing_flyline_draw_coords->start;
+                ezgl::point2d end = timing_flyline_draw_coords->end;
 
                 g->draw_line(start, end);
-                // Draw an arrow at the edge center.
+                // Draw an arrow at the flyline center.
                 draw_triangle_along_line_fixed_px(g, start, end, EDGE_CENTER, TIMING_EDGE_ARROW_SCALE * DEFAULT_ARROW_SIZE);
             }
 
@@ -557,8 +563,6 @@ static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::rende
 static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(const tatum::TimingPath& path,
                                                                             double pixels_per_world_unit,
                                                                             ezgl::renderer* g) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
     std::vector<t_label_drawing_info> basic_label_drawing_info;
     // The callers of this function have ensured that path is not empty, but having a safety check is still decent.
     VTR_ASSERT_SAFE(path.data_arrival_path().elements().size() > 0);
@@ -604,27 +608,19 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             std::string delay_label_str = ss.str();
             drawing_info.delay_label_str = delay_label_str;
 
-            // Calculate the physical locations of the two nodes.
-            ezgl::point2d start, end;
-            // In analytical placement, the timing nodes are mapped to the center of their associated
-            // AP blocks. If the two timing nodes collapse to the same AP block, we continue.
-            if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
-                APBlockId prev_node_ap_block = get_tnode_ap_block(prev_node);
-                APBlockId node_ap_block = get_tnode_ap_block(node);
-                if (prev_node_ap_block == node_ap_block) {
-                    drawing_info.hide_label = true;
-                    edge_idx++;
-                    prev_node = node;
-                    prev_arr_time = arr_time;
-                    continue;
-                }
-                start = get_ap_block_draw_coord(prev_node_ap_block);
-                end = get_ap_block_draw_coord(node_ap_block);
-            } else {
-                // In other stages, timing nodes are mapped to their corresponding atom pin coordinates.
-                start = get_tnode_draw_coord(prev_node);
-                end = get_tnode_draw_coord(node);
+            // Calculate where the corresponding timing edge flyline is placed.
+            // The function may return std::nullopt (see the function definition for details),
+            // in which case the label is skipped.
+            std::optional<t_flyline_draw_coords> timing_flyline_draw_coords = get_timing_flyline_draw_coords(prev_node, node);
+            if (!timing_flyline_draw_coords) {
+                drawing_info.hide_label = true;
+                edge_idx++;
+                prev_node = node;
+                prev_arr_time = arr_time;
+                continue;
             }
+            ezgl::point2d start = timing_flyline_draw_coords->start;
+            ezgl::point2d end = timing_flyline_draw_coords->end;
 
             // After this step, start and end are just a relative concept.
             // This step is to ensure that start is always to the physical left of end,
@@ -657,7 +653,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
 
             // This specifies the dimension of the "tilted rectangle" in pixels.
             ezgl::t_text_dimension delay_label_dimension = g->get_text_dimension(delay_label_str);
-            // The bbox is defined in world coordinates so we need to perform a conversion at the end.
+            // The bbox is defined in world coordinates, and we need to perform a conversion to pixels at the end.
             double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
                                        + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
                                       / pixels_per_world_unit;
@@ -920,6 +916,31 @@ static int get_tnode_layer_num(tatum::NodeId node) {
     return block_locs[clb_block].loc.layer;
 }
 
+static std::optional<t_flyline_draw_coords> get_timing_flyline_draw_coords(tatum::NodeId src_node,
+                                                                            tatum::NodeId sink_node) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    ezgl::point2d start, end;
+    if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
+        // In analytical placement, the timing nodes are mapped to the centers of their associated
+        // AP blocks. If the two timing nodes collapse to the same AP block, there is no flyline to draw.
+        APBlockId src_ap_block = get_tnode_ap_block(src_node);
+        APBlockId sink_ap_block = get_tnode_ap_block(sink_node);
+
+        if (src_ap_block == sink_ap_block) {
+            return std::nullopt;
+        }
+
+        start = get_ap_block_draw_coords(src_ap_block);
+        end = get_ap_block_draw_coords(sink_ap_block);
+    } else {
+        // In other stages, timing nodes are mapped to their corresponding atom pin coordinates.
+        start = get_tnode_draw_coord(src_node);
+        end = get_tnode_draw_coord(sink_node);
+    }
+    return t_flyline_draw_coords{start, end};
+}
+
 static ezgl::point2d get_tnode_draw_coord(tatum::NodeId node) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
@@ -930,12 +951,12 @@ static ezgl::point2d get_tnode_draw_coord(tatum::NodeId node) {
 static APBlockId get_tnode_ap_block(tatum::NodeId node) {
     t_draw_state* draw_state = get_draw_state_vars();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const APNetlist* ap_netlist = draw_state->get_ap_netlist_ref();
-    VTR_ASSERT(ap_netlist != nullptr);
+    const AtomBlockAPBlockLookup* atom_block_ap_block_lookup = draw_state->get_atom_block_ap_block_lookup_ref();
+    VTR_ASSERT(atom_block_ap_block_lookup != nullptr);
 
     AtomPinId atom_pin = atom_ctx.lookup().tnode_atom_pin(node);
     AtomBlockId atom_block = atom_ctx.netlist().pin_block(atom_pin);
-    return ap_netlist->atom_block_ap_block(atom_block);
+    return atom_block_ap_block_lookup->get_ap_block(atom_block);
 }
 
 #ifndef NO_SERVER

@@ -8,7 +8,6 @@
 #include "ap_netlist.h"
 #include <string>
 #include <vector>
-#include "atom_netlist_fwd.h"
 #include "netlist_fwd.h"
 #include "netlist_utils.h"
 #include "prepack.h"
@@ -140,40 +139,6 @@ APNetId APNetlist::create_net(const std::string& name, const AtomNetId atom_net_
     VTR_ASSERT(validate_net_sizes());
 
     return net_id;
-}
-
-/*
- * Reverse Lookup Builder
- */
-void APNetlist::build_atom_block_ap_block(const std::size_t num_atom_blocks, const Prepacker& prepacker) {
-    atom_block_ap_block_.resize(num_atom_blocks);
-    for (APBlockId ap_block_id : blocks()) {
-        for (PackMoleculeId block_mol_id : block_molecules(ap_block_id)) {
-            const t_pack_molecule& block_mol = prepacker.get_molecule(block_mol_id);
-            for (AtomBlockId atom_block_id : block_mol.atom_block_ids) {
-                // See issue #2791, some of the atom_block_ids may be invalid. They
-                // can safely be ignored.
-                if (!atom_block_id.is_valid())
-                    continue;
-                // Safety check.
-                VTR_ASSERT(static_cast<std::size_t>(atom_block_id) < atom_block_ap_block_.size());
-                // Ensure that this block is not in any other AP block. That would be weird.
-                VTR_ASSERT(!atom_block_ap_block_[atom_block_id].is_valid());
-                atom_block_ap_block_[atom_block_id] = ap_block_id;
-            }
-        }
-    }
-}
-
-/*
- * Reverse Lookup Accessor
- */
-APBlockId APNetlist::atom_block_ap_block(const AtomBlockId atom_block_id) const {
-    // Safety check.
-    VTR_ASSERT(atom_block_id.is_valid());
-    VTR_ASSERT(static_cast<std::size_t>(atom_block_id) < atom_block_ap_block_.size());
-
-    return atom_block_ap_block_[atom_block_id];
 }
 
 /*

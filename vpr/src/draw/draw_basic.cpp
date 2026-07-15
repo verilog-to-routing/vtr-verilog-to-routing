@@ -1093,7 +1093,7 @@ void draw_reset_blk_color(ClusterBlockId blk_id) {
     draw_state->reset_block_color(blk_id);
 }
 
-ezgl::point2d get_ap_block_draw_coord(APBlockId ap_block) {
+ezgl::point2d get_ap_block_draw_coords(APBlockId ap_block) {
     t_draw_state* draw_state = get_draw_state_vars();
     const PartialPlacement* p_placement = draw_state->get_ap_partial_placement_ref();
     VTR_ASSERT(p_placement != nullptr);

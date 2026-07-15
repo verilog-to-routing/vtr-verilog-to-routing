@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <memory>
+#include <optional>
 #include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "vpr_types.h"
@@ -166,8 +167,13 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
+struct t_flyline_draw_coords {
+    ezgl::point2d start;
+    ezgl::point2d end;
+};
+
 struct PartialPlacement;
-class APNetlist;
+class AtomBlockAPBlockLookup;
 
 /**
  * @brief Structure used to store variables related to highlighting/drawing
@@ -446,18 +452,18 @@ struct t_draw_state {
      */
     std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
 
-    std::optional<std::reference_wrapper<const APNetlist>> ap_netlist_ref_;
+    std::optional<std::reference_wrapper<const AtomBlockAPBlockLookup>> atom_block_ap_block_lookup_ref_;
 
   public:
-    // Set/clear/get the AP partial placement reference used during AP drawing
+    // Set/clear/get the analytical placement variable references used during AP drawing.
     void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
     void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
     const PartialPlacement* get_ap_partial_placement_ref() const { return ap_partial_placement_ref_ ? &ap_partial_placement_ref_->get() : nullptr; }
 
     // Set/clear/get the AP netlist reference used during AP drawing
-    void set_ap_netlist_ref(const APNetlist& apn) { ap_netlist_ref_ = std::cref(apn); }
-    void clear_ap_netlist_ref() { ap_netlist_ref_.reset(); }
-    const APNetlist* get_ap_netlist_ref() const { return ap_netlist_ref_ ? &ap_netlist_ref_->get() : nullptr; }
+    void set_atom_block_ap_block_lookup_ref(const AtomBlockAPBlockLookup& lookup) { atom_block_ap_block_lookup_ref_ = std::cref(lookup); }
+    void clear_atom_block_ap_block_lookup_ref() { atom_block_ap_block_lookup_ref_.reset(); }
+    const AtomBlockAPBlockLookup* get_atom_block_ap_block_lookup_ref() const { return atom_block_ap_block_lookup_ref_ ? &atom_block_ap_block_lookup_ref_->get() : nullptr; }
 };
 
 /* For each cluster type, this structure stores drawing

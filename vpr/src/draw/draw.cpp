@@ -307,8 +307,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
         }
     } else {
         draw_analytical_place(g);
-        // Note: during the AP stage, only the critical path flylines and delay labels are available.
-        //draw_crit_path(g);
+        draw_crit_path(g);
     }
 
     // Zoom-Select preview: while the user is in window mode and has clicked
