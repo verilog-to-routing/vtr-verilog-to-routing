@@ -334,6 +334,18 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
                 g->draw_line(start, end);
                 // Draw an arrow at the edge center.
                 draw_triangle_along_line_fixed_px(g, start, end, EDGE_CENTER, TIMING_EDGE_ARROW_SCALE * DEFAULT_ARROW_SIZE);
+
+                const double side_len = get_pixels_per_world_unit(g) < 1 ? 10 : 10 / get_pixels_per_world_unit(g);
+                
+                if (edge_idx != 0) {
+                    ezgl::point2d buttom_left = start - ezgl::point2d{0 , side_len / 2};
+                    g->fill_rectangle(buttom_left, side_len / 2, side_len);
+                }
+
+                if (edge_idx != path.data_arrival_path().elements().size() - 2) {
+                    ezgl::point2d buttom_left = end - ezgl::point2d{side_len / 2, side_len / 2};
+                    g->fill_rectangle(buttom_left, side_len / 2, side_len);
+                }
             }
 
             edge_idx++;
