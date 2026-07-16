@@ -10,6 +10,7 @@
 #include "physical_types.h"
 #include "place_macro.h"
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
 #include "vtr_cache.h"
@@ -689,6 +690,18 @@ struct FloorplanningContext : public Context {
      * The constraints are input into vpr and do not change.
      */
     UserPlaceConstraints constraints;
+
+    /**
+     * @brief Stores user-defined relative placement macros.
+     *
+     * Each macro constrains groups of atoms: atoms within a group are packed
+     * into the same cluster, atoms of different groups into different clusters,
+     * and the resulting clusters are placed at fixed offsets from each other
+     * (they form a placement macro).
+     *
+     * The relative macros are input into vpr and do not change.
+     */
+    UserRelativeMacros relative_macros;
 
     /**
      * @brief Constraints for each cluster
