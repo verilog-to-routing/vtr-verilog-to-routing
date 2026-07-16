@@ -36,15 +36,15 @@ void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& ap_netlist, const Prepacker& prepacker, const PartialPlacement& p_placement)
-                            : atom_block_ap_block_lookup_(atom_netlist, ap_netlist, prepacker) {
+    : atom_block_ap_block_lookup_(atom_netlist, ap_netlist, prepacker) {
 #ifndef NO_GRAPHICS
     // Verify the atom block to ap block lookup after construction.
-    atom_block_ap_block_lookup_.verify(ap_netlist,prepacker);
-    
+    atom_block_ap_block_lookup_.verify(ap_netlist, prepacker);
+
     // Set references in draw_state to analytical placement variables that we will need for drawing.
     get_draw_state_vars()->set_ap_partial_placement_ref(p_placement);
     get_draw_state_vars()->set_atom_block_ap_block_lookup_ref(atom_block_ap_block_lookup_);
-    
+
 #else
     (void)atom_netlist;
     (void)prepacker;

@@ -264,6 +264,6 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     // Verify that the netlist was created correctly.
     VTR_ASSERT(ap_netlist.verify());
-    
+
     return ap_netlist;
 }

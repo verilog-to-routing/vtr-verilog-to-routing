@@ -74,6 +74,5 @@ class APDrawManager {
     void pause_at_final_scene(const std::string& msg);
 
   private:
-
     AtomBlockAPBlockLookup atom_block_ap_block_lookup_;
 };

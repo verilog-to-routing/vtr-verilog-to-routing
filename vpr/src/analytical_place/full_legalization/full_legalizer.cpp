@@ -1151,7 +1151,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
 void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
                                         const PlaceMacros& place_macros,
                                         const PartialPlacement& p_placement) {
-                                            
+
     // Create a lookup from atom block id to AP block id.
     AtomBlockAPBlockLookup atom_block_ap_block_lookup(atom_netlist_, ap_netlist_, prepacker_);
     atom_block_ap_block_lookup.verify(ap_netlist_, prepacker_);

@@ -304,7 +304,7 @@ static int get_tnode_layer_num(tatum::NodeId node);
  * @return The start/end drawing coordinates for the flyline, or std::nullopt if the flyline is skipped.
  */
 static std::optional<t_flyline_draw_coords> get_timing_flyline_draw_coords(tatum::NodeId src_node,
-                                                                        tatum::NodeId sink_node);
+                                                                           tatum::NodeId sink_node);
 
 /**
  * @brief Returns the drawing coordinates of a timing node.
@@ -917,7 +917,7 @@ static int get_tnode_layer_num(tatum::NodeId node) {
 }
 
 static std::optional<t_flyline_draw_coords> get_timing_flyline_draw_coords(tatum::NodeId src_node,
-                                                                            tatum::NodeId sink_node) {
+                                                                           tatum::NodeId sink_node) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     ezgl::point2d start, end;

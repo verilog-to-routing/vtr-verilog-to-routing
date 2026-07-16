@@ -65,4 +65,3 @@ APBlockId AtomBlockAPBlockLookup::get_ap_block(const AtomBlockId atom_block_id) 
 
     return atom_block_ap_block_[atom_block_id];
 }
-

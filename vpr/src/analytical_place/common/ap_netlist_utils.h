@@ -22,7 +22,7 @@ class Prepacker;
  * will be rejected by a VTR_ASSERT (unless a lower assert level is set).
  */
 class AtomBlockAPBlockLookup {
-    public:
+  public:
     AtomBlockAPBlockLookup() = delete;
 
     /**
@@ -33,7 +33,6 @@ class AtomBlockAPBlockLookup {
      * @param prepacker Prepacker used to get the molecules in an AP block so that we can process the grouped atom blocks.
      */
     AtomBlockAPBlockLookup(const AtomNetlist& atom_netlist, const APNetlist& ap_netlist, const Prepacker& prepacker);
-
 
     /**
      * @brief Verifies that the lookup is consistent with the AP netlist.
@@ -54,7 +53,7 @@ class AtomBlockAPBlockLookup {
      */
     APBlockId get_ap_block(const AtomBlockId atom_block_id) const;
 
-    private:
+  private:
     /**
      * @brief Reflects whether the lookup has been verified after construction.
      */
