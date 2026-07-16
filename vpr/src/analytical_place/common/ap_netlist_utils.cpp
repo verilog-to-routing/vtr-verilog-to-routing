@@ -1,11 +1,15 @@
-#include "ap_netlist_utils.h"
+/**
+ * @file
+ * @author  Kevin Xing
+ * @date    July 2026
+ * @brief   Definition of methods in the utility class AtomBlockAPBlockLookup.
+ */
 
+#include "ap_netlist_utils.h"
 #include "atom_netlist.h"
 #include "ap_netlist.h"
-#include <iostream>
 
-
-AtomBlockAPBlockLookup::AtomBlockAPBlockLookup(const AtomNetlist& atom_netlist, const Prepacker& prepacker, const APNetlist& ap_netlist) {
+AtomBlockAPBlockLookup::AtomBlockAPBlockLookup(const AtomNetlist& atom_netlist, const APNetlist& ap_netlist, const Prepacker& prepacker) {
     atom_block_ap_block_.resize(atom_netlist.blocks().size());
     for (APBlockId ap_block_id : ap_netlist.blocks()) {
         for (PackMoleculeId block_mol_id : ap_netlist.block_molecules(ap_block_id)) {
@@ -24,23 +28,27 @@ AtomBlockAPBlockLookup::AtomBlockAPBlockLookup(const AtomNetlist& atom_netlist, 
         }
     }
 }
-void AtomBlockAPBlockLookup::verify(const Prepacker& prepacker, const APNetlist& ap_netlist) {
+
+void AtomBlockAPBlockLookup::verify(const APNetlist& ap_netlist, const Prepacker& prepacker) {
     for (const auto& [atom_block_id, ap_block_id] : atom_block_ap_block_.pairs()) {
+        // An invalid AP block id should not have been inserted during construction.
         VTR_ASSERT(ap_block_id.is_valid());
 
         bool atom_block_id_found = false;
+        // Loop through all molecules in the AP block and look for a matching atom block id.
         for (PackMoleculeId block_mol_id : ap_netlist.block_molecules(ap_block_id)) {
             const t_pack_molecule& block_mol = prepacker.get_molecule(block_mol_id);
             for (AtomBlockId curr_atom_block_id : block_mol.atom_block_ids) {
                 if (atom_block_id == curr_atom_block_id) {
-                    //std::cout << "hohoho" << std::endl;
                     atom_block_id_found = true;
                     break;
                 }
             }
+            // Early exit.
             if (atom_block_id_found)
                 break;
         }
+        // Something unexpected must have happened if we did not find the atom block id.
         VTR_ASSERT(atom_block_id_found);
     }
 
@@ -48,7 +56,7 @@ void AtomBlockAPBlockLookup::verify(const Prepacker& prepacker, const APNetlist&
 }
 
 APBlockId AtomBlockAPBlockLookup::get_ap_block(const AtomBlockId atom_block_id) const {
-    // We do not want people to use this getter without having verified the lookup.
+    // We should not use this getter without having verified the lookup.
     VTR_ASSERT_MSG(verified_, "Must verify the lookup using verify() first!");
 
     // Safety check.

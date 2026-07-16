@@ -45,10 +45,10 @@ void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 class APDrawManager {
   public:
     /**
-     * @brief Constructor initializes the draw manager with references to the
-     *        current partial placement and AP netlist.
+     * @brief Constructor initializes a owned lookup from atom block to AP block and sets references to it
+     * and the current partial placement.
      */
-    explicit APDrawManager(const AtomNetlist& atom_netlist, const Prepacker& prepacker, const APNetlist& ap_netlist, const PartialPlacement& p_placement);
+    explicit APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& ap_netlist, const Prepacker& prepacker, const PartialPlacement& p_placement);
 
     /**
      * @brief Destructor cleans up the reference in the draw state.

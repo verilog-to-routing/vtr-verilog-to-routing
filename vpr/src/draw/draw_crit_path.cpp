@@ -390,7 +390,7 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
                 g->set_color(color, flyline_visibility.alpha);
 
                 // Calculate the drawing coordinates for the flyline.
-                // The function may return std::nullopt (see the function definition for details),
+                // Use optional because the function may return std::nullopt (see the function definition for reasons),
                 // in which case the label is skipped.
                 std::optional<t_flyline_draw_coords> timing_flyline_draw_coords = get_timing_flyline_draw_coords(prev_node, node);
                 if (!timing_flyline_draw_coords) {
@@ -609,7 +609,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             drawing_info.delay_label_str = delay_label_str;
 
             // Calculate where the corresponding timing edge flyline is placed.
-            // The function may return std::nullopt (see the function definition for details),
+            // Use optional because the function may return std::nullopt (see the function definition for details),
             // in which case the label is skipped.
             std::optional<t_flyline_draw_coords> timing_flyline_draw_coords = get_timing_flyline_draw_coords(prev_node, node);
             if (!timing_flyline_draw_coords) {
@@ -951,6 +951,7 @@ static ezgl::point2d get_tnode_draw_coord(tatum::NodeId node) {
 static APBlockId get_tnode_ap_block(tatum::NodeId node) {
     t_draw_state* draw_state = get_draw_state_vars();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    // Get the lookup from atom block id to AP block id.
     const AtomBlockAPBlockLookup* atom_block_ap_block_lookup = draw_state->get_atom_block_ap_block_lookup_ref();
     VTR_ASSERT(atom_block_ap_block_lookup != nullptr);
 

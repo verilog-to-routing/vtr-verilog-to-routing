@@ -35,10 +35,10 @@ void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 #endif
 }
 
-APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const Prepacker& prepacker, const APNetlist& ap_netlist, const PartialPlacement& p_placement)
-                            : atom_block_ap_block_lookup_(atom_netlist, prepacker, ap_netlist) {
+APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& ap_netlist, const Prepacker& prepacker, const PartialPlacement& p_placement)
+                            : atom_block_ap_block_lookup_(atom_netlist, ap_netlist, prepacker) {
 #ifndef NO_GRAPHICS
-    // Verify the atom block to ap block lookup.
+    // Verify the atom block to ap block lookup after construction.
     atom_block_ap_block_lookup_.verify(prepacker, ap_netlist);
     
     // Set references in draw_state to analytical placement variables that we will need for drawing.
@@ -65,7 +65,8 @@ void APDrawManager::pause_at_initial_scene(const std::string& msg, PreClusterTim
 #ifndef NO_GRAPHICS
     if (timing_manager.is_valid()) {
         // Note: During each drawing stage (e.g. ANALYTICAL_PLACEMENT, ROUTING), the timing info pointer only needs to be
-        // updated once. That is why we only pass in nullptr to update_screen() in other APDrawManager functions.
+        // updated once. That is why we only pass the pointer once here, and pass in nullptr to update_screen()
+        //in other APDrawManager functions.
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), e_pic_type::ANALYTICAL_PLACEMENT, timing_manager.get_timing_info_ptr());
     } else {
         // No timing info pointer is available when timing analysis is off.
@@ -73,7 +74,7 @@ void APDrawManager::pause_at_initial_scene(const std::string& msg, PreClusterTim
     }
 #else
     (void)msg;
-    (void)setup_timing_info;
+    (void)timing_manager;
 #endif
 }
 

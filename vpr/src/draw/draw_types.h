@@ -448,10 +448,17 @@ struct t_draw_state {
     /**
      * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
      * @details This is set by the AP global placer just before drawing and cleared immediately after.
-     *          Only a reference is stored to avoid copying and lifetime issues.
+     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
+     *          and avoid copying and modification of the partial placement
      */
     std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
 
+    /**
+     * @brief Stores a temporary reference to the atom block to AP block lookup.
+     * @details This is also set by the AP global placer and has the same lifetime as the partial placement reference.
+     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
+     *          and avoid copying and modification of the lookup.
+     */
     std::optional<std::reference_wrapper<const AtomBlockAPBlockLookup>> atom_block_ap_block_lookup_ref_;
 
   public:
@@ -459,8 +466,6 @@ struct t_draw_state {
     void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
     void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
     const PartialPlacement* get_ap_partial_placement_ref() const { return ap_partial_placement_ref_ ? &ap_partial_placement_ref_->get() : nullptr; }
-
-    // Set/clear/get the AP netlist reference used during AP drawing
     void set_atom_block_ap_block_lookup_ref(const AtomBlockAPBlockLookup& lookup) { atom_block_ap_block_lookup_ref_ = std::cref(lookup); }
     void clear_atom_block_ap_block_lookup_ref() { atom_block_ap_block_lookup_ref_.reset(); }
     const AtomBlockAPBlockLookup* get_atom_block_ap_block_lookup_ref() const { return atom_block_ap_block_lookup_ref_ ? &atom_block_ap_block_lookup_ref_->get() : nullptr; }

@@ -146,8 +146,10 @@ class SimPLGlobalPlacer : public GlobalPlacer {
     ///        of connections in the AP netlist.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
 
+    /// @brief The atom netlist used to create an atom block to AP block lookup for the draw manager.
     const AtomNetlist& atom_netlist_;
 
+    /// @brief The prepacker used to create the same lookup for the draw manager.
     const Prepacker& prepacker_;
 
   public:

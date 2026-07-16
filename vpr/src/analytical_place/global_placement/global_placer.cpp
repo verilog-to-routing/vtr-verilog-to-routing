@@ -400,7 +400,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
     double best_ub_hpwl = std::numeric_limits<double>::max();
 
     // Initialize graphics for analytical placement, setting the references in the draw state.
-    APDrawManager draw_manager(atom_netlist_, prepacker_, ap_netlist_, p_placement);
+    APDrawManager draw_manager(atom_netlist_, ap_netlist_, prepacker_, p_placement);
 
     // Pause to show initial FPGA state before any solving begins. Also pass in the pre-cluster timing manager
     // so that the drawing code can prepare for critical path drawing.
