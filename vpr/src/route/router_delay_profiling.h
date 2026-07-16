@@ -32,10 +32,14 @@ class RouterDelayProfiler {
      */
     float get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const;
 
+    /// @return The router lookahead this profiler derives its delay estimates from.
+    const RouterLookahead* get_lookahead() const { return lookahead_; }
+
   private:
     const Netlist<>& net_list_;
     RouterStats router_stats_;
     SerialConnectionRouter<FourAryHeap> router_;
+    const RouterLookahead* lookahead_;
     vtr::NdMatrix<float, 5> min_delays_; // [physical_type_idx][from_layer][to_layer][dx][dy]
     bool is_flat_;
 };

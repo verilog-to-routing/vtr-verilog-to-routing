@@ -305,6 +305,114 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 }
 
 /**
+ * @brief Minimum delay across all OPINs of a tile type to travel along a single axis, from
+ *        coordinate c1 to coordinate c2 of the wire cost map for that axis.
+ *
+ * This mirrors min_opin_distance_cost_map() in router_lookahead_map.cpp: for each OPIN of the tile
+ * type it iterates over the wire segments reachable from that OPIN and takes the minimum of the cost
+ * to reach the wire plus the cost of travelling from the wire to the target coordinate. It differs in
+ * that the wire travel cost comes from a single-axis, absolute-coordinate map rather than the
+ * (dx, dy)-indexed one, and that the map has no direction (INC/DEC/BIDIR) information for a reachable
+ * wire, so the minimum over all three directions is taken.
+ *
+ * "include_opin_access_delay" controls whether the OPIN-to-wire delay is included, so that a caller
+ * summing the two axes' delays can charge it to one axis only.
+ */
+static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
+                                 const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
+                                 int physical_tile_idx,
+                                 int from_layer,
+                                 int to_layer,
+                                 int c1,
+                                 int c2,
+                                 bool include_opin_access_delay) {
+    float min_delay = std::numeric_limits<float>::infinity();
+
+    for (const auto& tile_opin_map : src_opin_delays[from_layer][physical_tile_idx]) {
+        float expected_delay = std::numeric_limits<float>::infinity();
+
+        for (const auto& layer_src_opin_delay_map : tile_opin_map) {
+            for (const auto& kv : layer_src_opin_delay_map) {
+                const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
+                if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
+                    continue;
+                }
+
+                const int chan_index = util::chan_type_to_index(reachable_wire_inf.wire_rr_type);
+                if (chan_index >= (int)wire_cost_map.dim_size(2)) {
+                    continue;
+                }
+
+                // The reachable wire info does not record the wire's direction, so consider all of them.
+                float wire_delay = std::numeric_limits<float>::infinity();
+                for (size_t dir_index = 0; dir_index < wire_cost_map.dim_size(4); ++dir_index) {
+                    const util::Cost_Entry& entry = wire_cost_map[reachable_wire_inf.layer_number][to_layer][chan_index][reachable_wire_inf.wire_seg_index][dir_index][c1][c2];
+                    if (entry.valid()) {
+                        wire_delay = std::min(wire_delay, entry.delay);
+                    }
+                }
+
+                const float access_delay = include_opin_access_delay ? reachable_wire_inf.delay : 0.f;
+                expected_delay = std::min(expected_delay, access_delay + wire_delay);
+            }
+        }
+
+        min_delay = std::min(min_delay, expected_delay);
+    }
+
+    // No profiled path along this axis; fall back to the same sentinel the lookahead uses elsewhere so
+    // that an unreachable pair is expensive but does not poison the placement cost with an infinity.
+    if (!std::isfinite(min_delay)) {
+        min_delay = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
+    }
+
+    return min_delay;
+}
+
+/**
+ * @brief Fills in the minimum OPIN delay along a single axis for every tile type, layer pair and
+ *        (c1, c2) coordinate pair, by calling min_opin_axis_delay() for each entry.
+ *
+ * This is the separable counterpart of min_opin_distance_cost_map() in router_lookahead_map.cpp: the
+ * per-OPIN minimization is done once here rather than on every query.
+ */
+static void min_opin_axis_delay_map(const util::t_src_opin_delays& src_opin_delays,
+                                    const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
+                                    bool include_opin_access_delay,
+                                    vtr::NdMatrix<float, 5>& axis_min_delay) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const int num_tile_types = (int)device_ctx.physical_tile_types.size();
+    const int num_layers = device_ctx.grid.get_num_layers();
+    // The wire cost map is square in its last two (coordinate) dimensions.
+    const int axis_dim_size = (int)wire_cost_map.dim_size(5);
+
+    axis_min_delay.resize({static_cast<size_t>(num_tile_types),
+                           static_cast<size_t>(num_layers),
+                           static_cast<size_t>(num_layers),
+                           static_cast<size_t>(axis_dim_size),
+                           static_cast<size_t>(axis_dim_size)});
+
+    for (int tile_type_idx = 0; tile_type_idx < num_tile_types; tile_type_idx++) {
+        for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
+            for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+                for (int c1 = 0; c1 < axis_dim_size; c1++) {
+                    for (int c2 = 0; c2 < axis_dim_size; c2++) {
+                        axis_min_delay[tile_type_idx][from_layer_num][to_layer_num][c1][c2] = min_opin_axis_delay(src_opin_delays,
+                                                                                                                 wire_cost_map,
+                                                                                                                 tile_type_idx,
+                                                                                                                 from_layer_num,
+                                                                                                                 to_layer_num,
+                                                                                                                 c1,
+                                                                                                                 c2,
+                                                                                                                 include_opin_access_delay);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * @note This lookahead is currently a skeleton: the class compiles and can be
  *       selected via --router_lookahead separable, but none of its methods are
  *       implemented yet.
@@ -443,6 +551,15 @@ void SeparableLookahead::compute(const std::vector<t_segment_inf>& segment_inf) 
     // (CHANX/CHANY/CHANZ) in the routing architecture
     compute_router_wire_lookahead(segment_inf, route_verbosity_, device_model_warnings_, x_wire_cost_map_, y_wire_cost_map_);
 
+    // Next, compute which wire types are accessible (and the cost to reach them) from the different
+    // physical tile type's SOURCEs & OPINs. This is what the per-axis OPIN delay queries start from.
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, device_model_warnings_);
+
+    // Reduce the above down to a minimum delay per axis for each tile type, layer pair and coordinate
+    // pair, so that get_opin_min_delay_x()/get_opin_min_delay_y() are simple lookups.
+    min_opin_axis_delay_map(src_opin_delays, x_wire_cost_map_, /*include_opin_access_delay=*/true, opin_x_min_delay_);
+    min_opin_axis_delay_map(src_opin_delays, y_wire_cost_map_, /*include_opin_access_delay=*/false, opin_y_min_delay_);
+
     // Build the delegate MapLookahead, which provides the SOURCE/OPIN distance estimates.
     map_lookahead_->compute(segment_inf);
 }
@@ -469,6 +586,14 @@ void SeparableLookahead::write_intra_cluster(const std::string& /*file*/) const 
 
 float SeparableLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const {
     return map_lookahead_->get_opin_distance_min_delay(physical_tile_idx, from_layer, to_layer, dx, dy);
+}
+
+float SeparableLookahead::get_opin_min_delay_x(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2) const {
+    return opin_x_min_delay_[physical_tile_idx][from_layer][to_layer][x1][x2];
+}
+
+float SeparableLookahead::get_opin_min_delay_y(int physical_tile_idx, int from_layer, int to_layer, int y1, int y2) const {
+    return opin_y_min_delay_[physical_tile_idx][from_layer][to_layer][y1][y2];
 }
 
 void read_router_lookahead_separable(const std::string& /*file*/) {
