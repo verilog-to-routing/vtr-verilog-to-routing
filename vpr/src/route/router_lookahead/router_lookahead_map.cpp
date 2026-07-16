@@ -575,6 +575,10 @@ float MapLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_
     return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][dx][dy].delay;
 }
 
+util::Cost_Entry MapLookahead::get_wire_cost(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) const {
+    return get_wire_cost_entry(rr_type, seg_index, from_layer_num, delta_x, delta_y, to_layer_num);
+}
+
 /******** Function Definitions ********/
 
 static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {

@@ -1,5 +1,6 @@
 #include "router_lookahead_separable.h"
 
+#include <fstream>
 #include <memory>
 #include "connection_router_interface.h"
 #include "globals.h"
@@ -10,6 +11,7 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 #include "vtr_time.h"
+#include "vtr_util.h"
 
 static RRNodeId get_chanxy_start_node_sep(int layer, int start_x, int start_y, Direction direction, e_rr_type rr_type, int seg_index, int track_offset) {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -317,16 +319,27 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
  *
  * "include_opin_access_delay" controls whether the OPIN-to-wire delay is included, so that a caller
  * summing the two axes' delays can charge it to one axis only.
+ *
+ * Wires with no usable entry in the separable map fall back to "map_lookahead"'s estimate for the
+ * equivalent travel along this axis (and none along the other one).
  */
 static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
                                  const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
+                                 e_profile_axis axis,
+                                 const MapLookahead& map_lookahead,
                                  int physical_tile_idx,
                                  int from_layer,
                                  int to_layer,
                                  int c1,
                                  int c2,
                                  bool include_opin_access_delay) {
+    const bool profile_x = (axis == e_profile_axis::X);
     float min_delay = std::numeric_limits<float>::infinity();
+
+    // An entry is unusable if it was never profiled, or profiled as unreachable.
+    auto is_usable = [](float delay) {
+        return std::isfinite(delay) && delay != ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
+    };
 
     for (const auto& tile_opin_map : src_opin_delays[from_layer][physical_tile_idx]) {
         float expected_delay = std::numeric_limits<float>::infinity();
@@ -347,9 +360,22 @@ static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
                 float wire_delay = std::numeric_limits<float>::infinity();
                 for (size_t dir_index = 0; dir_index < wire_cost_map.dim_size(4); ++dir_index) {
                     const util::Cost_Entry& entry = wire_cost_map[reachable_wire_inf.layer_number][to_layer][chan_index][reachable_wire_inf.wire_seg_index][dir_index][c1][c2];
-                    if (entry.valid()) {
+                    if (entry.valid() && is_usable(entry.delay)) {
                         wire_delay = std::min(wire_delay, entry.delay);
                     }
+                }
+
+                if (!is_usable(wire_delay)) {
+                    // This lookahead has nothing profiled for this wire at this coordinate pair, so
+                    // use the map lookahead's estimate for the same travel along this axis.
+                    const int delta = std::abs(c2 - c1);
+                    wire_delay = map_lookahead.get_wire_cost(reachable_wire_inf.wire_rr_type,
+                                                             reachable_wire_inf.wire_seg_index,
+                                                             reachable_wire_inf.layer_number,
+                                                             profile_x ? delta : 0,
+                                                             profile_x ? 0 : delta,
+                                                             to_layer)
+                                     .delay;
                 }
 
                 const float access_delay = include_opin_access_delay ? reachable_wire_inf.delay : 0.f;
@@ -378,6 +404,8 @@ static float min_opin_axis_delay(const util::t_src_opin_delays& src_opin_delays,
  */
 static void min_opin_axis_delay_map(const util::t_src_opin_delays& src_opin_delays,
                                     const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
+                                    e_profile_axis axis,
+                                    const MapLookahead& map_lookahead,
                                     bool include_opin_access_delay,
                                     vtr::NdMatrix<float, 5>& axis_min_delay) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -399,6 +427,8 @@ static void min_opin_axis_delay_map(const util::t_src_opin_delays& src_opin_dela
                     for (int c2 = 0; c2 < axis_dim_size; c2++) {
                         axis_min_delay[tile_type_idx][from_layer_num][to_layer_num][c1][c2] = min_opin_axis_delay(src_opin_delays,
                                                                                                                  wire_cost_map,
+                                                                                                                 axis,
+                                                                                                                 map_lookahead,
                                                                                                                  tile_type_idx,
                                                                                                                  from_layer_num,
                                                                                                                  to_layer_num,
@@ -555,13 +585,16 @@ void SeparableLookahead::compute(const std::vector<t_segment_inf>& segment_inf) 
     // physical tile type's SOURCEs & OPINs. This is what the per-axis OPIN delay queries start from.
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_, device_model_warnings_);
 
+    // Build the delegate MapLookahead, which provides the SOURCE/OPIN distance estimates. This must
+    // happen before the per-axis reduction below, which falls back on its cost map.
+    map_lookahead_->compute(segment_inf);
+
     // Reduce the above down to a minimum delay per axis for each tile type, layer pair and coordinate
     // pair, so that get_opin_min_delay_x()/get_opin_min_delay_y() are simple lookups.
-    min_opin_axis_delay_map(src_opin_delays, x_wire_cost_map_, /*include_opin_access_delay=*/true, opin_x_min_delay_);
-    min_opin_axis_delay_map(src_opin_delays, y_wire_cost_map_, /*include_opin_access_delay=*/false, opin_y_min_delay_);
-
-    // Build the delegate MapLookahead, which provides the SOURCE/OPIN distance estimates.
-    map_lookahead_->compute(segment_inf);
+    min_opin_axis_delay_map(src_opin_delays, x_wire_cost_map_, e_profile_axis::X, map_lookahead_impl(),
+                            /*include_opin_access_delay=*/true, opin_x_min_delay_);
+    min_opin_axis_delay_map(src_opin_delays, y_wire_cost_map_, e_profile_axis::Y, map_lookahead_impl(),
+                            /*include_opin_access_delay=*/false, opin_y_min_delay_);
 }
 
 void SeparableLookahead::compute_intra_tile() {
@@ -576,8 +609,94 @@ void SeparableLookahead::read_intra_cluster(const std::string& /*file*/) {
     NOT_IMPLEMENTED_ERROR("SeparableLookahead::read_intra_cluster");
 }
 
-void SeparableLookahead::write(const std::string& /*file_name*/) const {
-    NOT_IMPLEMENTED_ERROR("SeparableLookahead::write");
+/**
+ * @brief Dumps one axis' wire cost map to a human readable csv file.
+ *
+ * Each row is one entry of the map: the cost of travelling along the profiling axis from coordinate
+ * c1 to coordinate c2, starting from a wire of the given channel type, segment type and direction.
+ *
+ * Entries that this lookahead never profiled are filled in from the delegate MapLookahead, queried
+ * with the equivalent distance along this axis and zero distance along the other one, so that the
+ * dump never contains invalid entries.
+ */
+static void dump_separable_axis_csv(const std::string& file_name,
+                                    const vtr::NdMatrix<util::Cost_Entry, 7>& wire_cost_map,
+                                    e_profile_axis axis,
+                                    const MapLookahead& map_lookahead) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const int num_layers = device_ctx.grid.get_num_layers();
+    const bool profile_x = (axis == e_profile_axis::X);
+    const int axis_dim_size = (int)wire_cost_map.dim_size(5);
+
+    std::ofstream ofs(file_name);
+    if (!ofs.good()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unable to open file '%s' for writing\n", file_name.c_str());
+    }
+
+    const char* coord_names = profile_x ? "x1,x2," : "y1,y2,";
+    ofs << "from_layer,"
+           "to_layer,"
+           "chan_type,"
+           "seg_type,"
+           "direction,"
+        << coord_names << "cong_cost,"
+                          "delay_cost\n";
+
+    std::vector<e_rr_type> chan_types{e_rr_type::CHANX, e_rr_type::CHANY};
+    if (num_layers > 1) {
+        chan_types.push_back(e_rr_type::CHANZ);
+    }
+
+    for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
+        for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+            for (e_rr_type chan_type : chan_types) {
+                const int chan_index = util::chan_type_to_index(chan_type);
+                for (int seg_index = 0; seg_index < (int)wire_cost_map.dim_size(3); seg_index++) {
+                    for (int dir_index = 0; dir_index < (int)wire_cost_map.dim_size(4); dir_index++) {
+                        for (int c1 = 0; c1 < axis_dim_size; c1++) {
+                            for (int c2 = 0; c2 < axis_dim_size; c2++) {
+                                util::Cost_Entry cost = wire_cost_map[from_layer_num][to_layer_num][chan_index][seg_index][dir_index][c1][c2];
+
+                                if (!cost.valid()) {
+                                    const int delta = std::abs(c2 - c1);
+                                    cost = map_lookahead.get_wire_cost(chan_type,
+                                                                       seg_index,
+                                                                       from_layer_num,
+                                                                       profile_x ? delta : 0,
+                                                                       profile_x ? 0 : delta,
+                                                                       to_layer_num);
+                                }
+
+                                ofs << from_layer_num << ","
+                                    << to_layer_num << ","
+                                    << rr_node_typename[chan_type] << ","
+                                    << seg_index << ","
+                                    << DIRECTION_STRING[dir_index] << ","
+                                    << c1 << ","
+                                    << c2 << ","
+                                    << cost.congestion << ","
+                                    << cost.delay << "\n";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void SeparableLookahead::write(const std::string& file_name) const {
+    if (!vtr::check_file_name_extension(file_name, ".csv")) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "SeparableLookahead::write only supports writing a human readable .csv file, "
+                        "but was given '%s'.",
+                        file_name.c_str());
+    }
+
+    // The two axes' maps have different extents, so they go in a file each, named after the given path.
+    const std::string base_name = file_name.substr(0, file_name.size() - std::string(".csv").size());
+    dump_separable_axis_csv(base_name + "_x.csv", x_wire_cost_map_, e_profile_axis::X, map_lookahead_impl());
+    dump_separable_axis_csv(base_name + "_y.csv", y_wire_cost_map_, e_profile_axis::Y, map_lookahead_impl());
 }
 
 void SeparableLookahead::write_intra_cluster(const std::string& /*file*/) const {

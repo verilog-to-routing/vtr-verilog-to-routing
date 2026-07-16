@@ -4,6 +4,7 @@
 #include <string>
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
+#include "router_lookahead_map.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_interposer.h"
 
@@ -92,7 +93,13 @@ class SeparableLookahead : public RouterLookahead {
     // A MapLookahead used to answer SOURCE/OPIN distance queries (get_opin_distance_min_delay, and the
     // SOURCE/OPIN case of get_expected_delay_and_cong). The separable lookahead only overrides the
     // wire-to-target (CHAN) cost estimation; OPIN/SOURCE handling is delegated to this object.
+    // It also supplies the fall-back cost for map entries this lookahead never profiled.
+    // Held by base-class pointer because MapLookahead re-declares the RouterLookahead overrides as
+    // protected; it is always a MapLookahead.
     std::unique_ptr<RouterLookahead> map_lookahead_;
+
+    /// @brief map_lookahead_ as its concrete type, for the queries MapLookahead adds to the interface.
+    const MapLookahead& map_lookahead_impl() const { return *static_cast<const MapLookahead*>(map_lookahead_.get()); }
     std::optional<InterposerLookahead> interposer_lookahead_;
 
     t_x_wire_cost_map x_wire_cost_map_;
