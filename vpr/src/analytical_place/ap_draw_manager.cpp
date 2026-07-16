@@ -39,7 +39,7 @@ APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& a
                             : atom_block_ap_block_lookup_(atom_netlist, ap_netlist, prepacker) {
 #ifndef NO_GRAPHICS
     // Verify the atom block to ap block lookup after construction.
-    atom_block_ap_block_lookup_.verify(prepacker, ap_netlist);
+    atom_block_ap_block_lookup_.verify(ap_netlist,prepacker);
     
     // Set references in draw_state to analytical placement variables that we will need for drawing.
     get_draw_state_vars()->set_ap_partial_placement_ref(p_placement);
