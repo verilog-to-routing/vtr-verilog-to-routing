@@ -179,10 +179,6 @@ following arguments in the VPR command line:
 
 - ``--sb_maps <switch_block_map_file>``
 - ``--sb_templates <switch_block_template_directory>``
-- ``--sb_count_dir <switch_block_count_directory>`` (optional):  
-  If provided, VPR generates a CSV file for each switch block template,
-  showing how many times each switch specified in the template is used in the
-  final routing results.
 
 For additional arguments, refer to the command-line usage section in
 :ref:`vpr_command_line_usage`.
