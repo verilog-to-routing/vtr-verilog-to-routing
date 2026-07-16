@@ -36,7 +36,10 @@ void init_ap_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& ap_netlist, const Prepacker& prepacker, const PartialPlacement& p_placement)
-    : atom_block_ap_block_lookup_(atom_netlist, ap_netlist, prepacker) {
+#ifndef NO_GRAPHICS
+    : atom_block_ap_block_lookup_(atom_netlist, ap_netlist, prepacker) 
+#endif
+{
 #ifndef NO_GRAPHICS
     // Verify the atom block to ap block lookup after construction.
     unsigned num_errors = atom_block_ap_block_lookup_.verify(ap_netlist, prepacker);

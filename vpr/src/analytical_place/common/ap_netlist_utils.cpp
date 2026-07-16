@@ -37,6 +37,7 @@ unsigned AtomBlockAPBlockLookup::verify(const APNetlist& ap_netlist, const Prepa
         if (!ap_block_id.is_valid()) {
             VTR_LOG_ERROR("Atom block id %zu is mapped to an invalid AP block id.\n", size_t(atom_block_id));
             num_errors++;
+            continue;
         }
 
         bool atom_block_id_found = false;

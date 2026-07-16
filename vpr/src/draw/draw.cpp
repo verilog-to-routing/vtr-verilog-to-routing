@@ -1006,6 +1006,8 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
     ezgl::rectangle pb_bbox = draw_coords->get_absolute_pb_bbox(clb_index,
                                                                 pg_gnode);
 
+    ezgl::point2d p = draw_coords->get_absolute_pin_location(clb_index, pin);
+
     //We place each atom pin inside it's pb bounding box
     //and distribute the pins along it's vertical centre line
     const float FRACTION_USABLE_WIDTH = 0.8;

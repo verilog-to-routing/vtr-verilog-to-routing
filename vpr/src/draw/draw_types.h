@@ -449,7 +449,7 @@ struct t_draw_state {
      * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
      * @details This is set by the AP global placer just before drawing and cleared immediately after.
      *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
-     *          and avoid copying and modification of the partial placement
+     *          and avoid copying and modification of the partial placement.
      */
     std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
 
