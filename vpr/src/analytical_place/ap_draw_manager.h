@@ -76,7 +76,7 @@ class APDrawManager {
   private:
   #ifndef NO_GRAPHICS
     /**
-     * Lookup used to map an atom block id to an AP block id.
+     * @brief Lookup used to map an atom block id to an AP block id.
      */
     AtomBlockAPBlockLookup atom_block_ap_block_lookup_;
   #endif
