@@ -70,6 +70,45 @@
   </xs:complexType>
 
 
+  <!-- Relative placement macros: each macro has one reference_group and one or
+       more relative_groups. Atoms within a group are packed into the same cluster;
+       atoms of different groups are packed into different clusters. During placement,
+       each relative_group's cluster is placed at the given offset from the
+       reference_group's cluster and the whole macro moves as a unit.
+       sub_tile_offset is required for now; a future extension will allow omitting it
+       to mean "any compatible sub_tile". layer_offset defaults to 0 (cross-layer
+       offsets are not supported yet and are rejected at load time). -->
+  <xs:complexType name="reference_group">
+    <xs:sequence>
+      <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="relative_group">
+    <xs:sequence>
+      <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="x_offset" type="xs:int" use="required"/>
+    <xs:attribute name="y_offset" type="xs:int" use="required"/>
+    <xs:attribute name="sub_tile_offset" type="xs:int" use="required"/>
+    <xs:attribute name="layer_offset" type="xs:int"/>
+  </xs:complexType>
+
+  <xs:complexType name="relative_macro">
+    <xs:sequence>
+      <xs:element name="reference_group" type="reference_group"/>
+      <xs:element name="relative_group" type="relative_group" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="relative_macro_list">
+    <xs:sequence>
+      <xs:element name="relative_macro" type="relative_macro" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+
 <xs:simpleType name="route_model_type">
     <xs:restriction base="xs:string">
       <xs:enumeration value="ideal"/>
@@ -104,6 +143,7 @@
     <xs:complexType>
       <xs:all minOccurs="0">
         <xs:element name="partition_list" type="partition_list"/>
+        <xs:element name="relative_macro_list" type="relative_macro_list"/>
         <xs:element name="global_route_constraints" type="global_route_constraints"/>
       </xs:all>
 
