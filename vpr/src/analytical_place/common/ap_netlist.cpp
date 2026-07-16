@@ -8,6 +8,7 @@
 #include "ap_netlist.h"
 #include <string>
 #include <vector>
+#include "atom_netlist_fwd.h"
 #include "netlist_fwd.h"
 #include "netlist_utils.h"
 #include "prepack.h"
