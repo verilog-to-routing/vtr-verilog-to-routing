@@ -27,16 +27,16 @@ void SeparableDelayModel::compute(RouterDelayProfiler& route_profiler,
     // One table per axis, indexed by the absolute source and sink coordinate along that axis.
     // The second index is the layer the source is on and the third is the sink layer.
     x_delays_ = vtr::NdMatrix<float, 5>({num_physical_tile_types,
-                                        num_layers,
-                                        num_layers,
-                                        grid.width(),
-                                        grid.width()});
+                                         num_layers,
+                                         num_layers,
+                                         grid.width(),
+                                         grid.width()});
 
     y_delays_ = vtr::NdMatrix<float, 5>({num_physical_tile_types,
-                                        num_layers,
-                                        num_layers,
-                                        grid.height(),
-                                        grid.height()});
+                                         num_layers,
+                                         num_layers,
+                                         grid.height(),
+                                         grid.height()});
 
     // As in the simple delay model, the delay is the minimum across all the OPINs of the tile type,
     // taken from the router lookahead rather than by running the router. Here each axis is queried
@@ -47,16 +47,16 @@ void SeparableDelayModel::compute(RouterDelayProfiler& route_profiler,
                 for (size_t from_x = 0; from_x < grid.width(); ++from_x) {
                     for (size_t to_x = 0; to_x < grid.width(); ++to_x) {
                         x_delays_[physical_tile_type_idx][from_layer][to_layer][from_x][to_x] = separable_lookahead->get_opin_min_delay_x(physical_tile_type_idx,
-                                                                                                                                         from_layer, to_layer,
-                                                                                                                                         from_x, to_x);
+                                                                                                                                          from_layer, to_layer,
+                                                                                                                                          from_x, to_x);
                     }
                 }
 
                 for (size_t from_y = 0; from_y < grid.height(); ++from_y) {
                     for (size_t to_y = 0; to_y < grid.height(); ++to_y) {
                         y_delays_[physical_tile_type_idx][from_layer][to_layer][from_y][to_y] = separable_lookahead->get_opin_min_delay_y(physical_tile_type_idx,
-                                                                                                                                         from_layer, to_layer,
-                                                                                                                                         from_y, to_y);
+                                                                                                                                          from_layer, to_layer,
+                                                                                                                                          from_y, to_y);
                     }
                 }
             }
