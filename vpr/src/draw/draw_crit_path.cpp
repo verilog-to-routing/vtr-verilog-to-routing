@@ -952,8 +952,11 @@ static APBlockId get_tnode_ap_block(tatum::NodeId node) {
     t_draw_state* draw_state = get_draw_state_vars();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     // Get the lookup from atom block id to AP block id.
-    const AtomBlockAPBlockLookup* atom_block_ap_block_lookup = draw_state->get_atom_block_ap_block_lookup_ref();
-    VTR_ASSERT(atom_block_ap_block_lookup != nullptr);
+    const AtomBlockAPBlockLookup* atom_block_ap_block_lookup = draw_state->get_atom_block_ap_block_lookup_ptr();
+    if (!atom_block_ap_block_lookup) {
+        VTR_LOG_ERROR("Use of AtomBlockAPBlockLookup outside its lifetime (analytical placement) is not allowed.");
+        return APBlockId::INVALID();
+    }
 
     AtomPinId atom_pin = atom_ctx.lookup().tnode_atom_pin(node);
     AtomBlockId atom_block = atom_ctx.netlist().pin_block(atom_pin);

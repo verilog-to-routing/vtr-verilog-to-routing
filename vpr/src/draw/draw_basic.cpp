@@ -218,7 +218,7 @@ void draw_analytical_place(ezgl::renderer* g) {
 
     const double half_size = 0.05;
 
-    const PartialPlacement* ap_pp = draw_state->get_ap_partial_placement_ref();
+    const PartialPlacement* ap_pp = draw_state->get_ap_partial_placement_ptr();
     // The reference should be set in the beginning of analytial placement.
     VTR_ASSERT(ap_pp != nullptr);
     if (ap_pp == nullptr)
@@ -1095,8 +1095,11 @@ void draw_reset_blk_color(ClusterBlockId blk_id) {
 
 ezgl::point2d get_ap_block_draw_coords(APBlockId ap_block) {
     t_draw_state* draw_state = get_draw_state_vars();
-    const PartialPlacement* p_placement = draw_state->get_ap_partial_placement_ref();
-    VTR_ASSERT(p_placement != nullptr);
+    const PartialPlacement* p_placement = draw_state->get_ap_partial_placement_ptr();
+    if (!p_placement) {
+        VTR_LOG_ERROR("Use of partial placement outside its lifetime (analytical placement) is not allowed.");
+        return ezgl::point2d{-1, -1};
+    }
 
     // Safety check.
     VTR_ASSERT(ap_block.is_valid());

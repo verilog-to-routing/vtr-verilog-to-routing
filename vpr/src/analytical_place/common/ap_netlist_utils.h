@@ -17,9 +17,8 @@ class Prepacker;
  * @brief A lookup used to map an atom block id to the AP block id that contains it.
  * 
  * The class constructs and owns a vtr::vector storing (AtomBlockId, APBlockId) pairs by iterating through the APNetlist.
- * This vector is where the lookup essentially happens. After construction, it is required to call the verify() method
- * to ensure consistency between the lookup and the APNetlist. Otherwise, use of the getter get_ap_block()
- * will be rejected by a VTR_ASSERT (unless a lower assert level is set).
+ * This vector is where the lookup essentially happens. The class also provides a verify() method that the caller can use
+ * to ensure the lookup is consistent with the APNetlist.
  */
 class AtomBlockAPBlockLookup {
   public:

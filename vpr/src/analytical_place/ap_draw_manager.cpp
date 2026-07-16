@@ -46,8 +46,8 @@ APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& a
     VTR_ASSERT(num_errors == 0);
 
     // Set references in draw_state to analytical placement variables that we will need for drawing.
-    get_draw_state_vars()->set_ap_partial_placement_ref(p_placement);
-    get_draw_state_vars()->set_atom_block_ap_block_lookup_ref(atom_block_ap_block_lookup_);
+    get_draw_state_vars()->set_ap_partial_placement_ptr(&p_placement);
+    get_draw_state_vars()->set_atom_block_ap_block_lookup_ptr(&atom_block_ap_block_lookup_);
 
 #else
     (void)atom_netlist;
@@ -60,8 +60,8 @@ APDrawManager::APDrawManager(const AtomNetlist& atom_netlist, const APNetlist& a
 APDrawManager::~APDrawManager() {
 #ifndef NO_GRAPHICS
     // Clear references in draw_state to analytical placement variables that we no longer need for drawing.
-    get_draw_state_vars()->clear_ap_partial_placement_ref();
-    get_draw_state_vars()->clear_atom_block_ap_block_lookup_ref();
+    get_draw_state_vars()->clear_ap_partial_placement_ptr();
+    get_draw_state_vars()->clear_atom_block_ap_block_lookup_ptr();
 #endif
 }
 
