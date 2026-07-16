@@ -1154,7 +1154,8 @@ void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
 
     // Create a lookup from atom block id to AP block id.
     AtomBlockAPBlockLookup atom_block_ap_block_lookup(atom_netlist_, ap_netlist_, prepacker_);
-    atom_block_ap_block_lookup.verify(ap_netlist_, prepacker_);
+    unsigned num_errors = atom_block_ap_block_lookup.verify(ap_netlist_, prepacker_);
+    VTR_ASSERT(num_errors == 0);
 
     // Move the clusters to where they want to be first.
     // TODO: The fixed clusters should probably be moved first for legality

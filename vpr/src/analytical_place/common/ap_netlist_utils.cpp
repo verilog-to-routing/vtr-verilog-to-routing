@@ -20,19 +20,24 @@ AtomBlockAPBlockLookup::AtomBlockAPBlockLookup(const AtomNetlist& atom_netlist, 
                 if (!atom_block_id.is_valid())
                     continue;
                 // Safety check.
-                VTR_ASSERT(static_cast<std::size_t>(atom_block_id) < atom_block_ap_block_.size());
+                VTR_ASSERT_SAFE(static_cast<std::size_t>(atom_block_id) < atom_block_ap_block_.size());
                 // Ensure that this block is not in any other AP block. That would be weird.
-                VTR_ASSERT(!atom_block_ap_block_[atom_block_id].is_valid());
+                VTR_ASSERT_SAFE(!atom_block_ap_block_[atom_block_id].is_valid());
                 atom_block_ap_block_[atom_block_id] = ap_block_id;
             }
         }
     }
 }
 
-void AtomBlockAPBlockLookup::verify(const APNetlist& ap_netlist, const Prepacker& prepacker) {
+unsigned AtomBlockAPBlockLookup::verify(const APNetlist& ap_netlist, const Prepacker& prepacker) {
+    unsigned num_errors = 0;
+
     for (const auto& [atom_block_id, ap_block_id] : atom_block_ap_block_.pairs()) {
         // An invalid AP block id should not have been inserted during construction.
-        VTR_ASSERT(ap_block_id.is_valid());
+        if (!ap_block_id.is_valid()) {
+            VTR_LOG_ERROR("Atom block id %zu is mapped to an invalid AP block id.\n", size_t(atom_block_id));
+            num_errors++;
+        }
 
         bool atom_block_id_found = false;
         // Loop through all molecules in the AP block and look for a matching atom block id.
@@ -48,17 +53,17 @@ void AtomBlockAPBlockLookup::verify(const APNetlist& ap_netlist, const Prepacker
             if (atom_block_id_found)
                 break;
         }
-        // Something unexpected must have happened if we did not find the atom block id.
-        VTR_ASSERT(atom_block_id_found);
+
+        if (!atom_block_id_found) {
+            VTR_LOG_ERROR("Atom block id %zu is not found in AP block id %zu.\n", size_t(atom_block_id), size_t(ap_block_id));
+            num_errors++;
+        }
     }
 
-    verified_ = true;
+    return num_errors;
 }
 
 APBlockId AtomBlockAPBlockLookup::get_ap_block(const AtomBlockId atom_block_id) const {
-    // We should not use this getter without having verified the lookup.
-    VTR_ASSERT_MSG(verified_, "Must verify the lookup using verify() first!");
-
     // Safety check.
     VTR_ASSERT_SAFE(atom_block_id.is_valid());
     VTR_ASSERT_SAFE(static_cast<std::size_t>(atom_block_id) < atom_block_ap_block_.size());
