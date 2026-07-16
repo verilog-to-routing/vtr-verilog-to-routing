@@ -74,10 +74,10 @@ class APDrawManager {
     void pause_at_final_scene(const std::string& msg);
 
   private:
-  #ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
     /**
      * @brief Lookup used to map an atom block id to an AP block id.
      */
     AtomBlockAPBlockLookup atom_block_ap_block_lookup_;
-  #endif
+#endif
 };
