@@ -776,6 +776,20 @@ void GreedyCandidateSelector::add_general_cluster_molecule_candidates(
                                                                    cluster_legalizer,
                                                                    attraction_groups);
         cluster_gain_stats.has_done_connectivity_and_timing = true;
+
+        // If the cluster's attraction group asks to be pulled in from the start
+        // (relative placement groups do: their atoms must be packed together but
+        // may be unconnected), propose its molecules now instead of waiting for
+        // the connectivity-based search to run dry, by which time the cluster
+        // may already be full of unconstrained molecules.
+        AttractGroupId grp_id = cluster_gain_stats.attraction_grp_id;
+        if (grp_id.is_valid()
+            && attraction_groups.get_attraction_group_info(grp_id).pull_in_initial_search) {
+            add_cluster_molecule_candidates_by_attraction_group(cluster_gain_stats,
+                                                                legalization_cluster_id,
+                                                                cluster_legalizer,
+                                                                attraction_groups);
+        }
     }
 
     if (packer_opts_.prioritize_transitive_connectivity) {
