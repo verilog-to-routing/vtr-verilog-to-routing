@@ -94,7 +94,7 @@ class SeparableLookahead : public RouterLookahead {
     // SOURCE/OPIN case of get_expected_delay_and_cong). The separable lookahead only overrides the
     // wire-to-target (CHAN) cost estimation; OPIN/SOURCE handling is delegated to this object.
     // It also supplies the fall-back cost for map entries this lookahead never profiled.
-    // Held by base-class pointer because MapLookahead re-declares the RouterLookahead overrides as
+    // Held by base-class pointer because MapLookahead redeclares the RouterLookahead overrides as
     // protected; it is always a MapLookahead.
     std::unique_ptr<RouterLookahead> map_lookahead_;
 
