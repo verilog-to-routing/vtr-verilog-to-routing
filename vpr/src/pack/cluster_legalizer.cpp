@@ -920,6 +920,10 @@ static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
                 continue;
             }
 
+            // Save, delete, and loadback the pin class stats before each mark
+            // call to ensure checkpointing is working.
+            checkpoint_lookahead_pins_used(cluster);
+
             const t_pb* primitive_pb = atom_to_pb.atom_pb(blk_id);
             VTR_ASSERT_SAFE(primitive_pb != nullptr);
             VTR_ASSERT_SAFE(primitive_pb->pb_graph_node->pb_type->is_primitive());
@@ -928,6 +932,29 @@ static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
             compute_and_mark_lookahead_pins_used(blk_id, atom_cluster, atom_to_pb);
         }
     }
+}
+
+/*
+ * @brief Checkpoint the lookahead pin used in the current state.
+ *
+ * This can be used in several places:
+ *  - Incremental pin counting: Save the pin class usages before an attempt
+ *    so that we can get back to that state if the molecule fails later
+ *  - Pin counting from scratch: If the implementation is able to determine
+ *    a failiure of pin counting before checking all classes, then it can
+ *    discard the current molecule and turn back to the saved state. This can
+ *    can be used in the incremental update as well. However, a profiling is
+ *    needed here for both flows to determine if saving the state before each
+ *    attempt is cheaper than checking at the end of full computation.
+ * 
+ * TODO: Implement the checkpointing in a way that is aligned with how you
+ *       would update the pin class usages. So that, you can convert to this
+ *       convention in the already in use function as well to transition 
+ *       gradually. Do not try to stick to the legacy as it is not believed to
+ *       be the best way. Feel free to (and incentived to) change the
+ *       implementation in a good way. 
+ */
+static void checkpoint_lookahead_pins_used(const LegalizationCluster& cluster) {
 }
 
 /*
