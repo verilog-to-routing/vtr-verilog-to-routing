@@ -6,6 +6,10 @@
  *      Author: khalid88
  */
 
+#include <map>
+#include <utility>
+
+#include "user_relative_macros.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "atom_netlist_fwd.h"
@@ -42,6 +46,15 @@ struct AttractionGroup {
      * are potential candidates to be put in a cluster with the same attraction group.
      */
     float gain = 0.08;
+
+    /*
+     * When true, this group's molecules are proposed as candidates during the
+     * initial candidate search of a cluster with this attraction group, instead
+     * of only when the connectivity-based search runs dry (by which time the
+     * cluster may already be full). Set for relative placement groups, whose
+     * atoms must end up in one cluster but may not be connected to each other.
+     */
+    bool pull_in_initial_search = false;
 };
 
 class AttractionInfo {
@@ -60,6 +73,32 @@ class AttractionInfo {
      * Create attraction groups for all partitions.
      */
     void create_att_groups_for_all_regions();
+
+    /*
+     * Create one attraction group for each user-defined relative placement
+     * group (see UserRelativeMacros), pulling the atoms of a group into the
+     * same cluster.
+     *
+     * Must be called after construction AND after each create_att_groups_for_*
+     * call above: those methods clear all attraction groups and rebuild them
+     * from partitions only, which would otherwise silently drop the
+     * relative-group pull on re-pack iterations.
+     *
+     * Relative groups are added last, so an atom that belongs to both a
+     * partition and a relative placement group is assigned to the relative
+     * group's attraction group.
+     */
+    void create_att_groups_for_relative_groups();
+
+    /*
+     * Increase the attraction gain of a relative placement group by the given
+     * multiplier. Used to pull a group's atoms together more strongly when a
+     * previous packing iteration left the group split across clusters.
+     *
+     * The boosted gain persists across the attraction group rebuilds above
+     * (it is applied by create_att_groups_for_relative_groups).
+     */
+    void boost_relative_group_gain(UserRelativeMacroId macro_id, int group_idx, float multiplier);
 
     void assign_atom_attraction_ids();
 
@@ -99,6 +138,18 @@ class AttractionInfo {
      * its attraction group).
      */
     int att_group_pulls = 1;
+
+    /* The default attraction gain of relative placement groups. Stronger than the
+     * default partition gain (0.08) since group atoms must end up in one cluster.
+     */
+    static constexpr float DEFAULT_REL_GROUP_GAIN = 0.5;
+
+    /* Per relative placement group attraction gains, keyed by (macro id, group index).
+     * Kept outside the AttractionGroup objects because those are destroyed on each
+     * attraction group rebuild; boosted gains must survive rebuilds. Groups without
+     * an entry use DEFAULT_REL_GROUP_GAIN.
+     */
+    std::map<std::pair<UserRelativeMacroId, int>, float> rel_group_gains_;
 };
 
 inline int AttractionInfo::get_att_group_pulls() const {

@@ -70,6 +70,9 @@ void AttractionInfo::create_att_groups_for_overfull_regions(const std::vector<Pa
     //Then, fill in the group id for the atoms that do have an attraction group
     assign_atom_attraction_ids();
 
+    //Re-add the relative placement groups, which were wiped by the clear above
+    create_att_groups_for_relative_groups();
+
     att_group_pulls = 1;
 
     VTR_LOG("%d clustering attraction groups created. \n", attraction_groups.size());
@@ -111,9 +114,49 @@ void AttractionInfo::create_att_groups_for_all_regions() {
     //Then, fill in the group id for the atoms that do have an attraction group
     assign_atom_attraction_ids();
 
+    //Re-add the relative placement groups, which were wiped by the clear above
+    create_att_groups_for_relative_groups();
+
     att_group_pulls = 1;
 
     VTR_LOG("%d clustering attraction groups created. \n", attraction_groups.size());
+}
+
+void AttractionInfo::create_att_groups_for_relative_groups() {
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+
+    for (size_t imacro = 0; imacro < relative_macros.get_num_macros(); imacro++) {
+        UserRelativeMacroId macro_id(imacro);
+        const UserRelativeMacro& macro = relative_macros.get_macro(macro_id);
+
+        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
+            const UserRelativeGroup& rel_group = macro.groups[igroup];
+
+            // A single-atom group needs no pull towards itself.
+            if (rel_group.atoms.size() < 2)
+                continue;
+
+            AttractionGroup group_info;
+            group_info.group_atoms = rel_group.atoms;
+            group_info.pull_in_initial_search = true;
+
+            auto gain_itr = rel_group_gains_.find({macro_id, (int)igroup});
+            group_info.gain = (gain_itr != rel_group_gains_.end()) ? gain_itr->second
+                                                                   : DEFAULT_REL_GROUP_GAIN;
+
+            attraction_groups.push_back(group_info);
+        }
+    }
+
+    // Fill in the group ids of the newly added groups' atoms. Relative groups
+    // are added after partition groups, so an atom in both is assigned to its
+    // relative group.
+    assign_atom_attraction_ids();
+}
+
+void AttractionInfo::boost_relative_group_gain(UserRelativeMacroId macro_id, int group_idx, float multiplier) {
+    auto [gain_itr, inserted] = rel_group_gains_.insert({{macro_id, group_idx}, DEFAULT_REL_GROUP_GAIN});
+    gain_itr->second *= multiplier;
 }
 
 void AttractionInfo::assign_atom_attraction_ids() {
