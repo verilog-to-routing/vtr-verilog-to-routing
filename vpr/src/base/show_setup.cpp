@@ -589,8 +589,8 @@ static void show_placer_opts(const t_placer_opts& placer_opts) {
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
             VTR_LOG("placer_opts.delay_model_reducer: %s\n", e_reducer_strings[(size_t)placer_opts.delay_model_reducer].c_str());
 
-            std::string place_delay_model_strings[3] = {"SIMPLE", "DELTA", "DELTA_OVERRIDE"};
-            if ((size_t)placer_opts.delay_model_type > 2)
+            std::string place_delay_model_strings[4] = {"SIMPLE", "SEPARABLE", "DELTA", "DELTA_OVERRIDE"};
+            if ((size_t)placer_opts.delay_model_type > 3)
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_type\n");
             VTR_LOG("placer_opts.delay_model_type: %s\n", place_delay_model_strings[(size_t)placer_opts.delay_model_type].c_str());
         }

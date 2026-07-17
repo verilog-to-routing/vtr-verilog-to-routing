@@ -953,6 +953,7 @@ enum e_place_effort_scaling {
 
 enum class PlaceDelayModelType {
     SIMPLE,
+    SEPARABLE,      ///<Lookahead based delay model with independent x and y delay tables
     DELTA,          ///<Delta x/y based delay model
     DELTA_OVERRIDE, ///<Delta x/y based delay model with special case delay overrides
 };

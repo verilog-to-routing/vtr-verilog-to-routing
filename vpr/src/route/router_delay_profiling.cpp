@@ -20,6 +20,7 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
           is_flat,
           /*route_verbosity=*/1)
+    , lookahead_(lookahead)
     , is_flat_(is_flat) {
     const auto& grid = g_vpr_ctx.device().grid;
     int num_layers = grid.get_num_layers();

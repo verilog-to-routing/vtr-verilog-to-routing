@@ -4,6 +4,7 @@
 
 #include "place_delay_model.h"
 #include "simple_delay_model.h"
+#include "separable_delay_model.h"
 #include "delta_delay_model.h"
 #include "override_delay_model.h"
 
@@ -64,6 +65,8 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
 
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
         place_delay_model = std::make_unique<SimpleDelayModel>();
+    } else if (placer_opts.delay_model_type == PlaceDelayModelType::SEPARABLE) {
+        place_delay_model = std::make_unique<SeparableDelayModel>();
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
         place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {

@@ -4,6 +4,7 @@
 #include <string>
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
+#include "router_lookahead_map.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_interposer.h"
 
@@ -65,6 +66,20 @@ class SeparableLookahead : public RouterLookahead {
   public:
     explicit SeparableLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings, float interposer_base_cost_multiplier);
 
+    /**
+     * @brief Returns the x component of the minimum delay across all OPINs of the physical tile type
+     *        "physical_tile_idx" on layer "from_layer", travelling from x-coordinate x1 to an IPIN at
+     *        x-coordinate x2 on layer "to_layer".
+     *
+     * This is the absolute-coordinate, single-axis analogue of get_opin_distance_min_delay(). The delay
+     * of reaching a wire from the OPIN is charged to the x component only, so that adding this to
+     * get_opin_min_delay_y() counts the OPIN access delay exactly once.
+     */
+    float get_opin_min_delay_x(int physical_tile_idx, int from_layer, int to_layer, int x1, int x2) const;
+
+    /// @brief The y counterpart of get_opin_min_delay_x(), excluding the OPIN access delay.
+    float get_opin_min_delay_y(int physical_tile_idx, int from_layer, int to_layer, int y1, int y2) const;
+
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
 
@@ -78,11 +93,27 @@ class SeparableLookahead : public RouterLookahead {
     // A MapLookahead used to answer SOURCE/OPIN distance queries (get_opin_distance_min_delay, and the
     // SOURCE/OPIN case of get_expected_delay_and_cong). The separable lookahead only overrides the
     // wire-to-target (CHAN) cost estimation; OPIN/SOURCE handling is delegated to this object.
+    // It also supplies the fall-back cost for map entries this lookahead never profiled.
+    // Held by base-class pointer because MapLookahead redeclares the RouterLookahead overrides as
+    // protected; it is always a MapLookahead.
     std::unique_ptr<RouterLookahead> map_lookahead_;
+
+    /// @brief map_lookahead_ as its concrete type, for the queries MapLookahead adds to the interface.
+    const MapLookahead& map_lookahead_impl() const { return *static_cast<const MapLookahead*>(map_lookahead_.get()); }
     std::optional<InterposerLookahead> interposer_lookahead_;
 
     t_x_wire_cost_map x_wire_cost_map_;
     t_y_wire_cost_map y_wire_cost_map_;
+
+    /**
+     * @brief Minimum OPIN delay along each axis, precomputed from the wire cost maps and src_opin_delays
+     *        so that the per-OPIN minimization is done once rather than on every query.
+     *
+     * These back get_opin_min_delay_x()/get_opin_min_delay_y(); see those for what the values mean
+     * (in particular, the OPIN access delay is included in the x table only).
+     */
+    vtr::NdMatrix<float, 5> opin_x_min_delay_; // [physical_tile_idx][from_layer_num][to_layer_num][x1][x2] -> delay
+    vtr::NdMatrix<float, 5> opin_y_min_delay_; // [physical_tile_idx][from_layer_num][to_layer_num][y1][y2] -> delay
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;

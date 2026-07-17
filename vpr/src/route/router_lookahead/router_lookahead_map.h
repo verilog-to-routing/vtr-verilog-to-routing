@@ -29,6 +29,15 @@ class MapLookahead : public RouterLookahead {
      */
     std::pair<float, float> get_expected_delay_and_cong_from_deltas(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const;
 
+    /**
+     * @brief Returns the lookahead map's cost to travel (delta_x, delta_y) from a wire of the given
+     *        channel type and segment type on "from_layer_num", to a point on "to_layer_num".
+     * @attention This exposes a raw lookahead map entry, without any of the adjustments made when
+     *            costing an actual connection. It is intended for reporting, and for other lookaheads
+     *            that want to fall back on this one's estimates.
+     */
+    util::Cost_Entry get_wire_cost(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) const;
+
   private:
     float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
