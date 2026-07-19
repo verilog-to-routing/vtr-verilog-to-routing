@@ -122,6 +122,8 @@ LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
     alloc_and_load_pb_stats(pb);
     pb->parent_pb = nullptr;
     pb->mode = cluster_mode;
+    // Ensure the pin counter is allocated for the root pb of this cluster.
+    pin_counter.allocate_pb_state(pb);
 }
 
 /*
@@ -511,7 +513,8 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                          int verbosity,
                          const Prepacker& prepacker,
                          const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info,
-                         AtomPBBimap& atom_to_pb) {
+                         AtomPBBimap& atom_to_pb,
+                         ClusterPinCounter& pin_counter) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
@@ -528,7 +531,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                                                      molecule_id,
                                                      cluster_router,
                                                      verbosity,
-                                                     prepacker, clustering_chain_info, atom_to_pb);
+                                                     prepacker, clustering_chain_info, atom_to_pb, pin_counter);
         parent_pb = my_parent;
     } else {
         parent_pb = cb;
@@ -574,6 +577,11 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     if (pb->pb_stats == nullptr) {
         alloc_and_load_pb_stats(pb);
     }
+    // TODO: Currnetly this is the only place the pin classes are loaded for this pb.
+    //       This is very implicit. We can load all of them when we open a cluster or
+    //       handle this somehow more explicitly.
+    pin_counter.allocate_pb_state(pb);
+    
     const t_pb_type* pb_type = pb_graph_node->pb_type;
 
     /* Any pb_type under an mode, which is disabled for packing, should not be considered for mapping
@@ -744,7 +752,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
                                                          const t_pb* primitive_pb,
                                                          const AtomNetId net_id,
                                                          const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                         const AtomPBBimap& atom_to_pb) {
+                                                         const AtomPBBimap& atom_to_pb,
+                                                         ClusterPinCounter& pin_counter) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // starting from the parent pb of the input primitive go up in the hierarchy till the root block
@@ -802,6 +811,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
                 if (it == cur_pb->pb_stats->lookahead_input_pins_used[pin_class].end()) {
                     cur_pb->pb_stats->lookahead_input_pins_used[pin_class].push_back(net_id);
                 }
+                pin_counter.mark_lookahead_input(cur_pb, pin_class, net_id);
             }
         } else {
             VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
@@ -861,6 +871,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
             if (net_exits_cluster) {
                 /* This output must exit this cluster */
                 cur_pb->pb_stats->lookahead_output_pins_used[pin_class].push_back(net_id);
+                pin_counter.mark_lookahead_output(cur_pb, pin_class, net_id);
             }
         }
     }
@@ -871,7 +882,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
  */
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
                                                  const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                 const AtomPBBimap& atom_to_pb) {
+                                                 const AtomPBBimap& atom_to_pb,
+                                                 ClusterPinCounter& pin_counter) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
     const t_pb* cur_pb = atom_to_pb.atom_pb(blk_id);
@@ -882,7 +894,7 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
         auto net_id = atom_netlist.pin_net(pin_id);
 
         const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
-        compute_and_mark_lookahead_pins_used_for_pin(pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
+        compute_and_mark_lookahead_pins_used_for_pin(pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb, pin_counter);
     }
 }
 
@@ -930,7 +942,7 @@ static void checkpoint_lookahead_pins_used(const LegalizationCluster& cluster) {
  * Runtime is worst case O(k^2), where k is the number of pb graph pins. Hash
  * tables or an incremental update could be used if this becomes a bottleneck.
  */
-static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
+static void try_update_lookahead_pins_used(LegalizationCluster& cluster,
                                            const Prepacker& prepacker,
                                            const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                            const AtomPBBimap& atom_to_pb) {
@@ -952,7 +964,7 @@ static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
             VTR_ASSERT_SAFE(primitive_pb->pb_graph_node->pb_type->is_primitive());
 
             VTR_ASSERT(primitive_pb->pb_graph_node->pb_type->blif_model != nullptr);
-            compute_and_mark_lookahead_pins_used(blk_id, atom_cluster, atom_to_pb);
+            compute_and_mark_lookahead_pins_used(blk_id, atom_cluster, atom_to_pb, cluster.pin_counter);
         }
     }
 }
@@ -961,7 +973,7 @@ static void try_update_lookahead_pins_used(const LegalizationCluster& cluster,
  * @brief Check if the number of available inputs/outputs for a pin class is
  *        sufficient for speculatively packed blocks.
  */
-static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) {
+static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util, ClusterPinCounter& pin_counter) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
     if (!pb_type->is_primitive() && cur_pb->name) {
@@ -979,9 +991,25 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
                 // packed legally. Therefore, if the seed block is already using more inputs than
                 // the allowed maximum utilization, this should become the new maximum pin utilization.
                 class_size = std::max<size_t>(class_size, cur_pb->pb_stats->input_pins_used[class_id].size());
+                if (cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)) {
+                    VTR_LOG("Mismatch in the below expression\n");
+                    VTR_LOG("cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)\n");
+                    VTR_LOG("%zu != %zu\n",
+                        cur_pb->pb_stats->input_pins_used[class_id].size(),
+                        pin_counter.committed_input_size(cur_pb, class_id));
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+                }
             }
 
             if (cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() > class_size) {
+                if (cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() != pin_counter.lookahead_input_size(cur_pb, class_id)) {
+                    VTR_LOG("Mismatch in the below expression\n");
+                    VTR_LOG("cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() != pin_counter.lookahead_input_size(cur_pb, class_id)\n");
+                    VTR_LOG("%zu != %zu\n",
+                        cur_pb->pb_stats->lookahead_input_pins_used[class_id].size(),
+                        pin_counter.lookahead_input_size(cur_pb, class_id));
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+                }
                 return false;
             }
         }
@@ -999,9 +1027,25 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
                 // packed legally. Therefore, if the seed block is already using more inputs than
                 // the allowed maximum utilization, this should become the new maximum pin utilization.
                 class_size = std::max<size_t>(class_size, cur_pb->pb_stats->output_pins_used[class_id].size());
+                if (cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)) {
+                    VTR_LOG("Mismatch in the below expression\n");
+                    VTR_LOG("cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)\n");
+                    VTR_LOG("%zu != %zu\n",
+                        cur_pb->pb_stats->output_pins_used[class_id].size(),
+                        pin_counter.committed_output_size(cur_pb, class_id));
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+                }
             }
 
             if (cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() > class_size) {
+                if (cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() != pin_counter.lookahead_output_size(cur_pb, class_id)) {
+                    VTR_LOG("Mismatch in the below expression\n");
+                    VTR_LOG("cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() != pin_counter.lookahead_output_size(cur_pb, class_id)\n");
+                    VTR_LOG("%zu != %zu\n",
+                        cur_pb->pb_stats->lookahead_output_pins_used[class_id].size(),
+                        pin_counter.lookahead_output_size(cur_pb, class_id));
+                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+                }
                 return false;
             }
         }
@@ -1010,7 +1054,7 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
             for (int i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
                 if (cur_pb->child_pbs[i]) {
                     for (int j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
-                        if (!check_lookahead_pins_used(&cur_pb->child_pbs[i][j], max_external_pin_util))
+                        if (!check_lookahead_pins_used(&cur_pb->child_pbs[i][j], max_external_pin_util, pin_counter))
                             return false;
                     }
                 }
@@ -1083,7 +1127,8 @@ void ClusterLegalizer::reset_molecule_info(PackMoleculeId mol_id) {
 static void revert_place_atom_block(const AtomBlockId blk_id,
                                     ClusterRouter& cluster_router,
                                     vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                    AtomPBBimap& atom_to_pb) {
+                                    AtomPBBimap& atom_to_pb,
+                                    ClusterPinCounter& pin_counter) {
     //We cast away const here since we may free the pb, and it is
     //being removed from the active mapping.
     //
@@ -1097,6 +1142,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
          */
 
         t_pb* next = pb->parent_pb;
+        pin_counter.deallocate_recursive(pb);
         free_pb(pb, atom_to_pb);
         pb = next;
 
@@ -1113,6 +1159,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
                     /* If the code gets here, then that means that placing the initial seed molecule
                      * failed, don't free the actual complex block itself as the seed needs to find
                      * another placement */
+                    pin_counter.deallocate_recursive(pb);
                     free_pb(pb, atom_to_pb);
                 }
             }
@@ -1132,6 +1179,10 @@ static void commit_lookahead_pins_used(t_pb* cur_pb) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
     if (!pb_type->is_primitive() && cur_pb->name) {
+        
+        // TODO: Add checks to the function calls here as well for new pin counting code.
+        //       The commit operations itself is assumed to be performed by commit_lookahead() call.
+        
         for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
             VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() <= cur_pb->pb_graph_node->input_pin_class_sizes[class_id]);
             for (size_t net_id = 0; net_id < cur_pb->pb_stats->lookahead_input_pins_used[class_id].size(); net_id++) {
@@ -1368,7 +1419,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          log_verbosity_,
                                                          prepacker_,
                                                          clustering_chain_info_,
-                                                         mutable_atom_pb_lookup());
+                                                         mutable_atom_pb_lookup(),
+                                                         cluster.pin_counter);
         }
 
         // This flag controls the pop_back cleanup of cluster.molecules in case of subsequent failure.
@@ -1382,8 +1434,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // try_update_lookahead_pins_used requires the candidate molecule to
                 // already be in cluster.molecules, which is satisfied by the push above.
                 reset_lookahead_pins_used(cluster.pb);
+                cluster.pin_counter.reset_lookahead();
                 try_update_lookahead_pins_used(cluster, prepacker_, atom_cluster_, atom_pb_lookup());
-                if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
+                if (!check_lookahead_pins_used(cluster.pb, max_external_pin_util, cluster.pin_counter)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                     block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
                 } else {
@@ -1547,6 +1600,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
                 // Update the lookahead pins used.
                 commit_lookahead_pins_used(cluster.pb);
+                cluster.pin_counter.commit_lookahead();
             }
         }
 
@@ -1566,7 +1620,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
                 if (atom_blk_id) {
-                    revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup());
+                    revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup(), cluster.pin_counter);
                 }
             }
             reset_molecule_info(molecule_id);
@@ -1648,6 +1702,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
         molecule_cluster_[molecule_id] = new_cluster_id;
     } else {
         // Delete the new_cluster.
+        new_cluster.pin_counter.deallocate_recursive(new_cluster.pb);
         free_pb(new_cluster.pb, mutable_atom_pb_lookup());
         delete new_cluster.pb;
         free_cluster_placement_stats(new_cluster.placement_stats);
@@ -1700,7 +1755,7 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
         const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
         for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
             if (atom_blk_id) {
-                revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup());
+                revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup(), cluster.pin_counter);
             }
         }
         reset_molecule_info(mol_id);
@@ -1709,6 +1764,7 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     cluster.molecules.clear();
     // Free the rest of the cluster data.
     //  Casting things to nullptr for safety just in case someone is trying to use it.
+    cluster.pin_counter.deallocate_recursive(cluster.pb);
     free_pb(cluster.pb, mutable_atom_pb_lookup());
     delete cluster.pb;
     cluster.pb = nullptr;
@@ -1756,6 +1812,7 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
                && "Should not clean an already cleaned cluster!");
     // Free the pb stats.
+    cluster.pin_counter.deallocate_recursive(cluster.pb);
     free_pb_stats_recursive(cluster.pb);
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.
@@ -2016,6 +2073,14 @@ size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId 
     size_t inputs_avail = 0;
     for (size_t class_id = 0; class_id < cluster.pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
         inputs_avail += cluster.pb->pb_stats->input_pins_used[class_id].size();
+        if (cluster.pb->pb_stats->input_pins_used[class_id].size() != cluster.pin_counter.committed_input_size(cluster.pb, class_id)) {
+            VTR_LOG("Mismatch in the below expression\n");
+            VTR_LOG("cluster.pb->pb_stats->input_pins_used[class_id].size() != cluster.pin_counter.committed_input_size(cluster.pb, class_id)\n");
+            VTR_LOG("%zu != %zu\n",
+                cluster.pb->pb_stats->input_pins_used[class_id].size(),
+                cluster.pin_counter.committed_input_size(cluster.pb, class_id));
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+        }
     }
 
     return inputs_avail;

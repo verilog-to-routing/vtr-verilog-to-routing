@@ -44,13 +44,13 @@ class ClusterPinCounter {
     // ---------------- Allocation ----------------
 
     /**
-     * @brief Allocate state for @p pb if not already present. Idempotent.
+     * @brief Allocate state for @p pb. Should be called once per each pb.
      *
      * Mirrors the lazy alloc_and_load_pb_stats pattern in cluster_legalizer.cpp.
      * Sizes the per-class vectors from
      *   pb->pb_graph_node->{input,output}_pin_class_sizes.
      */
-    void ensure_allocated(const t_pb* pb);
+    void allocate_pb_state(const t_pb* pb);
 
     /**
      * @brief Drop the state stored for @p pb, if any.
@@ -60,6 +60,12 @@ class ClusterPinCounter {
      * in the internal map.
      */
     void deallocate(const t_pb* pb);
+
+
+    /**
+     * @brief TODO
+     */
+    void deallocate_recursive(const t_pb* pb);
 
     // ---------------- Lookahead writes ----------------
 

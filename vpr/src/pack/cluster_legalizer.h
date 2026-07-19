@@ -16,6 +16,7 @@
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "cluster_legalizer_fwd.h"
+#include "cluster_pin_counter.h"
 #include "cluster_router.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
@@ -97,7 +98,8 @@ struct LegalizationCluster {
         , pr(PartitionRegion())
         , noc_grp_id(NocGroupId::INVALID())
         , cluster_router()
-        , placement_stats(nullptr) {}
+        , placement_stats(nullptr)
+        , pin_counter() {}
 
     /**
      * @brief Constructor for the LegalizationCluster class.
@@ -154,6 +156,10 @@ struct LegalizationCluster {
     ///        placed in the cluster. This is used when the legalizer decides
     ///        what sites it should try to put a new molecule into.
     t_intra_cluster_placement_stats* placement_stats;
+
+    /// @brief The pin counter used for this cluster.
+    ///        TODO: write what this contains.
+    ClusterPinCounter pin_counter;
 };
 
 /*
