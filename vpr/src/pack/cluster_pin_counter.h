@@ -80,7 +80,7 @@ class ClusterPinCounter {
      * @brief Add @p net to the lookahead input state of @p pb / @p class_id.
      *
      * Deduplicates — mirrors legacy input-side behavior in
-     * compute_and_mark_lookahead_pins_used_for_pin.
+     * compute_and_mark_lookahead_pins_used_for_{input/output}_pin.
      */
     void mark_lookahead_input(const t_pb* pb, size_t class_id, AtomNetId net);
 
@@ -139,7 +139,7 @@ class ClusterPinCounter {
                                               const AtomPBBimap& atom_to_pb);
 
     /**
-     * @brief Given a pin and its assigned net, mark all pin classes that are
+     * @brief Given an input pin and its assigned net, mark all pin classes that are
      *        affected. Check if connecting this pin to its driver pin or to
      *        all sink pins will require leaving a pb_block starting from the
      *        parent pb_block of the primitive till the root block (depth = 0).
@@ -147,11 +147,27 @@ class ClusterPinCounter {
      *        (to increment the number of used pins from this class) that
      *        should be used to leave the pb_block.
      */
-    void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* pb_graph_pin,
-                                                      const t_pb* primitive_pb,
-                                                      AtomNetId net_id,
-                                                      const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                      const AtomPBBimap& atom_to_pb);
+    void compute_and_mark_lookahead_pins_used_for_input_pin(const t_pb_graph_pin* pb_graph_pin,
+                                                            const t_pb* primitive_pb,
+                                                            AtomNetId net_id,
+                                                            const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                            const AtomPBBimap& atom_to_pb);
+
+    /**
+     * @brief Given an output pin and its assigned net, mark all pin classes that are
+     *        affected. Check if connecting this pin to its driver pin or to
+     *        all sink pins will require leaving a pb_block starting from the
+     *        parent pb_block of the primitive till the root block (depth = 0).
+     *        If leaving a pb_block is required add this net to the pin class
+     *        (to increment the number of used pins from this class) that
+     *        should be used to leave the pb_block.
+     */
+    void compute_and_mark_lookahead_pins_used_for_output_pin(const t_pb_graph_pin* pb_graph_pin,
+                                                            const t_pb* primitive_pb,
+                                                            AtomNetId net_id,
+                                                            const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                            const AtomPBBimap& atom_to_pb);
+
 
 
     /**
