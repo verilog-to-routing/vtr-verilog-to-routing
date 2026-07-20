@@ -45,12 +45,12 @@ static constexpr int ENDPOINT_STAR_SIZE = 12;
  * @brief Highly contrasting colours that are useful for visualization.
  */
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
-    //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
+    //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background.
     ezgl::color(34, 34, 34),    //black
     ezgl::color(243, 195, 0),   //yellow
     ezgl::color(135, 86, 146),  //purple
     ezgl::color(243, 132, 0),   //orange
-    ezgl::color(161, 202, 241), //light blue
+    //ezgl::color(161, 202, 241), //light blue: skip due to poor contrast.
     ezgl::color(190, 0, 50),    //red
     ezgl::color(194, 178, 128), //buf
     ezgl::color(132, 132, 130), //gray
@@ -98,6 +98,9 @@ enum class e_label_relative_pos {
  * @brief Contains all attributes of one timing edge delay label needed for drawing and finding a label position that minimizes overlaps.
  */
 struct t_label_drawing_info {
+    /// @brief Delay time across this timing edge in nanoseconds.
+    float delay_time = 0.0;
+
     /// @brief Delay time across this timing edge in nanoseconds, represented in std::string and drawn on screen.
     std::string delay_label_str;
 
@@ -545,12 +548,16 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
 
             // Delay time in seconds.
             float delay_time = arr_time - prev_arr_time;
+            // Convert to nanoseconds
+            delay_time = 1e9 * delay_time;
+            drawing_info.delay_time = delay_time;
+
             std::stringstream ss;
             // Set precision to three decimals.
             ss.precision(3);
-            // Store in nanoseconds. Use std::fixed to explicitly show three decimals for visual consistency among labels
-            // (e.g. 1.5 can pass std::stringstream::precision(3) but still needs to be extended to 1.500).
-            ss << std::fixed << 1e9 * delay_time;
+            // Use std::fixed to explicitly show three decimals for visual consistency among labels
+            // (e.g. 1.5 is consistent with std::stringstream::precision(3) but still needs to be extended to 1.500).
+            ss << std::fixed << delay_time;
             // This local std::string will help construct the label bounding box later.
             std::string delay_label_str = ss.str();
             drawing_info.delay_label_str = delay_label_str;
@@ -688,8 +695,8 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
         }
 
         // As long as there is one overlap associated with this label, we hide it.
-        // Note: A label being hidden may change the fate of subsequent labels (always positively), and since we redo the overlap calculation
-        // for every label, the update will always be reflected in subsequent iterations and save labels that do not have overlaps amymore.
+        // Note: A hidden label may positively affect the fate of subsequent labels, and hence we must perform a clean calculation for each label
+        // to ensure the most recent status is reflected.
         bool has_overlap = false;
         for (std::size_t edge_idx_to_compare = 0; edge_idx_to_compare < post_decluttering_label_drawing_info.size(); edge_idx_to_compare++) {
             const t_label_drawing_info& drawing_info_to_compare = post_decluttering_label_drawing_info[edge_idx_to_compare];
