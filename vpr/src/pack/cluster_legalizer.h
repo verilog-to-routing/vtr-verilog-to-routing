@@ -161,9 +161,7 @@ struct LegalizationCluster {
     ///        Tracks, for each non-primitive pb in the cluster hierarchy, the
     ///        set of nets currently claiming a pin of each input/output pin
     ///        class — separately for committed molecules and for the current
-    ///        candidate under evaluation. Populated in parallel with the
-    ///        legacy t_pb_stats pin fields during the ongoing pin-counting
-    ///        rewrite; verified equivalent to legacy at every read site.
+    ///        candidate under evaluation.
     ClusterPinCounter pin_counter;
 };
 

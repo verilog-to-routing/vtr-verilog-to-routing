@@ -4,17 +4,13 @@
  * @brief Declaration of ClusterPinCounter, the pin-counting state for a
  *        LegalizationCluster.
  *
- * This class is intended to replace the pin-counting fields previously
- * stored on t_pb_stats (input_pins_used, output_pins_used,
- * lookahead_input_pins_used, lookahead_output_pins_used).
- *
  * For every non-primitive t_pb in the cluster, two symmetric states are
  * tracked per input/output pin class:
  *   - committed: nets claimed by molecules already accepted into the cluster
  *   - lookahead: nets claimed by molecules currently under evaluation
  *                (rebuilt from scratch on each candidate check)
  *
- * On a successful commit, lookahead is copied into committed.
+ * On a successful commit, lookahead is promoted into committed.
  * On a failed check, lookahead is discarded (reset).
  */
 
@@ -30,9 +26,9 @@ class ClusterPinCounter {
     /**
      * @brief Per non-primitive pb pin-counting state.
      *
-     * Each of the four vectors is indexed by pin class id at the associated pb,
-     * matching the layout previously used on t_pb_stats. The inner vector
-     * holds the AtomNetIds currently claiming a pin of that class.
+     * Each of the four vectors is indexed by pin class id at the associated pb.
+     * The inner vector holds the AtomNetIds currently claiming a pin of that
+     * class.
      */
     struct PerPbState {
         std::vector<std::vector<AtomNetId>> committed_input_pin_class_nets;
@@ -111,24 +107,10 @@ class ClusterPinCounter {
     size_t committed_input_size(const t_pb* pb, size_t class_id) const;
     size_t committed_output_size(const t_pb* pb, size_t class_id) const;
 
-    // ---------------- Introspection ----------------
-
-    /**
-     * @brief Returns the state associated with @p pb, or nullptr if none has
-     *        been allocated.
-     *
-     * Intended for step-1 verification asserts that compare the new state
-     * against the legacy t_pb_stats fields.
-     */
-    const PerPbState* find(const t_pb* pb) const;
-
   private:
     /**
-     * @brief One entry per non-primitive t_pb touched during clustering.
-     *
-     * Keyed by pb pointer to mirror the legacy per-t_pb layout, which lets
-     * mirror-writes at existing legacy write sites remain point-for-point
-     * symmetric.
+     * @brief One entry per non-primitive t_pb touched during clustering,
+     *        keyed by pb pointer.
      *
      * TODO: Each mark/size query does one std::unordered_map::find (average
      *       O(1), but with a hash + modulo + pointer chase, and heap-scattered

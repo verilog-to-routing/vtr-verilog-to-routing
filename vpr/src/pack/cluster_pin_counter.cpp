@@ -80,48 +80,45 @@ void ClusterPinCounter::reset_lookahead() {
     }
 }
 
-// !!! WARNING — LEGACY-MIRRORING QUIRK !!!
+// !!! WARNING — INHERITED PEAK-SIZE SEMANTICS !!!
 //
 // This commit uses "peak-size" semantics: for each class, committed only ever
 // grows to match the current lookahead; it never shrinks even when the current
 // lookahead is smaller (e.g., because a net was absorbed inside the cluster).
 //
-// This deliberately reproduces a quirk in legacy commit_lookahead_pins_used
-// (vpr/src/pack/cluster_legalizer.cpp), which stores committed state as
+// This preserves the behavior of the removed legacy commit_lookahead_pins_used
+// in cluster_legalizer.cpp, which stored committed state as
 //   std::unordered_map<size_t /*vector index*/, AtomNetId>
-// and uses insert({index, net}) with vector-index-as-key. Since insert does
-// not overwrite existing keys, once a class has been committed at some size N
-// it stays >= N forever within a cluster's lifetime, even if subsequent
-// commits' lookahead has size < N. The map's stored AtomNetId values are also
-// frozen at whatever the first commit that inserted that key contributed —
-// they are never read anywhere, but they exist.
+// and used insert({index, net}) with vector-index-as-key. Because insert does
+// not overwrite existing keys, once a class had been committed at some size N
+// it stayed >= N for the rest of the cluster's lifetime, even if subsequent
+// commits' lookahead had size < N.
 //
-// The only thing anyone actually reads from committed state is `.size()`:
-//   - check_lookahead_pins_used (at root only) floors class_size at committed.size()
-//   - get_num_cluster_inputs_available sums committed.size() at root
-// so matching the size is what makes the new class behaviorally equivalent to
-// legacy. The stored AtomNetIds diverge — that's fine; nobody reads them.
+// The only thing anyone reads from committed state is `.size()`:
+//   - check_lookahead_pins_used (at root only) floors class_size at
+//     committed.size() — the "seed pin protection" floor comment in that
+//     function explains the intent.
+//   - get_num_cluster_inputs_available sums committed.size() at root.
 //
-// Why we mirror the quirk instead of using the semantically obvious
-// `committed = lookahead` (current-usage semantics):
-//   - Step 1 of the pin-counting rewrite promises byte-for-byte behavioral
-//     equivalence with legacy. Changing the semantics here would silently
-//     alter the pin-feasibility filter at root pbs (peak is more permissive
-//     than current) and change get_num_cluster_inputs_available, potentially
-//     shifting packing decisions and QoR.
-//   - Any semantic cleanup should be a separate PR after legacy is removed,
-//     with a proper QoR study (vtr_reg_strong at minimum) to confirm the
-//     change is safe.
+// Why we still mirror the peak-size behavior rather than using the
+// semantically cleaner `committed = lookahead` (current-usage semantics):
+//   - Peak is strictly more permissive than current at the root floor, so
+//     switching changes which candidates pass the pin-feasibility filter
+//     and shifts QoR. Preserving peak keeps this branch bit-for-bit QoR
+//     equivalent to master, which is what the pin-counting rewrite promises.
+//   - The semantic swap is a follow-up: replace the loop below with the
+//     current-usage version shown in the commented block, then run a
+//     vtr_reg_strong QoR study to measure and justify the change.
 //
-// TODO (post-migration): once legacy commit_lookahead_pins_used is deleted,
-// replace the peak-mirror body below with the current-usage version shown in
-// the commented block. Peak semantics is undocumented and arguably a bug: the
-// floor's stated intent (see comment near line 975 of cluster_legalizer.cpp)
-// is only to protect the seed's committed count, not any historical peak.
-// Peak just falls out of the unordered_map insert quirk. Run a QoR study
-// (vtr_reg_strong minimum) when making the swap to confirm impact.
+// TODO (follow-up): swap peak-mirror for current-usage semantics. The
+// commented block at the bottom of this function is the intended
+// replacement. Peak semantics is undocumented in the original code and
+// falls out of the unordered_map insert quirk described above; the floor's
+// stated intent (see the "when packing the seed block" comment in
+// check_lookahead_pins_used) is only to protect the seed's committed count,
+// not any historical peak. Run vtr_reg_strong to confirm QoR impact.
 void ClusterPinCounter::commit_lookahead() {
-    // ---- Legacy-mirroring peak-size behavior (step-1 verification requires this) ----
+    // ---- Peak-size behavior inherited from the removed legacy commit ----
     for (auto& kv : per_pb_state_) {
         PerPbState& state = kv.second;
         for (size_t c = 0; c < state.committed_input_pin_class_nets.size(); c++) {
@@ -176,10 +173,3 @@ size_t ClusterPinCounter::committed_output_size(const t_pb* pb, size_t class_id)
     return it->second.committed_output_pin_class_nets[class_id].size();
 }
 
-const ClusterPinCounter::PerPbState* ClusterPinCounter::find(const t_pb* pb) const {
-    auto it = per_pb_state_.find(pb);
-    if (it == per_pb_state_.end()) {
-        return nullptr;
-    }
-    return &it->second;
-}
