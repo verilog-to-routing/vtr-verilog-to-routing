@@ -39,6 +39,8 @@ static constexpr double EDGE_OFFSET_FRACTION = 0.1;
  */
 static constexpr int MAX_EDGE_OFFSET_UNIT = 40;
 
+static constexpr int ENDPOINT_STAR_SIZE = 12;
+
 /**
  * @brief Highly contrasting colours that are useful for visualization.
  */
@@ -335,16 +337,18 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
                 // Draw an arrow at the edge center.
                 draw_triangle_along_line_fixed_px(g, start, end, EDGE_CENTER, TIMING_EDGE_ARROW_SCALE * DEFAULT_ARROW_SIZE);
 
-                const double side_len = get_pixels_per_world_unit(g) < 1 ? 10 : 10 / get_pixels_per_world_unit(g);
-                
-                if (edge_idx != 0) {
-                    ezgl::point2d buttom_left = start - ezgl::point2d{0 , side_len / 2};
-                    g->fill_rectangle(buttom_left, side_len / 2, side_len);
+                // Draw a green star at the beginning the timing path.
+                if (edge_idx == 0) {
+                    g->set_color(ezgl::GREEN, flyline_visibility.alpha);
+                    draw_star_fixed_px(start.x, start.y, ENDPOINT_STAR_SIZE, g);
                 }
 
-                if (edge_idx != path.data_arrival_path().elements().size() - 2) {
-                    ezgl::point2d buttom_left = end - ezgl::point2d{side_len / 2, side_len / 2};
-                    g->fill_rectangle(buttom_left, side_len / 2, side_len);
+                // Draw a red star at the end of the timing path.
+                // path.data_arrival_path().elements().size() returns the total number of nodes, hence we need to
+                // subtract 1 to get the total number of edges. Since we are using index here, we need to subtract another 1.
+                if (edge_idx == path.data_arrival_path().elements().size() - 2) {
+                    g->set_color(ezgl::RED, flyline_visibility.alpha);
+                    draw_star_fixed_px(end.x, end.y, ENDPOINT_STAR_SIZE, g);
                 }
             }
 

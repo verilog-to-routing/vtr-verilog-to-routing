@@ -53,6 +53,22 @@ void draw_routing_bb(ezgl::renderer* g);
 /* Draws an X centered at (x,y). The width and height of the X are each 2 * size. */
 void draw_x(float x, float y, float size, ezgl::renderer* g);
 
+/**
+ * @brief Draws a filled star centered at the specified world-coordinate location with a fixed pixel size.
+ *
+ * The star size is converted from pixels to world units using the current renderer zoom level, so it
+ * appears with a consistent on-screen size while zooming. The star can be imagined as a square with
+ * four triangles (tip pointing outwards) affixed to its four sides. The triangle's base has the same length
+ * as the sqaure's side. We specify the star by creating a std::vector of ezgl::point2d where the point2ds are
+ * the contiguous star vertices.
+ *
+ * @param x Center x coordinate in world units.
+ * @param y Center y coordinate in world units.
+ * @param size Distance from the star center to the previously mentioned traingle's tip, in pixels.
+ * @param g Renderer used to perform drawing.
+ */
+void draw_star_fixed_px(double x, double y, double size, ezgl::renderer* g);
+
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
  * that are not coloured black (useful for drawing over the rr_graph).       */
