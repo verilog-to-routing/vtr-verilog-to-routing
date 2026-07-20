@@ -953,6 +953,24 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
         for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
             size_t class_size = cur_pb->pb_graph_node->input_pin_class_sizes[class_id];
 
+            if (cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)) {
+                VTR_LOG("Mismatch in the below expression\n");
+                VTR_LOG("cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)\n");
+                VTR_LOG("%zu != %zu\n",
+                    cur_pb->pb_stats->input_pins_used[class_id].size(),
+                    pin_counter.committed_input_size(cur_pb, class_id));
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+            }
+
+            if (cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() != pin_counter.lookahead_input_size(cur_pb, class_id)) {
+                VTR_LOG("Mismatch in the below expression\n");
+                VTR_LOG("cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() != pin_counter.lookahead_input_size(cur_pb, class_id)\n");
+                VTR_LOG("%zu != %zu\n",
+                    cur_pb->pb_stats->lookahead_input_pins_used[class_id].size(),
+                    pin_counter.lookahead_input_size(cur_pb, class_id));
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+            }
+
             if (cur_pb->is_root()) {
                 // Scale the class size by the maximum external pin utilization factor
                 // Use ceil to avoid classes of size 1 from being scaled to zero
@@ -964,31 +982,34 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
                 // packed legally. Therefore, if the seed block is already using more inputs than
                 // the allowed maximum utilization, this should become the new maximum pin utilization.
                 class_size = std::max<size_t>(class_size, cur_pb->pb_stats->input_pins_used[class_id].size());
-                if (cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)) {
-                    VTR_LOG("Mismatch in the below expression\n");
-                    VTR_LOG("cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)\n");
-                    VTR_LOG("%zu != %zu\n",
-                        cur_pb->pb_stats->input_pins_used[class_id].size(),
-                        pin_counter.committed_input_size(cur_pb, class_id));
-                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
-                }
             }
 
             if (cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() > class_size) {
-                if (cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() != pin_counter.lookahead_input_size(cur_pb, class_id)) {
-                    VTR_LOG("Mismatch in the below expression\n");
-                    VTR_LOG("cur_pb->pb_stats->lookahead_input_pins_used[class_id].size() != pin_counter.lookahead_input_size(cur_pb, class_id)\n");
-                    VTR_LOG("%zu != %zu\n",
-                        cur_pb->pb_stats->lookahead_input_pins_used[class_id].size(),
-                        pin_counter.lookahead_input_size(cur_pb, class_id));
-                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
-                }
                 return false;
             }
         }
 
         for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->output_pin_class_sizes.size(); class_id++) {
             size_t class_size = cur_pb->pb_graph_node->output_pin_class_sizes[class_id];
+
+            if (cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)) {
+                VTR_LOG("Mismatch in the below expression\n");
+                VTR_LOG("cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)\n");
+                VTR_LOG("%zu != %zu\n",
+                    cur_pb->pb_stats->output_pins_used[class_id].size(),
+                    pin_counter.committed_output_size(cur_pb, class_id));
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+            }
+
+            if (cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() != pin_counter.lookahead_output_size(cur_pb, class_id)) {
+                VTR_LOG("Mismatch in the below expression\n");
+                VTR_LOG("cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() != pin_counter.lookahead_output_size(cur_pb, class_id)\n");
+                VTR_LOG("%zu != %zu\n",
+                    cur_pb->pb_stats->lookahead_output_pins_used[class_id].size(),
+                    pin_counter.lookahead_output_size(cur_pb, class_id));
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+            }
+
             if (cur_pb->is_root()) {
                 // Scale the class size by the maximum external pin utilization factor
                 // Use ceil to avoid classes of size 1 from being scaled to zero
@@ -1000,25 +1021,9 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
                 // packed legally. Therefore, if the seed block is already using more inputs than
                 // the allowed maximum utilization, this should become the new maximum pin utilization.
                 class_size = std::max<size_t>(class_size, cur_pb->pb_stats->output_pins_used[class_id].size());
-                if (cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)) {
-                    VTR_LOG("Mismatch in the below expression\n");
-                    VTR_LOG("cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)\n");
-                    VTR_LOG("%zu != %zu\n",
-                        cur_pb->pb_stats->output_pins_used[class_id].size(),
-                        pin_counter.committed_output_size(cur_pb, class_id));
-                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
-                }
             }
 
             if (cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() > class_size) {
-                if (cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() != pin_counter.lookahead_output_size(cur_pb, class_id)) {
-                    VTR_LOG("Mismatch in the below expression\n");
-                    VTR_LOG("cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() != pin_counter.lookahead_output_size(cur_pb, class_id)\n");
-                    VTR_LOG("%zu != %zu\n",
-                        cur_pb->pb_stats->lookahead_output_pins_used[class_id].size(),
-                        pin_counter.lookahead_output_size(cur_pb, class_id));
-                    VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
-                }
                 return false;
             }
         }
@@ -1148,7 +1153,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
 /*
  * @brief Speculation successful, commit input/output pins used.
  */
-static void commit_lookahead_pins_used(t_pb* cur_pb) {
+static void commit_lookahead_pins_used(t_pb* cur_pb, ClusterPinCounter& pin_counter) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
     if (!pb_type->is_primitive() && cur_pb->name) {
@@ -1164,6 +1169,19 @@ static void commit_lookahead_pins_used(t_pb* cur_pb) {
             }
         }
 
+        // Verification: pin_counter committed sizes must match legacy after commit.
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
+            VTR_ASSERT(pin_counter.lookahead_input_size(cur_pb, class_id) <= cur_pb->pb_graph_node->input_pin_class_sizes[class_id]);
+            if (cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)) {
+                VTR_LOG("Mismatch in the below expression\n");
+                VTR_LOG("cur_pb->pb_stats->input_pins_used[class_id].size() != pin_counter.committed_input_size(cur_pb, class_id)\n");
+                VTR_LOG("%zu != %zu\n",
+                    cur_pb->pb_stats->input_pins_used[class_id].size(),
+                    pin_counter.committed_input_size(cur_pb, class_id));
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+            }
+        }
+
         for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->output_pin_class_sizes.size(); class_id++) {
             VTR_ASSERT(cur_pb->pb_stats->lookahead_output_pins_used[class_id].size() <= cur_pb->pb_graph_node->output_pin_class_sizes[class_id]);
             for (size_t net_id = 0; net_id < cur_pb->pb_stats->lookahead_output_pins_used[class_id].size(); net_id++) {
@@ -1172,11 +1190,24 @@ static void commit_lookahead_pins_used(t_pb* cur_pb) {
             }
         }
 
+        // Verification: pin_counter committed sizes must match legacy after commit.
+        for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->output_pin_class_sizes.size(); class_id++) {
+            VTR_ASSERT(pin_counter.lookahead_output_size(cur_pb, class_id) <= cur_pb->pb_graph_node->output_pin_class_sizes[class_id]);
+            if (cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)) {
+                VTR_LOG("Mismatch in the below expression\n");
+                VTR_LOG("cur_pb->pb_stats->output_pins_used[class_id].size() != pin_counter.committed_output_size(cur_pb, class_id)\n");
+                VTR_LOG("%zu != %zu\n",
+                    cur_pb->pb_stats->output_pins_used[class_id].size(),
+                    pin_counter.committed_output_size(cur_pb, class_id));
+                VPR_FATAL_ERROR(VPR_ERROR_PACK, "Mismatch in replacing code");
+            }
+        }
+
         if (cur_pb->child_pbs) {
             for (int i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
                 if (cur_pb->child_pbs[i]) {
                     for (int j = 0; j < pb_type->modes[cur_pb->mode].pb_type_children[i].num_pb; j++) {
-                        commit_lookahead_pins_used(&cur_pb->child_pbs[i][j]);
+                        commit_lookahead_pins_used(&cur_pb->child_pbs[i][j], pin_counter);
                     }
                 }
             }
@@ -1572,8 +1603,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 }
 
                 // Update the lookahead pins used.
-                commit_lookahead_pins_used(cluster.pb);
                 cluster.pin_counter.commit_lookahead();
+                commit_lookahead_pins_used(cluster.pb, cluster.pin_counter);
             }
         }
 
