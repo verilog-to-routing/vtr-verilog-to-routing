@@ -18,8 +18,14 @@
 #include <vector>
 
 #include "atom_netlist_fwd.h"
+#include "cluster_legalizer_fwd.h"
+#include "prepack.h"
+#include "vpr_types.h"
+#include "vtr_vector_map.h"
 
+class AtomPBBimap;
 class t_pb;
+struct t_pb_graph_pin;
 
 class ClusterPinCounter {
   public:
@@ -107,7 +113,47 @@ class ClusterPinCounter {
     size_t committed_input_size(const t_pb* pb, size_t class_id) const;
     size_t committed_output_size(const t_pb* pb, size_t class_id) const;
 
+    // ---------------- Recompute / check ----------------
+
+    /**
+     * @brief Recompute speculative lookahead pin usage for every atom currently
+     *        assigned to the cluster.
+     */
+    void try_update_lookahead_pins_used(const std::vector<PackMoleculeId>& molecules,
+                                        const Prepacker& prepacker,
+                                        const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                        const AtomPBBimap& atom_to_pb);
+
+    /**
+     * @brief Check if the number of available inputs/outputs for a pin class
+     *        is sufficient for speculatively packed blocks.
+     */
+    bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util);
+
   private:
+    /**
+     * @brief Determine if pins of speculatively packed pb are legal.
+     */
+    void compute_and_mark_lookahead_pins_used(AtomBlockId blk_id,
+                                              const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                              const AtomPBBimap& atom_to_pb);
+
+    /**
+     * @brief Given a pin and its assigned net, mark all pin classes that are
+     *        affected. Check if connecting this pin to its driver pin or to
+     *        all sink pins will require leaving a pb_block starting from the
+     *        parent pb_block of the primitive till the root block (depth = 0).
+     *        If leaving a pb_block is required add this net to the pin class
+     *        (to increment the number of used pins from this class) that
+     *        should be used to leave the pb_block.
+     */
+    void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* pb_graph_pin,
+                                                      const t_pb* primitive_pb,
+                                                      AtomNetId net_id,
+                                                      const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                      const AtomPBBimap& atom_to_pb);
+
+
     /**
      * @brief One entry per non-primitive t_pb touched during clustering,
      *        keyed by pb pointer.
