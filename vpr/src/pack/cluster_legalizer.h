@@ -157,8 +157,13 @@ struct LegalizationCluster {
     ///        what sites it should try to put a new molecule into.
     t_intra_cluster_placement_stats* placement_stats;
 
-    /// @brief The pin counter used for this cluster.
-    ///        TODO: write what this contains.
+    /// @brief Pin-counting state for this cluster.
+    ///        Tracks, for each non-primitive pb in the cluster hierarchy, the
+    ///        set of nets currently claiming a pin of each input/output pin
+    ///        class — separately for committed molecules and for the current
+    ///        candidate under evaluation. Populated in parallel with the
+    ///        legacy t_pb_stats pin fields during the ongoing pin-counting
+    ///        rewrite; verified equivalent to legacy at every read site.
     ClusterPinCounter pin_counter;
 };
 

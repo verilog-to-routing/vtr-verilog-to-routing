@@ -15,8 +15,6 @@ void ClusterPinCounter::allocate_pb_state(const t_pb* pb) {
     VTR_ASSERT(pb != nullptr);
     if (per_pb_state_.count(pb) != 0)
         return;
-    // VTR_ASSERT_MSG(per_pb_state_.count(pb) == 0, 
-    //     "Pin counting state allocation should be called once per each pb in a cluster");
 
     const t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
     VTR_ASSERT(pb_graph_node != nullptr);

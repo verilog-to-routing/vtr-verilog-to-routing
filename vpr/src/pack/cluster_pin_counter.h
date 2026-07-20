@@ -44,10 +44,11 @@ class ClusterPinCounter {
     // ---------------- Allocation ----------------
 
     /**
-     * @brief Allocate state for @p pb. Should be called once per each pb.
+     * @brief Allocate state for @p pb.
      *
-     * Mirrors the lazy alloc_and_load_pb_stats pattern in cluster_legalizer.cpp.
-     * Sizes the per-class vectors from
+     * Idempotent — safe to call multiple times on the same pb; subsequent
+     * calls are no-ops. Mirrors the lazy alloc_and_load_pb_stats pattern in
+     * cluster_legalizer.cpp. Sizes the per-class vectors from
      *   pb->pb_graph_node->{input,output}_pin_class_sizes.
      */
     void allocate_pb_state(const t_pb* pb);
@@ -55,15 +56,19 @@ class ClusterPinCounter {
     /**
      * @brief Drop the state stored for @p pb, if any.
      *
-     * Mirrors the free_pb_stats(t_pb*) pattern. Called when a pb is torn down
-     * (e.g., during molecule revert) so that stale pb pointers do not remain
-     * in the internal map.
+     * Erases only @p pb's own entry; does not touch descendants. Prefer
+     * deallocate_recursive when tearing down a pb subtree. Safe to call on
+     * a pb that has no state (no-op).
      */
     void deallocate(const t_pb* pb);
 
-
     /**
-     * @brief TODO
+     * @brief Erase state for @p pb and every pb in its subtree.
+     *
+     * Mirrors the shape of free_pb / free_pb_stats_recursive in
+     * cluster_legalizer.cpp. Must be called BEFORE the corresponding
+     * legacy free — otherwise the pb pointers used for the recursion
+     * have been delete[]-freed and traversing them is UB.
      */
     void deallocate_recursive(const t_pb* pb);
 
