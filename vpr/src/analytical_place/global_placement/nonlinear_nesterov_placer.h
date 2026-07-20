@@ -96,7 +96,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
         double wirelength = 0.;               ///< Unweighted differentiable wirelength.
         double density = 0.;                  ///< Unweighted electrostatic density energy.
         std::vector<double> density_energies; ///< Electrostatic energy for each primitive dimension.
-        double pack_pattern_cohesion = 0.;    ///< Unweighted cohesion penalty for multi-block pack-pattern chains.
+        double affinity_spring = 0.;          ///< Weighted quadratic affinity-spring penalty (all kinds).
         double proximity = 0.;                ///< Unweighted proximity penalty to a legalized anchor.
         double total_overflow = 0.;           ///< Sum of normalized tile overflows.
         double max_overflow = 0.;             ///< Largest normalized tile overflow.
@@ -173,15 +173,49 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     void update_timing_net_weights_();
 
     /**
-     * @brief Build groups of AP blocks that belong to the same long prepacker chain.
+     * @brief Affinity-spring detector kind (logging / per-kind weights).
      */
-    void initialize_pack_pattern_cohesion_groups_(const Prepacker& prepacker);
+    enum class e_affinity_kind {
+        IO_PAIR,      ///< Direct 2-pin output-driver↔outpad pairs.
+        PACK_PATTERN  ///< Long prepacker chain groups spanning multiple AP blocks.
+    };
 
     /**
-     * @brief Add a quadratic cohesion term for long prepacker chains spanning multiple AP blocks.
+     * @brief A set of AP blocks pulled together by a quadratic centroid spring.
      */
-    double add_pack_pattern_cohesion_gradient_(const PartialPlacement& p_placement,
-                                               std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
+    struct AffinityGroup {
+        e_affinity_kind kind = e_affinity_kind::IO_PAIR; ///< Detector that created this group.
+        std::vector<APBlockId> blocks;                   ///< AP blocks in the group (size >= 2).
+    };
+
+    /**
+     * @brief Build pack-pattern affinity groups from long prepacker chains.
+     */
+    void initialize_pack_pattern_affinity_groups_(const Prepacker& prepacker);
+
+    /**
+     * @brief Detect direct 2-pin output-driver↔outpad pairs and register affinity groups.
+     */
+    void initialize_io_pair_affinity_groups_();
+
+    /**
+     * @brief Update pre-cluster timing for a checkpoint and return estimated CPD in ns.
+     */
+    double evaluate_checkpoint_cpd_(const PartialPlacement& placement);
+
+    /**
+     * @brief Effective kernel weight for an affinity group (preserves I/O pair strength).
+     */
+    double affinity_kernel_weight_(e_affinity_kind kind) const;
+
+    /**
+     * @brief Shared quadratic centroid spring: value and optional gradient.
+     *
+     * Penalty (unweighted): sum_b 0.5 / n * ||x_b - c||^2.
+     * Gradient uses @ref affinity_kernel_weight_ per group kind.
+     */
+    double add_affinity_spring_gradient_(const PartialPlacement& p_placement,
+                                         std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
      * @brief Add electrostatic density value and gradient.
@@ -195,6 +229,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                  std::optional<std::reference_wrapper<PlacementGradient>> grad,
                                  const FillerState& fillers,
                                  std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
+
+    /** @brief Build and cache the fixed per-site density targets. */
+    void initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const;
 
     /**
      * @brief Build dynamic filler particles from seed whitespace.
@@ -336,8 +373,11 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     std::vector<bool> boundary_confined_dims_;                         ///< [dim index] true if target capacity lies almost entirely on the device boundary.
     vtr::vector<APNetId, bool> boundary_cohesion_nets_;                ///< AP nets that receive I/O-only cohesion weight.
     vtr::vector<APNetId, bool> io_chain_cohesion_nets_;                ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
-    std::vector<std::vector<APBlockId>> pack_pattern_cohesion_groups_; ///< Multi-block long-chain AP block groups.
-    size_t num_io_chain_cohesion_nets_ = 0;                            ///< Number of flagged direct I/O-chain AP nets.
+    vtr::vector<APNetId, bool> io_pair_locality_nets_; ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
+    std::vector<AffinityGroup> affinity_groups_;       ///< All detected affinity-spring groups.
+    size_t num_io_pair_affinity_groups_ = 0;           ///< Count of IO_PAIR affinity groups.
+    size_t num_pack_pattern_affinity_groups_ = 0;      ///< Count of PACK_PATTERN affinity groups.
+    size_t num_io_chain_cohesion_nets_ = 0;             ///< Number of flagged direct I/O-chain AP nets.
     std::vector<double> filler_unit_mass_;                             ///< [dim] density mass per dynamic filler.
     std::vector<double> filler_precond_;                               ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
@@ -346,6 +386,17 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     mutable std::vector<std::vector<double>> cached_target_capacity_; ///< [dim][site] target capacity spread over each bin's footprint.
     mutable std::vector<double> cached_target_norm_floor_;            ///< [dim] floor added when dividing by target capacity.
     mutable std::vector<double> cached_residual_charge_scale_;        ///< [dim] typical site capacity used to scale residual charge.
+    // Reused density-evaluation storage. Objective/line-search evaluations are
+    // serial, so these mutable buffers safely remove repeated device-grid-sized
+    // allocation and zero-construction from the const evaluation routine.
+    mutable std::vector<std::vector<double>> density_utilization_workspace_; ///< [dim][site] deposited block/filler mass.
+    mutable std::vector<std::vector<double>> density_potential_workspace_;   ///< [dim][site] electrostatic potential.
+    mutable std::vector<std::vector<double>> density_field_x_workspace_;     ///< [dim][site] x component of potential gradient.
+    mutable std::vector<std::vector<double>> density_field_y_workspace_;     ///< [dim][site] y component of potential gradient.
+    mutable std::vector<double> density_charge_workspace_;                   ///< [site] current resource dimension's charge.
+    mutable std::vector<bool> density_active_workspace_;                     ///< [site] whether the current dimension has density charge/capacity.
+    mutable std::vector<double> density_layer_charge_workspace_;             ///< One layer extracted for the Poisson solve.
+    mutable std::vector<double> density_layer_potential_workspace_;          ///< One layer returned by the Poisson solve.
 
     size_t device_grid_width_ = 0;             ///< Width of the placement region.
     size_t device_grid_height_ = 0;            ///< Height of the placement region.
@@ -353,7 +404,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     float ap_timing_tradeoff_ = 0.f;           ///< User timing tradeoff value.
     float effective_timing_tradeoff_ = 0.f;    ///< Timing tradeoff after design-size adaptation.
     double io_chain_net_cohesion_weight_ = 2.; ///< Weight multiplier for direct I/O-chain AP nets.
-    double pack_pattern_cohesion_weight_ = 0.; ///< Weight of the optional pack-pattern chain cohesion objective.
+    double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (env-overridable).
+    double io_pair_net_weight_ = 8.;           ///< Extra smooth-WL multiplier for detected output-driver↔outpad nets.
+    double io_pair_attraction_weight_ = 8.;    ///< I/O pair spring strength (legacy per-block constant; kernel uses 2x for n=2 pack math).
 
     /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
     ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
@@ -375,4 +428,5 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        favor of the seed on sparse Titanium designs, at up to 11x the
     ///        lp-b2b global-placement runtime).
     bool sparse_seed_ = false;
+    double warmstart_seed_overflow_ = 0.; ///< Physical overflow of the dense warm-start seed used by the QoR gate.
 };

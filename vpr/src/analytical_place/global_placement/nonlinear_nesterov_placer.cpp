@@ -7,7 +7,6 @@
 
 #include "nonlinear_nesterov_placer.h"
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -16,6 +15,7 @@
 #include <limits>
 #include <optional>
 #include <random>
+#include <string>
 #include <vector>
 #include <unsupported/Eigen/FFT>
 #include "PreClusterTimingManager.h"
@@ -32,7 +32,6 @@
 #include "place_delay_model.h"
 #include "prepack.h"
 #include "primitive_vector.h"
-#include "router_lookahead_constants.h"
 #include "timing_info.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -220,13 +219,36 @@ constexpr double kBoundaryNetCohesionMinSeedHpwlFraction = 0.25;
 constexpr double kIoChainNetCohesionWeight = 2.0;
 
 /**
- * @brief Long-chain pack-pattern cohesion weight for direct I/O-chain designs.
+ * @brief Long-chain pack-pattern affinity-spring weight for I/O-chain designs.
  *
- * Gated to designs with long direct I/O-chain nets, where LU_Network needs extra
- * AP-to-APPack chain coherence. Designs without that pathology disable the term
- * after boundary/I/O-chain classification.
+ * Wave-A probing showed that ungated pack springs worsen general QoR, while the
+ * 0.02 gated policy (enabled only on designs with long direct I/O-chain nets)
+ * is required for the LU_Network win.
  */
 constexpr double kPackPatternCohesionWeight = 0.02;
+
+/**
+ * @brief Smooth-WL multiplier for direct output-driver↔outpad pair nets (always on).
+ *
+ * Generic I/O-chain cohesion only flags nets that are already long in the
+ * warm-start seed, so most pad-drive pairs never get that boost. This stronger
+ * multiplier applies to every detected 2-pin output-driver↔outpad AP net so GP keeps
+ * those endpoints local (LU_Network: eliminates cross-edge pack/place splits).
+ */
+constexpr double kIoPairNetWeight = 8.0;
+
+/**
+ * @brief Quadratic attraction weight for direct output-driver↔outpad pairs (always on).
+ *
+ * Soft spring only — no post-epoch snap. Winning LU_Network setting from the
+ * 2026-07-11 probe (post-route CPD 7.72 ns, cross-edge 0).
+ */
+constexpr double kIoPairAttractionWeight = 8.0;
+
+/**
+ * @brief Maximum AP-HPWL regression admitted by timing-guard checkpoint selection.
+ */
+constexpr double kCheckpointHpwlGuard = 0.05;
 
 /**
  * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
@@ -290,6 +312,11 @@ constexpr size_t kSparseSeedMaxEpochs = 1;
  * The probe refines wirelength near an already density-feasible seed, so it does
  * not need the full inner budget; each iteration still pays the per-resource
  * Poisson solves, which dominate sparse-seed epoch cost once fillers are gone.
+ *
+ * Do not shrink this below 12 to save runtime: under the timing-guard checkpoint
+ * selector the probe result is a real selection candidate, and a titanium A/B
+ * showed a 4-iteration probe loses the mandelbrot checkpoint that routes 10%
+ * better (5.676 ns vs 6.331 ns).
  */
 constexpr size_t kSparseSeedProbeIterations = 12;
 
@@ -384,50 +411,71 @@ constexpr double kEpsilon = 1e-9;
 constexpr double kDeviceBoundaryEpsilon = 1e-6;
 
 /**
+ * @brief Reusable storage for the separable DCT Poisson solve.
+ *
+ * Density is evaluated many times by the line search. Keeping the FFT object and
+ * its temporary arrays alive avoids rebuilding FFT state and repeatedly
+ * allocating the same device-sized buffers without changing the transform or
+ * arithmetic order.
+ */
+struct PoissonDctWorkspace {
+    Eigen::FFT<double> fft;
+    std::vector<double> extension;
+    std::vector<std::complex<double>> fft_spectrum;
+    std::vector<double> row_transformed;
+    std::vector<double> row;
+    std::vector<double> transformed_row;
+    std::vector<double> poisson_spectrum;
+    std::vector<double> column;
+    std::vector<double> transformed_column;
+    std::vector<double> column_inverse;
+};
+
+/**
  * @brief Apply an unnormalized DCT-II through an even FFT extension.
  */
-void dct_ii(const std::vector<double>& input, std::vector<double>& output) {
+void dct_ii(const std::vector<double>& input,
+            std::vector<double>& output,
+            PoissonDctWorkspace& workspace) {
     VTR_ASSERT(!input.empty());
 
     size_t size = input.size();
-    std::vector<double> extension(2 * size);
+    workspace.extension.resize(2 * size);
     for (size_t idx = 0; idx < size; idx++) {
-        extension[idx] = input[idx];
-        extension[2 * size - 1 - idx] = input[idx];
+        workspace.extension[idx] = input[idx];
+        workspace.extension[2 * size - 1 - idx] = input[idx];
     }
 
-    Eigen::FFT<double> fft;
-    std::vector<std::complex<double>> spectrum;
-    fft.fwd(spectrum, extension);
+    workspace.fft.fwd(workspace.fft_spectrum, workspace.extension);
 
     output.resize(size);
     for (size_t frequency = 0; frequency < size; frequency++) {
         double angle = kPi * frequency / (2. * size);
         std::complex<double> phase(std::cos(angle), -std::sin(angle));
-        output[frequency] = 0.5 * std::real(phase * spectrum[frequency]);
+        output[frequency] = 0.5 * std::real(phase * workspace.fft_spectrum[frequency]);
     }
 }
 
 /**
  * @brief Apply the inverse of the unnormalized DCT-II through an inverse FFT.
  */
-void idct_iii(const std::vector<double>& input, std::vector<double>& output) {
+void idct_iii(const std::vector<double>& input,
+              std::vector<double>& output,
+              PoissonDctWorkspace& workspace) {
     VTR_ASSERT(!input.empty());
 
     size_t size = input.size();
-    std::vector<std::complex<double>> spectrum(2 * size, 0.);
+    workspace.fft_spectrum.assign(2 * size, 0.);
     for (size_t frequency = 0; frequency < size; frequency++) {
         double angle = kPi * frequency / (2. * size);
         std::complex<double> phase(std::cos(angle), std::sin(angle));
-        spectrum[frequency] = 2. * phase * input[frequency];
+        workspace.fft_spectrum[frequency] = 2. * phase * input[frequency];
         if (frequency != 0)
-            spectrum[2 * size - frequency] = std::conj(spectrum[frequency]);
+            workspace.fft_spectrum[2 * size - frequency] = std::conj(workspace.fft_spectrum[frequency]);
     }
 
-    Eigen::FFT<double> fft;
-    std::vector<double> extension;
-    fft.inv(extension, spectrum);
-    output.assign(extension.begin(), extension.begin() + size);
+    workspace.fft.inv(workspace.extension, workspace.fft_spectrum);
+    output.assign(workspace.extension.begin(), workspace.extension.begin() + size);
 }
 
 /**
@@ -445,26 +493,25 @@ void solve_neumann_poisson_dct(const std::vector<double>& charge,
                                std::vector<double>& potential) {
     VTR_ASSERT(charge.size() == width * height);
 
-    std::vector<double> row_transformed(width * height);
-    std::vector<double> row(width);
-    std::vector<double> transformed_row;
+    thread_local PoissonDctWorkspace workspace;
+    workspace.row_transformed.resize(width * height);
+    workspace.row.resize(width);
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++)
-            row[x] = charge[y * width + x];
-        dct_ii(row, transformed_row);
+            workspace.row[x] = charge[y * width + x];
+        dct_ii(workspace.row, workspace.transformed_row, workspace);
         for (size_t x = 0; x < width; x++)
-            row_transformed[y * width + x] = transformed_row[x];
+            workspace.row_transformed[y * width + x] = workspace.transformed_row[x];
     }
 
-    std::vector<double> spectrum(width * height);
-    std::vector<double> column(height);
-    std::vector<double> transformed_column;
+    workspace.poisson_spectrum.resize(width * height);
+    workspace.column.resize(height);
     for (size_t x = 0; x < width; x++) {
         for (size_t y = 0; y < height; y++)
-            column[y] = row_transformed[y * width + x];
-        dct_ii(column, transformed_column);
+            workspace.column[y] = workspace.row_transformed[y * width + x];
+        dct_ii(workspace.column, workspace.transformed_column, workspace);
         for (size_t y = 0; y < height; y++)
-            spectrum[y * width + x] = transformed_column[y];
+            workspace.poisson_spectrum[y * width + x] = workspace.transformed_column[y];
     }
 
     for (size_t y_frequency = 0; y_frequency < height; y_frequency++) {
@@ -473,26 +520,26 @@ void solve_neumann_poisson_dct(const std::vector<double>& charge,
             size_t idx = y_frequency * width + x_frequency;
             double x_eigenvalue = 2. * (1. - std::cos(kPi * x_frequency / width));
             double eigenvalue = x_eigenvalue + y_eigenvalue;
-            spectrum[idx] = eigenvalue > kEpsilon ? spectrum[idx] / eigenvalue : 0.;
+            workspace.poisson_spectrum[idx] = eigenvalue > kEpsilon ? workspace.poisson_spectrum[idx] / eigenvalue : 0.;
         }
     }
 
-    std::vector<double> column_inverse(width * height);
+    workspace.column_inverse.resize(width * height);
     for (size_t x = 0; x < width; x++) {
         for (size_t y = 0; y < height; y++)
-            column[y] = spectrum[y * width + x];
-        idct_iii(column, transformed_column);
+            workspace.column[y] = workspace.poisson_spectrum[y * width + x];
+        idct_iii(workspace.column, workspace.transformed_column, workspace);
         for (size_t y = 0; y < height; y++)
-            column_inverse[y * width + x] = transformed_column[y];
+            workspace.column_inverse[y * width + x] = workspace.transformed_column[y];
     }
 
     potential.resize(width * height);
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++)
-            row[x] = column_inverse[y * width + x];
-        idct_iii(row, transformed_row);
+            workspace.row[x] = workspace.column_inverse[y * width + x];
+        idct_iii(workspace.row, workspace.transformed_row, workspace);
         for (size_t x = 0; x < width; x++)
-            potential[y * width + x] = transformed_row[x];
+            potential[y * width + x] = workspace.transformed_row[x];
     }
 }
 
@@ -606,7 +653,9 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , device_grid_num_layers_(device_grid.get_num_layers())
     , ap_timing_tradeoff_(ap_timing_tradeoff)
     , io_chain_net_cohesion_weight_(kIoChainNetCohesionWeight)
-    , pack_pattern_cohesion_weight_(kPackPatternCohesionWeight) {
+    , pack_pattern_cohesion_weight_(kPackPatternCohesionWeight)
+    , io_pair_net_weight_(kIoPairNetWeight)
+    , io_pair_attraction_weight_(kIoPairAttractionWeight) {
     vtr::ScopedStartFinishTimer nonlinear_nesterov_placer_building_timer("Constructing Nonlinear Nesterov Global Placer");
 
     density_manager_ = std::make_shared<FlatPlacementDensityManager>(ap_netlist_,
@@ -621,7 +670,11 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     if (generate_mass_report)
         density_manager_->generate_mass_report();
 
-    initialize_pack_pattern_cohesion_groups_(prepacker);
+    affinity_groups_.clear();
+    num_io_pair_affinity_groups_ = 0;
+    num_pack_pattern_affinity_groups_ = 0;
+    initialize_pack_pattern_affinity_groups_(prepacker);
+    initialize_io_pair_affinity_groups_();
 
     partial_legalizer_ = make_partial_legalizer(partial_legalizer_type,
                                                 ap_netlist_,
@@ -660,14 +713,21 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     warmstart_max_iters_ = std::max(kWarmStartMaxIters, warmstart_iters_);
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g io_chain_cohesion=%g pack_pattern_cohesion=%g groups=%zu.\n",
+        size_t affinity_blocks = 0;
+        for (const AffinityGroup& group : affinity_groups_)
+            affinity_blocks += group.blocks.size();
+        VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g io_chain_cohesion=%g.\n",
                 moveable_blocks_.size(),
                 pins_per_moveable_block,
                 warmstart_iters_,
                 effective_timing_tradeoff_,
-                io_chain_net_cohesion_weight_,
+                io_chain_net_cohesion_weight_);
+        VTR_LOG("Nonlinear Nesterov affinity springs: io_pairs=%zu weight=%g; pack_groups=%zu weight=%g; blocks=%zu.\n",
+                num_io_pair_affinity_groups_,
+                io_pair_attraction_weight_,
+                num_pack_pattern_affinity_groups_,
                 pack_pattern_cohesion_weight_,
-                pack_pattern_cohesion_groups_.size());
+                affinity_blocks);
     }
 
     // Build the B2B warm-start solver. Constructed here because the DeviceGrid is
@@ -715,6 +775,7 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     bool reached_sparse_deepening = false;
     bool stopped_by_convergence = false;
     double sparse_seed_overflow = 0.;
+    warmstart_seed_overflow_ = 0.;
 
     while (solver_iteration < max_cycles) {
         warmstart_solver_->solve(solver_iteration, p_placement);
@@ -750,6 +811,7 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
             project_placement_(p_placement);
             std::vector<PrimitiveVectorDim> dims = density_manager_->get_used_dims_mask().get_non_zero_dims();
             sparse_seed_overflow = compute_physical_overflow_ratio_(p_placement, dims);
+            warmstart_seed_overflow_ = sparse_seed_overflow;
             sparse_checked = true;
             if (sparse_seed_overflow < kSparseGateOverflow) {
                 sparse_seed_ = true;
@@ -809,12 +871,12 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     if (log_verbosity_ >= 1)
         VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
     update_boundary_net_flags_(density_dimensions, seed);
-    if (pack_pattern_cohesion_weight_ > 0. && num_io_chain_cohesion_nets_ == 0) {
+    if (pack_pattern_cohesion_weight_ > 0.
+        && num_io_chain_cohesion_nets_ == 0) {
         if (log_verbosity_ >= 1) {
-            VTR_LOG("Nonlinear Nesterov pack-pattern cohesion disabled: no long direct I/O-chain nets were found.\n");
+            VTR_LOG("Nonlinear Nesterov pack-pattern affinity disabled: no long direct I/O-chain nets were found.\n");
         }
         pack_pattern_cohesion_weight_ = 0.;
-        pack_pattern_cohesion_groups_.clear();
     }
 
     PartialPlacement result = optimize_from_seed_(seed, density_dimensions, device_span, convergence_displacement);
@@ -874,7 +936,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                 density_dimensions,
                                 sparse_seed_ ? 0. : kDynamicFillerWhitespaceFraction,
                                 current_fillers);
-
     // The initial density weight is derived from the seed's smooth wirelength, which
     // is net-weighted, so start from unit weights before the epoch loop refreshes
     // timing at epoch 0.
@@ -911,19 +972,32 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     }
 
     double legalizer_feedback_proximity_weight = 0.;
-    PartialPlacement best_placement(ap_netlist_);
-    best_placement.block_x_locs = current.block_x_locs;
-    best_placement.block_y_locs = current.block_y_locs;
-    best_placement.block_layer_nums = current.block_layer_nums;
-    best_placement.block_sub_tiles = current.block_sub_tiles;
-    double best_hpwl = current.get_hpwl(ap_netlist_);
-    int best_source = -1; // -1 = warm-start seed, otherwise epoch index.
+    const double checkpoint_hpwl_guard = kCheckpointHpwlGuard;
+    std::vector<PartialPlacement> checkpoints;
+    std::vector<double> checkpoint_hpwls;
+    std::vector<double> checkpoint_cpds_ns;
+    std::vector<int> checkpoint_sources;
+    checkpoints.push_back(seed);
+    checkpoint_hpwls.push_back(seed.get_hpwl(ap_netlist_));
+    {
+        vtr::Timer timing_update_timer;
+        checkpoint_cpds_ns.push_back(evaluate_checkpoint_cpd_(seed));
+        timing_update_time_sec += timing_update_timer.elapsed_sec();
+    }
+    checkpoint_sources.push_back(-1); // -1 = warm-start seed, otherwise epoch index.
     PartialPlacement legal_anchor(ap_netlist_);
     PartialPlacement y_placement(ap_netlist_);
     PartialPlacement next(ap_netlist_);
     PartialPlacement before_legalization(ap_netlist_);
     FillerState y_fillers;
     FillerState next_fillers;
+    auto apply_continuation_schedule = [&](double schedule) {
+        current_gamma_fraction_ = kGammaStartFraction
+                                  * std::pow(kGammaEndFraction / kGammaStartFraction, schedule);
+        double density_weight_scale = std::pow(kFinalDensityWeightMultiplier, schedule);
+        for (double& multiplier : density_multipliers)
+            multiplier = initial_density_weight * density_weight_scale;
+    };
 
     // Short continuation loop. Density weights are fixed within an epoch and
     // follow a simple geometric ramp between epochs; timing net weights and the
@@ -935,29 +1009,20 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // early epochs spread on an easy landscape and later epochs recover real
         // wirelength. The sparse-seed probe refines wirelength near an already
         // spread seed, so it goes straight to the sharp end of the schedule.
-        if (sparse_seed_) {
+        if (sparse_seed_)
             current_gamma_fraction_ = kGammaEndFraction;
-        } else if (kNesterovEpochs > 1) {
-            double schedule = static_cast<double>(epoch) / static_cast<double>(kNesterovEpochs - 1);
-            current_gamma_fraction_ = kGammaStartFraction
-                                      * std::pow(kGammaEndFraction / kGammaStartFraction, schedule);
-        }
-        if (effective_timing_tradeoff_ != 0.f && place_delay_model_) {
-            vtr::Timer timing_update_timer;
-            update_timing_info_with_partial_placement(pre_cluster_timing_manager_,
-                                                      *place_delay_model_,
-                                                      current,
-                                                      ap_netlist_);
-            timing_update_time_sec += timing_update_timer.elapsed_sec();
-        }
+        // Checkpoint timing is evaluated for the seed and after every partial
+        // legalization, so the timing manager already describes `current` here.
         update_timing_net_weights_();
-        double density_weight_scale = 1.0;
-        if (!sparse_seed_ && num_epochs > 1) {
-            double schedule = static_cast<double>(epoch) / static_cast<double>(num_epochs - 1);
-            density_weight_scale = std::pow(kFinalDensityWeightMultiplier, schedule);
+        if (sparse_seed_) {
+            for (double& multiplier : density_multipliers)
+                multiplier = initial_density_weight;
+        } else {
+            double schedule = num_epochs > 1
+                                  ? static_cast<double>(epoch) / static_cast<double>(num_epochs - 1)
+                                  : 0.;
+            apply_continuation_schedule(schedule);
         }
-        for (double& multiplier : density_multipliers)
-            multiplier = initial_density_weight * density_weight_scale;
         compute_preconditioner_(density_dimensions, density_multipliers);
 
         legal_anchor.block_x_locs = current.block_x_locs;
@@ -1118,15 +1183,13 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                                 kProximityWeightPerLegalizationTile * mean_displacement));
 
         double post_legalization_hpwl = current.get_hpwl(ap_netlist_);
-        if (post_legalization_hpwl < best_hpwl) {
-            best_hpwl = post_legalization_hpwl;
-            best_placement.block_x_locs = current.block_x_locs;
-            best_placement.block_y_locs = current.block_y_locs;
-            best_placement.block_layer_nums = current.block_layer_nums;
-            best_placement.block_sub_tiles = current.block_sub_tiles;
-            best_source = static_cast<int>(epoch);
-        }
-
+        vtr::Timer timing_update_timer;
+        double post_legalization_cpd_ns = evaluate_checkpoint_cpd_(current);
+        timing_update_time_sec += timing_update_timer.elapsed_sec();
+        checkpoints.push_back(current);
+        checkpoint_hpwls.push_back(post_legalization_hpwl);
+        checkpoint_cpds_ns.push_back(post_legalization_cpd_ns);
+        checkpoint_sources.push_back(static_cast<int>(epoch));
         VTR_LOG("%5zu  %8.2f  %9.2f  %9.4f  %10.4f  %7.4f  %8.4f  %9.4f  %8.4f  %10.4g  %7.4g\n",
                 epoch,
                 before_legalization.get_hpwl(ap_netlist_),
@@ -1156,6 +1219,41 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         }
     }
 
+    // Timing-guard selection: among checkpoints within checkpoint_hpwl_guard of
+    // the minimum HPWL, take the one with the lowest estimated CPD; fall back to
+    // minimum HPWL if no checkpoint has a finite timing estimate.
+    size_t best_checkpoint_idx = 0;
+    double minimum_checkpoint_hpwl = *std::min_element(checkpoint_hpwls.begin(), checkpoint_hpwls.end());
+    double hpwl_limit = minimum_checkpoint_hpwl * (1. + checkpoint_hpwl_guard);
+    double best_cpd_ns = std::numeric_limits<double>::infinity();
+    bool found_finite_timing_checkpoint = false;
+    for (size_t checkpoint_idx = 0; checkpoint_idx < checkpoints.size(); checkpoint_idx++) {
+        if (checkpoint_hpwls[checkpoint_idx] <= hpwl_limit
+            && std::isfinite(checkpoint_cpds_ns[checkpoint_idx])
+            && checkpoint_cpds_ns[checkpoint_idx] < best_cpd_ns) {
+            best_checkpoint_idx = checkpoint_idx;
+            best_cpd_ns = checkpoint_cpds_ns[checkpoint_idx];
+            found_finite_timing_checkpoint = true;
+        }
+    }
+    if (!found_finite_timing_checkpoint) {
+        best_checkpoint_idx = std::distance(checkpoint_hpwls.begin(),
+                                            std::min_element(checkpoint_hpwls.begin(), checkpoint_hpwls.end()));
+    }
+
+    for (size_t checkpoint_idx = 0; checkpoint_idx < checkpoints.size(); checkpoint_idx++) {
+        const char* source_name = checkpoint_sources[checkpoint_idx] < 0 ? "seed" : "epoch";
+        VTR_LOG("Nonlinear Nesterov checkpoint: source=%s index=%d hpwl=%g estimated_cpd_ns=%g selected=%s.\n",
+                source_name,
+                checkpoint_sources[checkpoint_idx],
+                checkpoint_hpwls[checkpoint_idx],
+                checkpoint_cpds_ns[checkpoint_idx],
+                checkpoint_idx == best_checkpoint_idx ? "yes" : "no");
+    }
+
+    const double best_hpwl = checkpoint_hpwls[best_checkpoint_idx];
+    const int best_source = checkpoint_sources[best_checkpoint_idx];
+
     VTR_LOG("Nonlinear Nesterov Global Placer Statistics:\n");
     VTR_LOG("\tFinal-epoch placement HPWL after partial legalization: %g\n", current.get_hpwl(ap_netlist_));
     if (best_source < 0)
@@ -1169,7 +1267,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     }
     partial_legalizer_->print_statistics();
 
-    return best_placement;
+    return checkpoints[best_checkpoint_idx];
 }
 
 NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_objective_(const PartialPlacement& p_placement,
@@ -1198,9 +1296,9 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
                                                   legal_anchor->get(),
                                                   proximity_weight,
                                                   grad);
-    value.pack_pattern_cohesion = add_pack_pattern_cohesion_gradient_(p_placement, grad);
+    value.affinity_spring = add_affinity_spring_gradient_(p_placement, grad);
     value.total = value.wirelength
-                  + pack_pattern_cohesion_weight_ * value.pack_pattern_cohesion
+                  + value.affinity_spring
                   + proximity_weight * value.proximity;
     for (size_t dim_idx = 0; dim_idx < value.density_energies.size(); dim_idx++) {
         double energy = value.density_energies[dim_idx];
@@ -1219,6 +1317,15 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
     double gamma = std::max(1.0, std::max<double>(device_grid_width_, device_grid_height_) * current_gamma_fraction_);
     double smooth_wirelength = 0.; // "smooth" == differentiable here: the WA surrogate above.
 
+    // Reuse pin-coordinate and WA-weight buffers across nets. The net traversal
+    // and arithmetic order are unchanged; only per-net heap churn is removed.
+    std::vector<double> x_locs;
+    std::vector<double> y_locs;
+    std::vector<double> positive_x_weights;
+    std::vector<double> negative_x_weights;
+    std::vector<double> positive_y_weights;
+    std::vector<double> negative_y_weights;
+
     for (APNetId net_id : ap_netlist_.nets()) {
         if (ap_netlist_.net_is_ignored(net_id))
             continue;
@@ -1228,10 +1335,12 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
             continue;
 
         double net_weight = net_weights_[net_id];
-        std::vector<double> x_locs;
-        std::vector<double> y_locs;
-        x_locs.reserve(num_pins);
-        y_locs.reserve(num_pins);
+        x_locs.clear();
+        y_locs.clear();
+        if (x_locs.capacity() < num_pins) {
+            x_locs.reserve(num_pins);
+            y_locs.reserve(num_pins);
+        }
 
         for (APPinId pin_id : ap_netlist_.net_pins(net_id)) {
             APBlockId blk_id = ap_netlist_.pin_block(pin_id);
@@ -1239,10 +1348,6 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
             y_locs.push_back(p_placement.block_y_locs[blk_id]);
         }
 
-        std::vector<double> positive_x_weights;
-        std::vector<double> negative_x_weights;
-        std::vector<double> positive_y_weights;
-        std::vector<double> negative_y_weights;
         OptionalWeightVectorRef positive_x_weights_ref;
         OptionalWeightVectorRef negative_x_weights_ref;
         OptionalWeightVectorRef positive_y_weights_ref;
@@ -1304,14 +1409,9 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
             AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
             VTR_ASSERT_SAFE(atom_net_id.is_valid());
 
-            // Linearly interpolate, via effective_timing_tradeoff_, between unit weight
-            // (tradeoff -> 0: minimize wirelength only, every net weighted equally) and
-            // criticality weight (tradeoff -> 1: weight == crit, so nets on the most
-            // timing-critical paths pull harder on the wirelength term than slack nets
-            // do). Same interpolation the B2B/QP-Hybrid warm-start solver uses to update
-            // its own net weights (see QPHybridSolver's net-weight update in
-            // analytical_solver.cpp), so both stages agree on how timing trades off
-            // against wirelength.
+            // Interpolate between unit weight and net criticality. Connection-
+            // specific timing pressure is handled separately so one critical
+            // sink does not increase the hypernet weight of every sink.
             double crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
             weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
         }
@@ -1324,6 +1424,10 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
             weight *= kBoundaryNetCohesionWeight;
         if (static_cast<size_t>(net_id) < io_chain_cohesion_nets_.size() && io_chain_cohesion_nets_[net_id])
             weight *= io_chain_net_cohesion_weight_;
+        // Boost all direct output-driver↔outpad nets (not just seed-long I/O-chain ones).
+        if (static_cast<size_t>(net_id) < io_pair_locality_nets_.size() && io_pair_locality_nets_[net_id]) {
+            weight *= io_pair_net_weight_;
+        }
         net_weights_[net_id] = weight;
 
         total_weight += weight;
@@ -1344,8 +1448,7 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
     }
 }
 
-void NonlinearNesterovPlacer::initialize_pack_pattern_cohesion_groups_(const Prepacker& prepacker) {
-    pack_pattern_cohesion_groups_.clear();
+void NonlinearNesterovPlacer::initialize_pack_pattern_affinity_groups_(const Prepacker& prepacker) {
     if (pack_pattern_cohesion_weight_ == 0.)
         return;
 
@@ -1371,51 +1474,189 @@ void NonlinearNesterovPlacer::initialize_pack_pattern_cohesion_groups_(const Pre
     for (std::vector<APBlockId>& group : chain_groups) {
         if (group.size() < 2)
             continue;
-        pack_pattern_cohesion_groups_.push_back(std::move(group));
-    }
-
-    if (log_verbosity_ >= 1) {
-        size_t grouped_blocks = 0;
-        for (const std::vector<APBlockId>& group : pack_pattern_cohesion_groups_)
-            grouped_blocks += group.size();
-        VTR_LOG("Nonlinear Nesterov pack-pattern cohesion: %zu long-chain groups, %zu grouped AP blocks, weight=%g.\n",
-                pack_pattern_cohesion_groups_.size(),
-                grouped_blocks,
-                pack_pattern_cohesion_weight_);
+        AffinityGroup affinity;
+        affinity.kind = e_affinity_kind::PACK_PATTERN;
+        affinity.blocks = std::move(group);
+        affinity_groups_.push_back(std::move(affinity));
+        num_pack_pattern_affinity_groups_++;
     }
 }
 
-double NonlinearNesterovPlacer::add_pack_pattern_cohesion_gradient_(const PartialPlacement& p_placement,
-                                                                    std::optional<std::reference_wrapper<PlacementGradient>> grad) const {
-    if (pack_pattern_cohesion_weight_ == 0. || pack_pattern_cohesion_groups_.empty())
+void NonlinearNesterovPlacer::initialize_io_pair_affinity_groups_() {
+    io_pair_locality_nets_.resize(ap_netlist_.nets().size(), false);
+    std::fill(io_pair_locality_nets_.begin(), io_pair_locality_nets_.end(), false);
+    if (io_pair_attraction_weight_ == 0. && io_pair_net_weight_ == 1.)
+        return;
+
+    for (APNetId net_id : ap_netlist_.nets()) {
+        if (ap_netlist_.net_is_ignored(net_id))
+            continue;
+        if (ap_netlist_.net_pins(net_id).size() != 2)
+            continue;
+
+        AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
+        if (!atom_net_id.is_valid())
+            continue;
+        if (atom_netlist_.net_sinks(atom_net_id).size() != 1)
+            continue;
+
+        AtomBlockId driver_blk = atom_netlist_.net_driver_block(atom_net_id);
+        AtomPinId sink_pin = *atom_netlist_.net_sinks(atom_net_id).begin();
+        AtomBlockId sink_blk = atom_netlist_.pin_block(sink_pin);
+        if (!driver_blk.is_valid() || !sink_blk.is_valid())
+            continue;
+        if (atom_netlist_.block_type(driver_blk) != AtomBlockType::BLOCK)
+            continue;
+        // Treat only combinational blocks immediately upstream of the primary
+        // output as output drivers. This excludes registered I/O primitives
+        // without relying on architecture-specific logical-model names.
+        if (!atom_netlist_.block_clock_pins(driver_blk).empty())
+            continue;
+        if (atom_netlist_.block_type(sink_blk) != AtomBlockType::OUTPAD)
+            continue;
+
+        APBlockId driver_ap_blk = APBlockId::INVALID();
+        APBlockId outpad_ap_blk = APBlockId::INVALID();
+        for (APPinId pin_id : ap_netlist_.net_pins(net_id)) {
+            AtomPinId atom_pin_id = ap_netlist_.pin_atom_pin(pin_id);
+            if (!atom_pin_id.is_valid())
+                continue;
+            AtomBlockId atom_blk = atom_netlist_.pin_block(atom_pin_id);
+            APBlockId ap_blk = ap_netlist_.pin_block(pin_id);
+            if (atom_blk == driver_blk)
+                driver_ap_blk = ap_blk;
+            if (atom_blk == sink_blk)
+                outpad_ap_blk = ap_blk;
+        }
+        if (!driver_ap_blk.is_valid() || !outpad_ap_blk.is_valid())
+            continue;
+        // Already co-located in one AP block — nothing for GP to reunite.
+        if (driver_ap_blk == outpad_ap_blk)
+            continue;
+
+        io_pair_locality_nets_[net_id] = true;
+        if (io_pair_attraction_weight_ == 0.)
+            continue;
+
+        AffinityGroup affinity;
+        affinity.kind = e_affinity_kind::IO_PAIR;
+        affinity.blocks = {driver_ap_blk, outpad_ap_blk};
+        affinity_groups_.push_back(std::move(affinity));
+        num_io_pair_affinity_groups_++;
+    }
+}
+
+double NonlinearNesterovPlacer::evaluate_checkpoint_cpd_(const PartialPlacement& placement) {
+    if (!pre_cluster_timing_manager_.is_valid() || !place_delay_model_)
+        return std::numeric_limits<double>::infinity();
+
+    update_timing_info_with_partial_placement(pre_cluster_timing_manager_,
+                                              *place_delay_model_,
+                                              placement,
+                                              ap_netlist_);
+    return pre_cluster_timing_manager_.get_timing_info().least_slack_critical_path().delay() * 1e9;
+}
+
+double NonlinearNesterovPlacer::affinity_kernel_weight_(e_affinity_kind kind) const {
+    switch (kind) {
+        case e_affinity_kind::IO_PAIR:
+            // Legacy I/O pair spring used grad += W * dx (no 1/n). Pack-math kernel
+            // uses W_kernel / n; for n=2 set W_kernel = 2W to preserve strength.
+            return 2. * io_pair_attraction_weight_;
+        case e_affinity_kind::PACK_PATTERN:
+            return pack_pattern_cohesion_weight_;
+        default:
+            VTR_ASSERT_MSG(false, "Unhandled affinity kind");
+            return 0.;
+    }
+}
+
+double NonlinearNesterovPlacer::add_affinity_spring_gradient_(const PartialPlacement& p_placement,
+                                                              std::optional<std::reference_wrapper<PlacementGradient>> grad) const {
+    if (affinity_groups_.empty())
         return 0.;
 
-    double cohesion_penalty = 0.;
-    for (const std::vector<APBlockId>& group : pack_pattern_cohesion_groups_) {
-        VTR_ASSERT_SAFE(group.size() >= 2);
+    double weighted_penalty = 0.;
+    for (const AffinityGroup& group : affinity_groups_) {
+        VTR_ASSERT_SAFE(group.blocks.size() >= 2);
+        double weight = affinity_kernel_weight_(group.kind);
+        if (weight == 0.)
+            continue;
+
         double centroid_x = 0.;
         double centroid_y = 0.;
-        for (APBlockId blk_id : group) {
+        for (APBlockId blk_id : group.blocks) {
             centroid_x += p_placement.block_x_locs[blk_id];
             centroid_y += p_placement.block_y_locs[blk_id];
         }
 
-        double inv_group_size = 1. / static_cast<double>(group.size());
+        double inv_group_size = 1. / static_cast<double>(group.blocks.size());
         centroid_x *= inv_group_size;
         centroid_y *= inv_group_size;
 
-        for (APBlockId blk_id : group) {
+        double unweighted = 0.;
+        for (APBlockId blk_id : group.blocks) {
             double dx = p_placement.block_x_locs[blk_id] - centroid_x;
             double dy = p_placement.block_y_locs[blk_id] - centroid_y;
-            cohesion_penalty += 0.5 * inv_group_size * (dx * dx + dy * dy);
+            unweighted += 0.5 * inv_group_size * (dx * dx + dy * dy);
             if (grad && block_is_moveable_(blk_id)) {
-                grad->get().dx[blk_id] += pack_pattern_cohesion_weight_ * inv_group_size * dx;
-                grad->get().dy[blk_id] += pack_pattern_cohesion_weight_ * inv_group_size * dy;
+                grad->get().dx[blk_id] += weight * inv_group_size * dx;
+                grad->get().dy[blk_id] += weight * inv_group_size * dy;
+            }
+        }
+        weighted_penalty += weight * unweighted;
+    }
+    return weighted_penalty;
+}
+
+void NonlinearNesterovPlacer::initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const {
+    size_t width = device_grid_width_;
+    size_t height = device_grid_height_;
+    size_t num_layers = device_grid_num_layers_;
+    size_t num_sites = width * height * num_layers;
+    if (cached_target_capacity_.size() == dimensions.size()
+        && (dimensions.empty() || cached_target_capacity_.front().size() == num_sites))
+        return;
+
+    cached_target_capacity_.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
+    cached_target_norm_floor_.assign(dimensions.size(), kEpsilon);
+    cached_residual_charge_scale_.assign(dimensions.size(), 1.0);
+
+    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
+    auto site_index = [width, height](size_t layer, size_t x, size_t y) {
+        return (layer * height + y) * width + x;
+    };
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t x = 0; x < width; x++) {
+            for (size_t y = 0; y < height; y++) {
+                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+                const vtr::Rect<double>& region = bins.bin_region(bin_id);
+                double bin_area = std::max(1.0, region.width() * region.height());
+                double target_density = density_manager_->get_bin_target_density(bin_id);
+                size_t idx = site_index(layer, x, y);
+                for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+                    cached_target_capacity_[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
+                                                             * target_density / bin_area;
+                }
             }
         }
     }
 
-    return cohesion_penalty;
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double target_sum = 0.;
+        size_t target_sites = 0;
+        for (double target : cached_target_capacity_[dim_idx]) {
+            if (target <= kEpsilon)
+                continue;
+            target_sum += target;
+            target_sites++;
+        }
+        if (target_sites != 0) {
+            cached_target_norm_floor_[dim_idx] = std::max(kEpsilon,
+                                                          kDensityTargetFloorFraction * target_sum / target_sites);
+            cached_residual_charge_scale_[dim_idx] = std::max(kEpsilon, target_sum / target_sites);
+        }
+    }
 }
 
 double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_placement,
@@ -1436,7 +1677,6 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     double overflow_area = 0.;
     double total_deposited_mass = 0.;
 
-    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
     std::vector<PrimitiveVectorDim> dimensions = density_manager_->get_used_dims_mask().get_non_zero_dims();
     if (dimensions.empty())
         return 0.;
@@ -1447,20 +1687,46 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     size_t height = device_grid_height_;
     size_t num_layers = device_grid_num_layers_;
     size_t num_sites = width * height * num_layers;
+    initialize_density_target_cache_(dimensions);
     auto site_index = [width, height](size_t layer, size_t x, size_t y) {
         return (layer * height + y) * width + x;
     };
 
-    // Arrays with grid information of the density objective via electrostatic formulation
-    // All are recreated & zero-filled at every density-objective evaluation
+    // Arrays with grid information of the density objective via electrostatic formulation.
+    // Reuse their storage across the many objective/line-search evaluations.
     // Utilization: deposited block mass at each site
     // Target Capacity: available target mass/capacity at each site
     // Potential: solved electrostatic potential
     // field_x, field_y: components of the potential gradient
-    std::vector<std::vector<double>> utilization(dimensions.size(), std::vector<double>(num_sites, 0.));
-    std::vector<std::vector<double>> potential(dimensions.size(), std::vector<double>(num_sites, 0.));
-    std::vector<std::vector<double>> field_x(dimensions.size(), std::vector<double>(num_sites, 0.));
-    std::vector<std::vector<double>> field_y(dimensions.size(), std::vector<double>(num_sites, 0.));
+    auto reset_grid_workspace = [num_sites, &dimensions](std::vector<std::vector<double>>& workspace) {
+        if (workspace.size() != dimensions.size()
+            || (!workspace.empty() && workspace.front().size() != num_sites)) {
+            workspace.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
+            return;
+        }
+        for (std::vector<double>& dimension_values : workspace)
+            std::fill(dimension_values.begin(), dimension_values.end(), 0.);
+    };
+    // Potential only needs a size check, not a zero-fill: every dimension in
+    // `dimensions` comes from get_used_dims_mask().get_non_zero_dims(), so
+    // active_sites > 0 below and the Poisson write-back unconditionally
+    // overwrites every site for every dimension before potential is read.
+    auto resize_grid_workspace = [num_sites, &dimensions](std::vector<std::vector<double>>& workspace) {
+        if (workspace.size() != dimensions.size()
+            || (!workspace.empty() && workspace.front().size() != num_sites)) {
+            workspace.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
+        }
+    };
+    reset_grid_workspace(density_utilization_workspace_);
+    resize_grid_workspace(density_potential_workspace_);
+    if (grad) {
+        reset_grid_workspace(density_field_x_workspace_);
+        reset_grid_workspace(density_field_y_workspace_);
+    }
+    std::vector<std::vector<double>>& utilization = density_utilization_workspace_;
+    std::vector<std::vector<double>>& potential = density_potential_workspace_;
+    std::vector<std::vector<double>>& field_x = density_field_x_workspace_;
+    std::vector<std::vector<double>>& field_y = density_field_y_workspace_;
 
     // The target capacity spread over each bin's footprint, and the per-dimension
     // normalization constants derived from it, depend only on the (fixed) device
@@ -1477,45 +1743,6 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     //    different natural capacity magnitudes on a heterogeneous grid (e.g. an
     //    abundant LUT dimension vs. a sparse DSP/BRAM one); this keeps their charge
     //    contributions comparably scaled before they feed the shared Poisson solve.
-    if (cached_target_capacity_.size() != dimensions.size()
-        || (!dimensions.empty() && cached_target_capacity_.front().size() != num_sites)) {
-        cached_target_capacity_.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
-        cached_target_norm_floor_.assign(dimensions.size(), kEpsilon);
-        cached_residual_charge_scale_.assign(dimensions.size(), 1.0);
-        // Spread each bin's capacity over its footprint, so hard blocks do not
-        // create an artificially large electrostatic charge at their root tile.
-        for (size_t layer = 0; layer < num_layers; layer++) {
-            for (size_t x = 0; x < width; x++) {
-                for (size_t y = 0; y < height; y++) {
-                    FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-                    const vtr::Rect<double>& region = bins.bin_region(bin_id);
-                    double bin_area = std::max(1.0, region.width() * region.height());
-                    double target_density = density_manager_->get_bin_target_density(bin_id);
-                    size_t idx = site_index(layer, x, y);
-                    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-                        PrimitiveVectorDim dim = dimensions[dim_idx];
-                        cached_target_capacity_[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim)
-                                                                * target_density / bin_area;
-                    }
-                }
-            }
-        }
-        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-            double target_sum = 0.;
-            size_t target_sites = 0;
-            for (double target : cached_target_capacity_[dim_idx]) {
-                if (target <= kEpsilon)
-                    continue;
-                target_sum += target;
-                target_sites++;
-            }
-            if (target_sites != 0) {
-                cached_target_norm_floor_[dim_idx] = std::max(kEpsilon,
-                                                              kDensityTargetFloorFraction * target_sum / target_sites);
-                cached_residual_charge_scale_[dim_idx] = std::max(kEpsilon, target_sum / target_sites);
-            }
-        }
-    }
     const std::vector<std::vector<double>>& target_capacity = cached_target_capacity_;
     const std::vector<double>& target_norm_floor = cached_target_norm_floor_;
     const std::vector<double>& residual_charge_scale = cached_residual_charge_scale_;
@@ -1644,8 +1871,14 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     // over-amplifying fractional-capacity sites on heterogeneous FPGA grids.
     double density_energy = 0.;
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        std::vector<double> charge(num_sites, 0.);
-        std::vector<bool> active(num_sites, false);
+        if (density_charge_workspace_.size() != num_sites)
+            density_charge_workspace_.resize(num_sites);
+        if (density_active_workspace_.size() != num_sites)
+            density_active_workspace_.resize(num_sites);
+        std::fill(density_charge_workspace_.begin(), density_charge_workspace_.end(), 0.);
+        std::fill(density_active_workspace_.begin(), density_active_workspace_.end(), false);
+        std::vector<double>& charge = density_charge_workspace_;
+        std::vector<bool>& active = density_active_workspace_;
         double charge_sum = 0.;
         size_t active_sites = 0;
 
@@ -1686,8 +1919,9 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
 
         // Solve each layer on the full rectangular field domain. Capacity-free
         // sites carry zero charge but remain part of the Neumann PDE domain.
-        std::vector<double> layer_charge(width * height);
-        std::vector<double> layer_potential;
+        density_layer_charge_workspace_.resize(width * height);
+        std::vector<double>& layer_charge = density_layer_charge_workspace_;
+        std::vector<double>& layer_potential = density_layer_potential_workspace_;
         for (size_t layer = 0; layer < num_layers; layer++) {
             for (size_t x = 0; x < width; x++) {
                 for (size_t y = 0; y < height; y++)
@@ -1703,6 +1937,11 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         for (size_t idx = 0; idx < num_sites; idx++)
             density_energies[dim_idx] += 0.5 * charge[idx] * potential[dim_idx][idx];
         density_energy += density_energies[dim_idx];
+
+        // Value-only line-search evaluations need the potential energy but never
+        // consume its spatial gradient.
+        if (!grad)
+            continue;
 
         // Computes field, i.e. potential gradient by central differences
         // site_index computes (layer * height + y) * width + x;
@@ -1759,6 +1998,9 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
             wy[1] = 0.;
         }
 
+        // Accumulate density-only force so along-rim damping does not touch WL/proximity.
+        double density_dx = 0.;
+        double density_dy = 0.;
         for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
             double mass = block_mass.get_dim_val(dimensions[dim_idx]);
             if (mass == 0.)
@@ -1781,9 +2023,12 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                                          ? mass / residual_charge_scale[dim_idx]
                                          : mass / std::max(local_target, target_norm_floor[dim_idx]);
             double coefficient = density_multipliers[dim_idx];
-            grad->get().dx[blk_id] += coefficient * normalized_mass * local_field_x;
-            grad->get().dy[blk_id] += coefficient * normalized_mass * local_field_y;
+            density_dx += coefficient * normalized_mass * local_field_x;
+            density_dy += coefficient * normalized_mass * local_field_y;
         }
+
+        grad->get().dx[blk_id] += density_dx;
+        grad->get().dy[blk_id] += density_dy;
     }
 
     if (filler_grad) {
@@ -1853,13 +2098,14 @@ void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement
     fillers.layer.assign(dimensions.size(), {});
     filler_unit_mass_.assign(dimensions.size(), 0.);
     filler_precond_.assign(dimensions.size(), kPreconditionFloor);
+    if (!dimensions.empty())
+        initialize_density_target_cache_(dimensions);
     if (dimensions.empty() || whitespace_fraction <= 0.) {
         if (log_verbosity_ >= 1)
             VTR_LOG("Nonlinear Nesterov dynamic fillers: disabled (whitespace fraction %g).\n", whitespace_fraction);
         return;
     }
 
-    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
     size_t width = device_grid_width_;
     size_t height = device_grid_height_;
     size_t num_layers = device_grid_num_layers_;
@@ -1868,24 +2114,14 @@ void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement
         return (layer * height + y) * width + x;
     };
 
-    std::vector<std::vector<double>> target_capacity(dimensions.size(), std::vector<double>(num_sites, 0.));
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        for (size_t x = 0; x < width; x++) {
-            for (size_t y = 0; y < height; y++) {
-                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-                const vtr::Rect<double>& region = bins.bin_region(bin_id);
-                double bin_area = std::max(1.0, region.width() * region.height());
-                double target_density = density_manager_->get_bin_target_density(bin_id);
-                size_t idx = site_index(layer, x, y);
-                for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-                    target_capacity[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
-                                                    * target_density / bin_area;
-                }
-            }
-        }
-    }
+    const std::vector<std::vector<double>>& target_capacity = cached_target_capacity_;
 
-    std::vector<std::vector<double>> utilization(dimensions.size(), std::vector<double>(num_sites, 0.));
+    density_utilization_workspace_.resize(dimensions.size());
+    for (std::vector<double>& dim_utilization : density_utilization_workspace_) {
+        dim_utilization.resize(num_sites);
+        std::fill(dim_utilization.begin(), dim_utilization.end(), 0.);
+    }
+    std::vector<std::vector<double>>& utilization = density_utilization_workspace_;
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         if (block_mass.is_zero())
@@ -2167,14 +2403,13 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
         }
     }
 
-    if (pack_pattern_cohesion_weight_ > 0.) {
-        for (const std::vector<APBlockId>& group : pack_pattern_cohesion_groups_) {
-            if (group.empty())
-                continue;
-            double curvature = pack_pattern_cohesion_weight_ / static_cast<double>(group.size());
-            for (APBlockId blk_id : group)
-                block_precond_[blk_id] += curvature;
-        }
+    for (const AffinityGroup& group : affinity_groups_) {
+        double weight = affinity_kernel_weight_(group.kind);
+        if (weight == 0. || group.blocks.empty())
+            continue;
+        double curvature = weight / static_cast<double>(group.blocks.size());
+        for (APBlockId blk_id : group.blocks)
+            block_precond_[blk_id] += curvature;
     }
 
     // Density Hessian diagonal: the per-dimension density weight scales the block
@@ -2219,6 +2454,7 @@ double NonlinearNesterovPlacer::compute_physical_overflow_ratio_(const PartialPl
     size_t height = device_grid_height_;
     size_t num_layers = std::max<size_t>(1, device_grid_num_layers_);
     size_t num_sites = width * height * num_layers;
+    initialize_density_target_cache_(dimensions);
     auto site_index = [width, height](size_t layer, size_t x, size_t y) {
         return (layer * height + y) * width + x;
     };
@@ -2226,7 +2462,12 @@ double NonlinearNesterovPlacer::compute_physical_overflow_ratio_(const PartialPl
     // Bin only physical block mass (no fillers) at the floor tile. Nearest-tile
     // deposition concentrates mass relative to the bilinear density field, so this
     // slightly over-reads overflow -- a conservative (stop-later) bias for the stop.
-    std::vector<std::vector<double>> utilization(dimensions.size(), std::vector<double>(num_sites, 0.));
+    density_utilization_workspace_.resize(dimensions.size());
+    for (std::vector<double>& dim_utilization : density_utilization_workspace_) {
+        dim_utilization.resize(num_sites);
+        std::fill(dim_utilization.begin(), dim_utilization.end(), 0.);
+    }
+    std::vector<std::vector<double>>& utilization = density_utilization_workspace_;
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         if (block_mass.is_zero())
@@ -2244,20 +2485,14 @@ double NonlinearNesterovPlacer::compute_physical_overflow_ratio_(const PartialPl
         }
     }
 
-    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
     double total_overflow_mass = 0.;
     double total_capacity = 0.;
     for (size_t layer = 0; layer < num_layers; layer++) {
         for (size_t x = 0; x < width; x++) {
             for (size_t y = 0; y < height; y++) {
-                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-                const vtr::Rect<double>& region = bins.bin_region(bin_id);
-                double bin_area = std::max(1.0, region.width() * region.height());
-                double target_density = density_manager_->get_bin_target_density(bin_id);
                 size_t idx = site_index(layer, x, y);
                 for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-                    double capacity = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
-                                      * target_density / bin_area;
+                    double capacity = cached_target_capacity_[dim_idx][idx];
                     total_capacity += capacity;
                     double overflow = utilization[dim_idx][idx] - capacity;
                     if (overflow > 0.)
