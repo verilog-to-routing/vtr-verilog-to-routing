@@ -306,6 +306,8 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const auto driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
     int num_net_sinks = static_cast<int>(atom_ctx.netlist().net_sinks(net_id).size());
+    bool all_sinks_in_cur_cluster_computed = false;
+    bool all_sinks_in_cur_cluster = false;
 
     // starting from the parent pb of the input primitive go up in the hierarchy till the root block
     for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
@@ -340,14 +342,16 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
              */
 
             //Check if all the net sinks are, in fact, inside this cluster
-            bool all_sinks_in_cur_cluster = true;
-            LegalizationClusterId driver_cluster = atom_cluster[driver_blk_id];
-            for (auto pin_id : atom_ctx.netlist().net_sinks(net_id)) {
-                auto sink_blk_id = atom_ctx.netlist().pin_block(pin_id);
-                if (atom_cluster[sink_blk_id] != driver_cluster) {
-                    all_sinks_in_cur_cluster = false;
-                    break;
+            if (!all_sinks_in_cur_cluster_computed) {
+                const LegalizationClusterId driver_cluster = atom_cluster[driver_blk_id];
+                all_sinks_in_cur_cluster = true;
+                for (auto pin_id : atom_ctx.netlist().net_sinks(net_id)) {
+                    if (atom_cluster[atom_ctx.netlist().pin_block(pin_id)] != driver_cluster) {
+                        all_sinks_in_cur_cluster = false;
+                        break;
+                    }
                 }
+                all_sinks_in_cur_cluster_computed = true;
             }
 
             if (all_sinks_in_cur_cluster) {
