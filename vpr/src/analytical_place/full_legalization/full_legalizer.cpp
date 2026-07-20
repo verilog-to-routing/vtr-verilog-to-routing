@@ -21,6 +21,7 @@
 #include "show_setup.h"
 #include "ap_flow_enums.h"
 #include "ap_netlist_fwd.h"
+#include "ap_netlist_utils.h"
 #include "blk_loc_registry.h"
 #include "check_netlist.h"
 #include "cluster_legalizer.h"
@@ -1150,24 +1151,12 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
 void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
                                         const PlaceMacros& place_macros,
                                         const PartialPlacement& p_placement) {
-    // PLACING:
-    // Create a lookup from the AtomBlockId to the APBlockId
-    vtr::vector<AtomBlockId, APBlockId> atom_to_ap_block(atom_netlist_.blocks().size());
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        for (PackMoleculeId blk_mol_id : ap_netlist_.block_molecules(ap_blk_id)) {
-            const t_pack_molecule& blk_mol = prepacker_.get_molecule(blk_mol_id);
-            for (AtomBlockId atom_blk_id : blk_mol.atom_block_ids) {
-                // See issue #2791, some of the atom_block_ids may be invalid. They
-                // can safely be ignored.
-                if (!atom_blk_id.is_valid())
-                    continue;
-                // Ensure that this block is not in any other AP block. That would
-                // be weird.
-                VTR_ASSERT(!atom_to_ap_block[atom_blk_id].is_valid());
-                atom_to_ap_block[atom_blk_id] = ap_blk_id;
-            }
-        }
-    }
+
+    // Create a lookup from atom block id to AP block id.
+    AtomBlockAPBlockLookup atom_block_ap_block_lookup(atom_netlist_, ap_netlist_, prepacker_);
+    unsigned num_errors = atom_block_ap_block_lookup.verify(ap_netlist_, prepacker_);
+    VTR_ASSERT(num_errors == 0);
+
     // Move the clusters to where they want to be first.
     // TODO: The fixed clusters should probably be moved first for legality
     //       reasons.
@@ -1181,7 +1170,7 @@ void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
         const std::unordered_set<AtomBlockId>& atoms_in_cluster = g_vpr_ctx.clustering().atoms_lookup[cluster_blk_id];
         VTR_ASSERT(atoms_in_cluster.size() > 0);
         AtomBlockId first_atom_blk = *atoms_in_cluster.begin();
-        APBlockId first_ap_blk = atom_to_ap_block[first_atom_blk];
+        APBlockId first_ap_blk = atom_block_ap_block_lookup.get_ap_block(first_atom_blk);
         size_t blk_sub_tile = p_placement.block_sub_tiles[first_ap_blk];
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(first_ap_blk);
         bool placed = ap_cluster_placer.place_cluster(cluster_blk_id, tile_loc, blk_sub_tile);
