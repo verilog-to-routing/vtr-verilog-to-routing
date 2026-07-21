@@ -65,12 +65,11 @@ void draw_x(float x, float y, float size, ezgl::renderer* g);
  * as the sqaure's side. We specify the star by creating a std::vector of ezgl::point2d where the point2ds are
  * the contiguous star vertices.
  *
- * @param x Center x coordinate in world units.
- * @param y Center y coordinate in world units.
+ * @param star_coords 2D star coordinates in world units.
  * @param size Distance from the star center to the previously mentioned traingle's tip, in pixels.
  * @param g Renderer used to perform drawing.
  */
-void draw_star_fixed_px(double x, double y, double size, ezgl::renderer* g);
+void draw_star_fixed_px(ezgl::point2d star_coords, double size, ezgl::renderer* g);
 
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *

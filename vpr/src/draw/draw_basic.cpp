@@ -571,7 +571,10 @@ void draw_x(float x, float y, float size, ezgl::renderer* g) {
     g->draw_line({x - size, y - size}, {x + size, y + size});
 }
 
-void draw_star_fixed_px(double x, double y, double size, ezgl::renderer* g) {
+void draw_star_fixed_px(ezgl::point2d star_coords, double size, ezgl::renderer* g) {
+    double x = star_coords.x;
+    double y = star_coords.y;
+
     // The star size is defined in pixels, but drawing is performed in world coordinates.
     double size_in_world = size / get_pixels_per_world_unit(g);
 
