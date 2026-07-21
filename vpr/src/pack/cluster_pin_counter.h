@@ -132,20 +132,6 @@ class ClusterPinCounter {
 
   private:
     /**
-     * @brief One non-primitive ancestor of a primitive pb, bundled with a
-     *        direct pointer to its PerPbState and its precomputed depth.
-     *
-     * Built once per atom in compute_and_mark_lookahead_pins_used and reused
-     * across every pin of that atom, so per_pb_state_ is queried once per
-     * (atom, ancestor) instead of once per (pin, ancestor).
-     */
-    struct PbAncestor {
-        const t_pb* pb;
-        PerPbState* pin_state;
-        int depth;
-    };
-
-    /**
      * @brief Determine if pins of speculatively packed pb are legal.
      */
     void compute_and_mark_lookahead_pins_used(AtomBlockId blk_id,
@@ -164,7 +150,6 @@ class ClusterPinCounter {
     void compute_and_mark_lookahead_pins_used_for_input_pin(const t_pb_graph_pin* pb_graph_pin,
                                                             const t_pb* primitive_pb,
                                                             AtomNetId net_id,
-                                                            const std::vector<PbAncestor>& ancestors,
                                                             const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                                             const AtomPBBimap& atom_to_pb);
 
@@ -180,7 +165,6 @@ class ClusterPinCounter {
     void compute_and_mark_lookahead_pins_used_for_output_pin(const t_pb_graph_pin* pb_graph_pin,
                                                             const t_pb* primitive_pb,
                                                             AtomNetId net_id,
-                                                            const std::vector<PbAncestor>& ancestors,
                                                             const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                                             const AtomPBBimap& atom_to_pb);
 

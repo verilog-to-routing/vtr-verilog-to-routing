@@ -241,7 +241,6 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_input_pin(const t_pb_graph_pin* pb_graph_pin,
                                                                            const t_pb* primitive_pb,
                                                                            AtomNetId net_id,
-                                                                           const std::vector<PbAncestor>& ancestors,
                                                                            const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                                                            const AtomPBBimap& atom_to_pb) {
     VTR_ASSERT(pb_graph_pin->port->type == IN_PORT);
@@ -265,14 +264,9 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_input_pin(const
         output_pb_graph_pin = get_driver_pb_graph_pin(driver_pb, driver_pin_id);
     }
 
-    // Iterate the cached ancestor chain (primitive->parent up to root). Each
-    // entry carries a direct PerPbState* and precomputed depth, so we mark
-    // via anc.pin_state->... instead of paying a per_pb_state_.find via
-    // mark_lookahead_input per iteration.
-    for (const PbAncestor& anc : ancestors) {
-        const t_pb* cur_pb = anc.pb;
-        PerPbState& state = *anc.pin_state;
-        const int depth = anc.depth;
+    // starting from the parent pb of the input primitive go up in the hierarchy till the root block
+    for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
+        const auto depth = cur_pb->pb_graph_node->pb_type->depth;
         const auto pin_class = pb_graph_pin->parent_pin_class[depth];
         VTR_ASSERT(pin_class != UNDEFINED);
 
@@ -298,12 +292,7 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_input_pin(const
         // Must use an input pin to connect the driver to the input pin of the given primitive, either the
         // driver atom is not contained in the cluster or is contained but cannot reach the primitive pin
         if (!is_reachable) {
-            // Deduped push into state.lookahead_input_pin_class_nets[pin_class]
-            // — inline of mark_lookahead_input to skip its hashmap find.
-            auto& class_nets = state.lookahead_input_pin_class_nets[pin_class];
-            if (std::find(class_nets.begin(), class_nets.end(), net_id) == class_nets.end()) {
-                class_nets.push_back(net_id);
-            }
+            mark_lookahead_input(cur_pb, pin_class, net_id);
         }
     }
 }
@@ -311,10 +300,8 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_input_pin(const
 void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(const t_pb_graph_pin* pb_graph_pin,
                                                                             const t_pb* primitive_pb,
                                                                             AtomNetId net_id,
-                                                                            const std::vector<PbAncestor>& ancestors,
                                                                             const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                                                             const AtomPBBimap& atom_to_pb) {
-    (void)primitive_pb;   // unused now that we iterate the cached ancestor list
     VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const auto driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
@@ -328,11 +315,9 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
     // the reachability walk at those shallower ancestors.
     bool confirmed_absorbed = false;
 
-    // Iterate the cached ancestor chain instead of walking parent_pb;
-    // marks go direct to anc.pin_state without a per_pb_state_.find.
-    for (const PbAncestor& anc : ancestors) {
-        PerPbState& state = *anc.pin_state;
-        const int depth = anc.depth;
+    // starting from the parent pb of the input primitive go up in the hierarchy till the root block
+    for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
+        const auto depth = cur_pb->pb_graph_node->pb_type->depth;
         const auto pin_class = pb_graph_pin->parent_pin_class[depth];
         VTR_ASSERT(pin_class != UNDEFINED);
 
@@ -397,8 +382,7 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
 
         if (net_exits_cluster) {
             /* This output must exit this cluster */
-            // Inline of mark_lookahead_output to skip its hashmap find.
-            state.lookahead_output_pin_class_nets[pin_class].push_back(net_id);
+            mark_lookahead_output(cur_pb, pin_class, net_id);
         }
     }
 }
@@ -409,19 +393,8 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used(
     const AtomPBBimap& atom_to_pb) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
-    const t_pb* primitive_pb = atom_to_pb.atom_pb(blk_id);
-    VTR_ASSERT(primitive_pb != nullptr);
-
-    // Walk the parent chain once per atom, caching (pb, PerPbState*, depth)
-    // for every non-primitive ancestor. Each pin of this atom would
-    // otherwise redo the parent walk and pay a per_pb_state_.find per
-    // ancestor visit; caching amortizes those lookups across all pins.
-    std::vector<PbAncestor> ancestors;
-    for (const t_pb* p = primitive_pb->parent_pb; p; p = p->parent_pb) {
-        auto it = per_pb_state_.find(p);
-        VTR_ASSERT(it != per_pb_state_.end());
-        ancestors.push_back({p, &it->second, p->pb_graph_node->pb_type->depth});
-    }
+    const t_pb* cur_pb = atom_to_pb.atom_pb(blk_id);
+    VTR_ASSERT(cur_pb != nullptr);
 
     /* Walk through inputs, outputs, and clocks marking pins off of the same class */
     for (auto pin_id : atom_netlist.block_pins(blk_id)) {
@@ -430,9 +403,9 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used(
         const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
 
         if (pb_graph_pin->port->type == IN_PORT) {
-            compute_and_mark_lookahead_pins_used_for_input_pin(pb_graph_pin, primitive_pb, net_id, ancestors, atom_cluster, atom_to_pb);
+            compute_and_mark_lookahead_pins_used_for_input_pin(pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
         } else {
-            compute_and_mark_lookahead_pins_used_for_output_pin(pb_graph_pin, primitive_pb, net_id, ancestors, atom_cluster, atom_to_pb);
+            compute_and_mark_lookahead_pins_used_for_output_pin(pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
         }
     }
 }
