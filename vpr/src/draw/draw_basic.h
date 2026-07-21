@@ -59,17 +59,15 @@ void draw_x(float x, float y, float size, ezgl::renderer* g);
 /**
  * @brief Draws a filled star centered at the specified world-coordinate location with a fixed pixel size.
  *
- * The star size is converted from pixels to world units using the current renderer zoom level, so it
- * appears with a consistent on-screen size while zooming. The star can be imagined as a square with
- * four triangles (tip pointing outwards) affixed to its four sides. The triangle's base has the same length
- * as the sqaure's side. We specify the star by creating a std::vector of ezgl::point2d where the point2ds are
- * the contiguous star vertices.
+ * The star size is in screen (pixel) coordinates, so it appears the same at any zoom level.
+ * The star can be imagined as a square with four triangles (tip pointing outwards) affixed to its four sides.
+ * The triangle's base has the same length as the sqaure's side.
  *
  * @param star_coords 2D star coordinates in world units.
- * @param size Distance from the star center to the previously mentioned traingle's tip, in pixels.
+ * @param size_in_pixels Distance from the star center to the previously mentioned traingle's tip, in pixels.
  * @param g Renderer used to perform drawing.
  */
-void draw_star_fixed_px(ezgl::point2d star_coords, double size, ezgl::renderer* g);
+void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::renderer* g);
 
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
