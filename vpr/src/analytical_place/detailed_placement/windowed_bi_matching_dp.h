@@ -29,20 +29,7 @@ class WindowedBiMatchingDetailedPlacer : public DetailedPlacer {
     NetCostHandler net_cost_handler_;
     int window_size_ = 2;        ///< Size of local placement window, forced to 2 temporarily
     int placement_layer_ = 0;    ///< Device layer processed by placer, forced to 0 temporarily
-    int placement_sub_tile_ = 0; ///< Sub-tile processed by placer.
-
-    /**
-     * @brief Creates a placement location from grid coordinates.
-     */
-    t_pl_loc make_pl_loc(int x, int y, int sub_tile, int layer);
-
-    /**
-     * @brief Returns true if  physical tile at given grid location is not empty.
-     */
-    bool is_non_empty_physical_tile(const DeviceGrid& grid,
-                                    int x,
-                                    int y,
-                                    int layer);
+    int placement_sub_tile_ = 0; ///< Sub-tile processed by placer, forced to 0 temporarily
 
     /**
      * @brief Returns true if every physical tile in the 2x2 window is not empty.
