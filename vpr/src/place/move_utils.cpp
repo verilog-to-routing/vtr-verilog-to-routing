@@ -502,6 +502,16 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
         return false;
     }
 
+    // The to location must be the root of a tile: blocks are always placed at
+    // tile roots. A non-root position can be proposed for a member of a macro
+    // whose members sit on tiles of different sizes (e.g. a relative placement
+    // macro anchoring a CLB to a multi-row RAM tile): shifting the macro can
+    // land a member mid-tile even though the moved block itself is at a root.
+    if (device_ctx.grid.get_width_offset({to.x, to.y, to.layer}) != 0
+        || device_ctx.grid.get_height_offset({to.x, to.y, to.layer}) != 0) {
+        return false;
+    }
+
     auto physical_tile = device_ctx.grid.get_physical_type(t_physical_tile_loc(to.x, to.y, to.layer));
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
 
