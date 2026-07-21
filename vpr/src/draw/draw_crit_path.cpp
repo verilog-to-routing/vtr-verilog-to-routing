@@ -41,7 +41,7 @@ static constexpr double EDGE_OFFSET_FRACTION = 0.1;
 static constexpr int MAX_EDGE_OFFSET_UNIT = 40;
 
 /**
- * @brief The size of the stars drawn at the beginning and end of the critical path, in pixels.
+ * @brief The size of the star drawn at the beginning and end of the critical path, in pixels.
  * 
  * This value refers to the distance in pixels from the star center to the star tip.
  */
