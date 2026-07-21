@@ -578,9 +578,9 @@ void draw_star_fixed_px(ezgl::point2d star_coords, double size, ezgl::renderer* 
     // The star size is defined in pixels, but drawing is performed in world coordinates.
     double size_in_world = size / get_pixels_per_world_unit(g);
 
-    // Check the function declaration for what "sqaure" refers to if not clear.
+    // Check the function declaration for what "square" refers to if not clear.
     // To replicate a star shape, we let the distance from the star center to the square side
-    // (eqivalent to half the length of the square side) be one fourth of the star size.
+    // (equivalent to half the length of the square side) be one fourth of the star size.
     double half_sqr_len = size_in_world / 4.0;
 
     // The star vertices, all calculated based on the star center.

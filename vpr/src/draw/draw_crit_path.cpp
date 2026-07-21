@@ -296,7 +296,7 @@ static bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::re
 static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_info, ezgl::renderer* g);
 
 /**
- * @brief Draws a meesage that shows the total delay time tied to the given critical path index.
+ * @brief Draws a message that shows the total delay time tied to the given critical path index.
  *
  * @param final_label_drawing_info Per-edge delay label drawing information whose delay values are summed.
  * @param crit_path_idx Index of the critical path (0 when only one path is chosen).
@@ -631,7 +631,7 @@ static void calculate_and_draw_delay(const tatum::TimingPath& path, ezgl::render
     // Draw non-hidden delay labels on the timing edge flylines.
     draw_labels(final_label_drawing_info, g);
 
-    // Draw a meesage that shows the total delay time at the screen's top right corner.
+    // Draw a message that shows the total delay time at the screen's top right corner.
     draw_total_delay(final_label_drawing_info, 0, g);
 }
 

@@ -168,7 +168,7 @@ struct t_draw_layer_display {
 };
 
 /**
- * @brief The drawing coordinates of the beginning and end of a flyline segemnt.
+ * @brief The drawing coordinates of the beginning and end of a flyline segment.
  * 
  * Includes a special boolean to tell if the two points are mapped to the same drawing coordinates.
  */
