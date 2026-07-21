@@ -308,12 +308,22 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
     int num_net_sinks = static_cast<int>(atom_ctx.netlist().net_sinks(net_id).size());
     bool all_sinks_in_cur_cluster_computed = false;
     bool all_sinks_in_cur_cluster = false;
+    // Once net_sinks_reachable_in_cluster confirms absorption at some depth
+    // D during this loop, the same net is absorbed at every shallower depth
+    // (root direction) too: connectable-pin sets grow as depth shrinks, so
+    // any sink reachable at D is reachable at every d < D. Short-circuit
+    // the reachability walk at those shallower ancestors.
+    bool confirmed_absorbed = false;
 
     // starting from the parent pb of the input primitive go up in the hierarchy till the root block
     for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
         const auto depth = cur_pb->pb_graph_node->pb_type->depth;
         const auto pin_class = pb_graph_pin->parent_pin_class[depth];
         VTR_ASSERT(pin_class != UNDEFINED);
+
+        if (confirmed_absorbed) {
+            continue;
+        }
 
         /*
          * Determine if this net (which is driven from within this cluster) leaves this cluster
@@ -364,6 +374,7 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
                  *       net is forever absorbed, no point in rechecking every time */
                 if (net_sinks_reachable_in_cluster(pb_graph_pin, depth, net_id, atom_to_pb)) {
                     //All the sinks are reachable inside the cluster
+                    confirmed_absorbed = true;
                     net_exits_cluster = false;
                 }
             }
