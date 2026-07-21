@@ -1773,7 +1773,7 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
         // Assign transparency from cross layer option if connection is between different layers.
         element_visibility.alpha = draw_state->cross_layer_display.alpha;
     } else {
-        if (!draw_state->draw_layer_display[sink_layer].visible || !draw_state->draw_layer_display[src_layer].visible) {
+        if (!draw_state->draw_layer_display[src_layer].visible) {
             element_visibility.visible = false; /* Don't Draw */
         }
         // Assign transparency of current layer.
