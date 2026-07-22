@@ -13,6 +13,7 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
+#include "ap_netlist_utils.h"
 
 /**
  * @brief A scaling factor applied to DEFAULT_ARROW_SIZE.
@@ -108,7 +109,7 @@ struct t_label_drawing_info {
     /// @brief Length of the associated timing-edge flyline in world units.
     double edge_length = 0.0;
 
-    /// @brief Label rotation angle (the same for the corresponding flyline) in degrees.
+    /// @brief Label rotation angle (the same as the associated flyline) in degrees.
     double rotation_angle = 0.0;
 
     /// @brief A virtual label bounding box centered on the timing edge before offsets are applied.
@@ -195,7 +196,7 @@ static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::rende
  * Calculated results are stored in a vector and returned by the function.
  *
  * @param path Timing path whose consecutive node pairs define the timing edges to place delay labels.
- * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
+ * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
  * Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
  * @param g Pointer to the ezgl::renderer object. Used to get the dimension of the delay label string in pixels.
  * @return Per-edge delay label drawing information that does not yet tell where each label will be eventually drawn.
@@ -213,7 +214,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
  * Chosen bounding box positions are updated to basic_label_drawing_info.
  * 
  * @param basic_label_drawing_info Basic per-edge label drawing information needed to perform the decluttering algorithm.
- * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
+ * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
  * Passed to helper calculate_label_bbox_from_relative_pos() which uses values in pixels to offset label bounding boxes.
  * @return Per-edge delay label drawing information that has each label's updated position.
  */
@@ -221,7 +222,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
                                                                              double pixels_per_world_unit);
 
 /**
- * @brief Hides labels that still overlap after calculate_least_cluttered_label_pos() has tried all candidates.
+ * @brief Hides labels that still overlap with others after calculate_least_cluttered_label_pos() has tried all candidates.
  * 
  * Hiding is performed in sequence from start to end (of the crit. path). Hiding one label may free up space for other labels
  * and so they no longer need to be hidden.
@@ -237,7 +238,7 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
  *
  * @param label_to_update Single Label drawing information whose bounding box waits to be updated.
  * @param label_relative_pos Candidate position to apply, relative to the timing-edge flyline.
- * @param pixels_per_world_unit The ratio between pixels and world units spanning the screen width.
+ * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
  * Used to convert values specified in pixels that determine the offset of the label bounding box.
  * @return The rectangle associated with label_to_update. Used to replace the current bounding box .
  */
@@ -254,7 +255,7 @@ static bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::re
 /**
  * @brief Draws all non-hidden delay labels in styles specified by the per-edge label drawing information.
  *
- * @param final_label_drawing_info The fully updated per-edge label drawing information queried for drawing.
+ * @param final_label_drawing_info Fully updated per-edge label drawing information queried for drawing.
  * @param g Pointer to the ezgl::renderer object.
  */
 static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_info, ezgl::renderer* g);
@@ -262,14 +263,73 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
 /**
  * @brief Calculates the color tied to a timing edge index deterministically. For long critical paths there may be repeats.
  * 
- * @param edge_idx The timing edge index.
+ * @param edge_idx Timing edge index.
  * @return Color associated with the provided timing edge.
  */
 static ezgl::color get_color_from_edge_idx(std::size_t edge_idx);
 
+/**
+ * @brief Returns the visibility and transparency for a timing flyline.
+ *
+ * In analytical placement, timing flylines are drawn between AP blocks, which reside at continuous layer levels
+ * and are treated as always visible and opaque. Therefore, the same convention is applied to flylines.
+ * In regular placement/routing views, visibility follows the discrete device-layer display settings.
+ *
+ * @param src_node Source timing node of the flyline.
+ * @param sink_node Sink timing node of the flyline.
+ * @return Visibility and transparency used to draw the flyline.
+ */
+static t_draw_layer_display get_timing_flyline_visibility(tatum::NodeId src_node, tatum::NodeId sink_node);
+
+/**
+ * @brief Returns the layer number of a timing path node.
+ * 
+ * @param node Timing node to locate.
+ * 
+ * @return layer number the node is situated on.
+ */
+static int get_tnode_layer_num(tatum::NodeId node);
+
+/**
+ * @brief Returns the drawing coordinates for a timing edge flyline.
+ *
+ * In analytical placement, timing nodes are mapped to the centers of their associated AP blocks.
+ * If both endpoints collapse to the same AP block, there is no meaningful flyline to draw, so this returns std::nullopt.
+ *
+ * In non-AP drawing stages, timing nodes are mapped to their atom pin drawing coordinates.
+ *
+ * @param src_node Source timing node of the timing edge.
+ * @param sink_node Sink timing node of the timing edge.
+ *
+ * @return The start/end drawing coordinates for the flyline, or std::nullopt if the flyline is skipped.
+ */
+static std::optional<t_flyline_draw_coords> get_timing_flyline_draw_coords(tatum::NodeId src_node,
+                                                                           tatum::NodeId sink_node);
+
+/**
+ * @brief Returns the drawing coordinates of a timing node.
+ *
+ * The timing node is mapped to its corresponding atom pin, then to the normal
+ * atom pin drawing location.
+ *
+ * @param node Timing node to locate.
+ * @return Drawing coordinates of the node.
+ */
+static ezgl::point2d get_tnode_draw_coord(tatum::NodeId node);
+
+/**
+ * @brief Returns the AP block containing a timing node.
+ *
+ * The timing node is mapped to its atom pin, then to the atom block containing
+ * that pin, and finally to the AP block containing that atom block.
+ *
+ * @param node Timing node to look up.
+ * @return AP block containing the timing node's atom block.
+ */
+static APBlockId get_tnode_ap_block(tatum::NodeId node);
+
 void draw_crit_path(ezgl::renderer* g) {
     tatum::TimingPathCollector path_collector;
-
     t_draw_state* draw_state = get_draw_state_vars();
     const TimingContext& timing_ctx = g_vpr_ctx.timing();
 
@@ -302,7 +362,8 @@ void draw_crit_path(ezgl::renderer* g) {
         }
     }
 
-    if (draw_state->show_crit_path_routing) {
+    // Ensure that we are already in the routing stage.
+    if (draw_state->show_crit_path_routing && draw_state->pic_on_screen == e_pic_type::ROUTING) {
         draw_routed_timing_connections(path, g);
     }
 }
@@ -322,17 +383,26 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
             // any routing which corresponds to the edge.
             ezgl::color color = get_color_from_edge_idx(edge_idx);
 
-            // Check visibility of layers where source and sink reside.
-            int src_block_layer = get_timing_path_node_layer_num(prev_node);
-            int sink_block_layer = get_timing_path_node_layer_num(node);
-            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+            // Check visibility of layers where source (prev_node) and sink (node) reside.
+            t_draw_layer_display flyline_visibility = get_timing_flyline_visibility(prev_node, node);
 
             if (flyline_visibility.visible) {
                 g->set_color(color, flyline_visibility.alpha);
-                ezgl::point2d start = tnode_draw_coord(prev_node);
-                ezgl::point2d end = tnode_draw_coord(node);
+
+                // Calculate the drawing coordinates for the flyline.
+                // Use optional because the function may return std::nullopt (see the function definition for reasons),
+                // in which case the label is skipped.
+                std::optional<t_flyline_draw_coords> timing_flyline_draw_coords = get_timing_flyline_draw_coords(prev_node, node);
+                if (!timing_flyline_draw_coords) {
+                    edge_idx++;
+                    prev_node = node;
+                    continue;
+                }
+                ezgl::point2d start = timing_flyline_draw_coords->start;
+                ezgl::point2d end = timing_flyline_draw_coords->end;
+
                 g->draw_line(start, end);
-                // Draw an arrow at the edge center.
+                // Draw an arrow at the flyline center.
                 draw_triangle_along_line_fixed_px(g, start, end, EDGE_CENTER, TIMING_EDGE_ARROW_SCALE * DEFAULT_ARROW_SIZE);
             }
 
@@ -346,6 +416,8 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
 }
 
 static void draw_routed_timing_connections(const tatum::TimingPath& path, ezgl::renderer* g) {
+    VTR_ASSERT(get_draw_state_vars()->pic_on_screen == e_pic_type::ROUTING);
+
     tatum::NodeId prev_node;
     std::size_t edge_idx = 0;
 
@@ -491,7 +563,6 @@ static void calculate_and_draw_labels(const tatum::TimingPath& path, ezgl::rende
 static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(const tatum::TimingPath& path,
                                                                             double pixels_per_world_unit,
                                                                             ezgl::renderer* g) {
-
     std::vector<t_label_drawing_info> basic_label_drawing_info;
     // The callers of this function have ensured that path is not empty, but having a safety check is still decent.
     VTR_ASSERT_SAFE(path.data_arrival_path().elements().size() > 0);
@@ -511,9 +582,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             t_label_drawing_info& drawing_info = basic_label_drawing_info[edge_idx];
 
             // Check visibility of layers where source and sink reside.
-            int src_block_layer = get_timing_path_node_layer_num(prev_node);
-            int sink_block_layer = get_timing_path_node_layer_num(node);
-            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+            t_draw_layer_display flyline_visibility = get_timing_flyline_visibility(prev_node, node);
 
             // Hide the label if the corresponding timing edge flyline is not visible
             if (!flyline_visibility.visible) {
@@ -539,12 +608,22 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             std::string delay_label_str = ss.str();
             drawing_info.delay_label_str = delay_label_str;
 
-            // Calculate the physical locations of the two nodes.
-            ezgl::point2d start = tnode_draw_coord(prev_node);
-            ezgl::point2d end = tnode_draw_coord(node);
+            // Calculate where the corresponding timing edge flyline is placed.
+            // Use optional because the function may return std::nullopt (see the function definition for details),
+            // in which case the label is skipped.
+            std::optional<t_flyline_draw_coords> timing_flyline_draw_coords = get_timing_flyline_draw_coords(prev_node, node);
+            if (!timing_flyline_draw_coords) {
+                drawing_info.hide_label = true;
+                edge_idx++;
+                prev_node = node;
+                prev_arr_time = arr_time;
+                continue;
+            }
+            ezgl::point2d start = timing_flyline_draw_coords->start;
+            ezgl::point2d end = timing_flyline_draw_coords->end;
 
             // After this step, start and end are just a relative concept.
-            // This step is to ensure that start is always physically to the left of end,
+            // This step is to ensure that start is always to the physical left of end,
             // which later helps facilitate the math.
             if (start.x > end.x) {
                 std::swap(start, end);
@@ -574,7 +653,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
 
             // This specifies the dimension of the "tilted rectangle" in pixels.
             ezgl::t_text_dimension delay_label_dimension = g->get_text_dimension(delay_label_str);
-            // The bbox is defined in world coordinates so we need to perform a conversion at the end.
+            // The bbox is defined in world coordinates, and we need to perform a conversion to pixels at the end.
             double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
                                        + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
                                       / pixels_per_world_unit;
@@ -810,10 +889,87 @@ static ezgl::color get_color_from_edge_idx(std::size_t edge_idx) {
     return kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
 }
 
+static t_draw_layer_display get_timing_flyline_visibility(tatum::NodeId src_node, tatum::NodeId sink_node) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // In analytical placement, the AP blocks that timing nodes are mapped to live at continuous layer levels
+    // and are treated as always visible and opaque. Therefore, the same convention is applied to flylines.
+    if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
+        // Note: in the VPR context, 255 is opaque (and 0 is transparent).
+        return t_draw_layer_display{true, 255};
+    } else {
+        // In other drawing stages, we conform to the discrete device-layer display settings.
+        int src_block_layer = get_tnode_layer_num(src_node);
+        int sink_block_layer = get_tnode_layer_num(sink_node);
+        return get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+    }
+}
+
+static int get_tnode_layer_num(tatum::NodeId node) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId atom_pin = atom_ctx.lookup().tnode_atom_pin(node);
+    AtomBlockId atom_block = atom_ctx.netlist().pin_block(atom_pin);
+    ClusterBlockId clb_block = atom_ctx.lookup().atom_clb(atom_block);
+    return block_locs[clb_block].loc.layer;
+}
+
+static std::optional<t_flyline_draw_coords> get_timing_flyline_draw_coords(tatum::NodeId src_node,
+                                                                           tatum::NodeId sink_node) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    ezgl::point2d start, end;
+    if (draw_state->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
+        // In analytical placement, the timing nodes are mapped to the centers of their associated
+        // AP blocks. If the two timing nodes collapse to the same AP block, there is no flyline to draw.
+        APBlockId src_ap_block = get_tnode_ap_block(src_node);
+        APBlockId sink_ap_block = get_tnode_ap_block(sink_node);
+
+        if (src_ap_block == sink_ap_block) {
+            return std::nullopt;
+        }
+
+        start = get_ap_block_draw_coords(src_ap_block);
+        end = get_ap_block_draw_coords(sink_ap_block);
+    } else {
+        // In other stages, timing nodes are mapped to their corresponding atom pin coordinates.
+        start = get_tnode_draw_coord(src_node);
+        end = get_tnode_draw_coord(sink_node);
+    }
+    return t_flyline_draw_coords{start, end};
+}
+
+static ezgl::point2d get_tnode_draw_coord(tatum::NodeId node) {
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
+    return atom_pin_draw_coord(pin);
+}
+
+static APBlockId get_tnode_ap_block(tatum::NodeId node) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    // Get the lookup from atom block id to AP block id.
+    const AtomBlockAPBlockLookup* atom_block_ap_block_lookup = draw_state->get_atom_block_ap_block_lookup_ptr();
+    if (!atom_block_ap_block_lookup) {
+        VTR_LOG_ERROR("Use of AtomBlockAPBlockLookup outside its lifetime (analytical placement) is not allowed.");
+        return APBlockId::INVALID();
+    }
+
+    AtomPinId atom_pin = atom_ctx.lookup().tnode_atom_pin(node);
+    AtomBlockId atom_block = atom_ctx.netlist().pin_block(atom_pin);
+    return atom_block_ap_block_lookup->get_ap_block(atom_block);
+}
+
 #ifndef NO_SERVER
 
 void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
+    // The server mode does not support drawing during the AP stage.
+    VTR_ASSERT(draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT);
+
     const ezgl::color contour_color{0, 0, 0, 40};
     const ezgl::line_dash contour_line_style{ezgl::line_dash::none};
     const int contour_line_width{1};
@@ -823,8 +979,8 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
         renderer->set_color(color);
         renderer->set_line_dash(line_style);
         renderer->set_line_width(line_width);
-        draw_server_mode_flylines_and_labels(tnode_draw_coord(prev_node),
-                                             tnode_draw_coord(node), delay, renderer, skip_draw_delays);
+        draw_server_mode_flylines_and_labels(get_tnode_draw_coord(prev_node),
+                                             get_tnode_draw_coord(node), delay, renderer, skip_draw_delays);
 
         renderer->set_line_dash(ezgl::line_dash::none);
         renderer->set_line_width(0);
@@ -862,6 +1018,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                     }
                     if (draw_state->show_crit_path_routing) {
                         if (draw_current_element) {
+                            VTR_ASSERT(draw_state->pic_on_screen == e_pic_type::ROUTING);
                             //Draw the routed version of the timing edge
                             draw_routed_connections_between_nodes(prev_node, node, color, g);
                         }
