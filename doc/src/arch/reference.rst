@@ -2739,6 +2739,7 @@ The full format is documented below.
         * ``x="-1" y="R"`` applies the switch block to the entire row at ``y = R`` (all columns).
 
     #. **A region** – specify one rectangular region (optionally repeating) with the attributes below.
+
     :opt_param startx:
         X coordinate of the first column of the region. Default: ``0``.
 
