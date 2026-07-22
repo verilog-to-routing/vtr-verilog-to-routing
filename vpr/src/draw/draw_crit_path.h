@@ -27,7 +27,7 @@
 /**
  * @brief Draws critical path elements: edge flylines, time delay labels and routed connections, if they are on.
  * 
- * Note: the current code only supports drawing of time delay labels on edge flylines.
+ * Note: the current code only supports drawing of time delay labels on edge flylines, not on routed connections.
  * 
  * @param g Pointer to the ezgl::renderer object.
  */
