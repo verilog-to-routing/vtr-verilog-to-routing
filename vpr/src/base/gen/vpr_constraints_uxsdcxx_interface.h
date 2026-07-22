@@ -63,12 +63,12 @@ class VprConstraintsBase {
     virtual void finish_write() = 0;
     virtual void error_encountered(const char* file, int line, const char* message) = 0;
     /** Generated for complex type "add_atom":
-	 * <xs:complexType name="add_atom">
-	 *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
-	 *   <xs:attribute name="is_regex" type="xs:string" default="false" />
-	 *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="add_atom">
+     *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     *   <xs:attribute name="is_regex" type="xs:string" default="false" />
+     *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
+     * </xs:complexType>
+     */
     virtual inline const char* get_add_atom_is_regex(typename ContextTypes::AddAtomReadContext& ctx) = 0;
     virtual inline void set_add_atom_is_regex(const char* is_regex, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
     virtual inline const char* get_add_atom_logical_block_location(typename ContextTypes::AddAtomReadContext& ctx) = 0;
@@ -77,16 +77,16 @@ class VprConstraintsBase {
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
 
     /** Generated for complex type "add_region":
-	 * <xs:complexType name="add_region">
-	 *   <xs:attribute name="x_low" type="xs:int" use="required" />
-	 *   <xs:attribute name="y_low" type="xs:int" use="required" />
-	 *   <xs:attribute name="x_high" type="xs:int" use="required" />
-	 *   <xs:attribute name="y_high" type="xs:int" use="required" />
-	 *   <xs:attribute name="layer_low" type="xs:int" />
-	 *   <xs:attribute name="layer_high" type="xs:int" />
-	 *   <xs:attribute name="subtile" type="xs:int" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="add_region">
+     *   <xs:attribute name="x_low" type="xs:int" use="required" />
+     *   <xs:attribute name="y_low" type="xs:int" use="required" />
+     *   <xs:attribute name="x_high" type="xs:int" use="required" />
+     *   <xs:attribute name="y_high" type="xs:int" use="required" />
+     *   <xs:attribute name="layer_low" type="xs:int" />
+     *   <xs:attribute name="layer_high" type="xs:int" />
+     *   <xs:attribute name="subtile" type="xs:int" />
+     * </xs:complexType>
+     */
     virtual inline int get_add_region_layer_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline void set_add_region_layer_high(int layer_high, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_layer_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
@@ -99,28 +99,28 @@ class VprConstraintsBase {
     virtual inline int get_add_region_y_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
 
     /** Generated for complex type "add_logical_block":
-	 * <xs:complexType name="add_logical_block">
-	 *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
-	 *   <xs:attribute name="is_regex" type="xs:string" default="false" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="add_logical_block">
+     *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     *   <xs:attribute name="is_regex" type="xs:string" default="false" />
+     * </xs:complexType>
+     */
     virtual inline const char* get_add_logical_block_is_regex(typename ContextTypes::AddLogicalBlockReadContext& ctx) = 0;
     virtual inline void set_add_logical_block_is_regex(const char* is_regex, typename ContextTypes::AddLogicalBlockWriteContext& ctx) = 0;
     virtual inline const char* get_add_logical_block_name_pattern(typename ContextTypes::AddLogicalBlockReadContext& ctx) = 0;
     virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, typename ContextTypes::AddLogicalBlockWriteContext& ctx) = 0;
 
     /** Generated for complex type "partition":
-	 * <xs:complexType name="partition">
-	 *   <xs:sequence>
-	 *      <xs:choice maxOccurs="unbounded">
-	 *          <xs:element name="add_atom" type="add_atom" />
-	 *          <xs:element name="add_region" type="add_region" />
-	 *          <xs:element name="add_logical_block" type="add_logical_block" />
-	 *      </xs:choice>
-	 *   </xs:sequence>
-	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="partition">
+     *   <xs:sequence>
+     *      <xs:choice maxOccurs="unbounded">
+     *          <xs:element name="add_atom" type="add_atom" />
+     *          <xs:element name="add_region" type="add_region" />
+     *          <xs:element name="add_logical_block" type="add_logical_block" />
+     *      </xs:choice>
+     *   </xs:sequence>
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
     virtual inline const char* get_partition_name(typename ContextTypes::PartitionReadContext& ctx) = 0;
     virtual inline void set_partition_name(const char* name, typename ContextTypes::PartitionWriteContext& ctx) = 0;
     virtual inline void preallocate_partition_add_atom(typename ContextTypes::PartitionWriteContext& ctx, size_t size) = 0;
@@ -140,12 +140,12 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::AddLogicalBlockReadContext get_partition_add_logical_block(int n, typename ContextTypes::PartitionReadContext& ctx) = 0;
 
     /** Generated for complex type "partition_list":
-	 * <xs:complexType name="partition_list">
-	 *   <xs:sequence>
-	 *     <xs:element name="partition" type="partition" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="partition_list">
+     *   <xs:sequence>
+     *     <xs:element name="partition" type="partition" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
     virtual inline void preallocate_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::PartitionWriteContext add_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
     virtual inline void finish_partition_list_partition(typename ContextTypes::PartitionWriteContext& ctx) = 0;
@@ -153,12 +153,12 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::PartitionReadContext get_partition_list_partition(int n, typename ContextTypes::PartitionListReadContext& ctx) = 0;
 
     /** Generated for complex type "reference_group":
-	 * <xs:complexType name="reference_group">
-	 *   <xs:sequence>
-	 *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="reference_group">
+     *   <xs:sequence>
+     *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
     virtual inline void preallocate_reference_group_add_atom(typename ContextTypes::ReferenceGroupWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::AddAtomWriteContext add_reference_group_add_atom(typename ContextTypes::ReferenceGroupWriteContext& ctx) = 0;
     virtual inline void finish_reference_group_add_atom(typename ContextTypes::AddAtomWriteContext& ctx) = 0;
@@ -166,16 +166,16 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::AddAtomReadContext get_reference_group_add_atom(int n, typename ContextTypes::ReferenceGroupReadContext& ctx) = 0;
 
     /** Generated for complex type "relative_group":
-	 * <xs:complexType name="relative_group">
-	 *   <xs:sequence>
-	 *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 *   <xs:attribute name="x_offset" type="xs:int" use="required" />
-	 *   <xs:attribute name="y_offset" type="xs:int" use="required" />
-	 *   <xs:attribute name="sub_tile_offset" type="xs:int" use="required" />
-	 *   <xs:attribute name="layer_offset" type="xs:int" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="relative_group">
+     *   <xs:sequence>
+     *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     *   <xs:attribute name="x_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="y_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="sub_tile_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="layer_offset" type="xs:int" />
+     * </xs:complexType>
+     */
     virtual inline int get_relative_group_layer_offset(typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
     virtual inline void set_relative_group_layer_offset(int layer_offset, typename ContextTypes::RelativeGroupWriteContext& ctx) = 0;
     virtual inline int get_relative_group_sub_tile_offset(typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
@@ -188,14 +188,14 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::AddAtomReadContext get_relative_group_add_atom(int n, typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
 
     /** Generated for complex type "relative_macro":
-	 * <xs:complexType name="relative_macro">
-	 *   <xs:sequence>
-	 *     <xs:element name="reference_group" type="reference_group" />
-	 *     <xs:element name="relative_group" type="relative_group" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="relative_macro">
+     *   <xs:sequence>
+     *     <xs:element name="reference_group" type="reference_group" />
+     *     <xs:element name="relative_group" type="relative_group" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
     virtual inline const char* get_relative_macro_name(typename ContextTypes::RelativeMacroReadContext& ctx) = 0;
     virtual inline void set_relative_macro_name(const char* name, typename ContextTypes::RelativeMacroWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::ReferenceGroupWriteContext init_relative_macro_reference_group(typename ContextTypes::RelativeMacroWriteContext& ctx) = 0;
@@ -208,12 +208,12 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::RelativeGroupReadContext get_relative_macro_relative_group(int n, typename ContextTypes::RelativeMacroReadContext& ctx) = 0;
 
     /** Generated for complex type "relative_macro_list":
-	 * <xs:complexType name="relative_macro_list">
-	 *   <xs:sequence>
-	 *     <xs:element name="relative_macro" type="relative_macro" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="relative_macro_list">
+     *   <xs:sequence>
+     *     <xs:element name="relative_macro" type="relative_macro" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
     virtual inline void preallocate_relative_macro_list_relative_macro(typename ContextTypes::RelativeMacroListWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::RelativeMacroWriteContext add_relative_macro_list_relative_macro(typename ContextTypes::RelativeMacroListWriteContext& ctx) = 0;
     virtual inline void finish_relative_macro_list_relative_macro(typename ContextTypes::RelativeMacroWriteContext& ctx) = 0;
@@ -221,12 +221,12 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::RelativeMacroReadContext get_relative_macro_list_relative_macro(int n, typename ContextTypes::RelativeMacroListReadContext& ctx) = 0;
 
     /** Generated for complex type "set_global_signal":
-	 * <xs:complexType name="set_global_signal">
-	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 *   <xs:attribute name="route_model" type="route_model_type" use="required" />
-	 *   <xs:attribute name="network_name" type="xs:string" />
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="set_global_signal">
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     *   <xs:attribute name="route_model" type="route_model_type" use="required" />
+     *   <xs:attribute name="network_name" type="xs:string" />
+     * </xs:complexType>
+     */
     virtual inline const char* get_set_global_signal_name(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
     virtual inline void set_set_global_signal_name(const char* name, typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
     virtual inline const char* get_set_global_signal_network_name(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
@@ -234,12 +234,12 @@ class VprConstraintsBase {
     virtual inline enum_route_model_type get_set_global_signal_route_model(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
 
     /** Generated for complex type "global_route_constraints":
-	 * <xs:complexType name="global_route_constraints">
-	 *   <xs:sequence>
-	 *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	*/
+     * <xs:complexType name="global_route_constraints">
+     *   <xs:sequence>
+     *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
     virtual inline void preallocate_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::SetGlobalSignalWriteContext add_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, enum_route_model_type route_model) = 0;
     virtual inline void finish_global_route_constraints_set_global_signal(typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
@@ -247,15 +247,15 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::SetGlobalSignalReadContext get_global_route_constraints_set_global_signal(int n, typename ContextTypes::GlobalRouteConstraintsReadContext& ctx) = 0;
 
     /** Generated for complex type "vpr_constraints":
-	 * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
-	 *     <xs:all minOccurs="0">
-	 *       <xs:element name="partition_list" type="partition_list" />
-	 *       <xs:element name="relative_macro_list" type="relative_macro_list" />
-	 *       <xs:element name="global_route_constraints" type="global_route_constraints" />
-	 *     </xs:all>
-	 *     <xs:attribute name="tool_name" type="xs:string" />
-	 *   </xs:complexType>
-	*/
+     * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
+     *     <xs:all minOccurs="0">
+     *       <xs:element name="partition_list" type="partition_list" />
+     *       <xs:element name="relative_macro_list" type="relative_macro_list" />
+     *       <xs:element name="global_route_constraints" type="global_route_constraints" />
+     *     </xs:all>
+     *     <xs:attribute name="tool_name" type="xs:string" />
+     *   </xs:complexType>
+     */
     virtual inline const char* get_vpr_constraints_tool_name(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline void set_vpr_constraints_tool_name(const char* tool_name, typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionListWriteContext init_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
