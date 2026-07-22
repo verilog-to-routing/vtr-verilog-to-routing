@@ -2717,8 +2717,69 @@ The full format is documented below.
         * ``CORNER`` – only at the corner switch blocks (both x and y-directed channels terminate here)
         * ``FRINGE`` – same as PERIMETER but excludes corners
         * ``CORE`` – everywhere but the perimeter
+        * ``XY_SPECIFIED`` – only at one or more explicitly specified grid locations, rows/columns, or regions
 
     Sets the location on the FPGA where the connections described by this switch block will be instantiated.
+
+    **Explicitly specified locations** (``type="XY_SPECIFIED"``)
+
+    When the type is ``XY_SPECIFIED``, the switch block is instantiated only at the grid locations selected by the additional
+    coordinate attributes. All coordinate attributes are evaluated as formulas which may reference the variables ``W`` and ``H``,
+    denoting the device grid width and height respectively (e.g. ``endx="W-1"``).
+
+    .. note:: ``XY_SPECIFIED`` requires a fixed device layout (a named ``<fixed_layout>``); it is not supported with an ``auto`` layout, since the grid dimensions must be known when the architecture is parsed.
+
+    There are three ways to select locations:
+
+    #. **A single switch block** – specify both ``x`` and ``y``. The switch block is created only at grid location ``(x, y)``.
+
+    #. **An entire row or column** – specify one coordinate and set the other to ``-1`` for the entire row or column.
+
+        * ``x="C" y="-1"`` applies the switch block to the entire column at ``x = C`` (all rows).
+        * ``x="-1" y="R"`` applies the switch block to the entire row at ``y = R`` (all columns).
+
+    #. **A region** – specify one rectangular region (optionally repeating) with the attributes below.
+    :opt_param startx:
+        X coordinate of the first column of the region. Default: ``0``.
+
+    :opt_param endx:
+        X coordinate of the last column of the region. Default: ``W-1``.
+
+    :opt_param starty:
+        Y coordinate of the first row of the region. Default: ``0``.
+
+    :opt_param endy:
+        Y coordinate of the last row of the region. Default: ``H-1``.
+
+    :opt_param repeatx:
+        Horizontal repeat factor at which the region repeats across the grid. Default: ``0`` (the region does not repeat).
+
+    :opt_param repeaty:
+        Vertical repeat factor at which the region repeats across the grid. Default: ``0`` (the region does not repeat).
+
+    :opt_param incrx:
+        Horizontal stride within the region; only every ``incrx``-th column of the region receives the switch block. Default: ``1``.
+
+    :opt_param incry:
+        Vertical stride within the region; only every ``incry``-th row of the region receives the switch block. Default: ``1``.
+
+    .. note:: If either ``x`` or ``y`` is specified (i.e. not ``-1``), the region attributes are ignored.
+
+    The following examples all use ``type="XY_SPECIFIED"``:
+
+    .. code-block:: xml
+
+        <!-- A single switch block at grid location (4, 7) -->
+        <switchblock_location type="XY_SPECIFIED" x="4" y="7"/>
+
+        <!-- The entire column at x = 1 (all rows) -->
+        <switchblock_location type="XY_SPECIFIED" x="1" y="-1"/>
+
+        <!-- The entire row at y = 1 (all columns) -->
+        <switchblock_location type="XY_SPECIFIED" x="-1" y="1"/>
+
+        <!-- Columns 2, 5, 8, ... (a one-column-wide region repeating every 3 columns), for all rows -->
+        <switchblock_location type="XY_SPECIFIED" startx="2" endx="2" repeatx="3"/>
 
 .. arch:tag:: <switchfuncs>
 
