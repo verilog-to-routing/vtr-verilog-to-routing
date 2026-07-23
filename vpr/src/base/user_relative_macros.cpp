@@ -27,6 +27,11 @@ const UserRelativeMacro& UserRelativeMacros::get_macro(UserRelativeMacroId macro
 }
 
 std::pair<UserRelativeMacroId, int> UserRelativeMacros::get_atom_group(AtomBlockId blk_id) const {
+    // Fast path for the common case of no relative placement macros: callers
+    // on hot packer paths may query every atom.
+    if (atom_to_group_.empty()) {
+        return {UserRelativeMacroId::INVALID(), -1};
+    }
     auto itr = atom_to_group_.find(blk_id);
     if (itr == atom_to_group_.end()) {
         return {UserRelativeMacroId::INVALID(), -1};
