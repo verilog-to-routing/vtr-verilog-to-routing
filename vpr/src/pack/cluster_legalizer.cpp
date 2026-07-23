@@ -1354,20 +1354,24 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     }
 
     // Check if all atoms in the molecule can be added to the cluster without
-    // relative placement group conflicts.
+    // relative placement group conflicts. Skipped entirely in the common case
+    // of no relative placement macros: this runs for every molecule x cluster
+    // attempt, and the per-atom group lookups would all miss anyway.
     std::pair<UserRelativeMacroId, int> new_cluster_rel_group = cluster.rel_group;
-    for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
-        if (!atom_blk_id.is_valid())
-            continue;
+    if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
+        for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
 
-        bool block_pack_rel_group_status = check_cluster_relative_group(atom_blk_id,
-                                                                        new_cluster_rel_group,
-                                                                        floorplanning_ctx.relative_macros,
-                                                                        log_verbosity_);
-        if (!block_pack_rel_group_status) {
-            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative_group_conflict (atom '%s')\n",
-                     atom_ctx.netlist().block_name(atom_blk_id).c_str());
-            return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+            bool block_pack_rel_group_status = check_cluster_relative_group(atom_blk_id,
+                                                                            new_cluster_rel_group,
+                                                                            floorplanning_ctx.relative_macros,
+                                                                            log_verbosity_);
+            if (!block_pack_rel_group_status) {
+                VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative_group_conflict (atom '%s')\n",
+                         atom_ctx.netlist().block_name(atom_blk_id).c_str());
+                return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+            }
         }
     }
 
@@ -2036,6 +2040,14 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
 
     const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    // Cheap early reject: an atom of one relative placement group can never
+    // join a cluster hosting a different group. (The definite check is in
+    // try_pack_molecule.) Only clusters that already host a group can reject
+    // on this basis, so hoist that test out of the per-atom loop: this method
+    // runs for every candidate molecule, and in the common case (no relative
+    // placement macros, so no cluster hosts a group) the per-atom group
+    // lookups are skipped entirely.
+    const bool cluster_has_rel_group = cluster.rel_group.first.is_valid();
 
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
@@ -2050,14 +2062,11 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
                                                   atom_blk_id)) {
             return false;
         }
-        // Cheap early reject: an atom of one relative placement group can never
-        // join a cluster hosting a different group. (The definite check is
-        // in try_pack_molecule.)
-        const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
-        if (atom_rel_group.first.is_valid()
-            && cluster.rel_group.first.is_valid()
-            && atom_rel_group != cluster.rel_group) {
-            return false;
+        if (cluster_has_rel_group) {
+            const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
+            if (atom_rel_group.first.is_valid() && atom_rel_group != cluster.rel_group) {
+                return false;
+            }
         }
     }
     // If every atom in the molecule has a free primitive it could theoretically
