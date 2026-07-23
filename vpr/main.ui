@@ -367,19 +367,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="SinglePauseButton">
-            <property name="label" translatable="yes">Single Pause</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="image-position">right</property>
-          </object>
-          <packing>
-            <property name="left-attach">0</property>
-            <property name="top-attach">2</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkButton" id="debugButton">
             <property name="label" translatable="yes">Debug</property>
             <property name="visible">True</property>
@@ -392,8 +379,8 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="SustainedPause">
-            <property name="label" translatable="yes">Sustained Pause</property>
+          <object class="GtkCheckButton" id="DisplayStep">
+            <property name="label" translatable="yes">Display Step</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
@@ -402,7 +389,7 @@
           </object>
           <packing>
             <property name="left-attach">0</property>
-            <property name="top-attach">3</property>
+            <property name="top-attach">2</property>
           </packing>
         </child>
         <child>
@@ -416,7 +403,7 @@
           </object>
           <packing>
             <property name="left-attach">0</property>
-            <property name="top-attach">4</property>
+            <property name="top-attach">3</property>
           </packing>
         </child>
       </object>

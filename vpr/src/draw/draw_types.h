@@ -337,9 +337,7 @@ struct t_draw_state {
     std::string renderer_type = "rhi";
 
     ///@brief If we should pause for user interaction (requested by user)
-    bool forced_pause = false;
-
-    bool sustained_pause = false;
+    bool display_step = false;
 
     int sequence_number = 0;
 

@@ -499,16 +499,10 @@ void update_screen(ScreenUpdatePriority priority,
 
     if (state_change                   //Must update buttons
         || should_pause                //The priority means graphics should pause for user interaction
-        || draw_state->forced_pause
-        || draw_state->sustained_pause) { //The user asked to pause
-
-        if (draw_state->forced_pause) {
-            VTR_LOG("Pausing in interactive graphics ('Single Pause' was pressed)\n");
-            draw_state->forced_pause = false; //Reset pause flag
-        }
+        || draw_state->display_step) { //The user asked to pause
         
-        if (draw_state->sustained_pause) {
-            VTR_LOG("Pausing in interactive graphics ('Sustained Pause' is on)\n");
+        if (draw_state->display_step) {
+            VTR_LOG("Pausing in interactive graphics ('Display Step' is on)\n");
         }
 
         const bool has_cmds = !draw_state->graphics_commands.empty();
@@ -1282,16 +1276,10 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
         press_zoom_fit(/*unused*/ nullptr, app);
     });
 
-    // Connect Pause button
-    QPushButton* single_pause_button = app->find_push_button("SinglePauseButton");
-    QObject::connect(single_pause_button, &QPushButton::clicked, []() {
-        set_single_pause();
-    });
-
     // 
-    QCheckBox* sustained_pause_button = app->find_check_box("SustainedPause");
-    QObject::connect(sustained_pause_button, &QCheckBox::toggled, [](bool checked) {
-        set_sustained_pause(checked);
+    QCheckBox* display_step = app->find_check_box("DisplayStep");
+    QObject::connect(display_step, &QCheckBox::toggled, [](bool checked) {
+        set_display_step(checked);
     });
 
     // Connect Block Outline checkbox
@@ -1400,16 +1388,10 @@ static void set_draw_partitions(bool checked) {
     application->refresh_drawing();
 }
 
-static void set_single_pause() {
+static void set_display_step(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    draw_state->forced_pause = true;
-}
-
-static void set_sustained_pause(bool checked) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->sustained_pause = checked;
+    draw_state->display_step= checked;
 
     application->update_message(draw_state->default_message);
 }
