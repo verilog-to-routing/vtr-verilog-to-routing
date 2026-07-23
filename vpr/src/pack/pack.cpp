@@ -723,6 +723,16 @@ bool try_pack(const t_packer_opts& packer_opts,
 
             // Reset the cluster legalizer for re-clustering.
             cluster_legalizer.reset();
+
+            // Rebuild the relative placement attraction groups for the next
+            // iteration: rebuild_attraction_groups() pruned their atom lists
+            // down to the still-unclustered atoms during this iteration, and
+            // the legalizer reset above unclustered everything again. Without
+            // this, retry states that do not recreate attraction groups (e.g.
+            // SET_UNRELATED_AND_BALANCED) would run with near-empty relative
+            // groups, losing the pull that packs each group into one cluster.
+            // This also applies any gain boosts made above to split groups.
+            attraction_groups.create_att_groups_for_relative_groups();
         }
 
         // Set the current state to the next state.
