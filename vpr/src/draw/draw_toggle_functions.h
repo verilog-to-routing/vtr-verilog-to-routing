@@ -53,6 +53,8 @@ void set_net_max_fanout_cbk(QSpinBox* self, ezgl::application* app);
  * its corresponding value in the UI. */
 void set_net_alpha_value_cbk(QSpinBox* self, ezgl::application* app);
 
+void set_num_paths_value_cbk(QSpinBox* self, ezgl::application* app);
+
 /* Callback function for main.ui created toggle_blk_internal button in ui_setup.cpp.
  * With each consecutive click of the button, a lower level in the
  * pb_graph will be shown for every clb. When the number of clicks on the button exceeds

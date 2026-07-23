@@ -300,8 +300,10 @@ void toggle_crit_path_cbk(SwitchButton*, bool state, ezgl::application* app) {
 
     draw_state->show_crit_path = state;
 
+    app->find_widget("NumCritPaths")->setEnabled(state);
     app->find_widget("ToggleCritPathFlylines")->setEnabled(state);
     app->find_widget("ToggleCritPathDelays")->setEnabled(state);
+    
 
     if (draw_state->setup_timing_info && draw_state->pic_on_screen == e_pic_type::ROUTING) {
         app->find_widget("ToggleCritPathRouting")->setEnabled(state);
@@ -393,6 +395,12 @@ void set_net_max_fanout_cbk(QSpinBox* self, ezgl::application* app) {
 void set_net_alpha_value_cbk(QSpinBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->net_alpha = 255 - self->value();
+    app->refresh_drawing();
+}
+
+void set_num_paths_value_cbk(QSpinBox* self, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->num_paths = self->value();
     app->refresh_drawing();
 }
 

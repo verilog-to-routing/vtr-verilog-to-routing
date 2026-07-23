@@ -345,26 +345,29 @@ void draw_crit_path(ezgl::renderer* g) {
     // Get the worst timing path
     auto paths = path_collector.collect_worst_setup_timing_paths(
         *timing_ctx.graph,
-        *(draw_state->setup_timing_info->setup_analyzer()), 1);
-    tatum::TimingPath path = paths[0];
+        *(draw_state->setup_timing_info->setup_analyzer()), draw_state->num_paths);
+    
+    for (int path_idx = 0; path_idx < draw_state->num_paths; path_idx++) {
+        tatum::TimingPath path = paths[path_idx];
 
-    // Subtract 1 so that we get the number of edges instead of nodes.
-    // Cast from size_t to int to avoid -1 wrapping around to SIZE_MAX
-    int num_edges = int(path.data_arrival_path().elements().size()) - 1;
-    if (num_edges <= 0) {
-        return;
-    }
-
-    if (draw_state->show_crit_path_flylines) {
-        draw_timing_edge_flylines(path, g);
-        if (draw_state->show_crit_path_delays) {
-            calculate_and_draw_labels(path, g);
+        // Subtract 1 so that we get the number of edges instead of nodes.
+        // Cast from size_t to int to avoid -1 wrapping around to SIZE_MAX
+        int num_edges = int(path.data_arrival_path().elements().size()) - 1;
+        if (num_edges <= 0) {
+            return;
         }
-    }
 
-    // Ensure that we are already in the routing stage.
-    if (draw_state->show_crit_path_routing && draw_state->pic_on_screen == e_pic_type::ROUTING) {
-        draw_routed_timing_connections(path, g);
+        if (draw_state->show_crit_path_flylines) {
+            draw_timing_edge_flylines(path, g);
+            if (draw_state->show_crit_path_delays) {
+                calculate_and_draw_labels(path, g);
+            }
+        }
+
+        // Ensure that we are already in the routing stage.
+        if (draw_state->show_crit_path_routing && draw_state->pic_on_screen == e_pic_type::ROUTING) {
+            draw_routed_timing_connections(path, g);
+        }
     }
 }
 

@@ -114,6 +114,13 @@ void net_button_setup(ezgl::application* app) {
     });
     max_fanout->setSingleStep(1);
     max_fanout->setRange(0, get_max_fanout());
+
+    QSpinBox* num_paths = app->find_spin_box("NumCritPaths");
+    QObject::connect(num_paths, &QSpinBox::valueChanged, num_paths, [num_paths, app]() {
+        set_num_paths_value_cbk(num_paths, app);
+    });
+    num_paths->setSingleStep(1);
+    num_paths->setRange(0, 10);
 }
 
 /*
