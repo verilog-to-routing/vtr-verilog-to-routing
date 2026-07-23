@@ -339,6 +339,8 @@ struct t_draw_state {
     ///@brief If we should pause for user interaction (requested by user)
     bool forced_pause = false;
 
+    bool sustained_pause = false;
+
     int sequence_number = 0;
 
     ///@brief net transparency factor (0 - Transparent, 255 - Opaque)
