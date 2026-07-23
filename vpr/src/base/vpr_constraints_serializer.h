@@ -320,7 +320,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             }
 
         } else { //the name pattern is a regex, look for all atoms matching the regex pattern
-            auto atom_name_regex = std::regex(name_pattern_);
+            std::regex atom_name_regex = compile_atom_name_regex("Partition '" + loaded_partition.get_name() + "'");
             for (auto block_id : atom_ctx.netlist().blocks()) { // loop through all block names and add the names that matches with the name_pattern
                 auto block_name = atom_ctx.netlist().block_name(block_id);
 
@@ -613,8 +613,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         if (loaded_relative_group_.offset.layer != 0) {
             //cross-layer relative macros are not supported yet: no macro code path
             //exercises nonzero layer offsets, so reject them at load time
-            report_relative_macro_error("Relative macro '" + loaded_relative_macro_.name
-                                        + "': layer_offset must be 0. Cross-layer relative macros are not supported.");
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+                                          + "': layer_offset must be 0. Cross-layer relative macros are not supported.");
         }
 
         if (loaded_relative_group_.atoms.empty()) {
@@ -656,7 +656,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         //macro names must be unique since they identify macros in error messages
         for (size_t imacro = 0; imacro < constraints_.relative_macros().get_num_macros(); imacro++) {
             if (constraints_.relative_macros().get_macro(UserRelativeMacroId(imacro)).name == macro_name) {
-                report_relative_macro_error("Relative macro name '" + macro_name + "' is used more than once. Macro names must be unique.");
+                report_constraints_load_error("Relative macro name '" + macro_name + "' is used more than once. Macro names must be unique.");
             }
         }
 
@@ -667,8 +667,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                 VTR_LOG_WARN("Relative macro '%s': no group matched any atoms, dropping the macro.\n",
                              macro_name.c_str());
             } else {
-                report_relative_macro_error("Relative macro '" + macro_name
-                                            + "': the reference group matched no atoms but a relative group did. The macro has no anchor.");
+                report_constraints_load_error("Relative macro '" + macro_name
+                                              + "': the reference group matched no atoms but a relative group did. The macro has no anchor.");
             }
             return;
         }
@@ -683,9 +683,9 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         for (size_t i = 0; i < groups.size(); i++) {
             for (size_t j = i + 1; j < groups.size(); j++) {
                 if (groups[i].offset == groups[j].offset) {
-                    report_relative_macro_error("Relative macro '" + macro_name + "': groups " + std::to_string(i)
-                                                + " and " + std::to_string(j)
-                                                + " have identical offsets. Two groups of a macro cannot be placed at the same location.");
+                    report_constraints_load_error("Relative macro '" + macro_name + "': groups " + std::to_string(i)
+                                                  + " and " + std::to_string(j)
+                                                  + " have identical offsets. Two groups of a macro cannot be placed at the same location.");
                 }
             }
         }
@@ -697,18 +697,18 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             for (AtomBlockId blk_id : groups[igroup].atoms) {
                 auto [seen_itr, first_time] = atoms_seen.insert({blk_id, igroup});
                 if (!first_time) {
-                    report_relative_macro_error("Relative macro '" + macro_name + "': atom '"
-                                                + atom_ctx.netlist().block_name(blk_id) + "' appears in groups "
-                                                + std::to_string(seen_itr->second) + " and " + std::to_string(igroup)
-                                                + ". An atom may belong to at most one relative placement group.");
+                    report_constraints_load_error("Relative macro '" + macro_name + "': atom '"
+                                                  + atom_ctx.netlist().block_name(blk_id) + "' appears in groups "
+                                                  + std::to_string(seen_itr->second) + " and " + std::to_string(igroup)
+                                                  + ". An atom may belong to at most one relative placement group.");
                 }
 
                 auto [other_macro_id, other_group_idx] = constraints_.relative_macros().get_atom_group(blk_id);
                 if (other_macro_id.is_valid()) {
-                    report_relative_macro_error("Atom '" + atom_ctx.netlist().block_name(blk_id)
-                                                + "' appears in relative macro '" + macro_name + "' and in relative macro '"
-                                                + constraints_.relative_macros().get_macro(other_macro_id).name
-                                                + "'. An atom may belong to at most one relative placement group.");
+                    report_constraints_load_error("Atom '" + atom_ctx.netlist().block_name(blk_id)
+                                                  + "' appears in relative macro '" + macro_name + "' and in relative macro '"
+                                                  + constraints_.relative_macros().get_macro(other_macro_id).name
+                                                  + "'. An atom may belong to at most one relative placement group.");
                 }
             }
         }
@@ -882,13 +882,37 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /**
-     * @brief Report an error found while loading relative placement macros.
+     * @brief Report an error found while loading the constraints file, with XML
+     *        file/line context when available.
      */
-    void report_relative_macro_error(const std::string& msg) {
+    void report_constraints_load_error(const std::string& msg) {
         if (report_error_ == nullptr) {
             VPR_ERROR(VPR_ERROR_PLACE, "\n%s\n", msg.c_str());
         } else {
             report_error_->operator()(msg.c_str());
+        }
+    }
+
+    /**
+     * @brief Compile the current add_atom name pattern into a regex, reporting a
+     *        load error if the pattern is not a valid regular expression.
+     *        std::regex throws std::regex_error on malformed patterns (e.g. "["),
+     *        which no caller of the constraints loader catches; without this,
+     *        VPR would abort with no file/line context.
+     *
+     * @param error_context  Prefix identifying the constraint being loaded (e.g.
+     *                       the partition or relative macro name), used in the
+     *                       error message.
+     */
+    std::regex compile_atom_name_regex(const std::string& error_context) {
+        try {
+            return std::regex(name_pattern_);
+        } catch (const std::regex_error& e) {
+            report_constraints_load_error(error_context + ": invalid atom name_pattern regex '"
+                                          + name_pattern_ + "' (" + e.what() + ").");
+            // report_constraints_load_error() throws, so this is unreachable; it
+            // only satisfies the compiler's return-path check.
+            return std::regex();
         }
     }
 
@@ -908,7 +932,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                 found = true;
             }
         } else { //the name pattern is a regex, look for all atoms matching the regex pattern
-            auto atom_name_regex = std::regex(name_pattern_);
+            std::regex atom_name_regex = compile_atom_name_regex("Relative macro '" + loaded_relative_macro_.name + "'");
             for (AtomBlockId block_id : atom_ctx.netlist().blocks()) {
                 if (std::regex_search(atom_ctx.netlist().block_name(block_id), atom_name_regex)) {
                     add_atom_to_loaded_relative_group(block_id);
