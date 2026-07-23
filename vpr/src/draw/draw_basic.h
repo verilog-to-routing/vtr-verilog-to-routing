@@ -60,11 +60,11 @@ void draw_x(float x, float y, float size, ezgl::renderer* g);
  * @brief Draws a filled star centered at the specified world-coordinate location with a fixed pixel size.
  *
  * The star size is in screen (pixel) coordinates, so it appears the same at any zoom level.
- * The star can be imagined as a square with four triangles (tip pointing outwards) affixed to its four sides.
- * The triangle's base has the same length as the sqaure's side.
+ * The star is four-pointed, with the distance from the center to a star point of size_in_pixels.
+ * The center of the star is filled in with a square of width size_in_pixels / 2.
  *
  * @param star_coords 2D star coordinates in world units.
- * @param size_in_pixels Distance from the star center to the previously mentioned traingle's tip, in pixels.
+ * @param size_in_pixels Distance from the center to a star point, in pixels.
  * @param g Renderer used to perform drawing.
  */
 void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::renderer* g);

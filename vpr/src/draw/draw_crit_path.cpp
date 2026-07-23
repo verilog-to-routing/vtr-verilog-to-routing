@@ -983,15 +983,15 @@ static void draw_total_delay(std::vector<t_label_drawing_info>& final_label_draw
     ss << " ns";
     std::string total_delay_str = ss.str();
 
-    // The canvas has an inverted y axis. Therefore, bottom right appears to be top right on the screen, which is what we aim for.
-    ezgl::point2d bottom_right = g->get_visible_screen().bottom_right();
+    // The rightmost screen x coordinate.
+    double screen_right = g->get_visible_screen().right();
     // String dimension in pixels.
     ezgl::t_text_dimension str_dimension = g->get_text_dimension(total_delay_str);
 
     // Use the screen (pixel) coordinates to draw the total delay string at a fixed screen location.
     g->set_coordinate_system(ezgl::SCREEN);
-    // Due to the same inverted y axis reason, adding str_dimension.height to y actually lowers down the string from the screen top.
-    g->draw_text(ezgl::point2d{bottom_right.x - str_dimension.width, bottom_right.y + str_dimension.height}, total_delay_str);
+    // The canvas has an inverted y axis. Therefore, adding str_dimension.height to y actually lowers down the string from the screen top.
+    g->draw_text(ezgl::point2d{screen_right - str_dimension.width, str_dimension.height}, total_delay_str);
     g->set_coordinate_system(ezgl::WORLD);
 }
 

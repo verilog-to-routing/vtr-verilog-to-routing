@@ -578,12 +578,12 @@ void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::
     // The star size is defined in pixels, but drawing is performed in world coordinates.
     double size_in_world = size_in_pixels / get_pixels_per_world_unit(g);
 
-    // Check the function declaration for what "square" refers to if not clear.
-    // To replicate a star shape, we let the distance from the star center to the square side
-    // (equivalent to half the width of the square) be one fourth of the star size.
+    // The square we use to fill the star center has a width of size_in_world / 2.
     double half_sqr_width = size_in_world / 4.0;
 
     // The star vertices, all calculated based on the star center.
+    // With the square fixed at the star center, four triangles (tip pointing outwards) are affixed to its four sides.
+    // The triangle's base has the same width as the square, and its tip serves as a star point.
     std::vector<ezgl::point2d> endpoints;
     // Top left corner of the square.
     endpoints.push_back({x - half_sqr_width, y + half_sqr_width});
