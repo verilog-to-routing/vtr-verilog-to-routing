@@ -571,6 +571,40 @@ void draw_x(float x, float y, float size, ezgl::renderer* g) {
     g->draw_line({x - size, y - size}, {x + size, y + size});
 }
 
+void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::renderer* g) {
+    double x = star_coords.x;
+    double y = star_coords.y;
+
+    // The star size is defined in pixels, but drawing is performed in world coordinates.
+    double size_in_world = size_in_pixels / get_pixels_per_world_unit(g);
+
+    // The square we use to fill the star center has a width of size_in_world / 2.
+    double half_sqr_width = size_in_world / 4.0;
+
+    // The star vertices, all calculated based on the star center.
+    // With the square fixed at the star center, four triangles (tip pointing outwards) are affixed to its four sides.
+    // The triangle's base has the same width as the square, and its tip serves as a star point.
+    std::vector<ezgl::point2d> endpoints;
+    // Top left corner of the square.
+    endpoints.push_back({x - half_sqr_width, y + half_sqr_width});
+    // Tip of the top triangle (check the function declaration for what "triangle" refers to if not clear.)
+    endpoints.push_back({x, y + size_in_world});
+    // Top right corner of the square.
+    endpoints.push_back({x + half_sqr_width, y + half_sqr_width});
+    // Tip of the right triangle.
+    endpoints.push_back({x + size_in_world, y});
+    // Bottom right corner of the square.
+    endpoints.push_back({x + half_sqr_width, y - half_sqr_width});
+    // Tip of the bottom triangle.
+    endpoints.push_back({x, y - size_in_world});
+    // Bottom left corner of the square.
+    endpoints.push_back({x - half_sqr_width, y - half_sqr_width});
+    // Tip of the left triangle.
+    endpoints.push_back({x - size_in_world, y});
+
+    g->fill_poly(endpoints);
+}
+
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
  * that are not coloured black (useful for drawing over the rr_graph).       */

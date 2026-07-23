@@ -167,7 +167,14 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
+/**
+ * @brief The drawing coordinates of the beginning and end of a flyline segment.
+ * 
+ * Includes a special boolean to tell if the two points are mapped to the same drawing coordinates.
+ */
 struct t_flyline_draw_coords {
+    /// True when start and end are mapped to the same drawing coordinates.
+    bool collapse_to_point = false;
     ezgl::point2d start;
     ezgl::point2d end;
 };
