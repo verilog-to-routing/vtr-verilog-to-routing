@@ -1,5 +1,6 @@
 #include "attraction_groups.h"
 #include "globals.h"
+#include "vtr_assert.h"
 
 AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -41,6 +42,8 @@ void AttractionInfo::create_att_groups_for_overfull_regions(const std::vector<Pa
     //clear the data structures before continuing
     atom_attraction_group.clear();
     attraction_groups.clear();
+    // The clear above also removed the relative placement groups (re-created below).
+    num_relative_att_groups_ = 0;
 
     //Initialize every atom to have no attraction group id
     int num_atoms = atom_ctx.netlist().blocks().size();
@@ -86,6 +89,8 @@ void AttractionInfo::create_att_groups_for_all_regions() {
     //clear the data structures before continuing
     atom_attraction_group.clear();
     attraction_groups.clear();
+    // The clear above also removed the relative placement groups (re-created below).
+    num_relative_att_groups_ = 0;
 
     //Initialize every atom to have no attraction group id
     int num_atoms = atom_ctx.netlist().blocks().size();
@@ -125,6 +130,15 @@ void AttractionInfo::create_att_groups_for_all_regions() {
 void AttractionInfo::create_att_groups_for_relative_groups() {
     const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
 
+    // Drop the relative attraction groups added by a previous call so they are
+    // rebuilt with full atom lists and up-to-date gains rather than duplicated.
+    // Relative groups are always the trailing groups: they are appended last
+    // here, and the partition group builders clear all groups (and this count)
+    // before re-creating them.
+    VTR_ASSERT(num_relative_att_groups_ <= (int)attraction_groups.size());
+    attraction_groups.resize(attraction_groups.size() - num_relative_att_groups_);
+    num_relative_att_groups_ = 0;
+
     for (size_t imacro = 0; imacro < relative_macros.get_num_macros(); imacro++) {
         UserRelativeMacroId macro_id(imacro);
         const UserRelativeMacro& macro = relative_macros.get_macro(macro_id);
@@ -145,6 +159,7 @@ void AttractionInfo::create_att_groups_for_relative_groups() {
                                                                    : DEFAULT_REL_GROUP_GAIN;
 
             attraction_groups.push_back(group_info);
+            num_relative_att_groups_++;
         }
     }
 
