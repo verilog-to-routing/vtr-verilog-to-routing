@@ -1,0 +1,33 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Test that carry chains whose cluster cin/cout pins have Fc = 0 (dedicated
+# inter-cluster routing only) are prepacked as single chain molecules even when
+# mid-chain cout nets have extra look-ahead fanout (combinational and registered).
+# The architecture provides Stratix-IV-style carry exits from every fle cout onto
+# the CLB's general outputs so the tapped carries can reach general routing.
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=chain_cout_fanout.blif
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_cout_fanout_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+script_params=-starting_stage vpr --route_chan_width 100 --pack_verbosity 2
