@@ -23,7 +23,7 @@
 #include "vpr_utils.h"
 #include "vtr_assert.h"
 
-void ClusterPinCounter::allocate_pb_state(const t_pb* pb) {
+void ClusterPinCounter::allocate_pin_count_state(const t_pb* pb) {
     VTR_ASSERT(pb != nullptr);
     VTR_ASSERT_MSG(per_pb_state_.count(pb) == 0,
                    "Pin counting state should be empty before allocation");
@@ -42,7 +42,7 @@ void ClusterPinCounter::allocate_pb_state(const t_pb* pb) {
     state.lookahead_output_pin_class_nets.assign(num_output_classes, {});
 }
 
-void ClusterPinCounter::deallocate_recursive(const t_pb* pb) {
+void ClusterPinCounter::deallocate_pin_count_state_recursive(const t_pb* pb) {
     if (pb == nullptr)
         return;
 
@@ -60,7 +60,7 @@ void ClusterPinCounter::deallocate_recursive(const t_pb* pb) {
         if (!pb->child_pbs[child_num])
             continue;
         for (int pb_instance = 0; pb_instance < pb_type->modes[mode].pb_type_children[child_num].num_pb; pb_instance++) {
-            deallocate_recursive(&pb->child_pbs[child_num][pb_instance]);
+            deallocate_pin_count_state_recursive(&pb->child_pbs[child_num][pb_instance]);
         }
     }
 }

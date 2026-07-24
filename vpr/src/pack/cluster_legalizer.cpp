@@ -114,7 +114,7 @@ LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
     alloc_and_load_pb_stats(pb);
-    pin_counter.allocate_pb_state(pb);
+    pin_counter.allocate_pin_count_state(pb);
     pb->parent_pb = nullptr;
     pb->mode = cluster_mode;
 }
@@ -569,7 +569,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
     if (pb->pb_stats == nullptr) {
         alloc_and_load_pb_stats(pb);
-        pin_counter.allocate_pb_state(pb);
+        pin_counter.allocate_pin_count_state(pb);
     }
 
     const t_pb_type* pb_type = pb_graph_node->pb_type;
@@ -717,7 +717,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
          */
 
         t_pb* next = pb->parent_pb;
-        pin_counter.deallocate_recursive(pb);
+        pin_counter.deallocate_pin_count_state_recursive(pb);
         free_pb(pb, atom_to_pb);
         pb = next;
 
@@ -734,7 +734,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
                     /* If the code gets here, then that means that placing the initial seed molecule
                      * failed, don't free the actual complex block itself as the seed needs to find
                      * another placement */
-                    pin_counter.deallocate_recursive(pb);
+                    pin_counter.deallocate_pin_count_state_recursive(pb);
                     free_pb(pb, atom_to_pb);
                 }
             }
@@ -1236,7 +1236,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
         molecule_cluster_[molecule_id] = new_cluster_id;
     } else {
         // Delete the new_cluster.
-        new_cluster.pin_counter.deallocate_recursive(new_cluster.pb);
+        new_cluster.pin_counter.deallocate_pin_count_state_recursive(new_cluster.pb);
         free_pb(new_cluster.pb, mutable_atom_pb_lookup());
         delete new_cluster.pb;
         free_cluster_placement_stats(new_cluster.placement_stats);
@@ -1298,7 +1298,7 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     cluster.molecules.clear();
     // Free the rest of the cluster data.
     //  Casting things to nullptr for safety just in case someone is trying to use it.
-    cluster.pin_counter.deallocate_recursive(cluster.pb);
+    cluster.pin_counter.deallocate_pin_count_state_recursive(cluster.pb);
     free_pb(cluster.pb, mutable_atom_pb_lookup());
     delete cluster.pb;
     cluster.pb = nullptr;
@@ -1346,7 +1346,7 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
                && "Should not clean an already cleaned cluster!");
     // Free the pb stats.
-    cluster.pin_counter.deallocate_recursive(cluster.pb);
+    cluster.pin_counter.deallocate_pin_count_state_recursive(cluster.pb);
     free_pb_stats_recursive(cluster.pb);
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.

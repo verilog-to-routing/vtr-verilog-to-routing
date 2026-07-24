@@ -74,7 +74,7 @@ class ClusterPinCounter {
      *
      * @param pb  The pb to allocate state for.
      */
-    void allocate_pb_state(const t_pb* pb);
+    void allocate_pin_count_state(const t_pb* pb);
 
     /**
      * @brief Erase the pin usage state for given pb and every pb in its subtree.
@@ -84,7 +84,7 @@ class ClusterPinCounter {
      *
      * @param pb  Root of the subtree to erase state for.
      */
-    void deallocate_recursive(const t_pb* pb);
+    void deallocate_pin_count_state_recursive(const t_pb* pb);
 
     /**
      * @brief Add given net to the lookahead input state of given pin class of
