@@ -1,8 +1,13 @@
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include "tatum/timing_paths.hpp"
+#include "tatum/TimingGraph.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
+#include "tatum/base/ArrivalType.hpp"
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -894,4 +899,183 @@ void write_hold_timing_graph_dot(const std::string& filename, HoldTimingInfo& ti
     dot_writer.set_nodes_to_dump(nodes);
 
     dot_writer.write_dot_file(filename, *timing_info.hold_analyzer());
+}
+
+void update_generated_clock_source_latencies(tatum::TimingConstraints& tc,
+                                             const tatum::TimingGraph& tg,
+                                             const tatum::DelayCalculator& dc) {
+    // Collect all generated clock domains. Fast path: nothing to do if there are none.
+    std::vector<tatum::DomainId> gen_domains;
+    for (tatum::DomainId domain : tc.clock_domains()) {
+        if (tc.generated_clock_master(domain).is_valid()) {
+            gen_domains.push_back(domain);
+        }
+    }
+    if (gen_domains.empty()) return;
+
+    // Topologically sort generated clocks by derivation depth so that a generated
+    // clock used as a master for another generated clock is processed first.
+    // "ready" starts as the set of primary (non-generated) clock domains.
+    std::unordered_set<tatum::DomainId> ready;
+    for (tatum::DomainId domain : tc.clock_domains()) {
+        if (!tc.generated_clock_master(domain).is_valid()) {
+            ready.insert(domain);
+        }
+    }
+    std::vector<tatum::DomainId> ordered;
+    std::unordered_set<tatum::DomainId> visited;
+    bool progress = true;
+    while (progress && ordered.size() < gen_domains.size()) {
+        progress = false;
+        for (tatum::DomainId domain : gen_domains) {
+            if (visited.count(domain)) continue;
+            if (ready.count(tc.generated_clock_master(domain))) {
+                ordered.push_back(domain);
+                visited.insert(domain);
+                ready.insert(domain);
+                progress = true;
+            }
+        }
+    }
+
+    // Process each generated clock domain in dependency order.
+    for (tatum::DomainId gen_domain : ordered) {
+        tatum::DomainId master_domain = tc.generated_clock_master(gen_domain);
+        tatum::NodeId master_src = tc.clock_domain_source_node(master_domain);
+        tatum::NodeId gen_src = tc.clock_domain_source_node(gen_domain);
+
+        // Skip virtual clocks (no source node in the timing graph).
+        if (!master_src.is_valid() || !gen_src.is_valid()) continue;
+
+        // The master's own source latency becomes the initial delay at master_src.
+        // For a primary clock this is 0 (or whatever set_clock_latency -source specified).
+        // For a cascaded generated clock this is the latency computed in a prior iteration.
+        float master_lat_late = tc.source_latency(master_domain, tatum::ArrivalType::LATE).value();
+        float master_lat_early = tc.source_latency(master_domain, tatum::ArrivalType::EARLY).value();
+
+        // Forward-traverse the clock distribution network from master_src.
+        // We follow enabled INTERCONNECT edges that do not lead to a SOURCE node
+        // (SOURCE nodes would be clock generators at that level; Tatum also stops
+        // clock propagation at SOURCE nodes for the same reason).
+        // This populates late_arr/early_arr with the max/min arrival time at every
+        // CPIN reachable from this master clock, and late_pred/early_pred with the
+        // predecessor edge for each visited node (for path reconstruction).
+        std::unordered_map<tatum::NodeId, float> late_arr, early_arr;
+        std::unordered_map<tatum::NodeId, tatum::EdgeId> late_pred, early_pred;
+        late_arr[master_src] = master_lat_late;
+        early_arr[master_src] = master_lat_early;
+
+        for (tatum::LevelId level : tg.levels()) {
+            for (tatum::NodeId node : tg.level_nodes(level)) {
+                auto it = late_arr.find(node);
+                if (it == late_arr.end()) continue;
+
+                float node_late = it->second;
+                float node_early = early_arr.at(node);
+
+                for (tatum::EdgeId edge : tg.node_out_edges(node)) {
+                    if (tg.edge_disabled(edge)) continue;
+                    if (tg.edge_type(edge) != tatum::EdgeType::INTERCONNECT) continue;
+
+                    tatum::NodeId sink = tg.edge_sink_node(edge);
+                    if (tg.node_type(sink) == tatum::NodeType::SOURCE) continue;
+
+                    float d_late = dc.max_edge_delay(tg, edge).value();
+                    float d_early = dc.min_edge_delay(tg, edge).value();
+                    float new_late = node_late + d_late;
+                    float new_early = node_early + d_early;
+
+                    auto sink_it = late_arr.find(sink);
+                    if (sink_it == late_arr.end()) {
+                        late_arr[sink] = new_late;
+                        early_arr[sink] = new_early;
+                        late_pred[sink] = edge;
+                        early_pred[sink] = edge;
+                    } else {
+                        if (new_late > sink_it->second) {
+                            sink_it->second = new_late;
+                            late_pred[sink] = edge;
+                        }
+                        if (new_early < early_arr.at(sink)) {
+                            early_arr.at(sink) = new_early;
+                            early_pred[sink] = edge;
+                        }
+                    }
+                }
+            }
+        }
+
+        // The generated clock's source node (gen_src) sits at level 0 in the timing
+        // graph because its PRIMITIVE_CLOCK_LAUNCH incoming edge is disabled. That
+        // disabled edge's source is the CPIN of the generating flip-flop; its delay is
+        // the clk-to-Q timing arc. Find it and combine with the CPIN's accumulated delay.
+        for (tatum::EdgeId clk_to_q_edge : tg.node_in_edges(gen_src)) {
+            if (!tg.edge_disabled(clk_to_q_edge)) continue;
+            if (tg.edge_type(clk_to_q_edge) != tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) continue;
+
+            tatum::NodeId cpin = tg.edge_src_node(clk_to_q_edge);
+            auto cpin_it = late_arr.find(cpin);
+            if (cpin_it == late_arr.end()) continue; // CPIN unreachable from this master
+
+            float clk_to_q_late = dc.max_edge_delay(tg, clk_to_q_edge).value();
+            float clk_to_q_early = dc.min_edge_delay(tg, clk_to_q_edge).value();
+
+            // Stack any user-specified extra latency (from set_clock_latency -source) on
+            // top of the computed network delay. The user value is stored separately so
+            // that repeated calls do not double-count it.
+            float user_lat_late = tc.user_source_latency(gen_domain, tatum::ArrivalType::LATE).value();
+            float user_lat_early = tc.user_source_latency(gen_domain, tatum::ArrivalType::EARLY).value();
+
+            tc.set_source_latency(gen_domain, tatum::ArrivalType::LATE,
+                                  tatum::Time(cpin_it->second + clk_to_q_late + user_lat_late));
+            tc.set_source_latency(gen_domain, tatum::ArrivalType::EARLY,
+                                  tatum::Time(early_arr.at(cpin) + clk_to_q_early + user_lat_early));
+
+            // Reconstruct the critical path from master_src to cpin (not including gen_src,
+            // which is already the first element of the existing clock network subpath).
+            // We do this for both LATE and EARLY to support both launch and capture display.
+            for (int pass = 0; pass < 2; ++pass) {
+                bool is_late = (pass == 0);
+                tatum::ArrivalType atype = is_late ? tatum::ArrivalType::LATE : tatum::ArrivalType::EARLY;
+                const auto& arr_map = is_late ? late_arr : early_arr;
+                const auto& pred_map = is_late ? late_pred : early_pred;
+
+                // Backtrace from cpin to master_src following predecessor edges.
+                std::vector<tatum::NodeId> path_nodes;
+                tatum::NodeId curr = cpin;
+                while (curr != master_src) {
+                    path_nodes.push_back(curr);
+                    auto pred_it = pred_map.find(curr);
+                    if (pred_it == pred_map.end()) break; // Should not happen
+                    curr = tg.edge_src_node(pred_it->second);
+                }
+                path_nodes.push_back(master_src);
+                std::reverse(path_nodes.begin(), path_nodes.end());
+
+                // Build path elements: (node, incoming_edge, cumulative_delay).
+                // cumulative_delay is the absolute arrival time at that node from the
+                // traversal (starts at master_lat at master_src).
+                // gen_src is included as the final element (via the disabled clk-to-Q edge)
+                // so the path is complete even when the capture subpath is empty (primary
+                // outputs have no PRIMITIVE_CLOCK_CAPTURE edge and thus no subpath elements).
+                float clk_to_q_delay = is_late ? clk_to_q_late : clk_to_q_early;
+                float cpin_arrival = arr_map.at(cpin);
+
+                std::vector<tatum::TimingConstraints::GeneratedClockSourcePathElem> path_elems;
+                path_elems.push_back({master_src, tatum::EdgeId::INVALID(),
+                                      tatum::Time(arr_map.at(master_src))});
+                for (size_t i = 1; i < path_nodes.size(); ++i) {
+                    tatum::NodeId n = path_nodes[i];
+                    tatum::EdgeId in_edge = pred_map.at(n);
+                    path_elems.push_back({n, in_edge, tatum::Time(arr_map.at(n))});
+                }
+                path_elems.push_back({gen_src, clk_to_q_edge,
+                                      tatum::Time(cpin_arrival + clk_to_q_delay)});
+
+                tc.set_generated_clock_source_path(gen_domain, atype, std::move(path_elems));
+            }
+
+            break; // Each generated clock source has exactly one driving CPIN
+        }
+    }
 }

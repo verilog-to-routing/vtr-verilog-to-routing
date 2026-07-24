@@ -660,7 +660,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clocks(const TimingGra
         if (tc.node_is_clock_source(src_node_id)) {
             //The source is a clock source
             TATUM_ASSERT_MSG(tg.node_type(src_node_id) == NodeType::SOURCE, "Only SOURCEs can be clock sources");
-            TATUM_ASSERT_MSG(tg.node_in_edges(src_node_id).empty(), "Clock sources should have no incoming edges");
+            TATUM_ASSERT_MSG(tg.node_num_active_in_edges(src_node_id) == 0, "Clock sources should have no incoming edges");
         }
         return true;
     }
