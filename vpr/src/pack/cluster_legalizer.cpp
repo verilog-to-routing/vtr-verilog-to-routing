@@ -114,10 +114,9 @@ LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
     alloc_and_load_pb_stats(pb);
+    pin_counter.allocate_pb_state(pb);
     pb->parent_pb = nullptr;
     pb->mode = cluster_mode;
-    // Ensure the pin counter is allocated for the root pb of this cluster.
-    pin_counter.allocate_pb_state(pb);
 }
 
 /*
@@ -570,12 +569,9 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
     if (pb->pb_stats == nullptr) {
         alloc_and_load_pb_stats(pb);
+        pin_counter.allocate_pb_state(pb);
     }
-    // TODO: Currnetly this is the only place the pin classes are loaded for this pb.
-    //       This is very implicit. We can load all of them when we open a cluster or
-    //       handle this somehow more explicitly.
-    pin_counter.allocate_pb_state(pb);
-    
+
     const t_pb_type* pb_type = pb_graph_node->pb_type;
 
     /* Any pb_type under an mode, which is disabled for packing, should not be considered for mapping
