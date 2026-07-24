@@ -106,7 +106,7 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause();
+static void set_display_step(bool checked);
 static void set_block_outline(bool checked);
 static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
@@ -498,11 +498,10 @@ void update_screen(ScreenUpdatePriority priority,
 
     if (state_change                   //Must update buttons
         || should_pause                //The priority means graphics should pause for user interaction
-        || draw_state->forced_pause) { //The user asked to pause
+        || draw_state->display_step) { //The user asked to pause
 
-        if (draw_state->forced_pause) {
-            VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
-            draw_state->forced_pause = false; //Reset pause flag
+        if (draw_state->display_step) {
+            VTR_LOG("Pausing in interactive graphics ('Display Step' is on)\n");
         }
 
         const bool has_cmds = !draw_state->graphics_commands.empty();
@@ -1276,10 +1275,10 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
         press_zoom_fit(/*unused*/ nullptr, app);
     });
 
-    // Connect Pause button
-    QPushButton* pause_button = app->find_push_button("PauseButton");
-    QObject::connect(pause_button, &QPushButton::clicked, []() {
-        set_force_pause();
+    //
+    QCheckBox* display_step = app->find_check_box("DisplayStep");
+    QObject::connect(display_step, &QCheckBox::toggled, [](bool checked) {
+        set_display_step(checked);
     });
 
     // Connect Block Outline checkbox
@@ -1388,10 +1387,12 @@ static void set_draw_partitions(bool checked) {
     application->refresh_drawing();
 }
 
-static void set_force_pause() {
+static void set_display_step(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    draw_state->forced_pause = true;
+    draw_state->display_step = checked;
+
+    application->update_message(draw_state->default_message);
 }
 
 // The enums below are the integer argument values accepted by the

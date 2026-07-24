@@ -343,8 +343,8 @@ struct t_draw_state {
     ///@brief Rendering backend: "immediate", "deferred", or "rhi"
     std::string renderer_type = "rhi";
 
-    ///@brief If we should pause for user interaction (requested by user)
-    bool forced_pause = false;
+    ///@brief If we should pause the graphics at every step (e.g. per annealer iteration). Requested by the user.
+    bool display_step = false;
 
     int sequence_number = 0;
 
