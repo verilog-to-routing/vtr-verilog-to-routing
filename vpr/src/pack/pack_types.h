@@ -34,7 +34,7 @@ const std::vector<const char*> lb_rr_type_str{
  *
  * TODO: The pin counting refactor left this struct with a single field.
  *       Worth revisiting whether t_pb_stats still earns its wrapper, but
- *       any change needs a replacement for the pb_stats null first-visit
+ *       any change needs a replacement for the pb_stats null first visit
  *       marker used in try_place_atom_block_rec.
  */
 struct t_pb_stats {

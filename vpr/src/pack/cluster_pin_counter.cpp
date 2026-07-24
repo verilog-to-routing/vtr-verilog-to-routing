@@ -354,7 +354,7 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
                 // the net does not exit the cluster
                 // TODO: I should cache the absorbed outputs, once net is absorbed,
                 //       net is forever absorbed, no point in rechecking every time
-                //       Caching within one pin evaluation is implemented by                                                                                                                                                                                                                                    
+                //       Caching within one pin evaluation is implemented by
                 //       confirmed_absorbed; leaving this TODO for the incremental case:
                 //       caching absorbed nets across candidate checks within a cluster.
                 if (net_sinks_reachable_in_cluster(pb_graph_pin, depth, net_id, atom_to_pb)) {
@@ -477,4 +477,3 @@ bool ClusterPinCounter::check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util m
 
     return true;
 }
-

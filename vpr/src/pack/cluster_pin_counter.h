@@ -229,12 +229,10 @@ class ClusterPinCounter {
      * @param atom_to_pb    Maps atoms to their assigned primitive pb.
      */
     void compute_and_mark_lookahead_pins_used_for_output_pin(const t_pb_graph_pin* pb_graph_pin,
-                                                            const t_pb* primitive_pb,
-                                                            AtomNetId net_id,
-                                                            const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                            const AtomPBBimap& atom_to_pb);
-
-
+                                                             const t_pb* primitive_pb,
+                                                             AtomNetId net_id,
+                                                             const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                             const AtomPBBimap& atom_to_pb);
 
     /**
      * @brief Pin usage state for every non-primitive pb visited during
