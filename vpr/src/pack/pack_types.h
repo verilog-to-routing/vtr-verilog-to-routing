@@ -29,8 +29,18 @@ const std::vector<const char*> lb_rr_type_str{
  * Packing Algorithm Data Structures
  ***************************************************************************/
 
-/* Stores statistical information for a physical cluster_ctx.blocks such as costs and usages */
+/**
+ * @brief Running count of atoms placed in a pb's subtree during packing.
+ *
+ * TODO: The pin counting refactor left this struct with a single field.
+ *       Worth revisiting whether t_pb_stats still earns its wrapper, but
+ *       any change needs a replacement for the pb_stats null first-visit
+ *       marker used in try_place_atom_block_rec.
+ */
 struct t_pb_stats {
+    /// @brief Running count of atom blocks placed in the subtree rooted at
+    ///        this pb. Used during tear down to detect speculatively
+    ///        allocated pbs that ended up empty, so they can be freed.
     int num_child_blocks_in_pb;
 };
 
