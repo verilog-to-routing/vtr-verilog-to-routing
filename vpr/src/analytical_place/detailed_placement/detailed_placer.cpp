@@ -42,7 +42,8 @@ std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detail
                                                             vpr_setup,
                                                             arch);
         case e_ap_detailed_placer::WindowedBiMatching:
-            return std::make_unique<WindowedBiMatchingDetailedPlacer>();
+            return std::make_unique<WindowedBiMatchingDetailedPlacer>(curr_clustered_placement,
+                                                                      vpr_setup.PlacerOpts);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized detailed placer type");
