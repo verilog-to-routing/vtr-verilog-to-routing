@@ -70,20 +70,16 @@ void ClusterPinCounter::deallocate_recursive(const t_pb* pb) {
 }
 
 void ClusterPinCounter::mark_lookahead_input(const t_pb* pb, size_t class_id, AtomNetId net) {
-    auto it = per_pb_state_.find(pb);
-    VTR_ASSERT(it != per_pb_state_.end());
-
-    std::vector<AtomNetId>& class_nets = it->second.lookahead_input_pin_class_nets[class_id];
+    PerPbState& state = per_pb_state_.at(pb);
+    std::vector<AtomNetId>& class_nets = state.lookahead_input_pin_class_nets.at(class_id);
     if (std::find(class_nets.begin(), class_nets.end(), net) == class_nets.end()) {
         class_nets.push_back(net);
     }
 }
 
 void ClusterPinCounter::mark_lookahead_output(const t_pb* pb, size_t class_id, AtomNetId net) {
-    auto it = per_pb_state_.find(pb);
-    VTR_ASSERT(it != per_pb_state_.end());
-
-    it->second.lookahead_output_pin_class_nets[class_id].push_back(net);
+    PerPbState& state = per_pb_state_.at(pb);
+    state.lookahead_output_pin_class_nets.at(class_id).push_back(net);
 }
 
 void ClusterPinCounter::reset_lookahead() {
@@ -127,27 +123,23 @@ void ClusterPinCounter::commit_lookahead() {
 }
 
 size_t ClusterPinCounter::lookahead_input_size(const t_pb* pb, size_t class_id) const {
-    auto it = per_pb_state_.find(pb);
-    VTR_ASSERT(it != per_pb_state_.end());
-    return it->second.lookahead_input_pin_class_nets[class_id].size();
+    const PerPbState& state = per_pb_state_.at(pb);
+    return state.lookahead_input_pin_class_nets.at(class_id).size();
 }
 
 size_t ClusterPinCounter::lookahead_output_size(const t_pb* pb, size_t class_id) const {
-    auto it = per_pb_state_.find(pb);
-    VTR_ASSERT(it != per_pb_state_.end());
-    return it->second.lookahead_output_pin_class_nets[class_id].size();
+    const PerPbState& state = per_pb_state_.at(pb);
+    return state.lookahead_output_pin_class_nets.at(class_id).size();
 }
 
 size_t ClusterPinCounter::committed_input_size(const t_pb* pb, size_t class_id) const {
-    auto it = per_pb_state_.find(pb);
-    VTR_ASSERT(it != per_pb_state_.end());
-    return it->second.committed_input_pin_class_nets[class_id].size();
+    const PerPbState& state = per_pb_state_.at(pb);
+    return state.committed_input_pin_class_nets.at(class_id).size();
 }
 
 size_t ClusterPinCounter::committed_output_size(const t_pb* pb, size_t class_id) const {
-    auto it = per_pb_state_.find(pb);
-    VTR_ASSERT(it != per_pb_state_.end());
-    return it->second.committed_output_pin_class_nets[class_id].size();
+    const PerPbState& state = per_pb_state_.at(pb);
+    return state.committed_output_pin_class_nets.at(class_id).size();
 }
 
 /**
