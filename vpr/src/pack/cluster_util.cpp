@@ -141,6 +141,10 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups,
         AttractGroupId group_id(igroup);
         AttractionGroup& group = attraction_groups.get_attraction_group_info(group_id);
         AttractionGroup new_att_group_info;
+        // Only the atom list is rebuilt (dropping already-clustered atoms); the
+        // group's other properties (gain, pull_in_initial_search) must survive.
+        new_att_group_info.gain = group.gain;
+        new_att_group_info.pull_in_initial_search = group.pull_in_initial_search;
 
         for (AtomBlockId atom : group.group_atoms) {
             if (!cluster_legalizer.is_atom_clustered(atom)) {

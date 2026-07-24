@@ -328,6 +328,60 @@ static bool check_cluster_noc_group(AtomBlockId atom_blk_id,
 }
 
 /**
+ * @brief Checks if an atom block can be added to a clustered block without
+ *        violating relative placement group constraints. A cluster may host at
+ *        most one relative placement group: an atom of a different group is
+ *        rejected, whether that group belongs to the same or to another macro
+ *        (each group becomes one member of a placement macro). Unconstrained
+ *        atoms may always join. A group-constrained atom assigns its group to
+ *        a cluster that does not host one yet.
+ *
+ * @param atom_blk_id
+ * @param cluster_rel_group     The relative placement group (macro id, group
+ *                              index) of the clustered block. This function may
+ *                              update this group.
+ * @param relative_macros       The user-defined relative placement macros.
+ * @param log_verbosity
+ *
+ * @return True if adding the atom block to the cluster does not violate
+ *         relative placement group constraints.
+ */
+static bool check_cluster_relative_group(AtomBlockId atom_blk_id,
+                                         std::pair<UserRelativeMacroId, int>& cluster_rel_group,
+                                         const UserRelativeMacros& relative_macros,
+                                         int log_verbosity) {
+    const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
+
+    // Unconstrained atoms are compatible with any cluster.
+    if (!atom_rel_group.first.is_valid())
+        return true;
+
+    if (!cluster_rel_group.first.is_valid()) {
+        // If the cluster does not host a relative placement group yet, assign
+        // the atom's group to the cluster.
+        VTR_LOGV(log_verbosity > 3,
+                 "\t\t\t Relative Group: Atom block %d passed cluster, cluster's relative group was updated with the atom's group (macro %zu, group %d)\n",
+                 atom_blk_id, (size_t)atom_rel_group.first, atom_rel_group.second);
+        cluster_rel_group = atom_rel_group;
+        return true;
+    }
+
+    if (cluster_rel_group == atom_rel_group) {
+        VTR_LOGV(log_verbosity > 3,
+                 "\t\t\t Relative Group: Atom block %d passed cluster, cluster's relative group was compatible with the atom's group\n",
+                 atom_blk_id);
+        return true;
+    }
+
+    // The cluster hosts a different relative placement group than the atom's.
+    VTR_LOGV(log_verbosity > 3,
+             "\t\t\t Relative Group: Atom block %d failed relative group check for cluster. Cluster's group: (macro %zu, group %d), atom's group: (macro %zu, group %d)\n",
+             atom_blk_id, (size_t)cluster_rel_group.first, cluster_rel_group.second,
+             (size_t)atom_rel_group.first, atom_rel_group.second);
+    return false;
+}
+
+/**
  * @brief This function takes the root block of a chain molecule and a proposed
  *        placement primitive for this block. The function then checks if this
  *        chain root block has a placement constraint (such as being driven from
@@ -1299,6 +1353,28 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         }
     }
 
+    // Check if all atoms in the molecule can be added to the cluster without
+    // relative placement group conflicts. Skipped entirely in the common case
+    // of no relative placement macros: this runs for every molecule x cluster
+    // attempt, and the per-atom group lookups would all miss anyway.
+    std::pair<UserRelativeMacroId, int> new_cluster_rel_group = cluster.rel_group;
+    if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
+        for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+
+            bool block_pack_rel_group_status = check_cluster_relative_group(atom_blk_id,
+                                                                            new_cluster_rel_group,
+                                                                            floorplanning_ctx.relative_macros,
+                                                                            log_verbosity_);
+            if (!block_pack_rel_group_status) {
+                VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative_group_conflict (atom '%s')\n",
+                         atom_ctx.netlist().block_name(atom_blk_id).c_str());
+                return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+            }
+        }
+    }
+
     std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
@@ -1498,6 +1574,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // Update the cluster's NoC group ID. This is cheap so it does
                 // not need the check like the what the PR did above.
                 cluster.noc_grp_id = new_cluster_noc_grp_id;
+
+                // Update the cluster's relative placement group.
+                cluster.rel_group = new_cluster_rel_group;
 
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
@@ -1960,6 +2039,16 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     //       would be more robust, but checking individual atoms is faster.
     const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
 
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    // Cheap early reject: an atom of one relative placement group can never
+    // join a cluster hosting a different group. (The definite check is in
+    // try_pack_molecule.) Only clusters that already host a group can reject
+    // on this basis, so hoist that test out of the per-atom loop: this method
+    // runs for every candidate molecule, and in the common case (no relative
+    // placement macros, so no cluster hosts a group) the per-atom group
+    // lookups are skipped entirely.
+    const bool cluster_has_rel_group = cluster.rel_group.first.is_valid();
+
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
         // FIXME: Why is it possible that molecules contain invalid block IDs?
@@ -1972,6 +2061,12 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
         if (!exists_free_primitive_for_atom_block(cluster.placement_stats,
                                                   atom_blk_id)) {
             return false;
+        }
+        if (cluster_has_rel_group) {
+            const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
+            if (atom_rel_group.first.is_valid() && atom_rel_group != cluster.rel_group) {
+                return false;
+            }
         }
     }
     // If every atom in the molecule has a free primitive it could theoretically

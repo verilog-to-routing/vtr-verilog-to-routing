@@ -558,6 +558,9 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
             case e_block_pack_status::BLK_FAILED_NOC_GROUP:
                 VTR_LOG("\tFAILED_NOC_GROUP_CHECK: ");
                 break;
+            case e_block_pack_status::BLK_FAILED_RELATIVE_GROUP:
+                VTR_LOG("\tFAILED_RELATIVE_GROUP_CHECK: ");
+                break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown pack status thrown.");
                 break;

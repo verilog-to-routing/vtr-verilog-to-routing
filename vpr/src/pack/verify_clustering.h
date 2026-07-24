@@ -19,6 +19,7 @@ class ClusterBlockId;
 class ClusteredNetlist;
 class PartitionRegion;
 class UserPlaceConstraints;
+class UserRelativeMacros;
 class VprContext;
 
 /**
@@ -38,6 +39,8 @@ class VprContext;
  *  - The pbs of the atoms are consistent with the clusters.
  *  - The floorplanning constraints on the clusters are consistent with the
  *    floorplanning constraints on the atoms within each cluster.
+ *  - Each relative placement group is clustered into exactly one cluster, and
+ *    no cluster hosts atoms of two different relative placement groups.
  *
  * Assumptions (are not checked by this function):
  *  - The atom netlist is valid (matches the input design).
@@ -52,6 +55,7 @@ class VprContext;
  *  @param clb_atoms            The atoms in each cluster.
  *  @param cluster_constraints  Floorplanning constraints on each cluster.
  *  @param constraints          Floorplanning constraints on each atom.
+ *  @param relative_macros      User-defined relative placement macros.
  *
  *  @return The number of errors found in the clustering. Will also print error
  *          log messages for each error found.
@@ -61,7 +65,8 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
                            const AtomLookup& atom_lookup,
                            const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
                            const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints,
-                           const UserPlaceConstraints& constraints);
+                           const UserPlaceConstraints& constraints,
+                           const UserRelativeMacros& relative_macros);
 
 /**
  * @brief Verifies the clustering of the atom netlist as it appears in the

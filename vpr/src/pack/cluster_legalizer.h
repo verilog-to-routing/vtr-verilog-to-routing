@@ -13,6 +13,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "cluster_legalizer_fwd.h"
@@ -20,6 +21,7 @@
 #include "noc_data_types.h"
 #include "partition_region.h"
 #include "prepack.h"
+#include "user_relative_macros.h"
 #include "vpr_types.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -72,12 +74,13 @@ enum class ClusterLegalizationStrategy {
 
 /// @brief The status of the cluster legalization.
 enum class e_block_pack_status {
-    BLK_PASSED,               // Passed legalization.
-    BLK_FAILED_FEASIBLE,      // Failed due to block not feasibly being able to go in the cluster.
-    BLK_FAILED_ROUTE,         // Failed due to intra-lb routing failure.
-    BLK_FAILED_FLOORPLANNING, // Failed due to not being compatible with the cluster's current PartitionRegion.
-    BLK_FAILED_NOC_GROUP,     // Failed due to not being compatible with the cluster's NoC group.
-    BLK_STATUS_UNDEFINED      // Undefined status. Something went wrong.
+    BLK_PASSED,                // Passed legalization.
+    BLK_FAILED_FEASIBLE,       // Failed due to block not feasibly being able to go in the cluster.
+    BLK_FAILED_ROUTE,          // Failed due to intra-lb routing failure.
+    BLK_FAILED_FLOORPLANNING,  // Failed due to not being compatible with the cluster's current PartitionRegion.
+    BLK_FAILED_NOC_GROUP,      // Failed due to not being compatible with the cluster's NoC group.
+    BLK_FAILED_RELATIVE_GROUP, // Failed due to not being compatible with the cluster's relative placement group.
+    BLK_STATUS_UNDEFINED       // Undefined status. Something went wrong.
 };
 
 /*
@@ -144,6 +147,12 @@ struct LegalizationCluster {
     ///        that have already been added to the primitive. This can be helpful
     ///        for optimization.
     NocGroupId noc_grp_id;
+
+    /// @brief The relative placement group (macro id, group index) this cluster
+    ///        hosts. The group index is the group's position in the macro's
+    ///        groups vector (0 is the reference group). A cluster may contain
+    ///        constrained atoms of at most one relative placement group.
+    std::pair<UserRelativeMacroId, int> rel_group = {UserRelativeMacroId::INVALID(), -1};
 
     /// @brief The intra lb router used for this cluster.
     ///        Contains information about the atoms in the cluster and how they

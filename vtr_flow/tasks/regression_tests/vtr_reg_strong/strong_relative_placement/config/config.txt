@@ -1,0 +1,40 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# This test exercises relative placement macros (see the
+# <relative_macro_list> section of the VPR constraints file documentation).
+# The circuit is a generated design with 120 LUTs, 20 DSPs (9x9 multiplies),
+# 20 BRAMs and 28 registers. The constraints file defines three macros:
+#   - 5 LUTs packed into one CLB placed at dx=1 from a DSP
+#   - 5 LUTs packed into one CLB placed at dx=1 from a BRAM (regex matching)
+#   - two 5-LUT groups packed into two separate CLBs placed at dx=1
+# Some constrained LUTs drive registers, exercising molecule (LUT+FF)
+# interaction with the constraints. Packing enforces the group/cluster
+# invariants and VPR's verify_placement errors out if any macro member is
+# not placed at exactly head + offset, so a passing flow implies the
+# constraints were honored.
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=relative_placement_macros.blif
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+script_params=-starting_stage vpr --route_chan_width 100 --read_vpr_constraints ../../../../relative_placement_constraints.xml

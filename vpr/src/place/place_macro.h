@@ -140,6 +140,13 @@ struct t_pl_macro_member {
 struct t_pl_macro {
     ///@brief A vector of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
+
+    ///@brief True if this macro comes from user relative placement constraints
+    ///       (see UserRelativeMacros) rather than from architecture direct
+    ///       connections (e.g., carry chains). User-defined macros may span multiple
+    ///       columns and mix block types, which some carry-chain-specific
+    ///       heuristics (e.g. dense initial placement) do not support.
+    bool user_defined = false;
 };
 
 class PlaceMacros {
@@ -230,6 +237,21 @@ class PlaceMacros {
                             std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+
+    /**
+     * @brief Appends user-defined relative placement macros (read from the
+     *        constraints file) to the architecture-derived macros in pl_macros_.
+     *
+     * The reference group's cluster becomes the macro head;
+     * each relative group's cluster becomes a member carrying the group's offset.
+     *
+     * A cluster that belongs to both a user-defined macro and an
+     * architecture-derived macro (e.g. a carry chain) is not supported and
+     * raises an error.
+     */
+    void append_user_defined_macros_(const ClusteredNetlist& clb_nlist,
+                                     const AtomNetlist& atom_nlist,
+                                     const AtomLookup& atom_lookup);
 
     void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
                                           const ClusteredNetlist& clb_nlist);
