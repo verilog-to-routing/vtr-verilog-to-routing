@@ -590,13 +590,13 @@
                     <input name="cin" num_pins="1"/>
                     <output name="cout" num_pins="1"/>
                     <output name="sumout" num_pins="1"/>
-                    <!-- CAUTION: THESE DELAYS ARE WRONG. I just took 75% (a dirty approximate scaling factor for the lut delays) of the 22nm delays -->
-                    <delay_constant max="0.225e-9" in_port="adder.a" out_port="adder.sumout"/>
-                    <delay_constant max="0.225e-9" in_port="adder.b" out_port="adder.sumout"/>
-                    <delay_constant max="0.225e-9" in_port="adder.cin" out_port="adder.sumout"/>
-                    <delay_constant max="0.225e-9" in_port="adder.a" out_port="adder.cout"/>
-                    <delay_constant max="0.225e-9" in_port="adder.b" out_port="adder.cout"/>
-                    <delay_constant max="0.0075e-9" in_port="adder.cin" out_port="adder.cout"/>
+                    <!-- CAUTION: THESE DELAYS ARE WRONG. I just took 67% (a dirty approximate scaling factor for the lut delays) of the 22nm delays -->
+                    <delay_constant max="46.06e-12" in_port="adder.a" out_port="adder.sumout"/>
+                    <delay_constant max="46.06e-12" in_port="adder.b" out_port="adder.sumout"/>
+                    <delay_constant max="23.76e-12" in_port="adder.cin" out_port="adder.sumout"/>
+                    <delay_constant max="33.04e-12" in_port="adder.a" out_port="adder.cout"/>
+                    <delay_constant max="33.04e-12" in_port="adder.b" out_port="adder.cout"/>
+                    <delay_constant max="17.13e-12" in_port="adder.cin" out_port="adder.cout"/>
                   </pb_type>
                   <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                     <input name="D" num_pins="1" port_class="D"/>
@@ -608,38 +608,38 @@
                   <interconnect>
                     <!--Clock -->
                     <direct name="direct5" input="arithmetic.clk" output="ff.clk"/>
-                    <!-- CAUTION: THESE DELAYS WERE RIPPED FROM THE blut5 MODE. NEED TO BE RE-COLLECTED. -->
+                    <!-- CAUTION: THESE DELAYS ARE JUST A SCALED VERSION OF AMON'S ARCH. NEED TO BE RE-COLLECTED. -->
                     <!-- NOTE: I removed the registered feedback mux for the arith mode. It may not make sense to feedback the registered sumout. -->
                     <!-- NOTE: I also removed the input selection mux. Was not clear how to connect that. -->
                     <direct name="direct0" input="arithmetic.in_A" output="lut4[0:0].in[0:0]">
-                      <delay_constant max="1.1287999999999999e-10" in_port="arithmetic.in_A" out_port="lut4[0:0].in[0:0]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_A" out_port="lut4[0:0].in[0:0]"/>
                     </direct>
                     <direct name="direct1" input="arithmetic.in_B" output="lut4[0:0].in[1:1]">
-                      <delay_constant max="1.1072500000000001e-10" in_port="arithmetic.in_B" out_port="lut4[0:0].in[1:1]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_B" out_port="lut4[0:0].in[1:1]"/>
                     </direct>
                     <direct name="direct2" input="arithmetic.in_C" output="lut4[0:0].in[2:2]">
-                      <delay_constant max="1.1072500000000001e-10" in_port="arithmetic.in_C" out_port="lut4[0:0].in[2:2]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_C" out_port="lut4[0:0].in[2:2]"/>
                     </direct>
                     <direct name="direct3" input="arithmetic.in_D" output="lut4[0:0].in[3:3]">
-                      <delay_constant max="8.1212e-11" in_port="arithmetic.in_D" out_port="lut4[0:0].in[3:3]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_D" out_port="lut4[0:0].in[3:3]"/>
                     </direct>
                     <direct name="direct4" input="arithmetic.in_A" output="lut4[1:1].in[0:0]">
-                      <delay_constant max="1.1287999999999999e-10" in_port="arithmetic.in_A" out_port="lut4[1:1].in[0:0]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_A" out_port="lut4[1:1].in[0:0]"/>
                     </direct>
                     <direct name="direct6" input="arithmetic.in_B" output="lut4[1:1].in[1:1]">
-                      <delay_constant max="1.1072500000000001e-10" in_port="arithmetic.in_B" out_port="lut4[1:1].in[1:1]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_B" out_port="lut4[1:1].in[1:1]"/>
                     </direct>
                     <direct name="direct7" input="arithmetic.in_C" output="lut4[1:1].in[2:2]">
-                      <delay_constant max="1.1072500000000001e-10" in_port="arithmetic.in_C" out_port="lut4[1:1].in[2:2]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_C" out_port="lut4[1:1].in[2:2]"/>
                     </direct>
                     <direct name="direct8" input="arithmetic.in_D" output="lut4[1:1].in[3:3]">
-                      <delay_constant max="8.1212e-11" in_port="arithmetic.in_D" out_port="lut4[1:1].in[3:3]"/>
+                      <delay_constant max="88.25e-12" in_port="arithmetic.in_D" out_port="lut4[1:1].in[3:3]"/>
                     </direct>
                     <direct name="lut_to_add1" input="lut4[0:0].out" output="adder.a"/>
                     <direct name="lut_to_add2" input="lut4[1:1].out" output="adder.b"/>
                     <direct name="add_to_ff" input="adder.sumout" output="ff.D">
-                      <!-- CAUTION: THIS DELAY IS WRONG. It is just 0.75x the delay in a 22nm arch. -->
-                      <delay_constant max="14.22e-12" in_port="adder.sumout" out_port="ff.D"/>
+                      <!-- CAUTION: THIS DELAY IS WRONG. It is just 0.67x the delay in a 22nm arch. -->
+                      <delay_constant max="12.70e-12" in_port="adder.sumout" out_port="ff.D"/>
                     </direct>
                     <direct name="carry_in" input="arithmetic.cin" output="adder.cin">
                       <pack_pattern name="chain" in_port="arithmetic.cin" out_port="adder.cin"/>
@@ -649,13 +649,13 @@
                     </direct>
                     <!-- BLE output (local) -->
                     <mux name="mux3" input="ff.Q adder.sumout" output="arithmetic.out_local">
-                      <delay_constant max="1.346e-10" in_port="ff.Q" out_port="arithmetic.out_local"/>
-                      <delay_constant max="1.346e-10" in_port="adder.sumout" out_port="arithmetic.out_local"/>
+                      <delay_constant max="26.70e-12" in_port="ff.Q" out_port="arithmetic.out_local"/>
+                      <delay_constant max="26.70e-12" in_port="adder.sumout" out_port="arithmetic.out_local"/>
                     </mux>
                     <!-- BLE output (routing 1) --> 
                     <mux name="mux4" input="ff.Q adder.sumout" output="arithmetic.out_routing[0:0]">
-                      <delay_constant max="3.771e-11" in_port="ff.Q" out_port="arithmetic.out_routing[0:0]"/>
-                      <delay_constant max="3.771e-11" in_port="adder.sumout" out_port="arithmetic.out_routing[0:0]"/>
+                      <delay_constant max="26.70e-12" in_port="ff.Q" out_port="arithmetic.out_routing[0:0]"/>
+                      <delay_constant max="26.70e-12" in_port="adder.sumout" out_port="arithmetic.out_routing[0:0]"/>
                     </mux>
                   </interconnect>
                 </pb_type>
@@ -761,8 +761,8 @@
           <!-- Carry chain links -->
           <direct name="carry_in" input="clb.cin" output="fle[0:0].cin">
             <!-- Put all inter-block carry chain delay on this one edge -->
-            <!-- CAUTION! THIS IS WRONG! I just multiplied the 22nm delay by 0.75 -->
-            <delay_constant max="0.12e-9" in_port="clb.cin" out_port="fle[0:0].cin"/>
+            <!-- CAUTION! THIS IS WRONG! I just multiplied the 22nm delay by 0.67 -->
+            <delay_constant max="12.37e-12" in_port="clb.cin" out_port="fle[0:0].cin"/>
             <pack_pattern name="chain" in_port="clb.cin" out_port="fle[0:0].cin"/>
           </direct>
           <direct name="carry_out" input="fle[9:9].cout" output="clb.cout">
