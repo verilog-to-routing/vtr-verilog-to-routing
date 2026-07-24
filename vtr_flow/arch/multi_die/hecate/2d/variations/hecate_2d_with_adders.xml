@@ -430,6 +430,7 @@
               <mux name="2" input="lut6.out ble6.in_C" output="ff.D">
                 <delay_constant max="1.74588e-11" in_port="lut6.out" out_port="ff.D"/>
                 <delay_constant max="1.74588e-11" in_port="ble6.in_C" out_port="ff.D"/>
+                <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
               </mux>
               <!-- BLE output (local) -->
               <mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local">
@@ -536,6 +537,7 @@
                     <mux name="2" input="lut5.out flut5.in_C" output="ff.D">
                       <delay_constant max="1.74588e-11" in_port="lut5.out" out_port="ff.D"/>
                       <delay_constant max="1.74588e-11" in_port="flut5.in_C" out_port="ff.D"/>
+                      <pack_pattern name="ble5" in_port="lut5.out" out_port="ff.D"/>
                     </mux>
                     <!-- BLE output (local) -->
                     <mux name="mux3" input="ff.Q lut5.out" output="flut5.out_local">
