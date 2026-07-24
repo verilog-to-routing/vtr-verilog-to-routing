@@ -16,7 +16,7 @@ archs_dir=arch/titan
 circuit_list_add=tiny_murax_stratix10_arch_timing.blif
 
 # Add architectures to list to sweep
-arch_list_add=stratix10_arch.timing.depop50.complex_alm.xml
+arch_list_add=stratix10_arch.timing.non-simplified.xml
 
 # Parse info and how to parse
 parse_file=vpr_titan_s10.txt
