@@ -313,7 +313,6 @@ struct t_options {
     argparse::ArgValue<std::string> sb_templates;
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
-    argparse::ArgValue<std::string> sb_count_dir;
     argparse::ArgValue<e_gsb_version> gsb_version;
 };
 

@@ -1460,7 +1460,6 @@ struct t_crr_opts {
     std::string sb_templates;
     bool annotated_rr_graph;
     bool remove_dangling_nodes;
-    std::string sb_count_dir;
     e_gsb_version gsb_version;
 };
 

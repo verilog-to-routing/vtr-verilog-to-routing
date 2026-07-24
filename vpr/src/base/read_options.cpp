@@ -3616,11 +3616,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
-        .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
-        .default_value("")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     crr_grp.add_argument<e_gsb_version, ParseGsbVersion>(args.gsb_version, "--gsb_version")
         .help("Specifies which GSB version should be used for CRR switch block templates. Valid values are 1 or 2. Defaults to 1 when --sb_maps is set, otherwise no GSB version is assumed.")
         .default_value("none")
