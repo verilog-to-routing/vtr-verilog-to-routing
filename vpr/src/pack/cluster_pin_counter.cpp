@@ -25,8 +25,8 @@
 
 void ClusterPinCounter::allocate_pb_state(const t_pb* pb) {
     VTR_ASSERT(pb != nullptr);
-    if (per_pb_state_.count(pb) != 0)
-        return;
+    VTR_ASSERT_MSG(per_pb_state_.count(pb) == 0,
+                   "Pin counting state should be empty before allocation");
 
     const t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
     VTR_ASSERT(pb_graph_node != nullptr);
@@ -40,10 +40,6 @@ void ClusterPinCounter::allocate_pb_state(const t_pb* pb) {
     state.committed_output_pin_class_nets.assign(num_output_classes, {});
     state.lookahead_input_pin_class_nets.assign(num_input_classes, {});
     state.lookahead_output_pin_class_nets.assign(num_output_classes, {});
-}
-
-void ClusterPinCounter::deallocate(const t_pb* pb) {
-    per_pb_state_.erase(pb);
 }
 
 void ClusterPinCounter::deallocate_recursive(const t_pb* pb) {

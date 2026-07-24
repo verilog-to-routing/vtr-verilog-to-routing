@@ -17,7 +17,7 @@
  *
  * See Section 4.3.2 of Jason Luu's PhD thesis for the pin feasibility filter
  * that this class is refactored from:
- *   https://www.eecg.toronto.edu/~jayar/pubs/theses/Luu/JasonLuuPhD.pdf
+ *   http://hdl.handle.net/1807/68469
  */
 
 #include <unordered_map>
@@ -66,24 +66,15 @@ class ClusterPinCounter {
     };
 
     /**
-     * @brief Allocate the pin usage state for given pb if not already allocated.
+     * @brief Allocate the pin usage state for given pb.
      *
-     * The four per-class vectors are sized to the number of input/output pin
-     * classes at given pb.
+     * The four per-class vectors are sized to the number of
+     * input/output pin classes at given pb. Do not call on
+     * a pb whose state is already allocated.
      *
      * @param pb  The pb to allocate state for.
      */
     void allocate_pb_state(const t_pb* pb);
-
-    /**
-     * @brief Erase the pin usage state stored for given pb, if any.
-     *
-     * Only the current pb is affected; descendants are not touched.
-     * Prefer deallocate_recursive when tearing down a pb subtree.
-     *
-     * @param pb  The pb to erase state for.
-     */
-    void deallocate(const t_pb* pb);
 
     /**
      * @brief Erase the pin usage state for given pb and every pb in its subtree.

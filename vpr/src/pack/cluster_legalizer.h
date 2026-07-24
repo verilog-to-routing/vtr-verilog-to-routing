@@ -157,8 +157,10 @@ struct LegalizationCluster {
     ///        what sites it should try to put a new molecule into.
     t_intra_cluster_placement_stats* placement_stats;
 
-    /// @brief Pin counting state for this cluster's pb hierarchy used to track
-    ///        the demand of each pin class in each pb level.
+    /// @brief Pin counting state for this cluster's pb hierarchy. Tracks the
+    ///        demand of each pin class at each pb level so the legalizer can
+    ///        quickly check whether adding a candidate molecule would exceed
+    ///        the pin supply of this cluster.
     ClusterPinCounter pin_counter;
 };
 

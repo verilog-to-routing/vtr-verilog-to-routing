@@ -59,4 +59,3 @@ ignore-words-list = subtile,
                     # formatting code "%shold". This can be fixed when std::format
                     # is better supported in C++20.
                     shold,
-                    theses,
