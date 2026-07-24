@@ -89,32 +89,10 @@ void ClusterPinCounter::reset_lookahead() {
     }
 }
 
-// TODO [BUG]: this loop grows committed to match lookahead but never shrinks,
-// even when lookahead is smaller (e.g., a net is absorbed inside the
-// cluster). This is a bug inherited from the legacy pin counting code,
-// where committed was stored as unordered_map<pin_index, net> and updated
-// with insert() which never overwrites existing keys, so committed size
-// could only grow across commits. Kept for the scope of this class refactor
-// so behaviour is preserved. The fix is to assign lookahead directly
-// to committed, as I implemented intuitively first and observed differences
-// with legacy. Leaving this QoR changing small fix to next PR.
 void ClusterPinCounter::commit_lookahead() {
-    for (auto& kv : per_pb_state_) {
-        PerPbState& state = kv.second;
-        for (size_t c = 0; c < state.committed_input_pin_class_nets.size(); c++) {
-            auto& committed = state.committed_input_pin_class_nets[c];
-            const auto& lookahead = state.lookahead_input_pin_class_nets[c];
-            if (lookahead.size() > committed.size()) {
-                committed = lookahead;
-            }
-        }
-        for (size_t c = 0; c < state.committed_output_pin_class_nets.size(); c++) {
-            auto& committed = state.committed_output_pin_class_nets[c];
-            const auto& lookahead = state.lookahead_output_pin_class_nets[c];
-            if (lookahead.size() > committed.size()) {
-                committed = lookahead;
-            }
-        }
+    for (auto& [pb, state] : per_pb_state_) {
+        state.committed_input_pin_class_nets  = state.lookahead_input_pin_class_nets;
+        state.committed_output_pin_class_nets = state.lookahead_output_pin_class_nets;
     }
 }
 
