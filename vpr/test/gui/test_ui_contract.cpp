@@ -124,14 +124,14 @@ constexpr WidgetSpec kSpecs[] = {
     {"TextInput", WidgetKind::LineEdit, "ui_setup.cpp:370"},
 
     // --- draw.cpp default_setup (callback wiring) ---
-    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1159"},
-    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1165"},
-    {"PauseButton", WidgetKind::PushButton, "draw.cpp:1171"},
-    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1177"},
-    {"blockText", WidgetKind::CheckBox, "draw.cpp:1183"},
-    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1189"},
-    {"debugButton", WidgetKind::PushButton, "draw.cpp:1195"},
-    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1201"},
+    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1267"},
+    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1273"},
+    {"DisplayStep", WidgetKind::CheckBox, "draw.cpp:1279"},
+    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1285"},
+    {"blockText", WidgetKind::CheckBox, "draw.cpp:1291"},
+    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1297"},
+    {"debugButton", WidgetKind::PushButton, "draw.cpp:1303"},
+    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1309"},
 
     // --- search_bar.cpp ---
     // (find_combo_box("SearchType") and find_line_edit("TextInput") already

@@ -106,8 +106,7 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_single_pause();
-static void set_sustained_pause(bool checked);
+static void set_display_step(bool checked);
 static void set_block_outline(bool checked);
 static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
@@ -500,7 +499,7 @@ void update_screen(ScreenUpdatePriority priority,
     if (state_change                   //Must update buttons
         || should_pause                //The priority means graphics should pause for user interaction
         || draw_state->display_step) { //The user asked to pause
-        
+
         if (draw_state->display_step) {
             VTR_LOG("Pausing in interactive graphics ('Display Step' is on)\n");
         }
@@ -1276,7 +1275,7 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
         press_zoom_fit(/*unused*/ nullptr, app);
     });
 
-    // 
+    //
     QCheckBox* display_step = app->find_check_box("DisplayStep");
     QObject::connect(display_step, &QCheckBox::toggled, [](bool checked) {
         set_display_step(checked);
@@ -1391,7 +1390,7 @@ static void set_draw_partitions(bool checked) {
 static void set_display_step(bool checked) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    draw_state->display_step= checked;
+    draw_state->display_step = checked;
 
     application->update_message(draw_state->default_message);
 }

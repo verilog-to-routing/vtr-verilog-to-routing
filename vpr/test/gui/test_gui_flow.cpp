@@ -257,7 +257,7 @@ TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
     REQUIRE(bbox != nullptr);
 }
 
-TEST_CASE("Flow: Misc popover has save, pause, debug, manual move", "[layer3][vpr_gui]") {
+TEST_CASE("Flow: Misc popover has save, display step, debug, manual move", "[layer3][vpr_gui]") {
     ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
@@ -266,9 +266,9 @@ TEST_CASE("Flow: Misc popover has save, pause, debug, manual move", "[layer3][vp
     REQUIRE(saveBtn != nullptr);
     CHECK(saveBtn->text() == "Save");
 
-    auto* pauseBtn = findWidgetByName<QPushButton>("PauseButton");
-    REQUIRE(pauseBtn != nullptr);
-    CHECK(pauseBtn->text() == "Pause");
+    auto* displayStep = findWidgetByName<QCheckBox>("DisplayStep");
+    REQUIRE(displayStep != nullptr);
+    CHECK(displayStep->text() == "Display Step");
 
     auto* debugBtn = findWidgetByName<QPushButton>("debugButton");
     REQUIRE(debugBtn != nullptr);
