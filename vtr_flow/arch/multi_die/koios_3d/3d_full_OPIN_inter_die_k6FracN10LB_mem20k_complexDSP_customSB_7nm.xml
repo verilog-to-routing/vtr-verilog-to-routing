@@ -504,24 +504,20 @@
   </device>
   <switchlist>
     <switch type="mux" name="L4_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="9.877e-11" mux_trans_size="2.6482996805637553" buf_size="18.744014602932605"/>
-    <switch type="mux" name="L4_inter_layer_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="17.177e-11" mux_trans_size="2.6482996805637553" buf_size="18.744014602932605"/>
     <!-- Delay of L16 driver is scaled from L4 by a factor of 1.5x (based on numbers from the Titan Stratix IV architecture file)
    Area numbers will not be totally accurate because of the same buf_size -->
     <switch type="mux" name="L16_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="2.016e-10" mux_trans_size="3.1851297470059468" buf_size="39.327334265524485"/>
-    <switch type="mux" name="L16_inter_layer_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="2.746e-10" mux_trans_size="3.1851297470059468" buf_size="39.327334265524485"/>
     <switch type="mux" name="ipin_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="5.636e-11" mux_trans_size="2.008" buf_size="9.624436045683868"/>
     <switch type="mux" name="ipin_inter_layer_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="130e-12" mux_trans_size="1.508" buf_size="11.71"/>
   </switchlist>
   <segmentlist>
     <segment name="L4" freq="280" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0">
       <mux name="L4_driver"/>
-      <mux_inter_die name="L4_inter_layer_driver"/>
       <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
     </segment>
     <segment name="L16" freq="40" length="16" type="unidir" Rmetal="0.0" Cmetal="0.0">
       <mux name="L16_driver"/>
-      <mux_inter_die name="L16_inter_layer_driver"/>
       <!-- Vias from the top of the metal stack (global layers, where the long wires are 
            implemented) down to the middle/bottom of the metal stack (semi-global layers, 
            where the short wires are implemented) are expensive and restrictive.
