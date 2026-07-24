@@ -22,6 +22,9 @@
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
 
+// Forward Declaration
+class APBlockId;
+
 /**
  * @brief Draws all placed blocks on the device grid across visible layers.
  *
@@ -53,6 +56,19 @@ void draw_routing_bb(ezgl::renderer* g);
 /* Draws an X centered at (x,y). The width and height of the X are each 2 * size. */
 void draw_x(float x, float y, float size, ezgl::renderer* g);
 
+/**
+ * @brief Draws a filled star centered at the specified world-coordinate location with a fixed pixel size.
+ *
+ * The star size is in screen (pixel) coordinates, so it appears the same at any zoom level.
+ * The star is four-pointed, with the distance from the center to a star point of size_in_pixels.
+ * The center of the star is filled in with a square of width size_in_pixels / 2.
+ *
+ * @param star_coords 2D star coordinates in world units.
+ * @param size_in_pixels Distance from the center to a star point, in pixels.
+ * @param g Renderer used to perform drawing.
+ */
+void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::renderer* g);
+
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
  * that are not coloured black (useful for drawing over the rr_graph).       */
@@ -63,13 +79,6 @@ void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 //Draws the set of rr_nodes specified, using the colors set in draw_state
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
                         ezgl::renderer* g);
-
-/**
- * @brief Returns the layer number of a timing path node
- * @param node
- * @return layer number the node is situated on.
- */
-int get_timing_path_node_layer_num(tatum::NodeId node);
 
 /**
  * @brief Returns true if both the current_node and prev_node are on the same layer and it is visible,
@@ -111,5 +120,13 @@ void draw_reset_blk_colors();
 
 //Reset a specific block's colour.
 void draw_reset_blk_color(ClusterBlockId blk_id);
+
+/**
+ * @brief Returns the drawing coordinates for an analytical placement block.
+ *
+ * @param ap_block AP block whose current drawing location is requested.
+ * @return 2D coordinates associated with the given AP block.
+ */
+ezgl::point2d get_ap_block_draw_coords(APBlockId ap_block);
 
 #endif /* NO_GRAPHICS */
