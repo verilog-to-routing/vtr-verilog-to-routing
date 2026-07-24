@@ -295,8 +295,8 @@
   </segmentlist>
   <directlist>
     <!-- Direct connect from one DSP to the DSP directly below it -->
-    <direct name="dsp_out_chain" from_pin="dsp_top.chainout" to_pin="dsp_top.chainin" x_offset="0" y_offset="-4" z_offset="0"/>
-    <direct name="dsp_in_chain" from_pin="dsp_top.scanout" to_pin="dsp_top.scanin" x_offset="0" y_offset="-4" z_offset="0"/>
+    <direct name="dsp_out_chain" from_pin="dsp_top.chainout" to_pin="dsp_top.chainin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="dsp_in_chain" from_pin="dsp_top.scanout" to_pin="dsp_top.scanin" x_offset="0" y_offset="-1" z_offset="0"/>
 
     <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
   </directlist>
