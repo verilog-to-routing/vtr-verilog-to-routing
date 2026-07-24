@@ -640,6 +640,18 @@ static void show_placer_opts(const t_placer_opts& placer_opts) {
 }
 
 static void show_analytical_placer_opts(const t_ap_opts& ap_opts) {
+    VTR_LOG("AnalyticalPlacerOpts.global_placer_type: ");
+    switch (ap_opts.global_placer_type) {
+        case e_ap_global_placer::SimPL:
+            VTR_LOG("simpl\n");
+            break;
+        case e_ap_global_placer::NonlinearNesterov:
+            VTR_LOG("nonlinear-nesterov\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown global_placer_type\n");
+    }
+
     VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
     switch (ap_opts.analytical_solver_type) {
         case e_ap_analytical_solver::Identity:
