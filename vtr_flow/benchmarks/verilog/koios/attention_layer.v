@@ -164,7 +164,7 @@ wordwise_bram_2 out_buffer34
 );
 
 //Softmax layer has a parallelism of 4
-softmax soft(
+softmax softmax(
 	.inp(data_to_softmax),
 	.sub0_inp(data_to_softmax),
 	.sub1_inp(data_to_softmax),
