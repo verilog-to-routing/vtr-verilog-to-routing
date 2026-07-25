@@ -150,7 +150,7 @@ class ClusterPinCounter {
      * atom_cluster/atom_to_pb (i.e. from the complete membership), not by
      * patching state left behind by previously visited atoms. This assumption
      * will need to be revisited in the incremental version where both
-     * processing order and reducing previously marked inputs becomes effective.
+     * processing order and reducing previously marked inputs become effective.
      *
      * @param molecules     Molecule ids currently under evaluation in the cluster.
      * @param prepacker     Used to resolve each PackMoleculeId to its atom list.

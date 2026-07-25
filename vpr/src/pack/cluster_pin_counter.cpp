@@ -81,7 +81,7 @@ void ClusterPinCounter::mark_lookahead_input(const t_pb* pb, size_t class_id, At
 void ClusterPinCounter::mark_lookahead_output(const t_pb* pb, size_t class_id, AtomNetId net) {
     PerPbState& state = per_pb_state_.at(pb);
     // A net has only one driver, so we don't have to check if this output net
-    // is already recorded here as we do in the input counterpart of this method.
+    // is already recorded here as we do in mark_lookahead_input.
     state.lookahead_output_pin_class_nets.at(class_id).push_back(net);
 }
 
