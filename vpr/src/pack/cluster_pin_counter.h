@@ -141,6 +141,17 @@ class ClusterPinCounter {
      * currently in the cluster: already committed molecules plus the candidate
      * being tested.
      *
+     * Because this is a full recompute rather than an incremental update,
+     * the order in which atoms are visited does not matter, and within one
+     * atom, the order in which its input and output pins are marked also does
+     * not matter, and there is no step that removes previously marked input
+     * pins when a later output locally captures the same net: each atom's
+     * input and output marking is derived independently from
+     * atom_cluster/atom_to_pb (i.e. from the complete membership), not by
+     * patching state left behind by previously visited atoms. This assumption
+     * will need to be revisited in the incremental version where both
+     * processing order and reducing previously marked inputs becomes effective.
+     *
      * @param molecules     Molecule ids currently under evaluation in the cluster.
      * @param prepacker     Used to resolve each PackMoleculeId to its atom list.
      * @param atom_cluster  Maps atoms to the legalization cluster that owns them.

@@ -68,6 +68,11 @@ void ClusterPinCounter::deallocate_pin_count_state_recursive(const t_pb* pb) {
 void ClusterPinCounter::mark_lookahead_input(const t_pb* pb, size_t class_id, AtomNetId net) {
     PerPbState& state = per_pb_state_.at(pb);
     std::vector<AtomNetId>& class_nets = state.lookahead_input_pin_class_nets.at(class_id);
+
+    // Note: This is a linear search over class_nets per call. Could switch to
+    //       a vector of unordered_maps for clusters with many pins, but that's
+    //       likely worse for the common case of small pin classes lower in
+    //       the hierarchy. Revisit if this shows up as a bottleneck.
     if (std::find(class_nets.begin(), class_nets.end(), net) == class_nets.end()) {
         class_nets.push_back(net);
     }
@@ -75,6 +80,8 @@ void ClusterPinCounter::mark_lookahead_input(const t_pb* pb, size_t class_id, At
 
 void ClusterPinCounter::mark_lookahead_output(const t_pb* pb, size_t class_id, AtomNetId net) {
     PerPbState& state = per_pb_state_.at(pb);
+    // A net has only one driver, so we don't have to check if this output net
+    // is already recorded here as we do in the input counterpart of this method.
     state.lookahead_output_pin_class_nets.at(class_id).push_back(net);
 }
 
