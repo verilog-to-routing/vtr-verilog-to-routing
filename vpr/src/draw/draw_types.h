@@ -346,7 +346,7 @@ struct t_draw_state {
     ///@brief If we should pause for user interaction (requested by user)
     bool forced_pause = false;
 
-    int num_paths = 0;
+    std::size_t num_crit_paths = 0;
 
     int sequence_number = 0;
 

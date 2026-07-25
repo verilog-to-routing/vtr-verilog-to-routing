@@ -389,9 +389,9 @@ void draw_crit_path(ezgl::renderer* g) {
     // Get the worst timing path
     auto paths = path_collector.collect_worst_setup_timing_paths(
         *timing_ctx.graph,
-        *(draw_state->setup_timing_info->setup_analyzer()), draw_state->num_paths);
+        *(draw_state->setup_timing_info->setup_analyzer()), draw_state->num_crit_paths);
     
-    for (int path_idx = 0; path_idx < draw_state->num_paths; path_idx++) {
+    for (int path_idx = 0; path_idx < actual_num_paths; path_idx++) {
         tatum::TimingPath path = paths[path_idx];
 
         // Subtract 1 so that we get the number of edges instead of nodes.
@@ -403,15 +403,16 @@ void draw_crit_path(ezgl::renderer* g) {
 
     if (draw_state->show_crit_path_flylines) {
         draw_timing_edge_flylines(path, g);
-        if (draw_state->show_crit_path_delays) {
-            calculate_and_draw_delay(path, g);
-        }
     }
 
         // Ensure that we are already in the routing stage.
         if (draw_state->show_crit_path_routing && draw_state->pic_on_screen == e_pic_type::ROUTING) {
             draw_routed_timing_connections(path, g);
         }
+    }
+
+    if (draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays) {
+        calculate_and_draw_delay(path, g);
     }
 }
 

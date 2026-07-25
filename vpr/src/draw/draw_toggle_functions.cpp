@@ -398,9 +398,9 @@ void set_net_alpha_value_cbk(QSpinBox* self, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void set_num_paths_value_cbk(QSpinBox* self, ezgl::application* app) {
+void set_num_crit_paths_value_cbk(QSpinBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->num_paths = self->value();
+    draw_state->num_crit_paths = self->value();
     app->refresh_drawing();
 }
 
