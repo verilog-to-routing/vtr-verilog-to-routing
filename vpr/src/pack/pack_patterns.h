@@ -40,6 +40,10 @@ struct t_pack_pattern_block {
  *      from_pin   : specific pin in the from_block driving the connection
  *      to_block   : block driven by this connection
  *      to_pin     : specific pin in the to_block driven by this connection
+ *      allow_multi_fanout : true if any pb-graph edge along this connection's
+ *                           path is annotated with allow_multi_fanout="true",
+ *                           lifting the prepacker's single-fanout assumptions
+ *                           for the netlist net implementing this connection
  *      next       : next connection in the linked list
  */
 struct t_pack_pattern_connections {
@@ -48,6 +52,8 @@ struct t_pack_pattern_connections {
 
     t_pack_pattern_block* to_block;
     t_pb_graph_pin* to_pin;
+
+    bool allow_multi_fanout = false;
 
     t_pack_pattern_connections* next;
 };
