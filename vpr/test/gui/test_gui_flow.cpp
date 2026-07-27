@@ -138,10 +138,10 @@ TEST_CASE("Flow: main.ui contains bottom menu bar with all menu buttons", "[laye
     auto* layersBtn = findWidgetByName<QPushButton>("3DMenuButton");
     REQUIRE(layersBtn != nullptr);
 
-    // Proceed (Next Step)
+    // Proceed
     auto* proceedBtn = findWidgetByName<QPushButton>("ProceedButton");
     REQUIRE(proceedBtn != nullptr);
-    CHECK(proceedBtn->text() == "Next Step");
+    CHECK(proceedBtn->text() == "Proceed");
 }
 
 // ---------------------------------------------------------------------------
