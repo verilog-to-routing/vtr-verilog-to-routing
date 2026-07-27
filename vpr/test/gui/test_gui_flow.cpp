@@ -31,6 +31,7 @@
 #include <QStringList>
 
 #include <ezgl/main_window.hpp>
+#include <ezgl/qt/switchbutton.hpp>
 #include "test_gui_helpers.hpp"
 
 // ---------------------------------------------------------------------------
@@ -185,6 +186,9 @@ TEST_CASE("Flow: Net popover has expected controls", "[layer3][vpr_gui]") {
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
+    auto* netToggleSwitch = findWidgetByName<SwitchButton>("ToggleNets");
+    REQUIRE(netToggleSwitch != nullptr);
+
     auto* netTypeCombo = findWidgetByName<QComboBox>("ToggleNetType");
     REQUIRE(netTypeCombo != nullptr);
     CHECK(netTypeCombo->count() == 2); // Flylines, Routing
@@ -210,6 +214,9 @@ TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
     ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
+
+    auto* rrToggleSwitch = findWidgetByName<SwitchButton>("ToggleRR");
+    REQUIRE(rrToggleSwitch != nullptr);
 
     // RR checkboxes
     auto* rrChannels = findWidgetByName<QCheckBox>("ToggleRRChannels");
@@ -257,18 +264,20 @@ TEST_CASE("Flow: Routing popover has expected controls", "[layer3][vpr_gui]") {
     REQUIRE(bbox != nullptr);
 }
 
-TEST_CASE("Flow: Misc popover has save, display step, debug, manual move", "[layer3][vpr_gui]") {
+TEST_CASE("Flow: Misc popover has proceed by step, save, debug, manual move", "[layer3][vpr_gui]") {
     ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
 
+    auto* proceedByStepToggleSwitch = findWidgetByName<SwitchButton>("ProceedByStep");
+    REQUIRE(proceedByStepToggleSwitch != nullptr);
+
+    auto* stepsToProceed = findWidgetByName<QSpinBox>("StepsToProceed");
+    REQUIRE(stepsToProceed != nullptr);
+
     auto* saveBtn = findWidgetByName<QPushButton>("SaveGraphics");
     REQUIRE(saveBtn != nullptr);
     CHECK(saveBtn->text() == "Save");
-
-    auto* displayStep = findWidgetByName<QCheckBox>("DisplayStep");
-    REQUIRE(displayStep != nullptr);
-    CHECK(displayStep->text() == "Display Step");
 
     auto* debugBtn = findWidgetByName<QPushButton>("debugButton");
     REQUIRE(debugBtn != nullptr);
@@ -283,6 +292,9 @@ TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_
     ezgl::MainWindow mw(VPR_MAIN_UI_PATH);
     std::unique_ptr<QMainWindow> win(mw.release());
     REQUIRE(win != nullptr);
+
+    auto* critPathToggleSwitch = findWidgetByName<SwitchButton>("ToggleCritPath");
+    REQUIRE(critPathToggleSwitch != nullptr);
 
     auto* critFlylines = findWidgetByName<QCheckBox>("ToggleCritPathFlylines");
     REQUIRE(critFlylines != nullptr);

@@ -119,19 +119,25 @@ constexpr WidgetSpec kSpecs[] = {
 
     // --- ui_setup.cpp critical_path_button_setup ---
     {"ToggleCritPath", WidgetKind::SwitchButton, "ui_setup.cpp:324"},
+    {"ToggleCritPathFlylines", WidgetKind::CheckBox, "ui_setup.cpp:330"},
+    {"ToggleCritPathRouting", WidgetKind::CheckBox, "ui_setup.cpp:331"},
+    {"ToggleCritPathDelays", WidgetKind::CheckBox, "ui_setup.cpp:332"},
+
+    // --- ui_setup.cpp proceed_by_step_button_setup ---
+    {"ProceedByStep", WidgetKind::SwitchButton, "ui_setup.cpp:366"},
+    {"StepsToProceed", WidgetKind::SpinBox, "ui_setup.cpp:372"},
 
     // --- ui_setup.cpp autocomplete_setup ---
-    {"TextInput", WidgetKind::LineEdit, "ui_setup.cpp:370"},
+    {"TextInput", WidgetKind::LineEdit, "ui_setup.cpp:387"},
 
     // --- draw.cpp default_setup (callback wiring) ---
-    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1267"},
-    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1273"},
-    {"DisplayStep", WidgetKind::CheckBox, "draw.cpp:1279"},
-    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1285"},
-    {"blockText", WidgetKind::CheckBox, "draw.cpp:1291"},
-    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1297"},
-    {"debugButton", WidgetKind::PushButton, "draw.cpp:1303"},
-    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1309"},
+    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1282"},
+    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1288"},
+    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1294"},
+    {"blockText", WidgetKind::CheckBox, "draw.cpp:1300"},
+    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1306"},
+    {"debugButton", WidgetKind::PushButton, "draw.cpp:1312"},
+    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1318"},
 
     // --- search_bar.cpp ---
     // (find_combo_box("SearchType") and find_line_edit("TextInput") already
