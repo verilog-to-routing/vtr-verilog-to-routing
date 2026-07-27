@@ -1165,8 +1165,8 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
 /**
  * Find the atom block in the netlist driven by this pin of the input atom block
  * If doesn't exist return AtomBlockId::INVALID()
- *      TODO: Limitation — For pack patterns other than chains, 
- *            the block should be driven by only one block
+ *      Limitation: The driven net must have a single sink, unless the pattern
+ *                  connection is marked allow_multi_fanout in the architecture
  *      block_id   : id of the atom block that is driving the net connected to the sink block
  *      connections : pack pattern connections from the given block
  */
@@ -1193,15 +1193,9 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     const auto& net_sinks = atom_nlist.net_sinks(net_id);
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
-    bool connected_to_latch = false;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-        // If the sink block has a clock, it is considered stateful (e.g., a latch or flip-flop).
-        // Mark this so we can later decide whether to drop the block based on the net’s fanout.
-        if (!atom_nlist.block_is_combinational(sink_block_id)) {
-            connected_to_latch = true;
-        }
         if (primitive_type_feasible(sink_block_id, to_pb_type)) {
             auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
             auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
@@ -1210,13 +1204,11 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
             }
         }
     }
-    // If the number of sinks is greater than 1, and one of the connected blocks is a latch,
-    // then we drop the block to avoid a situation where only registers or unregistered output
-    // of the block can use the output pin. Pattern connections marked allow_multi_fanout in
-    // the architecture are exempt, since the block absorbs the fanout internally.
-    // TODO: This is a conservative assumption, and ideally we need to do analysis of the architecture
-    // before to determine which pattern is supported by the architecture.
-    if (!connections.allow_multi_fanout && connected_to_latch && net_sinks.size() > 1) {
+    // By default a pattern connection is assumed to be point-to-point: if the net fans out
+    // to more than one sink, the sink block is dropped and no molecule is formed over this
+    // connection. Architectures that support fanout on this connection
+    // must explicitly mark the pack_pattern annotation with allow_multi_fanout.
+    if (!connections.allow_multi_fanout && net_sinks.size() > 1) {
         pattern_sink_block_id = AtomBlockId::INVALID();
     }
     return pattern_sink_block_id;
