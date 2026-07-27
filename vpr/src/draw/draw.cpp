@@ -506,7 +506,7 @@ void update_screen(ScreenUpdatePriority priority,
         || steps_reached) {    // The number of steps set by the user is reached.
 
         // Reset the step counter if Proceed by Step is on.
-        // Note that, other reasons that freeze the graphics (e.g. a state change) will also trigger this reset.
+        // Note that, other cases that freeze the graphics (e.g. a state change) will also trigger this reset.
         if (draw_state->proceed_by_step) {
             draw_state->step_counter = 0;
         }
