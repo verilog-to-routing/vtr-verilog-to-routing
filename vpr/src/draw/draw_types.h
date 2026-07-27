@@ -343,9 +343,12 @@ struct t_draw_state {
     ///@brief Rendering backend: "immediate", "deferred", or "rhi"
     std::string renderer_type = "rhi";
 
-    ///@brief If we should pause the graphics at every step (e.g. per annealer iteration). Requested by the user.
+    ///@brief If the graphics should freeze for interaction after a custom number of steps (e.g. temperature change, routing iteration).
     bool proceed_by_step = false;
+    ///@brief The number of steps the graphics should proceed before freezing for user interaction.
     unsigned int steps_to_proceed = 1;
+    ///@brief The current count of steps.
+    /// Used for comparison with steps_to_proceed to determine if the graphics should freeze.
     unsigned int step_counter = 0;
 
     int sequence_number = 0;

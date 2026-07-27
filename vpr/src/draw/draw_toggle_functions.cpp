@@ -453,6 +453,7 @@ void toggle_proceed_by_step_cbk(bool state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->proceed_by_step = state;
+    // Reset the step counter.
     draw_state->step_counter = 0;
 
     app->find_widget("StepsToProceedLabel")->setEnabled(state);
@@ -462,6 +463,7 @@ void toggle_proceed_by_step_cbk(bool state, ezgl::application* app) {
 void set_steps_to_proceed_cbk(QSpinBox* spinbox) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->steps_to_proceed = spinbox->value();
+    // Reset the step counter.
     draw_state->step_counter = 0;
 }
 #endif
