@@ -364,8 +364,7 @@ void hide_draw_routing(ezgl::application* app) {
 void proceed_by_step_button_setup(ezgl::application* app) {
     // Wire the Proceed by Step toggle switch to its callback function.
     SwitchButton* toggle_proceed_by_step_switch = app->find_switch_button("ProceedByStep");
-    QObject::connect(toggle_proceed_by_step_switch, &SwitchButton::toggled,
-        toggle_proceed_by_step_switch, [app](bool checked) {
+    QObject::connect(toggle_proceed_by_step_switch, &SwitchButton::toggled, toggle_proceed_by_step_switch, [app](bool checked) {
         toggle_proceed_by_step_cbk(checked, app);
     });
 

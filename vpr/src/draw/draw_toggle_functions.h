@@ -158,7 +158,6 @@ void cross_layer_transparency_cbk(QSpinBox* spinbox, int /*response_id*/, void* 
  * a custom number of steps (e.g. temperature change, routing iteration) set by the user.
  * 
  * @param state boolean value tied to the UI toggle switch.
- * @param app ezgl::application
  */
 void toggle_proceed_by_step_cbk(bool state, ezgl::application* app);
 
