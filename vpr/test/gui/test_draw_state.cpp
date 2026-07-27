@@ -121,8 +121,8 @@ TEST_CASE("DrawState: every plain field round-trips through assignment",
     CHECK(ds.proceed_by_step);
     ds.steps_to_proceed = 100;
     CHECK(ds.steps_to_proceed == 100);
-    ds.step_counter = 100;
-    CHECK(ds.step_counter == 100);
+    ds.step_counter = 80;
+    CHECK(ds.step_counter == 80);
     ds.sequence_number = 42;
     CHECK(ds.sequence_number == 42);
     ds.draw_route_type = e_route_type::DETAILED;

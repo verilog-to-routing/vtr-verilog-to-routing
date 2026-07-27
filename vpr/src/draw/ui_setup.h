@@ -80,6 +80,12 @@ void hide_crit_path_routing(ezgl::application* app);
  */
 void hide_draw_routing(ezgl::application* app);
 
+/**
+ * @brief Configures and connects signals/functions for Proceed by Step buttons.
+ * 
+ * Determines if the graphics should freeze for user interaction after counting
+ * a custom number of steps (e.g. temperature change, routing iteration) set by the user.
+ */
 void proceed_by_step_button_setup(ezgl::application* app);
 
 /**

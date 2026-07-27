@@ -149,7 +149,20 @@ void cross_layer_checkbox_cbk(QCheckBox* checkbox, int /*response_id*/, void* /*
  */
 void cross_layer_transparency_cbk(QSpinBox* spinbox, int /*response_id*/, void* /*data*/);
 
+/**
+ * @brief Callback function for the Proceed by Step toggle switch.
+ * 
+ * Enables the Proceed by Step mode, where the graphics should freeze for user interaction after counting
+ * a custom number of steps (e.g. temperature change, routing iteration) set by the user.
+ */
 void toggle_proceed_by_step_cbk(SwitchButton*, bool state, ezgl::application* app);
 
-void set_steps_to_proceed_cbk(QSpinBox* self);
+/**
+ * @brief Callback function for the Steps to Proceed spinbox.
+ * 
+ * Sets the number of steps the graphics should proceed before freezing.
+ * 
+ * @param spinbox The UI spinbox used to specify the step size.
+ */
+void set_steps_to_proceed_cbk(QSpinBox* spinbox);
 #endif /* NO_GRAPHICS */

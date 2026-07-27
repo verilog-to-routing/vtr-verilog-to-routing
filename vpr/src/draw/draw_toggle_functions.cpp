@@ -459,9 +459,9 @@ void toggle_proceed_by_step_cbk(SwitchButton*, bool state, ezgl::application* ap
     app->find_widget("StepsToProceed")->setEnabled(state);
 }
 
-void set_steps_to_proceed_cbk(QSpinBox* self) {
+void set_steps_to_proceed_cbk(QSpinBox* spinbox) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->steps_to_proceed = self->value();
+    draw_state->steps_to_proceed = spinbox->value();
     draw_state->step_counter = 0;
 }
 #endif
