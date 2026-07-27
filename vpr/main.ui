@@ -394,6 +394,7 @@
         <child>
           <object class="GtkLabel" id="StepsToProceedLabel">
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Steps to Proceed</property>
             <property name="xalign">0</property>
@@ -590,6 +591,7 @@
         <child>
           <object class="GtkLabel" id="netAlphaLabel">
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Net Transparency (0 - 255)</property>
           </object>
@@ -615,6 +617,7 @@
         <child>
           <object class="GtkLabel" id="netFanoutButton">
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Net Max Fanout</property>
           </object>

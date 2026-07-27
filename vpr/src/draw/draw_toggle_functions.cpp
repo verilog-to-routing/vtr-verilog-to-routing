@@ -38,7 +38,9 @@ void toggle_show_nets_cbk(bool state, ezgl::application* app) {
         app->find_widget("ToggleIntraClusterNets")->setEnabled(state);
     }
     app->find_widget("FanInFanOut")->setEnabled(state);
+    app->find_widget("netAlphaLabel")->setEnabled(state);
     app->find_widget("NetAlpha")->setEnabled(state);
+    app->find_widget("netFanoutButton")->setEnabled(state);
     app->find_widget("NetMaxFanout")->setEnabled(state);
 
     app->refresh_drawing();
