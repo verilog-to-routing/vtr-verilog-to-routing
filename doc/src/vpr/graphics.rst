@@ -361,16 +361,18 @@ If the manual move is legal, the cost summary window will display the delta cost
 
 The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown. 
 
-Display Step
+Proceed by Step
 ------------
 
-The **Display Step** checkbox allows the user to pause repeatedly during placement or routing.
-When enabled during global placement, the program pauses at each solver/legalizer iteration.
-When enabled during detailed placement, it pauses at each temperature update.
-When enabled during routing, it pauses at each router iteration.
+The **Proceed by Step** switch allows the user to freeze the graphics after a user-selected number of steps (see below the definition of step).
+The **Steps to Proceed** spinbox sets how many steps the graphics should proceed before freezing.
+These two UI elements can be found under the **Misc.** tab (see :ref:`fig-misc-tab`)
 
-The checkbox can be toggled at any time while the program is running.
-To enable the feature, turn on **Display Step** under the **Misc.** tab (see :ref:`fig-misc-tab`).
+When enabled during global analytical placement, step refers to every solver/legalizer iteration.
+When enabled during detailed simulated-annealing placement, step refers to every temperature update.
+When enabled during routing, step refers to every router iterations.
+After freezing, clicking **Proceed** resumes the graphics until the next selected step boundary, unless another
+major program update (e.g. a state change) freezes the graphics early. In the latter case, the number of steps completed
+since the last freeze will not be carried over. A new step count will be performed from the current freeze.
 
-After the program has paused, clicking **Next Step** resumes execution until the next iteration/update.
-Turn off **Display Step** to continue without pausing at every step.
+Turn off **Proceed by Step** to only freeze the graphics at major program updates.
