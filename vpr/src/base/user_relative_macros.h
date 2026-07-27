@@ -4,18 +4,6 @@
  * @brief This file defines the UserRelativeMacros class, which stores
  *        user-specified relative placement macros read from a VPR
  *        constraints file.
- *
- * Overview
- * ========
- * A relative placement macro constrains groups of atoms to be placed at fixed
- * offsets from each other, without pinning them to absolute locations. Each
- * macro consists of one reference group and one or more relative groups:
- * - Atoms within one group must be packed into the same cluster.
- * - Atoms of different groups (of any macro) must be packed into different
- *   clusters.
- * - During placement, each relative group's cluster is placed at its offset
- *   from the reference group's cluster and the whole macro moves as a unit
- *   (it becomes a placement macro, see vpr/src/place/place_macro.h).
  */
 
 #include <string>
