@@ -361,6 +361,22 @@ void hide_draw_routing(ezgl::application* app) {
     }
 }
 
+void proceed_by_step_button_setup(ezgl::application* app) {
+    // Toggle Proceed by Step
+    SwitchButton* toggle_proceed_by_step_switch = app->find_switch_button("ProceedByStep");
+    QObject::connect(toggle_proceed_by_step_switch, &SwitchButton::toggled,
+        toggle_proceed_by_step_switch, [toggle_proceed_by_step_switch, app](bool checked) {
+        toggle_proceed_by_step_cbk(toggle_proceed_by_step_switch, checked, app);
+    });
+
+    QSpinBox* steps_to_proceed = app->find_spin_box("StepsToProceed");
+    QObject::connect(steps_to_proceed, &QSpinBox::valueChanged, steps_to_proceed, [steps_to_proceed, app]() {
+        set_steps_to_proceed_cbk(steps_to_proceed);
+    });
+    steps_to_proceed->setSingleStep(1);
+    steps_to_proceed->setRange(1, 100);
+}
+
 /**
  * @brief loads atom and cluster lvl names into gtk list store item used for completion
  *

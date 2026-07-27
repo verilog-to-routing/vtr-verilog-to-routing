@@ -57,7 +57,9 @@ TEST_CASE("DrawState: default-constructed values match documented defaults",
     CHECK(ds.draw_route_type == e_route_type::GLOBAL);
     CHECK(ds.save_graphics == false);
     CHECK(ds.renderer_type == "rhi");
-    CHECK(ds.display_step == false);
+    CHECK(ds.proceed_by_step == false);
+    CHECK(ds.steps_to_proceed == 1);
+    CHECK(ds.step_counter == 0);
     CHECK(ds.sequence_number == 0);
     CHECK(ds.net_alpha == 255);
     CHECK(ds.is_flat == false);
@@ -115,8 +117,12 @@ TEST_CASE("DrawState: every plain field round-trips through assignment",
     CHECK(ds.save_graphics_file_base == "out");
     ds.graphics_commands = "set_nets 1; exit 0";
     CHECK(ds.graphics_commands == "set_nets 1; exit 0");
-    ds.display_step = true;
-    CHECK(ds.display_step);
+    ds.proceed_by_step = true;
+    CHECK(ds.proceed_by_step);
+    ds.steps_to_proceed = 100;
+    CHECK(ds.steps_to_proceed == 100);
+    ds.step_counter = 100;
+    CHECK(ds.step_counter == 100);
     ds.sequence_number = 42;
     CHECK(ds.sequence_number == 42);
     ds.draw_route_type = e_route_type::DETAILED;

@@ -448,4 +448,20 @@ void cross_layer_transparency_cbk(QSpinBox* spinbox, int /*response_id*/, void* 
 
     application->refresh_drawing();
 }
+
+void toggle_proceed_by_step_cbk(SwitchButton*, bool state, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    draw_state->proceed_by_step = state;
+    draw_state->step_counter = 0;
+
+    app->find_widget("StepsToProceedLabel")->setEnabled(state);
+    app->find_widget("StepsToProceed")->setEnabled(state);
+}
+
+void set_steps_to_proceed_cbk(QSpinBox* self) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->steps_to_proceed = self->value();
+    draw_state->step_counter = 0;
+}
 #endif

@@ -344,7 +344,9 @@ struct t_draw_state {
     std::string renderer_type = "rhi";
 
     ///@brief If we should pause the graphics at every step (e.g. per annealer iteration). Requested by the user.
-    bool display_step = false;
+    bool proceed_by_step = false;
+    unsigned int steps_to_proceed = 1;
+    unsigned int step_counter = 0;
 
     int sequence_number = 0;
 

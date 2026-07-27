@@ -106,7 +106,6 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_display_step(bool checked);
 static void set_block_outline(bool checked);
 static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
@@ -346,6 +345,7 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
         routing_button_setup(app);
         view_button_setup(app);
         crit_path_button_setup(app);
+        proceed_by_step_button_setup(app);
     }
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -481,14 +481,14 @@ void update_screen(ScreenUpdatePriority priority,
         initial_stages.insert(pic_on_screen_val);
     }
 
-    bool should_pause = int(priority) >= draw_state->gr_automode;
+    bool pause_for_priority = int(priority) >= draw_state->gr_automode;
 
     //If there was a state change, we must call ezgl::application::run() to update the buttons.
     //However, by default this causes graphics to pause for user interaction.
     //
     //If the priority is such that we shouldn't pause we need to continue automatically, so
     //the user won't need to click manually.
-    draw_state->auto_proceed = (state_change && !should_pause);
+    draw_state->auto_proceed = (state_change && !pause_for_priority);
 
     // Headless mode (save_graphics / graphics_commands without --disp): never
     // block for user interaction — there is no user at the keyboard. Always
@@ -496,12 +496,18 @@ void update_screen(ScreenUpdatePriority priority,
     if (!draw_state->show_graphics)
         draw_state->auto_proceed = true;
 
+    bool steps_reached = draw_state->proceed_by_step && (draw_state->step_counter == draw_state->steps_to_proceed);
+    
     if (state_change                   //Must update buttons
-        || should_pause                //The priority means graphics should pause for user interaction
-        || draw_state->display_step) { //The user asked to pause
-
-        if (draw_state->display_step) {
-            VTR_LOG("Pausing in interactive graphics ('Display Step' is on)\n");
+        || pause_for_priority          //The priority means graphics should pause for user interaction
+        || steps_reached) {            //The user asked to pause
+        
+        if (draw_state->proceed_by_step) {
+            draw_state->step_counter = 0;
+        }
+        
+        if (steps_reached) {
+            VTR_LOG("Pausing in interactive graphics ('Steps to Proceed' reached)\n");
         }
 
         const bool has_cmds = !draw_state->graphics_commands.empty();
@@ -551,6 +557,9 @@ void update_screen(ScreenUpdatePriority priority,
         exit(pending_graphics_exit_code);
     }
 
+    if (draw_state->proceed_by_step) {
+        (draw_state->step_counter)++;
+    }
 #else
     (void)setup_timing_info;
     (void)priority;
@@ -1275,12 +1284,6 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
         press_zoom_fit(/*unused*/ nullptr, app);
     });
 
-    //
-    QCheckBox* display_step = app->find_check_box("DisplayStep");
-    QObject::connect(display_step, &QCheckBox::toggled, [](bool checked) {
-        set_display_step(checked);
-    });
-
     // Connect Block Outline checkbox
     QCheckBox* block_outline = app->find_check_box("blockOutline");
     QObject::connect(block_outline, &QCheckBox::toggled, [](bool checked) {
@@ -1385,14 +1388,6 @@ static void set_draw_partitions(bool checked) {
 
     application->update_message(draw_state->default_message);
     application->refresh_drawing();
-}
-
-static void set_display_step(bool checked) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->display_step = checked;
-
-    application->update_message(draw_state->default_message);
 }
 
 // The enums below are the integer argument values accepted by the

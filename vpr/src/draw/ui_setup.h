@@ -80,6 +80,8 @@ void hide_crit_path_routing(ezgl::application* app);
  */
 void hide_draw_routing(ezgl::application* app);
 
+void proceed_by_step_button_setup(ezgl::application* app);
+
 /**
  * @brief Loads block names into Gtk Structures to enable autocomplete
  */
