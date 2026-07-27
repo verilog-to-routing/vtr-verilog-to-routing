@@ -27,7 +27,7 @@ void toggle_checkbox_cbk(QCheckBox* self, t_checkbox_data* data) {
     data->app->refresh_drawing();
 }
 
-void toggle_show_nets_cbk(SwitchButton*, bool state, ezgl::application* app) {
+void toggle_show_nets_cbk(bool state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->show_nets = state;
@@ -79,10 +79,10 @@ void toggle_draw_nets_cbk(QComboBox* self, ezgl::application* app) {
  * @brief cbk function for toggle rr combo-box. sets rr draw state based on selected option
  * updates draw_state->show_rr
  * 
- * @param self ptr to gtkComboBoxText object
+ * @param state boolean value tied to the UI toggle switch
  * @param app ezgl application
  */
-void toggle_rr_cbk(SwitchButton*, bool state, ezgl::application* app) {
+void toggle_rr_cbk(bool state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->show_rr = state;
@@ -294,7 +294,7 @@ void placement_macros_cbk(QComboBox* self, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_crit_path_cbk(SwitchButton*, bool state, ezgl::application* app) {
+void toggle_crit_path_cbk(bool state, ezgl::application* app) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -449,7 +449,7 @@ void cross_layer_transparency_cbk(QSpinBox* spinbox, int /*response_id*/, void* 
     application->refresh_drawing();
 }
 
-void toggle_proceed_by_step_cbk(SwitchButton*, bool state, ezgl::application* app) {
+void toggle_proceed_by_step_cbk(bool state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->proceed_by_step = state;

@@ -31,9 +31,11 @@ void toggle_checkbox_cbk(QCheckBox* self, t_checkbox_data* data);
 /**
  * @brief Callback function for toggle_nets button in main.ui.
  * Toggles whether or not nets are visualized.
+ * 
+ * @param state boolean value tied to the UI toggle switch
  * @param app ezgl::application
  */
-void toggle_show_nets_cbk(SwitchButton*, bool state, ezgl::application* app);
+void toggle_show_nets_cbk(bool state, ezgl::application* app);
 
 /**
  * @brief Callback function for toggle_net_type button in main.ui.
@@ -70,7 +72,7 @@ void placement_macros_cbk(QComboBox* self, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_rr button in ui_setup.cpp. Draws different groups of RRs depending on
  * user input. Changes value of draw_state->draw_rr_toggle. */
-void toggle_rr_cbk(SwitchButton*, bool state, ezgl::application* app);
+void toggle_rr_cbk(bool state, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_congestion button in ui_setup.cpp. Controls if congestion should be visualized.
  * Changes value of draw_state->show_congestion. */
@@ -96,7 +98,7 @@ void toggle_router_util_cbk(QComboBox* self, ezgl::application* app);
  * @brief Master switch callback function for showing critical paths. 
  * Changes value of draw_state->show_crit_path. 
  */
-void toggle_crit_path_cbk(SwitchButton*, bool state, ezgl::application* app);
+void toggle_crit_path_cbk(bool state, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_router_expansion_costs in ui_setup.cpp.
  * Draws different router expansion costs based on user input. Changes value of draw_state->show_router_expansion_cost. */
@@ -154,8 +156,11 @@ void cross_layer_transparency_cbk(QSpinBox* spinbox, int /*response_id*/, void* 
  * 
  * Enables the Proceed by Step mode, where the graphics should freeze for user interaction after counting
  * a custom number of steps (e.g. temperature change, routing iteration) set by the user.
+ * 
+ * @param state boolean value tied to the UI toggle switch.
+ * @param app ezgl::application
  */
-void toggle_proceed_by_step_cbk(SwitchButton*, bool state, ezgl::application* app);
+void toggle_proceed_by_step_cbk(bool state, ezgl::application* app);
 
 /**
  * @brief Callback function for the Steps to Proceed spinbox.

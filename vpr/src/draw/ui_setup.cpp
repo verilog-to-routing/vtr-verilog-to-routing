@@ -83,8 +83,8 @@ void net_button_setup(ezgl::application* app) {
 
     t_draw_state* draw_state = get_draw_state_vars();
     SwitchButton* toggle_nets_switch = app->find_switch_button("ToggleNets");
-    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [toggle_nets_switch, app](bool checked) {
-        toggle_show_nets_cbk(toggle_nets_switch, checked, app);
+    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [app](bool checked) {
+        toggle_show_nets_cbk(checked, app);
     });
 
     // Manages net type
@@ -172,8 +172,8 @@ void routing_button_setup(ezgl::application* app) {
 
     //Toggle RR
     SwitchButton* toggle_nets_switch = app->find_switch_button("ToggleRR");
-    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [toggle_nets_switch, app](bool checked) {
-        toggle_rr_cbk(toggle_nets_switch, checked, app);
+    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [app](bool checked) {
+        toggle_rr_cbk(checked, app);
     });
 
     // RR Checkboxes
@@ -322,8 +322,8 @@ void crit_path_button_setup(ezgl::application* app) {
 
     // Toggle Critical Path
     SwitchButton* toggle_nets_switch = app->find_switch_button("ToggleCritPath");
-    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [toggle_nets_switch, app](bool checked) {
-        toggle_crit_path_cbk(toggle_nets_switch, checked, app);
+    QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [app](bool checked) {
+        toggle_crit_path_cbk(checked, app);
     });
 
     // Checkboxes for critical path
@@ -365,8 +365,8 @@ void proceed_by_step_button_setup(ezgl::application* app) {
     // Wire the Proceed by Step toggle switch to its callback function.
     SwitchButton* toggle_proceed_by_step_switch = app->find_switch_button("ProceedByStep");
     QObject::connect(toggle_proceed_by_step_switch, &SwitchButton::toggled,
-        toggle_proceed_by_step_switch, [toggle_proceed_by_step_switch, app](bool checked) {
-        toggle_proceed_by_step_cbk(toggle_proceed_by_step_switch, checked, app);
+        toggle_proceed_by_step_switch, [app](bool checked) {
+        toggle_proceed_by_step_cbk(checked, app);
     });
 
     // Wire the Steps to Proceed spinbox to its callback function.
