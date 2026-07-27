@@ -98,7 +98,7 @@ void ClusterPinCounter::reset_lookahead() {
 
 void ClusterPinCounter::commit_lookahead() {
     for (auto& [pb, state] : per_pb_state_) {
-        state.committed_input_pin_class_nets  = state.lookahead_input_pin_class_nets;
+        state.committed_input_pin_class_nets = state.lookahead_input_pin_class_nets;
         state.committed_output_pin_class_nets = state.lookahead_output_pin_class_nets;
     }
 }
