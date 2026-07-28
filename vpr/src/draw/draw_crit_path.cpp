@@ -158,7 +158,7 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
  * @param crit_path_idx Index of the critical path (0 when only one path is chosen).
  * @param g Renderer used to perform drawing.
  */
-static void draw_crit_path_endpoint(e_crit_path_endpoint_type endpoint_type, ezgl::point2d endpoint_coords, unsigned crit_path_idx, ezgl::renderer* g);
+static void draw_crit_path_endpoint(e_crit_path_endpoint_type endpoint_type, ezgl::point2d endpoint_coords, std::size_t crit_path_idx, ezgl::renderer* g);
 
 /**
  * @brief Draws routed connections for consecutive nodes in a timing path.
@@ -302,7 +302,7 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
  * @param crit_path_idx Index of the critical path (0 when only one path is chosen).
  * @param g Renderer used to perform drawing.
  */
-static void draw_total_delay(std::vector<t_label_drawing_info>& final_label_drawing_info, unsigned crit_path_idx, ezgl::renderer* g);
+static void draw_total_delay(std::vector<t_label_drawing_info>& final_label_drawing_info, std::size_t crit_path_idx, ezgl::renderer* g);
 
 /**
  * @brief Calculates the color tied to a timing edge index deterministically. For long critical paths there may be repeats.
@@ -310,12 +310,12 @@ static void draw_total_delay(std::vector<t_label_drawing_info>& final_label_draw
  * @param edge_idx Timing edge index.
  * @return Color associated with the provided timing edge.
  */
-static ezgl::color get_color_from_edge_idx(std::size_t edge_idx);
+static ezgl::color get_edge_color_from_src_tnode_id(tatum::NodeId tnode_id);
 
 /**
- * @brief Returns the visibility and transparency for a timing flyline.
+ * @brief Returns the visibility and transparency for a timing edge flyline.
  *
- * In analytical placement, timing flylines are drawn between AP blocks, which reside at continuous layer levels
+ * In analytical placement, timing edge flylines are drawn between AP blocks, which reside at continuous layer levels
  * and are treated as always visible and opaque. Therefore, the same convention is applied to flylines.
  * In regular placement/routing views, visibility follows the discrete device-layer display settings.
  *
@@ -401,9 +401,9 @@ void draw_crit_path(ezgl::renderer* g) {
             return;
         }
 
-    if (draw_state->show_crit_path_flylines) {
-        draw_timing_edge_flylines(path, g);
-    }
+        if (draw_state->show_crit_path_flylines) {
+            draw_timing_edge_flylines(path, g);
+        }
 
         // Ensure that we are already in the routing stage.
         if (draw_state->show_crit_path_routing && draw_state->pic_on_screen == e_pic_type::ROUTING) {
@@ -468,15 +468,14 @@ static void draw_timing_edge_flylines(const tatum::TimingPath& path, ezgl::rende
     g->set_line_width(0);
 }
 
-static void draw_crit_path_endpoint(e_crit_path_endpoint_type endpoint_type, ezgl::point2d endpoint_coords, unsigned crit_path_idx, ezgl::renderer* g) {
+static void draw_crit_path_endpoint(e_crit_path_endpoint_type endpoint_type, ezgl::point2d endpoint_coords, std::size_t crit_path_idx, ezgl::renderer* g) {
     if (endpoint_type == e_crit_path_endpoint_type::START) {
         // Medium Green. We do not use the default ezgl::GREEN due to poor contrast.
         g->set_color({0x00, 0xCC, 0x00});
     } else if (endpoint_type == e_crit_path_endpoint_type::END) {
         g->set_color(ezgl::RED);
     } else {
-        VTR_LOG_ERROR("Illegal e_crit_path_endpoint value provided! Legal values are START and END.");
-        return;
+        VTR_ASSERT_SAFE_MSG(false, "Illegal e_crit_path_endpoint value provided! Legal values are START and END.");
     }
 
     // Draw a star shape at the endpoint.
@@ -957,7 +956,7 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
 
         // Timing-edge flylines share the same edge_idx with the labels here,
         // so they are always paired with the same color because get_color_from_edge_idx() is deterministic.
-        ezgl::color color = get_color_from_edge_idx(edge_idx);
+        ezgl::color color = get_color_from_tnode_id(edge_idx);
 
         if (!drawing_info.hide_label) {
             g->set_color(color, drawing_info.label_transparency);
@@ -999,8 +998,8 @@ static void draw_total_delay(std::vector<t_label_drawing_info>& final_label_draw
     g->set_coordinate_system(ezgl::WORLD);
 }
 
-static ezgl::color get_color_from_edge_idx(std::size_t edge_idx) {
-    return kelly_max_contrast_colors[edge_idx % kelly_max_contrast_colors.size()];
+static ezgl::color get_edge_color_from_src_tnode_id(tatum::NodeId tnode_id) {
+    return kelly_max_contrast_colors[static_cast<std::size_t>(tnode_id) % kelly_max_contrast_colors.size()];
 }
 
 static t_draw_layer_display get_timing_flyline_visibility(tatum::NodeId src_node, tatum::NodeId sink_node) {

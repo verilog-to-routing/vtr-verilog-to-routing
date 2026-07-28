@@ -10,7 +10,7 @@
  * The major differences are types of inputs (server mode can receive multiple critical paths from a VPR server
  * plus customized inputs to control the exact parts to draw, while non-server mode only fetches the single worst timing path
  * and does not customize what to draw) and the drawing style of delay labels (a label decluttering algorithm is implemented
- * for non-server mode, but server mode does not have that).
+ * in non-server mode, but server mode does not have that).
  */
 
 #ifndef NO_GRAPHICS
