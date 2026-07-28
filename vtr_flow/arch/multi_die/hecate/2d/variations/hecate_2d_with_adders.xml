@@ -563,6 +563,7 @@
                 </interconnect>
               </mode>
               <mode name="arithmetic">
+                <!-- In arithmetic mode, we split the 5-LUT into two 4-LUTs which feed the a and b inputs of a dedicated adder primitive. -->
                 <pb_type name="arithmetic" num_pb="1">
                   <input name="in_A" num_pins="1"/>
                   <input name="in_B" num_pins="1"/>
@@ -608,32 +609,33 @@
                   <interconnect>
                     <!--Clock -->
                     <direct name="direct5" input="arithmetic.clk" output="ff.clk"/>
-                    <!-- CAUTION: THESE DELAYS ARE JUST A SCALED VERSION OF AMON'S ARCH. NEED TO BE RE-COLLECTED. -->
+                    <!-- CAUTION: THESE DELAYS ARE JUST A SCALED VERSION OF AMAN'S ARCH. NEED TO BE RE-COLLECTED. -->
+                    <!-- For the LUT-4 delays, I used the 4 fastest LUT-5 delays. We should use COFFE to verify. I tried to keep the in_C the same delay in LUT4 and LUT5 modes. -->
                     <!-- NOTE: I removed the registered feedback mux for the arith mode. It may not make sense to feedback the registered sumout. -->
                     <!-- NOTE: I also removed the input selection mux. Was not clear how to connect that. -->
                     <direct name="direct0" input="arithmetic.in_A" output="lut4[0:0].in[0:0]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_A" out_port="lut4[0:0].in[0:0]"/>
+                      <delay_constant max="110.73e-12" in_port="arithmetic.in_A" out_port="lut4[0:0].in[0:0]"/>
                     </direct>
                     <direct name="direct1" input="arithmetic.in_B" output="lut4[0:0].in[1:1]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_B" out_port="lut4[0:0].in[1:1]"/>
+                      <delay_constant max="81.21e-12" in_port="arithmetic.in_B" out_port="lut4[0:0].in[1:1]"/>
                     </direct>
                     <direct name="direct2" input="arithmetic.in_C" output="lut4[0:0].in[2:2]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_C" out_port="lut4[0:0].in[2:2]"/>
+                      <delay_constant max="113.47e-12" in_port="arithmetic.in_C" out_port="lut4[0:0].in[2:2]"/>
                     </direct>
                     <direct name="direct3" input="arithmetic.in_D" output="lut4[0:0].in[3:3]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_D" out_port="lut4[0:0].in[3:3]"/>
+                      <delay_constant max="79.61e-12" in_port="arithmetic.in_D" out_port="lut4[0:0].in[3:3]"/>
                     </direct>
                     <direct name="direct4" input="arithmetic.in_A" output="lut4[1:1].in[0:0]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_A" out_port="lut4[1:1].in[0:0]"/>
+                      <delay_constant max="110.73e-12" in_port="arithmetic.in_A" out_port="lut4[1:1].in[0:0]"/>
                     </direct>
                     <direct name="direct6" input="arithmetic.in_B" output="lut4[1:1].in[1:1]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_B" out_port="lut4[1:1].in[1:1]"/>
+                      <delay_constant max="81.21e-12" in_port="arithmetic.in_B" out_port="lut4[1:1].in[1:1]"/>
                     </direct>
                     <direct name="direct7" input="arithmetic.in_C" output="lut4[1:1].in[2:2]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_C" out_port="lut4[1:1].in[2:2]"/>
+                      <delay_constant max="113.47e-12" in_port="arithmetic.in_C" out_port="lut4[1:1].in[2:2]"/>
                     </direct>
                     <direct name="direct8" input="arithmetic.in_D" output="lut4[1:1].in[3:3]">
-                      <delay_constant max="88.25e-12" in_port="arithmetic.in_D" out_port="lut4[1:1].in[3:3]"/>
+                      <delay_constant max="79.61e-12" in_port="arithmetic.in_D" out_port="lut4[1:1].in[3:3]"/>
                     </direct>
                     <direct name="lut_to_add1" input="lut4[0:0].out" output="adder.a"/>
                     <direct name="lut_to_add2" input="lut4[1:1].out" output="adder.b"/>
@@ -766,6 +768,7 @@
             <pack_pattern name="chain" in_port="clb.cin" out_port="fle[0:0].cin"/>
           </direct>
           <direct name="carry_out" input="fle[9:9].cout" output="clb.cout">
+            <!-- Note: We have no delay on the CLB output carry since we put all the CLB to CLB delay on the cin side. -->
             <pack_pattern name="chain" in_port="fle[9:9].cout" out_port="clb.cout"/>
           </direct>
           <direct name="carry_link" input="fle[8:0].cout" output="fle[9:1].cin">
