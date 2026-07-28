@@ -380,7 +380,7 @@
             <input name="in_D" num_pins="1"/>
             <input name="in_E" num_pins="1"/>
             <input name="in_F" num_pins="1"/>
-            <output name="out_local" num_pins="1"/>
+            <output name="out_local" num_pins="2"/>
             <output name="out_routing" num_pins="2"/>
             <clock name="clk" num_pins="1"/> 
             <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
@@ -433,9 +433,14 @@
                 <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
               </mux>
               <!-- BLE output (local) -->
-              <mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local">
-                <delay_constant max="1.346e-10" in_port="ff.Q" out_port="ble6.out_local"/>
-                <delay_constant max="1.346e-10" in_port="lut6.out" out_port="ble6.out_local"/>
+              <mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local[0:0]">
+                <delay_constant max="1.346e-10" in_port="ff.Q" out_port="ble6.out_local[0:0]"/>
+                <delay_constant max="1.346e-10" in_port="lut6.out" out_port="ble6.out_local[0:0]"/>
+              </mux>
+              <!-- BLE output (local) -->
+              <mux name="mux3_2" input="ff.Q lut6.out" output="ble6.out_local[1:1]">
+                <delay_constant max="1.346e-10" in_port="ff.Q" out_port="ble6.out_local[1:1]"/>
+                <delay_constant max="1.346e-10" in_port="lut6.out" out_port="ble6.out_local[1:1]"/>
               </mux>
               <!-- BLE output (routing 1) --> 
               <mux name="mux4" input="ff.Q lut6.out" output="ble6.out_routing[0:0]">
@@ -456,7 +461,8 @@
             <direct name="direct4" input="fle.in_D" output="ble6.in_D"/>
             <direct name="direct5" input="fle.in_E" output="ble6.in_E"/>
             <direct name="direct6" input="fle.in_F" output="ble6.in_F"/>
-            <direct name="direct7" input="ble6.out_local" output="fle.out_local[0:0]"/>
+            <direct name="direct7" input="ble6.out_local[0:0]" output="fle.out_local[0:0]"/>
+            <direct name="direct10" input="ble6.out_local[1:1]" output="fle.out_local[1:1]"/>
             <direct name="direct8" input="ble6.out_routing" output="fle.out_routing"/>
             <direct name="direct9" input="fle.clk" output="ble6.clk"/>
           </interconnect>
