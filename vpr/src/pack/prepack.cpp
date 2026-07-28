@@ -634,9 +634,9 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
 }
 
 static bool edge_allows_multi_fanout(const t_pb_graph_edge* edge, int pattern_index) {
+    VTR_ASSERT((int)edge->pack_pattern_allow_multi_fanout.size() == edge->num_pack_patterns);
     for (int i = 0; i < edge->num_pack_patterns; i++) {
         if (edge->pack_pattern_indices[i] == pattern_index
-            && i < (int)edge->pack_pattern_allow_multi_fanout.size()
             && edge->pack_pattern_allow_multi_fanout[i]) {
             return true;
         }
