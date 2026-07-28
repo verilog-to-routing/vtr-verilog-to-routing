@@ -1398,12 +1398,24 @@ void FullLegalizer::recreate_device_if_needed() {
 
     vpr_create_device_grid(vpr_setup_, arch_);
 
+    bool device_size_changed = (device_ctx.grid.width() != old_width
+                                || device_ctx.grid.height() != old_height);
+
+    // If the device grid was resized, the dedicated clock network geometry
+    // (computed from grid width/height when it was first set up, earlier in
+    // run_analytical_placement_flow()) is now stale. Regenerate it before any
+    // RR graph is (re)built below, since the RR graph embeds the clock
+    // network as a subgraph. This is a no-op unless dedicated clock networks
+    // are in use.
+    if (device_size_changed) {
+        // TODO: Cleanup these const casts. See comment below.
+        vpr_setup_clock_networks(const_cast<t_vpr_setup&>(vpr_setup_), arch_);
+    }
+
     // Build or rebuild the RR graph if needed. It must exist before placement.
     // Rebuild only when the device size changed (to avoid the high cost of
     // rebuilding unnecessarily on large architectures).
     if (vpr_setup_.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
-        bool device_size_changed = (device_ctx.grid.width() != old_width
-                                    || device_ctx.grid.height() != old_height);
         if (!rr_graph_exists || device_size_changed) {
             // vpr_create_rr_graph takes t_vpr_setup& even though it only reads from it.
             // TODO: This is not very clean to do this const cast, but the lifetime
