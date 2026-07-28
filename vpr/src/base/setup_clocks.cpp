@@ -23,6 +23,18 @@ static void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std:
 static void setup_clock_connections(const t_arch& Arch, FormulaParser& p);
 
 void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
+    // This function may be called more than once if the device grid is
+    // resized after the clock networks were first set up (clock network
+    // geometry is computed from the grid width/height). Reset segment_inf to
+    // the architecture's base segment list (discarding any clock segments
+    // appended by a previous call) and clear any previously-created clock
+    // network/connection objects so this function is safe to re-run.
+    segment_inf = Arch.Segments;
+
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.clock_networks.clear();
+    device_ctx.clock_connections.clear();
+
     FormulaParser p;
     setup_clock_network_wires(Arch, p, segment_inf);
     setup_clock_connections(Arch, p);

@@ -30,6 +30,7 @@
 #include "place_delay_model.h"
 #include "prepack.h"
 #include "user_place_constraints.h"
+#include "vpr_api.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
 #include "stats.h"
@@ -251,6 +252,17 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // device dimensions before packing. The packer may later grow or shrink the device
     // size to match the actual resource requirements after packing completes.
     DeviceSizeEstimator device_size_estimator(vpr_setup, *device_ctx.arch, prepacker);
+
+    // Set up the dedicated clock networks (if used) now that the device grid
+    // exists. This must happen before any RR graph is built in this flow
+    // (e.g. below, when computing the placement delay model, or later during
+    // full legalization) since the RR graph builder reads the clock network
+    // definitions set up here. Mirrors the ordering used by the non-AP flow
+    // in vpr_create_device(): grid, then clock networks, then the RR graph.
+    // If the device is auto-sized and later resized to its final dimensions
+    // during full legalization, the clock network geometry is recomputed to
+    // match (see full_legalizer.cpp's recreate_device_if_needed()).
+    vpr_setup_clock_networks(vpr_setup, *device_ctx.arch);
 
     // Infer logical RAMs and assign to physical types to prioritize during packing.
     // For the auto-device flow, reuse the groups already computed by the estimator.
