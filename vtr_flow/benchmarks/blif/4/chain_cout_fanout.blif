@@ -14,7 +14,7 @@
 # molecule. The taps sit on even-numbered bits so they occupy the second adder of
 # a fractured LUT pair, whose cout can reach the fle cout and escape onto the
 # CLB's general outputs (see the carry_exit interconnect in
-# vtr_flow/arch/timing/k6_frac_N10_frac_chain_cout_fanout_mem32K_40nm.xml).
+# vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm_tileable_crr.xml).
 #
 # Following the standard VTR flow convention, the chain starts with a dummy
 # adder that generates the initial carry from constants, and the final carry-out
