@@ -208,9 +208,6 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
-        // Each member is checked against its own block type: members of
-        // user-defined relative placement macros may have different types
-        // (e.g. a CLB constrained to sit next to a DSP).
         auto block_type = cluster_ctx.clb_nlist.block_type(pl_macro.members[imember].blk_index);
 
         //Check that the member location is on the grid
@@ -250,12 +247,8 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
         // Check whether the location could accept block of this type
         // Then check whether the location could still accommodate more blocks
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
-        // The member position must also be the root of its tile: members of a macro
-        // spanning tiles of different sizes could otherwise land mid-tile.
         t_physical_tile_type_ptr member_tile = device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer});
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && device_ctx.grid.get_width_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
-            && device_ctx.grid.get_height_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
             && is_tile_compatible(member_tile, block_type)
             && member_pos.sub_tile >= 0 && member_pos.sub_tile < member_tile->capacity
             && is_sub_tile_compatible(member_tile, block_type, member_pos.sub_tile)
