@@ -1763,8 +1763,9 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
     If the architecture can absorb the extra fanout (e.g., the block provides paths from the pattern connection to general routing), the architect can mark the ``<pack_pattern>`` annotation with ``allow_multi_fanout="true"``.
     The prepacker will then form molecules over this connection even when its net drives multiple sinks; among the sinks, the one matching the pattern's destination primitive continues the molecule, and the remaining sinks are left to be routed outside the pattern.
 
-    A connection between two primitives may pass through several interconnect edges (e.g., through intermediate modes).
-    Only explicitly annotated edges carry the attribute, but it applies to the whole connection: if any annotated edge along the connection's path is marked ``allow_multi_fanout="true"``, the entire connection allows multi-fanout.
+    Note that the attribute is written on individual interconnect edges, but its effect is defined at the level of a *primitive-to-primitive connection*.
+    Such a connection may pass through several interconnect edges when the two primitives are not directly wired together (e.g., the signal traverses intermediate modes or levels of the pb_type hierarchy).
+    The architect does not need to annotate every edge along that path: if any annotated edge on the connection's path is marked ``allow_multi_fanout="true"``, the entire primitive-to-primitive connection allows multi-fanout.
 
     For example, in a carry chain where each adder's ``cout`` may also feed look-ahead logic in addition to the next adder's ``cin``, marking the chain's ``cout`` link keeps chain molecules together despite the extra fanout:
 
