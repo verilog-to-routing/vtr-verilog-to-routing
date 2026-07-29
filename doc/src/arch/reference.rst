@@ -1767,6 +1767,11 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
     Such a connection may pass through several interconnect edges when the two primitives are not directly wired together (e.g., the signal traverses intermediate modes or levels of the pb_type hierarchy).
     The architect does not need to annotate every edge along that path: if any annotated edge on the connection's path is marked ``allow_multi_fanout="true"``, the entire primitive-to-primitive connection allows multi-fanout.
 
+    .. note::
+
+        If several sinks match the pattern's destination primitive, only one joins the molecule.
+        For example, with a ``LUT -> FF`` pack pattern and a LUT driving two FFs, the prepacker picks the last matching FF added to the netlist to form the molecule; the other FF is packed as a separate atom.
+
     For example, in a carry chain where each adder's ``cout`` may also feed look-ahead logic in addition to the next adder's ``cin``, marking the chain's ``cout`` link keeps chain molecules together despite the extra fanout:
 
     .. code-block:: xml
