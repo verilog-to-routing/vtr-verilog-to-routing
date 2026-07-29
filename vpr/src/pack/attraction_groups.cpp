@@ -132,9 +132,6 @@ void AttractionInfo::create_att_groups_for_relative_groups() {
 
     // Drop the relative attraction groups added by a previous call so they are
     // rebuilt with full atom lists and up-to-date gains rather than duplicated.
-    // Relative groups are always the trailing groups: they are appended last
-    // here, and the partition group builders clear all groups (and this count)
-    // before re-creating them.
     VTR_ASSERT(num_relative_att_groups_ <= (int)attraction_groups.size());
     attraction_groups.resize(attraction_groups.size() - num_relative_att_groups_);
     num_relative_att_groups_ = 0;

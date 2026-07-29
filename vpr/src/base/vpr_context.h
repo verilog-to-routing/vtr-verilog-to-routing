@@ -694,11 +694,6 @@ struct FloorplanningContext : public Context {
     /**
      * @brief Stores user-defined relative placement macros.
      *
-     * Each macro constrains groups of atoms: atoms within a group are packed
-     * into the same cluster, atoms of different groups into different clusters,
-     * and the resulting clusters are placed at fixed offsets from each other
-     * (they form a placement macro).
-     *
      * The relative macros are input into vpr and do not change.
      */
     UserRelativeMacros relative_macros;

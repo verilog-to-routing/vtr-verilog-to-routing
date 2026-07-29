@@ -69,15 +69,6 @@
     </xs:sequence>
   </xs:complexType>
 
-
-  <!-- Relative placement macros: each macro has one reference_group and one or
-       more relative_groups. Atoms within a group are packed into the same cluster;
-       atoms of different groups are packed into different clusters. During placement,
-       each relative_group's cluster is placed at the given offset from the
-       reference_group's cluster and the whole macro moves as a unit.
-       sub_tile_offset is required for now; a future extension will allow omitting it
-       to mean "any compatible sub_tile". layer_offset defaults to 0 (cross-layer
-       offsets are not supported yet and are rejected at load time). -->
   <xs:complexType name="reference_group">
     <xs:sequence>
       <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded"/>

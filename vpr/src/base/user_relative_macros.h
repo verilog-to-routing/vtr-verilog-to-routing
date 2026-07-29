@@ -51,21 +51,16 @@ struct UserRelativeMacro {
 };
 
 /**
- * @brief Stores all user-defined relative placement macros and provides an
- *        O(1) atom -> (macro, group) reverse lookup for the packer.
+ * @brief Stores all user-defined relative placement macros.
  *
- * An atom may belong to at most one group across all macros; this invariant
- * is enforced when the constraints file is loaded.
+ * An atom may belong to at most one group across all macros.
  */
 class UserRelativeMacros {
   public:
     /**
      * @brief Add a macro and register its atoms in the reverse lookup.
      *
-     * The caller (the constraints file reader) is responsible for validating
-     * that no atom belongs to more than one group; this method asserts it.
-     *
-     *   @return The id of the newly added macro.
+     * @return The id of the newly added macro.
      */
     UserRelativeMacroId add_macro(const UserRelativeMacro& macro);
 

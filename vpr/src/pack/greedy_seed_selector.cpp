@@ -200,9 +200,7 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
     vtr::vector<PackMoleculeId, float> molecule_gains(seed_mols_.size(), 0.f);
 
     // Molecules containing atoms of a relative placement group get a large seed
-    // gain bonus so that each group starts its own cluster early. Group atoms
-    // that trickle into half-full clusters as latecomers risk being split
-    // across clusters, which relative placement groups do not allow.
+    // gain bonus so that each group starts its own cluster early.
     constexpr float rel_group_seed_gain_bonus = 1000.f;
     const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
 

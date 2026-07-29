@@ -324,12 +324,7 @@ static bool check_cluster_noc_group(AtomBlockId atom_blk_id,
 
 /**
  * @brief Checks if an atom block can be added to a clustered block without
- *        violating relative placement group constraints. A cluster may host at
- *        most one relative placement group: an atom of a different group is
- *        rejected, whether that group belongs to the same or to another macro
- *        (each group becomes one member of a placement macro). Unconstrained
- *        atoms may always join. A group-constrained atom assigns its group to
- *        a cluster that does not host one yet.
+ *        violating relative placement group constraints.
  *
  * @param atom_blk_id
  * @param cluster_rel_group     The relative placement group (macro id, group
@@ -968,9 +963,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     }
 
     // Check if all atoms in the molecule can be added to the cluster without
-    // relative placement group conflicts. Skipped entirely in the common case
-    // of no relative placement macros: this runs for every molecule x cluster
-    // attempt, and the per-atom group lookups would all miss anyway.
+    // relative placement group conflicts.
     std::pair<UserRelativeMacroId, int> new_cluster_rel_group = cluster.rel_group;
     if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
         for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
@@ -1659,12 +1652,7 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
 
     const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
     // Cheap early reject: an atom of one relative placement group can never
-    // join a cluster hosting a different group. (The definite check is in
-    // try_pack_molecule.) Only clusters that already host a group can reject
-    // on this basis, so hoist that test out of the per-atom loop: this method
-    // runs for every candidate molecule, and in the common case (no relative
-    // placement macros, so no cluster hosts a group) the per-atom group
-    // lookups are skipped entirely.
+    // join a cluster hosting a different group.
     const bool cluster_has_rel_group = cluster.rel_group.first.is_valid();
 
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);

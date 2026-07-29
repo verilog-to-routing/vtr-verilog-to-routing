@@ -141,8 +141,7 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
 
     // Check if there are overfilled floorplan regions or split relative
     // placement groups. Both are resolved by packing more densely with
-    // attraction groups (split relative groups additionally get their
-    // attraction gain boosted before the re-pack).
+    // attraction groups.
     if (floorplan_regions_overfull || relative_groups_split) {
         // If there are overfilled region constraints, try to use attraction
         // groups to resolve it.
@@ -240,9 +239,11 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
  * @brief Verify that no prepacked molecule spans two different relative
  *        placement groups.
  *
- * Atoms of different relative placement groups must be packed into different
- * clusters, while atoms of one molecule always pack together; a molecule
- * spanning two groups is therefore unsatisfiable and reported as an error.
+ * The prepacker already refuses to put atoms of different groups into the same
+ * non-chain molecule, so only chain molecules (e.g. carry chains) can fail this
+ * check: their atoms are connected through dedicated routing and must be
+ * prepacked together, so a chain crossing a group boundary is a genuine
+ * constraint contradiction the user must resolve.
  */
 static void validate_relative_group_molecules(const Prepacker& prepacker,
                                               const AtomNetlist& atom_netlist,
@@ -271,9 +272,10 @@ static void validate_relative_group_molecules(const Prepacker& prepacker,
             if (mol_group != atom_group) {
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
                                 "Atoms '%s' (relative macro '%s', group %d) and '%s' (relative macro '%s', group %d) "
-                                "belong to the same prepacked molecule, so they must be packed into the same cluster; "
-                                "however, atoms of different relative placement groups must be packed into different "
-                                "clusters. Adjust the constraints so the molecule's atoms are in one group.\n",
+                                "belong to the same prepacked molecule (typically a chain, e.g. a carry chain, whose "
+                                "atoms are connected through dedicated routing), so they must be packed into the same "
+                                "cluster; however, atoms of different relative placement groups must be packed into "
+                                "different clusters. Adjust the constraints so the molecule's atoms are in one group.\n",
                                 atom_netlist.block_name(mol_group_atom).c_str(),
                                 relative_macros.get_macro(mol_group.first).name.c_str(),
                                 mol_group.second,
@@ -369,7 +371,8 @@ bool try_pack(const t_packer_opts& packer_opts,
     attraction_groups.create_att_groups_for_relative_groups();
 
     // A prepacked molecule spanning two relative placement groups can never be
-    // packed legally. Report it before clustering starts.
+    // packed legally. The prepacker avoids forming such non-chain molecules, so
+    // this only catches chain molecules; report them before clustering starts.
     validate_relative_group_molecules(prepacker,
                                       atom_ctx.netlist(),
                                       g_vpr_ctx.floorplanning().relative_macros);

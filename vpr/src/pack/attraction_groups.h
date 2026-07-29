@@ -79,21 +79,15 @@ class AttractionInfo {
      *        group (see UserRelativeMacros), pulling the atoms of a group into the
      *        same cluster.
      *
-     * Relative attraction groups created by a previous call are dropped and
-     * rebuilt from scratch (with full atom lists and up-to-date gains), so the
-     * method may be called repeatedly. It must be called:
-     *   - after construction, and after each create_att_groups_for_* call above
-     *     (those methods clear all attraction groups and rebuild them from
-     *     partitions only, which would otherwise silently drop the
-     *     relative-group pull on re-pack iterations), and
-     *   - before every re-pack iteration: rebuild_attraction_groups() prunes
-     *     clustered atoms from the atom lists during an iteration, and resetting
-     *     the cluster legalizer unclusters those atoms again, so the full atom
-     *     lists must be restored for the pull to have any effect.
+     * Safe to call repeatedly: previously created relative groups are dropped
+     * and rebuilt from scratch. It must be re-called after any
+     * create_att_groups_for_* call above (those clear all groups and rebuild
+     * from partitions only) and before every re-pack iteration (packing prunes
+     * the atom lists, so they must be restored once atoms are unclustered).
      *
-     * Relative groups are added last, so an atom that belongs to both a
-     * partition and a relative placement group is assigned to the relative
-     * group's attraction group.
+     * An atom can only be in one attraction group. If an atom is in both a
+     * partition and a relative placement group, the relative group wins.
+     * The partition's region constraint still applies at placement.
      */
     void create_att_groups_for_relative_groups();
 
@@ -166,7 +160,7 @@ class AttractionInfo {
      *        create_att_groups_for_relative_groups() call. Relative groups are always
      *        the trailing groups (they are appended last, and the partition group
      *        builders clear all groups before re-creating them), so this count lets
-     *        that method drop and rebuild them idempotently.
+     *        that method drop and rebuild them safely on repeated calls.
      */
     int num_relative_att_groups_ = 0;
 };
