@@ -4,6 +4,7 @@
 #include <sstream>
 #include <limits>
 #include <array>
+#include <iomanip>
 
 #include "draw_crit_path.h"
 #include "draw.h"
