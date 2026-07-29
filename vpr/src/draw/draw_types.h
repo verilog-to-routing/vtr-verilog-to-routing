@@ -179,6 +179,26 @@ struct t_flyline_draw_coords {
     ezgl::point2d end;
 };
 
+/**
+ * @brief Structure used to allow the graphics to proceed by a custom number of steps and then freeze for user interaction.
+ * 
+ * This structure corresponds to the "Proceed by Step" section under the "Misc." menu in the UI widget.
+ * 
+ * The definition of step varies with the flow stage during which this mode is used.
+ * During global analytical placement, step refers to every solver/legalizer iteration.
+ * During detailed simulated-annealing placement, step refers to every temperature update.
+ * During routing, step refers to every router iteration.
+ */
+struct t_proceed_by_step {
+    ///@brief If this mode is enabled. Tied to the "Proceed by Step" toggle switch in the Misc. menu.
+    bool enabled = false;
+    ///@brief The number of steps the graphics should proceed before freezing for user interaction. Set by the user.
+    unsigned int steps_to_proceed = 1;
+    ///@brief The current count of steps.
+    /// Used for comparison with steps_to_proceed at every update_screen() to determine if the graphics should freeze.
+    unsigned int step_counter = 0;
+};
+
 struct PartialPlacement;
 class AtomBlockAPBlockLookup;
 
@@ -343,13 +363,9 @@ struct t_draw_state {
     ///@brief Rendering backend: "immediate", "deferred", or "rhi"
     std::string renderer_type = "rhi";
 
-    ///@brief If the graphics should freeze for interaction after a custom number of steps (e.g. temperature change, routing iteration).
-    bool proceed_by_step = false;
-    ///@brief The number of steps the graphics should proceed before freezing for user interaction.
-    unsigned int steps_to_proceed = 1;
-    ///@brief The current count of steps.
-    /// Used for comparison with steps_to_proceed to determine if the graphics should freeze.
-    unsigned int step_counter = 0;
+    ///@brief A mode that controls if the graphics can proceed by a custom number of steps
+    /// (e.g. temperature change, routing iteration) and then freeze for user interaction.
+    t_proceed_by_step proceed_by_step;
 
     int sequence_number = 0;
 

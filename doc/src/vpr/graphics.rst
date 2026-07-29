@@ -370,7 +370,7 @@ These two UI elements can be found under the **Misc.** tab (see :ref:`fig-misc-t
 
 When enabled during global analytical placement, step refers to every solver/legalizer iteration.
 When enabled during detailed simulated-annealing placement, step refers to every temperature update.
-When enabled during routing, step refers to every router iterations.
+When enabled during routing, step refers to every router iteration.
 After freezing, clicking **Proceed** resumes the graphics until the next selected step boundary, unless another
 major program update (e.g. a state change) freezes the graphics early. In the latter case, the number of steps completed
 since the last freeze will not be carried over. A new step count will be performed from the current freeze.
