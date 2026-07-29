@@ -1526,7 +1526,8 @@
         <!-- Need some way of saying how clock signals get onto clock network. They will likely enter in the switch boxes. -->
         <!-- For now we can just hard code the drive point to the top-left switch box. -->
         <!-- TODO: It would be convenient to index the switch box instead of the location. -->
-        <switch_point type="drive" name="drive" xoffset="0" yoffset="0"/>
+        <!-- TODO: How would we specify the number of drives? We could add an option, or add another switch point tag here. -->
+        <switch_point type="drive" name="drive" xoffset="0" yoffset="0" switch_name="drive_buff"/>
 
         <!-- Put a tap point at the top of the grid to drive the center spine -->
         <switch_point type="tap" name="tap" xoffset="W/2" yoffset="0"/>

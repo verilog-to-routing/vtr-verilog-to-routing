@@ -120,6 +120,10 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER, "HTrees not yet supported.\n");
                 break;
             }
+            case e_clock_type::SWITCH_GRID: {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Clock switch grids not yet supported.\n");
+                break;
+            }
             default: {
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                                 "Found unsupported clock network type for '%s' clock network",

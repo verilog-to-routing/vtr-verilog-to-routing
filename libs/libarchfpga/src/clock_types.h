@@ -1,11 +1,13 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 enum class e_clock_type {
     SPINE,
     RIB,
-    H_TREE
+    H_TREE,
+    SWITCH_GRID
 };
 
 struct t_metal_layer {
@@ -36,6 +38,33 @@ struct t_clock_taps {
     std::string increment;
 };
 
+enum class e_clock_switch_grid_point_type {
+    DRIVE,
+    TAP
+};
+
+// A single <switch_point> entry within a <clock_switch_grid>. Unlike the rib/spine
+// drive/tap, offsets are 2D (a switch box location on the grid) and multiple drive
+// and/or tap points are allowed.
+struct t_clock_switch_grid_point {
+    std::string name;
+    e_clock_switch_grid_point_type type;
+    std::string xoffset;
+    std::string yoffset;
+    int arch_switch_idx = -1; // only set for DRIVE points
+};
+
+struct t_clock_switch_grid_arch {
+    std::string metal_layer;
+    std::string startx;
+    std::string starty;
+    std::string repeatx;
+    std::string repeaty;
+    std::string chan_w;
+
+    std::vector<t_clock_switch_grid_point> switch_points;
+};
+
 struct t_clock_network_arch {
     std::string name;
     int num_inst;
@@ -47,6 +76,8 @@ struct t_clock_network_arch {
     t_wire_repeat repeat;
     t_clock_drive drive;
     t_clock_taps tap;
+
+    t_clock_switch_grid_arch switch_grid;
 };
 
 struct t_clock_connection_arch {

@@ -368,6 +368,10 @@ static void process_clock_switch_points(pugi::xml_node parent,
                                         t_clock_network_arch& clock_network,
                                         const std::vector<t_arch_switch_inf>& switches,
                                         pugiutil::loc_data& loc_data);
+static void process_clock_switch_grid_points(pugi::xml_node parent,
+                                             t_clock_network_arch& clock_network,
+                                             const std::vector<t_arch_switch_inf>& switches,
+                                             pugiutil::loc_data& loc_data);
 static void process_clock_routing(pugi::xml_node parent,
                                   std::vector<t_clock_connection_arch>& clock_connections,
                                   const std::vector<t_arch_switch_inf>& switches,
@@ -4702,7 +4706,8 @@ static void process_clock_networks(pugi::xml_node parent,
                                    pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
     std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
-    std::vector<std::string> expected_children = {"rib", "spine"};
+    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w"};
+    std::vector<std::string> expected_children = {"rib", "spine", "clock_switch_grid"};
 
     int num_clock_networks = count_children(parent, "clock_network", loc_data);
     pugi::xml_node curr_network = get_first_child(parent, "clock_network", loc_data);
@@ -4793,11 +4798,49 @@ static void process_clock_networks(pugi::xml_node parent,
             process_clock_switch_points(curr_type, clock_network, switches, loc_data);
         }
 
-        // Currently their is only support for ribs and spines
+        // Parse clock_switch_grid
+        curr_type = get_single_child(curr_network, "clock_switch_grid", loc_data, ReqOpt::OPTIONAL);
+        if (curr_type) {
+            expect_only_attributes(curr_type, expected_switch_grid_attributes, loc_data);
+
+            is_supported_clock_type = true;
+            clock_network.type = e_clock_type::SWITCH_GRID;
+
+            std::string metal_layer(get_attribute(curr_type, "metal_layer", loc_data).value());
+            std::string startx(get_attribute(curr_type, "startx", loc_data).value());
+            std::string starty(get_attribute(curr_type, "starty", loc_data).value());
+            std::string chan_w(get_attribute(curr_type, "chan_w", loc_data).value());
+
+            std::string repeatx;
+            auto grid_repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (grid_repeatx_attr) {
+                repeatx = grid_repeatx_attr.value();
+            } else {
+                repeatx = "W";
+            }
+            std::string repeaty;
+            auto grid_repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (grid_repeaty_attr) {
+                repeaty = grid_repeaty_attr.value();
+            } else {
+                repeaty = "H";
+            }
+
+            clock_network.switch_grid.metal_layer = metal_layer;
+            clock_network.switch_grid.startx = startx;
+            clock_network.switch_grid.starty = starty;
+            clock_network.switch_grid.repeatx = repeatx;
+            clock_network.switch_grid.repeaty = repeaty;
+            clock_network.switch_grid.chan_w = chan_w;
+
+            process_clock_switch_grid_points(curr_type, clock_network, switches, loc_data);
+        }
+
+        // Currently their is only support for ribs, spines, and switch grids
         if (!is_supported_clock_type) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
                            vtr::string_fmt("Found no supported clock network type for '%s' clock network.\n"
-                                           "Currently there is only support for rib and spine networks.\n",
+                                           "Currently there is only support for rib, spine, and clock_switch_grid networks.\n",
                                            name.c_str())
                                .c_str());
         }
@@ -4885,6 +4928,61 @@ static void process_clock_switch_points(pugi::xml_node parent,
                                            clock_network.name.c_str())
                                .c_str());
         }
+
+        curr_switch = curr_switch.next_sibling(curr_switch.name());
+    }
+}
+
+static void process_clock_switch_grid_points(pugi::xml_node parent,
+                                             t_clock_network_arch& clock_network,
+                                             const std::vector<t_arch_switch_inf>& switches,
+                                             pugiutil::loc_data& loc_data) {
+    std::vector<std::string> expected_drive_attributes = {"name", "type", "xoffset", "yoffset", "switch_name"};
+    std::vector<std::string> expected_tap_attributes = {"name", "type", "xoffset", "yoffset"};
+    std::vector<std::string> expected_children = {"switch_point"};
+
+    int num_switch_points = count_children(parent, "switch_point", loc_data);
+    pugi::xml_node curr_switch = get_first_child(parent, "switch_point", loc_data);
+
+    for (int i = 0; i < num_switch_points; i++) {
+        expect_only_children(curr_switch, expected_children, loc_data);
+
+        std::string switch_type(get_attribute(curr_switch, "type", loc_data).value());
+
+        t_clock_switch_grid_point point;
+        point.name = get_attribute(curr_switch, "name", loc_data).value();
+
+        if (switch_type == "drive") {
+            expect_only_attributes(curr_switch, expected_drive_attributes, loc_data);
+
+            point.type = e_clock_switch_grid_point_type::DRIVE;
+            point.xoffset = get_attribute(curr_switch, "xoffset", loc_data).value();
+            point.yoffset = get_attribute(curr_switch, "yoffset", loc_data).value();
+
+            const char* switch_name = get_attribute(curr_switch, "switch_name", loc_data).value();
+            int switch_idx = find_switch_by_name(switches, switch_name);
+            if (switch_idx < 0) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+                               vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str());
+            }
+            point.arch_switch_idx = switch_idx;
+
+        } else if (switch_type == "tap") {
+            expect_only_attributes(curr_switch, expected_tap_attributes, loc_data);
+
+            point.type = e_clock_switch_grid_point_type::TAP;
+            point.xoffset = get_attribute(curr_switch, "xoffset", loc_data).value();
+            point.yoffset = get_attribute(curr_switch, "yoffset", loc_data).value();
+
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+                           vtr::string_fmt("Found unsupported switch type for '%s' clock network.\n"
+                                           "Currently there is only support for drive and tap switch types.\n",
+                                           clock_network.name.c_str())
+                               .c_str());
+        }
+
+        clock_network.switch_grid.switch_points.push_back(point);
 
         curr_switch = curr_switch.next_sibling(curr_switch.name());
     }
