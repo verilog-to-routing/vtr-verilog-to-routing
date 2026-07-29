@@ -748,6 +748,274 @@ void ClockSpine::map_relative_seg_indices(const t_unified_to_parallel_seg_index&
 
 /*********************************************************************************
  *********************************************************************************
+ ******************** ClockSwitchGrid Function Implementations *******************
+ *********************************************************************************
+ *********************************************************************************/
+
+/*
+ * ClockSwitchGrid (getters)
+ */
+
+ClockType ClockSwitchGrid::get_network_type() const {
+    return ClockType::SPINE; // TODO: give ClockSwitchGrid its own ClockType once other code depends on it
+}
+
+/*
+ * ClockSwitchGrid (setters)
+ */
+
+void ClockSwitchGrid::set_metal_layer(float r_metal, float c_metal) {
+    layer_.r_metal = r_metal;
+    layer_.c_metal = c_metal;
+}
+
+void ClockSwitchGrid::set_metal_layer(MetalLayer metal_layer) {
+    layer_ = metal_layer;
+}
+
+void ClockSwitchGrid::set_grid_start_location(int start_x, int start_y) {
+    start_x_ = start_x;
+    start_y_ = start_y;
+}
+
+void ClockSwitchGrid::set_wire_repeat(int repeat_x, int repeat_y) {
+    if (repeat_x <= 0 || repeat_y <= 0) {
+        // Avoid an infinite loop when creating the switch grid
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock switch grid repeat (%d,%d) must be greater than zero\n",
+                        repeat_x, repeat_y);
+    }
+
+    repeat_.x = repeat_x;
+    repeat_.y = repeat_y;
+}
+
+void ClockSwitchGrid::set_chan_width(int chan_w) {
+    if (chan_w <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock switch grid chan_w (%d) must be greater than zero\n", chan_w);
+    }
+
+    chan_w_ = chan_w;
+}
+
+void ClockSwitchGrid::set_internal_switch(int switch_idx) {
+    internal_switch_idx_ = switch_idx;
+}
+
+void ClockSwitchGrid::add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx) {
+    SwitchGridPoint point;
+    point.name = std::move(name);
+    point.type = type;
+    point.x = x;
+    point.y = y;
+    point.switch_idx = switch_idx;
+
+    switch_points_.push_back(std::move(point));
+}
+
+/*
+ * ClockSwitchGrid (member functions)
+ */
+
+void ClockSwitchGrid::create_segments(std::vector<t_segment_inf>& segment_inf) {
+    segment_inf.emplace_back();
+    x_seg_idx_ = segment_inf.size() - 1;
+    populate_segment_values(x_seg_idx_, clock_name_ + "_x", repeat_.x, layer_, segment_inf, e_parallel_axis::X_AXIS);
+
+    segment_inf.emplace_back();
+    y_seg_idx_ = segment_inf.size() - 1;
+    populate_segment_values(y_seg_idx_, clock_name_ + "_y", repeat_.y, layer_, segment_inf, e_parallel_axis::Y_AXIS);
+}
+
+int ClockSwitchGrid::num_grid_locations(const DeviceGrid& grid) const {
+    VTR_ASSERT(repeat_.x > 0);
+    VTR_ASSERT(repeat_.y > 0);
+
+    int x_max = int(grid.width()) - 2;
+    int y_max = int(grid.height()) - 2;
+
+    int num_x = (x_max >= start_x_) ? (x_max - start_x_) / repeat_.x + 1 : 0;
+    int num_y = (y_max >= start_y_) ? (y_max - start_y_) / repeat_.y + 1 : 0;
+
+    return num_x * num_y;
+}
+
+size_t ClockSwitchGrid::estimate_additional_nodes(const DeviceGrid& grid) {
+    // 1 hub node + up to 2 hop wire nodes (east, north) per grid location, per track.
+    // This over-estimates (locations at the top/right edge have fewer hops), which is
+    // fine since this is only used to reserve node storage.
+    return size_t(chan_w_) * size_t(num_grid_locations(grid)) * 3;
+}
+
+void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
+                                                                          t_rr_graph_storage* rr_nodes,
+                                                                          RRGraphBuilder& rr_graph_builder,
+                                                                          t_rr_edge_info_set* rr_edges_to_create,
+                                                                          int num_segments_x) {
+    const auto& grid = clock_graph.grid();
+
+    VTR_ASSERT(repeat_.x > 0);
+    VTR_ASSERT(repeat_.y > 0);
+
+    // TODO: This function is not adapted to the multi-layer grid
+    VTR_ASSERT(g_vpr_ctx.device().grid.get_num_layers() == 1);
+    int layer_num = 0;
+
+    int x_max = int(grid.width()) - 2;
+    int y_max = int(grid.height()) - 2;
+
+    std::vector<bool> switch_point_registered(switch_points_.size(), false);
+
+    for (int track = 0; track < chan_w_; track++) {
+        // Each node (hub or hop wire) gets its own dedicated ptc. Nodes that touch the
+        // same (x,y) location must never share a ptc, since the rr_node_indices reverse
+        // lookup is keyed by (x,y,type,ptc) and a collision silently drops one of the nodes.
+
+        // Hub node (switch box) rr_node index at each grid location, for this track
+        std::map<std::pair<int, int>, int> hub_nodes;
+
+        auto get_or_create_hub = [&](int x, int y) -> int {
+            auto key = std::make_pair(x, y);
+            auto it = hub_nodes.find(key);
+            if (it != hub_nodes.end()) {
+                return it->second;
+            }
+            int hub_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+            int node_idx = create_chanx_node(layer_num, x, x, y, hub_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
+            hub_nodes[key] = node_idx;
+            return node_idx;
+        };
+
+        for (int by = start_y_; by <= y_max; by += repeat_.y) {
+            for (int bx = start_x_; bx <= x_max; bx += repeat_.x) {
+                int hub_idx = get_or_create_hub(bx, by);
+
+                // Register any switch points (drive/tap) that live at this switch box
+                for (size_t i = 0; i < switch_points_.size(); i++) {
+                    const SwitchGridPoint& sp = switch_points_[i];
+                    if (sp.x == bx && sp.y == by) {
+                        clock_graph.add_switch_location(get_name(), sp.name, bx, by, hub_idx);
+                        switch_point_registered[i] = true;
+                    }
+                }
+
+                // Connect to the switch box to the east, if one exists
+                int east_x = bx + repeat_.x;
+                if (east_x <= x_max) {
+                    int east_hub_idx = get_or_create_hub(east_x, by);
+                    int wire_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+                    int wire_idx = create_chanx_node(layer_num, bx, east_x, by, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
+
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(east_hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(east_hub_idx), internal_switch_idx_, false);
+                }
+
+                // Connect to the switch box to the north, if one exists
+                int north_y = by + repeat_.y;
+                if (north_y <= y_max) {
+                    int north_hub_idx = get_or_create_hub(bx, north_y);
+                    int wire_ptc = clock_graph.get_and_increment_chany_ptc_num();
+                    int wire_idx = create_chany_node(layer_num, by, north_y, bx, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder, num_segments_x);
+
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(north_hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
+                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(north_hub_idx), internal_switch_idx_, false);
+                }
+            }
+        }
+    }
+
+    for (size_t i = 0; i < switch_points_.size(); i++) {
+        if (!switch_point_registered[i]) {
+            vtr::printf_warning(__FILE__, __LINE__,
+                                "Switch point '%s' of clock network '%s' at location (%d,%d) does not"
+                                " correspond to any switch box location produced by startx/starty/repeatx/repeaty."
+                                " This can lead to an unroutable architecture.\n",
+                                switch_points_[i].name.c_str(), clock_name_.c_str(),
+                                switch_points_[i].x, switch_points_[i].y);
+        }
+    }
+}
+
+int ClockSwitchGrid::create_chanx_node(int layer,
+                                       int x_start,
+                                       int x_end,
+                                       int y,
+                                       int ptc_num,
+                                       Direction direction,
+                                       t_rr_graph_storage* rr_nodes,
+                                       RRGraphBuilder& rr_graph_builder) {
+    rr_nodes->emplace_back();
+    size_t node_index = rr_nodes->size() - 1;
+    RRNodeId chanx_node = RRNodeId(node_index);
+
+    rr_graph_builder.set_node_type(chanx_node, e_rr_type::CHANX);
+    rr_graph_builder.set_node_coordinates(chanx_node, x_start, y, x_end, y);
+    rr_graph_builder.set_node_layer(chanx_node, layer, layer);
+    rr_graph_builder.set_node_capacity(chanx_node, 1);
+    rr_graph_builder.set_node_track_num(chanx_node, ptc_num);
+    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal, layer_.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
+    rr_graph_builder.set_node_rc_index(chanx_node, rc_index);
+    rr_graph_builder.set_node_direction(chanx_node, direction);
+    rr_graph_builder.set_node_cost_index(chanx_node, RRIndexedDataId(CHANX_COST_INDEX_START + x_seg_idx_));
+
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
+        for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
+            rr_graph_builder.node_lookup().add_node(chanx_node, layer, ix, iy, rr_graph.node_type(chanx_node), rr_graph.node_track_num(chanx_node));
+        }
+    }
+
+    return node_index;
+}
+
+int ClockSwitchGrid::create_chany_node(int layer,
+                                       int y_start,
+                                       int y_end,
+                                       int x,
+                                       int ptc_num,
+                                       Direction direction,
+                                       t_rr_graph_storage* rr_nodes,
+                                       RRGraphBuilder& rr_graph_builder,
+                                       int num_segments_x) {
+    rr_nodes->emplace_back();
+    size_t node_index = rr_nodes->size() - 1;
+    RRNodeId chany_node = RRNodeId(node_index);
+
+    rr_graph_builder.set_node_type(chany_node, e_rr_type::CHANY);
+    rr_graph_builder.set_node_coordinates(chany_node, x, y_start, x, y_end);
+    rr_graph_builder.set_node_layer(chany_node, layer, layer);
+    rr_graph_builder.set_node_capacity(chany_node, 1);
+    rr_graph_builder.set_node_track_num(chany_node, ptc_num);
+    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal, layer_.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
+    rr_graph_builder.set_node_rc_index(chany_node, rc_index);
+    rr_graph_builder.set_node_direction(chany_node, direction);
+    rr_graph_builder.set_node_cost_index(chany_node, RRIndexedDataId(CHANX_COST_INDEX_START + num_segments_x + y_seg_idx_));
+
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
+        for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {
+            rr_graph_builder.node_lookup().add_node(chany_node, layer, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
+        }
+    }
+
+    return node_index;
+}
+
+void ClockSwitchGrid::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
+    int seg_idx;
+
+    seg_idx = get_parallel_seg_index(x_seg_idx_, indices_map, e_parallel_axis::X_AXIS);
+    x_seg_idx_ = (seg_idx >= 0) ? seg_idx : x_seg_idx_;
+
+    seg_idx = get_parallel_seg_index(y_seg_idx_, indices_map, e_parallel_axis::Y_AXIS);
+    y_seg_idx_ = (seg_idx >= 0) ? seg_idx : y_seg_idx_;
+}
+
+/*********************************************************************************
+ *********************************************************************************
  ********************** ClockHTree Function Implementations **********************
  *********************************************************************************
  *********************************************************************************/

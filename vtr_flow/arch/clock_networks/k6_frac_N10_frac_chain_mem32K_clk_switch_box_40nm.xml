@@ -1522,21 +1522,23 @@
       <!-- Perhaps the switch block will match the default switch box. -->
       <!-- Need to update the custom switch block syntax to allow them to specify clock switch boxes. -->
       <!-- Maybe put the custom switch block specifier in here. Need to check the code to see what makes sense. -->
-      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W-1" starty="0" repeaty="W-1" chan_w="4">
+      <!-- TODO: What should we do when there is an empty tile? Should we still put a switch at that location? -->
+      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="1" starty="0" repeaty="1" chan_w="4" switch_name="drive_buff">
         <!-- Need some way of saying how clock signals get onto clock network. They will likely enter in the switch boxes. -->
         <!-- For now we can just hard code the drive point to the top-left switch box. -->
         <!-- TODO: It would be convenient to index the switch box instead of the location. -->
         <!-- TODO: How would we specify the number of drives? We could add an option, or add another switch point tag here. -->
-        <switch_point type="drive" name="drive" xoffset="0" yoffset="0" switch_name="drive_buff"/>
+        <switch_point type="drive" name="drive" xoffset="0" yoffset="1" switch_name="drive_buff"/>
 
-        <!-- Put a tap point at the top of the grid to drive the center spine -->
-        <switch_point type="tap" name="tap" xoffset="W/2" yoffset="0"/>
+        <!-- Put a tap point where spine1's drive point lives (x=W/2, y=H/2) so the two
+             networks physically meet at the same switch box location. -->
+        <switch_point type="tap" name="tap" xoffset="W/2" yoffset="H/2"/>
       </clock_switch_grid>
     </clock_network>
     <clock_network name="spine1" num_inst="2">
       <!-- Full Device: Center Spine -->
       <spine metal_layer="global_spine" x="W/2" starty="0" endy="H">
-        <switch_point type="drive" name="drive" yoffset="0" switch_name="drive_buff"/>
+        <switch_point type="drive" name="drive" yoffset="H/2" switch_name="drive_buff"/>
         <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
       </spine>
     </clock_network>
@@ -1551,7 +1553,7 @@
       <!-- "routing" is a special from address used to indicate that connections are comming
                  from intr-block routing at the specified switch location -->
       <!-- TODO: Check if this switch is still necessary if going from a switch box into the clock network. -->
-      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="W/2" locationy="0" switch="0" fc_val="1.0"/>
+      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="0" locationy="1" switch="0" fc_val="1.0"/>
       <tap from="global_clk_switch_network.tap" to="spine1.drive" switch="0" fc_val="1.0"/>
       <tap from="spine1.tap" to="rib1.drive" switch="0" fc_val="0.5"/>
       <!-- "clock" is a special to addreass used to indicate that the connections are going

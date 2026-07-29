@@ -4706,7 +4706,7 @@ static void process_clock_networks(pugi::xml_node parent,
                                    pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
     std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
-    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w"};
+    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name"};
     std::vector<std::string> expected_children = {"rib", "spine", "clock_switch_grid"};
 
     int num_clock_networks = count_children(parent, "clock_network", loc_data);
@@ -4811,6 +4811,13 @@ static void process_clock_networks(pugi::xml_node parent,
             std::string starty(get_attribute(curr_type, "starty", loc_data).value());
             std::string chan_w(get_attribute(curr_type, "chan_w", loc_data).value());
 
+            const char* switch_name = get_attribute(curr_type, "switch_name", loc_data).value();
+            int grid_switch_idx = find_switch_by_name(switches, switch_name);
+            if (grid_switch_idx < 0) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                               vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str());
+            }
+
             std::string repeatx;
             auto grid_repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
             if (grid_repeatx_attr) {
@@ -4832,6 +4839,8 @@ static void process_clock_networks(pugi::xml_node parent,
             clock_network.switch_grid.repeatx = repeatx;
             clock_network.switch_grid.repeaty = repeaty;
             clock_network.switch_grid.chan_w = chan_w;
+            clock_network.switch_grid.switch_name = switch_name;
+            clock_network.switch_grid.arch_switch_idx = grid_switch_idx;
 
             process_clock_switch_grid_points(curr_type, clock_network, switches, loc_data);
         }

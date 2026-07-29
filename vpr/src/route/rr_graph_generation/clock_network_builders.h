@@ -257,6 +257,92 @@ class ClockSpine : public ClockNetwork {
                               ClockRRGraphBuilder& clock_graph);
 };
 
+enum class SwitchGridPointType {
+    DRIVE,
+    TAP
+};
+
+// A single entry point/exit point into a ClockSwitchGrid, resolved to an absolute
+// device grid location (unlike ClockRib/ClockSpine's along-the-wire offsets).
+struct SwitchGridPoint {
+    std::string name;
+    SwitchGridPointType type = SwitchGridPointType::TAP;
+    int x = UNDEFINED;
+    int y = UNDEFINED;
+    int switch_idx = UNDEFINED; // only meaningful for DRIVE points
+};
+
+// Models a grid of clock switch boxes: at every (repeat_x, repeat_y) spaced location a
+// switch box ("hub") is created, connected to its adjacent switch boxes via dedicated
+// clock wires. This is a minimal implementation: connectivity between the wires
+// incident to a switch box is a full crossbar (every incident side is mutually
+// reachable through the hub node) rather than a configurable switch pattern.
+class ClockSwitchGrid : public ClockNetwork {
+  private:
+    MetalLayer layer_;
+    int start_x_ = UNDEFINED;
+    int start_y_ = UNDEFINED;
+    WireRepeat repeat_;
+    int chan_w_ = UNDEFINED;
+    int internal_switch_idx_ = UNDEFINED;
+
+    // segment indices for the horizontal/vertical inter-switch-box wires
+    int x_seg_idx_ = UNDEFINED;
+    int y_seg_idx_ = UNDEFINED;
+
+    std::vector<SwitchGridPoint> switch_points_;
+
+  public:
+    /*
+     * Getters
+     */
+    ClockType get_network_type() const override;
+
+    /*
+     * Setters
+     */
+    void set_metal_layer(float r_metal, float c_metal);
+    void set_metal_layer(MetalLayer metal_layer);
+    void set_grid_start_location(int start_x, int start_y);
+    void set_wire_repeat(int repeat_x, int repeat_y);
+    void set_chan_width(int chan_w);
+    void set_internal_switch(int switch_idx);
+    void add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx = UNDEFINED);
+
+    /*
+     * Member functions
+     */
+    void create_segments(std::vector<t_segment_inf>& segment_inf) override;
+    void create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
+                                                             t_rr_graph_storage* rr_nodes,
+                                                             RRGraphBuilder& rr_graph_builder,
+                                                             t_rr_edge_info_set* rr_edges_to_create,
+                                                             int num_segments_x) override;
+    size_t estimate_additional_nodes(const DeviceGrid& grid) override;
+    void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) override;
+
+  private:
+    int num_grid_locations(const DeviceGrid& grid) const;
+
+    int create_chanx_node(int layer,
+                          int x_start,
+                          int x_end,
+                          int y,
+                          int ptc_num,
+                          Direction direction,
+                          t_rr_graph_storage* rr_nodes,
+                          RRGraphBuilder& rr_graph_builder);
+    int create_chany_node(int layer,
+                          int y_start,
+                          int y_end,
+                          int x,
+                          int ptc_num,
+                          Direction direction,
+                          t_rr_graph_storage* rr_nodes,
+                          RRGraphBuilder& rr_graph_builder,
+                          int num_segments_x);
+};
+
 class ClockHTree : private ClockNetwork {
   private:
     // position not needed since it changes with every root of the tree

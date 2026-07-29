@@ -121,7 +121,38 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                 break;
             }
             case e_clock_type::SWITCH_GRID: {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Clock switch grids not yet supported.\n");
+                std::unique_ptr<ClockSwitchGrid> switch_grid = std::make_unique<ClockSwitchGrid>();
+
+                switch_grid->set_clock_name(clock_network_arch.name);
+                switch_grid->set_num_instance(clock_network_arch.num_inst);
+                switch_grid->set_metal_layer(get_metal_layer_from_name(
+                    clock_network_arch.switch_grid.metal_layer,
+                    clock_metal_layers,
+                    clock_network_arch.name));
+                switch_grid->set_grid_start_location(
+                    p.parse_formula(clock_network_arch.switch_grid.startx, vars),
+                    p.parse_formula(clock_network_arch.switch_grid.starty, vars));
+                switch_grid->set_wire_repeat(
+                    p.parse_formula(clock_network_arch.switch_grid.repeatx, vars),
+                    p.parse_formula(clock_network_arch.switch_grid.repeaty, vars));
+                switch_grid->set_chan_width(p.parse_formula(clock_network_arch.switch_grid.chan_w, vars));
+                switch_grid->set_internal_switch(clock_network_arch.switch_grid.arch_switch_idx);
+
+                for (const t_clock_switch_grid_point& point : clock_network_arch.switch_grid.switch_points) {
+                    SwitchGridPointType type = (point.type == e_clock_switch_grid_point_type::DRIVE)
+                                                    ? SwitchGridPointType::DRIVE
+                                                    : SwitchGridPointType::TAP;
+                    switch_grid->add_switch_point(
+                        point.name,
+                        type,
+                        p.parse_formula(point.xoffset, vars),
+                        p.parse_formula(point.yoffset, vars),
+                        point.arch_switch_idx);
+                }
+
+                switch_grid->create_segments(segment_inf);
+
+                clock_networks_device.push_back(std::move(switch_grid));
                 break;
             }
             default: {

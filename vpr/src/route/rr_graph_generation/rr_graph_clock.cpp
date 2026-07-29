@@ -1,9 +1,11 @@
 #include "rr_graph_clock.h"
 
 #include "globals.h"
+#include "vpr_error.h"
 
 #include "vtr_assert.h"
 #include "vtr_time.h"
+#include "vtr_util.h"
 
 void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types_x,
                                                            t_rr_edge_info_set* rr_edges_to_create) {
@@ -77,7 +79,26 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std
     VTR_ASSERT(itter != clock_name_to_switch_points.end());
 
     auto& switch_points = itter->second;
-    return switch_points.get_rr_node_indices_at_location(switch_point_name, x, y);
+    std::vector<int> rr_node_indices = switch_points.get_rr_node_indices_at_location(switch_point_name, x, y);
+
+    if (rr_node_indices.empty()) {
+        std::string valid_locations;
+        for (auto& loc : switch_points.get_switch_locations(switch_point_name)) {
+            valid_locations += vtr::string_fmt(" (%d,%d)", loc.first, loc.second);
+        }
+
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                         "Clock network '%s' has no switch point named '%s' registered at location (%d,%d).\n"
+                         "This is usually caused by a mismatch between a <tap> element's locationx/locationy "
+                         "and the xoffset/yoffset of the switch_point it refers to -- these must specify the "
+                         "exact same (x,y) location in the clock network architecture description.\n"
+                         "Switch point '%s' is only registered at:%s\n",
+                         clock_name.c_str(), switch_point_name.c_str(), x, y,
+                         switch_point_name.c_str(),
+                         valid_locations.empty() ? " <none>" : valid_locations.c_str());
+    }
+
+    return rr_node_indices;
 }
 
 std::vector<int> SwitchPoints::get_rr_node_indices_at_location(std::string switch_point_name,
@@ -94,8 +115,13 @@ std::vector<int> SwitchPoints::get_rr_node_indices_at_location(std::string switc
 }
 
 std::vector<int> SwitchPoint::get_rr_node_indices_at_location(int x, int y) const {
-    // assert that switch is connected to nodes at the location
-    VTR_ASSERT(!rr_node_indices[x][y].empty());
+    // Out-of-range or never-registered locations simply have no nodes here.
+    // Callers (ClockRRGraphBuilder::get_rr_node_indices_at_switch_location) are
+    // responsible for turning an empty result into a helpful error message,
+    // since they have the clock/switch point names needed to explain the mismatch.
+    if (x < 0 || y < 0 || size_t(x) >= rr_node_indices.size() || size_t(y) >= rr_node_indices[x].size()) {
+        return {};
+    }
 
     return rr_node_indices[x][y];
 }

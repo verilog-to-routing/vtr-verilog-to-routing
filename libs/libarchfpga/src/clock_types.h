@@ -61,6 +61,8 @@ struct t_clock_switch_grid_arch {
     std::string repeatx;
     std::string repeaty;
     std::string chan_w;
+    std::string switch_name;
+    int arch_switch_idx = -1;
 
     std::vector<t_clock_switch_grid_point> switch_points;
 };
