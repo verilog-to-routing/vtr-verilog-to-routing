@@ -312,6 +312,12 @@ void toggle_crit_path_cbk(SwitchButton*, bool state, ezgl::application* app) {
     app->refresh_drawing();
 }
 
+void set_num_crit_paths_value_cbk(QSpinBox* self, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->num_crit_paths = self->value();
+    app->refresh_drawing();
+}
+
 /**
  * @brief cbk function for toggling routing expansion cost. 
  * alters draw_state->show_router_expansion cost var. to reflect new value
@@ -395,12 +401,6 @@ void set_net_max_fanout_cbk(QSpinBox* self, ezgl::application* app) {
 void set_net_alpha_value_cbk(QSpinBox* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->net_alpha = 255 - self->value();
-    app->refresh_drawing();
-}
-
-void set_num_crit_paths_value_cbk(QSpinBox* self, ezgl::application* app) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->num_crit_paths = self->value();
     app->refresh_drawing();
 }
 

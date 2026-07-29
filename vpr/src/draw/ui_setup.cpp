@@ -114,13 +114,6 @@ void net_button_setup(ezgl::application* app) {
     });
     max_fanout->setSingleStep(1);
     max_fanout->setRange(0, get_max_fanout());
-
-    QSpinBox* num_paths = app->find_spin_box("NumCritPaths");
-    QObject::connect(num_paths, &QSpinBox::valueChanged, num_paths, [num_paths, app]() {
-        set_num_paths_value_cbk(num_paths, app);
-    });
-    num_paths->setSingleStep(1);
-    num_paths->setRange(0, 10);
 }
 
 /*
@@ -332,6 +325,13 @@ void crit_path_button_setup(ezgl::application* app) {
     QObject::connect(toggle_nets_switch, &SwitchButton::toggled, toggle_nets_switch, [toggle_nets_switch, app](bool checked) {
         toggle_crit_path_cbk(toggle_nets_switch, checked, app);
     });
+
+    QSpinBox* num_paths = app->find_spin_box("NumCritPaths");
+    QObject::connect(num_paths, &QSpinBox::valueChanged, num_paths, [num_paths, app]() {
+        set_num_crit_paths_value_cbk(num_paths, app);
+    });
+    num_paths->setSingleStep(1);
+    num_paths->setRange(1, 10);
 
     // Checkboxes for critical path
     setup_checkbox_button("ToggleCritPathFlylines", app, &draw_state->show_crit_path_flylines);
