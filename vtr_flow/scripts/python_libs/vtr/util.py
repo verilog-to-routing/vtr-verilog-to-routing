@@ -18,8 +18,6 @@ from pathlib import PurePath
 from pathlib import Path
 from typing import List, Tuple
 
-from prettytable import PrettyTable
-
 import vtr.error
 from vtr.error import CommandError
 from vtr import paths
@@ -319,28 +317,6 @@ def check_cmd(command):
     """
 
     return Path(command).exists()
-
-
-def pretty_print_table(file, border=False):
-    """Convert file to a pretty, easily read table"""
-    table = PrettyTable()
-    table.border = border
-    reader = None
-    with open(file, "r", encoding="utf-8") as csv_file:
-        reader = csv.reader(csv_file, delimiter="\t")
-        first = True
-        for row in reader:
-            row = [row_item.strip() + "\t" for row_item in row]
-            while row[-1] == "\t":
-                row = row[:-1]
-            if first:
-                table.field_names = list(row)
-                table.align = "l"
-                first = False
-            else:
-                table.add_row(row)
-    with open(file, "w+", encoding="utf-8") as out_file:
-        print(table, file=out_file)
 
 
 def write_tab_delimitted_csv(filepath, rows):
