@@ -483,7 +483,7 @@ void update_screen(ScreenUpdatePriority priority,
 
     // When the priority associated with this screen update is higher than the level set in draw_state,
     // we need to freeze the graphics. This does not necessarily happen only at a state change.
-    // Check the definition for gr_automode in draw_state for more information.
+    // Check the definition of gr_automode in draw_state for more information.
     bool freeze_for_priority = int(priority) >= draw_state->gr_automode;
 
     // If there was a state change, we must call ezgl::application::run() to update the buttons.
