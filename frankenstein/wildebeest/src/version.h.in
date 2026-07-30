@@ -1,0 +1,4 @@
+
+#pragma once
+
+#define YOSYS_SYN_REVISION "@YOSYS_SYN_REVISION@"

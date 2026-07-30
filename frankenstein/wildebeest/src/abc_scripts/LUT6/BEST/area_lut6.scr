@@ -1,0 +1,55 @@
+time
+
+echo " "
+echo "** Starting ABC AREA LUT6 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+write_blif area_lut6.blif
+
+&get -n -m; 
+
+&ps
+
+echo ""
+echo "&synch2 -K 6 -C 500; &if -K 6 -a;"
+&synch2 -K 6 -C 500; &if -K 6 -a; &ps; time 
+
+echo""
+echo "mfs2 -W 4 -M 500 -C 7000;"
+&put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &ps; time; &save -a; &load; 
+
+echo""
+echo "&synch2 -K 6 -C 500; &if -K 6 -a; &put; mfs2 -W 4 -M 500 -C 7000;"
+&synch2 -K 6 -C 500; &if -K 6 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; time
+
+&save -a; &load; &ps;
+
+echo ""
+echo "mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 6 -C 500; &lf -K 6 -e; &save -a; &load;"
+&put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 6 -C 500; &lf -K 6 -e; &save -a; &load; &ps; time
+
+echo ""
+echo "&st; &if -sz -C 5 -K 11 -S 66 -a"
+&st; &if -sz -C 5 -K 11 -S 66 -a ; &save -a; &load; &ps; time
+
+echo ""
+echo "mfs2 -W 4 -M 1000 -C 7000; "
+&put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time 
+
+echo ""
+echo "lutpack -S 1"
+&put; lutpack -S 1; time
+
+&get -n -m; &save -a; &ps; 
+
+echo ""
+echo "&shrink; &if -K 6 -a -C 32; &mfs -W 2 -C 600 -D 25; &satlut -C 32; &satlut -r -C 32;"
+&shrink; &if -K 6 -a -C 32; &mfs -W 2 -C 600 -D 25; &satlut -C 32; &satlut -r -C 32; &ps; &save -a; time
+
+&load; &ps
+
+echo "** End ABC AREA LUT6 optimization and mapping !!!"
+
+&put
+
+time

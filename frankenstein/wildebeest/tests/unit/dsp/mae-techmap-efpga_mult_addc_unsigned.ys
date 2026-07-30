@@ -1,0 +1,22 @@
+# yosys -m wildebeest -s mae-techmap-efpga_mult_addc_unsigned.ys
+read_verilog <<EOF
+module efpga_mult_addc_unsigned_map_inst
+  # (
+     parameter INPUT_WIDTH = 17,
+     parameter OUTPUT_WIDTH = 40,
+     localparam C_WIDTH = OUTPUT_WIDTH
+     )
+   (
+    input [(INPUT_WIDTH-1):0]   a,
+    input [(INPUT_WIDTH-1):0]   b,
+    input [(C_WIDTH-1):0]       c,
+    output [(OUTPUT_WIDTH-1):0] y
+    );
+
+   assign y = (a * b) + c;
+
+endmodule
+EOF
+
+synth_fpga -partname z1010
+select -assert-count 1 */t:efpga_mult_addc

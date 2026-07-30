@@ -1,0 +1,36 @@
+time
+
+echo " "
+echo "** Starting BASIC ABC AREA LUT4 optimization and mapping !!!"
+
+write_blif area_lut4.blif
+
+strash
+
+echo ""
+echo "&fraig"
+&get -n
+&sopb -C 3
+&fraig -x -L 200
+&put
+
+echo ""
+echo "dc2"
+dc2
+
+strash
+echo ""
+echo "if -K 4 -a"
+if -K 4 -a
+&get -n -m; &save -a; &ps ; time
+&put
+
+lutpack -S 1
+&get -n -m; &save -a; &ps ; time
+&load
+&put
+
+write_blif out.blif
+
+echo " "
+echo "** ABC BASIC AREA LUT4 Optimization and Mapping done !!!"

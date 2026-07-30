@@ -1,0 +1,41 @@
+time
+
+echo " "
+echo "** Starting ABC FAST LUT6 optimization and mapping !!!"
+
+write_blif in.blif 
+
+&get -n -m;
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&st; &lf -K 6 -e -C 32;"
+&st; &lf -K 6 -e -C 32; &ps; &save -a; time
+
+echo " "
+echo "&if -sz -C 5 -K 11 -S 66"
+&shrink; &if -sz -C 5 -K 11 -S 66; &ps; &save -a; time
+
+&load
+
+echo " "
+echo "&if -sz -C 5 -K 11 -S 66"
+&shrink; &if -sz -C 5 -K 11 -S 66; &save -a; &ps; time
+
+&load
+
+echo " "
+echo "********************* "
+echo "* Final Best netlist"
+echo "********************* "
+&load; &ps
+
+&put;  
+
+time
+
+echo " "
+echo "** Ending ABC FAST optimization !!!"

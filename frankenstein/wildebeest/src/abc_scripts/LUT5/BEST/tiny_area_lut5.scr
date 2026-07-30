@@ -1,0 +1,131 @@
+time
+
+echo " "
+echo "** Starting ABC TINY AREA LUT5 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+write_blif tiny_area_lut5.blif
+
+&get -n -m
+
+&st; &if -sz -C 5 -K 9 -S 55 -a ; &save -a; &ps; time
+&put
+
+read_blif tiny_area_lut5.blif
+
+&get -n -m
+
+&st; &lf -K 5 -e; &save -a; &ps; time
+&put
+
+read_blif tiny_area_lut5.blif
+
+&get -n -m
+
+&put
+
+read_blif tiny_area_lut5.blif
+
+strash
+
+&get -n
+&sopb -C 3
+&fraig -x -L 200
+&put
+
+dc2
+
+strash
+dch -f
+
+if -K 5 -a
+&get -n -m; &save -a; &ps ; time
+&put
+
+read_blif tiny_area_lut5.blif
+
+strash
+
+&get -n
+&fraig -x -L 200
+&put
+
+dc2
+
+strash
+dch -f
+
+if -K 5 -a
+&get -n -m; &ps ; &save -a;
+
+&load;
+&put
+
+
+mfs2 -W 4 -M 500 -C 7000
+
+lutpack -S 1;
+
+&get -n -m;
+
+&save -a;
+
+&synch2 -K 5 -C 500; &if -K 5 -a; &save -a; &ps; &load; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &ps; &load; &synch2 -K 5 -C 500; &if -K 5 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &load; &ps; time
+
+
+&put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &synch2 -K 5 -C 500; &lf -K 5 -e; &save -a; &load; &ps; time
+
+&st; &if -sz -C 5 -K 9 -S 55 -a ; &save -a; &load; &ps; time
+
+&put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time
+
+&put
+
+lutpack -S 1;
+time
+
+&get -n -m;
+
+&save -a;
+
+&shrink; &dch -s -C 300; &if -sz -C 4 -K 9 -S 55 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; &load; 
+time
+
+&shrink; &dch -s -C 300; &if -sz -C 4 -K 9 -S 55 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; &load; 
+time
+
+&load; &ps; 
+
+&shrink; &dch -s -C 300; &if -sz -C 4 -K 9 -S 55 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time
+
+&shrink; &dch -s -C 300; &if -sz -C 4 -K 9 -S 55 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time
+
+&shrink; &dch -s -C 300; &if -sz -C 4 -K 9 -S 55 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time 
+
+
+read_blif tiny_area_lut5.blif
+
+&st; &lf -K 5 -e; &save -a; &ps;
+&st; &if -K 5 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 5 -C 500; &lf -K 5 -e; &save -a; &st; &if -K 5 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 5 -C 500; &if -K 5 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &synch2 -K 5 -C 500; &if -K 5 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &synch2 -K 5 -C 500; &if -K 5 -a; &save -a; &load; &ps;
+&dch -s -C 300; &if -K 5 -a; &save -a; &ps;
+&synch2; &if -K 5 -a; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &mfs -W 2 -C 600 -D 25; &save -a; &ps;
+&dch -s -C 300; &if -K 5 -a; &save -a; &ps;
+&synch2; &if -K 5 -a; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &mfs -W 2 -C 600 -D 25; &save -a; &ps;
+&dch -s -C 300; &if -K 5 -a; &ps;
+&save -a;
+
+&load
+&put
+
+lutpack -S 1
+
+&get -n -m; 
+&save -a;
+&load
+
+&ps
+
+&put
+
+echo " "
+echo "** ABC TINY AREA LUT5 Optimization and Mapping done !!!"

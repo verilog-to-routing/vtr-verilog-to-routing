@@ -1,0 +1,40 @@
+# yosys -m wildebeest -s mae-techmap-efpga_macc_pipe_unsigned.ys
+read_verilog <<EOF
+module efpga_macc_pipe_unsigned_map_inst
+  # (
+     parameter INPUT_WIDTH = 17,
+     parameter OUTPUT_WIDTH = 40
+     )
+   (
+    input                                   clk,
+    input                                   resetn,
+    input [(INPUT_WIDTH-1):0]               a,
+    input [(INPUT_WIDTH-1):0]               b,
+    output reg [(OUTPUT_WIDTH-1):0]         y
+    );
+
+   reg [(2*INPUT_WIDTH-1):0] product;
+
+   always @(posedge clk or negedge resetn) begin
+      if (~resetn) begin
+         product <= 'h0;
+      end
+      else begin
+         product <= a * b;
+      end
+   end
+
+   always @(posedge clk or negedge resetn) begin
+      if (~resetn) begin
+         y <= 'h0;
+      end
+      else begin
+         y <= y + product;
+      end
+   end
+
+endmodule
+EOF
+
+synth_fpga -partname z1010
+select -assert-count 1 */t:efpga_macc_pipe

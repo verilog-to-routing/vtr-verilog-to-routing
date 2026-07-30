@@ -1,0 +1,35 @@
+echo "strash"; 
+strash; 
+
+echo "&get -n"; 
+&get -n; 
+
+echo "&put"; 
+&put; 
+
+echo "scorr"; 
+scorr; 
+
+echo "dc2"; 
+dc2; 
+
+echo "strash"; 
+strash; 
+
+echo "dch -f"; 
+dch -f; 
+
+echo "if -K 4"; 
+if -K 4; 
+
+&get -n -m; &ps; &put
+ 
+echo "mfs2"; 
+mfs2; 
+
+echo "&get -n -m"; 
+&get -n -m; 
+
+echo "&ps; &put";  
+&ps; &put;  
+

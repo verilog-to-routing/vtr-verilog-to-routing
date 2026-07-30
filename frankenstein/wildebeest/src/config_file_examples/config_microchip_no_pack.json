@@ -1,0 +1,41 @@
+{
+  "version": 3,
+  "partname": "Z1010",
+  "lut_size": 6,
+  "root_path" : "/home/thierry/YOSYS_DYN/yosys/wildebeest/",
+  "flipflops": {
+                "features": ["async_reset", "async_set", "flop_enable"]
+                "models": {
+                        "dffers": "SRC/FF_MODELS/dffers.v",
+                        "dffer": "SRC/FF_MODELS/dffer.v",
+                        "dffes": "SRC/FF_MODELS/dffes.v",
+                        "dffe": "SRC/FF_MODELS/dffe.v",
+                        "dffrs": "SRC/FF_MODELS/dffrs.v",
+                        "dffr": "SRC/FF_MODELS/dffr.v",
+                        "dffs": "SRC/FF_MODELS/dffs.v",
+                        "dff": "SRC/FF_MODELS/dff.v"
+                },
+                "techmap": "ARCHITECTURE/Z1010/techlib/tech_flops.v"
+        },
+  "brams": {
+            "memory_libmap": [ "ARCHITECTURE/Z1010/bram/LSRAM.txt",
+                               "ARCHITECTURE/Z1010/bram/uSRAM.txt"]
+            "memory_libmap_parameters": ["-logic-cost-rom 0.5"]
+            "techmap": ["ARCHITECTURE/Z1010/bram/LSRAM_map.v",
+                        "ARCHITECTURE/Z1010/bram/uSRAM_map.v"]
+        },
+  "dsps": {
+          "family": "microchip",
+          "techmap": "../techlibs/microchip/polarfire_dsp_map.v",
+          "techmap_parameters": {
+                   "DSP_A_MAXWIDTH": 18,
+                   "DSP_B_MAXWIDTH": 18,
+		   "DSP_A_MAXWIDTH_PARTIAL": 18,
+                   "DSP_A_MINWIDTH": 2,
+                   "DSP_B_MINWIDTH": 2,
+                   "DSP_Y_MINWIDTH": 9,
+                   "DSP_SIGNEDONLY": 1,
+                   "DSP_NAME": "$__MUL18X18"
+          },
+       }
+}

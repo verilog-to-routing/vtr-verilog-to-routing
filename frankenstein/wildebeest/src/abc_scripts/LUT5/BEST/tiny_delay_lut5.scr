@@ -1,0 +1,43 @@
+time
+echo " "
+echo "** Starting ABC TINY DELAY LUT5 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+&get -n -m;
+
+&st; &lf -K 5 -e; &ps
+&st; &if -K 5; &save; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &if -K 5 -a; &st; &lf -K 5 -e; &dch -C 600; &lf -K 5 -e; &mfs -W 2 -D 15 -M 600 ; &save; &load; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -K 5 -W 2; &if -K 5 -C 16; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &if -K 5 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -W 2 -K 5; &if -K 5 -C 16; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &if -K 5 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &sopb -C 5; &blut -K 5; &sopb -C 5; &synch2 -K 5 -W 2;  &lf -K 5 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &lf -e -K 5 -C 32; &save; &load; &mfs -W 2 -D 15 -C 600; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -W 2 -K 5; &lf -K 5 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &lf -K 5 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -K 5 -W 2; &if -K 5 -C 16; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &if -K 5 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -W 2 -K 5; &lf -K 5 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &lf -K 5 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -K 5 -W 2; &if -K 5 -C 16; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &if -K 5 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -W 2 -K 5; &lf -K 5 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &lf -K 5 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &sopb -C 5; &blut -K 5; &sopb -C 5; &synch2 -K 5 -W 2;  &lf -K 5 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &lf -e -K 5 -C 32; &save; &load; &mfs -W 2 -D 15 -C 600; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -W 2 -K 5; &lf -K 5 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &lf -K 5 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -K 5 -W 2; &if -K 5 -C 16; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &if -K 5 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -W 2 -K 5; &lf -K 5 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &lf -K 5 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 5; &sopb -C 5; &synch2 -K 5 -W 2; &if -K 5 -C 16; &save; &shrink; &sopb -C 5; &blut -K 5; &synch2 -W 2  -K 5; &if -K 5 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &save; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &save; &ps
+&shrink; &dch -C 300; &lf -K 5 -e -C 32; &mfs -D 15 -C 2500; &put; lutpack -S 1; &get -n -m; &save; &ps
+&mfs -C 600; &put ; lutpack -S 1; &get -n -m; &save; &ps
+
+
+&load;
+
+&put
+
+echo " "
+echo "** ABC TINY DELAY LUT5 optimization and mapping done !!!"
+
+time
+

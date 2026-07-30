@@ -1,0 +1,161 @@
+time
+
+echo " "
+echo "** Starting ABC AREA LUT4 optimization and mapping !!!"
+
+read_blif in.blif
+
+&get -n -m
+
+strash; muxes -g; &get -n -m; &st; &if -K 6 -a; &save -a; &ps
+&put
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "&st; &if -sz -C 5 -K 11 -S 66 -a"
+&st; &if -sz -C 5 -K 11 -S 66 -a ; &save -a; &ps; time
+&put
+
+read_blif in.blif
+
+&get -n -m
+
+&st; &if -K 6 -a; &ps
+
+&st; &if -K 6; &save -a; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &st; &if -K 6 -a; &mfs -W 2 -C 600 -D 25; &satlut -d -C 50; &save -a; &load; &ps
+
+&dch -s -C 300; &if -K 6 -a; &satlut; &ps
+
+&shrink; &if -K 6 -a; &mfs -W 2 -C 600 -D 25; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &ps
+
+&dch -s -C 300; &if -K 6 -a; &satlut; &save -a; &ps; time
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "&st; &lf -K 6 -e;"
+&st; &lf -K 6 -e; &save -a; &ps; time
+&put
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+&st; &lf -K 6 -e; &save -a; &ps; time
+&put
+
+read_blif in.blif
+
+strash
+
+echo ""
+echo "&fraig"
+&get -n
+&sopb -C 3
+&fraig -x -L 200
+&put
+
+echo ""
+echo "dc2"
+dc2
+
+strash
+echo ""
+echo "dch -f"
+dch -f
+
+echo ""
+echo "if -K 6 -a"
+if -K 6 -a
+&get -n -m; &save -a; &ps ; time
+&put
+
+read_blif in.blif
+
+strash
+
+echo ""
+echo "&fraig"
+&get -n
+&fraig -x -L 200
+&put
+
+echo ""
+echo "dc2"
+dc2
+
+strash
+echo ""
+echo "dch -f"
+dch -f
+
+echo ""
+echo "if -K 6 -a"
+if -K 6 -a
+&get -n -m; &ps ; &save -a;
+
+&load;
+&put
+
+
+echo ""
+echo "mfs2 -W 4 -M 500 -C 7000"
+mfs2 -W 4 -M 500 -C 7000
+
+lutpack -S 1;
+
+&get -n -m;
+
+&save -a;
+
+echo ""
+echo "&synch2 -K 6 -C 500; &dch -c 600; &if -K 6 -a; &save -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &load; &synch2 -K 6 -C 500; &if -K 6 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;"
+&synch2 -K 6 -C 500; &if -K 6 -a; &save -a; &ps; &load; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &ps; &load; &synch2 -K 6 -C 500; &if -K 6 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &load; &ps; time
+
+
+echo ""
+echo "mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 6 -C 500; &lf -K 6 -e; &save -a; &load;"
+&put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &synch2 -K 6 -C 500; &lf -K 6 -e; &save -a; &load; &ps; time
+
+echo ""
+echo "&st; &if -sz -C 5 -K 11 -S 66 -a"
+&st; &if -sz -C 5 -K 11 -S 66 -a ; &save -a; &load; &ps; time
+
+echo ""
+echo "mfs2 -W 4 -M 1000 -C 7000; "
+&put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time
+
+&put
+
+echo ""
+echo "lutpack -S 1"
+lutpack -S 1;
+time
+
+&get -n -m;
+
+&save -a;
+
+echo ""
+echo "&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 11 -S 66 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &load;"
+&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 11 -S 66 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &ps; &load; 
+time
+
+echo ""
+echo "&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 11 -S 66 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &load;"
+&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 11 -S 66 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &ps; &load; 
+time
+
+&load; &ps; 
+
+&put
+
+echo " "
+echo "** ABC AREA Optimization and Mapping done !!!"
+&put

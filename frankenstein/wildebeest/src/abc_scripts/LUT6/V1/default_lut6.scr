@@ -1,0 +1,44 @@
+echo "strash"; 
+strash; 
+
+echo "&get -n"; 
+&get -n; 
+
+echo "&fraig -x"; 
+&fraig -x; 
+
+echo "&put"; 
+&put; 
+
+echo "scorr"; 
+scorr; 
+
+echo "dc2"; 
+dc2; 
+
+echo "dretime"; 
+dretime; 
+
+echo "strash"; 
+strash; 
+
+echo "dch -f"; 
+dch -f; 
+
+echo "if -K 6"; 
+if -K 6; 
+
+&get -n -m; &ps; &put
+
+echo "mfs2"; 
+mfs2; 
+
+echo "lutpack -S 1"; 
+lutpack -S 1; 
+
+echo "&get -n -m"; 
+&get -n -m; 
+
+echo "&ps; &put";  
+&ps; &put;  
+

@@ -1,0 +1,57 @@
+ram block $__tech_spram_ {
+  abits 15;
+  widths 1 2 4 8 16 32 64 per_port;
+  cost 48;
+  init none;
+  port srsw "A" {
+    clock posedge;
+    clken;
+    rden;
+    portoption "RDWR" "OLD" {
+        rdwr old;
+    }
+  }
+}
+
+ram block $__tech_sdpram_ {
+  abits 15;
+  widths 1 2 4 8 16 32 per_port;
+  cost 48;
+  init none;
+  port sw "A" {
+    option "SYNC_MODE" 1 {
+      clock posedge "C";
+    }
+    option "SYNC_MODE" 0 {
+      clock posedge;
+    }
+    clken;
+  }
+  port sr "B" {
+    option "SYNC_MODE" 1 {
+      clock posedge "C";
+    }
+    option "SYNC_MODE" 0 {
+      clock posedge;
+    }
+    clken;
+    rden;
+  }
+}
+
+ram block $__tech_tdpram_ {
+  abits 15;
+  widths 1 2 4 8 16 32 per_port;
+  cost 48;
+  init none;
+  port srsw "A" "B" {
+    option "SYNC_MODE" 1 {
+      clock posedge "C";
+    }
+    option "SYNC_MODE" 0 {
+      clock posedge;
+    }
+    clken;
+    rden;
+  }
+}

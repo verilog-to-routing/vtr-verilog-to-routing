@@ -1,0 +1,31 @@
+# yosys -m wildebeest -s mae-techmap-efpga_mult_addc_rego.ys
+read_verilog <<EOF
+module efpga_mult_addc_rego_map_inst
+  # (
+     parameter INPUT_WIDTH = 18,
+     parameter OUTPUT_WIDTH = 40,
+     localparam C_WIDTH = OUTPUT_WIDTH
+     )
+   (
+    input                                   clk,
+    input                                   resetn,
+    input signed [(INPUT_WIDTH-1):0]        a,
+    input signed [(INPUT_WIDTH-1):0]        b,
+    input signed [(C_WIDTH-1):0]            c,
+    output reg [(OUTPUT_WIDTH-1):0]         y
+    );
+
+   always @(posedge clk or negedge resetn) begin
+      if (~resetn) begin
+         y <= 'h0;
+      end
+      else begin
+         y <= (a * b) + c;
+      end
+   end
+
+endmodule
+EOF
+
+synth_fpga -partname z1010
+select -assert-count 1 */t:efpga_mult_addc_rego

@@ -1,0 +1,113 @@
+ram block $__tech_spram__ {
+  abits 14;
+  widths 1 2 4 8 16 32 per_port;
+  cost 48;
+  init none;
+  byte 8;
+  
+  port srsw "A" {
+    wrbe_separate;
+    
+    clock posedge;
+    clken;
+    rden;
+    # read/write modes; adapted from third party
+    # Goal:  cover all the modes that are compatible with a
+    # conventional memory architecture, which amounts to
+    # everything except for write first
+    portoption "WRITE_MODE" "UNDEFINED" {
+    	rdwr undefined;
+    	wrtrans all old;
+    }
+    portoption "WRITE_MODE" "NO_CHANGE" {
+    	rdwr no_change;
+    	wrtrans all old;
+    }
+    portoption "WRITE_MODE" "READ_FIRST" {
+    	rdwr old;
+    	wrtrans all old;
+    }
+  }
+}
+
+ram block $__tech_sdpram__ {
+  abits 14;
+  widths 1 2 4 8 16 per_port;
+  cost 48;
+  init none;
+  byte 8;
+  
+  port sw "A" {
+    wrbe_separate;
+    
+    option "SYNC_MODE" 1 {
+      clock posedge "C";
+    }
+    option "SYNC_MODE" 0 {
+      clock posedge;
+    }
+    clken;
+    # read/write modes; adapted from third party
+    # Goal:  cover all the modes that are compatible with a
+    # conventional memory architecture, which amounts to
+    # everything except for write first; on a write only
+    # port that just boils down to setting the write mode
+    # to old data
+    wrtrans all old;
+  }
+  port sr "B" {
+    option "SYNC_MODE" 1 {
+      clock posedge "C";
+    }
+    option "SYNC_MODE" 0 {
+      clock posedge;
+    }
+    clken;
+    rden;
+    # Setting up read mode on the read only port is not
+    # allowed in yosys, so nothing to add here.  Let the
+    # tool do the work.
+  }
+}
+
+ram block $__tech_tdpram__ {
+  abits 14;
+  widths 1 2 4 8 16 per_port;
+  cost 48;
+  init none;
+  byte 8;
+  
+  port srsw "A" "B" {
+    wrbe_separate;
+    
+    option "SYNC_MODE" 1 {
+      clock posedge "C";
+    }
+    option "SYNC_MODE" 0 {
+      clock posedge;
+    }
+    clken;
+    rden;
+
+    # Allow ports here to be optional; this gives yosys some flexibility
+    # to instantiate a TDP port when its ports are not fully utilized
+    optional_rw;
+
+    # read/write modes; adapted from third party
+    # Goal:  cover all the modes that are compatible with a
+    # conventional memory architecture, which amounts to
+    # everything except for write first
+    portoption "WRITE_MODE" "UNDEFINED" {
+    	rdwr undefined;
+    	wrtrans all old;
+    }
+    portoption "WRITE_MODE" "NO_CHANGE" {
+    	rdwr no_change;
+    	wrtrans all old;
+    }
+    portoption "WRITE_MODE" "READ_FIRST" {
+    	rdwr old;
+    	wrtrans all old;
+    }
+  }
+}

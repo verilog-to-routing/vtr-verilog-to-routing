@@ -1,0 +1,26 @@
+time
+
+echo " "
+echo "** Starting ABC HUGE LUT5 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+&get -n -m;
+
+&st; &lf -K 5 -e -C 32; &ps; &save -a; time
+
+&shrink; &if -sz -C 3 -K 9 -S 55; &ps; &save -a; time
+
+&load
+
+&shrink; &if -sz -C 3 -K 9 -S 55; &save -a; &ps; time
+
+&load
+
+&load; &ps
+
+&put;  
+
+time
+
+echo " "
+echo "** Ending ABC HUGE LUT5 optimization !!!"

@@ -1,0 +1,61 @@
+time
+
+echo " "
+echo "** Starting ABC AREA LUT5 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+write_blif area_lut5.blif
+
+&get -n -m
+
+&st; &if -sz -C 5 -K 9 -S 55 -a ; &save -a; &ps; time
+&put
+
+read_blif area_lut5.blif
+
+strash
+
+&get -n
+&fraig -x -L 200
+&put
+
+dc2
+
+strash
+dch -f
+
+if -K 5 -a
+&get -n -m; &ps ; &put
+
+mfs2 -W 4 -M 500 -C 7000
+
+lutpack -S 1;
+
+&get -n -m;
+
+&save -a;
+
+&synch2 -K 5 -C 500; &if -K 5 -a; &save -a; &ps; &load; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &ps; &load; &synch2 -K 5 -C 500; &if -K 5 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &load; &ps; time
+
+
+&put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &synch2 -K 5 -C 500; &lf -K 5 -e; &save -a; &load; &ps; time
+
+&st; &if -sz -C 5 -K 9 -S 55 -a ; &save -a; &load; &ps; time
+
+&put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time
+
+&put
+
+lutpack -S 1;
+
+&get -n -m;
+
+&save -a;
+
+&load; &ps; 
+
+&put
+
+echo " "
+echo "** ABC AREA LUT5 Optimization and Mapping done !!!"
+&put

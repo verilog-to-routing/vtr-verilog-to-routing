@@ -1,0 +1,146 @@
+time
+echo " "
+echo "** Starting ABC DELAY LUT4 optimization and mapping !!!"
+
+write_blif in.blif
+
+&get -n -m;
+
+echo " "
+echo "&st; &lf -K 4 -e; &save; &ps; time"
+&st; &lf -K 4 -e; &save; &ps; time
+
+echo " "
+echo "&st; &if -K 4; &save;"
+&st; &if -K 4; &ps; &save; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&if -K 4 -a;"
+&if -K 4 -a; &ps; time
+
+echo " "
+echo "&st; &lf -K 4 -e;"
+&st; &lf -K 4 -e; &ps; time
+
+echo " "
+echo "&dch -C 600; &lf -K 4 -e;"
+&dch -C 600; &lf -K 4 -e; &ps; time
+
+echo " "
+echo "&mfs -W 2 -D 15 -M 600"
+&mfs -W 2 -D 15 -M 600 ; &save; &ps; time
+
+echo ""
+echo "&load; &ps;"
+&load; &ps; time
+
+echo " "
+echo "&shrink; &blut -K 4"
+&shrink; &blut -K 4; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&synch2 -W 2 -K 4;"
+&synch2 -W 2 -K 4; &ps; time
+
+echo " "
+echo "&if -sz -C 5 -K 7 -S 44"
+&if -sz -C 5 -K 7 -S 44 ; &ps; &save; time
+
+echo ""
+echo "&load; &ps;"
+&load; &ps; time
+
+echo " "
+echo "&shrink; &blut -K 4;"
+&shrink; &blut -K 4; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&synch2 -W 2 -K 4; &lf -K 4 -e -C 32;"
+&synch2 -W 2 -K 4; &lf -K 4 -e -C 32; &ps; &save; time
+
+echo " "
+echo "&shrink; &sopb -C 5; &blut -K 4;"
+&shrink; &sopb -C 5; &blut -K 4; &ps; time
+
+echo " "
+echo "&synch2 -W 2  -K 4; &lf -K 4 -e -C 32;"
+&synch2 -W 2  -K 4; &lf -K 4 -e -C 32; &ps; &save; time
+
+echo " "
+echo "&load; &ps"
+&load; &ps; time
+
+echo " "
+echo "&mfs -W 2 -D 15 -C 600 ;"
+&mfs -W 2 -D 15 -C 600 ; &ps; time
+
+echo " "
+echo "lutpack -S 1;"
+&put; lutpack -S 1; &get -n -m; &ps; &save; time
+
+echo " "
+echo "&load; &ps"
+&load; &ps; time
+
+echo " "
+echo "&shrink; &blut -K 4; &sopb -C 5;"
+&shrink; &blut -K 4; &sopb -C 5; &ps; time
+
+echo " "
+echo "&synch2 -W 2 -K 4; &if -sz -C 5 -K 7 -S 44"
+&synch2 -W 2 -K 4; &if -sz -C 5 -K 7 -S 44 ; &ps; &save; time
+
+echo " "
+echo "&load; &ps"
+&load; &ps; time
+
+echo "&satlut -d -N 31; "
+&satlut -d -N 31; &ps; &save; time
+
+echo " "
+echo "Final stat: "
+echo " "
+&load; &ps; time
+ 
+echo " "
+echo "** ABC DELAY optimization and mapping done !!!"
+&put
+
+time
+

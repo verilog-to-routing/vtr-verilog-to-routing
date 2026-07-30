@@ -1,0 +1,146 @@
+time
+echo " "
+echo "** Starting ABC DELAY LUT6 optimization and mapping !!!"
+
+write_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "&st; &if -sz -C 3 -K 11 -S 66 "
+&st; &if -sz -C 3 -K 11 -S 66 ; &save; &ps; time
+&put
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "&st; &if -K 6 ;"
+&st; &if -K 6 ; &ps; time
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "&st; &lf -K 6 -e;"
+&st; &lf -K 6 -e; &save; &ps; time
+&put
+
+read_blif in.blif
+
+&get -n -m;
+
+echo " "
+echo "&st; &lf -K 6 -e; &save; &ps; time"
+&st; &lf -K 6 -e; &save; &ps; time
+
+echo " "
+echo "&st; &if -K 6; &save;"
+&st; &if -K 6; &ps; &save; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps;  time
+
+echo " "
+echo "&if -K 6 -a;"
+&if -K 6 -a; &ps; time
+
+echo " "
+echo "&st; &lf -K 6 -e;"
+&st; &lf -K 6 -e; &ps; time
+
+echo " "
+echo "&dch -C 600; &lf -K 6 -e;"
+&dch -C 600; &lf -K 6 -e; &ps; time
+
+echo " "
+echo "&mfs -W 2 -D 15 -M 600"
+&mfs -W 2 -D 15 -M 600 ; &save; &ps; time
+
+echo ""
+echo "&load; &ps;"
+&load; &ps; time
+
+echo " "
+echo "&shrink; &blut -K 6"
+&shrink; &blut -K 6; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&synch2 -W 2 -K 6;"
+&synch2 -W 2 -K 6; &ps; time
+
+echo " "
+echo "&if -sz -C 4 -K 11 -S 66"
+&if -sz -C 4 -K 11 -S 66 ; &ps; &save; time
+
+echo ""
+echo "&load; &ps;"
+&load; &ps; time
+
+echo " "
+echo "&shrink; &blut -K 6;"
+&shrink; &blut -K 6; &ps; time
+
+echo " "
+echo "&sopb -C 5;"
+&sopb -C 5; &ps; time
+
+echo " "
+echo "&synch2 -W 2 -K 6; &lf -K 6 -e -C 32;"
+&synch2 -W 2 -K 6; &lf -K 6 -e -C 32; &ps; &save; time
+
+echo " "
+echo "&load; &ps"
+&load; &ps; time
+
+echo " "
+echo "&mfs -W 2 -D 15 -C 600 ;"
+&mfs -W 2 -D 15 -C 600 ; &ps; time
+
+echo " "
+echo "&load; &ps"
+&load; &ps; time
+
+echo " "
+echo "lutpack -S 1;"
+&put; lutpack -S 1; &get -n -m; &ps; &save; time
+
+&load;
+
+echo " "
+echo "** ABC DELAY optimization done !!!"
+&put
+
+time
+

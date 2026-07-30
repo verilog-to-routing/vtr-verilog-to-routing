@@ -1,0 +1,99 @@
+name: Build and test
+on:
+  # Runs on pushes to test/ branches and main
+  push:
+    branches:
+      - 'main'
+      - 'test/**'
+  # Runs on all PRs
+  pull_request:
+  # Manual Dispatch
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        yosys_version:
+          - "0.47"
+          - "v0.48"
+          - "v0.49"
+          - "v0.50"
+          - "v0.51"
+          - "v0.52"
+          - "v0.53"
+          - "v0.54"
+          - "v0.55"
+          - "v0.56"
+          - "v0.57"
+          - "v0.58"
+          - "v0.59"
+          - "v0.60"
+          - "v0.61"
+          - "v0.62"
+          - "v0.63"
+          - "v0.64"
+          - "v0.65"
+          - "v0.66"
+          
+    steps:
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential pkg-config cmake ccache gperf bison flex libreadline-dev gawk tcl-dev libffi-dev graphviz xdot python3 libboost-system-dev libboost-python-dev libboost-filesystem-dev zlib1g-dev libfl-dev
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cache Yosys build
+        id: cache-yosys
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-yosys
+        with:
+          path: yosys
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.yosys_version }}
+      - if: ${{ steps.cache-yosys.outputs.cache-hit != 'true' }}
+        name: Pull Yosys
+        run: |
+          git clone --depth 1 --recursive \
+            --branch ${{ matrix.yosys_version }} \
+            -- https://github.com/YosysHQ/yosys.git yosys
+      - if: ${{ steps.cache-yosys.outputs.cache-hit != 'true' }}
+        name: Build Yosys
+        shell: bash
+        run: |
+          cd yosys
+          make config-gcc
+          make -j$(nproc) PREFIX=$HOME/.local
+      - name: Install Yosys
+        shell: bash
+        run: |
+          cd yosys
+          make install PREFIX=$HOME/.local
+      - name: Build wildebeest
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cmake -S . -B build -D YOSYS_PATH="$HOME/.local"
+          cmake --build build
+          cmake --install build
+      - name: Run tests
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cd build && ctest --output-on-failure
+      - name: Pack build
+        shell: bash
+        run: |
+          tar -cvzf build.tar.gz build/ yosys/
+      - name: Store build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.yosys_version }}.tar.gz
+          path: build.tar.gz
+          retention-days: 1

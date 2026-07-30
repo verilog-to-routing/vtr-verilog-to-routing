@@ -1,0 +1,211 @@
+time
+
+echo " "
+echo "** Starting ABC SMALL AREA LUT4 optimization and mapping !!!"
+
+write_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "strash; muxes -g; &get -n -m; &st; &if -K 4 -a; "
+strash; muxes -g; &get -n -m; &st; &if -K 4 -a; &save -a; &ps
+&put
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "&st; &if -sz -C 5 -K 7 -S 44 -a"
+&st; &if -sz -C 5 -K 7 -S 44 -a ; &save -a; &ps; time
+&put
+
+read_blif in.blif
+
+&get -n -m
+
+&st; &if -K 4 -a; &ps
+
+echo ""
+echo "&st; &if -K 4; &save -a; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8"
+&st; &if -K 4; &save -a; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; &sopb -C 8; 
+
+echo ""
+echo "&st; &if -K 4 -a; &mfs -W 2 -C 600 -D 25; &satlut -d -C 50; &save -a"
+&st; &if -K 4 -a; &mfs -W 2 -C 600 -D 25; &satlut -d -C 50; &save -a; &load; &ps
+
+&st
+
+echo ""
+echo "&dch -s -C 300; "
+&dch -s -C 300; 
+
+echo ""
+echo "&if -K 4 -a;"
+&if -K 4 -a; 
+
+echo ""
+echo "&satlut;"
+&satlut; &ps
+
+echo ""
+echo "&shrink; &if -K 4 -a; &mfs -W 2 -C 600 -D 25; &put; mfs2 -W 4 -M 1000 -C 7000;"
+&shrink; &if -K 4 -a; &mfs -W 2 -C 600 -D 25; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &save -a; &ps
+
+&st
+
+echo ""
+echo "&dch -s -C 300; "
+&dch -s -C 300; 
+
+echo ""
+echo "&if -K 4 -a;"
+&if -K 4 -a; 
+
+echo ""
+echo "&satlut;"
+&satlut; &save -a; &ps; time
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+echo "&st; &lf -K 4 -e;"
+&st; &lf -K 4 -e; &save -a; &ps; time
+&put
+
+read_blif in.blif
+
+&get -n -m
+
+echo ""
+&st; &lf -K 4 -e; &save -a; &ps; time
+&put
+
+read_blif in.blif
+
+strash
+
+echo ""
+echo "&fraig"
+&get -n
+&sopb -C 3
+&fraig -x -L 200
+&put
+
+echo ""
+echo "dc2"
+dc2
+
+strash
+echo ""
+echo "dch -f"
+dch -f
+
+echo ""
+echo "if -K 4 -a"
+if -K 4 -a
+&get -n -m; &save -a; &ps ; time
+&put
+
+read_blif in.blif
+
+strash
+
+echo ""
+echo "&fraig"
+&get -n
+&fraig -x -L 200
+&put
+
+echo ""
+echo "dc2"
+dc2
+
+strash
+echo ""
+echo "dch -f"
+dch -f
+
+echo ""
+echo "if -K 4 -a"
+if -K 4 -a
+&get -n -m; &ps ; &save -a;
+
+&load;
+&put
+
+
+echo ""
+echo "mfs2 -W 4 -M 500 -C 7000"
+mfs2 -W 4 -M 500 -C 7000
+
+lutpack -S 1;
+
+&get -n -m;
+
+&save -a;
+
+echo ""
+echo "&synch2 -K 4 -C 500; &dch -c 600; &if -K 4 -a; &save -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &load; &synch2 -K 4 -C 500; &if -K 4 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;"
+&synch2 -K 4 -C 500; &if -K 4 -a; &save -a; &ps; &load; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &ps; &load; &synch2 -K 4 -C 500; &if -K 4 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &load; &ps; time
+
+
+echo ""
+echo "mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 4 -C 500; &lf -K 4 -e; &save -a; &load;"
+&put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &ps; &synch2 -K 4 -C 500; &lf -K 4 -e; &save -a; &load; &ps; time
+
+echo ""
+echo "&st; &if -sz -C 5 -K 7 -S 44 -a"
+&st; &if -sz -C 5 -K 7 -S 44 -a ; &save -a; &load; &ps; time
+
+echo ""
+echo "mfs2 -W 4 -M 1000 -C 7000; "
+&put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time
+
+&put
+
+echo ""
+echo "lutpack -S 1"
+lutpack -S 1;
+time
+
+&get -n -m;
+
+&save -a;
+
+echo ""
+echo "&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 7 -S 44 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &load;"
+&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 7 -S 44 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &ps; &load; 
+time
+
+echo ""
+echo "&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 7 -S 44 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &load;"
+&satlut -r; &save -a; &shrink; &dch -s -C 300; &if -sz -C 4 -K 7 -S 44 -a ; &put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &satlut; &satlut -r ; &save -a; &ps; &load; 
+time
+
+&load; &ps; 
+
+echo ""
+echo "&shrink; &if -K 4 -a -C 32; &mfs -W 2 -C 600 -D 25; &put; &satlut -C 32; &satlut -r -C 32;"
+&shrink; &if -K 4 -a -C 32; &mfs -W 2 -C 600 -D 25; &put; &satlut -C 32; &satlut -r -C 32; &ps; &save -a; time
+
+echo ""
+echo "&shrink; &if -K 4 -a -C 32; &mfs -W 2 -C 600 -D 25; &put; &satlut -C 32; &satlut -r -C 32;"
+&shrink; &if -K 4 -a -C 32; &mfs -W 2 -C 600 -D 25; &put; &satlut -C 32; &satlut -r -C 32; &ps; &save -a; time
+
+echo ""
+echo "&shrink; &if -K 4 -a -C 32; &mfs -W 2 -C 600 -D 25; &put; &satlut -C 32; &satlut -r -C 32;"
+&shrink; &if -K 4 -a -C 32; &mfs -W 2 -C 600 -D 25; &put; &satlut -C 32; &satlut -r -C 32; &ps; &save -a; time
+
+&load;
+
+&put
+
+write_blif out.blif
+
+echo " "
+echo "** ABC SMALL AREA LUT4 Optimization and Mapping done !!!"
+&put

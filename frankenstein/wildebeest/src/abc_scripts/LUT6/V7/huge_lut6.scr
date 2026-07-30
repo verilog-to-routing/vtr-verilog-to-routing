@@ -1,0 +1,35 @@
+time
+
+echo " "
+echo "** Starting ABC HUGE LUT4 optimization and mapping !!!"
+
+&get -n -m;
+
+echo " "
+echo "&st; &lf -K 6 -e -C 32;"
+&st; &lf -K 6 -e -C 32; &ps; &save -a; time
+
+echo " "
+echo "&if -sz -C 3 -K 11 -S 66"
+&shrink; &if -sz -C 3 -K 11 -S 66; &ps; &save -a; time
+
+&load
+
+echo " "
+echo "&if -sz -C 3 -K 11 -S 66"
+&shrink; &if -sz -C 3 -K 11 -S 66; &save -a; &ps; time
+
+&load
+
+echo " "
+echo "********************* "
+echo "* Final Best netlist"
+echo "********************* "
+&load; &ps
+
+&put;  
+
+time
+
+echo " "
+echo "** Ending ABC HUGE optimization !!!"

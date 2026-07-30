@@ -1,0 +1,43 @@
+# yosys -m wildebeest -s mae-techmap-efpga_mult_regio_unsigned.ys
+read_verilog <<EOF
+module efpga_mult_regio_unsigned_map_inst
+  # (
+     parameter INPUT_WIDTH = 17,
+     parameter OUTPUT_WIDTH = 34
+     )
+   (
+    input                                   clk,
+    input                                   resetn,
+    input [(INPUT_WIDTH-1):0]               a,
+    input [(INPUT_WIDTH-1):0]               b,
+    output reg [(OUTPUT_WIDTH-1):0]         y
+    );
+
+   reg [(INPUT_WIDTH-1):0] a_reg;
+   reg [(INPUT_WIDTH-1):0] b_reg;
+
+   always @(posedge clk or negedge resetn) begin
+      if (~resetn) begin
+         a_reg <= 'h0;
+         b_reg <= 'h0;
+      end
+      else begin
+         a_reg <= a;
+         b_reg <= b;
+      end
+   end
+
+   always @(posedge clk or negedge resetn) begin
+      if (~resetn) begin
+         y <= 'h0;
+      end
+      else begin
+         y <= a_reg * b_reg;
+      end
+   end
+
+endmodule
+EOF
+
+synth_fpga -partname z1010
+select -assert-count 1 */t:efpga_mult_regio

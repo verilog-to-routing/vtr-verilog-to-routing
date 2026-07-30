@@ -1,0 +1,47 @@
+time
+echo " "
+echo "** Starting ABC TINY DELAY LUT4 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+write_blif tiny_delay_lut4.blif
+
+&get -n -m;
+
+&st; &lf -K 4 -e; &ps
+&st; &if -K 4; &save; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &sopb -C 5; &if -K 4 -a; &st; &lf -K 4 -e; &satlut -d -N 31 ; &dch -C 600; &lf -K 4 -e; &mfs -W 2 -D 15 -M 600 ; &satlut -d -N 31 ; &save; &load; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -K 4 -W 2; &if -K 4 -C 16; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &if -K 4 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -W 2 -K 4; &if -K 4 -C 16; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &if -K 4 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &sopb -C 5; &blut -K 4; &sopb -C 5; &synch2 -K 4 -W 2;  &lf -K 4 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &lf -e -K 4 -C 32; &save; &load; &mfs -W 2 -D 15 -C 600; &satlut -N 15 -d ; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -W 2 -K 4; &lf -K 4 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &lf -K 4 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -K 4 -W 2; &if -K 4 -C 16; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &if -K 4 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -W 2 -K 4; &lf -K 4 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &lf -K 4 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -K 4 -W 2; &if -K 4 -C 16; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &if -K 4 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -W 2 -K 4; &lf -K 4 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &lf -K 4 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &sopb -C 5; &blut -K 4; &sopb -C 5; &synch2 -K 4 -W 2;  &lf -K 4 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &lf -e -K 4 -C 32; &save; &load; &mfs -W 2 -D 15 -C 600; &satlut -N 15 -d ; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -W 2 -K 4; &lf -K 4 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &lf -K 4 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -K 4 -W 2; &if -K 4 -C 16; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &if -K 4 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -W 2 -K 4; &lf -K 4 -e -C 32; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &lf -K 4 -e -C 32; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &put; lutpack -S 1; &get -n -m; &ps
+&shrink; &blut -K 4; &sopb -C 5; &synch2 -K 4 -W 2; &if -K 4 -C 16; &save; &shrink; &sopb -C 5; &blut -K 4; &synch2 -W 2  -K 4; &if -K 4 -C 16; &save; &load; &mfs -W 2 -D 15 -C 600 ; &satlut -N 15 -d ; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &save; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &save; &ps
+&shrink; &dch -C 300; &lf -K 4 -e -C 32; &mfs -D 15 -C 2500; &satlut -d -N 31; &put; lutpack -S 1; &get -n -m; &save; &ps
+&satlut -N 63 -r -d; &mfs -C 600; &put ; lutpack -S 1; &get -n -m; &save; &ps
+
+
+&load;
+
+&put
+
+write_blif out.blif
+
+echo " "
+echo "** ABC TINY DELAY LUT4 optimization and mapping done !!!"
+
+time
+

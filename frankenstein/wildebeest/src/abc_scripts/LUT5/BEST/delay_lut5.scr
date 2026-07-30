@@ -1,0 +1,77 @@
+time
+echo " "
+echo "** Starting ABC DELAY LUT5 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+&get -n -m;
+
+&st; &lf -K 5 -e; &save; &ps; time
+
+&st; &if -K 5; &ps; &save; time
+
+&sopb -C 5; &ps; time
+
+&sopb -C 5; &ps; time
+
+&sopb -C 5; &ps;  time
+
+&sopb -C 5; &ps;  time
+
+&sopb -C 5; &ps;  time
+
+&sopb -C 5; &ps;  time
+
+&sopb -C 5; &ps;  time
+
+&if -K 5 -a; &ps; time
+
+&st; &lf -K 5 -e; &ps; time
+
+&dch -C 600; &lf -K 5 -e; &ps; time
+
+&mfs -W 2 -D 15 -M 600 ; &save; &ps; time
+
+&load; &ps; time
+
+&shrink; &blut -K 5; &ps; time
+
+&sopb -C 5; &ps; time
+
+&synch2 -W 2 -K 5; &ps; time
+
+&if -sz -C 5 -K 9 -S 55 ; &ps; &save; time
+
+&load; &ps; time
+
+&shrink; &blut -K 5; &ps; time
+
+&sopb -C 5; &ps; time
+
+&synch2 -W 2 -K 5; &lf -K 5 -e -C 32; &ps; &save; time
+
+&shrink; &sopb -C 5; &blut -K 5; &ps; time
+
+&synch2 -W 2  -K 5; &lf -K 5 -e -C 32; &ps; &save; time
+
+&load; &ps; time
+
+&mfs -W 2 -D 15 -C 600 ; &ps; time
+
+&put; lutpack -S 1; &get -n -m; &ps; &save; time
+
+&load; &ps; time
+
+&shrink; &blut -K 5; &sopb -C 5; &ps; time
+
+&synch2 -W 2 -K 5; &if -sz -C 5 -K 9 -S 55 ; &ps; &save; time
+
+&load; &ps; time
+
+&load; &ps; time
+ 
+echo " "
+echo "** ABC DELAY LUT5 optimization and mapping done !!!"
+&put
+
+time
+

@@ -1,0 +1,28 @@
+time
+
+echo " "
+echo "** Starting ABC FAST LUT5 optimization and mapping (Zero Asic Corp.)"
+echo ""
+
+&get -n -m;
+
+&sopb -C 5; &ps; time
+
+&st; &lf -K 5 -e -C 32; &ps; &save -a; time
+
+&shrink; &if -sz -C 5 -K 9 -S 55; &ps; &save -a; time
+
+&load
+
+&shrink; &if -sz -C 5 -K 9 -S 55; &save -a; &ps; time
+
+&load
+
+&load; &ps
+
+&put;  
+
+time
+
+echo " "
+echo "** Ending ABC FAST LUT5 optimization !!!"

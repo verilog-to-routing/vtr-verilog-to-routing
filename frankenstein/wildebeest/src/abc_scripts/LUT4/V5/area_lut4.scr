@@ -1,0 +1,36 @@
+time
+
+&get -n -m; 
+
+echo ""
+echo "&synch2 -K 4 -C 500; &if -K 4 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &load; &synch2 -K 4 -C 500; &if -K 4 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;"
+&synch2 -K 4 -C 500; &if -K 4 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m;  &save -a; &load; &synch2 -K 4 -C 500; &if -K 4 -a; &put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &load; &ps; time
+
+
+echo ""
+echo "mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 4 -C 500; &lf -K 4 -e; &save -a; &load;"
+&put; mfs2 -W 4 -M 500 -C 7000; &get -n -m; &save -a; &synch2 -K 4 -C 500; &lf -K 4 -e; &save -a; &load; &ps; time
+
+echo ""
+echo "&st; &if -sz -C 5 -K 7 -S 44 -a"
+&st; &if -sz -C 5 -K 7 -S 44 -a ; &save -a; &load; &ps; time
+
+echo ""
+echo "mfs2 -W 4 -M 1000 -C 7000; "
+&put; mfs2 -W 4 -M 1000 -C 7000; &get -n -m; &save -a; &ps; time 
+
+echo ""
+echo "&satlut;" 
+&load; &satlut; &ps; time;
+
+&put
+
+echo ""
+echo "lutpack -S 3"
+lutpack -S 3; time
+
+&get -n -m; &ps; 
+
+&put
+
+time
