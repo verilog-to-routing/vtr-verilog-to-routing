@@ -53,6 +53,12 @@ struct t_clock_switch_grid_point {
     e_clock_switch_grid_point_type type;
     std::string xoffset;
     std::string yoffset;
+    // Repeat this tap point across the grid every xincr/yincr switch boxes
+    // (like the rib/spine tap xincr/yincr), instead of at just one location.
+    // "0" (the default) means no repeat, i.e. a single point. Only meaningful
+    // for TAP points; DRIVE points are always a single location.
+    std::string xincr = "0";
+    std::string yincr = "0";
     int arch_switch_idx = -1; // only set for DRIVE points
 };
 

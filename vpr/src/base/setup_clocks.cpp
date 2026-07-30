@@ -144,12 +144,36 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                     SwitchGridPointType type = (point.type == e_clock_switch_grid_point_type::DRIVE)
                                                     ? SwitchGridPointType::DRIVE
                                                     : SwitchGridPointType::TAP;
-                    switch_grid->add_switch_point(
-                        point.name,
-                        type,
-                        p.parse_formula(point.xoffset, vars),
-                        p.parse_formula(point.yoffset, vars),
-                        point.arch_switch_idx);
+
+                    int base_x = p.parse_formula(point.xoffset, vars);
+                    int base_y = p.parse_formula(point.yoffset, vars);
+                    int xincr = p.parse_formula(point.xincr, vars);
+                    int yincr = p.parse_formula(point.yincr, vars);
+
+                    // xincr/yincr repeat a tap point across the grid every that-many
+                    // switch boxes (mirroring rib/spine's tap xincr/yincr); "0" (the
+                    // default, and always the case for drive points) means a single
+                    // point at (base_x, base_y).
+                    //
+                    // The outermost ring of tiles (x/y == 0 or width/height - 1) is the
+                    // device perimeter and never has a switch box -- general routing
+                    // channels don't reach it either (see the "-2 for no perim channels"
+                    // convention used throughout rr_graph2.cpp/rr_graph_chan_seg_details.cpp,
+                    // and ClockSwitchGrid's own x_max/y_max in clock_network_builders.cpp).
+                    // Clamp the auto-generated end here to match, so a plain xincr="1"/
+                    // yincr="1" naturally covers every valid switch box location instead
+                    // of overshooting onto the perimeter and warning about unregistered
+                    // switch points.
+                    int x_end = (xincr > 0) ? (int)grid.width() - 1 : base_x + 1;
+                    int y_end = (yincr > 0) ? (int)grid.height() - 1 : base_y + 1;
+                    int x_step = (xincr > 0) ? xincr : 1;
+                    int y_step = (yincr > 0) ? yincr : 1;
+
+                    for (int x = base_x; x < x_end; x += x_step) {
+                        for (int y = base_y; y < y_end; y += y_step) {
+                            switch_grid->add_switch_point(point.name, type, x, y, point.arch_switch_idx);
+                        }
+                    }
                 }
 
                 switch_grid->create_segments(segment_inf);

@@ -4969,7 +4969,7 @@ static void process_clock_switch_grid_points(pugi::xml_node parent,
                                              const std::vector<t_arch_switch_inf>& switches,
                                              pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_drive_attributes = {"name", "type", "xoffset", "yoffset", "switch_name"};
-    std::vector<std::string> expected_tap_attributes = {"name", "type", "xoffset", "yoffset"};
+    std::vector<std::string> expected_tap_attributes = {"name", "type", "xoffset", "yoffset", "xincr", "yincr"};
     std::vector<std::string> expected_children = {"switch_point"};
 
     int num_switch_points = count_children(parent, "switch_point", loc_data);
@@ -5004,6 +5004,8 @@ static void process_clock_switch_grid_points(pugi::xml_node parent,
             point.type = e_clock_switch_grid_point_type::TAP;
             point.xoffset = get_attribute(curr_switch, "xoffset", loc_data).value();
             point.yoffset = get_attribute(curr_switch, "yoffset", loc_data).value();
+            point.xincr = get_attribute(curr_switch, "xincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            point.yincr = get_attribute(curr_switch, "yincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
 
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
