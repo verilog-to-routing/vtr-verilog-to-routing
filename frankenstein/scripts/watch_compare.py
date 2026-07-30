@@ -29,6 +29,9 @@ fmaxRe = re.compile(r"fmax=([0-9.]+)MHz")
 clbRe = re.compile(r"clb=(\d+)")
 wallRe = re.compile(r"wall=([0-9.]+)s")
 wnsRe = re.compile(r"wns=([0-9.-]+)ns")
+synthWallRe = re.compile(r"s_s=([0-9.]+)")
+abcWallRe = re.compile(r"a_s=([0-9.]+)")
+vprWallRe = re.compile(r"v_s=([0-9.]+)")
 synthLutsRe = re.compile(r"s_luts=(\d+)")
 abcLutsRe = re.compile(r"a_luts=(\d+)")
 packedLutsRe = re.compile(r"(?:p_luts|packed_luts)=(\d+)")
@@ -99,6 +102,9 @@ def parseStatusLine(label: str, line: str):
                 result["status"] = failMatch.group(1)
     for key, pattern in (
         ("wall", wallRe),
+        ("synth_wall", synthWallRe),
+        ("abc_wall", abcWallRe),
+        ("vpr_wall", vprWallRe),
         ("clb", clbRe),
         ("fmax", fmaxRe),
         ("wns", wnsRe),
@@ -151,61 +157,39 @@ def scanStatus(targetDir: Path):
 
 
 def renderTable(rows, title):
-    colWidths = {
-        "label": 36,
-        "status": 22,
-        "wall": 8,
-        "synth_luts": 8,
-        "abc_luts": 8,
-        "packed_luts": 8,
-        "clb": 6,
-        "ff": 6,
-        "mem": 5,
-        "dsp": 5,
-        "adder": 7,
-        "wl": 10,
-        "cpd": 8,
-        "fmax": 9,
-        "wns": 8,
-    }
+    # each metric is one s/a/p column: synth, abc, packed (vpr for counts,
+    # vpr wall for time). "" means that stage has no value for the metric.
+    timeKeys = ("synth_wall", "abc_wall", "vpr_wall")
+    sapGroups = (
+        ("time", timeKeys, 18),
+        ("lut", ("synth_luts", "abc_luts", "packed_luts"), 18),
+        ("clb", ("", "", "clb"), 18),
+        ("ff", ("", "", "ff"), 18),
+        ("bram", ("", "", "mem"), 18),
+        ("dsp", ("", "", "dsp"), 18),
+        ("adder", ("", "", "adder"), 18),
+    )
+    tailKeys = ("wl", "cpd", "fmax", "wns")
+    tailHeaders = ("wirelen", "cpd ns", "fmax MHz", "wns ns")
+    labelWidth, statusWidth, wallWidth = 36, 22, 8
+
+    def sapCell(row, keys):
+        return "/".join(row.get(k, "-") or "-" if k else "-" for k in keys)
+
+    def fmtSap(row, keys, width):
+        text = sapCell(row, keys)
+        return text if len(text) <= width else text[: width - 1] + "~"
+
+    widths = (
+        [labelWidth, statusWidth, wallWidth]
+        + [g[2] for g in sapGroups]
+        + [10, 8, 9, 8]
+    )
     headers = (
-        "run label",
-        "status",
-        "wall(s)",
-        "lut s",
-        "lut a",
-        "lut p",
-        "clbs",
-        "ffs",
-        "bram",
-        "dsp",
-        "adder",
-        "wirelen",
-        "cpd ns",
-        "fmax MHz",
-        "wns ns",
+        ["run label", "status", "wall(s)"]
+        + [g[0] + " s/a/p" for g in sapGroups]
+        + list(tailHeaders)
     )
-    keys = (
-        "label",
-        "status",
-        "wall",
-        "synth_luts",
-        "abc_luts",
-        "packed_luts",
-        "clb",
-        "ff",
-        "mem",
-        "dsp",
-        "adder",
-        "wl",
-        "cpd",
-        "fmax",
-        "wns",
-    )
-    widths = [colWidths[k] for k in (
-        "label", "status", "wall", "synth_luts", "abc_luts", "packed_luts",
-        "clb", "ff", "mem", "dsp", "adder", "wl", "cpd", "fmax", "wns"
-    )]
 
     divider = "+" + "+".join("-" * (width + 2) for width in widths) + "+"
     headerRow = "|" + "|".join(
@@ -230,20 +214,20 @@ def renderTable(rows, title):
         else:
             visibleText, color = status, ""
 
-        width = widths[1]
-        visibleText = visibleText[:width]
+        visibleText = visibleText[:statusWidth]
         statusCell = f"{color}{visibleText}\033[0m" if color else visibleText
-        pad = max(0, width - len(visibleText))
+        pad = max(0, statusWidth - len(visibleText))
         statusPadded = f" {statusCell}{' ' * pad} "
 
-        cells = [statusPadded]
-        dataKeys = [k for k in keys if k != "status"]
-        dataWidths = [w for i, w in enumerate(widths) if i != 1]
-        for key, width in zip(dataKeys, dataWidths):
-            if key == "label":
-                cells.insert(0, f" {row.get(key, '')[:width]:<{width}} ")
-            else:
-                cells.append(f" {str(row.get(key, '-')):<{width}} ")
+        cells = [
+            f" {row.get('label', '')[:labelWidth]:<{labelWidth}} ",
+            statusPadded,
+            f" {row.get('wall', '-'):<{wallWidth}} ",
+        ]
+        for _, keys, width in sapGroups:
+            cells.append(f" {fmtSap(row, keys, width):<{width}} ")
+        for key, header, width in zip(tailKeys, tailHeaders, (10, 8, 9, 8)):
+            cells.append(f" {str(row.get(key, '-')):<{width}} ")
         lines.append("|" + "|".join(cells) + "|")
 
     lines.append(divider)

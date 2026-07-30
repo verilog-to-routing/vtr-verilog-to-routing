@@ -89,6 +89,9 @@ csvFields = (
     "success",
     "vpr_status",
     "wall_time_sec",
+    "synth_wall_sec",
+    "abc_wall_sec",
+    "vpr_wall_sec",
     "synth_luts",
     "abc_luts",
     "packed_luts",
@@ -203,6 +206,47 @@ def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
     return counts
 
 
+def stageWallSeconds(logPath: Path) -> Optional[float]:
+    # the last `time -v` elapsed line in the stage log is that stage's wall clock
+    if not logPath.is_file():
+        return None
+    match = None
+    try:
+        with open(logPath, encoding="utf-8", errors="replace") as logFile:
+            for line in logFile:
+                found = re.search(r"Elapsed \(wall clock\) time.*?:\s*(\S+)", line)
+                if found:
+                    match = found
+    except OSError:
+        return None
+    if match is None:
+        return None
+    parts = match.group(1).split(":")
+    try:
+        seconds = float(parts[-1])
+        for multiplier, part in zip((60, 3600), reversed(parts[:-1])):
+            seconds += float(part) * multiplier
+        return seconds
+    except ValueError:
+        return None
+
+
+def stageWallTimes(tempDir: Path) -> Dict[str, str]:
+    # synth = the front-end yosys run, abc = the vtr abc stage, vpr = pack/place/route
+    times = {"synth_wall_sec": "", "abc_wall_sec": "", "vpr_wall_sec": ""}
+    for key, names in (
+        ("synth_wall_sec", ("frankenstein.out", "parmys.out", "odin.out")),
+        ("abc_wall_sec", ("abc0.out", "abc.out")),
+        ("vpr_wall_sec", ("vpr.out",)),
+    ):
+        for name in names:
+            value = stageWallSeconds(tempDir / name)
+            if value is not None:
+                times[key] = f"{value:.2f}"
+                break
+    return times
+
+
 def parseVprQor(tempDir: Path) -> Dict[str, str]:
     vprOut = tempDir / "vpr.out"
     metrics = {
@@ -311,6 +355,8 @@ def formatSummary(runLabel: str, row: Dict) -> str:
     status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
     return (
         f"{runLabel}: {status} wall={row.get('wall_time_sec', '')}s "
+        f"s_s={row.get('synth_wall_sec', '')} a_s={row.get('abc_wall_sec', '')} "
+        f"v_s={row.get('vpr_wall_sec', '')} "
         f"s_luts={row.get('synth_luts', '')} a_luts={row.get('abc_luts', '')} "
         f"p_luts={row.get('packed_luts', '')} clb={row.get('num_clb', '')} "
         f"ff={row.get('num_ff', '')} mem={row.get('num_memory', '')} "
@@ -398,6 +444,7 @@ def runOne(task: Tuple) -> Dict:
 
     qor = parseVprQor(tempDir)
     qor.update(stageLutCounts(tempDir, design))
+    qor.update(stageWallTimes(tempDir))
     success = result.returncode == 0 and qor["vpr_status"] == "ok"
     row = {
         "design": design,
