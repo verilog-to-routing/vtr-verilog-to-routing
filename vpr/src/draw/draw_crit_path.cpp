@@ -229,6 +229,12 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
  */
 static void calculate_and_draw_delay_labels(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g);
 
+/**
+ * @brief Counts the total number of timing edges across multiple timing paths.
+ *
+ * @param paths Timing paths whose timing edges are counted.
+ * @return Total number of timing edges across all provided paths.
+ */
 static std::size_t get_num_edges_of_multi_paths(const std::vector<tatum::TimingPath>& paths);
 
 /**
@@ -391,7 +397,8 @@ void draw_crit_path(ezgl::renderer* g) {
         return;
     }
 
-    // Get the worst timing path
+    // Request a number of critical paths set by the user through draw_state->num_crit_paths.
+    // If the number exceeds the currently available critical paths, only the available ones are returned.
     auto paths = path_collector.collect_worst_setup_timing_paths(
         *timing_ctx.graph,
         *(draw_state->setup_timing_info->setup_analyzer()), draw_state->num_crit_paths);
