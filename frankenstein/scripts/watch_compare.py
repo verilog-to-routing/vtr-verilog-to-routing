@@ -173,22 +173,23 @@ def scanStatus(targetDir: Path):
 
 
 def renderTable(rows, title):
-    # each metric is one s/a/p column: synth, abc, packed. `·` means that
-    # stage has no value for the metric. clb is vpr-only so its s/a slots
-    # stay `·`; the others come from the template's teeo stat dumps (synth
-    # and post-abc) and vpr (packed). time is the per-stage wall clock.
+    # metrics with a real synth/abc/packed split get one s/a/p column each.
+    # `·` means that stage has no value for the metric. counts come from the
+    # template's teeo stat dumps (synth and post-abc) and vpr (packed); time
+    # is the per-stage wall clock.
     timeKeys = ("synth_wall", "abc_wall", "vpr_wall")
     sapGroups = (
         ("time", timeKeys, 18),
         ("lut", ("synth_luts", "abc_luts", "packed_luts"), 18),
-        ("clb", ("", "", "clb"), 18),
         ("ff", ("synth_ff", "abc_ff", "ff"), 18),
         ("bram", ("synth_mem", "abc_mem", "mem"), 18),
         ("dsp", ("synth_dsp", "abc_dsp", "dsp"), 18),
         ("adder", ("synth_adder", "abc_adder", "adder"), 18),
     )
-    tailKeys = ("wl", "cpd", "fmax", "wns")
-    tailHeaders = ("wirelen", "cpd ns", "fmax MHz", "wns ns")
+    # metrics that only exist packed (vpr) stay single plain columns.
+    tailKeys = ("clb", "wl", "cpd", "fmax", "wns")
+    tailHeaders = ("clbs", "wirelen", "cpd ns", "fmax MHz", "wns ns")
+    tailWidths = (6, 10, 8, 9, 8)
     labelWidth, statusWidth, wallWidth = 36, 22, 8
 
     def sapCell(row, keys):
@@ -201,7 +202,7 @@ def renderTable(rows, title):
     widths = (
         [labelWidth, statusWidth, wallWidth]
         + [g[2] for g in sapGroups]
-        + [10, 8, 9, 8]
+        + list(tailWidths)
     )
     headers = (
         ["run label", "status", "wall(s)"]
@@ -244,7 +245,7 @@ def renderTable(rows, title):
         ]
         for _, keys, width in sapGroups:
             cells.append(f" {fmtSap(row, keys, width):<{width}} ")
-        for key, header, width in zip(tailKeys, tailHeaders, (10, 8, 9, 8)):
+        for key, width in zip(tailKeys, tailWidths):
             cells.append(f" {str(row.get(key, '-')):<{width}} ")
         lines.append("|" + "|".join(cells) + "|")
 
