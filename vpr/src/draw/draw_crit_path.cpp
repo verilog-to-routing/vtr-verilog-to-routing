@@ -48,7 +48,7 @@ static constexpr int MAX_EDGE_OFFSET_UNIT = 40;
 static constexpr int ENDPOINT_STAR_SIZE = 16;
 
 /**
- * @brief Distance in pixels used to pad from the total delay meesages when drawing their background rectangle.
+ * @brief Distance in pixels used to pad from the total delay messages when drawing their background rectangle.
  * 
  * Used for both x and y-direction padding.
  */
@@ -142,7 +142,7 @@ struct t_timing_edge_id {
 };
 
 /**
- * @brief Draws dashed flylines between consecutive nodes in the provided timing path, and draws a star at the beginning and end of the paths.
+ * @brief Draws dashed flylines between consecutive nodes in the provided timing paths, and draws a star at the beginning and end of the paths.
  *
  * @param paths Timing paths whose consecutive node pairs define the flylines.
  * @param g Pointer to the ezgl::renderer object.
@@ -242,7 +242,7 @@ static std::size_t get_num_edges_of_multi_paths(const std::vector<tatum::TimingP
  * 
  * Calculated results are stored in a vector and returned by the function.
  *
- * @param path Timing path whose consecutive node pairs define the timing edges to place delay labels.
+ * @param paths Timing paths whose consecutive node pairs define the timing edges to place delay labels.
  * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
  * Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
  * @param g Pointer to the ezgl::renderer object. Used to get the dimension of the delay label string in pixels.
@@ -271,7 +271,7 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
 /**
  * @brief Hides labels that still overlap with others after calculate_least_cluttered_label_pos() has tried all candidates.
  * 
- * Hiding is performed in sequence from start to end (of the critcal path), from the first critcal path to the last.
+ * Hiding is performed in sequence from start to end (of each critical path), from the first critical path to the last.
  * Hiding one label may free up space for other labels and so they no longer need to be hidden.
  * Visibility of hidden labels are updated to post_decluttering_label_drawing_info.
  *
@@ -308,7 +308,7 @@ static bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::re
 static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_info, ezgl::renderer* g);
 
 /**
- * @brief Draws messages that shows the total delay time and the cooresponding critical path index, with a background behind.
+ * @brief Draws messages that show the total delay time and the corresponding critical path index, with a background behind.
  * 
  * @param paths Timing paths whose total delay time is put into the messages drawn.
  * @param g Renderer used to perform drawing.
@@ -346,17 +346,18 @@ static t_draw_layer_display get_timing_flyline_visibility(tatum::NodeId src_node
 static int get_tnode_layer_num(tatum::NodeId node);
 
 /**
- * @brief Returns the drawing coordinates for a timing edge flyline.
+ * @brief Returns the drawing coordinates of a timing edge flyline and a state indicating if the flyline collapses to a single point.
  *
  * In analytical placement, timing nodes are mapped to the centers of their associated AP blocks.
- * If both endpoints collapse to the same AP block, there is no meaningful flyline to draw, so this returns std::nullopt.
+ * If both endpoints collapse to the same AP block, there is no meaningful flyline to draw,
+ * and the return value will indicate that the flyline collapses to a single point.
  *
- * In non-AP drawing stages, timing nodes are mapped to their atom pin drawing coordinates.
+ * In non-AP drawing stages, timing nodes are mapped to their atom pin drawing coordinates, and the collapse flag remains off.
  *
  * @param src_node Source timing node of the timing edge.
  * @param sink_node Sink timing node of the timing edge.
  *
- * @return The start/end drawing coordinates for the flyline, or std::nullopt if the flyline is skipped.
+ * @return The start/end drawing coordinates of the flyline, and a boolean indicating if the flyline collapses to a single point.
  */
 static t_flyline_draw_coords get_timing_flyline_draw_coords(tatum::NodeId src_node,
                                                             tatum::NodeId sink_node);
@@ -673,7 +674,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
     basic_label_drawing_info.reserve(total_num_edges);
 
     // A record of visited timing edges. Used to check for repeated labels.
-    // Since the number of timing edges is usually small (even when there are multiple critcal paths),
+    // Since the number of timing edges is usually small (even when there are multiple critical paths),
     // std::vector has good enough performace.
     std::vector<t_timing_edge_id> visited_edges;
     visited_edges.reserve(total_num_edges);

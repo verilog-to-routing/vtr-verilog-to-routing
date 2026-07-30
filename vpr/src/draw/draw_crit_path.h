@@ -6,9 +6,9 @@
  * 
  * Critical Path visualization includes timing-edge flylines, time delay labels and routed timing connections.
  * draw_crit_path() and draw_crit_path_elements() are tied to non-server mode (the main flow) and server mode, respectively.
- * Both modes support the drawing of multiple critical path. In non-server mode, the user can use a UI widget to set the number of paths.
- * In server mode, the user can use a VPR server to do it. They are mainly differed by the freedom in drawing
- * (non-server mode draws the entire critical paths, while server mode can receive customized inputs from the server to control what exactly to draw,
+ * Both modes support the drawing of multiple critical paths. In non-server mode, the user can use a UI widget to set the number of paths.
+ * In server mode, the user can use a VPR server to do it. They mainly differ in drawing flexibility (non-server mode draws
+ * the entire critical paths, while server mode can receive customized inputs from the server to control what exactly to draw)
  * and the drawing style of delay labels (a label decluttering algorithm is implemented in non-server mode, but server mode does not have that).
  */
 
@@ -29,9 +29,9 @@
  * Note: the current code only supports drawing of time delay labels on edge flylines, not on routed connections.
  * 
  * Note: When multiple critical paths are drawn, and some of them share the same timing edge segments, there will be repeated
- * drawings of the corresponding edge flylines and routed connections, because the visual affect from this is negligible, and running
- * a repetition detection logic would be inefficient in this sense. However, for delay labels, having multiple of them
- * surronding the same flyline segment would be very confusing, and so a repetition detection logic is implemented for them.
+ * drawings of the corresponding edge flylines and routed connections, because they do not negatively affect visual aesthetics,
+ * and running a repetition detection logic would be inefficient in this sense. However, for delay labels, having multiple of them
+ * surrounding the same flyline segment would be very confusing, and so a repetition detection logic is implemented for them.
  * 
  * @param g Pointer to the ezgl::renderer object.
  */
