@@ -36,6 +36,7 @@ DEFAULT_METRICS = [
     # Run-time Metrics
     "odin_synth_time",
     "parmys_synth_time",
+    "frankenstein_synth_time",
     "abc_synth_time",
     "pack_time",
     "place_time",
