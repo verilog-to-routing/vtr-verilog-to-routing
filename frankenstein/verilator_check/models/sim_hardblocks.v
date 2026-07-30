@@ -1,7 +1,17 @@
 // behavioral whiteboxes for frankenstein verilator random-check.
 // used when elaborating yosys-converted post-synth / post-abc blifs that
 // still contain .subckt adder|multiply|*_ram|dff*.  no specify blocks
-// (verilator-safe).  rams init to 0 — functional smoke only.
+// (verilator-safe).
+//
+// ram contents default to uninitialized (x) so rtl memory init that synth
+// dropped can still surface as a mismatch when unwritten locations are read.
+// define FRANKENSTEIN_SIM_RAM_ZERO_INIT (e.g. verilator -D...) to force zeros
+// for deterministic smoke that does not care about init.
+//
+// dual_port_ram same-address write-write policy (sim model only; silicon/blif
+// undefined): when we1 and we2 both assert and addr1 == addr2, port2 wins
+// (data2 is stored). same-cycle read+write uses read-first / old-data via
+// nonblocking assignments (matches vtr_flow/primitives.v).
 
 `timescale 1ns/1ps
 
@@ -38,13 +48,17 @@ module single_port_ram #(
     output reg [DATA_WIDTH-1:0] out
 );
     localparam DEPTH = 1 << ADDR_WIDTH;
+    // left uninitialized unless FRANKENSTEIN_SIM_RAM_ZERO_INIT is defined
     reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+`ifdef FRANKENSTEIN_SIM_RAM_ZERO_INIT
     integer i;
     initial begin
         for (i = 0; i < DEPTH; i = i + 1)
             mem[i] = {DATA_WIDTH{1'b0}};
         out = {DATA_WIDTH{1'b0}};
     end
+`endif
+    // read-first / old-data: out samples mem before the nba write updates it
     always @(posedge clk) begin
         if (we)
             mem[addr] <= data;
@@ -67,7 +81,9 @@ module dual_port_ram #(
     output reg [DATA_WIDTH-1:0] out2
 );
     localparam DEPTH = 1 << ADDR_WIDTH;
+    // left uninitialized unless FRANKENSTEIN_SIM_RAM_ZERO_INIT is defined
     reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+`ifdef FRANKENSTEIN_SIM_RAM_ZERO_INIT
     integer i;
     initial begin
         for (i = 0; i < DEPTH; i = i + 1)
@@ -75,11 +91,18 @@ module dual_port_ram #(
         out1 = {DATA_WIDTH{1'b0}};
         out2 = {DATA_WIDTH{1'b0}};
     end
+`endif
+    // port2-wins on same-address write-write; otherwise independent port writes.
+    // reads are always read-first / old-data (nba ordering).
     always @(posedge clk) begin
-        if (we1)
-            mem[addr1] <= data1;
-        if (we2)
-            mem[addr2] <= data2;
+        if (we1 && we2 && (addr1 == addr2))
+            mem[addr1] <= data2;
+        else begin
+            if (we1)
+                mem[addr1] <= data1;
+            if (we2)
+                mem[addr2] <= data2;
+        end
         out1 <= mem[addr1];
         out2 <= mem[addr2];
     end
@@ -102,6 +125,8 @@ module fpga_interconnect (
 endmodule
 
 // vpr / yosys flop aliases commonly seen in frankenstein blifs
+// initial Q=0 is intentional for deterministic reset-less smoke; not a claim
+// that rtl async/power-on reset is modeled.
 module dff (
     input clk,
     input D,

@@ -6,6 +6,11 @@ takes a harness circuit (or explicit paths), converts the two blifs to verilog
 via yosys, builds a 3-dut testbench, verilates, and drives hundreds of thousands
 of identical random vectors. exit 0 only if all three match.
 
+optional directed coverage:
+  --check-mem-init   fail if rtl has memory init that hard rams cannot carry
+  --directed-ram     prepend same-addr read/write (and write/write if feasible)
+  --ram-zero-init    force sim ram contents to 0 (hides init bugs; default is x)
+
 usage:
   python3 frankenstein/verilator_check/run_random_check.py \\
     --run-dir compare_output_k6_qor/runs/adder_4bit_frankenstein \\
@@ -37,10 +42,21 @@ from port_parse import (  # noqa: E402
     isResetPort,
     parseVerilogTopPorts,
 )
-from tb_generator import generateTripleTestbench  # noqa: E402
+from tb_generator import detectDirectedRamPlan, generateTripleTestbench  # noqa: E402
 
 repoRoot = _HERE.parents[1]
 modelsV = _HERE / "models" / "sim_hardblocks.v"
+
+_READMEM_RE = re.compile(r"\$readmem[hb]\b", re.I)
+_MEM_ARRAY_RE = re.compile(
+    r"\b(?:reg|logic)\s*(?:\[[^\]]+\])?\s*(\w+)\s*(?:\[[^\]]+\])?\s*;",
+    re.I,
+)
+_INITIAL_ASSIGN_RE = re.compile(
+    r"initial\s+begin.*?end",
+    re.I | re.S,
+)
+_HARD_RAM_RE = re.compile(r"\b(?:single_port_ram|dual_port_ram)\b")
 
 
 def resolveVerilator() -> Optional[str]:
@@ -51,6 +67,69 @@ def resolveVerilator() -> Optional[str]:
     if local.is_file():
         return str(local)
     return None
+
+
+def findRtlMemInitEvidence(rtlPath: Path) -> List[str]:
+    """return human-readable evidence that rtl initializes memory."""
+    text = rtlPath.read_text(encoding="utf-8", errors="replace")
+    findings: List[str] = []
+    if _READMEM_RE.search(text):
+        findings.append("$readmemh/$readmemb present")
+    # look for initial blocks that assign into array-like identifiers
+    memNames = {m.group(1) for m in _MEM_ARRAY_RE.finditer(text)}
+    for block in _INITIAL_ASSIGN_RE.finditer(text):
+        body = block.group(0)
+        for memName in memNames:
+            if re.search(rf"\b{re.escape(memName)}\s*\[", body):
+                findings.append(f"initial assign into array '{memName}'")
+                break
+        if re.search(r"\w+\s*\[[^\]]+\]\s*=", body) and "for" in body.lower():
+            # loop init of an array without a clean typed decl match
+            if "mem init loop-style assign in initial" not in findings:
+                findings.append("mem init loop-style assign in initial")
+    # dedupe while preserving order
+    seen = set()
+    ordered: List[str] = []
+    for item in findings:
+        if item not in seen:
+            seen.add(item)
+            ordered.append(item)
+    return ordered
+
+
+def synthUsesHardRam(synthBlif: Path, synthVerilog: Optional[Path] = None) -> bool:
+    """true when post-synth netlist still has hard ram blackboxes."""
+    for path in (synthBlif, synthVerilog):
+        if path is None or not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if _HARD_RAM_RE.search(text):
+            return True
+    return False
+
+
+def checkMemInitMismatch(rtlPath: Path, synthBlif: Path, synthVerilog: Optional[Path] = None) -> int:
+    """exit-style status: 0 ok, 1 init likely dropped, 2 scan error."""
+    evidence = findRtlMemInitEvidence(rtlPath)
+    if not evidence:
+        print("mem-init check: no rtl memory init patterns found")
+        return 0
+    print("mem-init check: rtl appears to initialize memory:")
+    for item in evidence:
+        print(f"  - {item}")
+    if synthUsesHardRam(synthBlif, synthVerilog):
+        print(
+            "mem-init check: FAIL — synth uses hard single_port_ram/dual_port_ram "
+            "blackboxes with no INIT ports; rtl init cannot be preserved",
+            file=sys.stderr,
+        )
+        return 1
+    print(
+        "mem-init check: WARN — rtl has init but no hard ram cells found in synth; "
+        "soft-mapped init may or may not have survived (manual review)",
+        file=sys.stderr,
+    )
+    return 0
 
 
 def renameModule(src: Path, dest: Path, newName: str, oldName: Optional[str] = None) -> str:
@@ -151,8 +230,9 @@ def buildWorkDir(
     numVectors: int,
     seed: int,
     maxErrors: int,
-) -> Tuple[Path, List[str]]:
-    """prepare renamed duts + tb; return (tbPath, verilatorSourceList)."""
+    directedRam: bool = False,
+) -> Tuple[Path, List[str], Path]:
+    """prepare renamed duts + tb; return (tbPath, verilatorSourceList, synthDutPath)."""
     if workDir.exists():
         shutil.rmtree(workDir)
     workDir.mkdir(parents=True)
@@ -180,6 +260,13 @@ def buildWorkDir(
     print(f"clocks: {clocks or ['(none)']}")
     print(f"resets: {resets or ['(none)']}")
 
+    if directedRam:
+        ramPlan = detectDirectedRamPlan(ports)
+        if ramPlan is None:
+            print("directed-ram: no matching ram port shape on this top")
+        else:
+            print(f"directed-ram: {ramPlan.note}")
+
     rtlDut = workDir / "dut_rtl.v"
     synthDut = workDir / "dut_synth.v"
     abcDut = workDir / "dut_abc.v"
@@ -195,6 +282,7 @@ def buildWorkDir(
         numVectors=numVectors,
         seed=seed,
         maxErrors=maxErrors,
+        directedRam=directedRam,
     )
     tbPath = workDir / "tb.sv"
     tbPath.write_text(tbText, encoding="utf-8")
@@ -202,7 +290,7 @@ def buildWorkDir(
     # use sim_hardblocks only — do not also link vtr_flow/primitives.v
     # (duplicate adder/dff module definitions).
     sources = [str(tbPath), str(rtlDut), str(synthDut), str(abcDut), str(modelsV)]
-    return tbPath, sources
+    return tbPath, sources, synthDut
 
 
 def countRtlWarnings(verilatorOut: Path) -> int:
@@ -225,6 +313,7 @@ def runVerilator(
     *,
     seed: int,
     verilatorJobs: int,
+    ramZeroInit: bool = False,
 ) -> int:
     verilator = resolveVerilator()
     if verilator is None:
@@ -262,6 +351,8 @@ def runVerilator(
         # abort compile on them (benchmark rtl often trips IMPLICIT/LATCH/etc).
         "-Wno-fatal",
     ]
+    if ramZeroInit:
+        cmd.append("-DFRANKENSTEIN_SIM_RAM_ZERO_INIT")
     with open(verilatorOut, "w", encoding="utf-8") as log:
         ret = subprocess.call(cmd, stdout=log, stderr=log)
     rtlWarns = countRtlWarnings(verilatorOut)
@@ -311,6 +402,21 @@ def main(argv=None) -> int:
     parser.add_argument("--max-errors", type=int, default=20)
     parser.add_argument("--yosys", type=Path, default=None)
     parser.add_argument("--verilator-j", type=int, default=4)
+    parser.add_argument(
+        "--check-mem-init",
+        action="store_true",
+        help="fail if rtl has memory init that hard ram blackboxes cannot carry",
+    )
+    parser.add_argument(
+        "--directed-ram",
+        action="store_true",
+        help="prepend directed same-addr read/write (and write/write if dual-we ports)",
+    )
+    parser.add_argument(
+        "--ram-zero-init",
+        action="store_true",
+        help="force sim_hardblocks ram contents to 0 (default leaves mem uninitialized/x)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -337,11 +443,17 @@ def main(argv=None) -> int:
         print(f"abc blif:   {abcBlif}")
         print(f"work:       {workDir}")
         print(f"vectors:    {args.vectors}  seed={args.seed}")
+        if args.directed_ram:
+            print("directed-ram: enabled")
+        if args.ram_zero_init:
+            print("ram-zero-init: enabled (sim rams start at 0)")
+        else:
+            print("ram init: uninitialized/x (use --ram-zero-init to force zeros)")
 
         # smoke that yosys exists early
         resolveYosys(args.yosys)
 
-        _, sources = buildWorkDir(
+        _, sources, synthDut = buildWorkDir(
             workDir,
             rtlPath,
             synthBlif,
@@ -350,12 +462,20 @@ def main(argv=None) -> int:
             numVectors=args.vectors,
             seed=args.seed,
             maxErrors=args.max_errors,
+            directedRam=args.directed_ram,
         )
+
+        if args.check_mem_init:
+            memStatus = checkMemInitMismatch(rtlPath, synthBlif, synthDut)
+            if memStatus != 0:
+                return memStatus
+
         return runVerilator(
             workDir,
             sources,
             seed=args.seed,
             verilatorJobs=max(1, args.verilator_j),
+            ramZeroInit=args.ram_zero_init,
         )
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
