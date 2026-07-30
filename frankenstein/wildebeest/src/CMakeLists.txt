@@ -1,7 +1,11 @@
 find_package(Yosys)
 
 add_library(wildebeest SHARED
+    arch_rule_gen.cc
     clk_domains.cc
+    vtr_arch_clocks.cc
+    vtr_arch_info.cc
+    vtr_arch_rules.cc
 )
 target_link_libraries(wildebeest
     PRIVATE

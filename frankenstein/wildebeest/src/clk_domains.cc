@@ -4,11 +4,14 @@
 #include <cassert>
 #include <chrono>
 
+#include "vtr_arch_clocks.h"
+
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
 
 static bool clk2clk = false;
 static bool summary = false;
+static std::string vtr_arch_file = "";
 
 struct MaxLvlPass : public ScriptPass {
 
@@ -42,6 +45,40 @@ struct MaxLvlPass : public ScriptPass {
     SigBit maxbit;
 
     pool<SigBit> visited_bits;
+
+    // ---------------------------------------
+    // setup_internals_vtr_arch
+    // ---------------------------------------
+    // frankenstein flow: derive the clk2clk cut points straight from the vtr
+    // architecture xml, the same data parmys pulls out of the arch (models that
+    // own an is_clock input port). the parser is self-contained, so wildebeest
+    // links no vtr static library.
+    //
+    void setup_internals_vtr_arch(CellTypes &ff_celltypes,
+                                  const std::string &xml_file) {
+      log("Deriving clk2clk cut points from vtr arch xml: %s\n",
+          xml_file.c_str());
+
+      std::string parse_error;
+      std::vector<std::string> clocked_models =
+          wildebeestVtr::readClockedModelNames(xml_file, &parse_error);
+
+      if (!parse_error.empty()) {
+        log_error("max_level -vtr_arch: %s\n", parse_error.c_str());
+      }
+
+      if (clocked_models.empty()) {
+        log_warning("max_level -vtr_arch: no clocked models found in %s\n",
+                    xml_file.c_str());
+      }
+
+      for (const std::string &model_name : clocked_models) {
+        IdString cell_type = RTLIL::escape_id(model_name);
+        ff_celltypes.setup_type(cell_type, {}, {});
+        log("  -> registered vtr clocked primitive cut point: %s\n",
+            model_name.c_str());
+      }
+    }
 
     // ---------------------------------------
     // setup_internals_zeroasic_clocked_cells
@@ -193,6 +230,15 @@ struct MaxLvlPass : public ScriptPass {
         ff_celltypes.setup_internals_mem();
         ff_celltypes.setup_stdcells_mem();
 
+        if (!vtr_arch_file.empty()) {
+
+          // frankenstein: cut points come from the vtr arch xml
+          // (parmys-style) instead of the hardcoded vendor lists below.
+          //
+          setup_internals_vtr_arch(ff_celltypes, vtr_arch_file);
+
+        } else {
+
         // Specify technology related DFF cutpoints for -clk2clk option
         //
         setup_internals_zeroasic_clocked_cells(ff_celltypes);
@@ -225,6 +271,8 @@ struct MaxLvlPass : public ScriptPass {
         // Intel (Altera)
         //
         setup_internals_intel_ff_cycloneiv(ff_celltypes);
+
+        } // end else (hardcoded vendor cut points)
       }
 
       // For all SigBits create their associated 'bitInfo'
@@ -593,6 +641,7 @@ struct MaxLvlPass : public ScriptPass {
   void clear_flags() override {
     clk2clk = false;
     summary = false;
+    vtr_arch_file = "";
   }
 
   // ---------------------
@@ -610,6 +659,11 @@ struct MaxLvlPass : public ScriptPass {
     G_design = design;
 
     for (argidx = 1; argidx < args.size(); argidx++) {
+
+      if (args[argidx] == "-vtr_arch" && argidx + 1 < args.size()) {
+        vtr_arch_file = args[++argidx];
+        continue;
+      }
 
       if (args[argidx] == "-clk2clk") {
         clk2clk = true;
