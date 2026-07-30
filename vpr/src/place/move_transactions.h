@@ -84,8 +84,8 @@ struct t_pl_blocks_to_be_moved {
                                           const BlkLocRegistry& blk_loc_registry);
 
     /**
-     * @brief Loads a previously recorded move (its full moved-blocks list) into
-     * this (empty) object, so the move can be re-applied to another placement
+     * @brief Loads a previously recorded move (its full moved blocks list) into
+     * this object, so the move can be re-applied to another placement
      * state. Used by the speculative parallel swap evaluation engine to transfer
      * a move proposed on the master state to worker replicas and back.
      */

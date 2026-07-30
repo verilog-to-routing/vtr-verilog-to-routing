@@ -1550,7 +1550,7 @@ bool NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
     VTR_ASSERT_DEBUG(cost_terms_delta.cong_cost == 0.);
     VTR_ASSERT_DEBUG(cost_terms_delta.interposer_cost == 0.);
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
 
@@ -1562,8 +1562,7 @@ bool NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
         // Go through all the pins in the moved block.
         for (ClusterPinId blk_pin : clb_nlist.block_pins(blk_id)) {
             // Abandon the update if the caller no longer needs this evaluation.
-            // The scratch staged so far (ts_nets_to_update_, affected_pins, ...)
-            // is consistent, so a subsequent revert restores everything.
+            // A subsequent revert restores everything.
             if (should_cancel && should_cancel()) {
                 return false;
             }
@@ -1595,7 +1594,7 @@ void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& reco
     // it would copy from the ts_ scratch into the committed data.
     VTR_ASSERT_SAFE_MSG(cube_bb_ && !congestion_modeling_started_,
                         "Commit records only support cube bounding boxes without congestion modeling.");
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     record.clear();
@@ -1622,7 +1621,7 @@ void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& reco
 
 void NetCostHandler::apply_commit_record(const std::vector<t_net_commit_entry>& record) {
     // Mirrors the writing side of update_move_nets(), minus the scratch flag
-    // resets: the applying state has no move in flight, so its flags are already
+    // resets: the applying handler has no move in flight, so its flags are already
     // in their reset state.
     VTR_ASSERT_SAFE_MSG(cube_bb_ && !congestion_modeling_started_,
                         "Commit records only support cube bounding boxes without congestion modeling.");
@@ -1648,7 +1647,7 @@ void NetCostHandler::update_move_nets() {
     // update net cost functions and reset flags.
     // NOTE: extract_commit_record()/apply_commit_record() must be kept consistent
     // with the values committed here.
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;

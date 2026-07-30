@@ -16,8 +16,7 @@
 
 /**
  * @brief Snapshot of the committed timing values a single evaluated move writes
- * for one affected connection (the values commit_td_cost() would copy from the
- * proposed_* arrays).
+ * for one affected connection.
  *
  * Captured with PlacerTimingContext::extract_connection_commit_record() on the
  * state that evaluated a move and replayed on any other state with
