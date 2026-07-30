@@ -63,9 +63,7 @@ if { [file exists $archConfigFile] } {
 if { $archXmlPath eq "" } {
     error "frankenstein synthesis requires an arch xml (VVV)"
 }
-vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir \
-    -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost \
-    -hard-adder-threshold $hardAdderThreshold
+vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold
 set bramMapFile      "$archRulesDir/bram_memory_map.txt"
 set techBramFile     "$archRulesDir/tech_bram.v"
 set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
@@ -189,10 +187,7 @@ opt_clean
 # mul2dsp chops wide $mul into chunks that fit one dsp block. mult_map.v
 # then picks up anything left that still fits an arch multiply mode.
 memory_dff
-techmap -map +/mul2dsp.v -map $mul2dspMapFile \
-    -D DSP_A_MAXWIDTH=$dspMaxWidth -D DSP_B_MAXWIDTH=$dspMaxWidth \
-    -D DSP_A_MINWIDTH=$dspMinWidth -D DSP_B_MINWIDTH=$dspMinWidth \
-    -D DSP_NAME=_dsp_block_
+techmap -map +/mul2dsp.v -map $mul2dspMapFile -D DSP_A_MAXWIDTH=$dspMaxWidth -D DSP_B_MAXWIDTH=$dspMaxWidth -D DSP_A_MINWIDTH=$dspMinWidth -D DSP_B_MINWIDTH=$dspMinWidth -D DSP_NAME=_dsp_block_
 select a:mul2dsp
 setattr -unset mul2dsp
 opt_expr
