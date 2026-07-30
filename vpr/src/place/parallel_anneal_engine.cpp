@@ -352,7 +352,7 @@ void ParallelAnnealEngine::commit_winner_on_master_(const t_speculative_swap& wi
     // and all replicas are kept bit-identical.
     {
         master_blocks_affected_.set_moved_blocks(winner.moved_blocks);
-        t_evaluated_move check = master_evaluator_.apply_and_evaluate(master_blocks_affected_, placer_opts_.place_algorithm);
+        t_swap_cost_deltas check = master_evaluator_.apply_and_evaluate(master_blocks_affected_, placer_opts_.place_algorithm);
         VTR_ASSERT_SAFE_MSG(check.delta_c == winner.eval.delta_c,
                             "Speculative evaluation diverged from the master placement state.");
         master_evaluator_.revert(master_blocks_affected_, timing_driven_);

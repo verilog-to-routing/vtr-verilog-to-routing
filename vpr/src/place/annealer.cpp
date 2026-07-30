@@ -596,11 +596,11 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
         // Apply the move to block_locs and compute the resulting cost deltas.
         // See SwapEvaluator::apply_and_evaluate() for details.
-        t_evaluated_move evaluated_move = swap_evaluator_->apply_and_evaluate(blocks_affected_, place_algorithm);
-        cost_terms_delta = evaluated_move.cost_terms_delta;
-        timing_delta_c = evaluated_move.timing_delta_c;
-        delta_c = evaluated_move.delta_c;
-        const bool update_interposer_costs = evaluated_move.update_interposer_costs;
+        t_swap_cost_deltas deltas = swap_evaluator_->apply_and_evaluate(blocks_affected_, place_algorithm);
+        cost_terms_delta = deltas.cost_terms_delta;
+        timing_delta_c = deltas.timing_delta_c;
+        delta_c = deltas.delta_c;
+        const bool update_interposer_costs = deltas.update_interposer_costs;
 
         if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest

@@ -100,7 +100,7 @@ struct t_speculative_swap {
     /// Accept/reject decision made during evaluation (ABORTED when create_outcome != VALID).
     e_move_result move_result = e_move_result::ABORTED;
     /// Cost deltas computed during evaluation.
-    t_evaluated_move eval;
+    t_swap_cost_deltas eval;
     /// Replayable committed values, captured during evaluation for accepted
     /// attempts only. Lets the winner be committed everywhere with
     /// O(affected nets + pins) copies instead of a re-evaluation.
