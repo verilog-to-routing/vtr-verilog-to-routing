@@ -72,17 +72,67 @@ set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
 set addSubMapFile    "$archRulesDir/add_sub_map.v"
 
 # ----------------------------------------------------------------------------
-# hardblock sweep  murray IV-A
-# opt_merge once then walk opt_clean repeatedly because a carry chain only
-# frees one bit tip per pass. has to run before setattr keep freezes the
-# hardblocks. do not pair this with setundef -undriven  that combo deletes
-# live blackbox datapaths.
+# hardblock sweep / keep / densify helpers
+# ----------------------------------------------------------------------------
+# ordering rules:
+#   1. frankensteinHardblockSweep only while keep is unset so unused cascade
+#      tips can still die (murray IV-A).
+#   2. never call setundef inside the sweep. setundef -undriven + opt_clean
+#      deletes live multiply/adder/ram outputs that look undriven.
+#   3. frankensteinKeepHardblocks must run before any densify setundef/opt_clean
+#      and again after hierarchy -purge_lib which can drop attributes.
 # ----------------------------------------------------------------------------
 proc frankensteinHardblockSweep {{maxIters 64}} {
+    # keep must stay unset here; only opt_merge/opt_clean so unused tips fall
     opt_merge
     for {set i 0} {$i < $maxIters} {incr i} {
         # becomes a no-op once the cascade is gone so overshooting is fine
         opt_clean
+    }
+}
+
+proc frankensteinKeepHardblocks {} {
+    global keepCellTypes
+    # freeze live hardblocks so later setundef/opt_clean cannot drop them
+    setattr -set keep 1 {*}$keepCellTypes
+}
+
+proc frankensteinDensifyLutInputs {{withOptLut 0}} {
+    # vpr crashes when write_blif emits sparse unconn $lut pins. only zero
+    # undriven nets that feed $lut inputs; do not blanket-zero every undriven
+    # net (that hides rtl bugs and can disturb hardblock edges).
+    frankensteinKeepHardblocks
+    select {t:$lut} %ci
+    setundef -zero -undriven
+    select -clear
+    opt_lut_ins
+    if {$withOptLut} {
+        opt_lut
+    }
+    # keep is still set so opt_clean will not delete live hardblock outputs
+    opt_clean
+}
+
+proc frankensteinWarnAsyncFf {} {
+    # k6/vpr has no async ff primitive; adff2dff is required but changes timing
+    set asyncFfDump "frankenstein_async_ff.select"
+    tee -q -o $asyncFfDump select -list {t:$adff} {t:$adffe} {t:$aldff} {t:$aldffe}
+    set asyncFfPresent 0
+    if {[file exists $asyncFfDump]} {
+        set asyncFfFd [open $asyncFfDump r]
+        set asyncFfText [read $asyncFfFd]
+        close $asyncFfFd
+        file delete -force $asyncFfDump
+        foreach asyncFfLine [split $asyncFfText "\n"] {
+            if {[string trim $asyncFfLine] ne ""} {
+                set asyncFfPresent 1
+                break
+            }
+        }
+    }
+    select -clear
+    if {$asyncFfPresent} {
+        log -warning "frankenstein: \$adff/\$adffe/\$aldff/\$aldffe present; k6/vpr has no async ff so adff2dff maps them to sync dff (async reset becomes clocked)."
     }
 }
 
@@ -95,7 +145,10 @@ proc frankensteinHardblockSweep {{maxIters 64}} {
 # same reason  -lib DATA_WIDTH=1 truncates the real rtl instance widths.
 read_verilog -lib $hardblockLibFile
 
-read_verilog -sv -nolatches XXX
+# omit -nolatches so inferred latches stay latches; forcing them away can
+# diverge from rtl that relies on latch inference. write_blif and
+# fix_blif_for_vpr already handle .latch emission for vpr/abc.
+read_verilog -sv XXX
 
 # lock the top before the whitebox lands. with -auto-top a whitebox module
 # can win and the actual circuit gets purged. the -lib ram stubs above are
@@ -129,6 +182,8 @@ flatten
 
 opt -full
 
+# async assert becomes clocked; required because k6/vpr has no async ff
+frankensteinWarnAsyncFf
 techmap -map +/parmys/adff2dff.v
 techmap -map +/parmys/adffe2dff.v
 techmap -map +/parmys/aldff2dff.v
@@ -207,6 +262,7 @@ techmap -map $addSubMapFile
 alumacc
 
 # no $alu to adder map  comparing through a hard adder is a qor loss
+# sweep while keep is unset; do not densify/setundef until after final sweep
 frankensteinHardblockSweep $sweepMaxIters
 
 # ----------------------------------------------------------------------------
@@ -256,7 +312,8 @@ if { $abcOptScript ne "" && $abcMapScript ne "" } {
     abc -luts $lutCost
 }
 
-# abc will not delete blackboxes so sweep anything it left unused
+# abc will not delete blackboxes so sweep anything it left unused.
+# last sweep before keep; densify below must setattr keep first.
 frankensteinHardblockSweep $sweepMaxIters
 
 # snapshot the post-abc per-type counts
@@ -269,18 +326,9 @@ if { "TTT" ne "" } {
 # ----------------------------------------------------------------------------
 # densify then write_blif
 # ----------------------------------------------------------------------------
-# an undriven $lut input becomes an unconn pin in the blif. vpr deletes that
-# net and the remaining sparse pin indices crash the delay calculator.
-# setundef -zero turns them into constants so opt_lut_ins can drop and
-# renumber.
-#
-# setattr keep first otherwise opt_clean treats blackbox outputs as
-# undriven and deletes live datapaths.
-setattr -set keep 1 {*}$keepCellTypes
-setundef -zero -undriven
-opt_lut_ins
-opt_lut
-opt_clean
+# scoped densify: keep hardblocks, zero only undriven $lut input nets, then
+# opt_lut_ins so write_blif does not emit sparse unconn lut pins.
+frankensteinDensifyLutInputs 1
 
 stat
 if { "TTT" ne "" } {
@@ -289,11 +337,8 @@ if { "TTT" ne "" } {
     hierarchy -check -auto-top -purge_lib
 }
 
-# hierarchy -purge_lib can leave fresh undriven lut inputs so densify again
-setattr -set keep 1 {*}$keepCellTypes
-setundef -zero -undriven
-opt_lut_ins
-opt_clean
+# hierarchy -purge_lib can drop keep and leave fresh undriven lut inputs
+frankensteinDensifyLutInputs 0
 
 # the minus form  with a plus yosys emits a second .names gnd and vpr dies
 # on inconsistent block data sizes
