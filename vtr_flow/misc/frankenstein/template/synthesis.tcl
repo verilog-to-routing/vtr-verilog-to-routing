@@ -60,17 +60,7 @@ if { [file exists $archConfigFile] } {
 # rule files  all derived from the arch xml by vtr_arch_rules at runtime.
 # the xml is required  there are no static fallback maps
 # ----------------------------------------------------------------------------
-# fail with a clear message instead of the raw tcl stack when the required
-# token was not substituted
-foreach {knob token} {
-    archSupportDir K6D
-    templateDir    TDIR
-} {
-    if {[set $knob] eq $token} {
-        error "frankenstein synthesis: required token $token was not substituted"
-    }
-}
-if { $archXmlPath eq "" || $archXmlPath eq "VVV" } {
+if { $archXmlPath eq "" } {
     error "frankenstein synthesis requires an arch xml (VVV)"
 }
 vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir \
