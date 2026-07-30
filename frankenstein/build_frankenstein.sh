@@ -47,6 +47,7 @@ if [[ ! -f "${frankensteinSrc}/vtr_arch_rules.cc" ]]; then
     exit 1
 fi
 
+echo ""
 echo "=== step 1: configure + build the plugin ==="
 cmake -S "${wildebeestSrc}" -B "${wildebeestSrc}/build" -DYOSYS_CONFIG="${yosysConfig}"
 cmake --build "${wildebeestSrc}/build" -j"${jobCount}"
@@ -57,6 +58,7 @@ if [[ ! -f "${plugin}" ]]; then
     exit 1
 fi
 
+echo ""
 echo "=== step 2: install plugin + share files into the vtr yosys tree ==="
 cmake --install "${wildebeestSrc}/build"
 
@@ -65,5 +67,3 @@ echo "frankenstein build ok."
 echo "  plugin:      ${plugin}"
 echo "  installed:   ${vtrDir}/build/share/yosys/plugins/wildebeest.so"
 echo ""
-echo "run it through the vtr flow with:"
-echo "  ./vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start frankenstein"
