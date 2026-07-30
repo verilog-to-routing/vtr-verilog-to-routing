@@ -63,17 +63,17 @@ The stage writes `<circuit>.frankenstein.blif`, logs to `frankenstein.out`, and 
 The synthesis template is architecture agnostic. Its tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `K6D`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys.
 
 ## QoR Compare (vanilla_vtr vs frankenstein)
-Runs the eight README circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` through both front-ends:
+Runs the eight README circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` through both front-ends. Each compare run writes a new timestamped csv.
 
 ```shell
-# terminal 1 — launch the compare
+# terminal 1, launch the compare
 python3 frankenstein/scripts/compare_flow.py --jobs 4
 
-# terminal 2 — live status table
+# terminal 2, live status table
 python3 frankenstein/scripts/watch_compare.py
 ```
 
-Useful flags: `--arch <other_arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8 --large-jobs 3`, `--no-rerun`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results.csv`).
+Useful flags: `--arch <other_arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8`, `--no-rerun`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`). 
 
 ## Regression Tests
 The `vtr_reg_basic_frankenstein` suite runs basic_timing circuits (`ch_intrinsics.v`, `diffeq1.v`, `multiclock_reader_writer.v`) on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start frankenstein`.

@@ -2,19 +2,33 @@
 """
 two-way vtr synthesis qor compare: vanilla_vtr (parmys) vs frankenstein.
 
-runs circuits through both front-ends, then the same abc + vpr backend on a
-chosen architecture.
+runs circuits through both front-ends, then the same vpr backend on a chosen architecture.
 
 usage (from the vtr repo root):
   python3 frankenstein/scripts/compare_flow.py
   python3 frankenstein/scripts/compare_flow.py --arch <path/to/arch.xml>
   python3 frankenstein/scripts/compare_flow.py --designs arm_core bgm --flows frankenstein
   python3 frankenstein/scripts/compare_flow.py --jobs 8
+  python3 frankenstein/scripts/compare_flow.py --no-rerun
+  python3 frankenstein/scripts/compare_flow.py --no-clean
+  python3 frankenstein/scripts/compare_flow.py --outdir <dir> --csv <path.csv>
 
 defaults:
   arch      vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
   circuits  vtr_flow/benchmarks/verilog/<name>.v
   outdir    compare_output_<arch_stem>
+  csv       <outdir>/compare_results_<YYYYMMDD_HHMMSS>.csv
+
+flags:
+  --arch <xml>           architecture file
+  --benchmark-dir <dir>  directory holding <design>.v files
+  --designs <names...>   circuit stems (default: eight readme circuits)
+  --flows <names...>     vanilla_vtr and/or frankenstein (aliases: vtr, frank)
+  --jobs <n>             parallel jobs (default 4)
+  --outdir <dir>         output directory
+  --csv <path>           results csv path (default: timestamped under outdir)
+  --no-clean             keep existing run dirs
+  --no-rerun             skip runs that already have a .success marker
 
 watch progress in a second terminal:
   python3 frankenstein/scripts/watch_compare.py --dir <outdir>
@@ -30,12 +44,9 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
-
-# ---------------------------------------------------------------------------
-# paths
-# ---------------------------------------------------------------------------
 
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
@@ -68,7 +79,6 @@ flowAliases = {
     "frank": "frankenstein",
 }
 
-# classic placer + fixed channel width (matches vtr_reg_qor_chain methodology)
 vprArgs = (
     "--pack",
     "--place",
@@ -83,6 +93,7 @@ vprArgs = (
 vprBramBlockTypes = ("memory", "bram_multimode")
 vprDspBlockTypes = ("mult_36", "mae", "dsp")
 
+# only metrics that have a reliable source in the stage logs / blifs / vpr.out
 csvFields = (
     "design",
     "flow",
@@ -92,42 +103,47 @@ csvFields = (
     "synth_wall_sec",
     "abc_wall_sec",
     "vpr_wall_sec",
+    "synthesis_sec",
     "synth_luts",
     "abc_luts",
     "packed_luts",
-    "synth_ff",
-    "abc_ff",
-    "synth_mem",
-    "abc_mem",
-    "synth_dsp",
-    "abc_dsp",
-    "synth_adder",
-    "abc_adder",
-    "packed_luts_2plus",
     "num_clb",
-    "num_ff",
     "num_memory",
     "num_dsp",
     "num_adder",
+    "num_io_in",
+    "num_io_out",
     "total_wire_length",
     "crit_path_delay_ns",
     "fmax_mhz",
     "worst_slack_ns",
-    "vpr_peak_mem_mb",
-    "pack_time_sec",
-    "place_time_sec",
-    "route_time_sec",
-    "vpr_runtime_sec",
     "return_code",
 )
 
-# ---------------------------------------------------------------------------
-# helpers
-# ---------------------------------------------------------------------------
+# status line keys consumed by watch_compare.py
+statusKeys = (
+    ("wall", "wall_time_sec"),
+    ("s_s", "synth_wall_sec"),
+    ("a_s", "abc_wall_sec"),
+    ("v_s", "vpr_wall_sec"),
+    ("synthesis", "synthesis_sec"),
+    ("s_luts", "synth_luts"),
+    ("a_luts", "abc_luts"),
+    ("p_luts", "packed_luts"),
+    ("mem", "num_memory"),
+    ("dsp", "num_dsp"),
+    ("adder", "num_adder"),
+    ("io_in", "num_io_in"),
+    ("io_out", "num_io_out"),
+    ("clb", "num_clb"),
+    ("wl", "total_wire_length"),
+    ("cpd", "crit_path_delay_ns"),
+    ("fmax", "fmax_mhz"),
+    ("wns", "worst_slack_ns"),
+)
 
 
 def ensurePlScriptsExecutable() -> None:
-    # abc.py calls blackbox_latches.pl every run; git sometimes strips +x
     for plScript in (vtrFlow / "scripts").glob("*.pl"):
         try:
             plScript.chmod(plScript.stat().st_mode | 0o111)
@@ -156,27 +172,7 @@ def checkPrerequisites(needFrankenstein: bool, archFile: Path, benchDir: Path) -
         raise SystemExit(1)
 
 
-def parsePackedLutCounts(vprText: str) -> Dict[str, str]:
-    metrics = {"packed_luts": "", "packed_luts_2plus": ""}
-    match = re.search(
-        r"Absorbed\s+(\d+)\s+LUT buffers.*?^\s*\.names\s*:?\s*(\d+)\s*$"
-        r"((?:\s+\d+-LUT:\s*\d+\s*$)*)",
-        vprText,
-        re.M | re.S,
-    )
-    if not match:
-        return metrics
-    metrics["packed_luts"] = match.group(2)
-    lutDist = {
-        int(m.group(1)): int(m.group(2))
-        for m in re.finditer(r"(\d+)-LUT:\s*(\d+)", match.group(3))
-    }
-    metrics["packed_luts_2plus"] = str(sum(v for k, v in lutDist.items() if k >= 2))
-    return metrics
-
-
 def countBlifNames(blifPath: Path) -> str:
-    # lut count is the number of .names blocks in the blif netlist
     if not blifPath.is_file():
         return ""
     try:
@@ -190,95 +186,55 @@ def countBlifNames(blifPath: Path) -> str:
         return ""
 
 
-def parseYosysStat(statPath: Path) -> Dict[str, str]:
-    # pull the per-type cell counts out of a yosys `stat` dump. keys match the
-    # compare split: ff, dsp (multiply), adder, mem (rams), clb is not a yosys
-    # concept so it stays unset until vpr.
-    cellPatterns = {
-        "ff": ("$dff", "$dffe", "$sdff", "$sdffe", "$adff", "$adffe", "$dffsr", "$dlatch", "dff"),
-        "dsp": ("multiply", "$mul", "_dsp_block_"),
-        "adder": ("adder", "$add", "$sub"),
-        "mem": ("single_port_ram", "dual_port_ram", "$mem", "memory"),
-    }
-    counts = {"ff": 0, "dsp": 0, "adder": 0, "mem": 0}
-    if not statPath.is_file():
-        return {}
-    try:
-        text = statPath.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return {}
-    for line in text.splitlines():
-        match = re.match(r"\s*(\S+)\s+(\d+)\s*$", line)
-        if not match:
-            continue
-        cellType, number = match.group(1), int(match.group(2))
-        for key, names in cellPatterns.items():
-            if any(cellType == n or cellType.lstrip("$\\") == n.lstrip("$\\") for n in names):
-                counts[key] += number
-    return {key: str(value) for key, value in counts.items() if value > 0}
-
-
 def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
-    # synth = pre-abc frankenstein/parmys blif, abc = post-abc blif. packed
-    # comes from vpr in parseVprQor. try the flow-prefixed (0_) and plain names
     counts = {"synth_luts": "", "abc_luts": ""}
-    synthCandidates = [
+    for path in (
         tempDir / f"{circuitStem}.frankenstein.blif",
         tempDir / f"{circuitStem}.parmys.blif",
         tempDir / f"{circuitStem}.odin.blif",
-    ]
-    abcCandidates = [
-        tempDir / f"{circuitStem}.abc.blif",
-        tempDir / f"0_{circuitStem}.abc.blif",
-    ]
-    for path in synthCandidates:
+    ):
         if path.is_file():
             counts["synth_luts"] = countBlifNames(path)
             break
-    for path in abcCandidates:
+    for path in (
+        tempDir / f"{circuitStem}.abc.blif",
+        tempDir / f"0_{circuitStem}.abc.blif",
+    ):
         if path.is_file():
             counts["abc_luts"] = countBlifNames(path)
             break
-
-    # overlay the per-type counts the template's teeo stat dumps captured.
-    # with abc in-yosys the frankenstein leg has both stat files; the vanilla
-    # leg has neither, so its synth/abc splits stay from the blifs above.
-    for stage, statName in (
-        ("synth", "frankenstein_synth.stat"),
-        ("abc", "frankenstein_abc.stat"),
-    ):
-        for key, value in parseYosysStat(tempDir / statName).items():
-            counts[f"{stage}_{key}"] = value
     return counts
 
 
-def stageWallSeconds(logPath: Path) -> Optional[float]:
-    # the last `time -v` elapsed line in the stage log is that stage's wall clock
-    if not logPath.is_file():
-        return None
-    match = None
-    try:
-        with open(logPath, encoding="utf-8", errors="replace") as logFile:
-            for line in logFile:
-                found = re.search(r"Elapsed \(wall clock\) time.*?:\s*(\S+)", line)
-                if found:
-                    match = found
-    except OSError:
-        return None
-    if match is None:
-        return None
-    parts = match.group(1).split(":")
-    try:
-        seconds = float(parts[-1])
-        for multiplier, part in zip((60, 3600), reversed(parts[:-1])):
-            seconds += float(part) * multiplier
-        return seconds
-    except ValueError:
-        return None
+def parseTimeSeconds(text: str) -> Optional[float]:
+    # prefer gnu time -v wall clock; fall back to user time (vtr parse_config style)
+    wallMatch = None
+    userMatch = None
+    for line in text.splitlines():
+        found = re.search(r"Elapsed \(wall clock\) time.*?:\s*(\S+)", line)
+        if found:
+            wallMatch = found.group(1)
+        found = re.search(r"User time \(seconds\):\s*([0-9.]+)", line)
+        if found:
+            userMatch = found.group(1)
+    if wallMatch is not None:
+        parts = wallMatch.split(":")
+        try:
+            seconds = float(parts[-1])
+            for multiplier, part in zip((60, 3600), reversed(parts[:-1])):
+                seconds += float(part) * multiplier
+            return seconds
+        except ValueError:
+            pass
+    if userMatch is not None:
+        try:
+            return float(userMatch)
+        except ValueError:
+            return None
+    return None
 
 
-def stageWallTimes(tempDir: Path) -> Dict[str, str]:
-    # synth = the front-end yosys run, abc = the vtr abc stage, vpr = pack/place/route
+def stageWallTimes(tempDir: Path, vprRuntimeSec: str = "") -> Dict[str, str]:
     times = {"synth_wall_sec": "", "abc_wall_sec": "", "vpr_wall_sec": ""}
     for key, names in (
         ("synth_wall_sec", ("frankenstein.out", "parmys.out", "odin.out")),
@@ -286,34 +242,60 @@ def stageWallTimes(tempDir: Path) -> Dict[str, str]:
         ("vpr_wall_sec", ("vpr.out",)),
     ):
         for name in names:
-            value = stageWallSeconds(tempDir / name)
+            path = tempDir / name
+            if not path.is_file():
+                continue
+            try:
+                value = parseTimeSeconds(path.read_text(encoding="utf-8", errors="replace"))
+            except OSError:
+                value = None
             if value is not None:
                 times[key] = f"{value:.2f}"
                 break
+    # vpr always prints its own total runtime even without time -v
+    if not times["vpr_wall_sec"] and vprRuntimeSec:
+        times["vpr_wall_sec"] = vprRuntimeSec
     return times
+
+
+def fairSynthesisSec(flowName: str, synthWall: str, abcWall: str) -> str:
+    # apples-to-apples synthesis time:
+    # frankenstein.out already includes in-yosys abc, so use synth alone.
+    # vanilla_vtr is parmys + a separate abc stage, so sum both.
+    try:
+        synth = float(synthWall) if synthWall else None
+    except ValueError:
+        synth = None
+    try:
+        abc = float(abcWall) if abcWall else None
+    except ValueError:
+        abc = None
+    if flowName == "frankenstein":
+        return f"{synth:.2f}" if synth is not None else ""
+    if flowName == "vanilla_vtr":
+        if synth is None and abc is None:
+            return ""
+        return f"{(synth or 0.0) + (abc or 0.0):.2f}"
+    return f"{synth:.2f}" if synth is not None else ""
+
+
+def parsePackedLuts(vprText: str) -> str:
+    match = re.search(
+        r"Absorbed\s+\d+\s+LUT buffers.*?^\s*\.names\s*:?\s*(\d+)\s*$",
+        vprText,
+        re.M | re.S,
+    )
+    return match.group(1) if match else ""
 
 
 def parseVprQor(tempDir: Path) -> Dict[str, str]:
     vprOut = tempDir / "vpr.out"
-    metrics = {
-        "vpr_status": "missing",
-        "num_clb": "",
-        "num_ff": "",
-        "num_memory": "",
-        "num_dsp": "",
-        "num_adder": "",
-        "packed_luts": "",
-        "packed_luts_2plus": "",
-        "total_wire_length": "",
-        "crit_path_delay_ns": "",
-        "fmax_mhz": "",
-        "worst_slack_ns": "",
-        "vpr_peak_mem_mb": "",
-        "pack_time_sec": "",
-        "place_time_sec": "",
-        "route_time_sec": "",
-        "vpr_runtime_sec": "",
-    }
+    metrics = {field: "" for field in csvFields if field not in (
+        "design", "flow", "success", "wall_time_sec", "return_code",
+        "synth_wall_sec", "abc_wall_sec", "vpr_wall_sec",
+        "synth_luts", "abc_luts",
+    )}
+    metrics["vpr_status"] = "missing"
     if not vprOut.is_file():
         return metrics
 
@@ -332,10 +314,15 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
         metrics["num_clb"] = str(blockCounts["clb"])
     metrics["num_memory"] = str(sum(blockCounts.get(b, 0) for b in vprBramBlockTypes))
     metrics["num_dsp"] = str(sum(blockCounts.get(b, 0) for b in vprDspBlockTypes))
-    if "ff" in blockCounts:
-        metrics["num_ff"] = str(blockCounts["ff"])
 
-    metrics.update(parsePackedLutCounts(text))
+    ioIn = re.search(r"Netlist inputs pins:\s*(\d+)", text)
+    if ioIn:
+        metrics["num_io_in"] = ioIn.group(1)
+    ioOut = re.search(r"Netlist output pins:\s*(\d+)", text)
+    if ioOut:
+        metrics["num_io_out"] = ioOut.group(1)
+
+    metrics["packed_luts"] = parsePackedLuts(text)
 
     adderPbMatch = re.search(r"^\s+adder\s+:\s*(\d+)", text, re.MULTILINE)
     if adderPbMatch:
@@ -347,26 +334,12 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
     if wnsMatch:
         metrics["worst_slack_ns"] = wnsMatch.group(1)
 
-    memMatch = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", text)
-    if memMatch:
-        metrics["vpr_peak_mem_mb"] = f"{int(memMatch.group(1)) / 1024:.1f}"
-
     wireMatch = re.search(r"Total wirelength:\s*(\d+)", text)
     if wireMatch:
         metrics["total_wire_length"] = wireMatch.group(1)
 
     runtimeMatch = re.search(r"The entire flow of VPR took ([0-9.]+) seconds", text)
-    if runtimeMatch:
-        metrics["vpr_runtime_sec"] = runtimeMatch.group(1)
-    packMatch = re.search(r"# Packing took ([0-9.]+) seconds", text)
-    if packMatch:
-        metrics["pack_time_sec"] = packMatch.group(1)
-    placeMatch = re.search(r"# Placement took ([0-9.]+) seconds", text)
-    if placeMatch:
-        metrics["place_time_sec"] = placeMatch.group(1)
-    routeMatch = re.search(r"# Routing took ([0-9.]+) seconds", text)
-    if routeMatch:
-        metrics["route_time_sec"] = routeMatch.group(1)
+    vprRuntime = runtimeMatch.group(1) if runtimeMatch else ""
 
     critFile = tempDir / "vpr.crit_path.out"
     critText = (
@@ -385,6 +358,8 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
             metrics["fmax_mhz"] = critMatch.group(2)
         elif cpd > 0:
             metrics["fmax_mhz"] = f"{1000.0 / cpd:.2f}"
+
+    metrics["_vpr_runtime_sec"] = vprRuntime
     return metrics
 
 
@@ -399,27 +374,22 @@ def writeStatus(outDir: Path, runLabel: str, summaryLine: str) -> None:
 
 def formatSummary(runLabel: str, row: Dict) -> str:
     status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
-    return (
-        f"{runLabel}: {status} wall={row.get('wall_time_sec', '')}s "
-        f"s_s={row.get('synth_wall_sec', '')} a_s={row.get('abc_wall_sec', '')} "
-        f"v_s={row.get('vpr_wall_sec', '')} "
-        f"s_luts={row.get('synth_luts', '')} a_luts={row.get('abc_luts', '')} "
-        f"p_luts={row.get('packed_luts', '')} "
-        f"s_ff={row.get('synth_ff', '')} a_ff={row.get('abc_ff', '')} ff={row.get('num_ff', '')} "
-        f"s_mem={row.get('synth_mem', '')} a_mem={row.get('abc_mem', '')} mem={row.get('num_memory', '')} "
-        f"s_dsp={row.get('synth_dsp', '')} a_dsp={row.get('abc_dsp', '')} dsp={row.get('num_dsp', '')} "
-        f"s_adder={row.get('synth_adder', '')} a_adder={row.get('abc_adder', '')} adder={row.get('num_adder', '')} "
-        f"clb={row.get('num_clb', '')} "
-        f"wl={row.get('total_wire_length', '')} "
-        f"cpd={row.get('crit_path_delay_ns', '')}ns "
-        f"fmax={row.get('fmax_mhz', '')}MHz "
-        f"wns={row.get('worst_slack_ns', '')}ns rc={row.get('return_code', '')}"
-    )
-
-
-# ---------------------------------------------------------------------------
-# one run
-# ---------------------------------------------------------------------------
+    parts = [f"{runLabel}: {status}"]
+    for shortKey, field in statusKeys:
+        value = row.get(field, "")
+        if value == "" or value is None:
+            continue
+        if shortKey == "cpd":
+            parts.append(f"{shortKey}={value}ns")
+        elif shortKey == "fmax":
+            parts.append(f"{shortKey}={value}MHz")
+        elif shortKey == "wns":
+            parts.append(f"{shortKey}={value}ns")
+        elif shortKey == "wall":
+            parts.append(f"{shortKey}={value}s")
+        else:
+            parts.append(f"{shortKey}={value}")
+    return " ".join(parts)
 
 
 def runOne(task: Tuple) -> Dict:
@@ -462,14 +432,13 @@ def runOne(task: Tuple) -> Dict:
     tempDir.mkdir(parents=True, exist_ok=True)
     logPath.parent.mkdir(parents=True, exist_ok=True)
 
-    startStage = flows[flowName]["start"]
     cmd = [
         sys.executable,
         str(runVtrFlow.resolve()),
         str(circuitPath.resolve()),
         str(archFile.resolve()),
         "-start",
-        startStage,
+        flows[flowName]["start"],
         "-temp_dir",
         str(tempDir),
         "-name",
@@ -492,8 +461,12 @@ def runOne(task: Tuple) -> Dict:
     wallSec = f"{time.perf_counter() - startTime:.2f}"
 
     qor = parseVprQor(tempDir)
+    vprRuntime = qor.pop("_vpr_runtime_sec", "")
     qor.update(stageLutCounts(tempDir, design))
-    qor.update(stageWallTimes(tempDir))
+    qor.update(stageWallTimes(tempDir, vprRuntime))
+    qor["synthesis_sec"] = fairSynthesisSec(
+        flowName, qor.get("synth_wall_sec", ""), qor.get("abc_wall_sec", "")
+    )
     success = result.returncode == 0 and qor["vpr_status"] == "ok"
     row = {
         "design": design,
@@ -515,28 +488,13 @@ def runOne(task: Tuple) -> Dict:
     return row
 
 
-# ---------------------------------------------------------------------------
-# csv / orchestration
-# ---------------------------------------------------------------------------
-
-
 def writeCsv(csvPath: Path, rows: List[Dict]) -> None:
-    merged: Dict[Tuple[str, str], Dict] = {}
-    if csvPath.is_file():
-        with open(csvPath, newline="", encoding="utf-8") as existing:
-            for oldRow in csv.DictReader(existing):
-                key = (oldRow.get("design", ""), oldRow.get("flow", ""))
-                merged[key] = dict(oldRow)
-    for row in rows:
-        key = (str(row.get("design", "")), str(row.get("flow", "")))
-        merged[key] = {field: row.get(field, "") for field in csvFields}
-
     csvPath.parent.mkdir(parents=True, exist_ok=True)
     with open(csvPath, "w", newline="", encoding="utf-8") as outFile:
-        writer = csv.DictWriter(outFile, fieldnames=csvFields)
+        writer = csv.DictWriter(outFile, fieldnames=csvFields, extrasaction="ignore")
         writer.writeheader()
-        for key in sorted(merged):
-            writer.writerow(merged[key])
+        for row in sorted(rows, key=lambda r: (r.get("design", ""), r.get("flow", ""))):
+            writer.writerow({field: row.get(field, "") for field in csvFields})
 
 
 def normalizeFlows(names: Optional[Sequence[str]]) -> List[str]:
@@ -579,55 +537,34 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="vanilla_vtr vs frankenstein vtr qor compare"
     )
-    parser.add_argument(
-        "--arch",
-        default=defaultArchRel,
-        help=f"architecture xml (default {defaultArchRel})",
-    )
-    parser.add_argument(
-        "--benchmark-dir",
-        default=defaultBenchRel,
-        help=f"directory holding <design>.v files (default {defaultBenchRel})",
-    )
-    parser.add_argument(
-        "--designs",
-        nargs="+",
-        default=None,
-        help=f"circuit stems (default: {' '.join(defaultDesigns)})",
-    )
-    parser.add_argument(
-        "--flows",
-        nargs="+",
-        default=None,
-        help="vanilla_vtr and/or frankenstein (aliases: vtr, frank)",
-    )
-    parser.add_argument("--jobs", type=int, default=4, help="parallel jobs")
-    parser.add_argument(
-        "--outdir",
-        default=None,
-        help="output directory (default compare_output_<arch_stem>)",
-    )
+    parser.add_argument("--arch", default=defaultArchRel)
+    parser.add_argument("--benchmark-dir", default=defaultBenchRel)
+    parser.add_argument("--designs", nargs="+", default=None)
+    parser.add_argument("--flows", nargs="+", default=None)
+    parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--outdir", default=None)
     parser.add_argument(
         "--csv",
         default=None,
-        help="results csv path (default <outdir>/compare_results.csv)",
+        help="results csv path (default <outdir>/compare_results_<timestamp>.csv)",
     )
-    parser.add_argument("--no-clean", action="store_true", help="keep existing run dirs")
-    parser.add_argument(
-        "--no-rerun", action="store_true", help="skip runs with a .success marker"
-    )
+    parser.add_argument("--no-clean", action="store_true")
+    parser.add_argument("--no-rerun", action="store_true")
     args = parser.parse_args(argv)
 
     archFile = resolvePath(args.arch, vtrRoot)
     benchDir = resolvePath(args.benchmark_dir, vtrRoot)
     designs = normalizeDesigns(args.designs)
     selectedFlows = normalizeFlows(args.flows)
-
     jobs = max(1, args.jobs)
 
-    defaultOutDirName = f"compare_output_{archFile.stem}"
-    outDir = resolvePath(args.outdir or defaultOutDirName, vtrRoot)
-    csvPath = resolvePath(args.csv, vtrRoot) if args.csv else (outDir / "compare_results.csv")
+    outDir = resolvePath(args.outdir or f"compare_output_{archFile.stem}", vtrRoot)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    csvPath = (
+        resolvePath(args.csv, vtrRoot)
+        if args.csv
+        else (outDir / f"compare_results_{stamp}.csv")
+    )
 
     checkPrerequisites("frankenstein" in selectedFlows, archFile, benchDir)
     ensurePlScriptsExecutable()
@@ -657,11 +594,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"watch:   python3 frankenstein/scripts/watch_compare.py --dir {outDir}")
     print()
 
-    nDesigns = len({t[0] for t in tasks})
-    nFlows = len({t[1] for t in tasks})
-    print(f"launching {nDesigns} designs x {nFlows} flows = {len(tasks)} runs @ {jobs} jobs")
+    print(
+        f"launching {len(designs)} designs x {len(selectedFlows)} flows "
+        f"= {len(tasks)} runs @ {jobs} jobs"
+    )
     rows = runPool(tasks, jobs)
-
     writeCsv(csvPath, rows)
 
     ok = sum(1 for row in rows if row.get("success"))

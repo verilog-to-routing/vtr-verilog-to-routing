@@ -10,6 +10,11 @@ usage:
   python3 frankenstein/scripts/watch_compare.py --dir compare_output_k6_frac_N10_frac_chain_mem32K_40nm
   python3 frankenstein/scripts/watch_compare.py --interval 2
   python3 frankenstein/scripts/watch_compare.py --once
+
+flags:
+  --dir <outdir>     compare output directory (default: newest compare_output*)
+  --interval <sec>   refresh period (default 1.0)
+  --once             print once and exit
 """
 
 from __future__ import annotations
@@ -21,80 +26,121 @@ import sys
 import time
 from pathlib import Path
 
+try:
+    from prettytable import PrettyTable
+except ImportError:
+    print("prettytable required: pip install prettytable", file=sys.stderr)
+    raise SystemExit(1)
+
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
 defaultOutDirName = "compare_output_k6_frac_N10_frac_chain_mem32K_40nm"
 
-fmaxRe = re.compile(r"fmax=([0-9.]+)MHz")
-clbRe = re.compile(r"clb=(\d+)")
-wallRe = re.compile(r"wall=([0-9.]+)s")
-wnsRe = re.compile(r"wns=([0-9.-]+)ns")
-synthWallRe = re.compile(r"s_s=([0-9.]+)")
-abcWallRe = re.compile(r"a_s=([0-9.]+)")
-vprWallRe = re.compile(r"v_s=([0-9.]+)")
-synthLutsRe = re.compile(r"s_luts=(\d+)")
-abcLutsRe = re.compile(r"a_luts=(\d+)")
-packedLutsRe = re.compile(r"(?:p_luts|packed_luts)=(\d+)")
-synthFfRe = re.compile(r"s_ff=(\d+)")
-abcFfRe = re.compile(r"a_ff=(\d+)")
-ffRe = re.compile(r"\bff=(\d+)")
-synthMemRe = re.compile(r"s_mem=(\d+)")
-abcMemRe = re.compile(r"a_mem=(\d+)")
-memRe = re.compile(r"(?:packed_brams|mem)=(\d+)")
-synthDspRe = re.compile(r"s_dsp=(\d+)")
-abcDspRe = re.compile(r"a_dsp=(\d+)")
-dspRe = re.compile(r"(?:packed_dsps|dsp)=(\d+)")
-synthAdderRe = re.compile(r"s_adder=(\d+)")
-abcAdderRe = re.compile(r"a_adder=(\d+)")
-adderRe = re.compile(r"(?:packed_adders|adder)=(\d+)")
-wlRe = re.compile(r"wl=(\d+)")
-cpdRe = re.compile(r"cpd=([0-9.]+)ns")
+# status-line keys written by compare_flow.formatSummary
+statusFields = (
+    "wall",
+    "s_s",
+    "a_s",
+    "v_s",
+    "synthesis",
+    "s_luts",
+    "a_luts",
+    "p_luts",
+    "mem",
+    "dsp",
+    "adder",
+    "io_in",
+    "io_out",
+    "clb",
+    "wl",
+    "cpd",
+    "fmax",
+    "wns",
+)
 
+# live-run phase hints (newest matching log line wins). labels are what the
+# status column shows.
+#
+# vpr prints these via vtr::ScopedStartFinishTimer:
+#   start:  "Packing" / "SA Placement" / "Routing"
+#   finish: "Packing took …" / "SA Placement took …" / "Routing took …"
+# packing also logs: Begin packing '…'.
 phasePatterns = [
-    (re.compile(r"# Routing took|routing took", re.IGNORECASE), "route:done"),
-    (re.compile(r"# Placement took|placement took", re.IGNORECASE), "place:done"),
-    (re.compile(r"# Packing took|packing took", re.IGNORECASE), "pack:done"),
-    (re.compile(r"Routing|Begin routing|Route:", re.IGNORECASE), "routing"),
-    (re.compile(r"Placement|Begin placement|Place:", re.IGNORECASE), "placing"),
-    (re.compile(r"Packing|Begin packing|Pack:", re.IGNORECASE), "packing"),
+    (re.compile(r"(?:^|#\s*)Routing took\b", re.IGNORECASE), "route done"),
+    (re.compile(r"(?:^|#\s*)SA Placement took\b|(?:^|#\s*)Placement took\b", re.IGNORECASE), "place done"),
+    (re.compile(r"(?:^|#\s*)Packing took\b", re.IGNORECASE), "pack done"),
+    (re.compile(r"(?:^|#\s*)Routing\s*$", re.IGNORECASE), "routing"),
+    (re.compile(r"(?:^|#\s*)SA Placement\s*$|(?:^|#\s*)Placement\s*$", re.IGNORECASE), "placing"),
+    (re.compile(r"(?:^|#\s*)Packing\s*$|Begin packing\b", re.IGNORECASE), "packing"),
     (re.compile(r"Executing ABC|abc -luts", re.IGNORECASE), "abc"),
-    (re.compile(r"frankenstein|vtr_arch_rules", re.IGNORECASE), "synth:frankenstein"),
-    (re.compile(r"parmys|Executing PARMYS", re.IGNORECASE), "synth:parmys"),
-    (re.compile(r"Yosys [0-9]|Executing.*yosys", re.IGNORECASE), "synth:yosys"),
+    (re.compile(r"frankenstein|vtr_arch_rules|parmys|Executing PARMYS|Yosys [0-9]|Executing.*yosys", re.IGNORECASE), "synth"),
 ]
+
+# display text -> ansi color for live phases
+phaseColors = {
+    "started": "\033[93m",
+    "synth": "\033[94m",
+    "abc": "\033[96m",
+    "packing": "\033[93m",
+    "pack done": "\033[93m",
+    "placing": "\033[93m",
+    "place done": "\033[93m",
+    "routing": "\033[93m",
+    "route done": "\033[93m",
+}
+
+
+# (header, status key, higher_is_better)
+# frontend s = raw front-end stage log only (parmys.out / frankenstein.out)
+# synthesis  = fair compare: frankenstein synth; vanilla synth+abc
+geomeanColumns = (
+    ("frontend", "s_s", False),
+    ("synthesis", "synthesis", False),
+    ("vpr time", "v_s", False),
+    ("wall time", "wall", False),
+    ("LUTs", "p_luts", False),
+    ("BRAMs", "mem", False),
+    ("DSPs", "dsp", False),
+    ("Adders", "adder", False),
+    ("CLBs", "clb", False),
+    ("IO in", "io_in", False),
+    ("Wirelen", "wl", False),
+    ("CPD ns", "cpd", False),
+    ("Fmax MHz", "fmax", True),
+)
 
 
 def inferPhase(lines):
+    # return None when nothing matches so the caller can keep the last known phase
     for line in reversed(lines[-200:]):
         for pattern, label in phasePatterns:
             if pattern.search(line):
                 return label
-    return "running"
+    return None
 
 
 def livePhaseFromRunDir(runDir: Path):
     if not runDir.is_dir():
         return None
-    candidates = []
-    for name in (
-        "frankenstein.out",
-        "parmys.out",
-        "vpr.out",
-        "abc.out",
-        "abc0.out",
-        "nohup.out",
-    ):
-        path = runDir / name
-        if path.is_file():
-            candidates.append(path)
-    # also pick up the outer log if the compare wrote one under logs/
+    candidates = [
+        runDir / name
+        for name in (
+            "frankenstein.out",
+            "parmys.out",
+            "vpr.out",
+            "abc.out",
+            "abc0.out",
+            "nohup.out",
+        )
+        if (runDir / name).is_file()
+    ]
     if not candidates:
-        return "starting"
+        return "started"
     newest = max(candidates, key=lambda path: path.stat().st_mtime)
     try:
         lines = newest.read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
-        return "running"
+        return None
     return inferPhase(lines)
 
 
@@ -103,44 +149,22 @@ def parseStatusLine(label: str, line: str):
     statusMatch = re.match(r"\S+:\s+(\S+)", line)
     if statusMatch:
         result["status"] = statusMatch.group(1)
-        # FAIL (reason) spans tokens; capture the rest until wall=
         if result["status"].startswith("FAIL"):
             failMatch = re.match(r"\S+:\s+(FAIL(?:\s*\([^)]*\))?)", line)
             if failMatch:
                 result["status"] = failMatch.group(1)
-    for key, pattern in (
-        ("wall", wallRe),
-        ("synth_wall", synthWallRe),
-        ("abc_wall", abcWallRe),
-        ("vpr_wall", vprWallRe),
-        ("clb", clbRe),
-        ("fmax", fmaxRe),
-        ("wns", wnsRe),
-        ("synth_luts", synthLutsRe),
-        ("abc_luts", abcLutsRe),
-        ("packed_luts", packedLutsRe),
-        ("synth_ff", synthFfRe),
-        ("abc_ff", abcFfRe),
-        ("ff", ffRe),
-        ("synth_mem", synthMemRe),
-        ("abc_mem", abcMemRe),
-        ("mem", memRe),
-        ("synth_dsp", synthDspRe),
-        ("abc_dsp", abcDspRe),
-        ("dsp", dspRe),
-        ("synth_adder", synthAdderRe),
-        ("abc_adder", abcAdderRe),
-        ("adder", adderRe),
-        ("wl", wlRe),
-        ("cpd", cpdRe),
-    ):
-        match = pattern.search(line)
+    for key in statusFields:
+        match = re.search(rf"\b{re.escape(key)}=([0-9.eE+-]+)", line)
         if match:
             result[key] = match.group(1)
     return result
 
 
-def scanStatus(targetDir: Path):
+def scanStatus(targetDir: Path, lastPhases=None):
+    # lastPhases remembers the last known live phase per label so an unknown
+    # log scrape does not snap the status back to a generic fallback
+    if lastPhases is None:
+        lastPhases = {}
     statusDir = targetDir / "status"
     runsDir = targetDir / "runs"
     manifest = statusDir / "manifest.txt"
@@ -161,110 +185,112 @@ def scanStatus(targetDir: Path):
         statusFile = statusDir / f"{label}.txt"
         if statusFile.is_file():
             line = statusFile.read_text(encoding="utf-8", errors="replace").strip()
-            rows.append(parseStatusLine(label, line))
+            rows.append(enrichSynthesis(parseStatusLine(label, line)))
+            lastPhases.pop(label, None)
             continue
         runDir = runsDir / label
         if runDir.is_dir():
             phase = livePhaseFromRunDir(runDir)
+            if phase is None:
+                phase = lastPhases.get(label, "started")
+            else:
+                lastPhases[label] = phase
             rows.append({"label": label, "status": f"running:{phase}"})
         else:
             rows.append({"label": label, "status": "pending"})
+            lastPhases.pop(label, None)
     return rows
 
 
+def sap(row, *keys):
+    return "/".join(str(row.get(k) or "-") for k in keys)
+
+
+def enrichSynthesis(row):
+    # fair synthesis time if missing from older status lines:
+    # frankenstein = frontend only (includes in-yosys abc);
+    # vanilla_vtr = frontend + abc stage
+    if row.get("synthesis"):
+        return row
+    flow = flowOf(row.get("label", ""))
+    s = numeric(row.get("s_s"))
+    a = numeric(row.get("a_s"))
+    if flow == "frankenstein" and s is not None:
+        row["synthesis"] = f"{s:.2f}"
+    elif flow == "vanilla_vtr" and (s is not None or a is not None):
+        row["synthesis"] = f"{(s or 0.0) + (a or 0.0):.2f}"
+    return row
+
+
+def coloredStatus(row):
+    # finished / queued
+    #   ok green, fail red, pending grey, cached cyan
+    # live phases (no "running (…)" wrapper — the phase is the status)
+    #   synth blue, abc cyan, pack/place/route yellow
+    status = row.get("status", "")
+    if status == "ok":
+        text, color = "ok", "\033[92m"
+    elif status.startswith("FAIL") or status == "fail":
+        text, color = status, "\033[91m"
+    elif status == "pending":
+        text, color = "pending", "\033[90m"
+    elif status == "cached":
+        text, color = "cached", "\033[96m"
+    elif status.startswith("running:"):
+        phase = status.split(":", 1)[1].strip() or "started"
+        if phase in ("running", "in progress", "starting", ""):
+            phase = "started"
+        text = phase
+        color = phaseColors.get(phase, "\033[93m")
+    elif status == "running":
+        text, color = "started", "\033[93m"
+    else:
+        # unknown token still gets a color so nothing is plain white
+        text, color = status or "started", "\033[93m"
+    return f"{color}{text}\033[0m"
+
+
 def renderTable(rows, title):
-    # metrics with a real synth/abc/packed split get one s/a/p column each.
-    # `·` means that stage has no value for the metric. counts come from the
-    # template's teeo stat dumps (synth and post-abc) and vpr (packed); time
-    # is the per-stage wall clock.
-    timeKeys = ("synth_wall", "abc_wall", "vpr_wall")
-    sapGroups = (
-        ("time", timeKeys, 18),
-        ("lut", ("synth_luts", "abc_luts", "packed_luts"), 18),
-        ("ff", ("synth_ff", "abc_ff", "ff"), 18),
-        ("bram", ("synth_mem", "abc_mem", "mem"), 18),
-        ("dsp", ("synth_dsp", "abc_dsp", "dsp"), 18),
-        ("adder", ("synth_adder", "abc_adder", "adder"), 18),
-    )
-    # metrics that only exist packed (vpr) stay single plain columns.
-    tailKeys = ("clb", "wl", "cpd", "fmax", "wns")
-    tailHeaders = ("clbs", "wirelen", "cpd ns", "fmax MHz", "wns ns")
-    tailWidths = (6, 10, 8, 9, 8)
-    labelWidth, statusWidth, wallWidth = 36, 22, 8
-
-    def sapCell(row, keys):
-        return "/".join(str(row.get(k) or "·") for k in keys)
-
-    def fmtSap(row, keys, width):
-        text = sapCell(row, keys)
-        return text if len(text) <= width else text[: width - 1] + "~"
-
-    widths = (
-        [labelWidth, statusWidth, wallWidth]
-        + [g[2] for g in sapGroups]
-        + list(tailWidths)
-    )
-    headers = (
-        ["run label", "status", "wall(s)"]
-        + [g[0] + " s/a/p" for g in sapGroups]
-        + list(tailHeaders)
-    )
-
-    divider = "+" + "+".join("-" * (width + 2) for width in widths) + "+"
-    headerRow = "|" + "|".join(
-        f" {header:<{width}} " for header, width in zip(headers, widths)
-    ) + "|"
-
-    lines = [title, divider, headerRow, divider]
+    table = PrettyTable()
+    table.field_names = [
+        "run label",
+        "status",
+        "wall(s)",
+        "synthesis",
+        "time s/a/p",
+        "lut s/a/p",
+        "bram",
+        "dsp",
+        "adder",
+        "io in/out",
+        "clbs",
+        "wirelen",
+        "cpd ns",
+        "fmax MHz",
+        "wns ns",
+    ]
+    table.align = "l"
     for row in rows:
-        status = row.get("status", "")
-        if status == "ok":
-            visibleText, color = "ok", "\033[92m"
-        elif status.startswith("FAIL") or status == "fail":
-            visibleText, color = status, "\033[91m"
-        elif status.startswith("running"):
-            phase = status.split(":", 1)[1] if ":" in status else ""
-            visibleText = f"running ({phase})" if phase else "running"
-            color = "\033[93m"
-        elif status == "pending":
-            visibleText, color = "pending", "\033[90m"
-        elif status == "cached":
-            visibleText, color = "cached", "\033[96m"
-        else:
-            visibleText, color = status, ""
-
-        visibleText = visibleText[:statusWidth]
-        statusCell = f"{color}{visibleText}\033[0m" if color else visibleText
-        pad = max(0, statusWidth - len(visibleText))
-        statusPadded = f" {statusCell}{' ' * pad} "
-
-        cells = [
-            f" {row.get('label', '')[:labelWidth]:<{labelWidth}} ",
-            statusPadded,
-            f" {row.get('wall', '-'):<{wallWidth}} ",
-        ]
-        for _, keys, width in sapGroups:
-            cells.append(f" {fmtSap(row, keys, width):<{width}} ")
-        for key, width in zip(tailKeys, tailWidths):
-            cells.append(f" {str(row.get(key, '-')):<{width}} ")
-        lines.append("|" + "|".join(cells) + "|")
-
-    lines.append(divider)
-    return "\n".join(lines)
-
-
-# geomean compare across flows, over runs that finished ok on both.
-# (column header, row key, higher_is_better)
-geomeanColumns = (
-    ("LUTs", "packed_luts", False),
-    ("BRAMs", "mem", False),
-    ("DSPs", "dsp", False),
-    ("Adders", "adder", False),
-    ("CLBs", "clb", False),
-    ("Wirelen", "wl", False),
-    ("CPD ns", "cpd", False),
-    ("Fmax MHz", "fmax", True),
-)
+        table.add_row(
+            [
+                row.get("label", ""),
+                coloredStatus(row),
+                row.get("wall", "-"),
+                row.get("synthesis", "-"),
+                sap(row, "s_s", "a_s", "v_s"),
+                sap(row, "s_luts", "a_luts", "p_luts"),
+                row.get("mem", "-"),
+                row.get("dsp", "-"),
+                row.get("adder", "-"),
+                sap(row, "io_in", "io_out"),
+                row.get("clb", "-"),
+                row.get("wl", "-"),
+                row.get("cpd", "-"),
+                row.get("fmax", "-"),
+                row.get("wns", "-"),
+            ]
+        )
+    return f"{title}\n{table}"
 
 
 def numeric(value):
@@ -283,7 +309,6 @@ def flowOf(label):
 
 
 def computeGeomeans(rows):
-    # design -> {flow -> row}; keep only designs where every flow is ok
     byDesign = {}
     flowsSeen = []
     for row in rows:
@@ -310,73 +335,64 @@ def computeGeomeans(rows):
     result = {}
     for flow in flowsSeen:
         result[flow] = {}
-        for header, key, _ in geomeanColumns:
+        for _, key, _ in geomeanColumns:
             values = [
-                numeric(flowRows[flow].get(key))
-                for flowRows in paired.values()
+                numeric(flowRows[flow].get(key)) for flowRows in paired.values()
             ]
             values = [v for v in values if v is not None]
             if values:
-                result[flow][key] = math.exp(sum(math.log(v) for v in values) / len(values))
+                result[flow][key] = math.exp(
+                    sum(math.log(v) for v in values) / len(values)
+                )
             else:
                 result[flow][key] = None
-    return {"flows": flowsSeen, "geo": result, "n": len(paired)}
+    return {"flows": flowsSeen, "geo": result}
 
 
 def renderGeomeanTable(rows):
     data = computeGeomeans(rows)
     if data is None:
         return "geomean: waiting for paired ok runs on both flows"
+
     flows = data["flows"]
     base = "vanilla_vtr" if "vanilla_vtr" in flows else flows[0]
     others = [f for f in flows if f != base]
     geo = data["geo"]
-    n = data["n"]
 
     def fmt(value):
         return f"{value:,.2f}" if value is not None else "-"
 
-    headers = ["flow"] + [header for header, _, _ in geomeanColumns]
-    tableRows = []
-    tableRows.append([f"{base} (n={n})"] + [fmt(geo[base].get(key)) for _, key, _ in geomeanColumns])
+    table = PrettyTable()
+    table.field_names = ["flow"] + [header for header, _, _ in geomeanColumns]
+    table.align = "l"
+    table.add_row(
+        [base] + [fmt(geo[base].get(key)) for _, key, _ in geomeanColumns]
+    )
     for flow in others:
-        tableRows.append([flow] + [fmt(geo[flow].get(key)) for _, key, _ in geomeanColumns])
-    for flow in others:
+        table.add_row([flow] + [fmt(geo[flow].get(key)) for _, key, _ in geomeanColumns])
         diffRow = [f"% diff {flow}/{base}"]
-        for _, key, higherBetter in geomeanColumns:
+        ratioRow = [f"x diff {flow}/{base}"]
+        for _, key, _ in geomeanColumns:
             fVal, bVal = geo[flow].get(key), geo[base].get(key)
             if fVal is None or bVal is None:
                 diffRow.append("-")
+                ratioRow.append("-")
             else:
                 diffRow.append(f"{(fVal / bVal - 1.0) * 100.0:+.2f}%")
-        tableRows.append(diffRow)
-        ratioRow = [f"x diff {flow}/{base}"]
-        for _, key, higherBetter in geomeanColumns:
-            fVal, bVal = geo[flow].get(key), geo[base].get(key)
-            ratioRow.append("-" if fVal is None or bVal is None else f"{fVal / bVal:.2f}x")
-        tableRows.append(ratioRow)
-
-    colWidths = [
-        max(len(str(r[i])) for r in [headers] + tableRows)
-        for i in range(len(headers))
-    ]
-    divider = "+" + "+".join("-" * (w + 2) for w in colWidths) + "+"
-    lines = ["geomean over paired ok runs:", divider]
-    lines.append("|" + "|".join(f" {h:<{w}} " for h, w in zip(headers, colWidths)) + "|")
-    lines.append(divider)
-    for row in tableRows:
-        lines.append("|" + "|".join(f" {str(c):<{w}} " for c, w in zip(row, colWidths)) + "|")
-    lines.append(divider)
-    return "\n".join(lines)
+                ratioRow.append(f"{fVal / bVal:.2f}x")
+        table.add_row(diffRow)
+        table.add_row(ratioRow)
+    return f"geomean:\n{table}"
 
 
 def watchDir(targetDir: Path, interval: float, once: bool):
     logsDir = targetDir / "logs"
+    lastPhases = {}
     print(f"watching {targetDir} (interval={interval}s) — Ctrl-C to stop")
 
     try:
         while True:
-            rows = scanStatus(targetDir)
+            rows = scanStatus(targetDir, lastPhases)
             total = len(rows)
             done = sum(
                 1
@@ -385,7 +401,9 @@ def watchDir(targetDir: Path, interval: float, once: bool):
                 and not row["status"].startswith("running")
                 and row["status"] != "pending"
             )
-            running = sum(1 for row in rows if row.get("status", "").startswith("running"))
+            running = sum(
+                1 for row in rows if row.get("status", "").startswith("running")
+            )
             pending = sum(1 for row in rows if row.get("status") == "pending")
             title = (
                 f"{targetDir.name}: {done}/{total} done, "
@@ -399,7 +417,7 @@ def watchDir(targetDir: Path, interval: float, once: bool):
             print()
             print(renderGeomeanTable(rows))
             print(f"\nlogs: {logsDir}")
-            csvCandidates = sorted(targetDir.glob("*results*.csv"))
+            csvCandidates = sorted(targetDir.glob("compare_results*.csv"))
             if csvCandidates:
                 print(f"csv:  {csvCandidates[-1]}")
 

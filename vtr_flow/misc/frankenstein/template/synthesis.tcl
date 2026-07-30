@@ -234,8 +234,14 @@ opt -fast -noff
 insbuf
 opt -purge -noff
 
-# snapshot the pre-abc cell counts for the compare s/a split
-teeo frankenstein_synth.stat stat
+# snapshot the pre-abc per-type counts (and io pins via -top) for the
+# compare s/a split. the trailing file arg writes stat there instead of
+# needing a tee pass.
+if { "TTT" ne "" } {
+    stat -top TTT frankenstein_synth.stat
+} else {
+    stat frankenstein_synth.stat
+}
 
 # ----------------------------------------------------------------------------
 # abc  runs in-yosys now that vtr's yosys is built with the in-yosys abc pass
@@ -253,8 +259,12 @@ if { $abcOptScript ne "" && $abcMapScript ne "" } {
 # abc will not delete blackboxes so sweep anything it left unused
 frankensteinHardblockSweep $sweepMaxIters
 
-# snapshot the post-abc cell counts
-teeo frankenstein_abc.stat stat
+# snapshot the post-abc per-type counts
+if { "TTT" ne "" } {
+    stat -top TTT frankenstein_abc.stat
+} else {
+    stat frankenstein_abc.stat
+}
 
 # ----------------------------------------------------------------------------
 # densify then write_blif
