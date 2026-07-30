@@ -296,9 +296,9 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
 
     // The cancellation callback is also polled inside the evaluation, so a long
     // evaluation of a stale attempt is abandoned partway.
-    attempt.eval = replica.evaluator->apply_and_evaluate(replica.blocks_affected, placer_opts_.place_algorithm,
+    attempt.deltas = replica.evaluator->apply_and_evaluate(replica.blocks_affected, placer_opts_.place_algorithm,
                                                          is_stale);
-    if (attempt.eval.cancelled) {
+    if (attempt.deltas.cancelled) {
         // Partially staged evaluation state must still be unwound. The attempt
         // keeps its default ABORTED outcome; it is never consulted, since it is
         // beyond the batch winner.
@@ -307,7 +307,7 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
         return;
     }
 
-    attempt.move_result = assess_speculative_swap_(attempt.eval.delta_c, batch_temperature_, attempt.accept_rand);
+    attempt.move_result = assess_speculative_swap_(attempt.deltas.delta_c, batch_temperature_, attempt.accept_rand);
 
     // If this attempt may become the batch winner, capture its move and the
     // committed values it would write while they are still in this replica's
@@ -318,7 +318,7 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
     // attempt lost). The eventual winner never skips: it is the minimum
     // accepted id, so no smaller id can ever appear in first_accepted_id_.
     if (attempt.move_result == e_move_result::ACCEPTED && !is_stale()) {
-        VTR_ASSERT_SAFE(!attempt.eval.update_interposer_costs);
+        VTR_ASSERT_SAFE(!attempt.deltas.update_interposer_costs);
         attempt.moved_blocks = replica.blocks_affected.moved_blocks;
         replica.evaluator->extract_commit_record(replica.blocks_affected,
                                                  attempt.commit_record);
@@ -353,21 +353,21 @@ void ParallelAnnealEngine::commit_winner_on_master_(const t_speculative_swap& wi
     {
         master_blocks_affected_.set_moved_blocks(winner.moved_blocks);
         t_swap_cost_deltas check = master_evaluator_.apply_and_evaluate(master_blocks_affected_, placer_opts_.place_algorithm);
-        VTR_ASSERT_SAFE_MSG(check.delta_c == winner.eval.delta_c,
+        VTR_ASSERT_SAFE_MSG(check.delta_c == winner.deltas.delta_c,
                             "Speculative evaluation diverged from the master placement state.");
         master_evaluator_.revert(master_blocks_affected_, timing_driven_);
         master_blocks_affected_.clear_move_blocks();
     }
 #endif
 
-    VTR_ASSERT_SAFE(!winner.eval.update_interposer_costs);
-    costs_.cost += winner.eval.delta_c;
-    costs_.bb_cost += winner.eval.cost_terms_delta.bb_cost;
+    VTR_ASSERT_SAFE(!winner.deltas.update_interposer_costs);
+    costs_.cost += winner.deltas.delta_c;
+    costs_.bb_cost += winner.deltas.cost_terms_delta.bb_cost;
 
     master_blocks_affected_.set_moved_blocks(winner.moved_blocks);
 
     if (timing_driven_) {
-        costs_.timing_cost += winner.eval.timing_delta_c;
+        costs_.timing_cost += winner.deltas.timing_delta_c;
 
         // Invalidations accumulate for the next big timing update (outer loop or
         // periodic recompute), exactly as in the sequential annealer. The

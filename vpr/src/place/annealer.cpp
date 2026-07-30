@@ -992,17 +992,17 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
                 }
             }
 
-            move_outcome_stats.delta_cost_norm = attempt.eval.delta_c;
-            move_outcome_stats.delta_bb_cost_norm = attempt.eval.cost_terms_delta.bb_cost * costs_.bb_cost_norm;
-            move_outcome_stats.delta_timing_cost_norm = attempt.eval.timing_delta_c * costs_.timing_cost_norm;
-            move_outcome_stats.delta_bb_cost_abs = attempt.eval.cost_terms_delta.bb_cost;
-            move_outcome_stats.delta_timing_cost_abs = attempt.eval.timing_delta_c;
+            move_outcome_stats.delta_cost_norm = attempt.deltas.delta_c;
+            move_outcome_stats.delta_bb_cost_norm = attempt.deltas.cost_terms_delta.bb_cost * costs_.bb_cost_norm;
+            move_outcome_stats.delta_timing_cost_norm = attempt.deltas.timing_delta_c * costs_.timing_cost_norm;
+            move_outcome_stats.delta_bb_cost_abs = attempt.deltas.cost_terms_delta.bb_cost;
+            move_outcome_stats.delta_timing_cost_abs = attempt.deltas.timing_delta_c;
 
             // Rewards are replayed to the agent in attempt order. Restore the
             // agent action captured at proposal time so the reward credits the
             // arm that actually proposed this attempt.
             move_generator.set_last_action(attempt.agent_action);
-            move_generator.calculate_reward_and_process_outcome(move_outcome_stats, attempt.eval.delta_c,
+            move_generator.calculate_reward_and_process_outcome(move_outcome_stats, attempt.deltas.delta_c,
                                                                 REWARD_BB_TIMING_RELATIVE_WEIGHT);
         }
 

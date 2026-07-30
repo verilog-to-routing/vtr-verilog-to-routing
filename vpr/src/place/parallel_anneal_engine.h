@@ -10,51 +10,44 @@
  * Most swap attempts in simulated annealing are rejected, and a rejected attempt
  * leaves the placement state unchanged. The engine exploits this: it proposes a
  * *batch* of `W` swaps against the current committed placement state and
- * evaluates them concurrently on worker threads. The annealer chooses W per
- * temperature from the previous temperature's acceptance rate (W == the number
- * of active workers, capped by --place_swap_eval_num_workers). Each attempt has a
- * logical id; outcomes are resolved in id order:
+ * evaluates them concurrently on worker threads. The annealer sets W to the
+ * inverse of the previous temperature's acceptance rate, so we expect
+ * one of the W attempts to be accepted (W == the number of active workers,
+ * capped by --place_swap_eval_num_workers). Each attempt has a logical id;
+ * outcomes are resolved in id order:
  *
- *  - The *winner* is the lowest-id accepted attempt. It is committed to the
- *    placement state. All attempts with the same or lower ids "really happened"
- *    (they update statistics and the RL agent, in id order).
- *  - Attempts with higher ids were evaluated against a placement state that the
- *    winner just invalidated, so they are discarded — they never logically
- *    happened, and fresh attempts are proposed against the new state in the
- *    next batch. As an optimization, once some attempt is known to be accepted,
- *    still-running attempts with higher ids cancel their evaluation early
- *    (see first_accepted_id_): they can neither win nor be bookkept, so
- *    abandoning them cannot change the trajectory.
- *  - If no attempt in the batch accepts, all W attempts are real rejections.
+ *  - The winner is the lowest-id accepted attempt. It is committed, and every
+ *    attempt with the same or lower id "really happened" (statistics and the RL
+ *    agent are updated in id order).
+ *  - Higher ids were evaluated against a state the winner just invalidated, so
+ *    they never logically happened and are re-proposed in the next batch. Once
+ *    an acceptance is known, still-running higher ids cancel early: they can
+ *    neither win nor be bookkept.
+ *  - If nothing accepts, all W attempts are real rejections.
  *
  * ## Determinism
  *
- * Each attempt id derives its own RNG stream from (seed, id), and every replica
- * proposes with an agent whose state is synced from the master generator (the
- * only one that processes move outcomes) at the start of each batch. An
- * attempt's proposal and acceptance test therefore do not depend on which
- * worker runs them or when. The trajectory is a pure function of
- * (seed, window size): the result is identical for any worker count, including
- * one.
+ * Each attempt id derives its own RNG stream from (seed, id), and replica agents
+ * are synced from the master generator every batch. An attempt's proposal and
+ * acceptance test therefore do not depend on which worker runs it or when. The
+ * trajectory is a pure function of (seed, W), so the result is identical for any
+ * worker count.
  *
  * ## Threading model
  *
- * Each worker owns a private *replica* of the state that swap evaluation
- * mutates: block locations, a NetCostHandler (scratch + committed net cost
- * data), the proposed connection delay/timing cost arrays (inside the replica's
- * PlacerState), plus a private RNG and private move generators. Everything
- * else — the clustered netlist, criticalities, the delay model — is shared and
- * read-only during a batch. Workers both propose and evaluate their share of a
- * batch against their own replica (identical to the committed master state);
- * the coordinator (the annealer thread) only resolves outcomes and commits.
- * When a winner is committed, the master state and every replica apply the same
- * move, keeping all copies bit-identical.
+ * Each worker owns a private replica of the state that swap evaluation mutates:
+ * block locations, a NetCostHandler, the proposed connection delay/timing cost
+ * arrays (inside the replica's PlacerState), plus a private RNG and private move
+ * generators. Everything else (the clustered netlist, criticalities, the delay
+ * model) is shared and read-only during a batch. Workers both propose and
+ * evaluate their share of a batch against their own replica; the coordinator
+ * only resolves outcomes and commits. When a winner is committed, the master
+ * state and every replica apply the same move, keeping all copies bit-identical.
  *
  * Supported configurations: CRITICALITY_TIMING_PLACE and BOUNDING_BOX_PLACE
  * with cube bounding boxes, without congestion modeling, interposer cost terms,
  * NoC optimization, manual moves, or per-move logging. The annealer falls back
- * to the sequential inner loop otherwise (see
- * PlacementAnnealer::should_use_parallel_inner_loop_()).
+ * to the sequential inner loop otherwise (see PlacementAnnealer::should_use_parallel_inner_loop_()).
  */
 
 #include "interposer_cost_handler.h"
@@ -86,21 +79,20 @@ struct t_placer_opts;
  * resolving and committing the batch.
  */
 struct t_speculative_swap {
-    /// The proposed move, captured only for accepted attempts (the winner must
-    /// be replayable on the master state and every replica).
+    /// The proposed move, captured only for accepted attempts.
     std::vector<t_pl_moved_block> moved_blocks;
-    /// Move/block type chosen by the move generator (for statistics and rewards).
+    /// Move/block type chosen by the move generator.
     t_propose_action proposed_action;
     /// Whether the move generator produced a valid move.
     e_create_move create_outcome = e_create_move::ABORT;
-    /// The RL-agent action behind this proposal (see MoveGenerator::get_last_action()).
+    /// The RL-agent action behind this proposal.
     size_t agent_action = 0;
     /// Pre-drawn uniform random number for the acceptance test, from this attempt's RNG stream.
     float accept_rand = 0.f;
     /// Accept/reject decision made during evaluation (ABORTED when create_outcome != VALID).
     e_move_result move_result = e_move_result::ABORTED;
     /// Cost deltas computed during evaluation.
-    t_swap_cost_deltas eval;
+    t_swap_cost_deltas deltas;
     /// Replayable committed values, captured during evaluation for accepted
     /// attempts only. Lets the winner be committed everywhere with
     /// O(affected nets + pins) copies instead of a re-evaluation.
@@ -127,15 +119,14 @@ class ParallelAnnealEngine {
     ParallelAnnealEngine& operator=(const ParallelAnnealEngine&) = delete;
 
     /**
-     * @param num_workers Number of worker threads (and state replicas).
+     * @param num_workers Number of worker threads.
      * @param placer_opts Placement options (algorithm, seed, cost factors).
      * @param place_macros Placement macros, needed to construct the replicas' move generators.
      * @param costs Master placement costs; updated when a winner is committed.
      * @param master_state The master placement state.
      * @param master_net_cost_handler Net cost handler bound to the master state.
      * @param move_lim Number of moves per temperature, needed to construct the
-     * replicas' move generators (their agent state is synced from the master
-     * generator anyway, see run_batch()).
+     * replicas' move generators.
      * @param noc_centroid_weight NoC-biased centroid move weight, needed to
      * construct the replicas' move generators.
      * @param delay_model Placement delay model (nullptr for non-timing-driven placement).
