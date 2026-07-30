@@ -20,6 +20,7 @@
 //   tech_bram.v           recursive bit-sliced bram techmap
 //   vtr_hardblock_lib.v   -lib stubs sized from the arch hardblock models
 //   mult_map.v            $mul -> multiply techmap with arch mode widths
+//   add_sub_map.v         $add/$sub -> carry-chain adder techmap
 //   <model>_map.v         one per -exotic comb block
 //
 // files are required because the yosys consumers (memory_libmap -lib,
@@ -62,6 +63,7 @@ struct VtrArchRulesPass : public Pass {
     log("\n");
     log("    vtr_arch_rules -xml <arch.xml> [-outdir <dir>] [-tpldir <dir>]\n");
     log("                    [-sp-cost N] [-dp-cost N] [-blocks a,b,...]\n");
+    log("                    [-hard-adder-threshold N]\n");
     log("                    [-exotic <model> -exotic-template <file>]...\n");
     log("\n");
     log("generate the frankenstein flow's arch-specific mapping rules from the\n");
@@ -76,7 +78,8 @@ struct VtrArchRulesPass : public Pass {
     log("techmap template; it may be repeated and pairs by order.\n");
     log("\n");
     log("mode geometry is arch-derived; the libmap costs are flow policy\n");
-    log("(-sp-cost / -dp-cost, default 128).\n");
+    log("(-sp-cost / -dp-cost, default 128), as is the hard adder width\n");
+    log("threshold (-hard-adder-threshold, default 3).\n");
     log("\n");
   }
 
@@ -87,6 +90,7 @@ struct VtrArchRulesPass : public Pass {
     std::string blocksArg;
     int spCost = 128;
     int dpCost = 128;
+    int hardAdderThreshold = 3;
     std::vector<std::string> exoticModels;
     std::vector<std::string> exoticTemplates;
 
@@ -110,6 +114,10 @@ struct VtrArchRulesPass : public Pass {
       }
       if (args[argidx] == "-dp-cost" && argidx + 1 < args.size()) {
         dpCost = std::atoi(args[++argidx].c_str());
+        continue;
+      }
+      if (args[argidx] == "-hard-adder-threshold" && argidx + 1 < args.size()) {
+        hardAdderThreshold = std::atoi(args[++argidx].c_str());
         continue;
       }
       if (args[argidx] == "-blocks" && argidx + 1 < args.size()) {
@@ -169,6 +177,7 @@ struct VtrArchRulesPass : public Pass {
     policy.tplDir = tplDir;
     policy.spCost = spCost;
     policy.dpCost = dpCost;
+    policy.hardAdderThreshold = hardAdderThreshold;
 
     auto gens = wildebeestVtr::makeBuiltinRuleGens();
     for (size_t i = 0; i < exoticModels.size(); ++i) {

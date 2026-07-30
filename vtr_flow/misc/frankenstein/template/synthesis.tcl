@@ -10,7 +10,7 @@ plugin -i wildebeest
 # vtr_arch_rules.
 #
 # put these next to each other in the arch support dir named by K6D
-#   arch_config.tcl add_sub_map.v mul2dsp_map.v
+#   arch_config.tcl mul2dsp_map.v
 # shared arch-independent support lives in the template dir TDIR
 #   vtr_ram_whitebox.v vtr_ram_bit_lib.v and whatever abc scripts the
 #   config points at
@@ -43,14 +43,16 @@ set bramSpCost     128
 set bramDpCost     128
 set cmpLutWidth    6
 set lutCost        "6:1"
+# $add/$sub at or below this width stay soft so abc can still optimize
+# across them. substituted into the generated add_sub_map.v because the
+# map file is the only place that sees $add widths at techmap time
+set hardAdderThreshold 3
 # long enough to walk an msb-to-lsb carry cascade in one go
 set sweepMaxIters  64
 # empty means skip the two-pass abc and do one plain -luts pass
 set abcOptScript   ""
 set abcMapScript   ""
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
-# HARD_ADDER_THRESHOLD is in add_sub_map.v not here because the map file
-# is the only place that sees $add widths at techmap time
 
 set archConfigFile "$archSupportDir/arch_config.tcl"
 if { [file exists $archConfigFile] } {
@@ -63,16 +65,19 @@ if { [file exists $archConfigFile] } {
 # ----------------------------------------------------------------------------
 if { $archXmlPath ne "" } {
     vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir \
-        -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost
+        -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost \
+        -hard-adder-threshold $hardAdderThreshold
     set bramMapFile      "$archRulesDir/bram_memory_map.txt"
     set techBramFile     "$archRulesDir/tech_bram.v"
     set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
     set multMapFile      "$archRulesDir/mult_map.v"
+    set addSubMapFile    "$archRulesDir/add_sub_map.v"
 } else {
     set bramMapFile      "$archSupportDir/bram_memory_map.txt"
     set techBramFile     "$archSupportDir/tech_bram.v"
     set hardblockLibFile "$archSupportDir/vtr_hardblock_lib.v"
     set multMapFile      "$archSupportDir/mult_map.v"
+    set addSubMapFile    "$archSupportDir/add_sub_map.v"
 }
 
 # ----------------------------------------------------------------------------
@@ -209,7 +214,7 @@ techmap -map $multMapFile
 # ----------------------------------------------------------------------------
 # before alumacc or the $add chains get folded into $macc and the carry
 # chain never sees them. compares stay soft on purpose.
-techmap -map $archSupportDir/add_sub_map.v
+techmap -map $addSubMapFile
 
 alumacc
 

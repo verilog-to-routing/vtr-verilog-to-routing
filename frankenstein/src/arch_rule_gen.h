@@ -28,6 +28,9 @@ struct ArchRulePolicy {
   std::string tplDir;
   int spCost = 128;
   int dpCost = 128;
+  // $add/$sub at or below this width stay soft so abc can optimize
+  // across them (hard adders are black boxes).
+  int hardAdderThreshold = 3;
 };
 
 // one -exotic <model> -exotic-template <file> request.
