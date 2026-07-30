@@ -95,6 +95,14 @@ csvFields = (
     "synth_luts",
     "abc_luts",
     "packed_luts",
+    "synth_ff",
+    "abc_ff",
+    "synth_mem",
+    "abc_mem",
+    "synth_dsp",
+    "abc_dsp",
+    "synth_adder",
+    "abc_adder",
     "packed_luts_2plus",
     "num_clb",
     "num_ff",
@@ -182,6 +190,34 @@ def countBlifNames(blifPath: Path) -> str:
         return ""
 
 
+def parseYosysStat(statPath: Path) -> Dict[str, str]:
+    # pull the per-type cell counts out of a yosys `stat` dump. keys match the
+    # compare split: ff, dsp (multiply), adder, mem (rams), clb is not a yosys
+    # concept so it stays unset until vpr.
+    cellPatterns = {
+        "ff": ("$dff", "$dffe", "$sdff", "$sdffe", "$adff", "$adffe", "$dffsr", "$dlatch", "dff"),
+        "dsp": ("multiply", "$mul", "_dsp_block_"),
+        "adder": ("adder", "$add", "$sub"),
+        "mem": ("single_port_ram", "dual_port_ram", "$mem", "memory"),
+    }
+    counts = {"ff": 0, "dsp": 0, "adder": 0, "mem": 0}
+    if not statPath.is_file():
+        return {}
+    try:
+        text = statPath.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    for line in text.splitlines():
+        match = re.match(r"\s*(\S+)\s+(\d+)\s*$", line)
+        if not match:
+            continue
+        cellType, number = match.group(1), int(match.group(2))
+        for key, names in cellPatterns.items():
+            if any(cellType == n or cellType.lstrip("$\\") == n.lstrip("$\\") for n in names):
+                counts[key] += number
+    return {key: str(value) for key, value in counts.items() if value > 0}
+
+
 def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
     # synth = pre-abc frankenstein/parmys blif, abc = post-abc blif. packed
     # comes from vpr in parseVprQor. try the flow-prefixed (0_) and plain names
@@ -203,6 +239,16 @@ def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
         if path.is_file():
             counts["abc_luts"] = countBlifNames(path)
             break
+
+    # overlay the per-type counts the template's teeo stat dumps captured.
+    # with abc in-yosys the frankenstein leg has both stat files; the vanilla
+    # leg has neither, so its synth/abc splits stay from the blifs above.
+    for stage, statName in (
+        ("synth", "frankenstein_synth.stat"),
+        ("abc", "frankenstein_abc.stat"),
+    ):
+        for key, value in parseYosysStat(tempDir / statName).items():
+            counts[f"{stage}_{key}"] = value
     return counts
 
 
@@ -358,9 +404,12 @@ def formatSummary(runLabel: str, row: Dict) -> str:
         f"s_s={row.get('synth_wall_sec', '')} a_s={row.get('abc_wall_sec', '')} "
         f"v_s={row.get('vpr_wall_sec', '')} "
         f"s_luts={row.get('synth_luts', '')} a_luts={row.get('abc_luts', '')} "
-        f"p_luts={row.get('packed_luts', '')} clb={row.get('num_clb', '')} "
-        f"ff={row.get('num_ff', '')} mem={row.get('num_memory', '')} "
-        f"dsp={row.get('num_dsp', '')} adder={row.get('num_adder', '')} "
+        f"p_luts={row.get('packed_luts', '')} "
+        f"s_ff={row.get('synth_ff', '')} a_ff={row.get('abc_ff', '')} ff={row.get('num_ff', '')} "
+        f"s_mem={row.get('synth_mem', '')} a_mem={row.get('abc_mem', '')} mem={row.get('num_memory', '')} "
+        f"s_dsp={row.get('synth_dsp', '')} a_dsp={row.get('abc_dsp', '')} dsp={row.get('num_dsp', '')} "
+        f"s_adder={row.get('synth_adder', '')} a_adder={row.get('abc_adder', '')} adder={row.get('num_adder', '')} "
+        f"clb={row.get('num_clb', '')} "
         f"wl={row.get('total_wire_length', '')} "
         f"cpd={row.get('crit_path_delay_ns', '')}ns "
         f"fmax={row.get('fmax_mhz', '')}MHz "

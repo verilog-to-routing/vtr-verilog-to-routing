@@ -234,6 +234,9 @@ opt -fast -noff
 insbuf
 opt -purge -noff
 
+# snapshot the pre-abc cell counts for the compare s/a split
+teeo frankenstein_synth.stat stat
+
 # ----------------------------------------------------------------------------
 # abc  runs in-yosys now that vtr's yosys is built with the in-yosys abc pass
 # (ENABLE_ABC=1). dress leaves PI and PO as pi* and po* which yosys then
@@ -249,6 +252,9 @@ if { $abcOptScript ne "" && $abcMapScript ne "" } {
 
 # abc will not delete blackboxes so sweep anything it left unused
 frankensteinHardblockSweep $sweepMaxIters
+
+# snapshot the post-abc cell counts
+teeo frankenstein_abc.stat stat
 
 # ----------------------------------------------------------------------------
 # densify then write_blif

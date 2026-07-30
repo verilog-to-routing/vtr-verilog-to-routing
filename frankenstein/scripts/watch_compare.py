@@ -35,9 +35,17 @@ vprWallRe = re.compile(r"v_s=([0-9.]+)")
 synthLutsRe = re.compile(r"s_luts=(\d+)")
 abcLutsRe = re.compile(r"a_luts=(\d+)")
 packedLutsRe = re.compile(r"(?:p_luts|packed_luts)=(\d+)")
+synthFfRe = re.compile(r"s_ff=(\d+)")
+abcFfRe = re.compile(r"a_ff=(\d+)")
 ffRe = re.compile(r"\bff=(\d+)")
+synthMemRe = re.compile(r"s_mem=(\d+)")
+abcMemRe = re.compile(r"a_mem=(\d+)")
 memRe = re.compile(r"(?:packed_brams|mem)=(\d+)")
+synthDspRe = re.compile(r"s_dsp=(\d+)")
+abcDspRe = re.compile(r"a_dsp=(\d+)")
 dspRe = re.compile(r"(?:packed_dsps|dsp)=(\d+)")
+synthAdderRe = re.compile(r"s_adder=(\d+)")
+abcAdderRe = re.compile(r"a_adder=(\d+)")
 adderRe = re.compile(r"(?:packed_adders|adder)=(\d+)")
 wlRe = re.compile(r"wl=(\d+)")
 cpdRe = re.compile(r"cpd=([0-9.]+)ns")
@@ -111,9 +119,17 @@ def parseStatusLine(label: str, line: str):
         ("synth_luts", synthLutsRe),
         ("abc_luts", abcLutsRe),
         ("packed_luts", packedLutsRe),
+        ("synth_ff", synthFfRe),
+        ("abc_ff", abcFfRe),
         ("ff", ffRe),
+        ("synth_mem", synthMemRe),
+        ("abc_mem", abcMemRe),
         ("mem", memRe),
+        ("synth_dsp", synthDspRe),
+        ("abc_dsp", abcDspRe),
         ("dsp", dspRe),
+        ("synth_adder", synthAdderRe),
+        ("abc_adder", abcAdderRe),
         ("adder", adderRe),
         ("wl", wlRe),
         ("cpd", cpdRe),
@@ -157,24 +173,26 @@ def scanStatus(targetDir: Path):
 
 
 def renderTable(rows, title):
-    # each metric is one s/a/p column: synth, abc, packed (vpr for counts,
-    # vpr wall for time). "" means that stage has no value for the metric.
+    # each metric is one s/a/p column: synth, abc, packed. `·` means that
+    # stage has no value for the metric. clb is vpr-only so its s/a slots
+    # stay `·`; the others come from the template's teeo stat dumps (synth
+    # and post-abc) and vpr (packed). time is the per-stage wall clock.
     timeKeys = ("synth_wall", "abc_wall", "vpr_wall")
     sapGroups = (
         ("time", timeKeys, 18),
         ("lut", ("synth_luts", "abc_luts", "packed_luts"), 18),
         ("clb", ("", "", "clb"), 18),
-        ("ff", ("", "", "ff"), 18),
-        ("bram", ("", "", "mem"), 18),
-        ("dsp", ("", "", "dsp"), 18),
-        ("adder", ("", "", "adder"), 18),
+        ("ff", ("synth_ff", "abc_ff", "ff"), 18),
+        ("bram", ("synth_mem", "abc_mem", "mem"), 18),
+        ("dsp", ("synth_dsp", "abc_dsp", "dsp"), 18),
+        ("adder", ("synth_adder", "abc_adder", "adder"), 18),
     )
     tailKeys = ("wl", "cpd", "fmax", "wns")
     tailHeaders = ("wirelen", "cpd ns", "fmax MHz", "wns ns")
     labelWidth, statusWidth, wallWidth = 36, 22, 8
 
     def sapCell(row, keys):
-        return "/".join(row.get(k, "-") or "-" if k else "-" for k in keys)
+        return "/".join(str(row.get(k) or "·") for k in keys)
 
     def fmtSap(row, keys, width):
         text = sapCell(row, keys)
