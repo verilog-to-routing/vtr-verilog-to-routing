@@ -58,28 +58,26 @@ static constexpr int PADDING = 5;
  * @brief Highly contrasting colours that are useful for visualization.
  */
 static const std::vector<ezgl::color> kelly_max_contrast_colors = {
-    //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background.
-    ezgl::color(34, 34, 34),   //black
-    ezgl::color(243, 195, 0),  //yellow
-    ezgl::color(135, 86, 146), //purple
-    ezgl::color(243, 132, 0),  //orange
-    //ezgl::color(161, 202, 241), //light blue: skip due to poor contrast.
-    ezgl::color(190, 0, 50),    //red
-    ezgl::color(194, 178, 128), //buf
-    ezgl::color(132, 132, 130), //gray
-    ezgl::color(0, 136, 86),    //green
-    ezgl::color(230, 143, 172), //purplish pink
-    ezgl::color(0, 103, 165),   //blue
-    ezgl::color(249, 147, 121), //yellowish pink
-    ezgl::color(96, 78, 151),   //violet
-    ezgl::color(246, 166, 0),   //orange yellow
-    ezgl::color(179, 68, 108),  //purplish red
-    ezgl::color(220, 211, 0),   //greenish yellow
-    ezgl::color(136, 45, 23),   //redish brown
-    ezgl::color(141, 182, 0),   //yellow green
-    ezgl::color(101, 69, 34),   //yellowish brown
-    ezgl::color(226, 88, 34),   //reddish orange
-    ezgl::color(43, 61, 38)     //olive green
+    ezgl::color(34, 34, 34),    ///< black
+    ezgl::color(243, 195, 0),   ///< yellow
+    ezgl::color(135, 86, 146),  ///< purple
+    ezgl::color(243, 132, 0),   ///< orange
+    ezgl::color(190, 0, 50),    ///< red
+    ezgl::color(194, 178, 128), ///< buf
+    ezgl::color(132, 132, 130), ///< gray
+    ezgl::color(0, 136, 86),    ///< green
+    ezgl::color(230, 143, 172), ///< purplish pink
+    ezgl::color(0, 103, 165),   ///< blue
+    ezgl::color(249, 147, 121), ///< yellowish pink
+    ezgl::color(96, 78, 151),   ///< violet
+    ezgl::color(246, 166, 0),   ///< orange yellow
+    ezgl::color(179, 68, 108),  ///< purplish red
+    ezgl::color(220, 211, 0),   ///< greenish yellow
+    ezgl::color(136, 45, 23),   ///< redish brown
+    ezgl::color(141, 182, 0),   ///< yellow green
+    ezgl::color(101, 69, 34),   ///< yellowish brown
+    ezgl::color(226, 88, 34),   ///< reddish orange
+    ezgl::color(43, 61, 38)     ///< olive green
 };
 
 /**
@@ -131,19 +129,22 @@ struct t_label_drawing_info {
     ezgl::rectangle label_bbox;                  ///< Final label bounding box after position offsets are applied.
 };
 
+/**
+ * @brief A pair of timing node Ids used to uniquely identify a timing edge.
+ */
 struct t_timing_edge_id {
-    tatum::NodeId start;
-    tatum::NodeId end;
+    tatum::NodeId src;  ///< source of the timing edge.
+    tatum::NodeId sink; ///< sink of the timing edge.
 
     bool operator==(const t_timing_edge_id& other) const {
-        return start == other.start && end == other.end;
+        return src == other.src && sink == other.sink;
     }
 };
 
 /**
- * @brief Draws dashed flylines between consecutive nodes in a timing path, and draws a star at the beginning and end of the path.
+ * @brief Draws dashed flylines between consecutive nodes in the provided timing path, and draws a star at the beginning and end of the paths.
  *
- * @param path Timing path whose consecutive node pairs define the flylines.
+ * @param paths Timing paths whose consecutive node pairs define the flylines.
  * @param g Pointer to the ezgl::renderer object.
  */
 static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g);
@@ -152,19 +153,20 @@ static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& path
  * @brief Fills a star at one endpoint of a critical path and draws the critical path index at the center.
  *
  * The endpoint type (START or END) determines the star color.
- * The critical path index is drawn at the star center.
+ * The critical path index drawn at the star center is useful when multiple critical paths
+ * are drawn simultaneously and we want to distinguish them.
  *
  * @param endpoint_type Whether the endpoint is the start or end of the critical path.
  * @param endpoint_coords Drawing coordinates of the endpoint in world units.
- * @param path_idx Index of the critical path (0 when only one path is chosen).
+ * @param path_idx Index of the critical path (0 when only the worst path is chosen).
  * @param g Renderer used to perform drawing.
  */
 static void draw_crit_path_endpoint(e_crit_path_endpoint_type endpoint_type, ezgl::point2d endpoint_coords, std::size_t path_idx, ezgl::renderer* g);
 
 /**
- * @brief Draws routed connections for consecutive nodes in a timing path.
+ * @brief Draws routed connections for consecutive nodes in the provided timing paths.
  *
- * @param path Timing path whose consecutive node pairs define the connections.
+ * @param paths Timing paths whose consecutive node pairs define the connections.
  * @param g Pointer to the ezgl::renderer object.
  */
 static void draw_routed_timing_connections(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g);
@@ -187,7 +189,7 @@ static void draw_routed_connections_between_nodes(tatum::NodeId src_tnode, tatum
 /**
  * @brief Draws the routed connection between an atom sink pin and its driver pin in a flat (atom) netlist. Used when flat routing is enabled.
  *
- * Note: We do not pass in atom_src_pin because what we eventually need to get the routed connection
+ * Note: we do not pass in atom_src_pin because what we eventually need to get the routed connection
  * are the driver net pin id (src pin) and sink net pin id in the net they form, but the driver net pin id is always 0.
  * 
  * @param atom_sink_pin Atom sink pin whose routed connection should be drawn.
@@ -199,7 +201,7 @@ static void draw_connections_from_atom_netlist(AtomPinId atom_sink_pin, ezgl::co
 /**
  * @brief Draws the routed connection between the two clbs associated with the atom src pin and sink pin through the clustered netlist.
  *
- * Note: If the connection is entirely internal to a cluster, nothing is drawn.
+ * Note: if the connection is entirely internal to a cluster, nothing is drawn.
  * Here, we need to pass in atom_src_pin because we want to know the clb that atom_src_pin belongs to so that
  * we can correctly draw the inter-cluster routed connection.
  * 
@@ -219,12 +221,13 @@ static void draw_server_mode_flylines_and_labels(ezgl::point2d start, ezgl::poin
 /**
  * @brief Greedily calculate delay label positions for the least number of overlaps and then draws all visible labels.
  *
- * In addition, a message that shows the total delay time is drawn at the screen's top right corner.
+ * Note: when multiple paths are provided and some of them share the same timing edge segments, only one label will be added
+ * to the calculation for each segment, and the others are discarded.
  * 
- * @param path Timing path whose consecutive node pairs define the timing edges to place delay labels.
+ * @param paths Timing paths whose consecutive node pairs define the timing edges to place delay labels.
  * @param g Pointer to the ezgl::renderer object.
  */
-static void calculate_and_draw_delays(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g);
+static void calculate_and_draw_delay_labels(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g);
 
 static std::size_t get_num_edges_of_multi_paths(const std::vector<tatum::TimingPath>& paths);
 
@@ -262,8 +265,8 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
 /**
  * @brief Hides labels that still overlap with others after calculate_least_cluttered_label_pos() has tried all candidates.
  * 
- * Hiding is performed in sequence from start to end (of the crit. path). Hiding one label may free up space for other labels
- * and so they no longer need to be hidden.
+ * Hiding is performed in sequence from start to end (of the critcal path), from the first critcal path to the last.
+ * Hiding one label may free up space for other labels and so they no longer need to be hidden.
  * Visibility of hidden labels are updated to post_decluttering_label_drawing_info.
  *
  * @param post_decluttering_label_drawing_info Per-edge label drawing information that includes each label's updated position.
@@ -274,7 +277,7 @@ static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector
 /**
  * @brief Calculates a label bounding box using the provided position relative to its timing-edge flyline.
  *
- * @param label_to_update Single Label drawing information whose bounding box waits to be updated.
+ * @param label_to_update Single Label drawing information whose bounding box is to be updated.
  * @param label_relative_pos Candidate position to apply, relative to the timing-edge flyline.
  * @param pixels_per_world_unit Ratio between pixels and world units spanning the screen width.
  * Used to convert values specified in pixels that determine the offset of the label bounding box.
@@ -299,19 +302,18 @@ static bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::re
 static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_info, ezgl::renderer* g);
 
 /**
- * @brief Draws a message that shows the total delay time tied to the given critical path index.
- *
- * @param final_label_drawing_info Per-edge delay label drawing information whose delay values are summed.
- * @param path_idx Index of the critical path (0 when only one path is chosen).
+ * @brief Draws messages that shows the total delay time and the cooresponding critical path index, with a background behind.
+ * 
+ * @param paths Timing paths whose total delay time is put into the messages drawn.
  * @param g Renderer used to perform drawing.
  */
-static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g);
+static void draw_total_delay_messages(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g);
 
 /**
- * @brief Calculates the color tied to a timing edge index deterministically. For long critical paths there may be repeats.
+ * @brief Calculates the color of a timing edge from its source timing node id deterministically.
  * 
- * @param label_idx Timing edge index.
- * @return Color associated with the provided timing edge.
+ * @param src_tnode_id Source timing node id.
+ * @return Color associated with the provided timing node id.
  */
 static ezgl::color get_edge_color_from_src_tnode_id(tatum::NodeId src_tnode_id);
 
@@ -397,7 +399,8 @@ void draw_crit_path(ezgl::renderer* g) {
     if (draw_state->show_crit_path_flylines) {
         draw_timing_edge_flylines(paths, g);
         if(draw_state->show_crit_path_delays) {
-            calculate_and_draw_delays(paths, g);
+            calculate_and_draw_delay_labels(paths, g);
+            draw_total_delay_messages(paths, g);
         }
     }
 
@@ -414,6 +417,7 @@ static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& path
     for (std::size_t path_idx = 0; path_idx < paths.size(); path_idx++) {
         const tatum::TimingPath& path = paths[path_idx];
         auto elements = path.data_arrival_path().elements();
+        // elements.size() returns the number of timing nodes. No flyline to draw when there is less than or equal to one node.
         if (elements.size() <= 1) {
             continue;
         }
@@ -423,8 +427,6 @@ static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& path
             tatum::NodeId node = elem.node();
             // Skip the first iteration because prev_node is not yet assigned to an actual node.
             if (prev_node) {
-                // We draw each 'edge' in a different color, this allows users to identify the stages and
-                // any routing which corresponds to the edge.
                 ezgl::color color = get_edge_color_from_src_tnode_id(prev_node);
 
                 // Check visibility of layers where source (prev_node) and sink (node) reside.
@@ -446,13 +448,14 @@ static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& path
                     }
 
                     // Draw a star at the beginning and end of the timing path.
-                    // Note that, even if the first and/or last flyline segment collapses to a single point,
+                    // Note: even if the first and/or last flyline segment collapses to a single point,
                     // the star is still drawn regardless.
                     if (prev_node == elements.begin()->node()) {
                         draw_crit_path_endpoint(e_crit_path_endpoint_type::START, start, path_idx, g);
                     }
-                    // path.data_arrival_path().elements().size() returns the total number of nodes, hence we need to
-                    // subtract 1 to get the total number of edges. Since we are using index here, we need to subtract another 1.
+                    
+                    // We have ensured that elements.size() <= 1 at the beginning, but if in the future that logic
+                    // is tampered, --elements.end() will become dangerous.
                     VTR_ASSERT_SAFE(elements.size() > 1);
                     if (node == (--elements.end())->node()) {
                         draw_crit_path_endpoint(e_crit_path_endpoint_type::END, end, path_idx, g);
@@ -481,9 +484,8 @@ static void draw_crit_path_endpoint(e_crit_path_endpoint_type endpoint_type, ezg
     draw_star_fixed_px(endpoint_coords, ENDPOINT_STAR_SIZE, g);
 
     // Draw the critical path index at the star center.
-    // Useful when multiple critical paths are drawn simultaneously and we want to distinguish them.
     g->set_font_size(16);
-    // Use white for good contrast with the two star colors.
+    // Use white for good contrast to the two star colors.
     g->set_color(ezgl::WHITE);
     g->draw_text(endpoint_coords, std::to_string(path_idx));
 }
@@ -493,6 +495,7 @@ static void draw_routed_timing_connections(const std::vector<tatum::TimingPath>&
 
     for (const tatum::TimingPath& path : paths) {
         auto elements = path.data_arrival_path().elements();
+        // elements.size() returns the number of timing nodes. No connection to draw when there is less than or equal to one node.
         if (elements.size() <= 1) {
             continue;
         }
@@ -617,7 +620,7 @@ static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPi
     }
 }
 
-static void calculate_and_draw_delays(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
+static void calculate_and_draw_delay_labels(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
     // The ratio between pixels and world units spanning the screen width.
     // Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
     double pixels_per_world_unit = get_pixels_per_world_unit(g);
@@ -636,9 +639,6 @@ static void calculate_and_draw_delays(const std::vector<tatum::TimingPath>& path
 
     // Draw non-hidden delay labels on the timing edge flylines.
     draw_labels(final_label_drawing_info, g);
-
-    // Draw a message that shows the total delay time at the screen's top right corner.
-    draw_total_delays(paths, g);
 }
 
 static std::size_t get_num_edges_of_multi_paths(const std::vector<tatum::TimingPath>& paths) {
@@ -661,13 +661,19 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
     // Per-edge label drawing info.
     std::vector<t_label_drawing_info> basic_label_drawing_info;
     std::size_t total_num_edges = get_num_edges_of_multi_paths(paths);
+    // If every critical path has completely different timing edge segments, there will be a number of total_num_edges labels.
+    // If not, some labels are repeated and will be skipped, in which case the final vector size will be less.
     basic_label_drawing_info.reserve(total_num_edges);
 
+    // A record of visited timing edges. Used to check for repeated labels.
+    // Since the number of timing edges is usually small (even when there are multiple critcal paths),
+    // std::vector has good enough performace.
     std::vector<t_timing_edge_id> visited_edges;
     visited_edges.reserve(total_num_edges);
 
     for (const tatum::TimingPath& path : paths) {
         auto elements = path.data_arrival_path().elements();
+        // elements.size() returns the number of timing nodes. No label to draw when there is less than or equal to one node.
         if (elements.size() <= 1) {
             continue;
         }
@@ -680,6 +686,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             // Skip the first iteration because prev_node is not yet assigned to an actual node.
             if (prev_node) {
                 t_timing_edge_id edge_id = {prev_node, node};
+                // A label is skipped if its corresponding timing edge has been visited before.
                 if (std::find(visited_edges.begin(), visited_edges.end(), edge_id) != visited_edges.end()) {
                     prev_node = node;
                     prev_arr_time = arr_time;
@@ -707,14 +714,17 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                     continue;
                 }
 
+                // After the several checks above, we can safely construct a drawing info object for the label.
                 t_label_drawing_info& drawing_info = basic_label_drawing_info.emplace_back();
 
                 // Delay time in seconds.
                 float delay_time = arr_time - prev_arr_time;
+                // Convert to nanoseconds.
+                delay_time = 1e9 * delay_time
                 std::stringstream ss;
                 // Set precision to three decimals and use std::fixed to explicitly show three decimals for visual consistency among labels
                 // (Note: 1.5, for example, is consistent with std::setprecision(3) but still needs to be extended to 1.500 by std::fixed).
-                ss << std::setprecision(3) << std::fixed << 1e9 * delay_time;
+                ss << std::setprecision(3) << std::fixed << delay_time;
                 // This local std::string will help construct the label bounding box later.
                 std::string delay_label_str = ss.str();
                 drawing_info.delay_label_str = delay_label_str;
@@ -724,7 +734,6 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                 
                 ezgl::point2d start = timing_flyline_draw_coords.start;
                 ezgl::point2d end = timing_flyline_draw_coords.end;
-
                 // After this step, start and end are just a relative concept.
                 // This step is to ensure that start is always to the physical left of end,
                 // which later helps facilitate the math.
@@ -960,9 +969,7 @@ static bool check_if_bboxes_overlap(const ezgl::rectangle& bbox1, const ezgl::re
 static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_info, ezgl::renderer* g) {
     g->set_font_size(16);
 
-    for (std::size_t label_idx = 0; label_idx < final_label_drawing_info.size(); label_idx++) {
-        t_label_drawing_info& drawing_info = final_label_drawing_info[label_idx];
-
+    for (t_label_drawing_info& drawing_info : final_label_drawing_info) {
         if (!drawing_info.hide_label) {
             g->set_color(drawing_info.label_color, drawing_info.label_transparency);
             g->set_text_rotation(drawing_info.rotation_angle);
@@ -972,7 +979,7 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
     g->set_text_rotation(0);
 }
 
-static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
+static void draw_total_delay_messages(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
     // The drawing logic of the total delay message background requires at least one path to exist.
     // Therefore, we need an explicit early exit.
     if (paths.size() == 0) {
@@ -991,15 +998,19 @@ static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl:
     // The longest total delay message width, in pixels.
     double max_msg_width = 0.0;
     // The total delay message height. Since a uniform font size is used, all the messages share the same height,
-    // contrasting their width.
+    // contrasting with their width.
     double msg_height = 0.0;
 
     for (std::size_t path_idx = 0; path_idx < paths.size(); path_idx++) {
         float total_delay_time = paths[path_idx].path_info().delay();
+        // Convert to nanoseconds.
+        total_delay_time = 1e9 * total_delay_time;
         // Construct the message.
         std::stringstream ss;
         ss << "Crit Path [" << path_idx << "]: ";
-        ss << std::setprecision(3) << std::fixed << 1e9 * total_delay_time;
+        // Set precision to three decimals and use std::fixed to explicitly show three decimals for visual consistency among labels
+        // (Note: 1.5, for example, is consistent with std::setprecision(3) but still needs to be extended to 1.500 by std::fixed).
+        ss << std::setprecision(3) << std::fixed << total_delay_time;
         ss << " ns";
         std::string total_delay_msg = ss.str();
         // Save the message for drawing later.
@@ -1008,7 +1019,7 @@ static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl:
         // Message dimension in pixels.
         ezgl::t_text_dimension msg_dimension = g->get_text_dimension(total_delay_msg);
 
-        // Only need to update this once, because the message height never changes.
+        // Only need to update this once, because the message height is always the same under the same font size.
         if (path_idx == 0) {
             msg_height = msg_dimension.height;
         }
@@ -1018,19 +1029,18 @@ static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl:
         }
     }
 
-    VTR_ASSERT_SAFE(paths.size() > 0);
     // Note: when we draw the background and the messages, keep in mind that the y axis is inverted and y = 0 is the screen top.
     //
     // We will draw the background rectangle first, then the messages. Otherwise the messages will be overdrawn.
     //
-    // The rectangle's center x dimension is determined by subtracting max_msg_width from the right of the screen.
+    // The rectangle's center x coordinate is determined by subtracting max_msg_width from the right of the screen.
     double background_rect_center_x = g->get_visible_screen().right() - max_msg_width;
 
     // The width of the rectangle before padding is max_msg_width. Subtract half of that from the center to reach its left side.
     // Finally, apply padding to create the actual left side of the rectangle.
     double rect_left = background_rect_center_x - max_msg_width / 2 - PADDING;
 
-    // The first total delay message will be drawn at y = msg_height. To reach the text ceiling,
+    // The first total delay message will be drawn at y = msg_height. To reach the text ceiling (the rough rectangle top),
     // we need to subtract half the height from where it is drawn, and this gives us y = msg_height - msg_height / 2 = msg_height / 2.
     // Finally, apply padding to create the actual top side of the rectangle.
     double rect_top = msg_height / 2 - PADDING;
@@ -1051,8 +1061,8 @@ static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl:
     g->set_color(ezgl::BLACK, 255);
     for (std::size_t msg_idx = 0; msg_idx < total_delay_messages.size(); msg_idx++) {
         std::string total_delay_msg = total_delay_messages[msg_idx];
-        // Align the message with the center x coordinate of the background rectangle.
-        // We want the first message to be drawn at y = msg_height, and hence we need (msg_idx + 1).
+        // Align the message with the background rectangle's center x coordinate.
+        // We want the first message to be drawn at y = msg_height, and hence we need the plus 1 added to msg_idx.
         g->draw_text(ezgl::point2d{background_rect_center_x, msg_height * (msg_idx + 1)}, total_delay_msg);
     }
     g->set_coordinate_system(ezgl::WORLD);
