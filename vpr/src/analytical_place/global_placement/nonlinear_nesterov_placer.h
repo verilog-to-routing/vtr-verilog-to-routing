@@ -92,15 +92,18 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * @brief Objective components from a placement evaluation.
      */
     struct ObjectiveValue {
-        double total = 0.;                    ///< Weighted total objective.
-        double wirelength = 0.;               ///< Unweighted differentiable wirelength.
-        double density = 0.;                  ///< Unweighted electrostatic density energy.
-        std::vector<double> density_energies; ///< Electrostatic energy for each primitive dimension.
-        double affinity_spring = 0.;          ///< Weighted quadratic affinity-spring penalty (all kinds).
-        double proximity = 0.;                ///< Unweighted proximity penalty to a legalized anchor.
-        double total_overflow = 0.;           ///< Sum of normalized tile overflows.
-        double max_overflow = 0.;             ///< Largest normalized tile overflow.
-        double overflow_ratio = 0.;           ///< Overflow mass / total deposited mass (legality in [0,~1]).
+        double total = 0.;                       ///< Weighted total objective.
+        double wirelength = 0.;                  ///< Unweighted differentiable wirelength.
+        double density = 0.;                     ///< Unweighted electrostatic density energy.
+        std::vector<double> density_energies;    ///< Electrostatic energy for each primitive dimension.
+        std::vector<double> dim_overflow_ratios; ///< Per-dimension overflow mass / deposited mass.
+        std::vector<double> dim_overflow_mass;   ///< Per-dimension absolute overflow mass.
+        std::vector<double> dim_max_overflow;    ///< Per-dimension peak normalized tile overflow.
+        double affinity_spring = 0.;             ///< Weighted quadratic affinity-spring penalty (all kinds).
+        double proximity = 0.;                   ///< Unweighted proximity penalty to a legalized anchor.
+        double total_overflow = 0.;              ///< Sum of normalized tile overflows.
+        double max_overflow = 0.;                ///< Largest normalized tile overflow.
+        double overflow_ratio = 0.;              ///< Overflow mass / total deposited mass (legality in [0,~1]).
     };
 
     /**
@@ -176,8 +179,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * @brief Affinity-spring detector kind (logging / per-kind weights).
      */
     enum class e_affinity_kind {
-        IO_PAIR,      ///< Direct 2-pin output-driver↔outpad pairs.
-        PACK_PATTERN  ///< Long prepacker chain groups spanning multiple AP blocks.
+        IO_PAIR,     ///< Direct 2-pin output-driver↔outpad pairs.
+        PACK_PATTERN ///< Long prepacker chain groups spanning multiple AP blocks.
     };
 
     /**
@@ -223,6 +226,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     double add_density_gradient_(const PartialPlacement& p_placement,
                                  const std::vector<double>& density_multipliers,
                                  std::vector<double>& density_energies,
+                                 std::vector<double>& dim_overflow_ratios,
+                                 std::vector<double>& dim_overflow_mass,
+                                 std::vector<double>& dim_max_overflow,
                                  double& total_overflow,
                                  double& max_overflow,
                                  double& overflow_ratio,
@@ -282,6 +288,16 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      */
     double compute_physical_overflow_ratio_(const PartialPlacement& p_placement,
                                             const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    /**
+     * @brief Per-resource physical-overflow ratios (overflow mass / capacity).
+     *
+     * Same deposition as @ref compute_physical_overflow_ratio_, but returns one
+     * ratio per density dimension so scarce-resource overfill is not diluted by
+     * abundant CLB capacity.
+     */
+    std::vector<double> compute_physical_overflow_ratios_per_dim_(const PartialPlacement& p_placement,
+                                                                  const std::vector<PrimitiveVectorDim>& dimensions) const;
 
     /**
      * @brief Recompute the diagonal preconditioner for the current epoch.
@@ -367,19 +383,19 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     std::vector<APBlockId> moveable_blocks_;   ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
 
-    vtr::vector<APBlockId, double> block_precond_;                     ///< Per-block diagonal preconditioner (objective curvature estimate).
-    bool precond_active_ = false;                                      ///< Whether the preconditioner is applied in the current optimization run.
-    double precond_alpha_active_ = 1.0;                                ///< Preconditioner strength exponent for the current optimization run.
-    std::vector<bool> boundary_confined_dims_;                         ///< [dim index] true if target capacity lies almost entirely on the device boundary.
-    vtr::vector<APNetId, bool> boundary_cohesion_nets_;                ///< AP nets that receive I/O-only cohesion weight.
-    vtr::vector<APNetId, bool> io_chain_cohesion_nets_;                ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
-    vtr::vector<APNetId, bool> io_pair_locality_nets_; ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
-    std::vector<AffinityGroup> affinity_groups_;       ///< All detected affinity-spring groups.
-    size_t num_io_pair_affinity_groups_ = 0;           ///< Count of IO_PAIR affinity groups.
-    size_t num_pack_pattern_affinity_groups_ = 0;      ///< Count of PACK_PATTERN affinity groups.
+    vtr::vector<APBlockId, double> block_precond_;      ///< Per-block diagonal preconditioner (objective curvature estimate).
+    bool precond_active_ = false;                       ///< Whether the preconditioner is applied in the current optimization run.
+    double precond_alpha_active_ = 1.0;                 ///< Preconditioner strength exponent for the current optimization run.
+    std::vector<bool> boundary_confined_dims_;          ///< [dim index] true if target capacity lies almost entirely on the device boundary.
+    vtr::vector<APNetId, bool> boundary_cohesion_nets_; ///< AP nets that receive I/O-only cohesion weight.
+    vtr::vector<APNetId, bool> io_chain_cohesion_nets_; ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
+    vtr::vector<APNetId, bool> io_pair_locality_nets_;  ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
+    std::vector<AffinityGroup> affinity_groups_;        ///< All detected affinity-spring groups.
+    size_t num_io_pair_affinity_groups_ = 0;            ///< Count of IO_PAIR affinity groups.
+    size_t num_pack_pattern_affinity_groups_ = 0;       ///< Count of PACK_PATTERN affinity groups.
     size_t num_io_chain_cohesion_nets_ = 0;             ///< Number of flagged direct I/O-chain AP nets.
-    std::vector<double> filler_unit_mass_;                             ///< [dim] density mass per dynamic filler.
-    std::vector<double> filler_precond_;                               ///< [dim] density-only filler preconditioner.
+    std::vector<double> filler_unit_mass_;              ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
     // reused across every objective evaluation instead of being rebuilt.
@@ -391,22 +407,20 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     // allocation and zero-construction from the const evaluation routine.
     mutable std::vector<std::vector<double>> density_utilization_workspace_; ///< [dim][site] deposited block/filler mass.
     mutable std::vector<std::vector<double>> density_potential_workspace_;   ///< [dim][site] electrostatic potential.
-    mutable std::vector<std::vector<double>> density_field_x_workspace_;     ///< [dim][site] x component of potential gradient.
-    mutable std::vector<std::vector<double>> density_field_y_workspace_;     ///< [dim][site] y component of potential gradient.
     mutable std::vector<double> density_charge_workspace_;                   ///< [site] current resource dimension's charge.
     mutable std::vector<bool> density_active_workspace_;                     ///< [site] whether the current dimension has density charge/capacity.
     mutable std::vector<double> density_layer_charge_workspace_;             ///< One layer extracted for the Poisson solve.
     mutable std::vector<double> density_layer_potential_workspace_;          ///< One layer returned by the Poisson solve.
 
-    size_t device_grid_width_ = 0;             ///< Width of the placement region.
-    size_t device_grid_height_ = 0;            ///< Height of the placement region.
-    size_t device_grid_num_layers_ = 0;        ///< Number of device layers.
-    float ap_timing_tradeoff_ = 0.f;           ///< User timing tradeoff value.
-    float effective_timing_tradeoff_ = 0.f;    ///< Timing tradeoff after design-size adaptation.
-    double io_chain_net_cohesion_weight_ = 2.; ///< Weight multiplier for direct I/O-chain AP nets.
+    size_t device_grid_width_ = 0;               ///< Width of the placement region.
+    size_t device_grid_height_ = 0;              ///< Height of the placement region.
+    size_t device_grid_num_layers_ = 0;          ///< Number of device layers.
+    float ap_timing_tradeoff_ = 0.f;             ///< User timing tradeoff value.
+    float effective_timing_tradeoff_ = 0.f;      ///< Timing tradeoff after design-size adaptation.
+    double io_chain_net_cohesion_weight_ = 2.;   ///< Weight multiplier for direct I/O-chain AP nets.
     double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (env-overridable).
-    double io_pair_net_weight_ = 8.;           ///< Extra smooth-WL multiplier for detected output-driver↔outpad nets.
-    double io_pair_attraction_weight_ = 8.;    ///< I/O pair spring strength (legacy per-block constant; kernel uses 2x for n=2 pack math).
+    double io_pair_net_weight_ = 8.;             ///< Extra smooth-WL multiplier for detected output-driver↔outpad nets.
+    double io_pair_attraction_weight_ = 8.;      ///< I/O pair spring strength (legacy per-block constant; kernel uses 2x for n=2 pack math).
 
     /// @brief B2B/QP warm-start solver. initialize_placement_ seeds the nonlinear
     ///        optimizer from a wirelength-aware analytical solve (elfPlace/ePlace
