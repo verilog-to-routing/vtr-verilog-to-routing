@@ -30,8 +30,8 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
     // we first move the blocks to their new locations (apply the move to
     // blk_loc_registry.block_locs) and then compute the change in cost. If the move
     // is accepted, the inverse look-up in blk_loc_registry.grid_blocks is updated
-    // (committing the move). If the move is rejected, the blocks are returned to
-    // their original positions (reverting blk_loc_registry.block_locs to its original state).
+    // (committing the move). If the move is rejected, the blocks are returned to their
+    // original positions (reverting blk_loc_registry.block_locs to its original state).
     //
     // Note that the inverse look-up blk_loc_registry.grid_blocks is only updated after
     // move acceptance is determined, so it should not be used when evaluating a move.
@@ -39,19 +39,21 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
     // Update the block positions
     placer_state_.mutable_blk_loc_registry().apply_move_blocks(blocks_affected);
 
-    // Find all the nets affected by this swap and update their wiring costs.
-    // This cost value doesn't depend on the timing info.
-    //
-    // Also find all the pins affected by the swap, and calculates new connection
+    // Find all the nets affected by this swap and update their costs.
+    // Also finds all the pins affected by the swap, and calculates new connection
     // delays and timing costs.
     bool completed = net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected,
                                                                            deltas.cost_terms_delta,
                                                                            deltas.timing_delta_c,
                                                                            should_cancel);
     if (!completed) {
-        // The caller no longer needs this evaluation. The partially staged
-        // scratch is consistent, so revert() restores the state; the deltas
-        // computed so far are meaningless.
+        // Cancellation may be requested by the parallel engine, when
+        // another worker has already accepted a lower-id attempt. This
+        // one is then past the batch winner, so its result would be
+        // discarded anyway. Abandoning it early cannot change the trajectory.
+        //
+        // The partially staged scratch is consistent, so revert()
+        // restores the state; the deltas computed so far are meaningless.
         deltas.cancelled = true;
         return deltas;
     }
@@ -84,9 +86,8 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
                               + placer_opts_.interposer_cost_params.cong_cost_factor * deltas.cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
         }
     } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
-        // delta_c is derived from a setup slack analysis performed by the caller
-        // (see PlacementAnnealer::try_swap_()); only the component deltas are
-        // computed here.
+        // delta_c is derived from a setup slack analysis performed by the caller;
+        // only the component deltas are computed here.
     } else {
         VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
@@ -118,7 +119,7 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
         interposer_cost_handler_->commit_costs(net_cost_handler_.affected_nets());
     }
 
-    // Update clb data structures since we kept the move.
+    // Update the grid_blocks inverse look-up now that the move is kept.
     placer_state_.mutable_blk_loc_registry().commit_move_blocks(blocks_affected);
 }
 
