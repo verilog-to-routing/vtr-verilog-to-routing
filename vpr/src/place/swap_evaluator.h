@@ -90,8 +90,8 @@ class SwapEvaluator {
      * state. A cancelled evaluation can only be reverted.
      */
     t_swap_cost_deltas apply_and_evaluate(t_pl_blocks_to_be_moved& blocks_affected,
-                                        const t_place_algorithm& place_algorithm,
-                                        const std::function<bool()>& should_cancel = {});
+                                          const t_place_algorithm& place_algorithm,
+                                          const std::function<bool()>& should_cancel = {});
 
     /**
      * @brief Makes an applied move permanent: writes the committed net bounding

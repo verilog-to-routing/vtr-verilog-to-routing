@@ -22,20 +22,19 @@ SwapEvaluator::SwapEvaluator(const t_placer_opts& placer_opts,
     , criticalities_(criticalities) {}
 
 t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& blocks_affected,
-                                                   const t_place_algorithm& place_algorithm,
-                                                   const std::function<bool()>& should_cancel) {
+                                                     const t_place_algorithm& place_algorithm,
+                                                     const std::function<bool()>& should_cancel) {
     t_swap_cost_deltas deltas;
 
-    /* To make evaluating the move simpler (e.g. calculating changed bounding box),
-     * we first move the blocks to their new locations (apply the move to
-     * blk_loc_registry.block_locs) and then compute the change in cost. If the move
-     * is accepted, the inverse look-up in blk_loc_registry.grid_blocks is updated
-     * (committing the move). If the move is rejected, the blocks are returned to
-     * their original positions (reverting blk_loc_registry.block_locs to its original state).
-     *
-     * Note that the inverse look-up blk_loc_registry.grid_blocks is only updated after
-     * move acceptance is determined, so it should not be used when evaluating a move.
-     */
+    // To make evaluating the move simpler (e.g. calculating changed bounding box),
+    // we first move the blocks to their new locations (apply the move to
+    // blk_loc_registry.block_locs) and then compute the change in cost. If the move
+    // is accepted, the inverse look-up in blk_loc_registry.grid_blocks is updated
+    // (committing the move). If the move is rejected, the blocks are returned to
+    // their original positions (reverting blk_loc_registry.block_locs to its original state).
+    //
+    // Note that the inverse look-up blk_loc_registry.grid_blocks is only updated after
+    // move acceptance is determined, so it should not be used when evaluating a move.
 
     // Update the block positions
     placer_state_.mutable_blk_loc_registry().apply_move_blocks(blocks_affected);
@@ -46,9 +45,9 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
     // Also find all the pins affected by the swap, and calculates new connection
     // delays and timing costs.
     bool completed = net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected,
-                                                                          deltas.cost_terms_delta,
-                                                                          deltas.timing_delta_c,
-                                                                          should_cancel);
+                                                                           deltas.cost_terms_delta,
+                                                                           deltas.timing_delta_c,
+                                                                           should_cancel);
     if (!completed) {
         // The caller no longer needs this evaluation. The partially staged
         // scratch is consistent, so revert() restores the state; the deltas
@@ -65,11 +64,10 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
     }
 
     if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
-        /* Take delta_c as a combination of timing and wiring cost. In
-         * addition to `timing_tradeoff`, we normalize the cost values.
-         * CRITICALITY_TIMING_PLACE algorithm works with somewhat stale
-         * timing information to save CPU time.
-         */
+        // Take delta_c as a combination of timing and wiring cost. In
+        // addition to `timing_tradeoff`, we normalize the cost values.
+        // CRITICALITY_TIMING_PLACE algorithm works with somewhat stale
+        // timing information to save CPU time.
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                        "\t\tMove bb_delta_c %e, bb_cost_norm %e, timing_tradeoff %f, "
                        "timing_delta_c %e, timing_cost_norm %e\n",
@@ -79,11 +77,11 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
                        deltas.timing_delta_c,
                        costs_.timing_cost_norm);
         deltas.delta_c = (1 - placer_opts_.timing_tradeoff) * deltas.cost_terms_delta.bb_cost * costs_.bb_cost_norm
-                                 + placer_opts_.timing_tradeoff * deltas.timing_delta_c * costs_.timing_cost_norm
-                                 + placer_opts_.congestion_factor * deltas.cost_terms_delta.cong_cost * costs_.congestion_cost_norm;
+                         + placer_opts_.timing_tradeoff * deltas.timing_delta_c * costs_.timing_cost_norm
+                         + placer_opts_.congestion_factor * deltas.cost_terms_delta.cong_cost * costs_.congestion_cost_norm;
         if (deltas.update_interposer_costs) {
             deltas.delta_c += placer_opts_.interposer_cost_params.net_cost_factor * deltas.cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                                      + placer_opts_.interposer_cost_params.cong_cost_factor * deltas.cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+                              + placer_opts_.interposer_cost_params.cong_cost_factor * deltas.cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
         }
     } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
         // delta_c is derived from a setup slack analysis performed by the caller
@@ -98,7 +96,7 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
         deltas.delta_c = deltas.cost_terms_delta.bb_cost * costs_.bb_cost_norm;
         if (deltas.update_interposer_costs) {
             deltas.delta_c += placer_opts_.interposer_cost_params.net_cost_factor * deltas.cost_terms_delta.interposer_cost * costs_.interposer_cost_norm
-                                      + placer_opts_.interposer_cost_params.cong_cost_factor * deltas.cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
+                              + placer_opts_.interposer_cost_params.cong_cost_factor * deltas.cost_terms_delta.interposer_cong_cost * costs_.interposer_cong_cost_norm;
         }
     }
 
@@ -109,8 +107,8 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
                            bool update_interposer_costs,
                            bool commit_td) {
     if (commit_td) {
-        /* Update the connection_timing_cost and connection_delay
-         * values from the temporary values. */
+        // Update the connection_timing_cost and connection_delay
+        // values from the temporary values.
         placer_state_.mutable_timing().commit_td_cost(blocks_affected);
     }
 
