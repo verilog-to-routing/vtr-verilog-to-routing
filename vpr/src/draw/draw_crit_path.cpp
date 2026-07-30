@@ -16,7 +16,7 @@
 #include "ap_netlist_utils.h"
 
 /**
- * @brief A scaling factor applied to DEFAULT_ARROW_SIZE.
+ * @brief Scaling factor applied to DEFAULT_ARROW_SIZE.
  */
 static constexpr int TIMING_EDGE_ARROW_SCALE = 30;
 
@@ -26,26 +26,33 @@ static constexpr int TIMING_EDGE_ARROW_SCALE = 30;
 static constexpr float EDGE_CENTER = 0.5;
 
 /**
- * @brief The distance in pixels used to offset a delay label from the center, perpendicular to the edge.
+ * @brief Distance in pixels used to offset a delay label from the center, perpendicular to the edge.
  */
 static constexpr int PERPENDICULAR_OFFSET = 13;
 
 /**
- * @brief The fraction of the total edge length used to offset a delay label from the center, along the edge.
+ * @brief Fraction of the total edge length used to offset a delay label from the center, along the edge.
  */
 static constexpr double EDGE_OFFSET_FRACTION = 0.1;
 
 /**
- * @brief The maximum unit distance in pixels that a label can be offset from the center, along the edge.
+ * @brief Maximum unit distance in pixels that a label can be offset from the center, along the edge.
  */
 static constexpr int MAX_EDGE_OFFSET_UNIT = 40;
 
 /**
- * @brief The size of the star drawn at the beginning and end of the critical path, in pixels.
+ * @brief Size of the star drawn at the beginning and end of the critical path, in pixels.
  * 
- * This value refers to the distance in pixels from the star center to the star tip.
+ * Refers to the distance in pixels from the star center to the star tip.
  */
 static constexpr int ENDPOINT_STAR_SIZE = 16;
+
+/**
+ * @brief Distance in pixels used to pad from the total delay meesages when drawing their background rectangle.
+ * 
+ * Used for both x and y-direction padding.
+ */
+static constexpr int PADDING = 5;
 
 /**
  * @brief Highly contrasting colours that are useful for visualization.
@@ -114,29 +121,14 @@ enum class e_label_relative_pos {
  * @brief Contains all attributes of one timing edge delay label needed for drawing and finding a label position that minimizes overlaps.
  */
 struct t_label_drawing_info {
-    /// @brief Delay time across this timing edge in nanoseconds, represented in std::string and drawn on screen.
-    std::string delay_label_str;
-
-    /// @brief True when the label is hidden due to overlaps.
-    bool hide_label = false;
-
-    /// @brief Color used when drawing the label.
-    ezgl::color label_color = {0, 0, 0};
-
-    /// @brief Alpha value used when drawing the label.
-    int label_transparency = 0;
-
-    /// @brief Length of the associated timing-edge flyline in world units.
-    double edge_length = 0.0;
-
-    /// @brief Label rotation angle (the same as the associated flyline) in degrees.
-    double rotation_angle = 0.0;
-
-    /// @brief A virtual label bounding box centered on the timing edge before offsets are applied.
-    ezgl::rectangle virtual_centered_label_bbox;
-
-    /// @brief Final label bounding box after position offsets are applied.
-    ezgl::rectangle label_bbox;
+    std::string delay_label_str;                 ///< Delay time across this timing edge in nanoseconds, represented in std::string and drawn on screen.
+    bool hide_label = false;                     ///< True when the label is hidden due to overlaps.
+    ezgl::color label_color = {0, 0, 0};         ///< Color used when drawing the label.
+    int label_transparency = 0;                  ///< Alpha value used when drawing the label.
+    double edge_length = 0.0;                    ///< Length of the associated timing-edge flyline in world units.
+    double rotation_angle = 0.0;                 ///< Label rotation angle (the same as the associated flyline) in degrees.
+    ezgl::rectangle virtual_centered_label_bbox; ///< A virtual label bounding box centered on the timing edge before offsets are applied.
+    ezgl::rectangle label_bbox;                  ///< Final label bounding box after position offsets are applied.
 };
 
 struct t_timing_edge_id {
@@ -882,8 +874,8 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
     // The unit length in world coordinates that can be doubled or directly used as the edgewise offset.
     double edge_offset_unit = edge_length * EDGE_OFFSET_FRACTION;
 
-    // For ultra long timing edges, using a fraction of the total edge length (see above) may result in
-    // labels jumping drastically. Therefore, we want to cap the edge offset unit at a certain threshold.
+    // For ultra long timing edges, using a fraction of the total edge length may result in labels jumping drastically
+    // at different zoom levels. Therefore, we want to cap the edge offset unit at a certain threshold.
     // Convert MAX_EDGE_OFFSET_UNIT (defined in pixels) to world coordinates.
     if (edge_offset_unit > MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit) {
         edge_offset_unit = MAX_EDGE_OFFSET_UNIT / pixels_per_world_unit;
@@ -952,7 +944,7 @@ static ezgl::rectangle calculate_label_bbox_from_relative_pos(t_label_drawing_in
     x_offset += edge_offset * cos(rotation_angle_in_deg);
     y_offset += edge_offset * sin(rotation_angle_in_deg);
 
-    // Calculate the label bounding box by applying the 2d offset to the virtual bounding box sitting at edge center.
+    // Calculate the label bounding box by applying the 2d offset to the virtual bounding box.
     ezgl::rectangle label_bbox = label_to_update.virtual_centered_label_bbox + ezgl::point2d(x_offset, y_offset);
     return label_bbox;
 }
@@ -981,30 +973,42 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
 }
 
 static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
+    // The drawing logic of the total delay message background requires at least one path to exist.
+    // Therefore, we need an explicit early exit.
+    if (paths.size() == 0) {
+        return;
+    }
+
     g->set_font_size(20);
     g->set_text_rotation(0);
-    // Use the screen (pixel) coordinates to draw the total delay string at a fixed screen location.
+    // Use the screen (pixel) coordinates to draw the total delay messages and their background at a fixed screen location.
     g->set_coordinate_system(ezgl::SCREEN);
-    // The rightmost screen x coordinate.
-    double screen_right = g->get_visible_screen().right();
-
+    
+    // The number of total delay messages is tied to the number of critical paths.
     std::vector<std::string> total_delay_messages;
     total_delay_messages.reserve(paths.size());
+
+    // The longest total delay message width, in pixels.
     double max_msg_width = 0.0;
+    // The total delay message height. Since a uniform font size is used, all the messages share the same height,
+    // contrasting their width.
     double msg_height = 0.0;
+
     for (std::size_t path_idx = 0; path_idx < paths.size(); path_idx++) {
         float total_delay_time = paths[path_idx].path_info().delay();
-        // Construct the message to be drawn on screen.
+        // Construct the message.
         std::stringstream ss;
         ss << "Crit Path [" << path_idx << "]: ";
         ss << std::setprecision(3) << std::fixed << 1e9 * total_delay_time;
         ss << " ns";
         std::string total_delay_msg = ss.str();
+        // Save the message for drawing later.
         total_delay_messages.push_back(total_delay_msg);
 
-        // String dimension in pixels.
+        // Message dimension in pixels.
         ezgl::t_text_dimension msg_dimension = g->get_text_dimension(total_delay_msg);
 
+        // Only need to update this once, because the message height never changes.
         if (path_idx == 0) {
             msg_height = msg_dimension.height;
         }
@@ -1014,17 +1018,42 @@ static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl:
         }
     }
 
-    double padding = 5.0;
-    ezgl::point2d top_left = {screen_right - 1.5 * max_msg_width - padding, msg_height / 2 - padding};
-    ezgl::rectangle background(top_left, max_msg_width + 2 * padding, msg_height * total_delay_messages.size() + 2 * padding);
-    g->set_color(ezgl::WHITE);
-    g->fill_rectangle(background);
+    VTR_ASSERT_SAFE(paths.size() > 0);
+    // Note: when we draw the background and the messages, keep in mind that the y axis is inverted and y = 0 is the screen top.
+    //
+    // We will draw the background rectangle first, then the messages. Otherwise the messages will be overdrawn.
+    //
+    // The rectangle's center x dimension is determined by subtracting max_msg_width from the right of the screen.
+    double background_rect_center_x = g->get_visible_screen().right() - max_msg_width;
+
+    // The width of the rectangle before padding is max_msg_width. Subtract half of that from the center to reach its left side.
+    // Finally, apply padding to create the actual left side of the rectangle.
+    double rect_left = background_rect_center_x - max_msg_width / 2 - PADDING;
+
+    // The first total delay message will be drawn at y = msg_height. To reach the text ceiling,
+    // we need to subtract half the height from where it is drawn, and this gives us y = msg_height - msg_height / 2 = msg_height / 2.
+    // Finally, apply padding to create the actual top side of the rectangle.
+    double rect_top = msg_height / 2 - PADDING;
+
+    // Take into account padding on the left and right.
+    double rect_width = max_msg_width + 2 * PADDING;
+
+    // The message height multiplied by the number of messages gives the rough rectangle height.
+    // Also take into account padding on the top and bottom.
+    double rect_height = msg_height * total_delay_messages.size() + 2 * PADDING;
+
+    ezgl::rectangle rect(ezgl::point2d{rect_left, rect_top}, rect_width, rect_height);
+    // Draw the background rectangle with a little translucency for good visual effect. 0 is transparent and 255 is opaque.
+    g->set_color(ezgl::WHITE, 225);
+    g->fill_rectangle(rect);
     
-    g->set_color(ezgl::BLACK);
-    
+    // Draw the messages.
+    g->set_color(ezgl::BLACK, 255);
     for (std::size_t msg_idx = 0; msg_idx < total_delay_messages.size(); msg_idx++) {
         std::string total_delay_msg = total_delay_messages[msg_idx];
-        g->draw_text(ezgl::point2d{screen_right - max_msg_width, msg_height * (msg_idx + 1)}, total_delay_msg);
+        // Align the message with the center x coordinate of the background rectangle.
+        // We want the first message to be drawn at y = msg_height, and hence we need (msg_idx + 1).
+        g->draw_text(ezgl::point2d{background_rect_center_x, msg_height * (msg_idx + 1)}, total_delay_msg);
     }
     g->set_coordinate_system(ezgl::WORLD);
 }
