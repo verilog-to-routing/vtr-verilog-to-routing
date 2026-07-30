@@ -279,6 +279,14 @@ struct SwitchGridPoint {
 // additionally get a dedicated hub node with full-crossbar access to every wire incident
 // to that switch box, since drive/tap points model dedicated clock-network access
 // hardware rather than part of the general switching fabric.
+//
+// Hop wires may span more than one switch-box pitch (see length_hops_), in which case
+// they only make wire-to-wire turns at their true endpoints; each track's wires are
+// staggered by (track % length_hops_) pitches so that every switch box still has some
+// tracks truly ending there, matching how alloc_and_load_seg_details staggers general
+// routing segments. A switch_point that lands strictly between a wire's endpoints still
+// gets tap access to that wire directly (see covering_wire_at in the .cpp), even though
+// no turn is available there.
 class ClockSwitchGrid : public ClockNetwork {
   private:
     MetalLayer layer_;
@@ -288,6 +296,7 @@ class ClockSwitchGrid : public ClockNetwork {
     int chan_w_ = UNDEFINED;
     int internal_switch_idx_ = UNDEFINED;
     e_switch_block_type switch_block_type_ = e_switch_block_type::FULL;
+    int length_hops_ = 1;
 
     // segment indices for the horizontal/vertical inter-switch-box wires
     int x_seg_idx_ = UNDEFINED;
@@ -311,6 +320,7 @@ class ClockSwitchGrid : public ClockNetwork {
     void set_chan_width(int chan_w);
     void set_internal_switch(int switch_idx);
     void set_switch_block_type(e_switch_block_type switch_block_type);
+    void set_length(int length_hops);
     void add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx = UNDEFINED);
 
     /*

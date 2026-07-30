@@ -72,6 +72,14 @@ struct t_clock_switch_grid_arch {
     // networks.
     e_switch_block_type switch_block_type = e_switch_block_type::FULL;
 
+    // Wire length, in switch-box hops (not tiles), i.e. how many repeatx/repeaty
+    // pitches a hop wire spans before terminating at a switch box. Defaults to
+    // "1", matching the original one-hop-per-switch-box implementation. Expressed
+    // in hop units (rather than tiles) so it stays independent of repeatx/repeaty:
+    // changing the switch-box pitch doesn't require also rescaling length to keep
+    // the same topology.
+    std::string length = "1";
+
     std::vector<t_clock_switch_grid_point> switch_points;
 };
 

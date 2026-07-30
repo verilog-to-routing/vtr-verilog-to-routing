@@ -138,6 +138,7 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                 switch_grid->set_chan_width(p.parse_formula(clock_network_arch.switch_grid.chan_w, vars));
                 switch_grid->set_internal_switch(clock_network_arch.switch_grid.arch_switch_idx);
                 switch_grid->set_switch_block_type(clock_network_arch.switch_grid.switch_block_type);
+                switch_grid->set_length(p.parse_formula(clock_network_arch.switch_grid.length, vars));
 
                 for (const t_clock_switch_grid_point& point : clock_network_arch.switch_grid.switch_points) {
                     SwitchGridPointType type = (point.type == e_clock_switch_grid_point_type::DRIVE)

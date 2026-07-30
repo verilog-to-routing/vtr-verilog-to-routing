@@ -347,6 +347,12 @@ int ClockRib::create_chanx_wire(int layer,
     rr_graph_builder.set_node_layer(chanx_node, layer, layer);
     rr_graph_builder.set_node_capacity(chanx_node, 1);
     rr_graph_builder.set_node_track_num(chanx_node, ptc_num);
+    // FIXME: Rmetal/Cmetal are per-unit-length (see doc/src/arch/reference.rst), but
+    // here they're used as a flat per-node total with no scaling by (x_end - x_start).
+    // This means wire delay doesn't scale with rib length/repeat spacing. Same bug as
+    // ClockSpine::create_chany_wire below, and the same one already fixed for
+    // ClockSwitchGrid::create_chanx_node/create_chany_node -- see the comment there
+    // for the fix (scale by node tile span before calling find_create_rr_rc_data).
     const NodeRCIndex rc_index = find_create_rr_rc_data(x_chan_wire_.layer.r_metal, x_chan_wire_.layer.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
     rr_graph_builder.set_node_rc_index(chanx_node, rc_index);
     rr_graph_builder.set_node_direction(chanx_node, direction);
@@ -682,6 +688,8 @@ int ClockSpine::create_chany_wire(int layer,
     rr_graph_builder.set_node_layer(chany_node, layer, layer);
     rr_graph_builder.set_node_capacity(chany_node, 1);
     rr_graph_builder.set_node_track_num(chany_node, ptc_num);
+    // FIXME: same unscaled Rmetal/Cmetal bug as ClockRib::create_chanx_wire above --
+    // see the comment there.
     const NodeRCIndex rc_index = find_create_rr_rc_data(y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
     rr_graph_builder.set_node_rc_index(chany_node, rc_index);
     rr_graph_builder.set_node_direction(chany_node, direction);
@@ -806,6 +814,11 @@ void ClockSwitchGrid::set_switch_block_type(e_switch_block_type switch_block_typ
     switch_block_type_ = switch_block_type;
 }
 
+void ClockSwitchGrid::set_length(int length_hops) {
+    VTR_ASSERT(length_hops > 0);
+    length_hops_ = length_hops;
+}
+
 void ClockSwitchGrid::add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx) {
     SwitchGridPoint point;
     point.name = std::move(name);
@@ -822,13 +835,16 @@ void ClockSwitchGrid::add_switch_point(std::string name, SwitchGridPointType typ
  */
 
 void ClockSwitchGrid::create_segments(std::vector<t_segment_inf>& segment_inf) {
+    // Segment length is recorded in tiles (like every other segment_inf entry),
+    // even though length_hops_ is specified in the arch file in switch-box-hop
+    // units: a hop wire physically spans length_hops_ * repeat tiles.
     segment_inf.emplace_back();
     x_seg_idx_ = segment_inf.size() - 1;
-    populate_segment_values(x_seg_idx_, clock_name_ + "_x", repeat_.x, layer_, segment_inf, e_parallel_axis::X_AXIS);
+    populate_segment_values(x_seg_idx_, clock_name_ + "_x", length_hops_ * repeat_.x, layer_, segment_inf, e_parallel_axis::X_AXIS);
 
     segment_inf.emplace_back();
     y_seg_idx_ = segment_inf.size() - 1;
-    populate_segment_values(y_seg_idx_, clock_name_ + "_y", repeat_.y, layer_, segment_inf, e_parallel_axis::Y_AXIS);
+    populate_segment_values(y_seg_idx_, clock_name_ + "_y", length_hops_ * repeat_.y, layer_, segment_inf, e_parallel_axis::Y_AXIS);
 }
 
 int ClockSwitchGrid::num_grid_locations(const DeviceGrid& grid) const {
@@ -882,35 +898,52 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
     std::vector<std::map<std::pair<int, int>, int>> north_wire(chan_w_);
 
     // Pass 1: create the hop wires themselves (independent of switch-block pattern).
+    // A wire spans length_hops_ switch-box pitches, not necessarily just one. Each
+    // track's wires are staggered by (track % length_hops_) pitches -- mirroring how
+    // alloc_and_load_seg_details staggers general routing segments -- so that across
+    // the whole channel, every switch box is still the true endpoint of some track's
+    // wire and can participate in wire-to-wire turns; only 1/length_hops_ of the
+    // tracks turn at any single switch box.
     for (int track = 0; track < chan_w_; track++) {
-        for (int by = start_y_; by <= y_max; by += repeat_.y) {
-            for (int bx = start_x_; bx <= x_max; bx += repeat_.x) {
-                int east_x = bx + repeat_.x;
-                if (east_x <= x_max) {
-                    int wire_ptc = clock_graph.get_and_increment_chanx_ptc_num();
-                    int wire_idx = create_chanx_node(layer_num, bx, east_x, by, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
-                    east_wire[track][{bx, by}] = wire_idx;
-                }
+        int stagger = track % length_hops_;
 
-                int north_y = by + repeat_.y;
-                if (north_y <= y_max) {
-                    int wire_ptc = clock_graph.get_and_increment_chany_ptc_num();
-                    int wire_idx = create_chany_node(layer_num, by, north_y, bx, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder, num_segments_x);
-                    north_wire[track][{bx, by}] = wire_idx;
-                }
+        for (int by = start_y_; by <= y_max; by += repeat_.y) {
+            for (int k = stagger;; k += length_hops_) {
+                int bx = start_x_ + k * repeat_.x;
+                int east_x = start_x_ + (k + length_hops_) * repeat_.x;
+                if (east_x > x_max) break;
+
+                int wire_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+                int wire_idx = create_chanx_node(layer_num, bx, east_x, by, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
+                east_wire[track][{bx, by}] = wire_idx;
+            }
+        }
+
+        for (int bx = start_x_; bx <= x_max; bx += repeat_.x) {
+            for (int k = stagger;; k += length_hops_) {
+                int by = start_y_ + k * repeat_.y;
+                int north_y = start_y_ + (k + length_hops_) * repeat_.y;
+                if (north_y > y_max) break;
+
+                int wire_ptc = clock_graph.get_and_increment_chany_ptc_num();
+                int wire_idx = create_chany_node(layer_num, by, north_y, bx, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder, num_segments_x);
+                north_wire[track][{bx, by}] = wire_idx;
             }
         }
     }
 
     // Returns the rr_node index of the hop wire touching switch box (bx,by) on the
-    // given side, for the given track, or -1 if no such wire exists (grid boundary).
+    // given side, for the given track, or -1 if no such wire exists there. With
+    // length_hops_ > 1 this only succeeds at a wire's true endpoints (grid boundary,
+    // or a switch box that isn't a multiple of length_hops_ pitches from this track's
+    // stagger, simply has no wire-to-wire turn available here for this track).
     auto stub_at = [&](int bx, int by, e_side side, int track) -> int {
         const std::map<std::pair<int, int>, int>* wires = nullptr;
         int key_x = bx;
         int key_y = by;
         switch (side) {
             case LEFT:
-                key_x = bx - repeat_.x;
+                key_x = bx - length_hops_ * repeat_.x;
                 if (key_x < start_x_) return -1;
                 wires = &east_wire[track];
                 break;
@@ -918,7 +951,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                 wires = &east_wire[track];
                 break;
             case BOTTOM:
-                key_y = by - repeat_.y;
+                key_y = by - length_hops_ * repeat_.y;
                 if (key_y < start_y_) return -1;
                 wires = &north_wire[track];
                 break;
@@ -931,6 +964,29 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
         }
         auto it = wires->find({key_x, key_y});
         return (it != wires->end()) ? it->second : -1;
+    };
+
+    // Returns the rr_node index of the given track's wire (along the given axis)
+    // whose physical span covers (bx,by), even when (bx,by) is not a true endpoint
+    // of that wire (i.e. stub_at would return -1 on both sides). This lets a
+    // switch_point tap into a length_hops_ > 1 wire anywhere along its span, the
+    // same way a connection block can tap a multi-tile general routing segment
+    // mid-span, independent of where that wire makes switch-block turns.
+    auto covering_wire_at = [&](int bx, int by, e_parallel_axis axis, int track) -> int {
+        int stagger = track % length_hops_;
+        if (axis == e_parallel_axis::X_AXIS) {
+            int k = (bx - start_x_) / repeat_.x;
+            if (k < stagger) return -1;
+            int start_k = stagger + length_hops_ * ((k - stagger) / length_hops_);
+            auto it = east_wire[track].find({start_x_ + start_k * repeat_.x, by});
+            return (it != east_wire[track].end()) ? it->second : -1;
+        } else {
+            int k = (by - start_y_) / repeat_.y;
+            if (k < stagger) return -1;
+            int start_k = stagger + length_hops_ * ((k - stagger) / length_hops_);
+            auto it = north_wire[track].find({bx, start_y_ + start_k * repeat_.y});
+            return (it != north_wire[track].end()) ? it->second : -1;
+        }
     };
 
     // Pass 2: connect the switch boxes.
@@ -958,12 +1014,39 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                         switch_point_registered[i] = true;
                     }
 
+                    bool x_tapped = false;
+                    bool y_tapped = false;
                     for (e_side side : TOTAL_2D_SIDES) {
                         int stub_idx = stub_at(bx, by, side, track);
                         if (stub_idx < 0) continue;
 
+                        if (side == LEFT || side == RIGHT) {
+                            x_tapped = true;
+                        } else {
+                            y_tapped = true;
+                        }
+
                         clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), internal_switch_idx_, false);
                         clock_graph.add_edge(rr_edges_to_create, RRNodeId(stub_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                    }
+
+                    // This switch box isn't a true endpoint of this track's horizontal
+                    // and/or vertical wire (only possible once length_hops_ > 1). The
+                    // switch_point still needs tap access here even though no
+                    // wire-to-wire turn is available at this location for this track.
+                    if (!x_tapped) {
+                        int cov_idx = covering_wire_at(bx, by, e_parallel_axis::X_AXIS, track);
+                        if (cov_idx >= 0) {
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                        }
+                    }
+                    if (!y_tapped) {
+                        int cov_idx = covering_wire_at(bx, by, e_parallel_axis::Y_AXIS, track);
+                        if (cov_idx >= 0) {
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                        }
                     }
                 }
             }
@@ -1032,7 +1115,15 @@ int ClockSwitchGrid::create_chanx_node(int layer,
     rr_graph_builder.set_node_layer(chanx_node, layer, layer);
     rr_graph_builder.set_node_capacity(chanx_node, 1);
     rr_graph_builder.set_node_track_num(chanx_node, ptc_num);
-    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal, layer_.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
+    // Rmetal/Cmetal are resistance/capacitance PER UNIT LENGTH (per tile spanned,
+    // see doc/src/arch/reference.rst), not a flat per-node total. Scale by the
+    // node's actual tile span so that increasing repeatx (or length_hops_) genuinely
+    // increases wire delay, instead of every hop wire silently getting the same R/C
+    // regardless of how many tiles it physically spans. This also naturally gives
+    // hub nodes (x_start == x_end) 0 R/C, which is correct since they represent
+    // switch hardware rather than metal wire.
+    int node_length = x_end - x_start;
+    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal * node_length, layer_.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
     rr_graph_builder.set_node_rc_index(chanx_node, rc_index);
     rr_graph_builder.set_node_direction(chanx_node, direction);
     rr_graph_builder.set_node_cost_index(chanx_node, RRIndexedDataId(CHANX_COST_INDEX_START + x_seg_idx_));
@@ -1065,7 +1156,11 @@ int ClockSwitchGrid::create_chany_node(int layer,
     rr_graph_builder.set_node_layer(chany_node, layer, layer);
     rr_graph_builder.set_node_capacity(chany_node, 1);
     rr_graph_builder.set_node_track_num(chany_node, ptc_num);
-    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal, layer_.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
+    // See the matching comment in create_chanx_node: Rmetal/Cmetal are per-unit-length,
+    // so scale by the node's actual tile span rather than treating them as a flat
+    // per-node total.
+    int node_length = y_end - y_start;
+    const NodeRCIndex rc_index = find_create_rr_rc_data(layer_.r_metal * node_length, layer_.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
     rr_graph_builder.set_node_rc_index(chany_node, rc_index);
     rr_graph_builder.set_node_direction(chany_node, direction);
     rr_graph_builder.set_node_cost_index(chany_node, RRIndexedDataId(CHANX_COST_INDEX_START + num_segments_x + y_seg_idx_));

@@ -4706,7 +4706,7 @@ static void process_clock_networks(pugi::xml_node parent,
                                    pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
     std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
-    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name", "switch_block_type"};
+    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name", "switch_block_type", "length"};
     std::vector<std::string> expected_children = {"rib", "spine", "clock_switch_grid"};
 
     int num_clock_networks = count_children(parent, "clock_network", loc_data);
@@ -4861,6 +4861,8 @@ static void process_clock_networks(pugi::xml_node parent,
                                                switch_block_type_str.c_str())
                                    .c_str());
             }
+
+            clock_network.switch_grid.length = get_attribute(curr_type, "length", loc_data, ReqOpt::OPTIONAL).as_string("1");
 
             process_clock_switch_grid_points(curr_type, clock_network, switches, loc_data);
         }
