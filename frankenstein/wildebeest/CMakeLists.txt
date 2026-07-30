@@ -27,28 +27,4 @@ else()
     message(WARNING "Only official yosys versions are supported")
 endif()
 
-set(YOSYS_SHARE_DIR ${YOSYS_DATDIR}/plugins/${OUTPUT_NAME})
-
 add_subdirectory(src)
-add_subdirectory(architecture)
-
-# Add back once testing is possible
-enable_testing()
-add_subdirectory(tests)
-
-# code formatting target
-find_program(CLANG_FORMAT_EXE clang-format)
-
-file(GLOB_RECURSE ALL_CPP_FILES
-    "*.cc"
-    "*.h"
-)
-
-if(CLANG_FORMAT_EXE)
-    add_custom_target(
-        format
-        COMMAND ${CLANG_FORMAT_EXE} -style=file -i ${ALL_CPP_FILES}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Formatting C++ source files with clang-format..."
-    )
-endif()
