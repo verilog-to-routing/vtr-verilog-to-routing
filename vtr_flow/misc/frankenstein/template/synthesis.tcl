@@ -9,8 +9,8 @@ plugin -i wildebeest
 # the individual passes ourselves. wildebeest is loaded for max_level and
 # vtr_arch_rules.
 #
-# put these next to each other in the arch support dir named by K6D
-#   arch_config.tcl mul2dsp_map.v
+# put arch_config.tcl in the arch support dir named by K6D; it is the only
+# genuinely per-arch artifact the script needs
 # shared arch-independent support lives in the template dir TDIR
 #   vtr_ram_whitebox.v vtr_ram_bit_lib.v and whatever abc scripts the
 #   config points at
@@ -71,12 +71,14 @@ if { $archXmlPath ne "" } {
     set techBramFile     "$archRulesDir/tech_bram.v"
     set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
     set multMapFile      "$archRulesDir/mult_map.v"
+    set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
     set addSubMapFile    "$archRulesDir/add_sub_map.v"
 } else {
     set bramMapFile      "$archSupportDir/bram_memory_map.txt"
     set techBramFile     "$archSupportDir/tech_bram.v"
     set hardblockLibFile "$archSupportDir/vtr_hardblock_lib.v"
     set multMapFile      "$archSupportDir/mult_map.v"
+    set mul2dspMapFile   "$archSupportDir/mul2dsp_map.v"
     set addSubMapFile    "$archSupportDir/add_sub_map.v"
 }
 
@@ -196,7 +198,7 @@ opt_clean
 # mul2dsp chops wide $mul into chunks that fit one dsp block. mult_map.v
 # then picks up anything left that still fits an arch multiply mode.
 memory_dff
-techmap -map +/mul2dsp.v -map $archSupportDir/mul2dsp_map.v \
+techmap -map +/mul2dsp.v -map $mul2dspMapFile \
     -D DSP_A_MAXWIDTH=$dspMaxWidth -D DSP_B_MAXWIDTH=$dspMaxWidth \
     -D DSP_A_MINWIDTH=$dspMinWidth -D DSP_B_MINWIDTH=$dspMinWidth \
     -D DSP_NAME=_dsp_block_

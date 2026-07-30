@@ -20,6 +20,7 @@
 //   tech_bram.v           recursive bit-sliced bram techmap
 //   vtr_hardblock_lib.v   -lib stubs sized from the arch hardblock models
 //   mult_map.v            $mul -> multiply techmap with arch mode widths
+//   mul2dsp_map.v         mul2dsp _dsp_block_ -> multiply with the same modes
 //   add_sub_map.v         $add/$sub -> carry-chain adder techmap
 //   <model>_map.v         one per -exotic comb block
 //
