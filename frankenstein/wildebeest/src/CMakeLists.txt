@@ -1,19 +1,29 @@
 find_package(Yosys)
 
+# frankenstein-only sources live next to the wildebeest tree
+# (frankenstein/src), not inside wildebeest/src.
+set(FRANKENSTEIN_SRC_DIR "${CMAKE_SOURCE_DIR}/../src")
+
 # pugixml is source-compiled into the plugin from vtr's vendored copy, so the
 # arch xml reader uses a real xml parser without adding any link dependency.
 set(PUGIXML_SRC_DIR "${CMAKE_SOURCE_DIR}/../../libs/EXTERNAL/libpugixml/src"
     CACHE PATH "path to the vendored pugixml sources")
 
 add_library(wildebeest SHARED
-    arch_rule_gen.cc
+    # wildebeest-originated (modified for -vtr_arch)
     clk_domains.cc
-    vtr_arch_clocks.cc
-    vtr_arch_info.cc
-    vtr_arch_rules.cc
+    # frankenstein-only
+    ${FRANKENSTEIN_SRC_DIR}/arch_rule_gen.cc
+    ${FRANKENSTEIN_SRC_DIR}/vtr_arch_clocks.cc
+    ${FRANKENSTEIN_SRC_DIR}/vtr_arch_info.cc
+    ${FRANKENSTEIN_SRC_DIR}/vtr_arch_rules.cc
     ${PUGIXML_SRC_DIR}/pugixml.cpp
 )
-target_include_directories(wildebeest PRIVATE ${PUGIXML_SRC_DIR})
+target_include_directories(wildebeest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${FRANKENSTEIN_SRC_DIR}
+    ${PUGIXML_SRC_DIR}
+)
 target_link_libraries(wildebeest
     PRIVATE
         yosys::yosys

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# build the frankenstein wildebeest plugin (the vendored wildebeest tree at
-# <vtr>/frankenstein/wildebeest with the -vtr_arch clock-cut modifications)
-# against the yosys that ships inside the vtr build.
+# build the frankenstein wildebeest plugin against the yosys that ships inside
+# the vtr build. sources are split:
+#   frankenstein/wildebeest/src  wildebeest-originated (clk_domains / max_level)
+#   frankenstein/src             frankenstein-only (vtr_arch_* / arch_rule_gen)
 #
 # prerequisites: vtr already built so that <vtr>/build/bin/yosys-config exists
 # (the plugin only needs yosys headers; it does NOT link any vtr lib).
@@ -13,6 +14,7 @@ set -euo pipefail
 scriptDir="$(cd "$(dirname "$0")" && pwd)"
 vtrDir="${VTR_DIR:-$(cd "${scriptDir}/.." && pwd)}"
 wildebeestSrc="${scriptDir}/wildebeest"
+frankensteinSrc="${scriptDir}/src"
 yosysConfig="${vtrDir}/build/bin/yosys-config"
 
 if [[ -n "${BUILD_JOBS:-}" ]]; then
@@ -21,9 +23,10 @@ else
     jobCount="$(nproc 2>/dev/null || echo 4)"
 fi
 
-echo "wildebeest src: ${wildebeestSrc}"
-echo "vtr dir:        ${vtrDir}"
-echo "build jobs:     ${jobCount}"
+echo "wildebeest src:    ${wildebeestSrc}"
+echo "frankenstein src:  ${frankensteinSrc}"
+echo "vtr dir:           ${vtrDir}"
+echo "build jobs:        ${jobCount}"
 
 if [[ ! -f "${yosysConfig}" ]]; then
     echo "error: yosys-config not found at ${yosysConfig}"
@@ -36,6 +39,11 @@ fi
 
 if [[ ! -f "${wildebeestSrc}/src/clk_domains.cc" ]]; then
     echo "error: wildebeest source not found at ${wildebeestSrc}"
+    exit 1
+fi
+
+if [[ ! -f "${frankensteinSrc}/vtr_arch_rules.cc" ]]; then
+    echo "error: frankenstein source not found at ${frankensteinSrc}"
     exit 1
 fi
 
