@@ -35,6 +35,14 @@ struct Wire {
 struct WireRepeat {
     int x = UNDEFINED;
     int y = UNDEFINED;
+    // Upper bound (in device grid coordinates) for how far this repeat pattern
+    // tiles, in whichever axis is the network's own tiling direction: x_max for
+    // a spine's column-tiling (repeat.x), y_max for a rib's row-tiling
+    // (repeat.y). Sourced from the arch's optional endx (spine)/endy (rib)
+    // attribute; defaults to the device's full width/height, i.e. tile all the
+    // way to the device edge, matching the historical behavior.
+    int x_max = UNDEFINED;
+    int y_max = UNDEFINED;
 };
 
 struct RibDrive {
@@ -153,7 +161,7 @@ class ClockRib : public ClockNetwork {
     void set_metal_layer(float r_metal, float c_metal);
     void set_metal_layer(MetalLayer metal_layer);
     void set_initial_wire_location(int start_x, int end_x, int y);
-    void set_wire_repeat(int repeat_x, int repeat_y);
+    void set_wire_repeat(int repeat_x, int repeat_y, int repeat_y_max);
     void set_drive_location(int offset_x);
     void set_drive_switch(int switch_idx);
     void set_drive_name(std::string name);
@@ -223,7 +231,7 @@ class ClockSpine : public ClockNetwork {
     void set_metal_layer(float r_metal, float c_metal);
     void set_metal_layer(MetalLayer metal_layer);
     void set_initial_wire_location(int start_y, int end_y, int x);
-    void set_wire_repeat(int repeat_x, int repeat_y);
+    void set_wire_repeat(int repeat_x, int repeat_y, int repeat_x_max);
     void set_drive_location(int offset_y);
     void set_drive_switch(int switch_idx);
     void set_drive_name(std::string name);

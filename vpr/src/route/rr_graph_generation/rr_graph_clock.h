@@ -98,11 +98,21 @@ class ClockRRGraphBuilder {
                              int y,
                              int node_index);
 
-    /* Returns the rr_node idx of the switch at location {x, y} */
+    /* Returns the rr_node idx of the switch at location {x, y}.
+     *
+     * If `required` is true (the default), a clock network/switch point that doesn't
+     * reach (x,y) is treated as an arch mistake and raises a fatal error -- appropriate
+     * for callers connecting to one specific, arch-declared coordinate (e.g. a <tap>'s
+     * locationx/locationy). Pass `required=false` for callers that probe many candidate
+     * locations and expect most of them to legitimately not be reached (e.g.
+     * ClockToPinsConnection scanning every tile in the device, where a quadrant-scoped
+     * clock network is only expected to reach tiles within its own quadrant) -- in that
+     * case a miss just means "not reachable from here" and an empty vector is returned. */
     std::vector<int> get_rr_node_indices_at_switch_location(std::string clock_name,
                                                             std::string switch_point_name,
                                                             int x,
-                                                            int y) const;
+                                                            int y,
+                                                            bool required = true) const;
 
     /* Returns all the switch locations for the a certain clock network switch */
     std::set<std::pair<int, int>> get_switch_locations(std::string clock_name,

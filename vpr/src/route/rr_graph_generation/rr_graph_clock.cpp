@@ -72,16 +72,26 @@ void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
 std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std::string clock_name,
                                                                              std::string switch_point_name,
                                                                              int x,
-                                                                             int y) const {
+                                                                             int y,
+                                                                             bool required) const {
     auto itter = clock_name_to_switch_points.find(clock_name);
 
-    // assert that clock name exists in map
-    VTR_ASSERT(itter != clock_name_to_switch_points.end());
+    if (itter == clock_name_to_switch_points.end()) {
+        if (!required) {
+            return {};
+        }
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                         "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
+                         "This usually means every instance of clock network '%s' failed to build -- check for "
+                         "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
+                         "the drive switch_point's offset places it outside every instance's valid span.\n",
+                         clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
+    }
 
     auto& switch_points = itter->second;
     std::vector<int> rr_node_indices = switch_points.get_rr_node_indices_at_location(switch_point_name, x, y);
 
-    if (rr_node_indices.empty()) {
+    if (rr_node_indices.empty() && required) {
         std::string valid_locations;
         for (auto& loc : switch_points.get_switch_locations(switch_point_name)) {
             valid_locations += vtr::string_fmt(" (%d,%d)", loc.first, loc.second);
@@ -130,8 +140,14 @@ std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(std::str
                                                                         std::string switch_point_name) const {
     auto itter = clock_name_to_switch_points.find(clock_name);
 
-    // assert that clock name exists in map
-    VTR_ASSERT(itter != clock_name_to_switch_points.end());
+    if (itter == clock_name_to_switch_points.end()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                         "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
+                         "This usually means every instance of clock network '%s' failed to build -- check for "
+                         "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
+                         "the drive switch_point's offset places it outside every instance's valid span.\n",
+                         clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
+    }
 
     auto& switch_points = itter->second;
     return switch_points.get_switch_locations(switch_point_name);

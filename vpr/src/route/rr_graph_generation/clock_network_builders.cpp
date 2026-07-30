@@ -8,6 +8,8 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
+#include <algorithm>
+
 void static populate_segment_values(int seg_index,
                                     std::string name,
                                     int length,
@@ -118,7 +120,7 @@ void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
     x_chan_wire_.position = y;
 }
 
-void ClockRib::set_wire_repeat(int repeat_x, int repeat_y) {
+void ClockRib::set_wire_repeat(int repeat_x, int repeat_y, int repeat_y_max) {
     if (repeat_x <= 0 || repeat_y <= 0) {
         // Avoid an infinite loop when creating ribs
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
@@ -127,6 +129,7 @@ void ClockRib::set_wire_repeat(int repeat_x, int repeat_y) {
 
     repeat_.x = repeat_x;
     repeat_.y = repeat_y;
+    repeat_.y_max = repeat_y_max;
 }
 
 void ClockRib::set_drive_location(int offset_x) {
@@ -198,7 +201,8 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
     VTR_ASSERT(repeat_.x > 0);
 
     size_t num_additional_nodes = 0;
-    for (unsigned y = x_chan_wire_.position; y < grid.height() - 1; y += repeat_.y) {
+    unsigned y_tile_end = std::min<unsigned>(grid.height() - 1, repeat_.y_max);
+    for (unsigned y = x_chan_wire_.position; y < y_tile_end; y += repeat_.y) {
         for (unsigned x_start = x_chan_wire_.start; x_start < grid.width() - 1; x_start += repeat_.x) {
             unsigned drive_x = x_start + drive_.offset;
             unsigned x_end = x_start + x_chan_wire_.length;
@@ -252,7 +256,8 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
     VTR_ASSERT(g_vpr_ctx.device().grid.get_num_layers() == 1);
     int layer_num = 0;
 
-    for (unsigned y = x_chan_wire_.position; y < grid.height() - 1; y += repeat_.y) {
+    unsigned y_tile_end = std::min<unsigned>(grid.height() - 1, repeat_.y_max);
+    for (unsigned y = x_chan_wire_.position; y < y_tile_end; y += repeat_.y) {
         for (unsigned x_start = x_chan_wire_.start; x_start < grid.width() - 1; x_start += repeat_.x) {
             unsigned drive_x = x_start + drive_.offset;
             unsigned x_end = x_start + x_chan_wire_.length;
@@ -458,7 +463,7 @@ void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
     y_chan_wire.position = x;
 }
 
-void ClockSpine::set_wire_repeat(int repeat_x, int repeat_y) {
+void ClockSpine::set_wire_repeat(int repeat_x, int repeat_y, int repeat_x_max) {
     if (repeat_x <= 0 || repeat_y <= 0) {
         // Avoid an infinite loop when creating spines
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
@@ -467,6 +472,7 @@ void ClockSpine::set_wire_repeat(int repeat_x, int repeat_y) {
 
     repeat.x = repeat_x;
     repeat.y = repeat_y;
+    repeat.x_max = repeat_x_max;
 }
 
 void ClockSpine::set_drive_location(int offset_y) {
@@ -538,7 +544,8 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
     VTR_ASSERT(repeat.y > 0);
     VTR_ASSERT(repeat.x > 0);
 
-    for (unsigned x = y_chan_wire.position; x < grid.width() - 1; x += repeat.x) {
+    unsigned x_tile_end = std::min<unsigned>(grid.width() - 1, repeat.x_max);
+    for (unsigned x = y_chan_wire.position; x < x_tile_end; x += repeat.x) {
         for (unsigned y_start = y_chan_wire.start; y_start < grid.height() - 1; y_start += repeat.y) {
             unsigned drive_y = y_start + drive.offset;
             unsigned y_end = y_start + y_chan_wire.length;
@@ -586,7 +593,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
 
     int layer_num = 0; //Function "FOR NOW" assumes that layer_num is always 0
 
-    for (unsigned x = y_chan_wire.position; x < grid.width() - 1; x += repeat.x) {
+    unsigned x_tile_end = std::min<unsigned>(grid.width() - 1, repeat.x_max);
+    for (unsigned x = y_chan_wire.position; x < x_tile_end; x += repeat.x) {
         for (unsigned y_start = y_chan_wire.start; y_start < grid.height() - 1; y_start += repeat.y) {
             unsigned drive_y = y_start + drive.offset;
             unsigned y_end = y_start + y_chan_wire.length;

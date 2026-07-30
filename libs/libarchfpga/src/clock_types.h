@@ -20,6 +20,15 @@ struct t_metal_layer {
 struct t_wire_repeat {
     std::string x;
     std::string y;
+    // Upper bound for how far this network repeats/tiles, in whichever axis is
+    // its own tiling direction (x for a spine's column-tiling repeatx, y for a
+    // rib's row-tiling repeaty). Defaults to the full device width/height,
+    // preserving the historical "tile all the way to the device edge" behavior;
+    // a smaller bound lets a rib/spine repeat within only part of the device
+    // (e.g. one clock quadrant) instead of needing a network that spans the
+    // whole device and is shared/cheated across quadrants.
+    std::string end_x = "W";
+    std::string end_y = "H";
 };
 
 struct t_wire {

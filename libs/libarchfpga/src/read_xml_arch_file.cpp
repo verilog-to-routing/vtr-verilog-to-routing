@@ -4704,8 +4704,8 @@ static void process_clock_networks(pugi::xml_node parent,
                                    std::vector<t_clock_network_arch>& clock_networks,
                                    const std::vector<t_arch_switch_inf>& switches,
                                    pugiutil::loc_data& loc_data) {
-    std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
-    std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
+    std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty", "endx"};
+    std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty", "endy"};
     std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name", "switch_block_type", "length"};
     std::vector<std::string> expected_children = {"rib", "spine", "clock_switch_grid"};
 
@@ -4750,12 +4750,26 @@ static void process_clock_networks(pugi::xml_node parent,
                 repeaty = "H";
             }
 
+            // Upper bound on how far this spine repeats/tiles across x (its own
+            // tiling direction, via repeatx). Defaults to the full device width,
+            // i.e. tile all the way to the device edge as before; a smaller bound
+            // lets a spine repeat within only part of the device (e.g. one clock
+            // quadrant).
+            std::string end_x;
+            auto end_x_attr = get_attribute(curr_type, "endx", loc_data, ReqOpt::OPTIONAL);
+            if (end_x_attr) {
+                end_x = end_x_attr.value();
+            } else {
+                end_x = "W";
+            }
+
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = starty;
             clock_network.wire.end = endy;
             clock_network.wire.position = x;
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
+            clock_network.repeat.end_x = end_x;
 
             process_clock_switch_points(curr_type, clock_network, switches, loc_data);
         }
@@ -4788,12 +4802,26 @@ static void process_clock_networks(pugi::xml_node parent,
                 repeaty = "H";
             }
 
+            // Upper bound on how far this rib repeats/tiles across y (its own
+            // tiling direction, via repeaty). Defaults to the full device height,
+            // i.e. tile all the way to the device edge as before; a smaller bound
+            // lets a rib repeat within only part of the device (e.g. one clock
+            // quadrant).
+            std::string end_y;
+            auto end_y_attr = get_attribute(curr_type, "endy", loc_data, ReqOpt::OPTIONAL);
+            if (end_y_attr) {
+                end_y = end_y_attr.value();
+            } else {
+                end_y = "H";
+            }
+
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = startx;
             clock_network.wire.end = endx;
             clock_network.wire.position = y;
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
+            clock_network.repeat.end_y = end_y;
 
             process_clock_switch_points(curr_type, clock_network, switches, loc_data);
         }

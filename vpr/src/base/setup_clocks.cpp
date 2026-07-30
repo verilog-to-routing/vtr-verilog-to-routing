@@ -76,7 +76,8 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                     p.parse_formula(clock_network_arch.wire.position, vars));
                 spine->set_wire_repeat(
                     p.parse_formula(clock_network_arch.repeat.x, vars),
-                    p.parse_formula(clock_network_arch.repeat.y, vars));
+                    p.parse_formula(clock_network_arch.repeat.y, vars),
+                    p.parse_formula(clock_network_arch.repeat.end_x, vars));
                 spine->set_drive_location(p.parse_formula(clock_network_arch.drive.offset, vars));
                 spine->set_drive_switch(clock_network_arch.drive.arch_switch_idx);
                 spine->set_drive_name(clock_network_arch.drive.name);
@@ -105,7 +106,8 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                     p.parse_formula(clock_network_arch.wire.position, vars));
                 rib->set_wire_repeat(
                     p.parse_formula(clock_network_arch.repeat.x, vars),
-                    p.parse_formula(clock_network_arch.repeat.y, vars));
+                    p.parse_formula(clock_network_arch.repeat.y, vars),
+                    p.parse_formula(clock_network_arch.repeat.end_y, vars));
                 rib->set_drive_location(p.parse_formula(clock_network_arch.drive.offset, vars));
                 rib->set_drive_switch(clock_network_arch.drive.arch_switch_idx);
                 rib->set_drive_name(clock_network_arch.drive.name);

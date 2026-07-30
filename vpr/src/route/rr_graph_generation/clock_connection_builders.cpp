@@ -345,11 +345,16 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                                                                         clock_pin_idx,
                                                                         side);
 
+                    // required=false: this loop probes every tile in the device, and a
+                    // quadrant/range-scoped clock network is only expected to reach the
+                    // tiles within its own scope -- a miss here just means "not reached
+                    // from this network," not an arch mistake.
                     std::vector<int> clock_network_indices = clock_graph.get_rr_node_indices_at_switch_location(
                         clock_to_connect_from,
                         switch_point_name,
                         x + clock_x_offset,
-                        y + clock_y_offset);
+                        y + clock_y_offset,
+                        /*required=*/false);
 
                     //Create edges depending on Fc
                     for (size_t i = 0; i < clock_network_indices.size() * fc; i++) {
