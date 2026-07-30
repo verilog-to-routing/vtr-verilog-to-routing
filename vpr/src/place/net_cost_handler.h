@@ -44,6 +44,30 @@ struct t_net_cost_terms {
     double cong_cost = 0.;
 };
 
+/**
+ * @brief Snapshot of the committed values a single evaluated move writes for one
+ * affected net (the values update_move_nets() would copy out of the ts_ scratch).
+ *
+ * Captured with NetCostHandler::extract_commit_record() on the state that
+ * evaluated a move, and replayed with NetCostHandler::apply_commit_record() on
+ * any state holding identical committed data. This lets the speculative parallel
+ * swap evaluation engine commit a winning move everywhere with O(affected nets)
+ * copies instead of re-evaluating it per state copy.
+ */
+struct t_net_commit_entry {
+    ClusterNetId net_id;
+    /// New bounding box.
+    t_bb bb_coords;
+    /// New number of blocks on each BB edge (valid only when update_edges).
+    t_bb bb_num_on_edges;
+    /// New number of sink pins on each layer.
+    std::vector<int> num_sink_pin_layer;
+    /// New wirelength (BB) cost of the net.
+    double net_cost = 0.;
+    /// True for large nets (>= SMALL_NET sinks) whose edge counts are incrementally maintained.
+    bool update_edges = false;
+};
+
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
@@ -108,13 +132,21 @@ class NetCostHandler {
      * The change in the timing cost is stored in `timing_delta_c`.
      * ts_nets_to_update is also extended with the latest net.
      *
-     * @return The number of affected nets.
+     * @param should_cancel Optional callback polled during the update. When it
+     * returns true, the update is abandoned partway and this method returns
+     * false. The scratch staged so far remains consistent, so the caller must
+     * revert the move as if it had been evaluated; the computed deltas are
+     * meaningless. Used by the speculative parallel swap evaluation engine to
+     * stop evaluating attempts that a batch winner has already made stale.
+     *
+     * @return True when the update completed; false when it was cancelled.
      */
-    void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
+    bool find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
                                              t_net_cost_terms& cost_terms_delta,
-                                             double& timing_delta_c);
+                                             double& timing_delta_c,
+                                             const std::function<bool()>& should_cancel = {});
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -173,6 +205,51 @@ class NetCostHandler {
      *        The channel usage estimates are computed in estimate_routing_chan_util().
      */
     const ChannelMetric<vtr::NdMatrix<double, 3>>& get_chan_util() const;
+
+    /// @brief Returns true when the 3D (cube) bounding box formulation is in use.
+    bool cube_bb() const { return cube_bb_; }
+
+    /// @brief Returns the routing-congestion channel utilization threshold this handler was built with.
+    double congestion_chan_util_threshold() const { return congestion_chan_util_threshold_; }
+
+    /**
+     * @brief Copies all committed (non-scratch) placement cost state from `other`.
+     *
+     * Used by the speculative parallel swap evaluation engine to synchronize a
+     * worker-replica handler with the master handler. Both handlers must have been
+     * constructed with identical parameters over netlists of the same size. `other`
+     * must not have a move in flight (i.e. its scratch flags must be in their reset
+     * state), which holds at every batch/loop boundary where this is called.
+     *
+     * Only supported with cube bounding boxes and congestion modeling off — the
+     * only configurations the parallel engine runs in (see
+     * PlacementAnnealer::should_use_parallel_inner_loop_()).
+     */
+    void copy_committed_state_from(const NetCostHandler& other);
+
+    /**
+     * @brief Captures, for every net affected by the currently applied move, the
+     * committed values update_move_nets() would write. Must be called after
+     * find_affected_nets_and_update_costs() and before the move is committed or
+     * reverted on this state.
+     *
+     * The record can then be replayed on any state with identical committed data
+     * via apply_commit_record(). Must be kept consistent with update_move_nets().
+     *
+     * Only supported with cube bounding boxes and congestion modeling off — the
+     * only configurations the parallel engine runs in (see
+     * PlacementAnnealer::should_use_parallel_inner_loop_()).
+     */
+    void extract_commit_record(std::vector<t_net_commit_entry>& record) const;
+
+    /**
+     * @brief Writes the recorded committed values of an accepted move into this
+     * handler's committed data, without re-evaluating the move.
+     *
+     * Unlike update_move_nets() this touches no scratch flags: the applying state
+     * must have no move in flight. Must be kept consistent with update_move_nets().
+     */
+    void apply_commit_record(const std::vector<t_net_commit_entry>& record);
 
   private:
     /// Indicates whether congestion cost modeling is enabled.
