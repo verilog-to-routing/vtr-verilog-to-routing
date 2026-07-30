@@ -195,28 +195,28 @@
     <clock_network name="global_clk_switch_network" num_inst="1">
       <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W/4" starty="0" repeaty="H/4" chan_w="4" switch_name="drive_buff" switch_block_type="subset">
         <!-- Put a drive in the middle of the left side. -->
-        <switch_point type="drive" name="drive" xoffset="0" yoffset="H/2" switch_name="drive_buff"/>
+        <switch_point type="drive" name="drive" xoffset="0" yoffset="2*(H/4)" switch_name="drive_buff"/>
 
         <!-- Tap into the global spine at the center of the device. -->
-        <switch_point type="tap" name="tap" xoffset="W/2" yoffset="H/2"/>
+        <switch_point type="tap" name="tap" xoffset="2*(W/4)" yoffset="2*(H/4)"/>
       </clock_switch_grid>
     </clock_network>
     <clock_network name="spine1" num_inst="2">
       <!-- Full Device: Center Spine -->
-      <spine metal_layer="global_spine" x="W/2" starty="0" endy="H">
-        <switch_point type="drive" name="drive" yoffset="H/2" switch_name="drive_buff"/>
+      <spine metal_layer="global_spine" x="2*(W/4)" starty="0" endy="H">
+        <switch_point type="drive" name="drive" yoffset="2*(H/4)" switch_name="drive_buff"/>
         <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
       </spine>
     </clock_network>
     <clock_network name="rib1" num_inst="2">
       <!-- Full Device: Each Grid Row -->
       <rib metal_layer="global_rib" y="0" startx="0" endx="W" repeaty="1">
-        <switch_point type="drive" name="drive" xoffset="W/2" switch_name="drive_buff"/>
+        <switch_point type="drive" name="drive" xoffset="2*(W/4)" switch_name="drive_buff"/>
         <switch_point type="tap" name="tap" xoffset="0" xincr="1"/>
       </rib>
     </clock_network>
     <clock_routing>
-      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="0" locationy="H/2" switch="0" fc_val="1.0"/>
+      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="0" locationy="2*(H/4)" switch="0" fc_val="1.0"/>
       <tap from="global_clk_switch_network.tap" to="spine1.drive" switch="0" fc_val="1.0"/>
       <tap from="spine1.tap" to="rib1.drive" switch="0" fc_val="0.5"/>
       <tap from="rib1.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>

@@ -89,11 +89,11 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std
     }
 
     auto& switch_points = itter->second;
-    std::vector<int> rr_node_indices = switch_points.get_rr_node_indices_at_location(switch_point_name, x, y);
+    std::vector<int> rr_node_indices = switch_points.get_rr_node_indices_at_location(clock_name, switch_point_name, x, y);
 
     if (rr_node_indices.empty() && required) {
         std::string valid_locations;
-        for (auto& loc : switch_points.get_switch_locations(switch_point_name)) {
+        for (auto& loc : switch_points.get_switch_locations(clock_name, switch_point_name)) {
             valid_locations += vtr::string_fmt(" (%d,%d)", loc.first, loc.second);
         }
 
@@ -111,13 +111,20 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std
     return rr_node_indices;
 }
 
-std::vector<int> SwitchPoints::get_rr_node_indices_at_location(std::string switch_point_name,
+std::vector<int> SwitchPoints::get_rr_node_indices_at_location(const std::string& clock_name,
+                                                               std::string switch_point_name,
                                                                int x,
                                                                int y) const {
     auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
-    // assert that switch name exists in map
-    VTR_ASSERT(itter != switch_point_name_to_switch_location.end());
+    if (itter == switch_point_name_to_switch_location.end()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                         "Clock network '%s' has no switch point named '%s'.\n"
+                         "This is usually caused by a <clock_routing> tap referencing a switch point whose "
+                         "xoffset/yoffset never landed on any instance of the network -- check for an earlier "
+                         "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
+                         clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
+    }
 
     auto& switch_point = itter->second;
     std::vector<int> rr_node_indices = switch_point.get_rr_node_indices_at_location(x, y);
@@ -150,14 +157,20 @@ std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(std::str
     }
 
     auto& switch_points = itter->second;
-    return switch_points.get_switch_locations(switch_point_name);
+    return switch_points.get_switch_locations(clock_name, switch_point_name);
 }
 
-std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(std::string switch_point_name) const {
+std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(const std::string& clock_name, std::string switch_point_name) const {
     auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
-    // assert that switch name exists in map
-    VTR_ASSERT(itter != switch_point_name_to_switch_location.end());
+    if (itter == switch_point_name_to_switch_location.end()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                         "Clock network '%s' has no switch point named '%s'.\n"
+                         "This is usually caused by a <clock_routing> tap referencing a switch point whose "
+                         "xoffset/yoffset never landed on any instance of the network -- check for an earlier "
+                         "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
+                         clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
+    }
 
     auto& switch_point = itter->second;
     return switch_point.get_switch_locations();

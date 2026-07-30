@@ -50,12 +50,20 @@ class SwitchPoints {
 
     /* Example: x,y = middle of the chip, switch_point_name == name of main drive
      * of global clock spine, returns the rr_nodes of all the clock spines that
-     * start the network there*/
-    std::vector<int> get_rr_node_indices_at_location(std::string switch_point_name,
+     * start the network there.
+     *
+     * clock_name is only used to produce a helpful message if switch_point_name was
+     * never registered for this clock network (a malformed arch file, e.g. a
+     * <clock_routing> tap referencing a switch point whose offset never landed on any
+     * instance of the network -- see the "does not correspond to any switch box
+     * location" warning emitted when that happens). */
+    std::vector<int> get_rr_node_indices_at_location(const std::string& clock_name,
+                                                     std::string switch_point_name,
                                                      int x,
                                                      int y) const;
 
-    std::set<std::pair<int, int>> get_switch_locations(std::string switch_point_name) const;
+    std::set<std::pair<int, int>> get_switch_locations(const std::string& clock_name,
+                                                       std::string switch_point_name) const;
 
     /** Mutators **/
     void insert_switch_node_idx(std::string switch_point_name, int x, int y, int node_idx);
