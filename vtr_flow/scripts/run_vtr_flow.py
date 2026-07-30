@@ -21,7 +21,7 @@ import vtr
 
 BASIC_VERBOSITY = 1
 
-VTR_STAGES = ["odin", "parmys", "abc", "ace", "vpr"]
+VTR_STAGES = ["odin", "parmys", "frankenstein", "abc", "ace", "vpr"]
 
 
 # pylint: disable=too-few-public-methods
@@ -35,6 +35,8 @@ class VtrStageArgparseAction(argparse.Action):
             setattr(namespace, self.dest, vtr.VtrStage.ODIN)
         elif value == "parmys":
             setattr(namespace, self.dest, vtr.VtrStage.PARMYS)
+        elif value == "frankenstein":
+            setattr(namespace, self.dest, vtr.VtrStage.FRANKENSTEIN)
         elif value == "abc":
             setattr(namespace, self.dest, vtr.VtrStage.ABC)
         elif value == "vpr":
@@ -383,6 +385,19 @@ def vtr_command_argparser(prog=None):
         + " in a custom Yosys script.",
     )
     #
+    # FRANKENSTEIN arguments
+    #
+    frankenstein = parser.add_argument_group(
+        "Frankenstein", description="Arguments to be passed to Frankenstein"
+    )
+    frankenstein.add_argument(
+        "-frankenstein_script",
+        default=None,
+        dest="frankenstein_script",
+        help="Supplies Frankenstein with a custom yosys template script"
+        + " (default: vtr_flow/misc/frankenstein/template/synthesis.tcl).",
+    )
+    #
     # VPR arguments
     #
     vpr = parser.add_argument_group(
@@ -486,16 +501,20 @@ def get_max_memory_usage(temp_dir):
     output_files = {
         "parmys": Path(temp_dir / "parmys.out"),
         "odin": Path(temp_dir / "odin.out"),
+        "frankenstein": Path(temp_dir / "frankenstein.out"),
         "abc": Path(temp_dir / "abc{}.out".format(cnt)),
         "vpr": Path(temp_dir / "vpr.out"),
     }
-    memory_usages = {"parmys": -1, "odin": -1, "abc": -1, "vpr": -1}
+    memory_usages = {"parmys": -1, "odin": -1, "frankenstein": -1, "abc": -1, "vpr": -1}
 
     if output_files["parmys"].is_file():
         memory_usages["parmys"] = get_memory_usage(output_files["parmys"])
 
     if output_files["odin"].is_file():
         memory_usages["odin"] = get_memory_usage(output_files["odin"])
+
+    if output_files["frankenstein"].is_file():
+        memory_usages["frankenstein"] = get_memory_usage(output_files["frankenstein"])
 
     while output_files["abc"].is_file():
         new_abc_mem_usage = get_memory_usage(output_files["abc"])
@@ -583,12 +602,14 @@ def vtr_command_main(arg_list, prog=None):
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
             parmys_args=process_parmys_args(args),
+            frankenstein_args=process_frankenstein_args(args),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
             min_hard_adder_size=args.min_hard_adder_size,
             odin_config=args.odin_config,
             yosys_script=args.yosys_script,
+            frankenstein_script=args.frankenstein_script,
             check_equivalent=args.check_equivalent,
             check_incremental_sta_consistency=args.check_incremental_sta_consistency,
             use_old_abc_script=args.use_old_abc_script,
@@ -749,6 +770,17 @@ def process_parmys_args(args):
     parmys_args["synthesis_params"] = args.synthesis_params or ""
 
     return parmys_args
+
+
+def process_frankenstein_args(args):
+    """
+    Finds arguments needed in the FRANKENSTEIN stage of the flow
+    """
+    frankenstein_args = OrderedDict()
+    # shares the -top_module flag with odin; empty means -auto-top
+    frankenstein_args["top_module"] = args.top_module or ""
+
+    return frankenstein_args
 
 
 def process_vpr_args(args, prog, temp_dir, vpr_args):

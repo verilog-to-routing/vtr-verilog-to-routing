@@ -36,6 +36,17 @@ parmys_verify_path = parmys_path / "verify_parmys.sh"
 parmys_benchmark_path = parmys_path / "regression_test" / "benchmark"
 parmys_output_on_error_path = parmys_path / "regression_test" / ".library" / "output_on_error.conf"
 
+# FRANKENSTEIN paths
+frankenstein_path = root_path / "frankenstein"
+frankenstein_build_script_path = frankenstein_path / "build_frankenstein.sh"
+frankenstein_misc_path = vtr_flow_path / "misc" / "frankenstein"
+frankenstein_template_path = frankenstein_misc_path / "template"
+frankenstein_script_path = frankenstein_template_path / "synthesis.tcl"
+frankenstein_k6_support_path = frankenstein_misc_path / "k6"
+frankenstein_fix_blif_script_path = frankenstein_k6_support_path / "fix_blif_for_vpr.py"
+wildebeest_path = frankenstein_path / "wildebeest"
+wildebeest_plugin_path = root_path / "build" / "share" / "yosys" / "plugins" / "wildebeest.so"
+
 # ABC paths
 abc_path = root_path / "abc"
 abc_exe_path = abc_path / "abc"
