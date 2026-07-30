@@ -39,12 +39,16 @@ set bramRomCost    0.5
 set bramSpCost     128
 set bramDpCost     128
 set cmpLutWidth    6
+set lutCost        "6:1"
 # $add/$sub at or below this width stay soft so abc can still optimize
 # across them. substituted into the generated add_sub_map.v because the
 # map file is the only place that sees $add widths at techmap time
 set hardAdderThreshold 3
 # long enough to walk an msb-to-lsb carry cascade in one go
 set sweepMaxIters  64
+# empty means skip the two-pass abc and do one plain -luts pass
+set abcOptScript   ""
+set abcMapScript   ""
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
 
 set archConfigFile "$archSupportDir/arch_config.tcl"
@@ -231,9 +235,20 @@ insbuf
 opt -purge -noff
 
 # ----------------------------------------------------------------------------
-# abc runs outside yosys in the vtr flow's abc stage  vtr's yosys build has
-# no in-yosys abc pass. the pre-abc blif written below is mapped there.
+# abc  runs in-yosys now that vtr's yosys is built with the in-yosys abc pass
+# (ENABLE_ABC=1). dress leaves PI and PO as pi* and po* which yosys then
+# cannot wire up so the gia opt script ends with move_names instead. two
+# passes when the scripts are set otherwise one plain -luts pass.
 # ----------------------------------------------------------------------------
+if { $abcOptScript ne "" && $abcMapScript ne "" } {
+    abc -script $abcOptScript
+    abc -luts $lutCost -script $abcMapScript
+} else {
+    abc -luts $lutCost
+}
+
+# abc will not delete blackboxes so sweep anything it left unused
+frankensteinHardblockSweep $sweepMaxIters
 
 # ----------------------------------------------------------------------------
 # densify then write_blif

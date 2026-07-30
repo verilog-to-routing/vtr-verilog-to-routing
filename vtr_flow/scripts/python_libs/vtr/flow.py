@@ -264,7 +264,10 @@ def run(
     #
     # Logic Optimization & Technology Mapping
     #
-    if should_run_stage(VtrStage.ABC, start_stage, end_stage):
+    # frankenstein maps to luts inside yosys (ENABLE_ABC=1), so its leg skips
+    # the external abc stage. odin and parmys still go through it.
+    abc_already_done_in_synth = start_stage == VtrStage.FRANKENSTEIN
+    if should_run_stage(VtrStage.ABC, start_stage, end_stage) and not abc_already_done_in_synth:
         vtr.abc.run(
             architecture_copy,
             next_stage_netlist,
