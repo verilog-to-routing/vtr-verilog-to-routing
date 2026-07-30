@@ -107,6 +107,6 @@ class ExtendedMapLookahead : public RouterLookahead {
     }
 
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+        VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::get_opin_distance_min_delay unimplemented");
     }
 };

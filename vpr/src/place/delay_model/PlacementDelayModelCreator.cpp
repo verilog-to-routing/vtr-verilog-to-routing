@@ -63,7 +63,7 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
     std::unique_ptr<PlaceDelayModel> place_delay_model;
 
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
-        place_delay_model = std::make_unique<SimpleDelayModel>();
+        place_delay_model = std::make_unique<SimpleDelayModel>(*router_lookahead);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
         place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {

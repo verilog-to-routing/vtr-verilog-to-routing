@@ -144,7 +144,7 @@ class ClassicLookahead : public RouterLookahead {
     }
 
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::get_opin_distance_min_delay unimplemented");
     }
 
   private:
@@ -180,6 +180,6 @@ class NoOpLookahead : public RouterLookahead {
     }
 
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+        VPR_THROW(VPR_ERROR_ROUTE, "get_opin_distance_min_delay not supported for NoOpLookahead");
     }
 };
