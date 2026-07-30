@@ -277,7 +277,7 @@ Detailed Command-line Options
 
 .. note::
 
-    Frankenstein is an alternative synthesis frontend based on the `Wildebeest <https://github.com/zeroasiccorp/wildebeest.git>`_ Yosys plugin (vendored at ``frankenstein/wildebeest/`` with VTR architecture-aware modifications).
+    Frankenstein is an alternative synthesis frontend based on the `Wildebeest <https://github.com/zeroasiccorp/wildebeest.git>`_ Yosys plugin.
     It derives clock cut points and hard-block mapping rules from the architecture XML at runtime (``max_level -clk2clk -vtr_arch`` and the ``vtr_arch_rules`` pass).
     Select it with ``-start frankenstein``; it requires the plugin to be built first with ``bash frankenstein/build_frankenstein.sh`` after building VTR.
 
