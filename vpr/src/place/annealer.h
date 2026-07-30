@@ -5,8 +5,10 @@
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
 #include "manual_move_generator.h"
+#include "swap_evaluator.h"
 #include "vtr_random.h"
 
+#include <memory>
 #include <optional>
 #include <tuple>
 
@@ -19,6 +21,7 @@ enum class e_agent_state;
 class NocCostHandler;
 class InterposerCostHandler;
 class NetPinTimingInvalidator;
+class ParallelAnnealEngine;
 class PlacerSetupSlacks;
 
 /**
@@ -198,6 +201,8 @@ class PlacementAnnealer {
                       float auto_init_t_scale,
                       int move_lim);
 
+    ~PlacementAnnealer();
+
     /**
      * @brief Contains the inner loop of the simulated annealing that performs
      * a certain number of swaps with a single temperature
@@ -287,6 +292,32 @@ class PlacementAnnealer {
     ///        results from a set of trial swaps.
     float estimate_starting_temp_using_cost_variance_();
 
+    /**
+     * @brief Returns true when the inner loop should run with speculative
+     * parallel swap evaluation (see parallel_anneal_engine.h).
+     *
+     * Requires --place_parallel_eval > 0 and a configuration the parallel
+     * engine supports (CRITICALITY_TIMING_PLACE or BOUNDING_BOX_PLACE, no NoC
+     * optimization, no per-move logging/saving, no graphics). Unsupported
+     * configurations fall back to the sequential inner loop with a one-time
+     * warning.
+     */
+    bool should_use_parallel_inner_loop_();
+
+    /// @brief Lazily creates the parallel swap evaluation engine and its worker replicas.
+    void init_parallel_engine_();
+
+    /**
+     * @brief Parallel counterpart of placement_inner_loop().
+     *
+     * Runs the inner loop as a sequence of speculative batches (see
+     * ParallelAnnealEngine::run_batch()). The speculative window (== number of
+     * active worker threads) adapts each temperature to the previous
+     * temperature's acceptance rate, capped by --place_parallel_eval. The result
+     * is deterministic for a fixed seed and cap.
+     */
+    void placement_inner_loop_parallel_();
+
   private:
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
@@ -330,6 +361,13 @@ class PlacementAnnealer {
     /// Keep record of moved blocks and affected pins in a swap
     t_pl_blocks_to_be_moved blocks_affected_;
 
+    /// Evaluates/commits/reverts swaps against the master placement state
+    std::unique_ptr<SwapEvaluator> swap_evaluator_;
+    /// Speculative parallel swap evaluation engine (created lazily when enabled)
+    std::unique_ptr<ParallelAnnealEngine> parallel_engine_;
+    /// Ensures the fallback-to-sequential warning is only printed once
+    bool parallel_fallback_warned_ = false;
+
   private:
     /**
      * @brief The maximum number of swap attempts before invoking the
@@ -353,6 +391,10 @@ class PlacementAnnealer {
     bool congestion_modeling_started_;
     /// Indicates whether interposer congestion modeling has been started
     bool interposer_cong_modeling_started_;
+    /// Acceptance rate of the previous parallel inner loop; sizes the next
+    /// loop's speculative window (see placement_inner_loop_parallel_()). The
+    /// initial 1.0 makes the first loop start with a window of 1.
+    float prev_parallel_success_rate_ = 1.0f;
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();
