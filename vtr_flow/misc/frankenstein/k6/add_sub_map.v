@@ -1,0 +1,131 @@
+// add_sub_map.v
+// maps $add and $sub onto the arch carry-chain adder.
+//
+// has to run before alumacc. alumacc folds $add chains into one $macc and
+// the carry chain never sees them which tanks fmax on add-heavy designs.
+//
+// only widths above HARD_ADDER_THRESHOLD go hard. narrower ones stay soft
+// so abc can still optimize across them  hard adders are black boxes.
+// compares stay soft on purpose  there is no $alu to adder map after
+// alumacc because that was a net qor loss.
+//
+// cin is only reachable through the dedicated carry link not general
+// routing so a constant cannot drive cin[0] directly. the dummy adder
+// below makes majority(ci ci 0)=ci and feeds carry[0] that way.
+
+// ---- addition ----------------------------------------------------------
+module \$add (A, B, Y);
+    parameter A_SIGNED = 0;
+    parameter B_SIGNED = 0;
+    parameter A_WIDTH  = 1;
+    parameter B_WIDTH  = 1;
+    parameter Y_WIDTH  = 1;
+
+    // 3 bits of soft arithmetic still fit a few luts. 12 under-mapped real
+    // datapath adds on k6 so this sits much lower.
+    localparam HARD_ADDER_THRESHOLD = 3;
+
+    input  [A_WIDTH-1:0] A;
+    input  [B_WIDTH-1:0] B;
+    output [Y_WIDTH-1:0] Y;
+
+    wire _TECHMAP_FAIL_ = (Y_WIDTH <= HARD_ADDER_THRESHOLD);
+
+    // signed and unsigned share the same chain once both sides are extended
+    wire [Y_WIDTH-1:0] aa;
+    wire [Y_WIDTH-1:0] bb;
+    generate
+        if (A_SIGNED)
+            assign aa = {{(Y_WIDTH - A_WIDTH){A[A_WIDTH-1]}}, A};
+        else
+            assign aa = {{(Y_WIDTH - A_WIDTH){1'b0}}, A};
+        if (B_SIGNED)
+            assign bb = {{(Y_WIDTH - B_WIDTH){B[B_WIDTH-1]}}, B};
+        else
+            assign bb = {{(Y_WIDTH - B_WIDTH){1'b0}}, B};
+    endgenerate
+
+    // ci=0  majority(0 0 0)=0 so carry[0] starts clear
+    wire boot_cout;
+    wire boot_sumout;
+    adder _boot (
+        .a(1'b0), .b(1'b0), .cin(1'b0),
+        .sumout(boot_sumout), .cout(boot_cout)
+    );
+
+    wire [Y_WIDTH:0] carry;
+    assign carry[0] = boot_cout;
+
+    genvar i;
+    generate
+        for (i = 0; i < Y_WIDTH; i = i + 1) begin : faChain
+            adder _adder (
+                .a     (aa[i]),
+                .b     (bb[i]),
+                .cin   (carry[i]),
+                .sumout(Y[i]),
+                .cout  (carry[i+1])
+            );
+        end
+    endgenerate
+
+endmodule
+
+// ---- subtraction -------------------------------------------------------
+module \$sub (A, B, Y);
+    parameter A_SIGNED = 0;
+    parameter B_SIGNED = 0;
+    parameter A_WIDTH  = 1;
+    parameter B_WIDTH  = 1;
+    parameter Y_WIDTH  = 1;
+
+    // same threshold as $add so a-b and a+b agree on what goes soft
+    localparam HARD_ADDER_THRESHOLD = 3;
+
+    input  [A_WIDTH-1:0] A;
+    input  [B_WIDTH-1:0] B;
+    output [Y_WIDTH-1:0] Y;
+
+    wire _TECHMAP_FAIL_ = (Y_WIDTH <= HARD_ADDER_THRESHOLD);
+
+    wire [Y_WIDTH-1:0] aa;
+    wire [Y_WIDTH-1:0] bb;
+    generate
+        if (A_SIGNED)
+            assign aa = {{(Y_WIDTH - A_WIDTH){A[A_WIDTH-1]}}, A};
+        else
+            assign aa = {{(Y_WIDTH - A_WIDTH){1'b0}}, A};
+        if (B_SIGNED)
+            assign bb = {{(Y_WIDTH - B_WIDTH){B[B_WIDTH-1]}}, B};
+        else
+            assign bb = {{(Y_WIDTH - B_WIDTH){1'b0}}, B};
+    endgenerate
+
+    // a - b = a + ~b + 1
+    wire [Y_WIDTH-1:0] bb_inv = ~bb;
+
+    // ci=1  majority(1 1 0)=1 so carry[0] starts set for the +1
+    wire boot_cout;
+    wire boot_sumout;
+    adder _boot (
+        .a(1'b1), .b(1'b1), .cin(1'b0),
+        .sumout(boot_sumout), .cout(boot_cout)
+    );
+
+    wire [Y_WIDTH:0] carry;
+    assign carry[0] = boot_cout;
+
+    genvar i;
+    generate
+        for (i = 0; i < Y_WIDTH; i = i + 1) begin : faChain
+            adder _adder (
+                .a     (aa[i]),
+                .b     (bb_inv[i]),
+                .cin   (carry[i]),
+                .sumout(Y[i]),
+                .cout  (carry[i+1])
+            );
+        end
+    endgenerate
+
+endmodule

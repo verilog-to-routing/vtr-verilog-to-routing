@@ -1,0 +1,16 @@
+# k6_delay.scr - pass2 fracturable lut map (after gia opt) or standalone
+# invoke: abc -luts LLL -script K6D/k6_delay.scr
+# LF-only ASCII. classic only.
+
+strash
+ifraig
+dc2
+dch -f
+dc2
+dch -f
+dc2
+dch -f
+if
+mfs2
+mfs2
+lutpack

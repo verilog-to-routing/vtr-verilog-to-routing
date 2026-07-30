@@ -1,0 +1,11 @@
+(* blackbox *)
+module adder #(
+    parameter WIDTH = @ADDER_WIDTH@
+) (
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    input cin,
+    output cout,
+    output [WIDTH-1:0] sumout
+);
+endmodule

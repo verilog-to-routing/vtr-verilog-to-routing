@@ -1,0 +1,10 @@
+// default WIDTH is the widest mode so -lib does not freeze a 1-bit multiply
+(* blackbox *)
+module multiply #(
+    parameter WIDTH = @MULT_MAX_WIDTH@
+) (
+    input [WIDTH-1:0] a,
+    input [WIDTH-1:0] b,
+    output [2*WIDTH-1:0] out
+);
+endmodule

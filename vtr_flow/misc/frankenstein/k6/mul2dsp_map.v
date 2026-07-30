@@ -1,0 +1,35 @@
+// mul2dsp_map.v
+// turns the mul2dsp _dsp_block_ into a vtr multiply.
+//
+// pairs with +/mul2dsp.v which chops wide $mul into chunks that fit one
+// dsp. leftovers still go through mult_map.v afterward.
+
+module _dsp_block_ (A, B, Y);
+	parameter A_SIGNED = 0;
+	parameter B_SIGNED = 0;
+	parameter A_WIDTH = 1;
+	parameter B_WIDTH = 1;
+	parameter Y_WIDTH = 1;
+
+	(* force_downto *)
+	input [A_WIDTH-1:0] A;
+	(* force_downto *)
+	input [B_WIDTH-1:0] B;
+	(* force_downto *)
+	output [Y_WIDTH-1:0] Y;
+
+	localparam needW = (A_WIDTH > B_WIDTH) ? A_WIDTH : B_WIDTH;
+	localparam MULT_W = (needW <= 9) ? 9 : (needW <= 18) ? 18 : 36;
+
+	wire [MULT_W-1:0] aa = {{(MULT_W - A_WIDTH){1'b0}}, A};
+	wire [MULT_W-1:0] bb = {{(MULT_W - B_WIDTH){1'b0}}, B};
+	wire [2*MULT_W-1:0] fullOut;
+
+	multiply #(.WIDTH(MULT_W)) _TECHMAP_REPLACE_ (
+		.a(aa),
+		.b(bb),
+		.out(fullOut)
+	);
+
+	assign Y = fullOut[Y_WIDTH-1:0];
+endmodule
