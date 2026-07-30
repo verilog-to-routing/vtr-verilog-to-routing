@@ -4,6 +4,10 @@
 #include <cassert>
 #include <chrono>
 
+#ifdef YOSYS_ENABLE_TCL
+#include <tcl.h>
+#endif
+
 #include "vtr_arch_clocks.h"
 
 USING_YOSYS_NAMESPACE
@@ -602,8 +606,20 @@ struct MaxLvlPass : public ScriptPass {
   // -------------------------
   // load_LUT_models
   // -------------------------
+  // the lut blackbox lib is arch-independent, so it ships with the flow
+  // templates; the tcl script sets the templateDir global and we resolve the
+  // models relative to it, falling back to the plugin share dir.
   void load_LUT_models() {
-    run("read_verilog +/plugins/wildebeest/lut_models/LUTs.v");
+    std::string lut_models = "+/plugins/wildebeest/lut_models/LUTs.v";
+#ifdef YOSYS_ENABLE_TCL
+    Tcl_Interp *interp = yosys_get_tcl_interp();
+    if (interp != NULL) {
+      const char *tdir = Tcl_GetVar(interp, "templateDir", TCL_GLOBAL_ONLY);
+      if (tdir != NULL && tdir[0] != '\0')
+        lut_models = std::string(tdir) + "/lut_models/LUTs.v";
+    }
+#endif
+    run("read_verilog " + lut_models);
 
     run("hierarchy -auto-top");
   }
