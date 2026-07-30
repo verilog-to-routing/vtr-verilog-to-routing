@@ -106,6 +106,7 @@ Detailed Command-line Options
 
       * ``odin``
       * ``parmys``
+      * ``frankenstein``
       * ``abc``
       * ``scripts``
       * ``vpr``
@@ -121,6 +122,7 @@ Detailed Command-line Options
 
       * ``odin``
       * ``parmys``
+      * ``frankenstein``
       * ``abc``
       * ``scripts``
       * ``vpr``
@@ -256,6 +258,12 @@ Detailed Command-line Options
 
     **Default:** "" (empty string)
 
+.. option:: -frankenstein_script <FRANKENSTEIN_SCRIPT>
+
+    Supplies Frankenstein with a custom yosys template script, including the synthesis steps.
+
+    **Default:** vtr_flow/misc/frankenstein/template/synthesis.tcl
+
 .. note::
 
     Yosys-Slang is a Yosys plugin that is built on top of the slang library to provide comprehensive SystemVerilog support.
@@ -266,6 +274,12 @@ Detailed Command-line Options
 .. note::
 
     Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available parameters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.
+
+.. note::
+
+    Frankenstein is an alternative synthesis frontend based on the `Wildebeest <https://github.com/zeroasiccorp/wildebeest.git>`_ Yosys plugin (vendored at ``frankenstein/wildebeest/`` with VTR architecture-aware modifications).
+    It derives clock cut points and hard-block mapping rules from the architecture XML at runtime (``max_level -clk2clk -vtr_arch`` and the ``vtr_arch_rules`` pass).
+    Select it with ``-start frankenstein``; it requires the plugin to be built first with ``bash frankenstein/build_frankenstein.sh`` after building VTR.
 
 .. Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
 ..     UHDM is used as a compiled interchange format in between SystemVerilog tools. Typical inputs to the UHDM flow are files with ``.v`` or ``.sv`` extensions.
