@@ -849,7 +849,7 @@ void PlacementAnnealer::outer_loop_update_timing_info_and_cost_terms() {
 }
 
 bool PlacementAnnealer::should_use_parallel_inner_loop_() {
-    if (placer_opts_.place_swap_eval_num_workers <= 1) {
+    if (placer_opts_.swap_eval_num_workers <= 1) {
         return false;
     }
 
@@ -896,7 +896,7 @@ bool PlacementAnnealer::should_use_parallel_inner_loop_() {
 void PlacementAnnealer::init_parallel_engine_() {
     VTR_ASSERT(!parallel_engine_);
 
-    const int num_workers = placer_opts_.place_swap_eval_num_workers;
+    const int num_workers = placer_opts_.swap_eval_num_workers;
     VTR_LOG("Parallel swap evaluation enabled: up to %d workers (active count adapts to the acceptance rate)\n",
             num_workers);
 
@@ -940,7 +940,7 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
     // produces discarded work. --place_swap_eval_num_workers caps the thread
     // count. The rate is a deterministic function of the trajectory, so the window
     // sequence (and therefore the result) is reproducible for a fixed seed and cap.
-    const int max_workers = placer_opts_.place_swap_eval_num_workers;
+    const int max_workers = placer_opts_.swap_eval_num_workers;
     int window = max_workers;
     if (prev_parallel_success_rate_ > 0.f) {
         window = (int)std::ceil(1.f / prev_parallel_success_rate_);
