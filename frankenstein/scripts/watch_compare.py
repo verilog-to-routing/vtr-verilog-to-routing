@@ -394,6 +394,19 @@ def renderGeomeanTable(rows):
     return f"geomean:\n{table}"
 
 
+def resolveCsvPath(targetDir: Path) -> Path | None:
+    # prefer the path written by the active compare_flow run
+    marker = targetDir / "status" / "csv_path.txt"
+    if marker.is_file():
+        text = marker.read_text(encoding="utf-8", errors="replace").strip()
+        if text:
+            path = Path(text)
+            if path.is_file() or path.parent.is_dir():
+                return path
+    candidates = sorted(targetDir.glob("compare_results*.csv"))
+    return candidates[-1] if candidates else None
+
+
 def watchDir(targetDir: Path, interval: float, once: bool):
     logsDir = targetDir / "logs"
     lastPhases = {}
@@ -426,9 +439,9 @@ def watchDir(targetDir: Path, interval: float, once: bool):
             print()
             print(renderGeomeanTable(rows))
             print(f"\nlogs: {logsDir}")
-            csvCandidates = sorted(targetDir.glob("compare_results*.csv"))
-            if csvCandidates:
-                print(f"csv:  {csvCandidates[-1]}")
+            csvPath = resolveCsvPath(targetDir)
+            if csvPath is not None:
+                print(f"csv:  {csvPath}")
 
             if once:
                 break

@@ -581,16 +581,35 @@ def resolvePath(value: str, base: Path) -> Path:
     return path if path.is_absolute() else (base / path)
 
 
-def runPool(tasks: List[Tuple], jobs: int) -> List[Dict]:
-    if jobs <= 1 or len(tasks) <= 1:
-        return [runOne(task) for task in tasks]
+def runPool(
+    tasks: List[Tuple],
+    jobs: int,
+    csvPath: Optional[Path] = None,
+) -> List[Dict]:
+    order = {(t[0], t[1]): i for i, t in enumerate(tasks)}
 
-    results: List[Dict] = []
+    def onRow(results: List[Dict]) -> None:
+        if csvPath is None:
+            return
+        ordered = sorted(
+            results,
+            key=lambda row: order.get((row["design"], row["flow"]), 0),
+        )
+        writeCsv(csvPath, ordered)
+
+    if jobs <= 1 or len(tasks) <= 1:
+        results: List[Dict] = []
+        for task in tasks:
+            results.append(runOne(task))
+            onRow(results)
+        return results
+
+    results = []
     with ProcessPoolExecutor(max_workers=jobs) as pool:
         futures = {pool.submit(runOne, task): task for task in tasks}
         for future in as_completed(futures):
             results.append(future.result())
-    order = {(t[0], t[1]): i for i, t in enumerate(tasks)}
+            onRow(results)
     results.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
     return results
 
@@ -645,6 +664,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ]
     labels = [f"{d}_{f}" for d, f, *_ in tasks]
     (statusDir / "manifest.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
+    # create this run's csv (header only) and point the watcher at it immediately
+    writeCsv(csvPath, [])
+    (statusDir / "csv_path.txt").write_text(str(csvPath.resolve()) + "\n", encoding="utf-8")
 
     print(f"arch:    {archFile.name}")
     print(f"designs: {', '.join(designs)}")
@@ -659,7 +681,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         f"launching {len(designs)} designs x {len(selectedFlows)} flows "
         f"= {len(tasks)} runs @ {jobs} jobs"
     )
-    rows = runPool(tasks, jobs)
+    rows = runPool(tasks, jobs, csvPath=csvPath)
     writeCsv(csvPath, rows)
 
     ok = sum(1 for row in rows if row.get("success"))
