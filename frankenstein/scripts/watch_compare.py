@@ -46,6 +46,8 @@ statusFields = (
     "s_luts",
     "a_luts",
     "p_luts",
+    "s_ff",
+    "ff",
     "mem",
     "dsp",
     "adder",
@@ -91,22 +93,25 @@ phaseColors = {
 
 
 # (header, status key, higher_is_better)
-# frontend s = raw front-end stage log only (parmys.out / frankenstein.out)
-# synthesis  = fair compare: frankenstein synth; vanilla synth+abc
+# frontend = raw front-end stage log only (parmys.out / frankenstein.out)
+# synthesis = fair compare: frankenstein synth; vanilla synth+abc
+# column order matches the per-run table (IO in/out, then CLBs, then FFs)
 geomeanColumns = (
     ("frontend", "s_s", False),
     ("synthesis", "synthesis", False),
-    ("vpr time", "v_s", False),
-    ("wall time", "wall", False),
+    ("vpr", "v_s", False),
+    ("wall", "wall", False),
     ("LUTs", "p_luts", False),
+    ("FFs", "ff", False),
     ("BRAMs", "mem", False),
     ("DSPs", "dsp", False),
     ("Adders", "adder", False),
-    ("CLBs", "clb", False),
     ("IO in", "io_in", False),
+    ("IO out", "io_out", False),
+    ("CLBs", "clb", False),
     ("Wirelen", "wl", False),
-    ("CPD ns", "cpd", False),
-    ("Fmax MHz", "fmax", True),
+    ("CPD", "cpd", False),
+    ("Fmax", "fmax", True),
 )
 
 
@@ -253,21 +258,23 @@ def coloredStatus(row):
 def renderTable(rows, title):
     table = PrettyTable()
     table.field_names = [
-        "run label",
+        "run",
         "status",
-        "wall(s)",
+        "wall",
         "synthesis",
-        "time s/a/p",
-        "lut s/a/p",
-        "bram",
-        "dsp",
-        "adder",
-        "io in/out",
-        "clbs",
-        "wirelen",
-        "cpd ns",
-        "fmax MHz",
-        "wns ns",
+        "time s/a/v",
+        "LUTs s/a/p",
+        "FFs s/p",
+        "BRAMs",
+        "DSPs",
+        "Adders",
+        "IO in",
+        "IO out",
+        "CLBs",
+        "Wirelen",
+        "CPD",
+        "Fmax",
+        "WNS",
     ]
     table.align = "l"
     for row in rows:
@@ -279,10 +286,12 @@ def renderTable(rows, title):
                 row.get("synthesis", "-"),
                 sap(row, "s_s", "a_s", "v_s"),
                 sap(row, "s_luts", "a_luts", "p_luts"),
+                sap(row, "s_ff", "ff"),
                 row.get("mem", "-"),
                 row.get("dsp", "-"),
                 row.get("adder", "-"),
-                sap(row, "io_in", "io_out"),
+                row.get("io_in", "-"),
+                row.get("io_out", "-"),
                 row.get("clb", "-"),
                 row.get("wl", "-"),
                 row.get("cpd", "-"),

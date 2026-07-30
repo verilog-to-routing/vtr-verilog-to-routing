@@ -107,6 +107,8 @@ csvFields = (
     "synth_luts",
     "abc_luts",
     "packed_luts",
+    "synth_ff",
+    "num_ff",
     "num_clb",
     "num_memory",
     "num_dsp",
@@ -130,6 +132,8 @@ statusKeys = (
     ("s_luts", "synth_luts"),
     ("a_luts", "abc_luts"),
     ("p_luts", "packed_luts"),
+    ("s_ff", "synth_ff"),
+    ("ff", "num_ff"),
     ("mem", "num_memory"),
     ("dsp", "num_dsp"),
     ("adder", "num_adder"),
@@ -186,8 +190,39 @@ def countBlifNames(blifPath: Path) -> str:
         return ""
 
 
+def countBlifLatches(blifPath: Path) -> str:
+    if not blifPath.is_file():
+        return ""
+    try:
+        count = 0
+        with open(blifPath, encoding="utf-8", errors="replace") as blifFile:
+            for line in blifFile:
+                if line.startswith(".latch"):
+                    count += 1
+        return str(count)
+    except OSError:
+        return ""
+
+
+def parseYosysFfCount(text: str) -> str:
+    # yosys `stat` lines look like: "    $dff                           1234"
+    # after dffunmap / techmap the cell may be $dff, $_DFF_P_, etc.
+    total = 0
+    found = False
+    for line in text.splitlines():
+        match = re.match(r"\s*(\S+)\s+(\d+)\s*$", line)
+        if not match:
+            continue
+        cell = match.group(1).lower().lstrip("$")
+        if "dff" in cell or cell == "dlatch" or "latch" in cell:
+            total += int(match.group(2))
+            found = True
+    return str(total) if found else ""
+
+
 def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
-    counts = {"synth_luts": "", "abc_luts": ""}
+    counts = {"synth_luts": "", "abc_luts": "", "synth_ff": ""}
+    synthBlif = None
     for path in (
         tempDir / f"{circuitStem}.frankenstein.blif",
         tempDir / f"{circuitStem}.parmys.blif",
@@ -195,6 +230,7 @@ def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
     ):
         if path.is_file():
             counts["synth_luts"] = countBlifNames(path)
+            synthBlif = path
             break
     for path in (
         tempDir / f"{circuitStem}.abc.blif",
@@ -203,6 +239,24 @@ def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
         if path.is_file():
             counts["abc_luts"] = countBlifNames(path)
             break
+
+    # synth ff: prefer yosys stat in frankenstein.out / parmys.out; fall back to
+    # .latch count in the synth blif
+    for logName in ("frankenstein.out", "parmys.out", "odin.out"):
+        logPath = tempDir / logName
+        if not logPath.is_file():
+            continue
+        try:
+            ffCount = parseYosysFfCount(
+                logPath.read_text(encoding="utf-8", errors="replace")
+            )
+        except OSError:
+            ffCount = ""
+        if ffCount:
+            counts["synth_ff"] = ffCount
+            break
+    if not counts["synth_ff"] and synthBlif is not None:
+        counts["synth_ff"] = countBlifLatches(synthBlif)
     return counts
 
 
@@ -280,6 +334,10 @@ def fairSynthesisSec(flowName: str, synthWall: str, abcWall: str) -> str:
 
 
 def parsePackedLuts(vprText: str) -> str:
+    # circuit statistics block: "    .names:    1234"
+    match = re.search(r"^\s+\.names\s*:\s*(\d+)\s*$", vprText, re.MULTILINE)
+    if match:
+        return match.group(1)
     match = re.search(
         r"Absorbed\s+\d+\s+LUT buffers.*?^\s*\.names\s*:?\s*(\d+)\s*$",
         vprText,
@@ -288,12 +346,23 @@ def parsePackedLuts(vprText: str) -> str:
     return match.group(1) if match else ""
 
 
+def parseVprFfCount(vprText: str) -> str:
+    # prefer packed pb-type usage ("  ff : N"), else circuit stats ".latch: N"
+    ffPbMatch = re.search(r"^\s+ff\s+:\s*(\d+)\s*$", vprText, re.MULTILINE)
+    if ffPbMatch:
+        return ffPbMatch.group(1)
+    latchMatch = re.search(r"^\s+\.latch\s*:\s*(\d+)\s*$", vprText, re.MULTILINE)
+    if latchMatch:
+        return latchMatch.group(1)
+    return ""
+
+
 def parseVprQor(tempDir: Path) -> Dict[str, str]:
     vprOut = tempDir / "vpr.out"
     metrics = {field: "" for field in csvFields if field not in (
         "design", "flow", "success", "wall_time_sec", "return_code",
         "synth_wall_sec", "abc_wall_sec", "vpr_wall_sec",
-        "synth_luts", "abc_luts",
+        "synth_luts", "abc_luts", "synth_ff",
     )}
     metrics["vpr_status"] = "missing"
     if not vprOut.is_file():
@@ -323,6 +392,7 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
         metrics["num_io_out"] = ioOut.group(1)
 
     metrics["packed_luts"] = parsePackedLuts(text)
+    metrics["num_ff"] = parseVprFfCount(text)
 
     adderPbMatch = re.search(r"^\s+adder\s+:\s*(\d+)", text, re.MULTILINE)
     if adderPbMatch:
