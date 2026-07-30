@@ -15,6 +15,7 @@ usage:
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import sys
 import time
@@ -28,7 +29,9 @@ fmaxRe = re.compile(r"fmax=([0-9.]+)MHz")
 clbRe = re.compile(r"clb=(\d+)")
 wallRe = re.compile(r"wall=([0-9.]+)s")
 wnsRe = re.compile(r"wns=([0-9.-]+)ns")
-packedLutsRe = re.compile(r"packed_luts=(\d+)")
+synthLutsRe = re.compile(r"s_luts=(\d+)")
+abcLutsRe = re.compile(r"a_luts=(\d+)")
+packedLutsRe = re.compile(r"(?:p_luts|packed_luts)=(\d+)")
 ffRe = re.compile(r"\bff=(\d+)")
 memRe = re.compile(r"(?:packed_brams|mem)=(\d+)")
 dspRe = re.compile(r"(?:packed_dsps|dsp)=(\d+)")
@@ -99,6 +102,8 @@ def parseStatusLine(label: str, line: str):
         ("clb", clbRe),
         ("fmax", fmaxRe),
         ("wns", wnsRe),
+        ("synth_luts", synthLutsRe),
+        ("abc_luts", abcLutsRe),
         ("packed_luts", packedLutsRe),
         ("ff", ffRe),
         ("mem", memRe),
@@ -150,8 +155,10 @@ def renderTable(rows, title):
         "label": 36,
         "status": 22,
         "wall": 8,
+        "synth_luts": 8,
+        "abc_luts": 8,
+        "packed_luts": 8,
         "clb": 6,
-        "luts": 8,
         "ff": 6,
         "mem": 5,
         "dsp": 5,
@@ -165,8 +172,10 @@ def renderTable(rows, title):
         "run label",
         "status",
         "wall(s)",
+        "lut s",
+        "lut a",
+        "lut p",
         "clbs",
-        "luts",
         "ffs",
         "bram",
         "dsp",
@@ -180,8 +189,10 @@ def renderTable(rows, title):
         "label",
         "status",
         "wall",
-        "clb",
+        "synth_luts",
+        "abc_luts",
         "packed_luts",
+        "clb",
         "ff",
         "mem",
         "dsp",
@@ -192,7 +203,8 @@ def renderTable(rows, title):
         "wns",
     )
     widths = [colWidths[k] for k in (
-        "label", "status", "wall", "clb", "luts", "ff", "mem", "dsp", "adder", "wl", "cpd", "fmax", "wns"
+        "label", "status", "wall", "synth_luts", "abc_luts", "packed_luts",
+        "clb", "ff", "mem", "dsp", "adder", "wl", "cpd", "fmax", "wns"
     )]
 
     divider = "+" + "+".join("-" * (width + 2) for width in widths) + "+"
@@ -238,6 +250,123 @@ def renderTable(rows, title):
     return "\n".join(lines)
 
 
+# geomean compare across flows, over runs that finished ok on both.
+# (column header, row key, higher_is_better)
+geomeanColumns = (
+    ("LUTs", "packed_luts", False),
+    ("BRAMs", "mem", False),
+    ("DSPs", "dsp", False),
+    ("Adders", "adder", False),
+    ("CLBs", "clb", False),
+    ("Wirelen", "wl", False),
+    ("CPD ns", "cpd", False),
+    ("Fmax MHz", "fmax", True),
+)
+
+
+def numeric(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number > 0 else None
+
+
+def flowOf(label):
+    for flow in ("frankenstein", "vanilla_vtr"):
+        if label.endswith("_" + flow):
+            return flow
+    return None
+
+
+def computeGeomeans(rows):
+    # design -> {flow -> row}; keep only designs where every flow is ok
+    byDesign = {}
+    flowsSeen = []
+    for row in rows:
+        flow = flowOf(row.get("label", ""))
+        if flow is None:
+            continue
+        if flow not in flowsSeen:
+            flowsSeen.append(flow)
+        design = row["label"][: -(len(flow) + 1)]
+        byDesign.setdefault(design, {})[flow] = row
+
+    if len(flowsSeen) < 2:
+        return None
+
+    paired = {
+        design: flowRows
+        for design, flowRows in byDesign.items()
+        if len(flowRows) == len(flowsSeen)
+        and all(flowRows[f].get("status") == "ok" for f in flowsSeen)
+    }
+    if not paired:
+        return None
+
+    result = {}
+    for flow in flowsSeen:
+        result[flow] = {}
+        for header, key, _ in geomeanColumns:
+            values = [
+                numeric(flowRows[flow].get(key))
+                for flowRows in paired.values()
+            ]
+            values = [v for v in values if v is not None]
+            if values:
+                result[flow][key] = math.exp(sum(math.log(v) for v in values) / len(values))
+            else:
+                result[flow][key] = None
+    return {"flows": flowsSeen, "geo": result, "n": len(paired)}
+
+
+def renderGeomeanTable(rows):
+    data = computeGeomeans(rows)
+    if data is None:
+        return "geomean: waiting for paired ok runs on both flows"
+    flows = data["flows"]
+    base = "vanilla_vtr" if "vanilla_vtr" in flows else flows[0]
+    others = [f for f in flows if f != base]
+    geo = data["geo"]
+    n = data["n"]
+
+    def fmt(value):
+        return f"{value:,.2f}" if value is not None else "-"
+
+    headers = ["flow"] + [header for header, _, _ in geomeanColumns]
+    tableRows = []
+    tableRows.append([f"{base} (n={n})"] + [fmt(geo[base].get(key)) for _, key, _ in geomeanColumns])
+    for flow in others:
+        tableRows.append([flow] + [fmt(geo[flow].get(key)) for _, key, _ in geomeanColumns])
+    for flow in others:
+        diffRow = [f"% diff {flow}/{base}"]
+        for _, key, higherBetter in geomeanColumns:
+            fVal, bVal = geo[flow].get(key), geo[base].get(key)
+            if fVal is None or bVal is None:
+                diffRow.append("-")
+            else:
+                diffRow.append(f"{(fVal / bVal - 1.0) * 100.0:+.2f}%")
+        tableRows.append(diffRow)
+        ratioRow = [f"x diff {flow}/{base}"]
+        for _, key, higherBetter in geomeanColumns:
+            fVal, bVal = geo[flow].get(key), geo[base].get(key)
+            ratioRow.append("-" if fVal is None or bVal is None else f"{fVal / bVal:.2f}x")
+        tableRows.append(ratioRow)
+
+    colWidths = [
+        max(len(str(r[i])) for r in [headers] + tableRows)
+        for i in range(len(headers))
+    ]
+    divider = "+" + "+".join("-" * (w + 2) for w in colWidths) + "+"
+    lines = ["geomean over paired ok runs:", divider]
+    lines.append("|" + "|".join(f" {h:<{w}} " for h, w in zip(headers, colWidths)) + "|")
+    lines.append(divider)
+    for row in tableRows:
+        lines.append("|" + "|".join(f" {str(c):<{w}} " for c, w in zip(row, colWidths)) + "|")
+    lines.append(divider)
+    return "\n".join(lines)
+
+
 def watchDir(targetDir: Path, interval: float, once: bool):
     logsDir = targetDir / "logs"
     print(f"watching {targetDir} (interval={interval}s) — Ctrl-C to stop")
@@ -264,6 +393,8 @@ def watchDir(targetDir: Path, interval: float, once: bool):
                 print("\033[H\033[J", end="")
 
             print(renderTable(rows, title))
+            print()
+            print(renderGeomeanTable(rows))
             print(f"\nlogs: {logsDir}")
             csvCandidates = sorted(targetDir.glob("*results*.csv"))
             if csvCandidates:

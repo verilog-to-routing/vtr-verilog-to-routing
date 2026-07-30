@@ -89,6 +89,8 @@ csvFields = (
     "success",
     "vpr_status",
     "wall_time_sec",
+    "synth_luts",
+    "abc_luts",
     "packed_luts",
     "packed_luts_2plus",
     "num_clb",
@@ -160,6 +162,45 @@ def parsePackedLutCounts(vprText: str) -> Dict[str, str]:
     }
     metrics["packed_luts_2plus"] = str(sum(v for k, v in lutDist.items() if k >= 2))
     return metrics
+
+
+def countBlifNames(blifPath: Path) -> str:
+    # lut count is the number of .names blocks in the blif netlist
+    if not blifPath.is_file():
+        return ""
+    try:
+        count = 0
+        with open(blifPath, encoding="utf-8", errors="replace") as blifFile:
+            for line in blifFile:
+                if line.startswith(".names"):
+                    count += 1
+        return str(count)
+    except OSError:
+        return ""
+
+
+def stageLutCounts(tempDir: Path, circuitStem: str) -> Dict[str, str]:
+    # synth = pre-abc frankenstein/parmys blif, abc = post-abc blif. packed
+    # comes from vpr in parseVprQor. try the flow-prefixed (0_) and plain names
+    counts = {"synth_luts": "", "abc_luts": ""}
+    synthCandidates = [
+        tempDir / f"{circuitStem}.frankenstein.blif",
+        tempDir / f"{circuitStem}.parmys.blif",
+        tempDir / f"{circuitStem}.odin.blif",
+    ]
+    abcCandidates = [
+        tempDir / f"{circuitStem}.abc.blif",
+        tempDir / f"0_{circuitStem}.abc.blif",
+    ]
+    for path in synthCandidates:
+        if path.is_file():
+            counts["synth_luts"] = countBlifNames(path)
+            break
+    for path in abcCandidates:
+        if path.is_file():
+            counts["abc_luts"] = countBlifNames(path)
+            break
+    return counts
 
 
 def parseVprQor(tempDir: Path) -> Dict[str, str]:
@@ -270,9 +311,11 @@ def formatSummary(runLabel: str, row: Dict) -> str:
     status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
     return (
         f"{runLabel}: {status} wall={row.get('wall_time_sec', '')}s "
-        f"luts={row.get('packed_luts', '')} clb={row.get('num_clb', '')} "
+        f"s_luts={row.get('synth_luts', '')} a_luts={row.get('abc_luts', '')} "
+        f"p_luts={row.get('packed_luts', '')} clb={row.get('num_clb', '')} "
         f"ff={row.get('num_ff', '')} mem={row.get('num_memory', '')} "
         f"dsp={row.get('num_dsp', '')} adder={row.get('num_adder', '')} "
+        f"wl={row.get('total_wire_length', '')} "
         f"cpd={row.get('crit_path_delay_ns', '')}ns "
         f"fmax={row.get('fmax_mhz', '')}MHz "
         f"wns={row.get('worst_slack_ns', '')}ns rc={row.get('return_code', '')}"
@@ -354,6 +397,7 @@ def runOne(task: Tuple) -> Dict:
     wallSec = f"{time.perf_counter() - startTime:.2f}"
 
     qor = parseVprQor(tempDir)
+    qor.update(stageLutCounts(tempDir, design))
     success = result.returncode == 0 and qor["vpr_status"] == "ok"
     row = {
         "design": design,
