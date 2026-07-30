@@ -304,7 +304,7 @@ void toggle_crit_path_cbk(SwitchButton*, bool state, ezgl::application* app) {
     app->find_widget("NumCritPaths")->setEnabled(state);
     app->find_widget("ToggleCritPathFlylines")->setEnabled(state);
     app->find_widget("ToggleCritPathDelays")->setEnabled(state);
-    
+
     if (draw_state->setup_timing_info && draw_state->pic_on_screen == e_pic_type::ROUTING) {
         app->find_widget("ToggleCritPathRouting")->setEnabled(state);
     }
