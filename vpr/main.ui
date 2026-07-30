@@ -624,6 +624,7 @@
         <child>
           <object class="GtkLabel" id="NumCritPathsLabel">
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Num Critical Paths</property>
           </object>

@@ -727,7 +727,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                 // Delay time in seconds.
                 float delay_time = arr_time - prev_arr_time;
                 // Convert to nanoseconds.
-                delay_time = 1e9 * delay_time
+                delay_time = 1e9 * delay_time;
                 std::stringstream ss;
                 // Set precision to three decimals and use std::fixed to explicitly show three decimals for visual consistency among labels
                 // (Note: 1.5, for example, is consistent with std::setprecision(3) but still needs to be extended to 1.500 by std::fixed).

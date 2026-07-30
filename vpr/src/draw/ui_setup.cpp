@@ -331,6 +331,7 @@ void crit_path_button_setup(ezgl::application* app) {
         set_num_crit_paths_value_cbk(num_paths, app);
     });
     num_paths->setSingleStep(1);
+    // We allow the drawing of at most ten critical paths.
     num_paths->setRange(1, 10);
 
     // Checkboxes for critical path
