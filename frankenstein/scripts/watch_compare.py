@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-live status table for frankenstein/scripts/compare_k6.py.
+live status table for frankenstein/scripts/compare_flow.py.
 
 scans <outdir>/status/*.txt and live phase hints from run dirs. run in a
 second terminal while the compare is going.
 
 usage:
   python3 frankenstein/scripts/watch_compare.py
-  python3 frankenstein/scripts/watch_compare.py --dir compare_output_k6
+  python3 frankenstein/scripts/watch_compare.py --dir compare_output_k6_frac_N10_frac_chain_mem32K_40nm
   python3 frankenstein/scripts/watch_compare.py --interval 2
   python3 frankenstein/scripts/watch_compare.py --once
 """
@@ -22,7 +22,7 @@ from pathlib import Path
 
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
-defaultOutDir = vtrRoot / "compare_output_k6"
+defaultOutDirName = "compare_output_k6_frac_N10_frac_chain_mem32K_40nm"
 
 fmaxRe = re.compile(r"fmax=([0-9.]+)MHz")
 clbRe = re.compile(r"clb=(\d+)")
@@ -265,9 +265,9 @@ def watchDir(targetDir: Path, interval: float, once: bool):
 
             print(renderTable(rows, title))
             print(f"\nlogs: {logsDir}")
-            csvPath = targetDir / "compare_k6_results.csv"
-            if csvPath.is_file():
-                print(f"csv:  {csvPath}")
+            csvCandidates = sorted(targetDir.glob("*results*.csv"))
+            if csvCandidates:
+                print(f"csv:  {csvCandidates[-1]}")
 
             if once:
                 break
@@ -285,7 +285,7 @@ def findOutputDirs():
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="live status table for compare_k6")
+    parser = argparse.ArgumentParser(description="live status table for compare_flow")
     parser.add_argument("--dir", default=None, help="compare output directory")
     parser.add_argument("--interval", type=float, default=1.0, help="refresh seconds")
     parser.add_argument("--once", action="store_true", help="print once and exit")
@@ -295,15 +295,17 @@ def main(argv=None):
         targetDir = Path(args.dir)
         if not targetDir.is_absolute():
             targetDir = vtrRoot / targetDir
-    elif defaultOutDir.is_dir():
-        targetDir = defaultOutDir
     else:
-        candidates = findOutputDirs()
-        if not candidates:
-            print("no compare_output* directories found", file=sys.stderr)
-            sys.exit(1)
-        targetDir = candidates[-1]
-        print(f"auto-selected: {targetDir.name}")
+        preferred = vtrRoot / defaultOutDirName
+        if preferred.is_dir():
+            targetDir = preferred
+        else:
+            candidates = findOutputDirs()
+            if not candidates:
+                print("no compare_output* directories found", file=sys.stderr)
+                sys.exit(1)
+            targetDir = candidates[-1]
+            print(f"auto-selected: {targetDir.name}")
 
     watchDir(targetDir, args.interval, args.once)
 

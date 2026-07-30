@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 """
-two-way k6 qor compare: vanilla_vtr (parmys) vs frankenstein.
+two-way vtr synthesis qor compare: vanilla_vtr (parmys) vs frankenstein.
 
-runs the eight README circuits through both synthesis front-ends, then the
-same abc + vpr backend on k6_frac_N10_frac_chain_mem32K_40nm.xml.
+runs circuits through both front-ends, then the same abc + vpr backend on a
+chosen architecture.
 
 usage (from the vtr repo root):
-  python3 frankenstein/scripts/compare_k6.py
-  python3 frankenstein/scripts/compare_k6.py --flows frankenstein --serial
-  python3 frankenstein/scripts/compare_k6.py --designs arm_core bgm --jobs 4
-  python3 frankenstein/scripts/compare_k6.py --no-rerun
+  python3 frankenstein/scripts/compare_flow.py
+  python3 frankenstein/scripts/compare_flow.py --arch <path/to/arch.xml>
+  python3 frankenstein/scripts/compare_flow.py --designs arm_core bgm --flows frankenstein
+  python3 frankenstein/scripts/compare_flow.py --jobs 8 --large-jobs 3
+
+defaults:
+  arch      vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
+  circuits  vtr_flow/benchmarks/verilog/<name>.v
+  outdir    compare_output_k6
 
 watch progress in a second terminal:
-  python3 frankenstein/scripts/watch_compare.py
+  python3 frankenstein/scripts/watch_compare.py --dir <outdir>
 """
 
 from __future__ import annotations
@@ -36,18 +41,11 @@ scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
 vtrFlow = vtrRoot / "vtr_flow"
 runVtrFlow = vtrFlow / "scripts" / "run_vtr_flow.py"
-archFile = vtrFlow / "arch" / "timing" / "k6_frac_N10_frac_chain_mem32K_40nm.xml"
-benchmarksDir = vtrFlow / "benchmarks" / "verilog"
 yosysBin = vtrRoot / "build" / "bin" / "yosys"
 pluginPath = vtrRoot / "build" / "share" / "yosys" / "plugins" / "wildebeest.so"
-defaultOutDir = vtrRoot / "compare_output_k6"
-defaultCsvName = "compare_k6_results.csv"
 
-# ---------------------------------------------------------------------------
-# designs / flows
-# ---------------------------------------------------------------------------
-
-# the eight circuits in the frankenstein README qor table
+defaultArchRel = "vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml"
+defaultBenchRel = "vtr_flow/benchmarks/verilog"
 defaultDesigns = (
     "LU32PEEng",
     "LU8PEEng",
@@ -58,14 +56,12 @@ defaultDesigns = (
     "stereovision1",
     "stereovision2",
 )
-
 largeDesigns = frozenset({"LU32PEEng", "LU8PEEng", "mcml", "bgm"})
 
 flows = {
     "vanilla_vtr": {"start": "parmys"},
     "frankenstein": {"start": "frankenstein"},
 }
-
 flowAliases = {
     "vtr": "vanilla_vtr",
     "vanilla": "vanilla_vtr",
@@ -127,11 +123,13 @@ def ensurePlScriptsExecutable() -> None:
             pass
 
 
-def checkPrerequisites(needFrankenstein: bool) -> None:
+def checkPrerequisites(needFrankenstein: bool, archFile: Path, benchDir: Path) -> None:
     missing = []
     for path in (runVtrFlow, archFile, yosysBin):
         if not path.is_file():
             missing.append(str(path))
+    if not benchDir.is_dir():
+        missing.append(str(benchDir))
     if needFrankenstein and not pluginPath.is_file():
         missing.append(str(pluginPath))
     if missing:
@@ -147,10 +145,7 @@ def checkPrerequisites(needFrankenstein: bool) -> None:
 
 
 def parsePackedLutCounts(vprText: str) -> Dict[str, str]:
-    metrics = {
-        "packed_luts": "",
-        "packed_luts_2plus": "",
-    }
+    metrics = {"packed_luts": "", "packed_luts_2plus": ""}
     match = re.search(
         r"Absorbed\s+(\d+)\s+LUT buffers.*?^\s*\.names\s*:?\s*(\d+)\s*$"
         r"((?:\s+\d+-LUT:\s*\d+\s*$)*)",
@@ -212,7 +207,7 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
 
     metrics.update(parsePackedLutCounts(text))
 
-    adderPbMatch = re.search(r"^\s+adder\s+:\s+(\d+)", text, re.MULTILINE)
+    adderPbMatch = re.search(r"^\s+adder\s+:\s*(\d+)", text, re.MULTILINE)
     if adderPbMatch:
         metrics["num_adder"] = adderPbMatch.group(1)
 
@@ -244,7 +239,11 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
         metrics["route_time_sec"] = routeMatch.group(1)
 
     critFile = tempDir / "vpr.crit_path.out"
-    critText = critFile.read_text(encoding="utf-8", errors="replace") if critFile.is_file() else text
+    critText = (
+        critFile.read_text(encoding="utf-8", errors="replace")
+        if critFile.is_file()
+        else text
+    )
     critMatch = re.search(
         r"Final critical path[^:]*:\s*([0-9.]+)\s*ns(?:,\s*Fmax:\s*([0-9.]+)\s*MHz)?",
         critText,
@@ -292,12 +291,12 @@ def formatSummary(runLabel: str, row: Dict) -> str:
 
 
 def runOne(task: Tuple) -> Dict:
-    design, flowName, outDir, noClean, noRerun = task
+    design, flowName, outDir, archFile, benchDir, noClean, noRerun = task
     runLabel = f"{design}_{flowName}"
     tempDir = (outDir / "runs" / runLabel).resolve()
     logPath = (outDir / "logs" / f"{runLabel}.log").resolve()
     successMarker = tempDir / ".success"
-    circuitPath = benchmarksDir / f"{design}.v"
+    circuitPath = benchDir / f"{design}.v"
 
     if noRerun and successMarker.is_file():
         summary = f"{runLabel}: cached"
@@ -420,23 +419,12 @@ def normalizeFlows(names: Optional[Sequence[str]]) -> List[str]:
 
 
 def normalizeDesigns(names: Optional[Sequence[str]]) -> List[str]:
-    if not names:
-        return list(defaultDesigns)
-    return list(names)
+    return list(names) if names else list(defaultDesigns)
 
 
-def buildTasks(
-    designs: Sequence[str],
-    selectedFlows: Sequence[str],
-    outDir: Path,
-    noClean: bool,
-    noRerun: bool,
-) -> List[Tuple]:
-    return [
-        (design, flowName, outDir, noClean, noRerun)
-        for design in designs
-        for flowName in selectedFlows
-    ]
+def resolvePath(value: str, base: Path) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else (base / path)
 
 
 def runPool(tasks: List[Tuple], jobs: int) -> List[Dict]:
@@ -448,7 +436,6 @@ def runPool(tasks: List[Tuple], jobs: int) -> List[Dict]:
         futures = {pool.submit(runOne, task): task for task in tasks}
         for future in as_completed(futures):
             results.append(future.result())
-    # stable order for the csv merge
     order = {(t[0], t[1]): i for i, t in enumerate(tasks)}
     results.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
     return results
@@ -456,7 +443,17 @@ def runPool(tasks: List[Tuple], jobs: int) -> List[Dict]:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="vanilla_vtr vs frankenstein k6 qor compare"
+        description="vanilla_vtr vs frankenstein vtr qor compare"
+    )
+    parser.add_argument(
+        "--arch",
+        default=defaultArchRel,
+        help=f"architecture xml (default {defaultArchRel})",
+    )
+    parser.add_argument(
+        "--benchmark-dir",
+        default=defaultBenchRel,
+        help=f"directory holding <design>.v files (default {defaultBenchRel})",
     )
     parser.add_argument(
         "--designs",
@@ -470,41 +467,46 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=None,
         help="vanilla_vtr and/or frankenstein (aliases: vtr, frank)",
     )
-    parser.add_argument("--jobs", type=int, default=4, help="parallel jobs (default 4)")
-    parser.add_argument("--serial", action="store_true", help="force --jobs 1")
+    parser.add_argument("--jobs", type=int, default=4, help="parallel jobs for small circuits")
+    parser.add_argument(
+        "--large-jobs",
+        type=int,
+        default=None,
+        help="parallel jobs for large circuits (default --jobs/2)",
+    )
+    parser.add_argument("--serial", action="store_true", help="force --jobs 1 --large-jobs 1")
     parser.add_argument(
         "--outdir",
-        type=Path,
-        default=defaultOutDir,
-        help=f"output directory (default {defaultOutDir.name})",
+        default=None,
+        help="output directory (default compare_output_<arch_stem>)",
     )
     parser.add_argument(
         "--csv",
-        type=Path,
         default=None,
-        help="results csv path (default <outdir>/compare_k6_results.csv)",
+        help="results csv path (default <outdir>/compare_results.csv)",
     )
+    parser.add_argument("--no-clean", action="store_true", help="keep existing run dirs")
     parser.add_argument(
-        "--no-clean",
-        action="store_true",
-        help="keep existing run dirs instead of wiping them",
-    )
-    parser.add_argument(
-        "--no-rerun",
-        action="store_true",
-        help="skip runs that already have a .success marker",
+        "--no-rerun", action="store_true", help="skip runs with a .success marker"
     )
     args = parser.parse_args(argv)
 
+    archFile = resolvePath(args.arch, vtrRoot)
+    benchDir = resolvePath(args.benchmark_dir, vtrRoot)
     designs = normalizeDesigns(args.designs)
     selectedFlows = normalizeFlows(args.flows)
-    jobs = 1 if args.serial else max(1, args.jobs)
-    outDir = args.outdir if args.outdir.is_absolute() else (vtrRoot / args.outdir)
-    csvPath = args.csv or (outDir / defaultCsvName)
-    if not csvPath.is_absolute():
-        csvPath = vtrRoot / csvPath
 
-    checkPrerequisites(needFrankenstein="frankenstein" in selectedFlows)
+    jobs = max(1, args.jobs)
+    largeJobs = args.large_jobs if args.large_jobs else max(1, jobs // 2)
+    if args.serial:
+        jobs = 1
+        largeJobs = 1
+
+    defaultOutDirName = f"compare_output_{archFile.stem}"
+    outDir = resolvePath(args.outdir or defaultOutDirName, vtrRoot)
+    csvPath = resolvePath(args.csv, vtrRoot) if args.csv else (outDir / "compare_results.csv")
+
+    checkPrerequisites("frankenstein" in selectedFlows, archFile, benchDir)
     ensurePlScriptsExecutable()
 
     outDir.mkdir(parents=True, exist_ok=True)
@@ -515,29 +517,36 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         shutil.rmtree(statusDir, ignore_errors=True)
     statusDir.mkdir(exist_ok=True)
 
-    tasks = buildTasks(designs, selectedFlows, outDir, args.no_clean, args.no_rerun)
+    tasks = [
+        (design, flowName, outDir, archFile, benchDir, args.no_clean, args.no_rerun)
+        for design in designs
+        for flowName in selectedFlows
+    ]
     labels = [f"{d}_{f}" for d, f, *_ in tasks]
     (statusDir / "manifest.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
 
+    print(f"arch:    {archFile.name}")
     print(f"designs: {', '.join(designs)}")
     print(f"flows:   {', '.join(selectedFlows)}")
-    print(f"jobs:    {jobs}")
+    print(f"jobs:    small={jobs} large={largeJobs}")
     print(f"outdir:  {outDir}")
     print(f"csv:     {csvPath}")
     print(f"watch:   python3 frankenstein/scripts/watch_compare.py --dir {outDir}")
     print()
 
-    # large circuits first at half parallelism to reduce oom risk
     largeTasks = [t for t in tasks if t[0] in largeDesigns]
     smallTasks = [t for t in tasks if t[0] not in largeDesigns]
-    largeJobs = max(1, jobs // 2)
 
     rows: List[Dict] = []
     if largeTasks:
-        print(f"large circuits ({len(largeTasks)} runs) @ {largeJobs} jobs")
+        nDesigns = len({t[0] for t in largeTasks})
+        nFlows = len({t[1] for t in largeTasks})
+        print(f"large circuits ({nDesigns} designs x {nFlows} flows = {len(largeTasks)} runs) @ {largeJobs} jobs")
         rows.extend(runPool(largeTasks, largeJobs))
     if smallTasks:
-        print(f"small circuits ({len(smallTasks)} runs) @ {jobs} jobs")
+        nDesigns = len({t[0] for t in smallTasks})
+        nFlows = len({t[1] for t in smallTasks})
+        print(f"small circuits ({nDesigns} designs x {nFlows} flows = {len(smallTasks)} runs) @ {jobs} jobs")
         rows.extend(runPool(smallTasks, jobs))
 
     writeCsv(csvPath, rows)
@@ -550,5 +559,4 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    # windows + ProcessPoolExecutor needs the guard
     raise SystemExit(main())
