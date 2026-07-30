@@ -33,12 +33,36 @@ class MoveAbortionLogger {
     /// Records reasons for an aborted move.
     void log_move_abort(std::string_view reason);
 
-    /// Prints a brief report about aborted move reasons and counts.
+    /**
+     * @brief Records a move proposal whose moved block belongs to a placement
+     *        macro (the whole macro moves), and whether the proposal aborted.
+     *
+     * A move inverted from single-block to macro (e_block_move_result::INVERT)
+     * is recorded on the second, inverted find_affected_blocks() call.
+     *
+     * @param user_defined  True for a user relative placement macro, false for
+     *                      an architecture-derived macro (e.g. a carry chain).
+     * @param aborted       True if the proposal was aborted.
+     */
+    void log_macro_move_proposal(bool user_defined, bool aborted);
+
+    /// Prints a brief report about aborted move reasons and counts, and macro
+    /// move proposal statistics.
     void report_aborted_moves() const;
 
   private:
     /// Records counts of reasons for aborted moves
     std::map<std::string, size_t, std::less<>> move_abort_reasons_;
+
+    /// Move proposals that moved an architecture-derived macro, and how many
+    /// of them aborted.
+    size_t arch_macro_proposals_ = 0;
+    size_t arch_macro_aborts_ = 0;
+
+    /// Move proposals that moved a user relative placement macro, and how many
+    /// of them aborted.
+    size_t user_macro_proposals_ = 0;
+    size_t user_macro_aborts_ = 0;
 };
 
 /* Stores the list of cluster blocks to be moved in a swap during       *
