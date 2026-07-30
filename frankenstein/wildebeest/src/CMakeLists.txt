@@ -1,12 +1,19 @@
 find_package(Yosys)
 
+# pugixml is source-compiled into the plugin from vtr's vendored copy, so the
+# arch xml reader uses a real xml parser without adding any link dependency.
+set(PUGIXML_SRC_DIR "${CMAKE_SOURCE_DIR}/../../libs/EXTERNAL/libpugixml/src"
+    CACHE PATH "path to the vendored pugixml sources")
+
 add_library(wildebeest SHARED
     arch_rule_gen.cc
     clk_domains.cc
     vtr_arch_clocks.cc
     vtr_arch_info.cc
     vtr_arch_rules.cc
+    ${PUGIXML_SRC_DIR}/pugixml.cpp
 )
+target_include_directories(wildebeest PRIVATE ${PUGIXML_SRC_DIR})
 target_link_libraries(wildebeest
     PRIVATE
         yosys::yosys

@@ -1,222 +1,34 @@
 #include "vtr_arch_info.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstring>
-#include <deque>
-#include <fstream>
-#include <sstream>
+#include <string>
+#include <vector>
+
+#include "pugixml.hpp"
 
 namespace wildebeestVtr {
 
 namespace {
 
 // ---------------------------------------------------------------------------
-// minimal xml dom: elements + attributes only (no text, namespaces, or dtd).
-// vtr arch xml uses none of the skipped features, so this is enough and keeps
-// the plugin free of any xml dependency.
-// ---------------------------------------------------------------------------
-
-struct XmlNode {
-  std::string name;
-  std::vector<std::pair<std::string, std::string>> attrs;
-  std::vector<XmlNode *> children;
-  bool selfClosing_ = false;
-
-  const std::string *attr(const std::string &key) const {
-    for (const auto &kv : attrs)
-      if (kv.first == key)
-        return &kv.second;
-    return nullptr;
-  }
-
-  std::vector<const XmlNode *> find(const std::string &childName) const {
-    std::vector<const XmlNode *> out;
-    for (const XmlNode *c : children)
-      if (c->name == childName)
-        out.push_back(c);
-    return out;
-  }
-};
-
-std::string decodeEntities(const std::string &s) {
-  std::string out;
-  out.reserve(s.size());
-  for (size_t i = 0; i < s.size(); ++i) {
-    if (s[i] == '&') {
-      size_t semi = s.find(';', i);
-      if (semi != std::string::npos && semi - i <= 6) {
-        std::string ent = s.substr(i + 1, semi - i - 1);
-        if (ent == "amp") { out += '&'; i = semi; continue; }
-        if (ent == "lt") { out += '<'; i = semi; continue; }
-        if (ent == "gt") { out += '>'; i = semi; continue; }
-        if (ent == "quot") { out += '"'; i = semi; continue; }
-        if (ent == "apos") { out += '\''; i = semi; continue; }
-      }
-    }
-    out += s[i];
-  }
-  return out;
-}
-
-class XmlParser {
-public:
-  XmlParser(const std::string &text) : text_(text) {}
-
-  // parse the whole document; returns nullptr on malformed input.
-  XmlNode *parse() {
-    std::vector<XmlNode *> stack;
-    XmlNode *root = nullptr;
-    while (skipToTag()) {
-      if (match("</")) {
-        // closing tag: pop (validate name loosely)
-        size_t end = text_.find('>', pos_);
-        if (end == std::string::npos)
-          return nullptr;
-        if (!stack.empty())
-          stack.pop_back();
-        pos_ = end + 1;
-        continue;
-      }
-      XmlNode *node = parseOpenTag();
-      if (!node)
-        return nullptr;
-      if (!stack.empty())
-        stack.back()->children.push_back(node);
-      else if (!root)
-        root = node;
-      if (!node->selfClosing_)
-        stack.push_back(node);
-    }
-    return root;
-  }
-
-private:
-  const std::string &text_;
-  size_t pos_ = 0;
-  std::deque<XmlNode> pool_;
-
-  bool match(const char *pat) const {
-    return text_.compare(pos_, std::strlen(pat), pat) == 0;
-  }
-
-  // advance to the next '<', skipping prologs, comments, doctypes, cdata.
-  bool skipToTag() {
-    while (true) {
-      size_t lt = text_.find('<', pos_);
-      if (lt == std::string::npos)
-        return false;
-      pos_ = lt;
-      if (match("<!--")) {
-        size_t end = text_.find("-->", pos_ + 4);
-        if (end == std::string::npos)
-          return false;
-        pos_ = end + 3;
-        continue;
-      }
-      if (match("<?")) {
-        size_t end = text_.find("?>", pos_ + 2);
-        if (end == std::string::npos)
-          return false;
-        pos_ = end + 2;
-        continue;
-      }
-      if (match("<![CDATA[")) {
-        size_t end = text_.find("]]>", pos_ + 9);
-        if (end == std::string::npos)
-          return false;
-        pos_ = end + 3;
-        continue;
-      }
-      if (match("<!")) {
-        size_t end = text_.find('>', pos_ + 2);
-        if (end == std::string::npos)
-          return false;
-        pos_ = end + 1;
-        continue;
-      }
-      return true;
-    }
-  }
-
-  XmlNode *parseOpenTag() {
-    ++pos_; // past '<'
-    pool_.emplace_back();
-    XmlNode *node = &pool_.back();
-    // element name
-    while (pos_ < text_.size() && !isspace((unsigned char)text_[pos_]) &&
-           text_[pos_] != '>' && text_[pos_] != '/') {
-      node->name += text_[pos_++];
-    }
-    if (node->name.empty())
-      return nullptr;
-    // attributes
-    while (pos_ < text_.size()) {
-      while (pos_ < text_.size() && isspace((unsigned char)text_[pos_]))
-        ++pos_;
-      if (pos_ >= text_.size())
-        return nullptr;
-      if (text_[pos_] == '>') {
-        ++pos_;
-        return node;
-      }
-      if (match("/>")) {
-        pos_ += 2;
-        node->selfClosing_ = true;
-        return node;
-      }
-      std::string key;
-      while (pos_ < text_.size() &&
-             (isalnum((unsigned char)text_[pos_]) || text_[pos_] == '_' ||
-              text_[pos_] == '-' || text_[pos_] == '.' || text_[pos_] == ':'))
-        key += text_[pos_++];
-      while (pos_ < text_.size() && isspace((unsigned char)text_[pos_]))
-        ++pos_;
-      if (pos_ >= text_.size() || text_[pos_] != '=')
-        return nullptr;
-      ++pos_;
-      while (pos_ < text_.size() && isspace((unsigned char)text_[pos_]))
-        ++pos_;
-      if (pos_ >= text_.size() ||
-          (text_[pos_] != '"' && text_[pos_] != '\''))
-        return nullptr;
-      char quote = text_[pos_++];
-      size_t end = text_.find(quote, pos_);
-      if (end == std::string::npos)
-        return nullptr;
-      node->attrs.emplace_back(key, decodeEntities(text_.substr(pos_, end - pos_)));
-      pos_ = end + 1;
-    }
-    return nullptr;
-  }
-};
-
-// ---------------------------------------------------------------------------
 // extraction helpers (mirror the legacy offline generator semantics)
 // ---------------------------------------------------------------------------
 
-void collectAll(const XmlNode *node, const std::string &name,
-                std::vector<const XmlNode *> &out) {
-  if (node->name == name)
+void collectAll(const pugi::xml_node &node, const char *name,
+                std::vector<pugi::xml_node> &out) {
+  if (std::strcmp(node.name(), name) == 0)
     out.push_back(node);
-  for (const XmlNode *c : node->children)
-    collectAll(c, name, out);
+  for (const pugi::xml_node child : node.children())
+    collectAll(child, name, out);
 }
 
-int attrInt(const XmlNode *node, const std::string &key, int fallback = 0) {
-  const std::string *v = node->attr(key);
-  if (!v)
-    return fallback;
-  try {
-    return std::stoi(*v);
-  } catch (...) {
-    return fallback;
-  }
+int attrInt(const pugi::xml_node &node, const char *key, int fallback = 0) {
+  return node.attribute(key).as_int(fallback);
 }
 
-std::string attrStr(const XmlNode *node, const std::string &key) {
-  const std::string *v = node->attr(key);
-  return v ? *v : std::string();
+std::string attrStr(const pugi::xml_node &node, const char *key) {
+  return node.attribute(key).value();
 }
 
 bool isTruthy(const std::string &v) {
@@ -224,10 +36,10 @@ bool isTruthy(const std::string &v) {
 }
 
 // map of direct <input>/<output> children by name -> num_pins
-std::vector<std::pair<std::string, int>> directPins(const XmlNode *node,
+std::vector<std::pair<std::string, int>> directPins(const pugi::xml_node &node,
                                                     const char *tag) {
   std::vector<std::pair<std::string, int>> out;
-  for (const XmlNode *pin : node->find(tag))
+  for (const pugi::xml_node pin : node.children(tag))
     out.emplace_back(attrStr(pin, "name"), attrInt(pin, "num_pins", 1));
   return out;
 }
@@ -240,14 +52,14 @@ int pinWidth(const std::vector<std::pair<std::string, int>> &pins,
   return 0;
 }
 
-void scanModels(const XmlNode *root, VtrArchInfo &info) {
-  for (const XmlNode *modelsNode : root->find("models")) {
-    for (const XmlNode *model : modelsNode->find("model")) {
-      for (const XmlNode *inputPorts : model->find("input_ports")) {
-        for (const XmlNode *port : inputPorts->find("port")) {
-          const std::string *isClock = port->attr("is_clock");
-          if (isClock && isTruthy(*isClock)) {
-            std::string name = attrStr(model, "name");
+void scanModels(const pugi::xml_node &root, VtrArchInfo &info) {
+  for (const pugi::xml_node modelsNode : root.children("models")) {
+    for (const pugi::xml_node model : modelsNode.children("model")) {
+      for (const pugi::xml_node inputPorts : model.children("input_ports")) {
+        for (const pugi::xml_node port : inputPorts.children("port")) {
+          const pugi::xml_attribute isClock = port.attribute("is_clock");
+          if (!isClock.empty() && isTruthy(isClock.value())) {
+            const std::string name = attrStr(model, "name");
             if (std::find(info.clockedModels.begin(),
                           info.clockedModels.end(),
                           name) == info.clockedModels.end())
@@ -259,15 +71,15 @@ void scanModels(const XmlNode *root, VtrArchInfo &info) {
   }
 }
 
-void scanBramModes(const std::vector<const XmlNode *> &pbTypes,
+void scanBramModes(const std::vector<pugi::xml_node> &pbTypes,
                    VtrArchInfo &info) {
-  for (const XmlNode *pb : pbTypes) {
+  for (const pugi::xml_node pb : pbTypes) {
     const std::string blif = attrStr(pb, "blif_model");
-    bool isSp = blif == ".subckt single_port_ram";
-    bool isDp = blif == ".subckt dual_port_ram";
+    const bool isSp = blif == ".subckt single_port_ram";
+    const bool isDp = blif == ".subckt dual_port_ram";
     if (!isSp && !isDp)
       continue;
-    auto pins = directPins(pb, "input");
+    const auto pins = directPins(pb, "input");
     BramModeInfo mode;
     mode.name = attrStr(pb, "name");
     mode.isSp = isSp;
@@ -285,28 +97,30 @@ void scanBramModes(const std::vector<const XmlNode *> &pbTypes,
 }
 
 // size of a .names lut pb_type = num_pins of its first direct <input>
-int lutSize(const XmlNode *pb) {
-  for (const XmlNode *in : pb->find("input"))
-    return attrInt(in, "num_pins", 0);
+int lutSize(const pugi::xml_node &pb) {
+  for (const pugi::xml_node input : pb.children("input"))
+    return attrInt(input, "num_pins", 0);
   return 0;
 }
 
-void scanLutCost(const std::vector<const XmlNode *> &pbTypes,
+void scanLutCost(const std::vector<pugi::xml_node> &pbTypes,
                  VtrArchInfo &info) {
   int singleK = 0;
   int subK = 0;
-  for (const XmlNode *pb : pbTypes) {
-    auto modes = pb->find("mode");
+  for (const pugi::xml_node pb : pbTypes) {
+    std::vector<pugi::xml_node> modes;
+    for (const pugi::xml_node mode : pb.children("mode"))
+      modes.push_back(mode);
     if (modes.size() < 2)
       continue;
-    for (const XmlNode *mode : modes) {
+    for (const pugi::xml_node mode : modes) {
       // .names luts among direct pb_type children, or one level deeper
       std::vector<std::pair<int, int>> luts; // (size, num_pb)
-      for (const XmlNode *child : mode->find("pb_type")) {
+      for (const pugi::xml_node child : mode.children("pb_type")) {
         if (attrStr(child, "blif_model") == ".names")
           luts.emplace_back(lutSize(child), attrInt(child, "num_pb", 1));
         else
-          for (const XmlNode *grand : child->find("pb_type"))
+          for (const pugi::xml_node grand : child.children("pb_type"))
             if (attrStr(grand, "blif_model") == ".names")
               luts.emplace_back(lutSize(grand),
                                 attrInt(grand, "num_pb", 1) *
@@ -334,15 +148,15 @@ void scanLutCost(const std::vector<const XmlNode *> &pbTypes,
 // binding contributes its direct port widths to hardblockModels[<name>].
 // this replaces the old adder/multiply-only scan; those two are derived
 // from the generic map below.
-void scanHardblockModels(const std::vector<const XmlNode *> &pbTypes,
+void scanHardblockModels(const std::vector<pugi::xml_node> &pbTypes,
                          VtrArchInfo &info) {
   const std::string prefix = ".subckt ";
-  for (const XmlNode *pb : pbTypes) {
+  for (const pugi::xml_node pb : pbTypes) {
     const std::string blif = attrStr(pb, "blif_model");
     if (blif.compare(0, prefix.size(), prefix) != 0)
       continue;
     ModelGeometry &geo = info.hardblockModels[blif.substr(prefix.size())];
-    auto inputs = directPins(pb, "input");
+    const auto inputs = directPins(pb, "input");
     for (const auto &kv : inputs) {
       int &w = geo.inputWidths[kv.first];
       w = std::max(w, kv.second);
@@ -351,7 +165,7 @@ void scanHardblockModels(const std::vector<const XmlNode *> &pbTypes,
       int &w = geo.outputWidths[kv.first];
       w = std::max(w, kv.second);
     }
-    int a = pinWidth(inputs, "a");
+    const int a = pinWidth(inputs, "a");
     if (a > 0 && std::find(geo.modes.begin(), geo.modes.end(), a) ==
                      geo.modes.end())
       geo.modes.push_back(a);
@@ -383,27 +197,19 @@ void deriveHardblockAliases(VtrArchInfo &info) {
 
 bool readArchInfo(const std::string &xmlPath, VtrArchInfo &info,
                   std::string *errorOut) {
-  std::ifstream in(xmlPath, std::ios::binary);
-  if (!in.is_open()) {
+  pugi::xml_document doc;
+  const pugi::xml_parse_result result = doc.load_file(xmlPath.c_str());
+  if (!result) {
     if (errorOut)
-      *errorOut = "cannot open " + xmlPath;
+      *errorOut = "cannot parse " + xmlPath + ": " + result.description();
     return false;
   }
-  std::ostringstream buf;
-  buf << in.rdbuf();
-  const std::string text = buf.str();
 
-  XmlParser parser(text);
-  XmlNode *root = parser.parse();
-  if (!root) {
-    if (errorOut)
-      *errorOut = "malformed xml in " + xmlPath;
-    return false;
-  }
+  const pugi::xml_node root = doc.document_element();
 
   scanModels(root, info);
 
-  std::vector<const XmlNode *> pbTypes;
+  std::vector<pugi::xml_node> pbTypes;
   collectAll(root, "pb_type", pbTypes);
   scanBramModes(pbTypes, info);
   scanLutCost(pbTypes, info);

@@ -5,14 +5,15 @@
 #include <string>
 #include <vector>
 
-// generalized, dependency-free reader for the slices of a vtr architecture
-// xml that the frankenstein flow needs at synthesis time.
+// generalized reader for the slices of a vtr architecture xml that the
+// frankenstein flow needs at synthesis time.
 //
-// this supersedes the clocks-only scanner (vtr_arch_clocks): same constraint
-// (no pugixml, no libarchfpga link, plugin builds against yosys alone), but
-// it also walks the pb_type hierarchy for bram modes, lut fracturability and
-// hardblock port widths — the data the old offline python generators used
-// to produce statically.
+// the xml is parsed with pugixml, source-compiled into the plugin from vtr's
+// vendored copy (libs/EXTERNAL/libpugixml), so there is still no
+// libarchfpga/libvtrutil link and the plugin keeps building against yosys
+// alone. it walks the pb_type hierarchy for bram modes, lut fracturability
+// and hardblock port widths — the data the old offline python generators
+// used to produce statically.
 namespace wildebeestVtr {
 
 // one concrete bram mode from a pb_type with blif_model
