@@ -43,7 +43,7 @@ frankenstein_misc_path = vtr_flow_path / "misc" / "frankenstein"
 frankenstein_template_path = frankenstein_misc_path / "template"
 frankenstein_script_path = frankenstein_template_path / "synthesis.tcl"
 frankenstein_k6_support_path = frankenstein_misc_path / "k6"
-frankenstein_fix_blif_script_path = frankenstein_k6_support_path / "fix_blif_for_vpr.py"
+frankenstein_fix_blif_script_path = frankenstein_template_path / "fix_blif_for_vpr.py"
 wildebeest_path = frankenstein_path / "wildebeest"
 wildebeest_plugin_path = root_path / "build" / "share" / "yosys" / "plugins" / "wildebeest.so"
 

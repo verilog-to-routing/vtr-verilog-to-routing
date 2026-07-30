@@ -10,9 +10,12 @@ plugin -i wildebeest
 # vtr_arch_rules.
 #
 # put these next to each other in the arch support dir named by K6D
-#   arch_config.tcl add_sub_map.v mul2dsp_map.v vtr_ram_whitebox.v
-#   vtr_ram_bit_lib.v and whatever abc scripts the config points at
-# also keep the four fallback statics there for runs where VVV is empty
+#   arch_config.tcl add_sub_map.v mul2dsp_map.v
+# shared arch-independent support lives in the template dir TDIR
+#   vtr_ram_whitebox.v vtr_ram_bit_lib.v and whatever abc scripts the
+#   config points at
+# also keep the four fallback statics in the support dir for runs where
+# VVV is empty
 #   bram_memory_map.txt tech_bram.v mult_map.v vtr_hardblock_lib.v
 #
 # harness fills these tokens before yosys sees the script
@@ -30,6 +33,7 @@ plugin -i wildebeest
 set archSupportDir "K6D"
 set archXmlPath    "VVV"
 set archRulesDir   "."
+set templateDir    "TDIR"
 
 set dspMaxWidth    18
 set dspMinWidth    2
@@ -59,7 +63,7 @@ if { [file exists $archConfigFile] } {
 # ----------------------------------------------------------------------------
 if { $archXmlPath ne "" } {
     vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir \
-        -tpldir TDIR/templates -sp-cost $bramSpCost -dp-cost $bramDpCost
+        -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost
     set bramMapFile      "$archRulesDir/bram_memory_map.txt"
     set techBramFile     "$archRulesDir/tech_bram.v"
     set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
@@ -108,7 +112,7 @@ if { "TTT" ne "" } {
 
 # no -lib here so the generate loops expand at the real DATA_WIDTH. top is
 # already set so a plain hierarchy re-elaborates without -auto-top.
-read_verilog -overwrite $archSupportDir/vtr_ram_whitebox.v
+read_verilog -overwrite $templateDir/vtr_ram_whitebox.v
 hierarchy -check -purge_lib
 opt_expr
 opt_clean
@@ -173,7 +177,7 @@ delete single_port_ram dual_port_ram
 chtype -map vtr_sp_ram_bit single_port_ram
 chtype -map vtr_dp_ram_bit dual_port_ram
 delete vtr_sp_ram_bit vtr_dp_ram_bit
-read_verilog -lib $archSupportDir/vtr_ram_bit_lib.v
+read_verilog -lib $templateDir/vtr_ram_bit_lib.v
 
 # last chance to shrink soft cones before hard mapping freezes the edges
 opt -full

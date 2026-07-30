@@ -12,8 +12,8 @@ set cmpLutWidth    6
 # fracturable fle  sizes 1..5 cost 13 and size 6 costs 20
 set lutCost        "5:13,6:20"
 set sweepMaxIters  64
-set abcOptScript   "$archSupportDir/k6_delay_gia_opt.scr"
-set abcMapScript   "$archSupportDir/k6_delay.scr"
+set abcOptScript   "$templateDir/k6_delay_gia_opt.scr"
+set abcMapScript   "$templateDir/k6_delay.scr"
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
 
-# rebuild the abc scripts with frankenstein/yosys/k6/build_k6_delay_scr.py
+# rebuild the abc scripts with vtr_flow/misc/frankenstein/template/build_k6_delay_scr.py
