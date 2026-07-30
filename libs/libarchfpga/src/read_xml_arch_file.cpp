@@ -4706,7 +4706,7 @@ static void process_clock_networks(pugi::xml_node parent,
                                    pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty"};
     std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty"};
-    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name"};
+    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name", "switch_block_type"};
     std::vector<std::string> expected_children = {"rib", "spine", "clock_switch_grid"};
 
     int num_clock_networks = count_children(parent, "clock_network", loc_data);
@@ -4841,6 +4841,26 @@ static void process_clock_networks(pugi::xml_node parent,
             clock_network.switch_grid.chan_w = chan_w;
             clock_network.switch_grid.switch_name = switch_name;
             clock_network.switch_grid.arch_switch_idx = grid_switch_idx;
+
+            std::string switch_block_type_str = get_attribute(curr_type, "switch_block_type", loc_data, ReqOpt::OPTIONAL).as_string("full");
+            if (switch_block_type_str == "full") {
+                clock_network.switch_grid.switch_block_type = e_switch_block_type::FULL;
+            } else if (switch_block_type_str == "subset") {
+                clock_network.switch_grid.switch_block_type = e_switch_block_type::SUBSET;
+            } else if (switch_block_type_str == "wilton") {
+                clock_network.switch_grid.switch_block_type = e_switch_block_type::WILTON;
+            } else if (switch_block_type_str == "universal") {
+                clock_network.switch_grid.switch_block_type = e_switch_block_type::UNIVERSAL;
+            } else if (switch_block_type_str == "custom") {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                               "Custom switch block patterns are not yet supported for clock_switch_grid.\n");
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                               vtr::string_fmt("Unknown switch_block_type '%s' for clock_switch_grid. "
+                                               "Expected one of: full, subset, wilton, universal.\n",
+                                               switch_block_type_str.c_str())
+                                   .c_str());
+            }
 
             process_clock_switch_grid_points(curr_type, clock_network, switches, loc_data);
         }

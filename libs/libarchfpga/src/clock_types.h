@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "switchblock_types.h"
+
 enum class e_clock_type {
     SPINE,
     RIB,
@@ -63,6 +65,12 @@ struct t_clock_switch_grid_arch {
     std::string chan_w;
     std::string switch_name;
     int arch_switch_idx = -1;
+
+    // How the wires incident to each switch box connect to one another.
+    // Defaults to FULL (every incident wire mutually reachable), matching the
+    // original minimal implementation. CUSTOM is not yet supported for clock
+    // networks.
+    e_switch_block_type switch_block_type = e_switch_block_type::FULL;
 
     std::vector<t_clock_switch_grid_point> switch_points;
 };

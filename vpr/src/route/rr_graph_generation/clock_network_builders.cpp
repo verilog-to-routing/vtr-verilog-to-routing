@@ -3,6 +3,7 @@
 #include "globals.h"
 
 #include "get_parallel_segs.h"
+#include "rr_graph_sbox.h"
 #include "rr_rc_data.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -801,6 +802,10 @@ void ClockSwitchGrid::set_internal_switch(int switch_idx) {
     internal_switch_idx_ = switch_idx;
 }
 
+void ClockSwitchGrid::set_switch_block_type(e_switch_block_type switch_block_type) {
+    switch_block_type_ = switch_block_type;
+}
+
 void ClockSwitchGrid::add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx) {
     SwitchGridPoint point;
     point.name = std::move(name);
@@ -840,10 +845,11 @@ int ClockSwitchGrid::num_grid_locations(const DeviceGrid& grid) const {
 }
 
 size_t ClockSwitchGrid::estimate_additional_nodes(const DeviceGrid& grid) {
-    // 1 hub node + up to 2 hop wire nodes (east, north) per grid location, per track.
-    // This over-estimates (locations at the top/right edge have fewer hops), which is
-    // fine since this is only used to reserve node storage.
-    return size_t(chan_w_) * size_t(num_grid_locations(grid)) * 3;
+    // Up to 2 hop wire nodes (east, north) per grid location, per track, plus 1 hub
+    // node per track at each switch_point location. This over-estimates (locations at
+    // the top/right edge have fewer hops), which is fine since this is only used to
+    // reserve node storage.
+    return size_t(chan_w_) * (size_t(num_grid_locations(grid)) * 2 + switch_points_.size());
 }
 
 void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
@@ -865,63 +871,133 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
 
     std::vector<bool> switch_point_registered(switch_points_.size(), false);
 
+    // Each node gets its own dedicated ptc. Nodes that touch the same (x,y) location
+    // must never share a ptc, since the rr_node_indices reverse lookup is keyed by
+    // (x,y,type,ptc) and a collision silently drops one of the nodes.
+
+    // Hop wire rr_node index of the wire leaving a switch box to the east/north,
+    // indexed by [track][{x,y}]. The wire leaving (x,y) to the east is the same node
+    // as the wire arriving at (x + repeat_.x, y) from the west, and similarly for north.
+    std::vector<std::map<std::pair<int, int>, int>> east_wire(chan_w_);
+    std::vector<std::map<std::pair<int, int>, int>> north_wire(chan_w_);
+
+    // Pass 1: create the hop wires themselves (independent of switch-block pattern).
     for (int track = 0; track < chan_w_; track++) {
-        // Each node (hub or hop wire) gets its own dedicated ptc. Nodes that touch the
-        // same (x,y) location must never share a ptc, since the rr_node_indices reverse
-        // lookup is keyed by (x,y,type,ptc) and a collision silently drops one of the nodes.
-
-        // Hub node (switch box) rr_node index at each grid location, for this track
-        std::map<std::pair<int, int>, int> hub_nodes;
-
-        auto get_or_create_hub = [&](int x, int y) -> int {
-            auto key = std::make_pair(x, y);
-            auto it = hub_nodes.find(key);
-            if (it != hub_nodes.end()) {
-                return it->second;
-            }
-            int hub_ptc = clock_graph.get_and_increment_chanx_ptc_num();
-            int node_idx = create_chanx_node(layer_num, x, x, y, hub_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
-            hub_nodes[key] = node_idx;
-            return node_idx;
-        };
-
         for (int by = start_y_; by <= y_max; by += repeat_.y) {
             for (int bx = start_x_; bx <= x_max; bx += repeat_.x) {
-                int hub_idx = get_or_create_hub(bx, by);
-
-                // Register any switch points (drive/tap) that live at this switch box
-                for (size_t i = 0; i < switch_points_.size(); i++) {
-                    const SwitchGridPoint& sp = switch_points_[i];
-                    if (sp.x == bx && sp.y == by) {
-                        clock_graph.add_switch_location(get_name(), sp.name, bx, by, hub_idx);
-                        switch_point_registered[i] = true;
-                    }
-                }
-
-                // Connect to the switch box to the east, if one exists
                 int east_x = bx + repeat_.x;
                 if (east_x <= x_max) {
-                    int east_hub_idx = get_or_create_hub(east_x, by);
                     int wire_ptc = clock_graph.get_and_increment_chanx_ptc_num();
                     int wire_idx = create_chanx_node(layer_num, bx, east_x, by, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
-
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(east_hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(east_hub_idx), internal_switch_idx_, false);
+                    east_wire[track][{bx, by}] = wire_idx;
                 }
 
-                // Connect to the switch box to the north, if one exists
                 int north_y = by + repeat_.y;
                 if (north_y <= y_max) {
-                    int north_hub_idx = get_or_create_hub(bx, north_y);
                     int wire_ptc = clock_graph.get_and_increment_chany_ptc_num();
                     int wire_idx = create_chany_node(layer_num, by, north_y, bx, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder, num_segments_x);
+                    north_wire[track][{bx, by}] = wire_idx;
+                }
+            }
+        }
+    }
 
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(north_hub_idx), RRNodeId(wire_idx), internal_switch_idx_, false);
-                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(wire_idx), RRNodeId(north_hub_idx), internal_switch_idx_, false);
+    // Returns the rr_node index of the hop wire touching switch box (bx,by) on the
+    // given side, for the given track, or -1 if no such wire exists (grid boundary).
+    auto stub_at = [&](int bx, int by, e_side side, int track) -> int {
+        const std::map<std::pair<int, int>, int>* wires = nullptr;
+        int key_x = bx;
+        int key_y = by;
+        switch (side) {
+            case LEFT:
+                key_x = bx - repeat_.x;
+                if (key_x < start_x_) return -1;
+                wires = &east_wire[track];
+                break;
+            case RIGHT:
+                wires = &east_wire[track];
+                break;
+            case BOTTOM:
+                key_y = by - repeat_.y;
+                if (key_y < start_y_) return -1;
+                wires = &north_wire[track];
+                break;
+            case TOP:
+                wires = &north_wire[track];
+                break;
+            default:
+                VTR_ASSERT_MSG(false, "Unexpected side for clock switch grid");
+                return -1;
+        }
+        auto it = wires->find({key_x, key_y});
+        return (it != wires->end()) ? it->second : -1;
+    };
+
+    // Pass 2: connect the switch boxes.
+    for (int by = start_y_; by <= y_max; by += repeat_.y) {
+        for (int bx = start_x_; bx <= x_max; bx += repeat_.x) {
+            // Switch points (drive/tap) get a dedicated hub node per track, shared by
+            // every switch point at this location, with full access to every wire
+            // incident to this switch box: drive/tap points model dedicated
+            // clock-network access hardware, not the general switching fabric, so they
+            // are intentionally exempt from the switch-block pattern.
+            std::vector<size_t> points_here;
+            for (size_t i = 0; i < switch_points_.size(); i++) {
+                if (switch_points_[i].x == bx && switch_points_[i].y == by) {
+                    points_here.push_back(i);
+                }
+            }
+
+            if (!points_here.empty()) {
+                for (int track = 0; track < chan_w_; track++) {
+                    int hub_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+                    int hub_idx = create_chanx_node(layer_num, bx, bx, by, hub_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
+
+                    for (size_t i : points_here) {
+                        clock_graph.add_switch_location(get_name(), switch_points_[i].name, bx, by, hub_idx);
+                        switch_point_registered[i] = true;
+                    }
+
+                    for (e_side side : TOTAL_2D_SIDES) {
+                        int stub_idx = stub_at(bx, by, side, track);
+                        if (stub_idx < 0) continue;
+
+                        clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), internal_switch_idx_, false);
+                        clock_graph.add_edge(rr_edges_to_create, RRNodeId(stub_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                    }
+                }
+            }
+
+            // Wire-to-wire connectivity through this switch box follows the
+            // configured switch-block pattern.
+            for (e_side from_side : TOTAL_2D_SIDES) {
+                for (int from_track = 0; from_track < chan_w_; from_track++) {
+                    int from_idx = stub_at(bx, by, from_side, from_track);
+                    if (from_idx < 0) continue;
+
+                    for (e_side to_side : TOTAL_2D_SIDES) {
+                        if (to_side == from_side) continue;
+
+                        if (switch_block_type_ == e_switch_block_type::FULL) {
+                            // FULL connects every from_track to every to_track (there is
+                            // no meaningful single to_track to permute to).
+                            for (int to_track = 0; to_track < chan_w_; to_track++) {
+                                int to_idx = stub_at(bx, by, to_side, to_track);
+                                if (to_idx >= 0) {
+                                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(from_idx), RRNodeId(to_idx), internal_switch_idx_, false);
+                                }
+                            }
+                        } else {
+                            int to_track = get_simple_switch_block_track(from_side, to_side, from_track,
+                                                                         switch_block_type_, chan_w_, chan_w_);
+                            if (to_track < 0 || to_track >= chan_w_) continue;
+
+                            int to_idx = stub_at(bx, by, to_side, to_track);
+                            if (to_idx >= 0) {
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(from_idx), RRNodeId(to_idx), internal_switch_idx_, false);
+                            }
+                        }
+                    }
                 }
             }
         }

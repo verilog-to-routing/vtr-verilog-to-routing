@@ -7,6 +7,7 @@
 #include "rr_graph_builder.h"
 #include "rr_graph_clock.h"
 #include "rr_graph_type.h"
+#include "switchblock_types.h"
 
 #include "vpr_types.h"
 
@@ -272,11 +273,12 @@ struct SwitchGridPoint {
     int switch_idx = UNDEFINED; // only meaningful for DRIVE points
 };
 
-// Models a grid of clock switch boxes: at every (repeat_x, repeat_y) spaced location a
-// switch box ("hub") is created, connected to its adjacent switch boxes via dedicated
-// clock wires. This is a minimal implementation: connectivity between the wires
-// incident to a switch box is a full crossbar (every incident side is mutually
-// reachable through the hub node) rather than a configurable switch pattern.
+// Models a grid of clock switch boxes: at every (repeat_x, repeat_y) spaced location,
+// clock wires connect to their adjacent switch boxes' wires according to a configurable
+// switch-block pattern (see switch_block_type_). Locations with a drive/tap switch_point
+// additionally get a dedicated hub node with full-crossbar access to every wire incident
+// to that switch box, since drive/tap points model dedicated clock-network access
+// hardware rather than part of the general switching fabric.
 class ClockSwitchGrid : public ClockNetwork {
   private:
     MetalLayer layer_;
@@ -285,6 +287,7 @@ class ClockSwitchGrid : public ClockNetwork {
     WireRepeat repeat_;
     int chan_w_ = UNDEFINED;
     int internal_switch_idx_ = UNDEFINED;
+    e_switch_block_type switch_block_type_ = e_switch_block_type::FULL;
 
     // segment indices for the horizontal/vertical inter-switch-box wires
     int x_seg_idx_ = UNDEFINED;
@@ -307,6 +310,7 @@ class ClockSwitchGrid : public ClockNetwork {
     void set_wire_repeat(int repeat_x, int repeat_y);
     void set_chan_width(int chan_w);
     void set_internal_switch(int switch_idx);
+    void set_switch_block_type(e_switch_block_type switch_block_type);
     void add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx = UNDEFINED);
 
     /*
