@@ -28,9 +28,9 @@
  * 
  * Note: the current code only supports drawing of time delay labels on edge flylines, not on routed connections.
  * 
- * Note: When multiple critical paths are drawn, and some of them share the same timing edge segments, there will be repeated
+ * Note: If multiple critical paths are drawn, and some of them share the same timing edge segments, there will be repeated
  * drawings of the corresponding edge flylines and routed connections, because they do not negatively affect visual aesthetics,
- * and running a repetition detection logic would be inefficient in this sense. However, for delay labels, having multiple of them
+ * and running a repetition detection logic would be unnecessary. However, for delay labels, having multiple of them
  * surrounding the same flyline segment would be very confusing, and so a repetition detection logic is implemented for them.
  * 
  * @param g Pointer to the ezgl::renderer object.

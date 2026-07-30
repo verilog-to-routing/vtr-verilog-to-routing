@@ -593,7 +593,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Display Critical Path</property>
+                <property name="label" translatable="yes">Display Critical Paths</property>
               </object>
               <packing>
                 <property name="expand">False</property>
