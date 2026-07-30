@@ -147,14 +147,6 @@ statusKeys = (
 )
 
 
-def ensurePlScriptsExecutable() -> None:
-    for plScript in (vtrFlow / "scripts").glob("*.pl"):
-        try:
-            plScript.chmod(plScript.stat().st_mode | 0o111)
-        except OSError:
-            pass
-
-
 def checkPrerequisites(needFrankenstein: bool, archFile: Path, benchDir: Path) -> None:
     missing = []
     for path in (runVtrFlow, archFile, yosysBin):
@@ -637,7 +629,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
 
     checkPrerequisites("frankenstein" in selectedFlows, archFile, benchDir)
-    ensurePlScriptsExecutable()
 
     outDir.mkdir(parents=True, exist_ok=True)
     (outDir / "runs").mkdir(exist_ok=True)

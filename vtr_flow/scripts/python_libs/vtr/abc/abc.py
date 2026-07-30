@@ -8,6 +8,7 @@ from pathlib import Path
 from vtr import determine_lut_size, verify_file, CommandRunner
 from vtr import paths
 from vtr.error import InspectError
+from vtr.util import perl_script_command
 
 
 def _read_text_lines(file_path):
@@ -250,13 +251,13 @@ def run(
         )
         if abc_flow_type == "blanket_bb":
             command_runner.run_system_command(
-                [
+                perl_script_command(
                     blackbox_latches_script,
                     "--input",
                     input_file,
                     "--output",
                     pre_abc_blif.name,
-                ],
+                ),
                 temp_dir=temp_dir,
                 log_filename=str(i) + "_blackboxing_latch.out",
                 indent_depth=1,
@@ -264,7 +265,7 @@ def run(
 
         elif len(clk_list) > i:
             command_runner.run_system_command(
-                [
+                perl_script_command(
                     blackbox_latches_script,
                     "--clk_list",
                     clk_list[i],
@@ -272,7 +273,7 @@ def run(
                     input_file,
                     "--output",
                     pre_abc_blif.name,
-                ],
+                ),
                 temp_dir=temp_dir,
                 log_filename=str(i) + "_blackboxing_latch.out",
                 indent_depth=1,
@@ -357,7 +358,7 @@ def run(
 
         if abc_flow_type != "blanket_bb" and len(clk_list) > i:
             command_runner.run_system_command(
-                [
+                perl_script_command(
                     blackbox_latches_script,
                     "--restore",
                     clk_list[i],
@@ -365,7 +366,7 @@ def run(
                     post_abc_raw_blif.name,
                     "--output",
                     post_abc_blif.name,
-                ],
+                ),
                 temp_dir=temp_dir,
                 log_filename="restore_latch" + str(i) + ".out",
                 indent_depth=1,
@@ -377,12 +378,12 @@ def run(
                 else str(paths.restore_multiclock_latch_script_path)
             )
             command_runner.run_system_command(
-                [
+                perl_script_command(
                     restore_multiclock_info_script,
                     pre_abc_blif.name,
                     post_abc_raw_blif.name,
                     post_abc_blif.name,
-                ],
+                ),
                 temp_dir=temp_dir,
                 log_filename="restore_latch" + str(i) + ".out",
                 indent_depth=1,
@@ -394,14 +395,14 @@ def run(
         input_file = post_abc_blif.name
 
     command_runner.run_system_command(
-        [
+        perl_script_command(
             blackbox_latches_script,
             "--input",
             post_abc_blif.name,
             "--output",
             output_netlist.name,
             "--vanilla",
-        ],
+        ),
         temp_dir=temp_dir,
         log_filename="restore_latch" + str(i) + ".out",
         indent_depth=1,
@@ -462,13 +463,13 @@ def populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command
     function to populate the clock list
     """
     clk_list_path = temp_dir / "report_clk.out"
-    cmd = [
+    cmd = perl_script_command(
         blackbox_latches_script,
         "--input",
         circuit_file.name,
         "--output_list",
         clk_list_path.name,
-    ]
+    )
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename="report_clocks.abc.out", indent_depth=1
     )

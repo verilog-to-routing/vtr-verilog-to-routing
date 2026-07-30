@@ -311,6 +311,22 @@ class CommandRunner:
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
 
 
+def perl_script_command(script_path, *script_args):
+    """
+    Build argv to run a .pl helper without requiring the execute bit.
+
+    Tracked scripts under vtr_flow/scripts/ are often mode 0644 in git.
+    Invoking them via perl avoids chmod'ing the working tree.
+    """
+    perl = shutil.which("perl")
+    if perl is None:
+        raise vtr.error.VtrError(
+            "perl is required to run VTR flow scripts "
+            "(e.g. blackbox_latches.pl), but was not found on PATH"
+        )
+    return [perl, str(script_path), *[str(arg) for arg in script_args]]
+
+
 def check_cmd(command):
     """
     Return True if command can be run, False otherwise.

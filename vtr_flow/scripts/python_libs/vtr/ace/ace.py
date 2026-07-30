@@ -4,6 +4,7 @@ Module to run ACE with its various options
 
 from pathlib import Path
 from vtr import verify_file, CommandRunner, paths
+from vtr.util import perl_script_command
 
 
 # pylint: disable=too-many-arguments
@@ -93,7 +94,7 @@ def run(
 
     clock_script = str(paths.restore_multiclock_latch_script_path)
 
-    cmd = [clock_script, old_netlist.name, ace_raw.name, output_netlist.name]
+    cmd = perl_script_command(clock_script, old_netlist.name, ace_raw.name, output_netlist.name)
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename="ace_clk_restore.out", indent_depth=1
     )
