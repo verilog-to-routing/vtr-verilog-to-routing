@@ -14,7 +14,7 @@ usage (from the vtr repo root):
 defaults:
   arch      vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
   circuits  vtr_flow/benchmarks/verilog/<name>.v
-  outdir    compare_output_k6
+  outdir    compare_output_<arch_stem>
 
 watch progress in a second terminal:
   python3 frankenstein/scripts/watch_compare.py --dir <outdir>
@@ -115,7 +115,7 @@ csvFields = (
 
 
 def ensurePlScriptsExecutable() -> None:
-    # abc.py calls blackbox_latches.pl; git sometimes strips +x
+    # abc.py calls blackbox_latches.pl every run; git sometimes strips +x
     for plScript in (vtrFlow / "scripts").glob("*.pl"):
         try:
             plScript.chmod(plScript.stat().st_mode | 0o111)
@@ -271,17 +271,12 @@ def formatSummary(runLabel: str, row: Dict) -> str:
     status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
     return (
         f"{runLabel}: {status} wall={row.get('wall_time_sec', '')}s "
-        f"packed_luts={row.get('packed_luts', '')} "
-        f"packed_luts_2plus={row.get('packed_luts_2plus', '')} "
-        f"clb={row.get('num_clb', '')} ff={row.get('num_ff', '')} "
-        f"mem={row.get('num_memory', '')} dsp={row.get('num_dsp', '')} "
-        f"adder={row.get('num_adder', '')} "
-        f"wl={row.get('total_wire_length', '')} "
+        f"luts={row.get('packed_luts', '')} clb={row.get('num_clb', '')} "
+        f"ff={row.get('num_ff', '')} mem={row.get('num_memory', '')} "
+        f"dsp={row.get('num_dsp', '')} adder={row.get('num_adder', '')} "
         f"cpd={row.get('crit_path_delay_ns', '')}ns "
         f"fmax={row.get('fmax_mhz', '')}MHz "
-        f"wns={row.get('worst_slack_ns', '')}ns "
-        f"peak={row.get('vpr_peak_mem_mb', '')}MB "
-        f"rc={row.get('return_code', '')}"
+        f"wns={row.get('worst_slack_ns', '')}ns rc={row.get('return_code', '')}"
     )
 
 
