@@ -34,7 +34,8 @@ set templateDir    "TDIR"
 
 set dspMaxWidth    18
 set dspMinWidth    2
-# half cost so roms prefer hard bram over soft luts
+# half cost so zero/undef roms prefer hard bram over soft luts.
+# non-zero init is refused by bram_memory_map (init zero) and soft-maps.
 set bramRomCost    0.5
 set bramSpCost     128
 set bramDpCost     128
@@ -161,9 +162,11 @@ read_verilog -lib $hardblockLibFile
 # ----------------------------------------------------------------------------
 # bram
 # ----------------------------------------------------------------------------
+# memory_libmap uses init zero / rdwr old from bram_memory_map.txt.
+# non-zero-initialized memories are left as $mem here then soft-mapped.
 memory_libmap -lib $bramMapFile -logic-cost-rom $bramRomCost
 
-# leftovers become flip-flop arrays
+# leftovers (incl. non-zero init / unfit sizes) become flip-flop arrays
 memory_map
 
 techmap -map $techBramFile
