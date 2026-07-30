@@ -9,7 +9,7 @@ usage (from the vtr repo root):
   python3 frankenstein/scripts/compare_flow.py
   python3 frankenstein/scripts/compare_flow.py --arch <path/to/arch.xml>
   python3 frankenstein/scripts/compare_flow.py --designs arm_core bgm --flows frankenstein
-  python3 frankenstein/scripts/compare_flow.py --jobs 8 --large-jobs 3
+  python3 frankenstein/scripts/compare_flow.py --jobs 8
 
 defaults:
   arch      vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
@@ -56,7 +56,6 @@ defaultDesigns = (
     "stereovision1",
     "stereovision2",
 )
-largeDesigns = frozenset({"LU32PEEng", "LU8PEEng", "mcml", "bgm"})
 
 flows = {
     "vanilla_vtr": {"start": "parmys"},
@@ -462,14 +461,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=None,
         help="vanilla_vtr and/or frankenstein (aliases: vtr, frank)",
     )
-    parser.add_argument("--jobs", type=int, default=4, help="parallel jobs for small circuits")
-    parser.add_argument(
-        "--large-jobs",
-        type=int,
-        default=None,
-        help="parallel jobs for large circuits (default --jobs/2)",
-    )
-    parser.add_argument("--serial", action="store_true", help="force --jobs 1 --large-jobs 1")
+    parser.add_argument("--jobs", type=int, default=4, help="parallel jobs")
     parser.add_argument(
         "--outdir",
         default=None,
@@ -492,10 +484,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     selectedFlows = normalizeFlows(args.flows)
 
     jobs = max(1, args.jobs)
-    largeJobs = args.large_jobs if args.large_jobs else max(1, jobs // 2)
-    if args.serial:
-        jobs = 1
-        largeJobs = 1
 
     defaultOutDirName = f"compare_output_{archFile.stem}"
     outDir = resolvePath(args.outdir or defaultOutDirName, vtrRoot)
@@ -523,26 +511,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"arch:    {archFile.name}")
     print(f"designs: {', '.join(designs)}")
     print(f"flows:   {', '.join(selectedFlows)}")
-    print(f"jobs:    small={jobs} large={largeJobs}")
+    print(f"jobs:    {jobs}")
     print(f"outdir:  {outDir}")
     print(f"csv:     {csvPath}")
     print(f"watch:   python3 frankenstein/scripts/watch_compare.py --dir {outDir}")
     print()
 
-    largeTasks = [t for t in tasks if t[0] in largeDesigns]
-    smallTasks = [t for t in tasks if t[0] not in largeDesigns]
-
-    rows: List[Dict] = []
-    if largeTasks:
-        nDesigns = len({t[0] for t in largeTasks})
-        nFlows = len({t[1] for t in largeTasks})
-        print(f"large circuits ({nDesigns} designs x {nFlows} flows = {len(largeTasks)} runs) @ {largeJobs} jobs")
-        rows.extend(runPool(largeTasks, largeJobs))
-    if smallTasks:
-        nDesigns = len({t[0] for t in smallTasks})
-        nFlows = len({t[1] for t in smallTasks})
-        print(f"small circuits ({nDesigns} designs x {nFlows} flows = {len(smallTasks)} runs) @ {jobs} jobs")
-        rows.extend(runPool(smallTasks, jobs))
+    nDesigns = len({t[0] for t in tasks})
+    nFlows = len({t[1] for t in tasks})
+    print(f"launching {nDesigns} designs x {nFlows} flows = {len(tasks)} runs @ {jobs} jobs")
+    rows = runPool(tasks, jobs)
 
     writeCsv(csvPath, rows)
 
