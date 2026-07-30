@@ -45,6 +45,16 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
     return e_block_move_result::VALID;
 }
 
+void t_pl_blocks_to_be_moved::set_moved_blocks(const std::vector<t_pl_moved_block>& moves) {
+    VTR_ASSERT_SAFE(moved_blocks.empty() && moved_from.empty() && moved_to.empty() && affected_pins.empty());
+
+    moved_blocks = moves;
+    for (const t_pl_moved_block& moved_block : moved_blocks) {
+        moved_from.insert(moved_block.old_loc);
+        moved_to.insert(moved_block.new_loc);
+    }
+}
+
 //Examines the currently proposed move and determine any empty locations
 std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move() const {
     std::set<t_pl_loc> moved_from_set;
