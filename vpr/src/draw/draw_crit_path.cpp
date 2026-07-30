@@ -50,7 +50,7 @@ static constexpr int ENDPOINT_STAR_SIZE = 16;
 /**
  * @brief Highly contrasting colours that are useful for visualization.
  */
-const std::vector<ezgl::color> kelly_max_contrast_colors = {
+static const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background.
     ezgl::color(34, 34, 34),   //black
     ezgl::color(243, 195, 0),  //yellow
@@ -321,7 +321,7 @@ static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl:
  * @param label_idx Timing edge index.
  * @return Color associated with the provided timing edge.
  */
-static ezgl::color get_edge_color_from_src_tnode_id(tatum::NodeId tnode_id);
+static ezgl::color get_edge_color_from_src_tnode_id(tatum::NodeId src_tnode_id);
 
 /**
  * @brief Returns the visibility and transparency for a timing edge flyline.
@@ -803,11 +803,6 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
     for (std::size_t label_idx = 0; label_idx < basic_label_drawing_info.size(); label_idx++) {
         t_label_drawing_info& drawing_info = basic_label_drawing_info[label_idx];
 
-        // At this stage, hidden labels are due to their corresponding flylines being invisible. Therefore, we skip them.
-        if (drawing_info.hide_label) {
-            continue;
-        }
-
         // The position candidate to start with is CENTER_ABOVE, which aligns with the order in label_pos_candidates.
         e_label_relative_pos candidate_with_least_overlaps = e_label_relative_pos::CENTER_ABOVE;
 
@@ -852,13 +847,9 @@ static std::vector<t_label_drawing_info> calculate_least_cluttered_label_pos(std
 }
 
 static std::vector<t_label_drawing_info> hide_still_cluttered_labels(std::vector<t_label_drawing_info> post_decluttering_label_drawing_info) {
+
     for (std::size_t label_idx = 0; label_idx < post_decluttering_label_drawing_info.size(); label_idx++) {
         t_label_drawing_info& drawing_info = post_decluttering_label_drawing_info[label_idx];
-
-        // Skip if the label is already hidden.
-        if (drawing_info.hide_label) {
-            continue;
-        }
 
         // As long as there is one overlap associated with this label, we hide it.
         // Note: A hidden label may positively affect the fate of subsequent labels, and hence we must perform a clean calculation for each label
@@ -990,11 +981,17 @@ static void draw_labels(std::vector<t_label_drawing_info>& final_label_drawing_i
 }
 
 static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl::renderer* g) {
-    g->set_color(ezgl::BLACK);
     g->set_font_size(20);
     g->set_text_rotation(0);
     // Use the screen (pixel) coordinates to draw the total delay string at a fixed screen location.
     g->set_coordinate_system(ezgl::SCREEN);
+    // The rightmost screen x coordinate.
+    double screen_right = g->get_visible_screen().right();
+
+    std::vector<std::string> total_delay_messages;
+    total_delay_messages.reserve(paths.size());
+    double max_msg_width = 0.0;
+    double msg_height = 0.0;
     for (std::size_t path_idx = 0; path_idx < paths.size(); path_idx++) {
         float total_delay_time = paths[path_idx].path_info().delay();
         // Construct the message to be drawn on screen.
@@ -1002,22 +999,39 @@ static void draw_total_delays(const std::vector<tatum::TimingPath>& paths, ezgl:
         ss << "Crit Path [" << path_idx << "]: ";
         ss << std::setprecision(3) << std::fixed << 1e9 * total_delay_time;
         ss << " ns";
-        std::string total_delay_str = ss.str();
+        std::string total_delay_msg = ss.str();
+        total_delay_messages.push_back(total_delay_msg);
 
-        // The rightmost screen x coordinate.
-        double screen_right = g->get_visible_screen().right();
         // String dimension in pixels.
-        ezgl::t_text_dimension str_dimension = g->get_text_dimension(total_delay_str);
+        ezgl::t_text_dimension msg_dimension = g->get_text_dimension(total_delay_msg);
 
-        // The canvas has an inverted y axis. Therefore, adding str_dimension.height to y actually lowers down the string from the screen top.
-        g->draw_text(ezgl::point2d{screen_right - str_dimension.width, str_dimension.height * (path_idx + 1)}, total_delay_str);
+        if (path_idx == 0) {
+            msg_height = msg_dimension.height;
+        }
+
+        if (msg_dimension.width > max_msg_width) {
+            max_msg_width = msg_dimension.width;
+        }
+    }
+
+    double padding = 5.0;
+    ezgl::point2d top_left = {screen_right - 1.5 * max_msg_width - padding, msg_height / 2 - padding};
+    ezgl::rectangle background(top_left, max_msg_width + 2 * padding, msg_height * total_delay_messages.size() + 2 * padding);
+    g->set_color(ezgl::WHITE);
+    g->fill_rectangle(background);
+    
+    g->set_color(ezgl::BLACK);
+    
+    for (std::size_t msg_idx = 0; msg_idx < total_delay_messages.size(); msg_idx++) {
+        std::string total_delay_msg = total_delay_messages[msg_idx];
+        g->draw_text(ezgl::point2d{screen_right - max_msg_width, msg_height * (msg_idx + 1)}, total_delay_msg);
     }
     g->set_coordinate_system(ezgl::WORLD);
 }
 
-static ezgl::color get_edge_color_from_src_tnode_id(tatum::NodeId tnode_id) {
-    VTR_ASSERT_SAFE(tnode_id.is_valid());
-    return kelly_max_contrast_colors[static_cast<std::size_t>(tnode_id) % kelly_max_contrast_colors.size()];
+static ezgl::color get_edge_color_from_src_tnode_id(tatum::NodeId src_tnode_id) {
+    VTR_ASSERT_SAFE(src_tnode_id.is_valid());
+    return kelly_max_contrast_colors[static_cast<std::size_t>(src_tnode_id) % kelly_max_contrast_colors.size()];
 }
 
 static t_draw_layer_display get_timing_flyline_visibility(tatum::NodeId src_node, tatum::NodeId sink_node) {
