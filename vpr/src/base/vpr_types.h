@@ -1103,9 +1103,10 @@ struct t_placer_opts {
     int placement_saves_per_temperature;
 
     /// Maximum number of worker threads used to speculatively evaluate placement
-    /// swaps in parallel (0 = sequential annealer). The active thread count (and
+    /// swaps in parallel (1 = sequential annealer). Resolved to a concrete count
+    /// in setup_vpr(), so it is always >= 1 here. The active thread count (and
     /// the speculative window, which equals it) adapts to the acceptance rate.
-    int place_parallel_eval;
+    int place_swap_eval_num_workers;
 
     e_place_effort_scaling effort_scaling;
 

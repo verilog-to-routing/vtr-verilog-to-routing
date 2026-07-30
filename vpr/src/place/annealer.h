@@ -296,7 +296,7 @@ class PlacementAnnealer {
      * @brief Returns true when the inner loop should run with speculative
      * parallel swap evaluation (see parallel_anneal_engine.h).
      *
-     * Requires --place_parallel_eval > 0 and a configuration the parallel
+     * Requires --place_swap_eval_num_workers > 1 and a configuration the parallel
      * engine supports (CRITICALITY_TIMING_PLACE or BOUNDING_BOX_PLACE, no NoC
      * optimization, no per-move logging/saving, no graphics). Unsupported
      * configurations fall back to the sequential inner loop with a one-time
@@ -313,7 +313,7 @@ class PlacementAnnealer {
      * Runs the inner loop as a sequence of speculative batches (see
      * ParallelAnnealEngine::run_batch()). The speculative window (== number of
      * active worker threads) adapts each temperature to the previous
-     * temperature's acceptance rate, capped by --place_parallel_eval. The result
+     * temperature's acceptance rate, capped by --place_swap_eval_num_workers. The result
      * is deterministic for a fixed seed and cap.
      */
     void placement_inner_loop_parallel_();

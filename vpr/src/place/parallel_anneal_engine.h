@@ -12,7 +12,7 @@
  * *batch* of `W` swaps against the current committed placement state and
  * evaluates them concurrently on worker threads. The annealer chooses W per
  * temperature from the previous temperature's acceptance rate (W == the number
- * of active workers, capped by --place_parallel_eval). Each attempt has a
+ * of active workers, capped by --place_swap_eval_num_workers). Each attempt has a
  * logical id; outcomes are resolved in id order:
  *
  *  - The *winner* is the lowest-id accepted attempt. It is committed to the

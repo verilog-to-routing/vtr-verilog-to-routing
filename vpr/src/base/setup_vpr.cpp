@@ -1,5 +1,6 @@
 #include <vector>
 #include <list>
+#include <thread>
 
 #include "setup_vpr.h"
 #include "physical_types_util.h"
@@ -713,7 +714,13 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->rlim_escape_fraction = Options.place_rlim_escape_fraction;
     PlacerOpts->move_stats_file = Options.place_move_stats_file;
     PlacerOpts->placement_saves_per_temperature = Options.placement_saves_per_temperature;
-    PlacerOpts->place_parallel_eval = Options.place_parallel_eval;
+    // 0 requests the host's maximum concurrency; resolve it here so the placer
+    // always sees a concrete worker count (>= 1, where 1 means sequential).
+    PlacerOpts->place_swap_eval_num_workers = Options.place_swap_eval_num_workers;
+    if (PlacerOpts->place_swap_eval_num_workers <= 0) {
+        const unsigned int hw_concurrency = std::thread::hardware_concurrency();
+        PlacerOpts->place_swap_eval_num_workers = (hw_concurrency > 0) ? (int)hw_concurrency : 1;
+    }
     PlacerOpts->place_delta_delay_matrix_calculation_method = Options.place_delta_delay_matrix_calculation_method;
 
     PlacerOpts->strict_checks = Options.strict_checks;
