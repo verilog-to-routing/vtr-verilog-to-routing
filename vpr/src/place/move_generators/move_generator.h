@@ -147,6 +147,33 @@ class MoveGenerator {
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
 
     /**
+     * @brief Returns an identifier for the internal decision ("arm") behind the most
+     * recent propose_move() call. Only meaningful for RL-agent based generators.
+     *
+     * Together with set_last_action(), this lets a caller interleave several
+     * propose_move() calls and later replay each outcome to the agent in order:
+     * capture the action after each proposal, and restore it right before the
+     * corresponding process_outcome()/calculate_reward_and_process_outcome() call.
+     * Used by the speculative parallel swap evaluation engine.
+     */
+    virtual size_t get_last_action() const { return 0; }
+
+    /// @brief Restores the action identifier captured by get_last_action(). See get_last_action().
+    virtual void set_last_action(size_t /*action*/) {}
+
+    /**
+     * @brief Copies the evolving proposal state (e.g. the RL agent's Q-values)
+     * from `other`, which must be a generator of the same concrete type.
+     *
+     * Used by the speculative parallel swap evaluation engine: each worker owns a
+     * generator replica and syncs it with the master generator (the one that
+     * processes move outcomes) before proposing, so every replica proposes
+     * exactly what the master would. The default is a no-op because most
+     * generators' proposals depend only on the placement state and the RNG.
+     */
+    virtual void sync_state_from(const MoveGenerator& /*other*/) {}
+
+    /**
      * @brief Calculates the agent's reward and the total process outcome
      *
      * @param move_outcome_stats Contains information about how much each cost term
