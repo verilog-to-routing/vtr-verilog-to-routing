@@ -323,6 +323,7 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                                     rr_graph_builder);
             record_tap_locations(x_start + x_offset,
                                  x_end,
+                                 drive_x,
                                  y,
                                  left_node_idx,
                                  right_node_idx,
@@ -394,12 +395,20 @@ int ClockRib::create_chanx_wire(int layer,
 
 void ClockRib::record_tap_locations(unsigned x_start,
                                     unsigned x_end,
+                                    unsigned drive_x,
                                     unsigned y,
                                     int left_rr_node_idx,
                                     int right_rr_node_idx,
                                     ClockRRGraphBuilder& clock_graph) {
     for (unsigned x = x_start + tap_.offset; x <= x_end; x += tap_.increment) {
-        if (x < (x_start + drive_.offset - 1)) {
+        // left_rr_node_idx spans [x_start, drive_x - 1], so the split must be at
+        // drive_x itself, taken as-is from the caller rather than re-derived here
+        // as x_start + drive_.offset: x_start at this point is already the
+        // boundary-adjusted start (x_start_orig + x_offset), so re-adding
+        // drive_.offset to it overshoots drive_x by x_offset whenever the rib
+        // starts at the left device edge, misclassifying the leftmost column(s)
+        // of the right node as belonging to left instead.
+        if (x < drive_x) {
             clock_graph.add_switch_location(get_name(), tap_.name, x, y, left_rr_node_idx);
         } else {
             clock_graph.add_switch_location(get_name(), tap_.name, x, y, right_rr_node_idx);
@@ -666,6 +675,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             // the tap point
             record_tap_locations(y_start + y_offset,
                                  y_end,
+                                 drive_y,
                                  x,
                                  left_node_idx,
                                  right_node_idx,
@@ -734,12 +744,20 @@ int ClockSpine::create_chany_wire(int layer,
 
 void ClockSpine::record_tap_locations(unsigned y_start,
                                       unsigned y_end,
+                                      unsigned drive_y,
                                       unsigned x,
                                       int left_node_idx,
                                       int right_node_idx,
                                       ClockRRGraphBuilder& clock_graph) {
     for (unsigned y = y_start + tap.offset; y <= y_end; y += tap.increment) {
-        if (y < (y_start + drive.offset - 1)) {
+        // left_node_idx spans [y_start, drive_y - 1], so the split must be at
+        // drive_y itself, taken as-is from the caller rather than re-derived here
+        // as y_start + drive.offset: y_start at this point is already the
+        // boundary-adjusted start (y_start_orig + y_offset), so re-adding
+        // drive.offset to it overshoots drive_y by y_offset whenever the spine
+        // starts at the bottom device edge, misclassifying the bottommost row(s)
+        // of the right node as belonging to left instead.
+        if (y < drive_y) {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, left_node_idx);
         } else {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, right_node_idx);

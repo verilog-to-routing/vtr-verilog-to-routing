@@ -191,6 +191,7 @@ class ClockRib : public ClockNetwork {
                           RRGraphBuilder& rr_graph_builder);
     void record_tap_locations(unsigned x_start,
                               unsigned x_end,
+                              unsigned drive_x,
                               unsigned y,
                               int left_rr_node_idx,
                               int right_rr_node_idx,
@@ -260,6 +261,7 @@ class ClockSpine : public ClockNetwork {
                           int num_segments);
     void record_tap_locations(unsigned y_start,
                               unsigned y_end,
+                              unsigned drive_y,
                               unsigned x,
                               int left_node_idx,
                               int right_node_idx,
