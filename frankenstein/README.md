@@ -58,9 +58,22 @@ The stage writes `<circuit>.frankenstein.blif`, logs to `frankenstein.out`, and 
 - `vtr_flow/misc/frankenstein/template/templates/*.tmpl`: templates used by `vtr_arch_rules -tpldir` to generate BRAM, multiply, and hardblock stub files
 - `vtr_flow/misc/frankenstein/k6/`: K6 per-arch knob config (`arch_config.tcl`) — the only per-arch artifact; everything else is generated from `template/templates/*.tmpl` or shared under `template/`
 - `vtr_flow/scripts/python_libs/vtr/frankenstein/`: the vtr flow stage module
-- `frankenstein/verilator_check/`: random-vector equivalence checking between rtl, post-synthesis blif, and post-abc blif
+- `frankenstein/scripts/`: `compare_k6.py` (vanilla_vtr vs frankenstein) and `watch_compare.py` (live status table)
 
 The synthesis template is architecture agnostic. Its tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `K6D`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys.
+
+## QoR Compare (vanilla_vtr vs frankenstein)
+Runs the eight README circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` through both front-ends:
+
+```shell
+# terminal 1 — launch the compare
+python3 frankenstein/scripts/compare_k6.py --jobs 4
+
+# terminal 2 — live status table
+python3 frankenstein/scripts/watch_compare.py
+```
+
+Useful flags: `--flows frankenstein`, `--designs arm_core bgm`, `--serial`, `--no-rerun`. Results land in `compare_output_k6/` (`runs/`, `logs/`, `status/`, `compare_k6_results.csv`).
 
 ## Regression Tests
 The `vtr_reg_basic_frankenstein` suite runs basic_timing circuits (`ch_intrinsics.v`, `diffeq1.v`, `multiclock_reader_writer.v`) on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start frankenstein`.
