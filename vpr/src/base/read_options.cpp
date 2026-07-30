@@ -2647,6 +2647,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_parallel_eval, "--place_parallel_eval")
+        .help(
+            "Maximum number of worker threads used to speculatively evaluate multiple placement swaps "
+            "in parallel during simulated annealing. 0 (the default) uses the sequential annealer. "
+            "The number of active threads (and the speculative window, which equals it) is chosen "
+            "each temperature from the previous temperature's acceptance rate, capped by this value. "
+            "Results are deterministic for a fixed value of this option.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
             "The percentage probabilities of different moves in Simulated Annealing placement. "
