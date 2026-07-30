@@ -48,7 +48,7 @@ Options are thhe following:
 - `-frankenstein_script <path>`: custom yosys template script (default `vtr_flow/misc/frankenstein/template/synthesis.tcl`)
 - `-top_module <name>`: top module; leaving it empty means yosys `-auto-top`
 
-The stage writes `<circuit>.frankenstein.blif`, logs to `frankenstein.out`, and post-processes the blif (prunes blackbox models the arch never declares, then applies `vtr_flow/misc/frankenstein/template/fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify). after that the flow continues through abc and vpr exactly like the odin and parmys legs.
+The stage writes `<circuit>.frankenstein.blif`, logs to `frankenstein.out`, and post-processes the blif (prunes blackbox models the arch never declares, then applies `vtr_flow/misc/frankenstein/template/fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify). After that the flow continues through abc and vpr exactly like the odin and parmys legs.
 
 ## Layout
 - `frankenstein/wildebeest/src/`: wildebeest-originated sources (`clk_domains.cc` / `max_level`, with the `-vtr_arch` patch)
@@ -56,7 +56,7 @@ The stage writes `<circuit>.frankenstein.blif`, logs to `frankenstein.out`, and 
 - `frankenstein/build_frankenstein.sh`: builds and installs the plugin
 - `vtr_flow/misc/frankenstein/template/`: architecture-agnostic yosys synthesis template + rule templates
 - `vtr_flow/misc/frankenstein/template/templates/*.tmpl`: templates used by `vtr_arch_rules -tpldir` to generate BRAM, multiply, and hardblock stub files
-- `vtr_flow/misc/frankenstein/k6/`: K6 arch support files including `arch_config.tcl`, hand-written techmaps, fallback statics, abc scripts, and `fix_blif_for_vpr.py`
+- `vtr_flow/misc/frankenstein/k6/`: K6 per-arch knob config (`arch_config.tcl`) — the only per-arch artifact; everything else is generated from `template/templates/*.tmpl` or shared under `template/`
 - `vtr_flow/scripts/python_libs/vtr/frankenstein/`: the vtr flow stage module
 - `frankenstein/verilator_check/`: random-vector equivalence checking between rtl, post-synthesis blif, and post-abc blif
 

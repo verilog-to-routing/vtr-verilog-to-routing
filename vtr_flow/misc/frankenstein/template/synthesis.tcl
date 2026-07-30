@@ -14,9 +14,6 @@ plugin -i wildebeest
 # shared arch-independent support lives in the template dir TDIR
 #   vtr_ram_whitebox.v vtr_ram_bit_lib.v and whatever abc scripts the
 #   config points at
-# also keep the four fallback statics in the support dir for runs where
-# VVV is empty
-#   bram_memory_map.txt tech_bram.v mult_map.v vtr_hardblock_lib.v
 #
 # harness fills these tokens before yosys sees the script
 #   XXX circuit verilog
@@ -60,27 +57,21 @@ if { [file exists $archConfigFile] } {
 }
 
 # ----------------------------------------------------------------------------
-# rule files  regenerate from the arch xml when we have one otherwise fall
-# back to the committed statics in the support dir
+# rule files  all derived from the arch xml by vtr_arch_rules at runtime.
+# the xml is required  there are no static fallback maps
 # ----------------------------------------------------------------------------
-if { $archXmlPath ne "" } {
-    vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir \
-        -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost \
-        -hard-adder-threshold $hardAdderThreshold
-    set bramMapFile      "$archRulesDir/bram_memory_map.txt"
-    set techBramFile     "$archRulesDir/tech_bram.v"
-    set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
-    set multMapFile      "$archRulesDir/mult_map.v"
-    set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
-    set addSubMapFile    "$archRulesDir/add_sub_map.v"
-} else {
-    set bramMapFile      "$archSupportDir/bram_memory_map.txt"
-    set techBramFile     "$archSupportDir/tech_bram.v"
-    set hardblockLibFile "$archSupportDir/vtr_hardblock_lib.v"
-    set multMapFile      "$archSupportDir/mult_map.v"
-    set mul2dspMapFile   "$archSupportDir/mul2dsp_map.v"
-    set addSubMapFile    "$archSupportDir/add_sub_map.v"
+if { $archXmlPath eq "" } {
+    error "frankenstein synthesis requires an arch xml (VVV)"
 }
+vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir \
+    -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost \
+    -hard-adder-threshold $hardAdderThreshold
+set bramMapFile      "$archRulesDir/bram_memory_map.txt"
+set techBramFile     "$archRulesDir/tech_bram.v"
+set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
+set multMapFile      "$archRulesDir/mult_map.v"
+set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
+set addSubMapFile    "$archRulesDir/add_sub_map.v"
 
 # ----------------------------------------------------------------------------
 # hardblock sweep  murray IV-A
