@@ -88,8 +88,11 @@ The `RegressionWithFrankenstein` job in `.github/workflows/test.yml` builds the 
 The `frankenstein/verilator_check/` flow checks functional equivalence between the original rtl and the generated post-synthesis and post-abc blifs.
 
 ```shell
-python3 verilator_check/run_random_check.py ...
+python3 frankenstein/verilator_check/run_random_check.py \
+  --run-dir <harness_run_dir> --vectors 200000 --seed 1
 ```
+
+Optional flags: `--check-mem-init` (fail if rtl memory init cannot survive hard ram blackboxes), `--directed-ram` (same-addr read/write and dual-port write/write when ports match), `--ram-zero-init` (force sim rams to 0; default leaves mem uninitialized so dropped init can surface).
 
 The checker converts both blifs back to verilog with yosys, builds a three-DUT testbench containing the rtl, post-synth design, and post-abc design, and drives identical random input vectors to all three. Hardblock simulation models are provided in `verilator_check/models/sim_hardblocks.v`.
 

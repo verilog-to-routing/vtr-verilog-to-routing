@@ -3,9 +3,201 @@
 
 from __future__ import annotations
 
-from typing import List
+from dataclasses import dataclass
+from typing import List, Optional
 
 from port_parse import PortDecl, isClockPort, isResetPort
+
+
+@dataclass(frozen=True)
+class DirectedRamPlan:
+    """port names used for directed same-addr ram collision stimulus."""
+    kind: str  # "sp_bits" | "regfile_bits" | "dp_vector"
+    note: str
+
+
+def _portByLower(ports: List[PortDecl], lowerName: str) -> Optional[PortDecl]:
+    for port in ports:
+        if port.name.lower() == lowerName:
+            return port
+    return None
+
+
+def detectDirectedRamPlan(ports: List[PortDecl]) -> Optional[DirectedRamPlan]:
+    """return a directed-ram plan when top ports look like known ram harnesses."""
+    inputs = {p.name.lower(): p for p in ports if p.direction == "input"}
+    if (
+        "we1" in inputs
+        and "we2" in inputs
+        and "addr1" in inputs
+        and "addr2" in inputs
+        and "data1" in inputs
+        and "data2" in inputs
+    ):
+        return DirectedRamPlan(
+            kind="dp_vector",
+            note="dual-port vector ports: same-addr read/write and write/write",
+        )
+    if (
+        "we" in inputs
+        and "waddr0" in inputs
+        and "raddr0" in inputs
+        and "wd0" in inputs
+    ):
+        return DirectedRamPlan(
+            kind="regfile_bits",
+            note="regfile-style dual-port: same-addr read+write (we1 hardwired 0 in rtl)",
+        )
+    if "we" in inputs and "a0" in inputs and "d0" in inputs:
+        return DirectedRamPlan(
+            kind="sp_bits",
+            note="single-port bit-blasted: same-addr read+write",
+        )
+    return None
+
+
+def _assignBits(prefix: str, width: int, value: int) -> List[str]:
+    lines = []
+    for bitIdx in range(width):
+        bitVal = (value >> bitIdx) & 1
+        lines.append(f"        {prefix}{bitIdx} = 1'b{bitVal};")
+    return lines
+
+
+def _directedRamStimulusBody(
+    ports: List[PortDecl],
+    plan: DirectedRamPlan,
+    primaryClk: str,
+) -> str:
+    """emit directed vectors that hit same-cycle same-address ram collisions."""
+    compareChecks = []
+    outputs = [p for p in ports if p.direction == "output"]
+    for p in outputs:
+        compareChecks.append(
+            f"""            if ({p.name}_rtl !== {p.name}_synth || {p.name}_rtl !== {p.name}_abc) begin
+                if (errors < MAX_ERRORS) begin
+                    $display("MISMATCH directed port={p.name} rtl=%b synth=%b abc=%b",
+                             {p.name}_rtl, {p.name}_synth, {p.name}_abc);
+                end
+                errors++;
+            end"""
+        )
+    compareBody = "\n".join(compareChecks) if compareChecks else "            ;"
+    tick = f"""
+        @(posedge {primaryClk});
+        #1;
+{compareBody}
+        if (errors >= MAX_ERRORS) begin
+            $display("aborting after %0d errors (directed ram)", errors);
+            $fatal(1);
+        end
+"""
+    if plan.kind == "sp_bits":
+        body = "\n".join(
+            [
+                "        // directed sp_ram: write then same-addr read+write",
+                "        we = 1'b1;",
+                *_assignBits("a", 3, 0),
+                *_assignBits("d", 8, 0x55),
+            ]
+        )
+        body2 = "\n".join(
+            [
+                "        we = 1'b1;",
+                *_assignBits("a", 3, 0),
+                *_assignBits("d", 8, 0xAA),
+            ]
+        )
+        body3 = "\n".join(
+            [
+                "        we = 1'b0;",
+                *_assignBits("a", 3, 0),
+                *_assignBits("d", 8, 0),
+            ]
+        )
+        return f"""
+        $display("directed ram: {plan.note}");
+{body}
+{tick}
+{body2}
+{tick}
+{body3}
+{tick}
+"""
+    if plan.kind == "regfile_bits":
+        body = "\n".join(
+            [
+                "        // directed regfile: seed write",
+                "        we = 1'b1;",
+                *_assignBits("waddr", 2, 0),
+                *_assignBits("raddr", 2, 1),
+                *_assignBits("wd", 8, 0x3C),
+            ]
+        )
+        body2 = "\n".join(
+            [
+                "        // same-addr read+write (raddr==waddr)",
+                "        we = 1'b1;",
+                *_assignBits("waddr", 2, 0),
+                *_assignBits("raddr", 2, 0),
+                *_assignBits("wd", 8, 0xC3),
+            ]
+        )
+        body3 = "\n".join(
+            [
+                "        we = 1'b0;",
+                *_assignBits("waddr", 2, 0),
+                *_assignBits("raddr", 2, 0),
+                *_assignBits("wd", 8, 0),
+            ]
+        )
+        return f"""
+        $display("directed ram: {plan.note}");
+{body}
+{tick}
+{body2}
+{tick}
+{body3}
+{tick}
+"""
+    # dp_vector: full dual-port with both write enables
+    data1 = _portByLower(ports, "data1")
+    data2 = _portByLower(ports, "data2")
+    assert data1 and data2
+    return f"""
+        $display("directed ram: {plan.note}");
+        // seed via port2
+        we1 = 1'b0;
+        we2 = 1'b1;
+        addr1 = '0;
+        addr2 = '0;
+        data1 = '0;
+        data2 = {data2.width}'h55;
+{tick}
+        // same-addr read+write on port2 (read-first)
+        we1 = 1'b0;
+        we2 = 1'b1;
+        addr1 = '0;
+        addr2 = '0;
+        data1 = '0;
+        data2 = {data2.width}'hAA;
+{tick}
+        // same-addr write/write: port2 wins per sim_hardblocks.v policy
+        we1 = 1'b1;
+        we2 = 1'b1;
+        addr1 = '0;
+        addr2 = '0;
+        data1 = {data1.width}'h11;
+        data2 = {data2.width}'h22;
+{tick}
+        we1 = 1'b0;
+        we2 = 1'b0;
+        addr1 = '0;
+        addr2 = '0;
+        data1 = '0;
+        data2 = '0;
+{tick}
+"""
 
 
 def _isActiveLowReset(name: str) -> bool:
@@ -52,6 +244,7 @@ def generateTripleTestbench(
     numVectors: int,
     seed: int,
     maxErrors: int = 20,
+    directedRam: bool = False,
 ) -> str:
     """emit tb that drives identical random inputs into three duts and compares outputs."""
     clocks = [p for p in ports if p.direction == "input" and isClockPort(p.name)]
@@ -156,6 +349,17 @@ def generateTripleTestbench(
         $display("tb resets: {resetNames}");
 """
 
+    directedBlock = ""
+    if directedRam and not combinatorial:
+        ramPlan = detectDirectedRamPlan(ports)
+        if ramPlan is not None:
+            primaryClk = clocks[0].name
+            directedBlock = _directedRamStimulusBody(ports, ramPlan, primaryClk)
+        else:
+            directedBlock = """
+        $display("directed ram: skipped (top ports do not match known ram harness shapes)");
+"""
+
     if combinatorial:
         stimulus = f"""
         errors = 0;
@@ -188,7 +392,7 @@ def generateTripleTestbench(
 """
         stimulus = f"""
         errors = 0;
-{pinBanner}{resetBlock}
+{pinBanner}{resetBlock}{directedBlock}
         for (vecIdx = 0; vecIdx < NUM_VECTORS; vecIdx++) begin
 {randBody}
             @(posedge {primaryClk});
