@@ -27,6 +27,12 @@ void RoutingToClockConnection::set_switch_location(int x, int y, int layer /* =0
     switch_location.layer_num = layer;
 }
 
+void RoutingToClockConnection::set_virtual_sink_location(int x, int y, int layer /* =0 */) {
+    virtual_sink_location.x = x;
+    virtual_sink_location.y = y;
+    virtual_sink_location.layer_num = layer;
+}
+
 void RoutingToClockConnection::set_switch(int arch_switch_index) {
     arch_switch_idx = arch_switch_index;
 }
@@ -40,7 +46,9 @@ void RoutingToClockConnection::set_fc_val(float fc_val) {
  */
 
 size_t RoutingToClockConnection::estimate_additional_nodes() {
-    // 1 rr node is being added as the virtual clock sink.
+    // Up to 1 rr node is added as the virtual clock sink (shared across all drive
+    // points of a clock network, so most calls add 0; this is just a capacity
+    // estimate, so overcounting here is harmless).
     return 1;
 }
 
@@ -55,8 +63,33 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     auto& rr_graph_builder = device_ctx.rr_graph_builder;
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
-    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.layer_num, switch_location.x, switch_location.y);
-    rr_graph_builder.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
+    // A clock network can have multiple ROUTING->clock drive points (e.g. one per
+    // device side). They all share a single virtual sink node in the RR graph (see
+    // is_virtual_clock_network_root's doc comment), so that stage-1 routing of a
+    // global net (pre_route_to_clock_root) can reach the clock network through
+    // whichever drive point turns out to be cheapest, instead of only the one
+    // processed first. Look up whether that shared node already exists before
+    // creating a new one; if this is the first drive point processed for this
+    // network, create it now, at the centroid of all this network's drive points
+    // (virtual_sink_location, set in setup_clock_connections) rather than this
+    // connection's own switch_location.
+    //
+    // FIXME: the router lookahead estimates remaining cost using only the shared
+    // sink node's fixed (x,y) location, not the true distance to whichever drive
+    // point is actually closest to a given expansion node. For drive points away
+    // from the centroid this makes the heuristic inadmissible (it can overestimate
+    // the true remaining cost), biasing stage-1 routing away from the closest
+    // drive point instead of toward it. Routing stays correct -- Dijkstra still
+    // finds a valid path using exact edge costs -- but the search may waste effort
+    // and/or fail to minimize insertion delay across drive points. Fixing this
+    // properly requires teaching the lookahead about multiple targets per sink
+    // (e.g. the minimum over each drive point's distance), not just picking a
+    // better fixed coordinate here.
+    RRNodeId virtual_clock_network_root_idx = device_ctx.rr_graph.virtual_clock_network_root_idx(device_ctx.arch->default_clock_network_name.c_str());
+    if (virtual_clock_network_root_idx == RRNodeId::INVALID()) {
+        virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(virtual_sink_location.layer_num, virtual_sink_location.x, virtual_sink_location.y);
+        rr_graph_builder.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
+    }
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
     auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer_num, switch_location.x, switch_location.y, e_rr_type::CHANX);

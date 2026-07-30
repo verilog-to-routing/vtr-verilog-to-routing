@@ -33,6 +33,11 @@ class RoutingToClockConnection : public ClockConnection {
     std::string clock_to_connect_to;
     std::string switch_point_name;
     t_physical_tile_loc switch_location;
+    // Representative location for this clock network's shared virtual sink node (see
+    // create_switches). Only used the first time that node is created; ignored on
+    // later reuse. Set to the centroid of all of this clock network's drive points,
+    // not this connection's own switch_location.
+    t_physical_tile_loc virtual_sink_location;
     int arch_switch_idx = UNDEFINED;
     float fc = 0.;
 
@@ -45,6 +50,7 @@ class RoutingToClockConnection : public ClockConnection {
     void set_clock_name_to_connect_to(std::string clock_name);
     void set_clock_switch_point_name(std::string clock_switch_point_name);
     void set_switch_location(int x, int y, int layer = 0);
+    void set_virtual_sink_location(int x, int y, int layer = 0);
     void set_switch(int arch_switch_index);
     void set_fc_val(float fc_val);
 

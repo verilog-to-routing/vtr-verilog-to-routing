@@ -11,6 +11,8 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
+#include <utility>
 
 using vtr::FormulaParser;
 using vtr::t_formula_data;
@@ -203,6 +205,22 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
     vars.set_var_value("W", grid.width());
     vars.set_var_value("H", grid.height());
 
+    // A clock network's ROUTING->clock drive points all share one virtual sink node
+    // in the RR graph (see RoutingToClockConnection::create_switches), so pick a
+    // single representative location for that shared node up front: the centroid of
+    // all of this network's drive point locations, rather than arbitrarily using
+    // whichever drive point happens to be processed first.
+    std::unordered_map<std::string, std::pair<int, int>> drive_location_sum;
+    std::unordered_map<std::string, int> drive_location_count;
+    for (const t_clock_connection_arch& clock_connection_arch : clock_connections_arch) {
+        if (clock_connection_arch.from == "ROUTING") {
+            std::string clock_name = vtr::StringToken(clock_connection_arch.to).split(".")[0];
+            drive_location_sum[clock_name].first += p.parse_formula(clock_connection_arch.locationx, vars);
+            drive_location_sum[clock_name].second += p.parse_formula(clock_connection_arch.locationy, vars);
+            drive_location_count[clock_name]++;
+        }
+    }
+
     for (const t_clock_connection_arch& clock_connection_arch : clock_connections_arch) {
         if (clock_connection_arch.from == "ROUTING") {
             clock_connections_device.emplace_back(new RoutingToClockConnection);
@@ -219,6 +237,11 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
                     p.parse_formula(clock_connection_arch.locationy, vars));
                 routing_to_clock->set_switch(clock_connection_arch.arch_switch_idx);
                 routing_to_clock->set_fc_val(clock_connection_arch.fc);
+
+                int count = drive_location_count[names[0]];
+                routing_to_clock->set_virtual_sink_location(
+                    drive_location_sum[names[0]].first / count,
+                    drive_location_sum[names[0]].second / count);
             }
 
         } else if (clock_connection_arch.to == "CLOCK") {

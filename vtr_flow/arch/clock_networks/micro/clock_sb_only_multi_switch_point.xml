@@ -5,8 +5,12 @@
   complex blocks and tiles were not important. It just needs to be
   light and fast.
 
+  The clock network in this file is a basic global spine with many
+  ribs clock topology.
+
   This takes the micro_base.xml arch and creates a single clock network
-  which is a grid of switch boxes.
+  which is a grid of switch boxes with switch points (i.e. drive points)
+  at multiple locations.
 -->
 <architecture>
   <models>
@@ -191,8 +195,14 @@
     </metal_layers>
     <clock_network name="global_clk_switch_network" num_inst="1">
       <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="1" starty="0" repeaty="1" chan_w="4" switch_name="drive_buff" switch_block_type="subset">
-        <!-- For now the drive point is hard-coded to the top-left switch box. -->
-        <switch_point type="drive" name="drive" xoffset="0" yoffset="1" switch_name="drive_buff"/>
+        <!-- One drive point on each side of the device. -->
+        <!-- NOTE: For this test, I am avoiding putting drives on the top-right edges.
+                   This is due to VTR's convention on switch-boxes causing no clock
+                   switch boxes to be created on the top-right perimeter. This is
+                   resolved by adding a perimeter of empties.
+        -->
+        <switch_point type="drive" name="drive" xoffset="0" yoffset="H/2" switch_name="drive_buff"/>
+        <switch_point type="drive" name="drive" xoffset="W/2" yoffset="0" switch_name="drive_buff"/>
 
         <!-- Put a tap point at every switch box location. xincr/yincr="1" naturally
              stops at the last interior switch box location and doesn't reach the
@@ -202,7 +212,8 @@
       </clock_switch_grid>
     </clock_network>
     <clock_routing>
-      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="0" locationy="1" switch="0" fc_val="1.0"/>
+      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="0" locationy="H/2" switch="0" fc_val="1.0"/>
+      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="W/2" locationy="0" switch="0" fc_val="1.0"/>
       <tap from="global_clk_switch_network.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
     </clock_routing>
   </clocknetworks>
