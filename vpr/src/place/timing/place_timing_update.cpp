@@ -41,8 +41,8 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
                             SetupTimingInfo* timing_info,
                             t_placer_costs* costs,
                             PlacerState& placer_state) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& clb_nlist = cluster_ctx.clb_nlist;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
     //As a safety measure, for the first time update,
     //invalidate all timing edges via the pin invalidator
@@ -67,7 +67,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
     timing_info->set_warn_unconstrained(false);
 
     //Clear all update_td_costs() runtime stat variables
-    auto& p_runtime_ctx = placer_state.mutable_runtime();
+    PlacerRuntimeContext& p_runtime_ctx = placer_state.mutable_runtime();
     p_runtime_ctx.f_update_td_costs_connections_elapsed_sec = 0.f;
     p_runtime_ctx.f_update_td_costs_nets_elapsed_sec = 0.f;
     p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec = 0.f;
@@ -195,11 +195,11 @@ void update_timing_cost(const PlaceDelayModel* delay_model,
  */
 void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks,
                          PlacerState& placer_state) {
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& connection_setup_slack = placer_state.mutable_timing().connection_setup_slack;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    ClbNetPinsMatrix<float>& connection_setup_slack = placer_state.mutable_timing().connection_setup_slack;
 
     /* Incremental: only go through sink pins with modified setup slack */
-    auto clb_pins_modified = setup_slacks->pins_with_modified_setup_slack();
+    PlacerSetupSlacks::pin_range clb_pins_modified = setup_slacks->pins_with_modified_setup_slack();
     for (ClusterPinId pin_id : clb_pins_modified) {
         ClusterNetId net_id = clb_nlist.pin_net(pin_id);
         size_t pin_index_in_net = clb_nlist.pin_net_index(pin_id);
@@ -221,8 +221,8 @@ void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks,
  */
 bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
                                     const PlacerState& placer_state) {
-    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& connection_setup_slack = placer_state.timing().connection_setup_slack;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClbNetPinsMatrix<float>& connection_setup_slack = placer_state.timing().connection_setup_slack;
 
     /* Go through every single sink pin to check that the slack values are the same */
     for (ClusterNetId net_id : clb_nlist.nets()) {
@@ -260,17 +260,17 @@ void update_td_costs(const PlaceDelayModel* delay_model,
                      PlacerState& placer_state,
                      double* timing_cost) {
     vtr::Timer t;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
-    auto& p_timing_ctx = placer_state.mutable_timing();
-    auto& p_runtime_ctx = placer_state.mutable_runtime();
-    auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
+    PlacerTimingContext& p_timing_ctx = placer_state.mutable_timing();
+    PlacerRuntimeContext& p_runtime_ctx = placer_state.mutable_runtime();
+    PlacerTimingCosts& connection_timing_cost = p_timing_ctx.connection_timing_cost;
 
     //Update the modified pin timing costs
     {
         vtr::Timer timer;
-        auto clb_pins_modified = place_crit.pins_with_modified_criticality();
+        PlacerCriticalities::pin_range clb_pins_modified = place_crit.pins_with_modified_criticality();
         for (ClusterPinId clb_pin : clb_pins_modified) {
             if (clb_nlist.pin_type(clb_pin) == PinType::DRIVER) continue;
 
@@ -323,11 +323,11 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
                    const PlacerCriticalities& place_crit,
                    PlacerState& placer_state,
                    double* timing_cost) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& p_timing_ctx = placer_state.mutable_timing();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    PlacerTimingContext& p_timing_ctx = placer_state.mutable_timing();
 
-    auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
-    auto& net_timing_cost = p_timing_ctx.net_timing_cost;
+    PlacerTimingCosts& connection_timing_cost = p_timing_ctx.connection_timing_cost;
+    vtr::vector<ClusterNetId, double>& net_timing_cost = p_timing_ctx.net_timing_cost;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
@@ -356,7 +356,7 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerState& placer_state,
                                       ClusterNetId net,
                                       int ipin) {
-    const auto& p_timing_ctx = placer_state.timing();
+    const PlacerTimingContext& p_timing_ctx = placer_state.timing();
     const auto& block_locs = placer_state.block_locs();
 
     VTR_ASSERT_SAFE_MSG(ipin > 0, "Shouldn't be calculating connection timing cost for driver pins");
@@ -378,9 +378,9 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
 ///@brief Returns the timing cost of the specified 'net' based on the values in connection_timing_cost.
 static double sum_td_net_cost(ClusterNetId net,
                               const PlacerState& placer_state) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& p_timing_ctx = placer_state.timing();
-    auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const PlacerTimingContext& p_timing_ctx = placer_state.timing();
+    const PlacerTimingCosts& connection_timing_cost = p_timing_ctx.connection_timing_cost;
 
     double net_td_cost = 0;
     for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
@@ -392,9 +392,9 @@ static double sum_td_net_cost(ClusterNetId net,
 
 ///@brief Returns the total timing cost across all nets based on the values in net_timing_cost.
 static double sum_td_costs(const PlacerState& placer_state) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& p_timing_ctx = placer_state.timing();
-    const auto& net_timing_cost = p_timing_ctx.net_timing_cost;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const PlacerTimingContext& p_timing_ctx = placer_state.timing();
+    const vtr::vector<ClusterNetId, double>& net_timing_cost = p_timing_ctx.net_timing_cost;
 
     double td_cost = 0;
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
