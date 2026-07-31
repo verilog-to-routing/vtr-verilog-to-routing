@@ -10,7 +10,7 @@
  * @brief A simple delay model based on the information stored in router lookahead
  * This is in contrast to other placement delay models that get the cost of getting from one location to another by running the router
  */
-class SimpleDelayModel : public PlaceDelayModel {
+class SimpleDelayModel final : public PlaceDelayModel {
   public:
     explicit SimpleDelayModel(const RouterLookahead& router_lookahead)
         : router_lookahead_(router_lookahead) {}
