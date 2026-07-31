@@ -16,7 +16,7 @@ class VtrStage(Enum):
 
     ODIN = 1
     PARMYS = 2
-    FRANKENSTEIN = 3
+    MOSAIC = 3
     ABC = 4
     ACE = 5
     VPR = 6
@@ -44,14 +44,14 @@ def run(
     temp_dir=Path("./temp"),
     odin_args=None,
     parmys_args=None,
-    frankenstein_args=None,
+    mosaic_args=None,
     abc_args=None,
     vpr_args=None,
     keep_intermediate_files=True,
     keep_result_files=True,
     odin_config=None,
     yosys_script=None,
-    frankenstein_script=None,
+    mosaic_script=None,
     min_hard_mult_size=3,
     min_hard_adder_size=1,
     check_equivalent=False,
@@ -98,8 +98,8 @@ def run(
         odin_args        :
             A dictionary of keyword arguments to pass on to ODIN II
 
-        frankenstein_args :
-            A dictionary of keyword arguments to pass on to FRANKENSTEIN
+        mosaic_args :
+            A dictionary of keyword arguments to pass on to MOSAIC
 
         abc_args         :
             A dictionary of keyword arguments to pass on to ABC
@@ -149,7 +149,7 @@ def run(
     vpr_args = OrderedDict() if not vpr_args else vpr_args
     odin_args = OrderedDict() if not odin_args else odin_args
     parmys_args = OrderedDict() if not parmys_args else parmys_args
-    frankenstein_args = OrderedDict() if not frankenstein_args else frankenstein_args
+    mosaic_args = OrderedDict() if not mosaic_args else mosaic_args
     abc_args = OrderedDict() if not abc_args else abc_args
     # Verify that files are Paths or convert them to Paths and check that they exist
     architecture_file = vtr.util.verify_file(architecture_file, "Architecture")
@@ -166,7 +166,7 @@ def run(
     # Define useful filenames
     post_odin_netlist = temp_dir / (circuit_file.stem + ".odin" + netlist_ext)
     post_yosys_netlist = temp_dir / (circuit_file.stem + ".parmys" + netlist_ext)
-    post_frankenstein_netlist = temp_dir / (circuit_file.stem + ".frankenstein" + netlist_ext)
+    post_mosaic_netlist = temp_dir / (circuit_file.stem + ".mosaic" + netlist_ext)
     post_abc_netlist = temp_dir / (circuit_file.stem + ".abc" + netlist_ext)
     post_ace_netlist = temp_dir / (circuit_file.stem + ".ace" + netlist_ext)
     post_ace_activity_file = temp_dir / (circuit_file.stem + ".act")
@@ -243,30 +243,30 @@ def run(
         lec_base_netlist = post_yosys_netlist if not lec_base_netlist else lec_base_netlist
 
     #
-    # RTL Elaboration & Synthesis (FRANKENSTEIN)
+    # RTL Elaboration & Synthesis (MOSAIC)
     #
-    elif should_run_stage(VtrStage.FRANKENSTEIN, start_stage, end_stage):
-        vtr.frankenstein.run(
+    elif should_run_stage(VtrStage.MOSAIC, start_stage, end_stage):
+        vtr.mosaic.run(
             architecture_copy,
             next_stage_netlist,
             include_files,
-            output_netlist=post_frankenstein_netlist,
+            output_netlist=post_mosaic_netlist,
             command_runner=command_runner,
             temp_dir=temp_dir,
-            frankenstein_args=frankenstein_args,
-            frankenstein_script=frankenstein_script,
+            mosaic_args=mosaic_args,
+            mosaic_script=mosaic_script,
         )
 
-        next_stage_netlist = post_frankenstein_netlist
+        next_stage_netlist = post_mosaic_netlist
 
-        lec_base_netlist = post_frankenstein_netlist if not lec_base_netlist else lec_base_netlist
+        lec_base_netlist = post_mosaic_netlist if not lec_base_netlist else lec_base_netlist
 
     #
     # Logic Optimization & Technology Mapping
     #
-    # frankenstein maps to luts inside yosys (ENABLE_ABC=1), so its leg skips
+    # mosaic maps to luts inside yosys (ENABLE_ABC=1), so its leg skips
     # the external abc stage. odin and parmys still go through it.
-    abc_already_done_in_synth = start_stage == VtrStage.FRANKENSTEIN
+    abc_already_done_in_synth = start_stage == VtrStage.MOSAIC
     if should_run_stage(VtrStage.ABC, start_stage, end_stage) and not abc_already_done_in_synth:
         vtr.abc.run(
             architecture_copy,
@@ -292,8 +292,8 @@ def run(
             pre_ace_netlist = post_yosys_netlist
             if start_stage == VtrStage.ODIN:
                 pre_ace_netlist = post_odin_netlist
-            elif start_stage == VtrStage.FRANKENSTEIN:
-                pre_ace_netlist = post_frankenstein_netlist
+            elif start_stage == VtrStage.MOSAIC:
+                pre_ace_netlist = post_mosaic_netlist
             vtr.ace.run(
                 next_stage_netlist,
                 old_netlist=pre_ace_netlist,

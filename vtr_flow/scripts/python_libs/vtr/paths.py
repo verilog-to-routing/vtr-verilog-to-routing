@@ -36,16 +36,16 @@ parmys_verify_path = parmys_path / "verify_parmys.sh"
 parmys_benchmark_path = parmys_path / "regression_test" / "benchmark"
 parmys_output_on_error_path = parmys_path / "regression_test" / ".library" / "output_on_error.conf"
 
-# FRANKENSTEIN paths
-frankenstein_path = root_path / "frankenstein"
-frankenstein_build_script_path = frankenstein_path / "build_frankenstein.sh"
-frankenstein_misc_path = vtr_flow_path / "misc" / "frankenstein"
-frankenstein_template_path = frankenstein_misc_path / "template"
-frankenstein_script_path = frankenstein_template_path / "synthesis.tcl"
-frankenstein_k6_support_path = frankenstein_misc_path / "k6"
-frankenstein_koios_support_path = frankenstein_misc_path / "koios"
-frankenstein_fix_blif_script_path = frankenstein_template_path / "fix_blif_for_vpr.py"
-wildebeest_path = frankenstein_path / "wildebeest"
+# MOSAIC paths
+mosaic_path = root_path / "mosaic"
+mosaic_build_script_path = mosaic_path / "build_mosaic.sh"
+mosaic_misc_path = vtr_flow_path / "misc" / "mosaic"
+mosaic_template_path = mosaic_misc_path / "template"
+mosaic_script_path = mosaic_template_path / "synthesis.tcl"
+mosaic_k6_support_path = mosaic_misc_path / "k6"
+mosaic_koios_support_path = mosaic_misc_path / "koios"
+mosaic_fix_blif_script_path = mosaic_template_path / "fix_blif_for_vpr.py"
+wildebeest_path = mosaic_path / "wildebeest"
 wildebeest_plugin_path = root_path / "build" / "share" / "yosys" / "plugins" / "wildebeest.so"
 
 # ABC paths

@@ -91,7 +91,7 @@ if (${WITH_PARMYS})
 	)
 
 	# how to build the result of the library
-	# ENABLE_ABC=1 builds yosys's in-yosys abc pass so the frankenstein
+	# ENABLE_ABC=1 builds yosys's in-yosys abc pass so the mosaic
 	# synthesis template can run `abc` inside yosys. this is yosys's own
 	# bundled abc submodule; vtr's standalone abc binary is unaffected.
 	add_custom_command(OUTPUT ${YOSYS_BUILD_DIR}

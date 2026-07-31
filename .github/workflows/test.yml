@@ -756,7 +756,7 @@ jobs:
           vtr_flow/**/parse_results*.txt
 
 
-  RegressionWithFrankenstein:
+  RegressionWithMosaic:
     runs-on: ubuntu-24.04
     needs: [BuildVTR]
     strategy:
@@ -764,8 +764,8 @@ jobs:
       matrix:
         include: [
           {
-            name: 'Basic_frankenstein',
-            suite: 'vtr_reg_basic_frankenstein',
+            name: 'Basic_mosaic',
+            suite: 'vtr_reg_basic_mosaic',
             extra_pkgs: ''
           }
         ]
@@ -809,12 +809,12 @@ jobs:
 
     # builds the vendored wildebeest tree against the unpacked yosys and
     # installs wildebeest.so into build/share/yosys/plugins
-    - name: Build Frankenstein Plugin
+    - name: Build Mosaic Plugin
       shell: bash
       env:
         BUILD_JOBS: ${{ steps.cpu-cores.outputs.count }}
       run: |
-        bash frankenstein/build_frankenstein.sh
+        bash mosaic/build_mosaic.sh
 
     - name: Test
       timeout-minutes: 30

@@ -31,7 +31,7 @@ quick_test/*
 temp/
 
 #
-# Frankenstein QoR compare output (frankenstein/scripts/compare_flow.py)
+# Mosaic QoR compare output (mosaic/scripts/compare_flow.py)
 #
 /compare_output_*/
 

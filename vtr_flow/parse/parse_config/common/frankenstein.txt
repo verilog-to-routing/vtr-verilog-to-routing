@@ -1,3 +1,0 @@
-#Frankenstein Run-time Metrics
-frankenstein_synth_time;frankenstein.out;\s*User time \(seconds\): (.*)
-max_frankenstein_mem;frankenstein.out;\s*Maximum resident set size \(kbytes\): (\d+)
