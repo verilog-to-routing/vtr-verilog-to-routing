@@ -7,7 +7,7 @@
 #include "router_lookahead_cost_map.h"
 
 // Implementation of RouterLookahead based on source segment and destination connection box types
-class ExtendedMapLookahead : public RouterLookahead {
+class ExtendedMapLookahead final : public RouterLookahead {
   public:
     ExtendedMapLookahead(bool is_flat, int route_verbosity, bool device_model_warnings)
         : is_flat_(is_flat)
