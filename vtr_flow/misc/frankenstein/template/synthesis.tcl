@@ -51,6 +51,9 @@ set sweepMaxIters  64
 set abcOptScript   ""
 set abcMapScript   ""
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
+# when 1, vtr_arch_rules emits generic stubs for every exotic hardblock model
+# and writes hardblock_keep_types.txt so rtl-instantiated cells survive synth
+set stubAllHardblocks 0
 
 set archConfigFile "$archSupportDir/arch_config.tcl"
 if { [file exists $archConfigFile] } {
@@ -64,13 +67,29 @@ if { [file exists $archConfigFile] } {
 if { $archXmlPath eq "" } {
     error "frankenstein synthesis requires an arch xml (VVV)"
 }
-vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold
+if { $stubAllHardblocks } {
+    vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold -stub-all-hardblocks
+} else {
+    vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold
+}
 set bramMapFile      "$archRulesDir/bram_memory_map.txt"
 set techBramFile     "$archRulesDir/tech_bram.v"
 set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
 set multMapFile      "$archRulesDir/mult_map.v"
 set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
 set addSubMapFile    "$archRulesDir/add_sub_map.v"
+
+# exotic keep types from stub-all (opt-in via arch_config); append so the
+# arch_config keepCellTypes builtins stay first
+set keepTypesFile "$archRulesDir/hardblock_keep_types.txt"
+if { [file exists $keepTypesFile] } {
+    set keepTypesFd [open $keepTypesFile r]
+    set keepTypesExtra [string trim [read $keepTypesFd]]
+    close $keepTypesFd
+    if { $keepTypesExtra ne "" } {
+        append keepCellTypes " $keepTypesExtra"
+    }
+}
 
 # ----------------------------------------------------------------------------
 # hardblock sweep / keep / densify helpers

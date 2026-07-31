@@ -30,8 +30,9 @@ struct BramModeInfo {
 // generic geometry of one hardblock model, gathered from every pb_type that
 // binds blif_model ".subckt <name>" (the <models> section carries no sizes).
 // port widths are the max num_pins seen per port name across bindings;
-// modes holds the sorted distinct widths of the 'a' input port
-// (multiply-style mode geometry; empty for models without an 'a' input).
+// <clock> pins are folded into inputWidths. modes holds the sorted distinct
+// widths of the 'a' input port (multiply-style mode geometry; empty for
+// models without an 'a' input).
 struct ModelGeometry {
   std::map<std::string, int> inputWidths;
   std::map<std::string, int> outputWidths;

@@ -147,7 +147,9 @@ void scanLutCost(const std::vector<pugi::xml_node> &pbTypes,
 // generic hardblock scan: every pb_type with a blif_model ".subckt <name>"
 // binding contributes its direct port widths to hardblockModels[<name>].
 // this replaces the old adder/multiply-only scan; those two are derived
-// from the generic map below.
+// from the generic map below. clock ports are <clock> children (not
+// <input>), but they are still model inputs and must appear on stubs so
+// rtl connections like .clk(clk) on mult_fp_clk_16 / int_sop_2 resolve.
 void scanHardblockModels(const std::vector<pugi::xml_node> &pbTypes,
                          VtrArchInfo &info) {
   const std::string prefix = ".subckt ";
@@ -158,6 +160,10 @@ void scanHardblockModels(const std::vector<pugi::xml_node> &pbTypes,
     ModelGeometry &geo = info.hardblockModels[blif.substr(prefix.size())];
     const auto inputs = directPins(pb, "input");
     for (const auto &kv : inputs) {
+      int &w = geo.inputWidths[kv.first];
+      w = std::max(w, kv.second);
+    }
+    for (const auto &kv : directPins(pb, "clock")) {
       int &w = geo.inputWidths[kv.first];
       w = std::max(w, kv.second);
     }

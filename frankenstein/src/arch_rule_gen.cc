@@ -488,6 +488,49 @@ std::string alwaysFailExoticMap(const std::string &archName,
   return out.str();
 }
 
+// builtins already get stubs (or whiteboxes) from other generators; skip
+// them when stubbing every remaining hardblock model.
+bool isBuiltinHardblock(const std::string &name) {
+  return name == "multiply" || name == "adder" || name == "single_port_ram" ||
+         name == "dual_port_ram";
+}
+
+// ---------------------------------------------------------------------------
+// StubAllExoticsRuleGen: generic stubs + keep list for every exotic model
+// ---------------------------------------------------------------------------
+
+class StubAllExoticsRuleGen : public ArchRuleGen {
+public:
+  StubAllExoticsRuleGen() : ArchRuleGen("stub-all-exotics") {}
+
+  void emit(const VtrArchInfo &info, const ArchRulePolicy &,
+            const std::string &outDir) const override {
+    std::ostringstream keep;
+    bool first = true;
+    for (const auto &kv : info.hardblockModels) {
+      if (isBuiltinHardblock(kv.first))
+        continue;
+      if (!first)
+        keep << " ";
+      first = false;
+      keep << "t:" << kv.first;
+    }
+    keep << "\n";
+    writeFile(outDir + "/hardblock_keep_types.txt", keep.str());
+  }
+
+  std::string hardblockStub(const VtrArchInfo &info,
+                            const ArchRulePolicy &) const override {
+    std::ostringstream stubs;
+    for (const auto &kv : info.hardblockModels) {
+      if (isBuiltinHardblock(kv.first))
+        continue;
+      stubs << genericStub(kv.first, kv.second);
+    }
+    return stubs.str();
+  }
+};
+
 class ExoticCombRuleGen : public ArchRuleGen {
 public:
   explicit ExoticCombRuleGen(ExoticRequest request)
@@ -595,6 +638,10 @@ std::vector<std::unique_ptr<ArchRuleGen>> makeBuiltinRuleGens() {
 
 std::unique_ptr<ArchRuleGen> makeExoticRuleGen(const ExoticRequest &request) {
   return std::unique_ptr<ArchRuleGen>(new ExoticCombRuleGen(request));
+}
+
+std::unique_ptr<ArchRuleGen> makeStubAllExoticsGen() {
+  return std::unique_ptr<ArchRuleGen>(new StubAllExoticsRuleGen());
 }
 
 std::unique_ptr<ArchRuleGen>

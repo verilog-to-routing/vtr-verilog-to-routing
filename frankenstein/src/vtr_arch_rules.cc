@@ -65,6 +65,7 @@ struct VtrArchRulesPass : public Pass {
     log("    vtr_arch_rules -xml <arch.xml> [-outdir <dir>] [-tpldir <dir>]\n");
     log("                    [-sp-cost N] [-dp-cost N] [-blocks a,b,...]\n");
     log("                    [-hard-adder-threshold N]\n");
+    log("                    [-stub-all-hardblocks]\n");
     log("                    [-exotic <model> -exotic-template <file>]...\n");
     log("\n");
     log("generate the frankenstein flow's arch-specific mapping rules from the\n");
@@ -77,6 +78,10 @@ struct VtrArchRulesPass : public Pass {
     log("subset of bram,adder,multiply,hardblock-lib (default: all). -exotic\n");
     log("adds a generic comb-block generator for <model> using <file> as its\n");
     log("techmap template; it may be repeated and pairs by order.\n");
+    log("\n");
+    log("-stub-all-hardblocks emits generic blackbox stubs for every hardblock\n");
+    log("model except multiply/adder/rams, and writes hardblock_keep_types.txt\n");
+    log("so synthesis.tcl can setattr keep on rtl-instantiated exotic cells.\n");
     log("\n");
     log("mode geometry is arch-derived; the libmap costs are flow policy\n");
     log("(-sp-cost / -dp-cost, default 128), as is the hard adder width\n");
@@ -92,6 +97,7 @@ struct VtrArchRulesPass : public Pass {
     int spCost = 128;
     int dpCost = 128;
     int hardAdderThreshold = 3;
+    bool stubAllHardblocks = false;
     std::vector<std::string> exoticModels;
     std::vector<std::string> exoticTemplates;
 
@@ -123,6 +129,10 @@ struct VtrArchRulesPass : public Pass {
       }
       if (args[argidx] == "-blocks" && argidx + 1 < args.size()) {
         blocksArg = args[++argidx];
+        continue;
+      }
+      if (args[argidx] == "-stub-all-hardblocks") {
+        stubAllHardblocks = true;
         continue;
       }
       if (args[argidx] == "-exotic" && argidx + 1 < args.size()) {
@@ -189,15 +199,35 @@ struct VtrArchRulesPass : public Pass {
     }
 
     // emit enabled generators in registry order, collecting the comb-kind
-    // ones as stub providers for the hardblock lib.
+    // ones as stub providers for the hardblock lib. when stubbing all
+    // exotics, per-model -exotic gens still emit techmaps but their stubs
+    // are skipped so the lib does not get duplicate modules.
     std::vector<const wildebeestVtr::ArchRuleGen *> stubProviders;
     for (const auto &gen : gens) {
       const bool isExotic = !builtinBlocks.count(gen->blockName());
       if (!isExotic && !enabled.count(gen->blockName()))
         continue;
       gen->emit(info, policy, outDir);
-      if (gen->blockName() != "bram")
-        stubProviders.push_back(gen.get());
+      if (gen->blockName() == "bram")
+        continue;
+      if (stubAllHardblocks && isExotic)
+        continue;
+      stubProviders.push_back(gen.get());
+    }
+
+    std::unique_ptr<wildebeestVtr::ArchRuleGen> stubAllGen;
+    if (stubAllHardblocks) {
+      stubAllGen = wildebeestVtr::makeStubAllExoticsGen();
+      stubAllGen->emit(info, policy, outDir);
+      stubProviders.push_back(stubAllGen.get());
+      size_t exoticCount = 0;
+      for (const auto &kv : info.hardblockModels) {
+        if (kv.first != "multiply" && kv.first != "adder" &&
+            kv.first != "single_port_ram" && kv.first != "dual_port_ram")
+          exoticCount++;
+      }
+      log("vtr_arch_rules: stub-all-hardblocks enabled (%zu exotic models)\n",
+          exoticCount);
     }
 
     if (enabled.count("hardblock-lib"))

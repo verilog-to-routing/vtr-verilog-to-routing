@@ -1,0 +1,33 @@
+##############################################
+# frankenstein koios smoke (hardblock passthrough)
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog/koios
+
+# Path to directory of architectures to use
+archs_dir=arch/COFFE_22nm
+
+# Directory containing the verilog includes file(s)
+includes_dir=benchmarks/verilog/koios
+
+# small rtl that instantiates complex_dsp cells (int_sop_2, mult_fp_clk_16)
+circuit_list_add=test.v
+
+# Add architectures to list to sweep
+arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
+
+# enables `complex_dsp` / `hard_mem` macros for rtl hardblock instantiations
+include_list_add=hard_block_include.v
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+script_params=-track_memory_usage -start frankenstein -crit_path_router_iterations 100 --route_chan_width 300

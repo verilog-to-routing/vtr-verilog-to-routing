@@ -56,11 +56,12 @@ The stage writes `<circuit>.frankenstein.blif`, logs to `frankenstein.out`, and 
 - `frankenstein/build_frankenstein.sh`: builds and installs the plugin
 - `vtr_flow/misc/frankenstein/template/`: architecture-agnostic yosys synthesis template + rule templates
 - `vtr_flow/misc/frankenstein/template/templates/*.tmpl`: templates used by `vtr_arch_rules -tpldir` to generate BRAM, multiply, and hardblock stub files
-- `vtr_flow/misc/frankenstein/k6/`: K6 per-arch knob config (`arch_config.tcl`) — the only per-arch artifact; everything else is generated from `template/templates/*.tmpl` or shared under `template/`
-- `vtr_flow/scripts/python_libs/vtr/frankenstein/`: the vtr flow stage module
+- `vtr_flow/misc/frankenstein/k6/`: K6 per-arch knob config (`arch_config.tcl`)
+- `vtr_flow/misc/frankenstein/koios/`: Koios complex-DSP arch knobs (`dspMaxWidth 27`, `stubAllHardblocks 1` for exotic DSP passthrough)
+- `vtr_flow/scripts/python_libs/vtr/frankenstein/`: the vtr flow stage module (selects the support dir from the arch xml stem)
 - `frankenstein/scripts/`: `compare_flow.py` (vanilla_vtr vs frankenstein) and `watch_compare.py` (live status table)
 
-The synthesis template is architecture agnostic. Its tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `K6D`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys.
+The synthesis template is architecture agnostic. Its tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `K6D`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `K6D` is the per-arch support dir (`k6/` or `koios/`, chosen from the architecture file).
 
 ## QoR Compare (vanilla_vtr vs frankenstein)
 Runs the eight README circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` through both front-ends. Each compare run writes a new timestamped csv.
@@ -73,7 +74,32 @@ python3 frankenstein/scripts/compare_flow.py --jobs 4
 python3 frankenstein/scripts/watch_compare.py
 ```
 
-Useful flags: `--arch <other_arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8`, `--no-rerun`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`). 
+Useful flags: `--arch <other_arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8`, `--no-rerun`, `--include <file>`, `--koios`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`).
+
+### Koios compare
+```shell
+# preset: koios arch, koios benchmarks, hard_block_include.v, small design set
+python3 frankenstein/scripts/compare_flow.py --koios --jobs 2
+
+# equivalent explicit form
+python3 frankenstein/scripts/compare_flow.py \
+  --arch vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \
+  --benchmark-dir vtr_flow/benchmarks/verilog/koios \
+  --designs lenet gemm_layer conv_layer eltwise_layer \
+  --include hard_block_include.v \
+  --jobs 2
+```
+
+Single-circuit smoke (after rebuilding the plugin if C++ changed):
+```shell
+./vtr_flow/scripts/run_vtr_flow.py vtr_flow/benchmarks/verilog/diffeq1.v \
+  vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \
+  -start frankenstein
+
+./vtr_flow/scripts/run_vtr_flow.py vtr_flow/benchmarks/verilog/koios/lenet.v \
+  vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \
+  -start frankenstein -include vtr_flow/benchmarks/verilog/koios/hard_block_include.v
+```
 
 ## Regression Tests
 The `vtr_reg_basic_frankenstein` suite runs basic_timing circuits (`ch_intrinsics.v`, `diffeq1.v`, `multiclock_reader_writer.v`) on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start frankenstein`.
@@ -82,7 +108,13 @@ The `vtr_reg_basic_frankenstein` suite runs basic_timing circuits (`ch_intrinsic
 ./run_reg_test.py vtr_reg_basic_frankenstein -j4
 ```
 
-The `RegressionWithFrankenstein` job in `.github/workflows/test.yml` builds the plugin on top of the regular release build artifact and runs this suite.
+A separate koios frankenstein smoke task lives at `vtr_flow/tasks/regression_tests/vtr_reg_basic_frankenstein/koios` (`test.v` + `hard_block_include.v` on the complex-DSP arch). Run it with:
+
+```shell
+./vtr_flow/scripts/run_vtr_task.py regression_tests/vtr_reg_basic_frankenstein/koios
+```
+
+The `RegressionWithFrankenstein` job in `.github/workflows/test.yml` builds the plugin on top of the regular release build artifact and runs the basic suite.
 
 ## Verilator Check
 The `frankenstein/verilator_check/` flow checks functional equivalence between the original rtl and the generated post-synthesis and post-abc blifs.

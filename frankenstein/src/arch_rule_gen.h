@@ -72,6 +72,12 @@ std::vector<std::unique_ptr<ArchRuleGen>> makeBuiltinRuleGens();
 // always-_TECHMAP_FAIL_ map and contributes no stub.
 std::unique_ptr<ArchRuleGen> makeExoticRuleGen(const ExoticRequest &request);
 
+// stub-only generator for every hardblock model that is not a builtin
+// (multiply/adder/rams). emit() writes hardblock_keep_types.txt; the
+// hardblock stub section is generic blackboxes from scanned port geometry.
+// block name: "stub-all-exotics".
+std::unique_ptr<ArchRuleGen> makeStubAllExoticsGen();
+
 // aggregates the stub sections of providers (in the given order) into
 // vtr_hardblock_lib.v. block name: "hardblock-lib".
 std::unique_ptr<ArchRuleGen>

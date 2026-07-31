@@ -19,6 +19,51 @@ FILE_TYPES = {
     ".svh": "SystemVerilog",
 }
 
+# arch xml stem -> support dir name under vtr_flow/misc/frankenstein/
+# denser/coupled/etc koios variants share the koios knobs via prefix match below
+_ARCH_SUPPORT_ALIASES = {
+    "k6_frac_N10_frac_chain_mem32K_40nm": "k6",
+    "k6FracN10LB_mem20K_complexDSP_customSB_22nm": "koios",
+}
+
+
+def resolve_arch_support_dir(architecture_file_path):
+    """pick the frankenstein per-arch support dir for an architecture xml.
+
+    resolution order:
+      1. exact stem alias in _ARCH_SUPPORT_ALIASES
+      2. koios family prefix (k6FracN10LB_mem20K_complexDSP*)
+      3. a dir under frankenstein_misc_path named after the stem with arch_config.tcl
+      4. fall back to k6
+
+    raises if the chosen dir has no arch_config.tcl
+    """
+    archPath = Path(architecture_file_path)
+    archStem = archPath.stem
+    miscPath = Path(vtr.paths.frankenstein_misc_path)
+
+    supportName = None
+    if archStem in _ARCH_SUPPORT_ALIASES:
+        supportName = _ARCH_SUPPORT_ALIASES[archStem]
+    elif archStem.startswith("k6FracN10LB_mem20K_complexDSP"):
+        supportName = "koios"
+    else:
+        candidate = miscPath / archStem
+        if (candidate / "arch_config.tcl").is_file():
+            supportName = archStem
+
+    if supportName is None:
+        supportName = "k6"
+
+    supportDir = miscPath / supportName
+    configFile = supportDir / "arch_config.tcl"
+    if not configFile.is_file():
+        raise vtr.VtrError(
+            "frankenstein arch support dir for '{}' resolved to '{}' "
+            "but {} is missing".format(archStem, supportDir, configFile)
+        )
+    return supportDir
+
 
 # pylint: disable=too-many-arguments, too-many-locals
 def init_script_file(
@@ -30,23 +75,25 @@ def init_script_file(
 ):
     """fill the template tokens in the copied frankenstein yosys script"""
     # yosys tcl wants forward slashes even on windows
-    arch_support_dir = str(vtr.paths.frankenstein_k6_support_path.resolve()).replace("\\", "/")
-    template_dir = str(vtr.paths.frankenstein_template_path.resolve()).replace("\\", "/")
+    archSupportDir = str(resolve_arch_support_dir(architecture_file_path).resolve()).replace(
+        "\\", "/"
+    )
+    templateDir = str(vtr.paths.frankenstein_template_path.resolve()).replace("\\", "/")
 
     # YYY is what makes this the frankenstein leg: max_level -clk2clk takes
     # its clock cut points from the arch xml instead of the vendor lists
-    vtr_arch_flag = "-vtr_arch {}".format(architecture_file_path)
+    vtrArchFlag = "-vtr_arch {}".format(architecture_file_path)
 
     vtr.file_replace(
         yosys_script_full_path,
         {
             "XXX": " ".join(str(s) for s in circuit_list),
-            "TDIR": template_dir,
+            "TDIR": templateDir,
             "TTT": top_module,
             "ZZZ": raw_netlist_name,
-            "K6D": arch_support_dir,
+            "K6D": archSupportDir,
             "VVV": architecture_file_path,
-            "YYY": vtr_arch_flag,
+            "YYY": vtrArchFlag,
         },
     )
 

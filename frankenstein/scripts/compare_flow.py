@@ -24,6 +24,9 @@ flags:
   --arch <xml>           architecture file
   --benchmark-dir <dir>  directory holding <design>.v files
   --designs <names...>   circuit stems (default: eight readme circuits)
+  --include <files...>   -include paths for run_vtr_flow (relative to
+                         benchmark-dir, or absolute); use for koios
+                         hard_block_include.v (`complex_dsp` / `hard_mem`)
   --flows <names...>     vanilla_vtr and/or frankenstein (aliases: vtr, frank)
   --jobs <n>             parallel jobs (default 4)
   --outdir <dir>         output directory
@@ -69,6 +72,18 @@ defaultDesigns = (
     "stereovision1",
     "stereovision2",
 )
+# small koios smoke set for frankenstein vs parmys on the complex-dsp arch
+defaultKoiosDesigns = (
+    "lenet",
+    "gemm_layer",
+    "conv_layer",
+    "eltwise_layer",
+)
+koiosArchRel = (
+    "vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml"
+)
+koiosBenchRel = "vtr_flow/benchmarks/verilog/koios"
+koiosIncludeRel = "hard_block_include.v"
 
 flows = {
     "vanilla_vtr": {"start": "parmys"},
@@ -504,8 +519,24 @@ def emitReusedVanilla(outDir: Path, rows: Sequence[Dict]) -> None:
         print(summary)
 
 
+def resolveIncludePaths(includeArgs: Optional[Sequence[str]], benchDir: Path) -> List[Path]:
+    # resolve each -include path; bare names are relative to benchmark-dir
+    resolved: List[Path] = []
+    if not includeArgs:
+        return resolved
+    for includeArg in includeArgs:
+        includePath = Path(includeArg)
+        if not includePath.is_absolute():
+            includePath = benchDir / includePath
+        includePath = includePath.resolve()
+        if not includePath.is_file():
+            raise FileNotFoundError(f"include file not found: {includePath}")
+        resolved.append(includePath)
+    return resolved
+
+
 def runOne(task: Tuple) -> Dict:
-    design, flowName, outDir, archFile, benchDir, noClean, noRerun = task
+    design, flowName, outDir, archFile, benchDir, noClean, noRerun, includeFiles = task
     runLabel = f"{design}_{flowName}"
     tempDir = (outDir / "runs" / runLabel).resolve()
     logPath = (outDir / "logs" / f"{runLabel}.log").resolve()
@@ -559,6 +590,8 @@ def runOne(task: Tuple) -> Dict:
         "-track_memory_usage",
         *vprArgs,
     ]
+    if includeFiles:
+        cmd += ["-include", *[str(path) for path in includeFiles]]
 
     print(f"--- {runLabel} ---")
     startTime = time.perf_counter()
@@ -682,6 +715,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--arch", default=defaultArchRel)
     parser.add_argument("--benchmark-dir", default=defaultBenchRel)
     parser.add_argument("--designs", nargs="+", default=None)
+    parser.add_argument(
+        "--include",
+        nargs="+",
+        default=None,
+        help="include files for -include (relative to --benchmark-dir or absolute)",
+    )
+    parser.add_argument(
+        "--koios",
+        action="store_true",
+        help=(
+            f"preset for koios: arch={koiosArchRel}, "
+            f"benchmark-dir={koiosBenchRel}, designs={','.join(defaultKoiosDesigns)}, "
+            f"include={koiosIncludeRel} (explicit flags still win)"
+        ),
+    )
     parser.add_argument("--flows", nargs="+", default=None)
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--outdir", default=None)
@@ -700,6 +748,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--no-rerun", action="store_true")
     args = parser.parse_args(argv)
 
+    # --koios fills defaults only when the user did not override them
+    if args.koios:
+        if args.arch == defaultArchRel:
+            args.arch = koiosArchRel
+        if args.benchmark_dir == defaultBenchRel:
+            args.benchmark_dir = koiosBenchRel
+        if args.designs is None:
+            args.designs = list(defaultKoiosDesigns)
+        if args.include is None:
+            args.include = [koiosIncludeRel]
+
     archFile = resolvePath(args.arch, vtrRoot)
     benchDir = resolvePath(args.benchmark_dir, vtrRoot)
     designs = normalizeDesigns(args.designs)
@@ -708,6 +767,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     reuseVanillaPath = (
         resolvePath(args.reuse_vanilla, vtrRoot) if args.reuse_vanilla else None
     )
+    includeFiles = resolveIncludePaths(args.include, benchDir)
 
     outDir = resolvePath(args.outdir or f"compare_output_{archFile.stem}", vtrRoot)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -737,7 +797,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     statusDir.mkdir(exist_ok=True)
 
     tasks = [
-        (design, flowName, outDir, archFile, benchDir, args.no_clean, args.no_rerun)
+        (
+            design,
+            flowName,
+            outDir,
+            archFile,
+            benchDir,
+            args.no_clean,
+            args.no_rerun,
+            includeFiles,
+        )
         for design in designs
         for flowName in runFlows
     ]
@@ -754,6 +823,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"arch:    {archFile.name}")
     print(f"designs: {', '.join(designs)}")
     print(f"flows:   {', '.join(selectedFlows)}")
+    if includeFiles:
+        print(f"include: {', '.join(path.name for path in includeFiles)}")
     if reuseVanillaPath is not None:
         print(f"reuse_vanilla: {reuseVanillaPath} ({len(reusedVanilla)} rows)")
     print(f"jobs:    {jobs}")
