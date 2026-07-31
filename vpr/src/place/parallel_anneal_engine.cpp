@@ -270,6 +270,10 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
                                                          int slot_index) {
     t_speculative_swap& attempt = attempts_[slot_index];
 
+    // Reset by the evaluating worker, not the coordinator, so the slot's cache
+    // lines are not bounced through the coordinator every batch.
+    attempt.reset();
+
     // Early cancellation: once a lower-id attempt is known to be accepted, this
     // one can neither win nor retire, so its remaining work is skipped. Nothing at
     // or below the eventual winner id is cancelled, so the trajectory is unaffected.
@@ -378,15 +382,13 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
     VTR_ASSERT_SAFE(batch_size >= 1);
 
     // The previous batch's replica commits may still be in flight, and their
-    // winner lives in attempts_: wait before resetting the slots.
+    // winner lives in attempts_: wait before the resize below can reallocate it.
+    // The slots themselves are reset by the workers that evaluate them (see
+    // propose_and_evaluate_attempt_()).
     wait_worker_job_();
 
-    // Reset the attempt slots in place, reusing their heap buffers across batches.
     if (attempts_.size() < static_cast<size_t>(batch_size)) {
         attempts_.resize(batch_size);
-    }
-    for (int k = 0; k < batch_size; ++k) {
-        attempts_[k].reset();
     }
 
     // --- Parallel propose + evaluate phase ---
