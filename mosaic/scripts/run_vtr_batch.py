@@ -72,7 +72,8 @@ flowAliases = {
 }
 
 vprBramBlockTypes = ("memory", "bram_multimode")
-vprDspBlockTypes = ("mult_36", "mae", "dsp")
+# koios uses dsp_top; classic k6 uses mult_36; some arches use mae/dsp
+vprDspBlockTypes = ("mult_36", "mae", "dsp", "dsp_top")
 
 csvFields = (
     "design",
