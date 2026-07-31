@@ -19,14 +19,17 @@ usage (from the vtr repo root):
 
 defaults:
   arch      vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
-  circuits  vtr_flow/benchmarks/verilog/<name>.v
+  circuits  eight readme stems under vtr_flow/benchmarks/verilog/
+            (or all *.v under a custom --benchmark-dir)
   outdir    compare_output_<arch_stem>
   csv       <outdir>/compare_results_<YYYYMMDD_HHMMSS>.csv
 
 flags:
   --arch <xml>           architecture file (required to target a non-default arch)
   --benchmark-dir <dir>  directory holding <design>.v files
-  --designs <names...>   circuit stems (default: eight readme circuits)
+  --designs <names...>   circuit stems (default: eight readme circuits when
+                         --benchmark-dir is the default; otherwise every
+                         *.v in the bench dir except *_include.v)
   --include <files...>   -include paths for run_vtr_flow (relative to
                          benchmark-dir, or absolute); use for koios
                          hard_block_include.v (`complex_dsp` / `hard_mem`)
@@ -647,8 +650,45 @@ def normalizeFlows(names: Optional[Sequence[str]]) -> List[str]:
     return selected
 
 
-def normalizeDesigns(names: Optional[Sequence[str]]) -> List[str]:
-    return list(names) if names else list(defaultDesigns)
+def discoverDesigns(benchDir: Path) -> List[str]:
+    """stems of *.v in benchDir, skipping include/helper files."""
+    designs = []
+    for path in sorted(benchDir.glob("*.v")):
+        if path.name.endswith("_include.v"):
+            continue
+        designs.append(path.stem)
+    return designs
+
+
+def resolveDesigns(
+    names: Optional[Sequence[str]],
+    benchDir: Path,
+    defaultBenchDir: Path,
+) -> List[str]:
+    if names:
+        designs = list(names)
+    elif benchDir.resolve() == defaultBenchDir.resolve():
+        designs = list(defaultDesigns)
+    else:
+        designs = discoverDesigns(benchDir)
+
+    if not designs:
+        raise SystemExit(f"no designs found under {benchDir}")
+
+    missing = [name for name in designs if not (benchDir / f"{name}.v").is_file()]
+    if missing:
+        available = discoverDesigns(benchDir)
+        hint = ", ".join(available[:12]) if available else "(none)"
+        if len(available) > 12:
+            hint += ", ..."
+        raise SystemExit(
+            "missing verilog for design(s): "
+            + ", ".join(missing)
+            + f"\n  looked in: {benchDir}"
+            + f"\n  available: {hint}"
+            + "\n  pass --designs <stems...> or fix --benchmark-dir"
+        )
+    return designs
 
 
 def resolvePath(value: str, base: Path) -> Path:
@@ -709,7 +749,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help=f"architecture xml (default: {defaultArchRel})",
     )
     parser.add_argument("--benchmark-dir", default=defaultBenchRel)
-    parser.add_argument("--designs", nargs="+", default=None)
+    parser.add_argument(
+        "--designs",
+        nargs="+",
+        default=None,
+        help=(
+            "circuit stems; default is the eight readme circuits for the "
+            "default bench dir, else every *.v in --benchmark-dir "
+            "(except *_include.v)"
+        ),
+    )
     parser.add_argument(
         "--include",
         nargs="+",
@@ -736,7 +785,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     archFile = resolvePath(args.arch, vtrRoot)
     benchDir = resolvePath(args.benchmark_dir, vtrRoot)
-    designs = normalizeDesigns(args.designs)
+    defaultBenchDir = resolvePath(defaultBenchRel, vtrRoot)
+    designs = resolveDesigns(args.designs, benchDir, defaultBenchDir)
     selectedFlows = normalizeFlows(args.flows)
     jobs = max(1, args.jobs)
     reuseVanillaPath = (
