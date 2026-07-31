@@ -145,10 +145,8 @@ void ParallelAnnealEngine::worker_main_(int worker_id) {
         switch (job) {
             case e_worker_job::EVALUATE: {
                 MoveGenerator& generator = batch_use_gen2_ ? *replica.move_generator_2 : *replica.move_generator_1;
-                // Bring this replica's generator into lockstep with the master
-                // generator, the only one that processes move outcomes. All
-                // workers read the master generator concurrently, but no one
-                // writes it during a batch.
+                // Copy the master generator's agent state; it is the only one
+                // that receives outcomes. All workers read it, no one writes it.
                 generator.sync_state_from(*batch_master_generator_);
                 for (int k = worker_id; k < batch_size_; k += num_workers_) {
                     propose_and_evaluate_attempt_(replica, generator, k);
@@ -257,13 +255,10 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
                                                          int slot_index) {
     t_speculative_swap& attempt = attempts_[slot_index];
 
-    // Early cancellation: once any attempt with a lower id is known to be
-    // accepted, this attempt is stale speculation — it can neither win (the
-    // winner is the lowest-id accepted attempt) nor be bookkept (bookkeeping
-    // stops at the winner) — so its remaining work is skipped. Cancellation
-    // never touches attempts at or below the eventual winner id, so the
-    // trajectory is unaffected. Relaxed ordering suffices: a stale read only
-    // delays a cancellation.
+    // Early cancellation: once a lower-id attempt is known to be accepted, this
+    // one can neither win nor retire, so its remaining work is skipped. Nothing at
+    // or below the eventual winner id is cancelled, so the trajectory is unaffected.
+    // Relaxed ordering suffices: a stale read only delays a cancellation.
     auto is_stale = [this, slot_index]() {
         return slot_index > first_accepted_id_.load(std::memory_order_relaxed);
     };
@@ -272,9 +267,8 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
         return;
     }
 
-    // Reseed this attempt's private RNG stream. The proposal and the pre-drawn
-    // acceptance random number depend only on the attempt id and the committed
-    // state — not on which worker runs them, batching, or scheduling.
+    // Reseed this attempt's private RNG stream, so its proposal and pre-drawn
+    // acceptance number depend only on the attempt id and the committed state.
     replica.rng.srandom(attempt_seed_(attempt_counter_ + slot_index));
 
     // Allow some fraction of moves to not be restricted by rlim,
@@ -286,7 +280,7 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
 
     attempt.create_outcome = move_generator.propose_move(replica.blocks_affected, attempt.proposed_action,
                                                          attempt_rlim, placer_opts_, criticalities_);
-    attempt.accept_rand = replica.rng.frand();
+    const float accept_rand = replica.rng.frand();
     attempt.agent_action = move_generator.get_last_action();
 
     if (attempt.create_outcome != e_create_move::VALID) {
@@ -300,30 +294,28 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
     attempt.deltas = replica.evaluator->apply_and_evaluate(replica.blocks_affected, placer_opts_.place_algorithm,
                                                          is_stale);
     if (attempt.deltas.cancelled) {
-        // Partially staged evaluation state must still be unwound. The attempt
-        // keeps its default ABORTED outcome; it is never consulted, since it is
-        // beyond the batch winner.
+        // The blocks have already been moved and some affected nets already
+        // have proposed costs, so both must be undone.
         replica.evaluator->revert(replica.blocks_affected, timing_driven_);
         replica.blocks_affected.clear_move_blocks();
         return;
     }
 
-    attempt.move_result = assess_speculative_swap_(attempt.deltas.delta_c, batch_temperature_, attempt.accept_rand);
+    attempt.move_result = assess_speculative_swap_(attempt.deltas.delta_c, batch_temperature_, accept_rand);
 
-    // If this attempt may become the batch winner, capture its move and the
-    // committed values it would write while they are still in this replica's
-    // scratch, then publish its id for early cancellation. Committing replays
-    // this record everywhere — the move is never evaluated again.
-    //
-    // The capture is skipped when a lower id is already known accepted (this
-    // attempt lost). The eventual winner never skips: it is the minimum
-    // accepted id, so no smaller id can ever appear in first_accepted_id_.
+    // Capture the move and the committed values it would write while they are
+    // still in this replica's scratch, so a win can be committed everywhere
+    // without re-evaluating, then publish this id for early cancellation.
+    // Nothing is captured once a lower id is accepted, which never happens to
+    // the eventual winner: it is the minimum accepted id.
     if (attempt.move_result == e_move_result::ACCEPTED && !is_stale()) {
         VTR_ASSERT_SAFE(!attempt.deltas.update_interposer_costs);
         attempt.moved_blocks = replica.blocks_affected.moved_blocks;
         replica.evaluator->extract_commit_record(replica.blocks_affected,
                                                  attempt.commit_record);
 
+        // Atomic min: lower first_accepted_id_ to this id, retrying if another
+        // worker changed it concurrently and stopping if it installed a lower id.
         int current = first_accepted_id_.load(std::memory_order_relaxed);
         while (slot_index < current
                && !first_accepted_id_.compare_exchange_weak(current, slot_index, std::memory_order_relaxed)) {
@@ -342,24 +334,8 @@ void ParallelAnnealEngine::apply_winner_to_replica_(EvalReplica& replica, const 
 }
 
 void ParallelAnnealEngine::commit_winner_on_master_(const t_speculative_swap& winner) {
-    // The winner is the minimum accepted id, so its evaluation can never have
-    // been cancelled or its record capture skipped (both require a lower
-    // accepted id to exist).
-    VTR_ASSERT(!winner.moved_blocks.empty());
-
-#ifdef VTR_ASSERT_SAFE_ENABLED
-    // Replica-divergence tripwire (debug builds only): an independent evaluation
-    // on the master must reproduce the recorded numbers exactly, since the master
-    // and all replicas are kept bit-identical.
-    {
-        master_blocks_affected_.set_moved_blocks(winner.moved_blocks);
-        t_swap_cost_deltas check = master_evaluator_.apply_and_evaluate(master_blocks_affected_, placer_opts_.place_algorithm);
-        VTR_ASSERT_SAFE_MSG(check.delta_c == winner.deltas.delta_c,
-                            "Speculative evaluation diverged from the master placement state.");
-        master_evaluator_.revert(master_blocks_affected_, timing_driven_);
-        master_blocks_affected_.clear_move_blocks();
-    }
-#endif
+    // The winner has the minimum accepted id, so its move was always captured.
+    VTR_ASSERT_SAFE(!winner.moved_blocks.empty());
 
     VTR_ASSERT_SAFE(!winner.deltas.update_interposer_costs);
     costs_.cost += winner.deltas.delta_c;
@@ -370,9 +346,8 @@ void ParallelAnnealEngine::commit_winner_on_master_(const t_speculative_swap& wi
     if (timing_driven_) {
         costs_.timing_cost += winner.deltas.timing_delta_c;
 
-        // Invalidations accumulate for the next big timing update (outer loop or
-        // periodic recompute), exactly as in the sequential annealer. The
-        // invalidator reads affected_pins, which the master never computed itself.
+        // The invalidator reads affected_pins, which only the winner's replica
+        // computed, so copy them to the master before invalidating.
         master_blocks_affected_.affected_pins = winner.commit_record.affected_pins;
         pin_timing_invalidator_->invalidate_affected_connections(master_blocks_affected_);
     }

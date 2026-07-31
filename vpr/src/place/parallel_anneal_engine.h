@@ -87,8 +87,6 @@ struct t_speculative_swap {
     e_create_move create_outcome = e_create_move::ABORT;
     /// The RL-agent action behind this proposal.
     size_t agent_action = 0;
-    /// Pre-drawn uniform random number for the acceptance test, from this attempt's RNG stream.
-    float accept_rand = 0.f;
     /// Accept/reject decision made during evaluation (ABORTED when create_outcome != VALID).
     e_move_result move_result = e_move_result::ABORTED;
     /// Cost deltas computed during evaluation.
