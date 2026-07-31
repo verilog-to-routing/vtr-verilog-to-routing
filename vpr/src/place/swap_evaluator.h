@@ -44,7 +44,7 @@ struct t_swap_commit_record {
     /// Pins whose connection timing cost changed.
     std::vector<ClusterPinId> affected_pins;
     /// Per affected net: committed BB, sink counts, and net cost.
-    std::vector<t_net_commit_entry> net_entries;
+    t_net_commit_record net_record;
     /// Per affected connection: committed delay and timing cost.
     std::vector<t_connection_commit_entry> connection_entries;
 };

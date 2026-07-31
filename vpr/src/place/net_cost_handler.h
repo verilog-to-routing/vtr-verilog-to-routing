@@ -48,9 +48,8 @@ struct t_net_cost_terms {
  * @brief The committed values an evaluated move writes for one affected net,
  * i.e. what update_move_nets() would copy out of the ts_ scratch.
  *
- * Captured with NetCostHandler::extract_commit_record() and replayed on other
- * states with apply_commit_record(), letting the parallel swap evaluation engine
- * commit a winning move without re-evaluating it.
+ * Part of t_net_commit_record. The per-layer sink pin counts live in the
+ * record's flat sink_pin_layer_counts array, so an entry itself never allocates.
  */
 struct t_net_commit_entry {
     ClusterNetId net_id;
@@ -58,12 +57,28 @@ struct t_net_commit_entry {
     t_bb bb_coords;
     /// New number of blocks on each BB edge (valid only when update_edges).
     t_bb bb_num_on_edges;
-    /// New number of sink pins on each layer.
-    std::vector<int> num_sink_pin_layer;
     /// New wirelength (BB) cost of the net.
     double net_cost = 0.;
     /// True for large nets (>= SMALL_NET sinks) whose edge counts are incrementally maintained.
     bool update_edges = false;
+};
+
+/**
+ * @brief The committed values an evaluated move writes into a NetCostHandler,
+ * for all nets the move affects.
+ *
+ * Captured with extract_commit_record() and replayed on other states with
+ * apply_commit_record(), letting the parallel swap evaluation engine commit a
+ * winning move without re-evaluating it. Extraction overwrites the record in
+ * place, reusing its buffers.
+ */
+struct t_net_commit_record {
+    /// One entry per affected net.
+    std::vector<t_net_commit_entry> entries;
+    /// New number of sink pins on each layer, for every affected net,
+    /// flattened: entry i's counts are the num_layers values starting at
+    /// index i * num_layers.
+    std::vector<int> sink_pin_layer_counts;
 };
 
 class NetCostHandler {
@@ -224,14 +239,14 @@ class NetCostHandler {
      *
      * Only supported with cube bounding boxes and congestion modeling off.
      */
-    void extract_commit_record(std::vector<t_net_commit_entry>& record) const;
+    void extract_commit_record(t_net_commit_record& record) const;
 
     /**
      * @brief Writes an extracted commit record into this handler's committed data,
      * without re-evaluating the move. Unlike update_move_nets() it touches no
      * scratch flags, so this handler must have no move in flight.
      */
-    void apply_commit_record(const std::vector<t_net_commit_entry>& record);
+    void apply_commit_record(const t_net_commit_record& record);
 
   private:
     /// Indicates whether congestion cost modeling is enabled.

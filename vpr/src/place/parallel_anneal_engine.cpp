@@ -362,7 +362,13 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
                                                 float rlim) {
     VTR_ASSERT_SAFE(batch_size >= 1);
 
-    attempts_.assign(batch_size, t_speculative_swap());
+    // Reset the attempt slots in place, reusing their heap buffers across batches.
+    if (attempts_.size() < static_cast<size_t>(batch_size)) {
+        attempts_.resize(batch_size);
+    }
+    for (int k = 0; k < batch_size; ++k) {
+        attempts_[k].reset();
+    }
 
     // --- Parallel propose + evaluate phase ---
     //

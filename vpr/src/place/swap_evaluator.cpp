@@ -125,7 +125,7 @@ void SwapEvaluator::commit(t_pl_blocks_to_be_moved& blocks_affected,
 
 void SwapEvaluator::extract_commit_record(const t_pl_blocks_to_be_moved& blocks_affected,
                                           t_swap_commit_record& record) const {
-    net_cost_handler_.extract_commit_record(record.net_entries);
+    net_cost_handler_.extract_commit_record(record.net_record);
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         record.affected_pins = blocks_affected.affected_pins;
@@ -144,7 +144,7 @@ void SwapEvaluator::apply_commit_record(t_pl_blocks_to_be_moved& blocks_affected
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
     blk_loc_registry.apply_move_blocks(blocks_affected);
 
-    net_cost_handler_.apply_commit_record(record.net_entries);
+    net_cost_handler_.apply_commit_record(record.net_record);
 
     if (!record.connection_entries.empty()) {
         placer_state_.mutable_timing().apply_connection_commit_record(record.connection_entries);

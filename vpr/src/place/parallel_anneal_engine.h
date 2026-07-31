@@ -95,6 +95,17 @@ struct t_speculative_swap {
     /// attempts only. Lets the winner be committed everywhere with
     /// O(affected nets + pins) copies instead of a re-evaluation.
     t_swap_commit_record commit_record;
+
+    /// @brief Resets the attempt for reuse. Keeps the buffers of moved_blocks and
+    /// commit_record; they are stale, but accepted attempts overwrite them first.
+    void reset() {
+        moved_blocks.clear();
+        proposed_action = t_propose_action();
+        create_outcome = e_create_move::ABORT;
+        agent_action = 0;
+        move_result = e_move_result::ABORTED;
+        deltas = t_swap_cost_deltas();
+    }
 };
 
 /// @brief Result of running one speculative batch.

@@ -1589,7 +1589,7 @@ bool NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
     return true;
 }
 
-void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& record) const {
+void NetCostHandler::extract_commit_record(t_net_commit_record& record) const {
     // Mirrors the reading side of update_move_nets(): capture exactly the values
     // it would copy from the ts_ scratch into the committed data.
     VTR_ASSERT_SAFE_MSG(cube_bb_ && !congestion_modeling_started_,
@@ -1597,11 +1597,13 @@ void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& reco
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    record.clear();
-    record.reserve(ts_nets_to_update_.size());
+    const size_t num_affected_nets = ts_nets_to_update_.size();
+    record.entries.resize(num_affected_nets);
+    record.sink_pin_layer_counts.resize(num_affected_nets * num_layers);
 
-    for (const ClusterNetId net_id : ts_nets_to_update_) {
-        t_net_commit_entry& entry = record.emplace_back();
+    for (size_t i = 0; i < num_affected_nets; i++) {
+        const ClusterNetId net_id = ts_nets_to_update_[i];
+        t_net_commit_entry& entry = record.entries[i];
         entry.net_id = net_id;
         entry.update_edges = cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET;
 
@@ -1610,24 +1612,25 @@ void NetCostHandler::extract_commit_record(std::vector<t_net_commit_entry>& reco
             entry.bb_num_on_edges = ts_bb_edge_new_[net_id];
         }
 
-        entry.num_sink_pin_layer.resize(num_layers);
         for (size_t layer_num = 0; layer_num < num_layers; layer_num++) {
-            entry.num_sink_pin_layer[layer_num] = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
+            record.sink_pin_layer_counts[i * num_layers + layer_num] = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
         }
 
         entry.net_cost = proposed_net_cost_[net_id];
     }
 }
 
-void NetCostHandler::apply_commit_record(const std::vector<t_net_commit_entry>& record) {
+void NetCostHandler::apply_commit_record(const t_net_commit_record& record) {
     // Mirrors the writing side of update_move_nets(), minus the scratch flag
     // resets: the applying handler has no move in flight, so its flags are already
     // in their reset state.
     VTR_ASSERT_SAFE_MSG(cube_bb_ && !congestion_modeling_started_,
                         "Commit records only support cube bounding boxes without congestion modeling.");
     const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    VTR_ASSERT_SAFE(record.sink_pin_layer_counts.size() == record.entries.size() * num_layers);
 
-    for (const t_net_commit_entry& entry : record) {
+    for (size_t i = 0; i < record.entries.size(); i++) {
+        const t_net_commit_entry& entry = record.entries[i];
         const ClusterNetId net_id = entry.net_id;
 
         bb_coords_[net_id] = entry.bb_coords;
@@ -1636,7 +1639,7 @@ void NetCostHandler::apply_commit_record(const std::vector<t_net_commit_entry>& 
         }
 
         for (size_t layer_num = 0; layer_num < num_layers; layer_num++) {
-            num_sink_pin_layer_[size_t(net_id)][layer_num] = entry.num_sink_pin_layer[layer_num];
+            num_sink_pin_layer_[size_t(net_id)][layer_num] = record.sink_pin_layer_counts[i * num_layers + layer_num];
         }
 
         net_cost_[net_id] = entry.net_cost;
