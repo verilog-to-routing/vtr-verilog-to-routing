@@ -59,35 +59,35 @@ The stage writes `<circuit>.frankenstein.blif`, logs to `frankenstein.out`, and 
 - `vtr_flow/misc/frankenstein/k6/`: K6 per-arch knob config (`arch_config.tcl`)
 - `vtr_flow/misc/frankenstein/koios/`: Koios complex-DSP arch knobs (`dspMaxWidth 27`, `stubAllHardblocks 1` for exotic DSP passthrough)
 - `vtr_flow/scripts/python_libs/vtr/frankenstein/`: the vtr flow stage module (selects the support dir from the arch xml stem)
-- `frankenstein/scripts/`: `compare_flow.py` (vanilla_vtr vs frankenstein) and `watch_compare.py` (live status table)
+- `frankenstein/scripts/run_vtr_batch.py`: batch `run_vtr_flow.py` (1 core per run), live csv/status, optional `--watch`
+- `frankenstein/scripts/watch_compare.py`: live status table (used by `--watch`, or run alone in a second terminal)
 
 The synthesis template is architecture agnostic. Its tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `K6D`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `K6D` is the per-arch support dir (`k6/` or `koios/`, chosen from the architecture file).
 
 ## QoR Compare (vanilla_vtr vs frankenstein)
-Runs the eight README circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` through both front-ends. Each compare run writes a new timestamped csv.
+`run_vtr_batch.py` wraps the default `run_vtr_flow.py` call. Each run is pinned
+to 1 core (`--num_workers 1`); `--jobs N` means N concurrent single-core runs.
+Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`,
+`compare_results_<YYYYMMDD_HHMMSS>.csv`).
 
 ```shell
-# terminal 1, launch the compare
-python3 frankenstein/scripts/compare_flow.py --jobs 4
-
-# terminal 2, live status table (defaults to newest compare_output* by mtime)
-python3 frankenstein/scripts/watch_compare.py
-# or pin an outdir:
-# python3 frankenstein/scripts/watch_compare.py --dir compare_output_<arch_stem>
-```
-
-Useful flags: `--arch <arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8`, `--no-rerun`, `--include <file>`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`).
-
-### Koios compare
-Pass the koios arch with `--arch`. With a non-default `--benchmark-dir` and no `--designs`, every `*.v` in that dir is used (except `*_include.v`). Prefer an explicit design list for a short smoke:
-```shell
-python3 frankenstein/scripts/compare_flow.py \
+python3 frankenstein/scripts/run_vtr_batch.py \
   --arch vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \
   --benchmark-dir vtr_flow/benchmarks/verilog/koios \
-  --designs lenet gemm_layer conv_layer eltwise_layer \
+  --designs eltwise_layer conv_layer gemm_layer lenet \
   --include hard_block_include.v \
-  --jobs 2
+  --jobs 4 --watch
 ```
+
+`--watch` spawns `watch_compare.py` in the same terminal. Or run the watcher
+yourself (defaults to newest `compare_output*` if `--dir` omitted):
+
+```shell
+python3 frankenstein/scripts/watch_compare.py --dir compare_output_<arch_stem>
+```
+
+Useful flags: `--flows frankenstein`, `--no-rerun`. Omit `--designs` to take
+every `*.v` in the bench dir (except `*_include.v`).
 
 Single-circuit smoke (after rebuilding the plugin if C++ changed):
 ```shell

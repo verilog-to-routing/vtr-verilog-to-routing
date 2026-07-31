@@ -1,30 +1,33 @@
 #!/usr/bin/env python3
 """
-live status table for frankenstein/scripts/compare_flow.py.
+live status table for frankenstein/scripts/run_vtr_batch.py.
 
-scans <outdir>/status/*.txt and live phase hints from run dirs. run in a
-second terminal while the compare is going.
+details:
+    scans <outdir>/status/*.txt and live phase hints from run dirs. run in a
+    second terminal while the batch is going.
 
 usage:
-  python3 frankenstein/scripts/watch_compare.py
-  python3 frankenstein/scripts/watch_compare.py --dir compare_output_<arch_stem>
-  python3 frankenstein/scripts/watch_compare.py --interval 2
-  python3 frankenstein/scripts/watch_compare.py --once
+    python3 frankenstein/scripts/watch_compare.py
+    python3 frankenstein/scripts/watch_compare.py --dir compare_output_<arch_stem>
+    python3 frankenstein/scripts/watch_compare.py --interval 2
+    python3 frankenstein/scripts/watch_compare.py --once
 
 flags:
-  --dir <outdir>     compare output directory (default: newest compare_output* by mtime)
-  --interval <sec>   refresh period (default 1.0)
-  --once             print once and exit
+    --dir <outdir>     compare output directory (default: newest compare_output* by mtime)
+    --interval <sec>   refresh period (default 1.0)
+    --once             print once and exit
 """
 
 from __future__ import annotations
 
 import argparse
 import math
+import os
 import re
 import sys
 import time
 from pathlib import Path
+from typing import Dict, List, Optional, Sequence
 
 try:
     from prettytable import PrettyTable
@@ -35,49 +38,23 @@ except ImportError:
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
 
-# status-line keys written by compare_flow.formatSummary
-statusFields = (
-    "wall",
-    "s_s",
-    "a_s",
-    "v_s",
-    "synthesis",
-    "s_luts",
-    "a_luts",
-    "p_luts",
-    "s_ff",
-    "ff",
-    "mem",
-    "dsp",
-    "adder",
-    "io_in",
-    "io_out",
-    "clb",
-    "wl",
-    "cpd",
-    "fmax",
-    "wns",
-)
-
-# live-run phase hints (newest matching log line wins). labels are what the
-# status column shows.
-#
-# vpr prints these via vtr::ScopedStartFinishTimer:
-#   start:  "Packing" / "SA Placement" / "Routing"
-#   finish: "Packing took …" / "SA Placement took …" / "Routing took …"
-# packing also logs: Begin packing '…'.
 phasePatterns = [
-    (re.compile(r"(?:^|#\s*)Routing took\b", re.IGNORECASE), "route done"),
-    (re.compile(r"(?:^|#\s*)SA Placement took\b|(?:^|#\s*)Placement took\b", re.IGNORECASE), "place done"),
-    (re.compile(r"(?:^|#\s*)Packing took\b", re.IGNORECASE), "pack done"),
-    (re.compile(r"(?:^|#\s*)Routing\s*$", re.IGNORECASE), "routing"),
-    (re.compile(r"(?:^|#\s*)SA Placement\s*$|(?:^|#\s*)Placement\s*$", re.IGNORECASE), "placing"),
-    (re.compile(r"(?:^|#\s*)Packing\s*$|Begin packing\b", re.IGNORECASE), "packing"),
-    (re.compile(r"Executing ABC|abc -luts", re.IGNORECASE), "abc"),
-    (re.compile(r"frankenstein|vtr_arch_rules|parmys|Executing PARMYS|Yosys [0-9]|Executing.*yosys", re.IGNORECASE), "synth"),
+    (re.compile(r"(?:^|#\s*)Routing took\b", re.I), "route done"),
+    (re.compile(r"(?:^|#\s*)SA Placement took\b|(?:^|#\s*)Placement took\b", re.I), "place done"),
+    (re.compile(r"(?:^|#\s*)Packing took\b", re.I), "pack done"),
+    (re.compile(r"(?:^|#\s*)Routing\s*$", re.I), "routing"),
+    (re.compile(r"(?:^|#\s*)SA Placement\s*$|(?:^|#\s*)Placement\s*$", re.I), "placing"),
+    (re.compile(r"(?:^|#\s*)Packing\s*$|Begin packing\b", re.I), "packing"),
+    (re.compile(r"Executing ABC|abc -luts", re.I), "abc"),
+    (
+        re.compile(
+            r"frankenstein|vtr_arch_rules|parmys|Executing PARMYS|Yosys [0-9]",
+            re.I,
+        ),
+        "synth",
+    ),
 ]
 
-# display text -> ansi color for live phases
 phaseColors = {
     "started": "\033[93m",
     "synth": "\033[94m",
@@ -90,11 +67,9 @@ phaseColors = {
     "route done": "\033[93m",
 }
 
-
 # (header, status key, higher_is_better)
-# frontend = raw front-end stage log only (parmys.out / frankenstein.out)
+# frontend = raw front-end stage only (parmys.out / frankenstein.out)
 # synthesis = fair compare: frankenstein synth; vanilla synth+abc
-# column order matches the per-run table (IO in/out, then CLBs, then FFs)
 geomeanColumns = (
     ("frontend", "s_s", False),
     ("synthesis", "synthesis", False),
@@ -114,194 +89,102 @@ geomeanColumns = (
 )
 
 
-def inferPhase(lines):
-    # return None when nothing matches so the caller can keep the last known phase
-    for line in reversed(lines[-200:]):
-        for pattern, label in phasePatterns:
-            if pattern.search(line):
-                return label
-    return None
-
-
-def livePhaseFromRunDir(runDir: Path):
-    if not runDir.is_dir():
-        return None
-    candidates = [
-        runDir / name
-        for name in (
-            "frankenstein.out",
-            "parmys.out",
-            "vpr.out",
-            "abc.out",
-            "abc0.out",
-            "nohup.out",
-        )
-        if (runDir / name).is_file()
-    ]
-    if not candidates:
-        return "started"
-    newest = max(candidates, key=lambda path: path.stat().st_mtime)
-    try:
-        lines = newest.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        return None
-    return inferPhase(lines)
-
-
-def parseStatusLine(label: str, line: str):
-    result = {"label": label, "raw": line}
-    statusMatch = re.match(r"\S+:\s+(\S+)", line)
-    if statusMatch:
-        result["status"] = statusMatch.group(1)
-        if result["status"].startswith("FAIL"):
-            failMatch = re.match(r"\S+:\s+(FAIL(?:\s*\([^)]*\))?)", line)
-            if failMatch:
-                result["status"] = failMatch.group(1)
-    for key in statusFields:
-        match = re.search(rf"\b{re.escape(key)}=([0-9.eE+-]+)", line)
-        if match:
-            result[key] = match.group(1)
-    return result
-
-
-def scanStatus(targetDir: Path, lastPhases=None):
-    # lastPhases remembers the last known live phase per label so an unknown
-    # log scrape does not snap the status back to a generic fallback
-    if lastPhases is None:
-        lastPhases = {}
-    statusDir = targetDir / "status"
-    runsDir = targetDir / "runs"
-    manifest = statusDir / "manifest.txt"
-
-    if manifest.is_file():
-        labels = [
-            line.strip()
-            for line in manifest.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
-    elif runsDir.is_dir():
-        labels = sorted(path.name for path in runsDir.iterdir() if path.is_dir())
-    else:
-        return []
-
-    rows = []
-    for label in labels:
-        statusFile = statusDir / f"{label}.txt"
-        if statusFile.is_file():
-            line = statusFile.read_text(encoding="utf-8", errors="replace").strip()
-            rows.append(enrichSynthesis(parseStatusLine(label, line)))
-            lastPhases.pop(label, None)
-            continue
-        runDir = runsDir / label
-        if runDir.is_dir():
-            phase = livePhaseFromRunDir(runDir)
-            if phase is None:
-                phase = lastPhases.get(label, "started")
-            else:
-                lastPhases[label] = phase
-            rows.append({"label": label, "status": f"running:{phase}"})
-        else:
-            rows.append({"label": label, "status": "pending"})
-            lastPhases.pop(label, None)
-    return rows
-
-
-def sap(row, *keys):
-    return "/".join(str(row.get(k) or "-") for k in keys)
-
-
-def enrichSynthesis(row):
-    # fair synthesis time if missing from older status lines:
-    # frankenstein = frontend only (includes in-yosys abc);
-    # vanilla_vtr = frontend + abc stage
-    if row.get("synthesis"):
+def parseStatusLine(text: str) -> Dict[str, str]:
+    # "label: status key=val ..." — status may be "FAIL (reason with spaces)"
+    row: Dict[str, str] = {}
+    line = text.strip()
+    if not line:
         return row
-    flow = flowOf(row.get("label", ""))
-    s = numeric(row.get("s_s"))
-    a = numeric(row.get("a_s"))
-    if flow == "frankenstein" and s is not None:
-        row["synthesis"] = f"{s:.2f}"
-    elif flow == "vanilla_vtr" and (s is not None or a is not None):
-        row["synthesis"] = f"{(s or 0.0) + (a or 0.0):.2f}"
+    match = re.match(r"^([^:]+):\s*(.*)$", line)
+    if not match:
+        row["label"] = line.split()[0]
+        return row
+    row["label"] = match.group(1).strip()
+    rest = match.group(2).strip()
+    if not rest:
+        return row
+    tokens = rest.split()
+    kvStart = len(tokens)
+    for i in range(len(tokens) - 1, -1, -1):
+        if "=" in tokens[i]:
+            kvStart = i
+        else:
+            break
+    row["status"] = " ".join(tokens[:kvStart]).strip() or "ok"
+    for tok in tokens[kvStart:]:
+        if "=" not in tok:
+            continue
+        key, value = tok.split("=", 1)
+        row[key] = value
     return row
 
 
-def coloredStatus(row):
-    # finished / queued
-    #   ok green, fail red, pending grey, cached cyan
-    # live phases (no "running (…)" wrapper — the phase is the status)
-    #   synth blue, abc cyan, pack/place/route yellow
-    status = row.get("status", "")
-    if status == "ok":
-        text, color = "ok", "\033[92m"
-    elif status.startswith("FAIL") or status == "fail":
-        text, color = status, "\033[91m"
-    elif status == "pending":
-        text, color = "pending", "\033[90m"
-    elif status == "cached":
-        text, color = "cached", "\033[96m"
-    elif status.startswith("running:"):
-        phase = status.split(":", 1)[1].strip() or "started"
-        if phase in ("running", "in progress", "starting", ""):
-            phase = "started"
-        text = phase
-        color = phaseColors.get(phase, "\033[93m")
-    elif status == "running":
-        text, color = "started", "\033[93m"
-    else:
-        # unknown token still gets a color so nothing is plain white
-        text, color = status or "started", "\033[93m"
-    return f"{color}{text}\033[0m"
+def detectPhase(runDir: Path) -> str:
+    for name in (
+        "vpr.out",
+        "vpr_stdout.log",
+        "frankenstein.out",
+        "parmys.out",
+        "output.txt",
+    ):
+        path = runDir / name
+        if not path.is_file() or path.stat().st_size == 0:
+            continue
+        try:
+            with open(path, "rb") as handle:
+                handle.seek(0, os.SEEK_END)
+                size = handle.tell()
+                handle.seek(max(0, size - 8192), os.SEEK_SET)
+                text = handle.read().decode("utf-8", errors="replace")
+        except OSError:
+            continue
+        for pattern, label in phasePatterns:
+            if pattern.search(text):
+                return label
+    return "started"
 
 
-def renderTable(rows, title):
-    table = PrettyTable()
-    table.field_names = [
-        "run",
-        "status",
-        "wall",
-        "synthesis",
-        "time s/a/v",
-        "LUTs s/a/p",
-        "FFs s/p",
-        "BRAMs",
-        "DSPs",
-        "Adders",
-        "IO in",
-        "IO out",
-        "CLBs",
-        "Wirelen",
-        "CPD",
-        "Fmax",
-        "WNS",
-    ]
-    table.align = "l"
-    for row in rows:
-        table.add_row(
-            [
-                row.get("label", ""),
-                coloredStatus(row),
-                row.get("wall", "-"),
-                row.get("synthesis", "-"),
-                sap(row, "s_s", "a_s", "v_s"),
-                sap(row, "s_luts", "a_luts", "p_luts"),
-                sap(row, "s_ff", "ff"),
-                row.get("mem", "-"),
-                row.get("dsp", "-"),
-                row.get("adder", "-"),
-                row.get("io_in", "-"),
-                row.get("io_out", "-"),
-                row.get("clb", "-"),
-                row.get("wl", "-"),
-                row.get("cpd", "-"),
-                row.get("fmax", "-"),
-                row.get("wns", "-"),
-            ]
-        )
-    return f"{title}\n{table}"
+def readLabels(outDir: Path) -> List[str]:
+    manifest = outDir / "status" / "manifest.txt"
+    if manifest.is_file():
+        try:
+            text = manifest.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+        labels = [line.strip() for line in text.splitlines() if line.strip()]
+        if labels:
+            return labels
+    statusDir = outDir / "status"
+    if statusDir.is_dir():
+        return sorted(path.stem for path in statusDir.glob("*.txt") if path.stem != "csv_path")
+    runsDir = outDir / "runs"
+    if runsDir.is_dir():
+        return sorted(path.name for path in runsDir.iterdir() if path.is_dir())
+    return []
 
 
-def numeric(value):
+def scanStatus(outDir: Path, labels: Sequence[str]) -> List[Dict[str, str]]:
+    rows = []
+    for label in labels:
+        statusPath = outDir / "status" / f"{label}.txt"
+        runDir = outDir / "runs" / label
+        if statusPath.is_file():
+            try:
+                text = statusPath.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                text = ""
+            row = parseStatusLine(text.splitlines()[0] if text else "")
+            if not row.get("label"):
+                row["label"] = label
+            rows.append(enrichSynthesis(row))
+        elif runDir.is_dir():
+            rows.append({"label": label, "status": f"running:{detectPhase(runDir)}"})
+        else:
+            rows.append({"label": label, "status": "pending"})
+    return rows
+
+
+def numeric(value) -> Optional[float]:
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -309,16 +192,31 @@ def numeric(value):
     return number if number > 0 else None
 
 
-def flowOf(label):
+def flowOf(label: str) -> Optional[str]:
     for flow in ("frankenstein", "vanilla_vtr"):
         if label.endswith("_" + flow):
             return flow
     return None
 
 
-def computeGeomeans(rows):
-    byDesign = {}
-    flowsSeen = []
+def enrichSynthesis(row: Dict[str, str]) -> Dict[str, str]:
+    # fair synthesis time if missing from older status lines:
+    # frankenstein = frontend only; vanilla_vtr = frontend + abc
+    if row.get("synthesis"):
+        return row
+    flow = flowOf(row.get("label", ""))
+    synthSec = numeric(row.get("s_s"))
+    abcSec = numeric(row.get("a_s"))
+    if flow == "frankenstein" and synthSec is not None:
+        row["synthesis"] = f"{synthSec:.2f}"
+    elif flow == "vanilla_vtr" and (synthSec is not None or abcSec is not None):
+        row["synthesis"] = f"{(synthSec or 0.0) + (abcSec or 0.0):.2f}"
+    return row
+
+
+def computeGeomeans(rows: Sequence[Dict[str, str]]):
+    byDesign: Dict[str, Dict[str, Dict[str, str]]] = {}
+    flowsSeen: List[str] = []
     for row in rows:
         flow = flowOf(row.get("label", ""))
         if flow is None:
@@ -357,7 +255,7 @@ def computeGeomeans(rows):
     return {"flows": flowsSeen, "geo": result}
 
 
-def renderGeomeanTable(rows):
+def renderGeomeanTable(rows: Sequence[Dict[str, str]]) -> str:
     data = computeGeomeans(rows)
     if data is None:
         return "geomean: waiting for paired ok/cached runs on both flows"
@@ -377,7 +275,9 @@ def renderGeomeanTable(rows):
         [base] + [fmt(geo[base].get(key)) for _, key, _ in geomeanColumns]
     )
     for flow in others:
-        table.add_row([flow] + [fmt(geo[flow].get(key)) for _, key, _ in geomeanColumns])
+        table.add_row(
+            [flow] + [fmt(geo[flow].get(key)) for _, key, _ in geomeanColumns]
+        )
         diffRow = [f"% diff {flow}/{base}"]
         ratioRow = [f"x diff {flow}/{base}"]
         for _, key, _ in geomeanColumns:
@@ -393,8 +293,74 @@ def renderGeomeanTable(rows):
     return f"geomean:\n{table}"
 
 
+def coloredStatus(status: str) -> str:
+    if status == "ok":
+        return "\033[92mok\033[0m"
+    if status.startswith("FAIL") or status == "fail":
+        return f"\033[91m{status}\033[0m"
+    if status == "pending":
+        return "\033[90mpending\033[0m"
+    if status == "cached":
+        return "\033[96mcached\033[0m"
+    if status.startswith("running:"):
+        phase = status.split(":", 1)[1] or "started"
+        color = phaseColors.get(phase, "\033[93m")
+        return f"{color}{phase}\033[0m"
+    return f"\033[93m{status or 'started'}\033[0m"
+
+
+def sap(row: Dict[str, str], *keys: str) -> str:
+    return "/".join(str(row.get(key) or "-") for key in keys)
+
+
+def renderTable(rows: List[Dict[str, str]], title: str) -> str:
+    table = PrettyTable()
+    table.field_names = [
+        "run",
+        "status",
+        "wall",
+        "synthesis",
+        "time s/a/v",
+        "LUTs s/a/p",
+        "FFs s/p",
+        "BRAMs",
+        "DSPs",
+        "Adders",
+        "IO in",
+        "IO out",
+        "CLBs",
+        "Wirelen",
+        "CPD",
+        "Fmax",
+        "WNS",
+    ]
+    table.align = "l"
+    for row in rows:
+        table.add_row(
+            [
+                row.get("label", ""),
+                coloredStatus(row.get("status", "")),
+                row.get("wall", "-"),
+                row.get("synthesis", "-"),
+                sap(row, "s_s", "a_s", "v_s"),
+                sap(row, "s_luts", "a_luts", "p_luts"),
+                sap(row, "s_ff", "ff"),
+                row.get("mem", "-"),
+                row.get("dsp", "-"),
+                row.get("adder", "-"),
+                row.get("io_in", "-"),
+                row.get("io_out", "-"),
+                row.get("clb", "-"),
+                row.get("wl", "-"),
+                row.get("cpd", "-"),
+                row.get("fmax", "-"),
+                row.get("wns", "-"),
+            ]
+        )
+    return f"{title}\n{table}"
+
+
 def resolveCsvPath(targetDir: Path) -> Path | None:
-    # prefer the path written by the active compare_flow run
     marker = targetDir / "status" / "csv_path.txt"
     if marker.is_file():
         text = marker.read_text(encoding="utf-8", errors="replace").strip()
@@ -406,51 +372,7 @@ def resolveCsvPath(targetDir: Path) -> Path | None:
     return candidates[-1] if candidates else None
 
 
-def watchDir(targetDir: Path, interval: float, once: bool):
-    logsDir = targetDir / "logs"
-    lastPhases = {}
-    print(f"watching {targetDir} (interval={interval}s) — Ctrl-C to stop")
-
-    try:
-        while True:
-            rows = scanStatus(targetDir, lastPhases)
-            total = len(rows)
-            done = sum(
-                1
-                for row in rows
-                if row.get("status")
-                and not row["status"].startswith("running")
-                and row["status"] != "pending"
-            )
-            running = sum(
-                1 for row in rows if row.get("status", "").startswith("running")
-            )
-            pending = sum(1 for row in rows if row.get("status") == "pending")
-            title = (
-                f"{targetDir.name}: {done}/{total} done, "
-                f"{running} running, {pending} pending"
-            )
-
-            if not once:
-                print("\033[H\033[J", end="")
-
-            print(renderTable(rows, title))
-            print()
-            print(renderGeomeanTable(rows))
-            print(f"\nlogs: {logsDir}")
-            csvPath = resolveCsvPath(targetDir)
-            if csvPath is not None:
-                print(f"csv:  {csvPath}")
-
-            if once:
-                break
-            time.sleep(interval)
-    except KeyboardInterrupt:
-        print("\nstopped.")
-
-
-def findOutputDirs():
-    """compare_output* dirs, newest modification time last."""
+def findOutputDirs() -> List[Path]:
     dirs = [
         path
         for path in vtrRoot.iterdir()
@@ -460,8 +382,47 @@ def findOutputDirs():
     return dirs
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="live status table for compare_flow")
+def watchDir(targetDir: Path, interval: float, once: bool) -> None:
+    logsDir = targetDir / "logs"
+    print(f"watching {targetDir} (interval={interval}s) — Ctrl-C to stop")
+    try:
+        while True:
+            labels = readLabels(targetDir)
+            rows = scanStatus(targetDir, labels)
+            total = len(rows)
+            done = sum(
+                1
+                for row in rows
+                if row.get("status")
+                and not str(row["status"]).startswith("running")
+                and row["status"] != "pending"
+            )
+            running = sum(
+                1 for row in rows if str(row.get("status", "")).startswith("running")
+            )
+            pending = sum(1 for row in rows if row.get("status") == "pending")
+            title = (
+                f"{targetDir.name}: {done}/{total} done, "
+                f"{running} running, {pending} pending"
+            )
+            if not once:
+                print("\033[H\033[J", end="")
+            print(renderTable(rows, title))
+            print()
+            print(renderGeomeanTable(rows))
+            print(f"\nlogs: {logsDir}")
+            csvPath = resolveCsvPath(targetDir)
+            if csvPath is not None:
+                print(f"csv:  {csvPath}")
+            if once:
+                break
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        print("\nstopped.")
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description="live status table for run_vtr_batch")
     parser.add_argument(
         "--dir",
         default=None,
@@ -479,12 +440,17 @@ def main(argv=None):
         candidates = findOutputDirs()
         if not candidates:
             print("no compare_output* directories found", file=sys.stderr)
-            sys.exit(1)
+            return 1
         targetDir = candidates[-1]
         print(f"auto-selected: {targetDir.name}")
 
-    watchDir(targetDir, args.interval, args.once)
+    if not targetDir.is_dir():
+        print(f"missing outdir: {targetDir}", file=sys.stderr)
+        return 1
+
+    watchDir(targetDir, max(0.2, args.interval), args.once)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
