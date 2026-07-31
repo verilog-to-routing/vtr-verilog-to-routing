@@ -467,7 +467,7 @@ static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& path
                     }
 
                     // We have ensured that elements.size() <= 1 at the beginning, but if in the future that logic
-                    // is tampered, --elements.end() will become dangerous.
+                    // is tampered with, --elements.end() will become dangerous.
                     VTR_ASSERT_SAFE(elements.size() > 1);
                     if (node == (--elements.end())->node()) {
                         draw_crit_path_endpoint(e_crit_path_endpoint_type::END, end, path_idx, g);
