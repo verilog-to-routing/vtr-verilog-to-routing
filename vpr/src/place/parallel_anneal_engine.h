@@ -40,9 +40,10 @@
  * arrays (inside the replica's PlacerState), plus a private RNG and private move
  * generators. Everything else (the clustered netlist, criticalities, the delay
  * model) is shared and read-only during a batch. Workers both propose and
- * evaluate their share of a batch against their own replica; the coordinator
- * only resolves outcomes and commits. When a winner is committed, the master
- * state and every replica apply the same move, keeping all copies bit-identical.
+ * evaluate their share of a batch against their own replica. The coordinator
+ * is itself worker 0: it evaluates its share, then resolves outcomes and commits.
+ * When a winner is committed, the master state and every replica apply the same move,
+ * keeping all copies bit-identical.
  *
  * Supported configurations: CRITICALITY_TIMING_PLACE and BOUNDING_BOX_PLACE
  * with cube bounding boxes, without congestion modeling, interposer cost terms,
@@ -128,7 +129,8 @@ class ParallelAnnealEngine {
     ParallelAnnealEngine& operator=(const ParallelAnnealEngine&) = delete;
 
     /**
-     * @param num_workers Number of worker threads.
+     * @param num_workers Number of parallel evaluators. The coordinator thread
+     * is one of them, so num_workers - 1 worker threads are spawned.
      * @param placer_opts Placement options (algorithm, seed, cost factors).
      * @param place_macros Placement macros, needed to construct the replicas' move generators.
      * @param costs Master placement costs; updated when a winner is committed.
@@ -262,13 +264,19 @@ class ParallelAnnealEngine {
     /// @brief Worker thread entry point: waits for jobs and executes them on its replica.
     void worker_main_(int worker_id);
 
-    /// @brief Publishes a job to the workers (non-blocking).
+    /// @brief Executes the current job on `replicas_[worker_id]`. Called by the
+    /// worker threads (ids 1..num_workers_-1) and by the coordinator for its own
+    /// share (worker id 0).
+    void execute_worker_job_(int worker_id);
+
+    /// @brief Publishes a job to the worker threads (non-blocking).
     void begin_worker_job_(e_worker_job job);
 
-    /// @brief Blocks until all workers have finished the current job.
+    /// @brief Blocks until all worker threads have finished the current job.
     void wait_worker_job_();
 
-    /// @brief Publishes a job and waits for its completion.
+    /// @brief Publishes a job, executes the coordinator's share of it, and waits
+    /// for the worker threads to finish theirs.
     void run_worker_job_(e_worker_job job);
 
     /// @brief Proposes and evaluates the attempt in slot `slot_index` of the
@@ -327,16 +335,18 @@ class ParallelAnnealEngine {
     /// identical to the master, and no further full copies are needed.
     bool replicas_fully_synced_ = false;
 
-    /// Worker replicas, one per worker thread.
+    /// Worker replicas. Replica 0 belongs to the coordinator; each of the
+    /// num_workers_ - 1 worker threads owns one of the others.
     std::vector<std::unique_ptr<EvalReplica>> replicas_;
     /// Attempts of the current/most recent batch.
     std::vector<t_speculative_swap> attempts_;
 
     // ---- Worker pool state ----
+    /// The num_workers_ - 1 worker threads (the coordinator is worker 0).
     std::vector<std::thread> workers_;
-    /// Incremented to publish a new job; workers spin on it.
+    /// Incremented to publish a new job; worker threads spin on it.
     std::atomic<uint64_t> job_epoch_{0};
-    /// Count of workers that finished the current job.
+    /// Count of worker threads that finished the current job.
     std::atomic<int> workers_done_{0};
     /// Current job; written by the coordinator before bumping job_epoch_.
     e_worker_job job_ = e_worker_job::NONE;

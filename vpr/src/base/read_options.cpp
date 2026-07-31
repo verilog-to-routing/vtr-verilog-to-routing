@@ -2649,8 +2649,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_swap_eval_num_workers, "--place_swap_eval_num_workers")
         .help(
-            "Maximum number of worker threads used to speculatively evaluate placement swaps in "
-            "parallel during simulated annealing:\n"
+            "Maximum number of workers used to speculatively evaluate placement swaps in "
+            "parallel during simulated annealing. The annealing thread itself acts as one "
+            "of the workers:\n"
             " *  1 (the default) uses the sequential annealer,\n"
             " * >1 caps the number of workers, and\n"
             " *  0 uses the maximum concurrency supported by the host machine.\n"

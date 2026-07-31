@@ -111,8 +111,10 @@ ParallelAnnealEngine::ParallelAnnealEngine(int num_workers,
                                                              delay_model_, criticalities_));
     }
 
-    workers_.reserve(num_workers_);
-    for (int i = 0; i < num_workers_; ++i) {
+    // The coordinator evaluates replica 0's share itself, so only
+    // num_workers_ - 1 threads are needed.
+    workers_.reserve(num_workers_ - 1);
+    for (int i = 1; i < num_workers_; ++i) {
         workers_.emplace_back(&ParallelAnnealEngine::worker_main_, this, i);
     }
 }
@@ -125,7 +127,6 @@ ParallelAnnealEngine::~ParallelAnnealEngine() {
 }
 
 void ParallelAnnealEngine::worker_main_(int worker_id) {
-    EvalReplica& replica = *replicas_[worker_id];
     uint64_t last_epoch = 0;
 
     while (true) {
@@ -137,36 +138,41 @@ void ParallelAnnealEngine::worker_main_(int worker_id) {
         // the previous one, so exactly one new epoch can be pending here.
         last_epoch = job_epoch_.load(std::memory_order_acquire);
 
-        const e_worker_job job = job_;
-        if (job == e_worker_job::EXIT) {
+        if (job_ == e_worker_job::EXIT) {
             return;
         }
 
-        switch (job) {
-            case e_worker_job::EVALUATE: {
-                MoveGenerator& generator = batch_use_gen2_ ? *replica.move_generator_2 : *replica.move_generator_1;
-                // Copy the master generator's agent state; it is the only one
-                // that receives outcomes. All workers read it, no one writes it.
-                generator.sync_state_from(*batch_master_generator_);
-                for (int k = worker_id; k < batch_size_; k += num_workers_) {
-                    propose_and_evaluate_attempt_(replica, generator, k);
-                }
-                break;
-            }
-            case e_worker_job::COMMIT_WINNER:
-                apply_winner_to_replica_(replica, *winner_attempt_);
-                break;
-            case e_worker_job::SYNC_FULL:
-                sync_replica_full_(replica);
-                break;
-            case e_worker_job::SYNC_TIMING:
-                sync_replica_timing_(replica);
-                break;
-            default:
-                break;
-        }
+        execute_worker_job_(worker_id);
 
         workers_done_.fetch_add(1, std::memory_order_release);
+    }
+}
+
+void ParallelAnnealEngine::execute_worker_job_(int worker_id) {
+    EvalReplica& replica = *replicas_[worker_id];
+
+    switch (job_) {
+        case e_worker_job::EVALUATE: {
+            MoveGenerator& generator = batch_use_gen2_ ? *replica.move_generator_2 : *replica.move_generator_1;
+            // Copy the master generator's agent state; it is the only one
+            // that receives outcomes. All workers read it, no one writes it.
+            generator.sync_state_from(*batch_master_generator_);
+            for (int k = worker_id; k < batch_size_; k += num_workers_) {
+                propose_and_evaluate_attempt_(replica, generator, k);
+            }
+            break;
+        }
+        case e_worker_job::COMMIT_WINNER:
+            apply_winner_to_replica_(replica, *winner_attempt_);
+            break;
+        case e_worker_job::SYNC_FULL:
+            sync_replica_full_(replica);
+            break;
+        case e_worker_job::SYNC_TIMING:
+            sync_replica_timing_(replica);
+            break;
+        default:
+            break;
     }
 }
 
@@ -177,14 +183,16 @@ void ParallelAnnealEngine::begin_worker_job_(e_worker_job job) {
 }
 
 void ParallelAnnealEngine::wait_worker_job_() {
+    const int num_worker_threads = num_workers_ - 1;
     unsigned spin_count = 0;
-    while (workers_done_.load(std::memory_order_acquire) != num_workers_) {
+    while (workers_done_.load(std::memory_order_acquire) != num_worker_threads) {
         spin_backoff(spin_count);
     }
 }
 
 void ParallelAnnealEngine::run_worker_job_(e_worker_job job) {
     begin_worker_job_(job);
+    execute_worker_job_(/*worker_id=*/0);
     wait_worker_job_();
 }
 
@@ -373,7 +381,7 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
     // --- Parallel propose + evaluate phase ---
     //
     // Each worker proposes and evaluates its share of the batch on its private
-    // replica. The coordinator only waits.
+    // replica; the coordinator evaluates replica 0's share itself.
     first_accepted_id_.store(std::numeric_limits<int>::max(), std::memory_order_relaxed);
     batch_size_ = batch_size;
     batch_temperature_ = temperature;
@@ -402,6 +410,7 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
         winner_attempt_ = &attempts_[winner];
         begin_worker_job_(e_worker_job::COMMIT_WINNER);
         commit_winner_on_master_(attempts_[winner]);
+        execute_worker_job_(/*worker_id=*/0);
         wait_worker_job_();
     }
 
