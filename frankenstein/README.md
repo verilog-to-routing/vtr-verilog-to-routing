@@ -70,8 +70,10 @@ Runs the eight README circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` throu
 # terminal 1, launch the compare
 python3 frankenstein/scripts/compare_flow.py --jobs 4
 
-# terminal 2, live status table
+# terminal 2, live status table (defaults to newest compare_output* by mtime)
 python3 frankenstein/scripts/watch_compare.py
+# or pin an outdir:
+# python3 frankenstein/scripts/watch_compare.py --dir compare_output_<arch_stem>
 ```
 
 Useful flags: `--arch <arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8`, `--no-rerun`, `--include <file>`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`).

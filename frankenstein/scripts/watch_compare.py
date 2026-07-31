@@ -7,12 +7,12 @@ second terminal while the compare is going.
 
 usage:
   python3 frankenstein/scripts/watch_compare.py
-  python3 frankenstein/scripts/watch_compare.py --dir compare_output_k6_frac_N10_frac_chain_mem32K_40nm
+  python3 frankenstein/scripts/watch_compare.py --dir compare_output_<arch_stem>
   python3 frankenstein/scripts/watch_compare.py --interval 2
   python3 frankenstein/scripts/watch_compare.py --once
 
 flags:
-  --dir <outdir>     compare output directory (default: newest compare_output*)
+  --dir <outdir>     compare output directory (default: newest compare_output* by mtime)
   --interval <sec>   refresh period (default 1.0)
   --once             print once and exit
 """
@@ -34,7 +34,6 @@ except ImportError:
 
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
-defaultOutDirName = "compare_output_k6_frac_N10_frac_chain_mem32K_40nm"
 
 # status-line keys written by compare_flow.formatSummary
 statusFields = (
@@ -451,16 +450,23 @@ def watchDir(targetDir: Path, interval: float, once: bool):
 
 
 def findOutputDirs():
-    return sorted(
+    """compare_output* dirs, newest modification time last."""
+    dirs = [
         path
         for path in vtrRoot.iterdir()
         if path.is_dir() and path.name.startswith("compare_output")
-    )
+    ]
+    dirs.sort(key=lambda path: path.stat().st_mtime)
+    return dirs
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="live status table for compare_flow")
-    parser.add_argument("--dir", default=None, help="compare output directory")
+    parser.add_argument(
+        "--dir",
+        default=None,
+        help="compare output directory (default: newest compare_output* by mtime)",
+    )
     parser.add_argument("--interval", type=float, default=1.0, help="refresh seconds")
     parser.add_argument("--once", action="store_true", help="print once and exit")
     args = parser.parse_args(argv)
@@ -470,16 +476,12 @@ def main(argv=None):
         if not targetDir.is_absolute():
             targetDir = vtrRoot / targetDir
     else:
-        preferred = vtrRoot / defaultOutDirName
-        if preferred.is_dir():
-            targetDir = preferred
-        else:
-            candidates = findOutputDirs()
-            if not candidates:
-                print("no compare_output* directories found", file=sys.stderr)
-                sys.exit(1)
-            targetDir = candidates[-1]
-            print(f"auto-selected: {targetDir.name}")
+        candidates = findOutputDirs()
+        if not candidates:
+            print("no compare_output* directories found", file=sys.stderr)
+            sys.exit(1)
+        targetDir = candidates[-1]
+        print(f"auto-selected: {targetDir.name}")
 
     watchDir(targetDir, args.interval, args.once)
 

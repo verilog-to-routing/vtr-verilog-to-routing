@@ -445,6 +445,39 @@ def writeStatus(outDir: Path, runLabel: str, summaryLine: str) -> None:
         pass
 
 
+def extractFailReason(tempDir: Path, flowName: str, returnCode: int) -> str:
+    """short reason when vpr never finished (vpr_status would otherwise be 'missing')."""
+    stageName = "frankenstein" if flowName == "frankenstein" else "parmys"
+    candidates = (
+        tempDir / f"{stageName}.out",
+        tempDir / "output.txt",
+        tempDir / "vpr.out",
+    )
+    errorRe = re.compile(
+        r"(ERROR[:\s].+|error:\s.+|can't open command file.+|No such file.+|"
+        r"unknown command:.+|TCL interpreter returned an error|"
+        r"failed to execute.+|Assert.+|EXCEPTION.+)",
+        re.IGNORECASE,
+    )
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        matches = errorRe.findall(text)
+        if not matches:
+            continue
+        snippet = re.sub(r"\s+", " ", matches[-1]).strip()
+        if len(snippet) > 120:
+            snippet = snippet[:117] + "..."
+        return f"{path.name}: {snippet}"
+    if returnCode != 0:
+        return f"rc={returnCode}"
+    return "missing"
+
+
 def formatSummary(runLabel: str, row: Dict, status: Optional[str] = None) -> str:
     if status is None:
         status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
@@ -607,6 +640,8 @@ def runOne(task: Tuple) -> Dict:
     qor["synthesis_sec"] = fairSynthesisSec(
         flowName, qor.get("synth_wall_sec", ""), qor.get("abc_wall_sec", "")
     )
+    if qor.get("vpr_status") == "missing":
+        qor["vpr_status"] = extractFailReason(tempDir, flowName, result.returncode)
     success = result.returncode == 0 and qor["vpr_status"] == "ok"
     row = {
         "design": design,
