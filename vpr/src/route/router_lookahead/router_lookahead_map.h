@@ -45,6 +45,9 @@ class MapLookahead final : public RouterLookahead {
     void write(const std::string& file_name) const override;
     void write_intra_cluster(const std::string& file) const override;
 
+  public:
+    // Public so SimpleDelayModel can call it through the
+    // concrete type statically, without using dynamic dispatch.
     inline float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override {
         return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][dx][dy].delay;
     }
