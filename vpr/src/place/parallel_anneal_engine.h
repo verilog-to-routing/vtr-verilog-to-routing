@@ -78,8 +78,11 @@ struct t_placer_opts;
  * @brief One speculative swap attempt. All fields are filled by the worker that
  * proposes and evaluates the attempt; the coordinator only reads them when
  * resolving and committing the batch.
+ *
+ * Adjacent slots of a batch are written concurrently by different workers; the
+ * cache-line alignment keeps them from false-sharing a line at slot boundaries.
  */
-struct t_speculative_swap {
+struct alignas(64) t_speculative_swap {
     /// The proposed move, captured only for accepted attempts.
     std::vector<t_pl_moved_block> moved_blocks;
     /// Move/block type chosen by the move generator.
