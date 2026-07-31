@@ -12,6 +12,7 @@ usage (from the vtr repo root):
   python3 frankenstein/scripts/compare_flow.py --no-rerun
   python3 frankenstein/scripts/compare_flow.py --no-clean
   python3 frankenstein/scripts/compare_flow.py --outdir <dir> --csv <path.csv>
+  python3 frankenstein/scripts/compare_flow.py --reuse-vanilla <prior.csv>
 
 defaults:
   arch      vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
@@ -27,6 +28,7 @@ flags:
   --jobs <n>             parallel jobs (default 4)
   --outdir <dir>         output directory
   --csv <path>           results csv path (default: timestamped under outdir)
+  --reuse-vanilla <csv>  load vanilla_vtr rows from a prior compare csv (skip rerun)
   --no-clean             keep existing run dirs
   --no-rerun             skip runs that already have a .success marker
 
@@ -434,8 +436,9 @@ def writeStatus(outDir: Path, runLabel: str, summaryLine: str) -> None:
         pass
 
 
-def formatSummary(runLabel: str, row: Dict) -> str:
-    status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
+def formatSummary(runLabel: str, row: Dict, status: Optional[str] = None) -> str:
+    if status is None:
+        status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
     parts = [f"{runLabel}: {status}"]
     for shortKey, field in statusKeys:
         value = row.get(field, "")
@@ -454,6 +457,53 @@ def formatSummary(runLabel: str, row: Dict) -> str:
     return " ".join(parts)
 
 
+def parseCsvBool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    return text in ("1", "true", "yes", "ok")
+
+
+def loadVanillaFromCsv(csvPath: Path, designs: Sequence[str]) -> List[Dict]:
+    # pull vanilla_vtr rows for the requested designs from a prior compare csv
+    if not csvPath.is_file():
+        raise SystemExit(f"--reuse-vanilla not found: {csvPath}")
+
+    byDesign: Dict[str, Dict] = {}
+    with open(csvPath, newline="", encoding="utf-8") as inFile:
+        reader = csv.DictReader(inFile)
+        if not reader.fieldnames or "design" not in reader.fieldnames or "flow" not in reader.fieldnames:
+            raise SystemExit(f"--reuse-vanilla missing design/flow columns: {csvPath}")
+        for raw in reader:
+            design = (raw.get("design") or "").strip()
+            flow = (raw.get("flow") or "").strip()
+            if flow != "vanilla_vtr" or design not in designs:
+                continue
+            row = {field: (raw.get(field, "") or "") for field in csvFields}
+            row["design"] = design
+            row["flow"] = "vanilla_vtr"
+            row["success"] = parseCsvBool(raw.get("success", ""))
+            if not row.get("vpr_status"):
+                row["vpr_status"] = "cached" if row["success"] else "fail"
+            byDesign[design] = row
+
+    missing = [design for design in designs if design not in byDesign]
+    if missing:
+        raise SystemExit(
+            "--reuse-vanilla missing vanilla_vtr rows for: " + ", ".join(missing)
+        )
+    return [byDesign[design] for design in designs]
+
+
+def emitReusedVanilla(outDir: Path, rows: Sequence[Dict]) -> None:
+    # write status lines as cached so watch_compare shows cyan "cached"
+    for row in rows:
+        runLabel = f"{row['design']}_vanilla_vtr"
+        summary = formatSummary(runLabel, row, status="cached")
+        writeStatus(outDir, runLabel, summary)
+        print(summary)
+
+
 def runOne(task: Tuple) -> Dict:
     design, flowName, outDir, archFile, benchDir, noClean, noRerun = task
     runLabel = f"{design}_{flowName}"
@@ -463,6 +513,7 @@ def runOne(task: Tuple) -> Dict:
     circuitPath = benchDir / f"{design}.v"
 
     if noRerun and successMarker.is_file():
+        # local .success reuse: status cached (metrics filled if parseable later)
         summary = f"{runLabel}: cached"
         writeStatus(outDir, runLabel, summary)
         print(summary)
@@ -577,7 +628,7 @@ def normalizeDesigns(names: Optional[Sequence[str]]) -> List[str]:
 
 
 def resolvePath(value: str, base: Path) -> Path:
-    path = Path(value)
+    path = Path(value).expanduser()
     return path if path.is_absolute() else (base / path)
 
 
@@ -585,33 +636,43 @@ def runPool(
     tasks: List[Tuple],
     jobs: int,
     csvPath: Optional[Path] = None,
+    seedRows: Optional[Sequence[Dict]] = None,
 ) -> List[Dict]:
-    order = {(t[0], t[1]): i for i, t in enumerate(tasks)}
+    seed = list(seedRows or [])
+    order: Dict[Tuple[str, str], int] = {}
+    for i, row in enumerate(seed):
+        order[(row["design"], row["flow"])] = i
+    base = len(seed)
+    for i, task in enumerate(tasks):
+        order[(task[0], task[1])] = base + i
 
-    def onRow(results: List[Dict]) -> None:
+    def onRow(liveResults: List[Dict]) -> None:
         if csvPath is None:
             return
-        ordered = sorted(
-            results,
-            key=lambda row: order.get((row["design"], row["flow"]), 0),
-        )
-        writeCsv(csvPath, ordered)
+        merged = seed + liveResults
+        merged.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
+        writeCsv(csvPath, merged)
+
+    if not tasks:
+        if csvPath is not None:
+            writeCsv(csvPath, seed)
+        return seed
 
     if jobs <= 1 or len(tasks) <= 1:
-        results: List[Dict] = []
+        liveResults: List[Dict] = []
         for task in tasks:
-            results.append(runOne(task))
-            onRow(results)
-        return results
+            liveResults.append(runOne(task))
+            onRow(liveResults)
+        return seed + liveResults
 
-    results = []
+    liveResults = []
     with ProcessPoolExecutor(max_workers=jobs) as pool:
         futures = {pool.submit(runOne, task): task for task in tasks}
         for future in as_completed(futures):
-            results.append(future.result())
-            onRow(results)
-    results.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
-    return results
+            liveResults.append(future.result())
+            onRow(liveResults)
+    liveResults.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
+    return seed + liveResults
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -629,6 +690,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=None,
         help="results csv path (default <outdir>/compare_results_<timestamp>.csv)",
     )
+    parser.add_argument(
+        "--reuse-vanilla",
+        default=None,
+        metavar="CSV",
+        help="load vanilla_vtr rows from a prior compare csv instead of rerunning",
+    )
     parser.add_argument("--no-clean", action="store_true")
     parser.add_argument("--no-rerun", action="store_true")
     args = parser.parse_args(argv)
@@ -638,6 +705,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     designs = normalizeDesigns(args.designs)
     selectedFlows = normalizeFlows(args.flows)
     jobs = max(1, args.jobs)
+    reuseVanillaPath = (
+        resolvePath(args.reuse_vanilla, vtrRoot) if args.reuse_vanilla else None
+    )
 
     outDir = resolvePath(args.outdir or f"compare_output_{archFile.stem}", vtrRoot)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -648,6 +718,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
 
     checkPrerequisites("frankenstein" in selectedFlows, archFile, benchDir)
+
+    reusedVanilla: List[Dict] = []
+    runFlows = list(selectedFlows)
+    if reuseVanillaPath is not None:
+        reusedVanilla = loadVanillaFromCsv(reuseVanillaPath, designs)
+        # skip scheduling vanilla; always keep it in the compare output
+        runFlows = [flow for flow in runFlows if flow != "vanilla_vtr"]
+        if "vanilla_vtr" not in selectedFlows:
+            selectedFlows = ["vanilla_vtr", *selectedFlows]
 
     outDir.mkdir(parents=True, exist_ok=True)
     (outDir / "runs").mkdir(exist_ok=True)
@@ -660,9 +739,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     tasks = [
         (design, flowName, outDir, archFile, benchDir, args.no_clean, args.no_rerun)
         for design in designs
-        for flowName in selectedFlows
+        for flowName in runFlows
     ]
-    labels = [f"{d}_{f}" for d, f, *_ in tasks]
+    # manifest includes reused vanilla so the watcher shows them as cached
+    labels = []
+    for design in designs:
+        for flowName in selectedFlows:
+            labels.append(f"{design}_{flowName}")
     (statusDir / "manifest.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
     # create this run's csv (header only) and point the watcher at it immediately
     writeCsv(csvPath, [])
@@ -671,17 +754,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"arch:    {archFile.name}")
     print(f"designs: {', '.join(designs)}")
     print(f"flows:   {', '.join(selectedFlows)}")
+    if reuseVanillaPath is not None:
+        print(f"reuse_vanilla: {reuseVanillaPath} ({len(reusedVanilla)} rows)")
     print(f"jobs:    {jobs}")
     print(f"outdir:  {outDir}")
     print(f"csv:     {csvPath}")
     print(f"watch:   python3 frankenstein/scripts/watch_compare.py --dir {outDir}")
     print()
 
+    if reusedVanilla:
+        print(f"reusing {len(reusedVanilla)} vanilla_vtr rows from prior csv")
+        emitReusedVanilla(outDir, reusedVanilla)
+        print()
+
     print(
-        f"launching {len(designs)} designs x {len(selectedFlows)} flows "
+        f"launching {len(designs)} designs x {len(runFlows)} flows "
         f"= {len(tasks)} runs @ {jobs} jobs"
     )
-    rows = runPool(tasks, jobs, csvPath=csvPath)
+    rows = runPool(tasks, jobs, csvPath=csvPath, seedRows=reusedVanilla)
     writeCsv(csvPath, rows)
 
     ok = sum(1 for row in rows if row.get("success"))

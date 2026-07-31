@@ -336,7 +336,7 @@ def computeGeomeans(rows):
         design: flowRows
         for design, flowRows in byDesign.items()
         if len(flowRows) == len(flowsSeen)
-        and all(flowRows[f].get("status") == "ok" for f in flowsSeen)
+        and all(flowRows[f].get("status") in ("ok", "cached") for f in flowsSeen)
     }
     if not paired:
         return None
@@ -361,7 +361,7 @@ def computeGeomeans(rows):
 def renderGeomeanTable(rows):
     data = computeGeomeans(rows)
     if data is None:
-        return "geomean: waiting for paired ok runs on both flows"
+        return "geomean: waiting for paired ok/cached runs on both flows"
 
     flows = data["flows"]
     base = "vanilla_vtr" if "vanilla_vtr" in flows else flows[0]
