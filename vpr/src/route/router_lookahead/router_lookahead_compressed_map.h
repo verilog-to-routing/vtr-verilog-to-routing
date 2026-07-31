@@ -48,6 +48,9 @@ class CompressedMapLookahead final : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write_intra_cluster unimplemented");
     }
 
+  public:
+    // Public so SimpleDelayModel can call it through the
+    // concrete type statically, without using dynamic dispatch.
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::get_opin_distance_min_delay unimplemented");
     }
