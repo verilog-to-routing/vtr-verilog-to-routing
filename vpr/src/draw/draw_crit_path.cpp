@@ -399,8 +399,11 @@ void draw_crit_path(ezgl::renderer* g) {
         return;
     }
 
-    // Request a number of critical paths set by the user through draw_state->num_crit_paths.
-    // If the number exceeds the currently available critical paths, only the available ones are returned.
+    // The user can set the number of critical paths to draw through a UI spinbox, which controls draw_state->num_crit_paths.
+    // The requested number should be in the range [1, 10], and the range limit is enforced by the UI spinbox.
+    // However, if the number is out of range, someone must have directly tampered with the variable, and that is bad.
+    VTR_ASSERT(draw_state->num_crit_paths >= 1 && draw_state->num_crit_paths <= 10);
+    // If the requested number exceeds the currently available critical paths, the function only returns all available ones.
     auto paths = path_collector.collect_worst_setup_timing_paths(
         *timing_ctx.graph,
         *(draw_state->setup_timing_info->setup_analyzer()), draw_state->num_crit_paths);
