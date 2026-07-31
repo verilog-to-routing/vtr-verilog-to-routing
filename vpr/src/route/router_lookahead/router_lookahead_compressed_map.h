@@ -5,7 +5,7 @@
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
 
-class CompressedMapLookahead : public RouterLookahead {
+class CompressedMapLookahead final : public RouterLookahead {
   public:
     explicit CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity, bool device_model_warnings);
 

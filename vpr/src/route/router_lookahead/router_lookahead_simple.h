@@ -11,7 +11,7 @@
  * This cost map is similar to that of MapLookahead, and it only refers to channel segments. There is no additional
  * cost map for sources/opins or intra-cluster estimates.
  */
-class SimpleLookahead : public RouterLookahead {
+class SimpleLookahead final : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
