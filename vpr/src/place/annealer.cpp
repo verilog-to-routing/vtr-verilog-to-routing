@@ -932,7 +932,7 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
     // updates); bring every replica up to date. After the first (full) sync this
     // only copies the timing data, since winner commits keep the replicas'
     // committed state identical to the master's.
-    parallel_engine_->sync_replicas_for_inner_loop();
+    parallel_engine_->sync_replicas();
 
     // The speculative window (== number of active worker threads) adapts to the
     // previous outer-loop iteration's acceptance rate: on average 1/rate attempts
@@ -951,8 +951,8 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
     const bool timing_driven = placer_opts_.place_algorithm.is_timing_driven();
 
     int inner_iter = 0;
-    // Logical attempts since the last timing update. Timing info is recomputed
-    // every `recompute_limit` logical attempts, mirroring the sequential loop.
+    // Retired attempts since the last timing update. Timing info is recomputed
+    // every `recompute_limit` retired attempts, mirroring the sequential loop.
     int inner_crit_iter_count = 0;
 
     while (inner_iter < annealing_state_.move_lim) {
@@ -969,10 +969,10 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
         t_batch_outcome batch_outcome = parallel_engine_->run_batch(batch_size, move_generator, use_second_generator,
                                                                     annealing_state_.t, annealing_state_.rlim);
 
-        // Bookkeeping for the attempts that logically happened, in attempt order.
+        // Bookkeeping for the attempts that retired, in attempt order.
         // This matches what the sequential loop does after each try_swap_() call.
         const std::vector<t_speculative_swap>& attempts = parallel_engine_->attempts();
-        for (int k = 0; k < batch_outcome.logical_attempts; ++k) {
+        for (int k = 0; k < batch_outcome.num_retired_attempts; ++k) {
             const t_speculative_swap& attempt = attempts[k];
 
             swap_stats_.num_ts_called++;
@@ -1011,11 +1011,11 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
             placer_stats_.single_swap_update(costs_);
         }
 
-        inner_iter += batch_outcome.logical_attempts;
-        inner_crit_iter_count += batch_outcome.logical_attempts;
-        moves_since_cost_recompute_ += batch_outcome.logical_attempts;
+        inner_iter += batch_outcome.num_retired_attempts;
+        inner_crit_iter_count += batch_outcome.num_retired_attempts;
+        moves_since_cost_recompute_ += batch_outcome.num_retired_attempts;
 
-        // Periodic timing update, aligned to logical attempt counts (skipped at
+        // Periodic timing update, aligned to retired attempt counts (skipped at
         // the very end of the loop like in the sequential inner loop).
         if (timing_driven && inner_crit_iter_count >= recompute_limit
             && inner_iter < annealing_state_.move_lim) {

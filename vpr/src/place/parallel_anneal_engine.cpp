@@ -6,6 +6,7 @@
 #include "place_util.h"
 #include "placer_state.h"
 #include "vpr_types.h"
+#include "vtr_assert.h"
 
 #include <chrono>
 #include <cmath>
@@ -189,7 +190,7 @@ void ParallelAnnealEngine::run_worker_job_(e_worker_job job) {
     wait_worker_job_();
 }
 
-void ParallelAnnealEngine::sync_replicas_for_inner_loop() {
+void ParallelAnnealEngine::sync_replicas() {
     if (!replicas_fully_synced_) {
         run_worker_job_(e_worker_job::SYNC_FULL);
         replicas_fully_synced_ = true;
@@ -384,14 +385,14 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
                                                 bool use_second_generator,
                                                 float temperature,
                                                 float rlim) {
-    VTR_ASSERT(batch_size >= 1);
+    VTR_ASSERT_SAFE(batch_size >= 1);
 
     attempts_.assign(batch_size, t_speculative_swap());
 
     // --- Parallel propose + evaluate phase ---
     //
     // Each worker proposes and evaluates its share of the batch on its private
-    // replica (see propose_and_evaluate_attempt_()). The coordinator only waits.
+    // replica. The coordinator only waits.
     first_accepted_id_.store(std::numeric_limits<int>::max(), std::memory_order_relaxed);
     batch_size_ = batch_size;
     batch_temperature_ = temperature;
@@ -402,14 +403,14 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
 
     // --- Resolve in attempt-id order ---
     t_batch_outcome outcome;
-    outcome.logical_attempts = batch_size;
+    outcome.num_retired_attempts = batch_size;
 
     int winner = -1;
     for (int k = 0; k < batch_size; ++k) {
         if (attempts_[k].create_outcome == e_create_move::VALID
             && attempts_[k].move_result == e_move_result::ACCEPTED) {
             winner = k;
-            outcome.logical_attempts = k + 1;
+            outcome.num_retired_attempts = k + 1;
             outcome.committed = true;
             break;
         }
@@ -423,6 +424,6 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
         wait_worker_job_();
     }
 
-    attempt_counter_ += outcome.logical_attempts;
+    attempt_counter_ += outcome.num_retired_attempts;
     return outcome;
 }

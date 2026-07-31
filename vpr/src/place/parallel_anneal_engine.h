@@ -13,17 +13,17 @@
  * evaluates them concurrently on worker threads. The annealer sets W to the
  * inverse of the previous temperature's acceptance rate, so we expect
  * one of the W attempts to be accepted (W == the number of active workers,
- * capped by --place_swap_eval_num_workers). Each attempt has a logical id;
- * outcomes are resolved in id order:
+ * capped by --place_swap_eval_num_workers). Each attempt has an id; outcomes
+ * are resolved in id order:
  *
- *  - The winner is the lowest-id accepted attempt. It is committed, and every
- *    attempt with the same or lower id "really happened" (statistics and the RL
- *    agent are updated in id order).
+ *  - The winner is the lowest-id accepted attempt. It is committed, and it and
+ *    every lower-id attempt retire: they really happened, so statistics and the
+ *    RL agent are updated for them in id order.
  *  - Higher ids were evaluated against a state the winner just invalidated, so
- *    they never logically happened and are re-proposed in the next batch. Once
- *    an acceptance is known, still-running higher ids cancel early: they can
- *    neither win nor be bookkept.
- *  - If nothing accepts, all W attempts are real rejections.
+ *    they never happened and are re-proposed in the next batch. Once an
+ *    acceptance is known, still-running higher ids cancel early: they can
+ *    neither win nor retire.
+ *  - If nothing accepts, all W attempts retire as real rejections.
  *
  * ## Determinism
  *
@@ -101,10 +101,10 @@ struct t_speculative_swap {
 
 /// @brief Result of running one speculative batch.
 struct t_batch_outcome {
-    /// Number of attempts that logically happened (index of the winner + 1, or
-    /// the full batch size if no attempt was accepted).
-    int logical_attempts = 0;
-    /// True when the last logical attempt was accepted and has been committed.
+    /// Number of attempts that retired (index of the winner + 1, or the full
+    /// batch size if no attempt was accepted).
+    int num_retired_attempts = 0;
+    /// True when the last retired attempt was accepted and has been committed.
     bool committed = false;
 };
 
@@ -153,26 +153,21 @@ class ParallelAnnealEngine {
     ~ParallelAnnealEngine();
 
     /**
-     * @brief Brings every replica up to date with the master state. Must be
-     * called before the first batch of every inner loop.
+     * @brief Copies the master state into every replica. Must be called
+     * before the first batch of each outer loop iteration.
      *
-     * The first call copies the full committed master state (block locations,
-     * net cost data, timing data). Winner commits keep the replicas' committed
-     * state bit-identical to the master's from then on, so subsequent calls only
-     * copy the committed timing data — in the configurations the engine supports
-     * (no congestion modeling, no interposer cost terms), that is the only state
-     * the outer loop rewrites between inner loops
-     * (perform_full_timing_update()).
+     * Only the very first call copies the full committed master state. Every
+     * winning move is applied to all replicas, keeping them identical to the
+     * master, so later calls only copy the timing data the outer loop rewrites.
      */
-    void sync_replicas_for_inner_loop();
+    void sync_replicas();
 
     /**
-     * @brief Synchronizes only the committed timing data (connection delays and
-     * timing costs) of every replica with the master state.
+     * @brief Copies the master's committed connection delays and timing costs
+     * into every replica, leaving block locations and net bounding boxes alone.
      *
-     * Sufficient after a timing update or cost recompute inside the inner loop,
-     * which rewrites timing data but leaves block locations and net bounding
-     * boxes untouched.
+     * Needed after a timing update or a cost recompute, which rewrite that data
+     * on the master only.
      */
     void sync_replicas_timing();
 
@@ -188,14 +183,14 @@ class ParallelAnnealEngine {
      * @param batch_size Number of attempts to issue (>= 1).
      * @param master_move_generator The master move generator selected by the
      * annealer for this inner loop. Never proposes here; it is the sync source
-     * for the replica generators' agent state, and stays canonical because the
-     * annealer replays every logical outcome to it (and only it).
+     * for the replica generators' agent state, and the annealer replays every
+     * retired attempt's outcome to it (and only it).
      * @param use_second_generator True when `master_move_generator` is the
      * annealer's second move generator; replicas then propose with their second
      * generator as well.
      * @param temperature Current annealing temperature.
      * @param rlim Current move range limit.
-     * @return How many attempts logically happened and whether a move was committed.
+     * @return How many attempts retired and whether a move was committed.
      */
     t_batch_outcome run_batch(int batch_size,
                               MoveGenerator& master_move_generator,
@@ -204,7 +199,7 @@ class ParallelAnnealEngine {
                               float rlim);
 
     /**
-     * @brief Returns the attempts of the most recent batch. Only the logical
+     * @brief Returns the attempts of the most recent batch. Only the retired
      * prefix reported by run_batch() is meaningful; later entries were discarded
      * as stale speculation.
      */
@@ -224,8 +219,7 @@ class ParallelAnnealEngine {
                     const PlaceDelayModel* delay_model,
                     const PlacerCriticalities* criticalities);
 
-        /// Private block locations + proposed timing arrays. grid_blocks and the
-        /// committed timing arrays inside are kept in sync via winner commits.
+        /// Private block locations + proposed timing arrays.
         PlacerState placer_state;
         /// Private net cost scratch + committed net cost data.
         std::unique_ptr<NetCostHandler> net_cost_handler;
@@ -317,7 +311,7 @@ class ParallelAnnealEngine {
     const bool timing_driven_;
     /// Base seed for per-attempt RNG stream derivation.
     const uint64_t seed_;
-    /// Monotonic logical attempt counter; discarded speculation does not advance it.
+    /// Monotonic retired attempt counter; discarded speculation does not advance it.
     uint64_t attempt_counter_ = 0;
     /// True once the replicas have received their initial full state copy; from
     /// then on winner commits plus the per-inner-loop timing sync keep them
@@ -349,9 +343,9 @@ class ParallelAnnealEngine {
     const MoveGenerator* batch_master_generator_ = nullptr;
     /// Lowest attempt id known to be accepted in the current batch (INT_MAX when
     /// none yet). Accepting workers CAS-min it; workers running attempts with a
-    /// higher id cancel early, since those attempts can neither win nor be
-    /// bookkept. It monotonically decreases to the batch winner's id, so a stale
-    /// read only delays a cancellation — it can never cancel a logical attempt.
+    /// higher id cancel early, since those attempts can neither win nor retire.
+    /// It monotonically decreases to the batch winner's id, so a stale read only
+    /// delays a cancellation; it can never cancel an attempt that retires.
     std::atomic<int> first_accepted_id_{std::numeric_limits<int>::max()};
     /// COMMIT_WINNER payload: the winning attempt (with its commit record).
     const t_speculative_swap* winner_attempt_ = nullptr;
