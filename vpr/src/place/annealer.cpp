@@ -897,8 +897,7 @@ void PlacementAnnealer::init_parallel_engine_() {
     VTR_ASSERT(!parallel_engine_);
 
     const int num_workers = placer_opts_.swap_eval_num_workers;
-    VTR_LOG("Parallel swap evaluation enabled: up to %d workers (active count adapts to the acceptance rate)\n",
-            num_workers);
+    VTR_LOG("Parallel swap evaluation enabled: %d workers\n", num_workers);
 
     parallel_engine_ = std::make_unique<ParallelAnnealEngine>(num_workers,
                                                               placer_opts_,
@@ -934,18 +933,12 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
     // committed state identical to the master's.
     parallel_engine_->sync_replicas();
 
-    // The speculative window (== number of active worker threads) adapts to the
-    // previous outer-loop iteration's acceptance rate: on average 1/rate attempts
-    // are needed to reach an accepted move, so speculating much past that mostly
-    // produces discarded work. --place_swap_eval_num_workers caps the thread
-    // count. The rate is a deterministic function of the trajectory, so the window
-    // sequence (and therefore the result) is reproducible for a fixed seed and cap.
-    const int max_workers = placer_opts_.swap_eval_num_workers;
-    int window = max_workers;
-    if (prev_parallel_success_rate_ > 0.f) {
-        window = (int)std::ceil(1.f / prev_parallel_success_rate_);
-    }
-    window = std::clamp(window, 1, max_workers);
+    // Fixed speculative window: every batch issues one attempt per evaluator.
+    // A batch's wall time is one evaluation regardless of how many attempts it
+    // issues, and the expected number of retired attempts per batch grows with
+    // the window, so the full window maximizes throughput; attempts discarded
+    // past the winner only cost workers that would otherwise have been idle.
+    const int window = placer_opts_.swap_eval_num_workers;
 
     const int recompute_limit = quench_started_ ? quench_recompute_limit_ : inner_recompute_limit_;
     const bool timing_driven = placer_opts_.place_algorithm.is_timing_driven();
@@ -959,7 +952,7 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
         // Cap the batch so it never straddles a synchronization point: the end of
         // the inner loop, a periodic timing update, or a from-scratch cost
         // recompute. All bounds are deterministic counters, so the batch sequence
-        // (and therefore the result) is independent of the worker count.
+        // (and therefore the result) is reproducible for a fixed seed and worker count.
         int batch_size = std::min(window, annealing_state_.move_lim - inner_iter);
         if (timing_driven) {
             batch_size = std::min(batch_size, std::max(recompute_limit - inner_crit_iter_count, 1));
@@ -1063,10 +1056,6 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
 
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
-
-    // Remember this iteration's acceptance rate to size the next iteration's
-    // speculative window.
-    prev_parallel_success_rate_ = placer_stats_.success_rate;
 
     // update the RL agent's state
     if (!quench_started_) {

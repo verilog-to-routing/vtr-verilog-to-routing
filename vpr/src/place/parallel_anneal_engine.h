@@ -10,10 +10,8 @@
  * Most swap attempts in simulated annealing are rejected, and a rejected attempt
  * leaves the placement state unchanged. The engine exploits this: it proposes a
  * *batch* of `W` swaps against the current committed placement state and
- * evaluates them concurrently on worker threads. The annealer sets W to the
- * inverse of the previous temperature's acceptance rate, so we expect
- * one of the W attempts to be accepted (W == the number of active workers,
- * capped by --place_swap_eval_num_workers). Each attempt has an id; outcomes
+ * evaluates them concurrently, one per worker (W == the number of workers,
+ * set by --place_swap_eval_num_workers). Each attempt has an id; outcomes
  * are resolved in id order:
  *
  *  - The winner is the lowest-id accepted attempt. It is committed, and it and
@@ -30,8 +28,8 @@
  * Each attempt id derives its own RNG stream from (seed, id), and replica agents
  * are synced from the master generator every batch. An attempt's proposal and
  * acceptance test therefore do not depend on which worker runs it or when. The
- * trajectory is a pure function of (seed, W), so the result is identical for any
- * worker count.
+ * trajectory is a pure function of (seed, W): runs with the same seed and worker
+ * count produce identical results regardless of scheduling or machine.
  *
  * ## Threading model
  *

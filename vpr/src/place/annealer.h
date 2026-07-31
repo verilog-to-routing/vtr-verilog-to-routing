@@ -311,10 +311,9 @@ class PlacementAnnealer {
      * @brief Parallel counterpart of placement_inner_loop().
      *
      * Runs the inner loop as a sequence of speculative batches (see
-     * ParallelAnnealEngine::run_batch()). The speculative window (== number of
-     * active worker threads) adapts each temperature to the previous
-     * temperature's acceptance rate, capped by --place_swap_eval_num_workers. The result
-     * is deterministic for a fixed seed and cap.
+     * ParallelAnnealEngine::run_batch()), each issuing one attempt per evaluator
+     * (--place_swap_eval_num_workers). The result is deterministic for a fixed
+     * seed and worker count.
      */
     void placement_inner_loop_parallel_();
 
@@ -391,10 +390,6 @@ class PlacementAnnealer {
     bool congestion_modeling_started_;
     /// Indicates whether interposer congestion modeling has been started
     bool interposer_cong_modeling_started_;
-    /// Acceptance rate of the previous parallel inner loop; sizes the next
-    /// loop's speculative window (see placement_inner_loop_parallel_()). The
-    /// initial 1.0 makes the first loop start with a window of 1.
-    float prev_parallel_success_rate_ = 1.0f;
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();
