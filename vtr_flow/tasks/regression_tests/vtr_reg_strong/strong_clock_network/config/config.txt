@@ -46,6 +46,6 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_clock_modeling.txt
 
 # Script parameters
-script_params_common=-starting_stage vpr --route_chan_width 50
+script_params_common=-starting_stage vpr --route_chan_width 50 -sdc_file sdc/samples/default_vpr_no_io_constraints.sdc
 script_params_list_add=--clock_modeling dedicated_network
 script_params_list_add=--clock_modeling dedicated_network --two_stage_clock_routing
