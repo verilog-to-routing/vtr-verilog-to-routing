@@ -229,16 +229,7 @@ def formatSummary(runLabel: str, row: Dict, status: Optional[str] = None) -> str
         value = row.get(field, "")
         if value == "" or value is None:
             continue
-        if shortKey == "cpd":
-            parts.append(f"{shortKey}={value}ns")
-        elif shortKey == "fmax":
-            parts.append(f"{shortKey}={value}MHz")
-        elif shortKey == "wns":
-            parts.append(f"{shortKey}={value}ns")
-        elif shortKey == "wall":
-            parts.append(f"{shortKey}={value}s")
-        else:
-            parts.append(f"{shortKey}={value}")
+        parts.append(f"{shortKey}={value}")
     return " ".join(parts)
 
 

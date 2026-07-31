@@ -84,8 +84,8 @@ geomeanColumns = (
     ("IO out", "io_out", False),
     ("CLBs", "clb", False),
     ("Wirelen", "wl", False),
-    ("CPD", "cpd", False),
-    ("Fmax", "fmax", True),
+    ("CPD (ns)", "cpd", False),
+    ("Fmax (MHz)", "fmax", True),
 )
 
 
@@ -115,8 +115,22 @@ def parseStatusLine(text: str) -> Dict[str, str]:
         if "=" not in tok:
             continue
         key, value = tok.split("=", 1)
-        row[key] = value
+        row[key] = stripUnit(value)
     return row
+
+
+def stripUnit(value: str) -> str:
+    # accept bare numbers or legacy status values like 12.3ns / 100MHz / 4.5s
+    text = str(value).strip()
+    match = re.match(
+        r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*"
+        r"(ns|mhz|s|sec|seconds?)?$",
+        text,
+        re.I,
+    )
+    if match:
+        return match.group(1)
+    return text
 
 
 def detectPhase(runDir: Path) -> str:
@@ -185,8 +199,10 @@ def scanStatus(outDir: Path, labels: Sequence[str]) -> List[Dict[str, str]]:
 
 
 def numeric(value) -> Optional[float]:
+    if value is None:
+        return None
     try:
-        number = float(value)
+        number = float(stripUnit(value))
     except (TypeError, ValueError):
         return None
     return number if number > 0 else None
@@ -330,9 +346,9 @@ def renderTable(rows: List[Dict[str, str]], title: str) -> str:
         "IO out",
         "CLBs",
         "Wirelen",
-        "CPD",
-        "Fmax",
-        "WNS",
+        "CPD (ns)",
+        "Fmax (MHz)",
+        "WNS (ns)",
     ]
     table.align = "l"
     for row in rows:
