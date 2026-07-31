@@ -188,8 +188,10 @@ class ParallelAnnealEngine {
      * Workers propose and evaluate their share of the batch on their private
      * replicas, with per-attempt RNG streams and replica move generators synced
      * from `master_move_generator`'s agent state. The lowest-id accepted attempt
-     * (if any) is committed to the master state and all replicas before
-     * returning.
+     * (if any) is committed to the master state before returning. The worker
+     * threads' replica commits may still be running when this returns — they
+     * overlap the caller's per-batch bookkeeping — and are waited on before the
+     * engine touches any replica or attempt state again.
      *
      * @param batch_size Number of attempts to issue (>= 1).
      * @param master_move_generator The master move generator selected by the
@@ -269,7 +271,8 @@ class ParallelAnnealEngine {
     /// share (worker id 0).
     void execute_worker_job_(int worker_id);
 
-    /// @brief Publishes a job to the worker threads (non-blocking).
+    /// @brief Waits for any job still in flight, then publishes a new one to the
+    /// worker threads without waiting for it.
     void begin_worker_job_(e_worker_job job);
 
     /// @brief Blocks until all worker threads have finished the current job.

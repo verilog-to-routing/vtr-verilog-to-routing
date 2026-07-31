@@ -111,6 +111,10 @@ ParallelAnnealEngine::ParallelAnnealEngine(int num_workers,
                                                              delay_model_, criticalities_));
     }
 
+    // Matches the "no job in flight" state so waits before the first job
+    // return immediately (see wait_worker_job_()).
+    workers_done_.store(num_workers_ - 1, std::memory_order_relaxed);
+
     // The coordinator evaluates replica 0's share itself, so only
     // num_workers_ - 1 threads are needed.
     workers_.reserve(num_workers_ - 1);
@@ -177,6 +181,9 @@ void ParallelAnnealEngine::execute_worker_job_(int worker_id) {
 }
 
 void ParallelAnnealEngine::begin_worker_job_(e_worker_job job) {
+    // The previous job may still be in flight: run_batch() leaves the replica
+    // COMMIT_WINNER running so it overlaps the annealer's batch bookkeeping.
+    wait_worker_job_();
     workers_done_.store(0, std::memory_order_relaxed);
     job_ = job;
     job_epoch_.fetch_add(1, std::memory_order_release);
@@ -370,6 +377,10 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
                                                 float rlim) {
     VTR_ASSERT_SAFE(batch_size >= 1);
 
+    // The previous batch's replica commits may still be in flight, and their
+    // winner lives in attempts_: wait before resetting the slots.
+    wait_worker_job_();
+
     // Reset the attempt slots in place, reusing their heap buffers across batches.
     if (attempts_.size() < static_cast<size_t>(batch_size)) {
         attempts_.resize(batch_size);
@@ -411,7 +422,9 @@ t_batch_outcome ParallelAnnealEngine::run_batch(int batch_size,
         begin_worker_job_(e_worker_job::COMMIT_WINNER);
         commit_winner_on_master_(attempts_[winner]);
         execute_worker_job_(/*worker_id=*/0);
-        wait_worker_job_();
+        // The worker threads' commits are deliberately not waited on: they
+        // overlap the annealer's bookkeeping for this batch, and the next
+        // job waits for them before touching any replica or attempt state.
     }
 
     attempt_counter_ += outcome.num_retired_attempts;
