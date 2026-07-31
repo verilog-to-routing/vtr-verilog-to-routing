@@ -131,7 +131,7 @@ struct t_label_drawing_info {
 };
 
 /**
- * @brief A pair of timing node Ids used to uniquely identify a timing edge.
+ * @brief A pair of timing node ids used to uniquely identify a timing edge.
  */
 struct t_timing_edge_id {
     tatum::NodeId src;  ///< source of the timing edge.
