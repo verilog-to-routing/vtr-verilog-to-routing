@@ -40,6 +40,13 @@ void populate_segment_values(int seg_index,
     segment_inf[seg_index].frac_cb = -1;
     segment_inf[seg_index].frac_sb = -1;
     segment_inf[seg_index].res_type = SegResType::GCLK;
+
+    // Clock segments share the same segment_inf list used for regular routing
+    // tracks (see alloc_and_load_seg_details()), so they need cb/sb patterns
+    // just like architecture-defined segments. Default to fully connectable,
+    // matching the default used when a <segment> doesn't specify <cb>/<sb>.
+    segment_inf[seg_index].cb.resize(length, true);
+    segment_inf[seg_index].sb.resize(length + 1, true);
 }
 
 /*
