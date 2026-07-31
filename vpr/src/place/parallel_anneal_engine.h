@@ -346,30 +346,37 @@ class ParallelAnnealEngine {
     std::vector<t_speculative_swap> attempts_;
 
     // ---- Worker pool state ----
+    //
+    // The two atomics written while a job runs (workers_done_,
+    // first_accepted_id_) each get their own cache line, so those writes do
+    // not invalidate the lines the other threads spin on or poll.
+
     /// The num_workers_ - 1 worker threads (the coordinator is worker 0).
     std::vector<std::thread> workers_;
-    /// Incremented to publish a new job; worker threads spin on it.
-    std::atomic<uint64_t> job_epoch_{0};
-    /// Count of worker threads that finished the current job.
-    std::atomic<int> workers_done_{0};
+    /// Incremented to publish a new job; worker threads spin on it. Shares its
+    /// cache line only with the job payload below, which is written before the
+    /// epoch is bumped and read-only while the job runs.
+    alignas(64) std::atomic<uint64_t> job_epoch_{0};
     /// Current job; written by the coordinator before bumping job_epoch_.
     e_worker_job job_ = e_worker_job::NONE;
+    /// EVALUATE payload: whether replicas propose with their second generator.
+    bool batch_use_gen2_ = false;
     /// EVALUATE payload: number of attempts in the current batch.
     int batch_size_ = 0;
     /// EVALUATE payload: current annealing temperature.
     float batch_temperature_ = 0.f;
     /// EVALUATE payload: current move range limit.
     float batch_rlim_ = 0.f;
-    /// EVALUATE payload: whether replicas propose with their second generator.
-    bool batch_use_gen2_ = false;
     /// EVALUATE payload: sync source for the replica generators' agent state.
     const MoveGenerator* batch_master_generator_ = nullptr;
+    /// COMMIT_WINNER payload: the winning attempt (with its commit record).
+    const t_speculative_swap* winner_attempt_ = nullptr;
+    /// Count of worker threads that finished the current job.
+    alignas(64) std::atomic<int> workers_done_{0};
     /// Lowest attempt id known to be accepted in the current batch (INT_MAX when
     /// none yet). Accepting workers CAS-min it; workers running attempts with a
     /// higher id cancel early, since those attempts can neither win nor retire.
     /// It monotonically decreases to the batch winner's id, so a stale read only
     /// delays a cancellation; it can never cancel an attempt that retires.
-    std::atomic<int> first_accepted_id_{std::numeric_limits<int>::max()};
-    /// COMMIT_WINNER payload: the winning attempt (with its commit record).
-    const t_speculative_swap* winner_attempt_ = nullptr;
+    alignas(64) std::atomic<int> first_accepted_id_{std::numeric_limits<int>::max()};
 };
