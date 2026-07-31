@@ -6,14 +6,19 @@
 // would be driven. the flow later chtypes the bit cells to the arch model
 // names for write_blif.
 //
-// address is padded or truncated to 15 bits (k6 max abits). those pads
-// become gnd in the blif and fix_blif_for_vpr.py rewrites them to unconn
-// so vpr can pack sibling slices into wide modes.
+// address is padded or truncated to VTR_RAM_ABITS (max ram addr bits on
+// the arch). those pads become gnd in the blif and fix_blif_for_vpr.py
+// rewrites them to unconn so vpr can pack sibling slices into wide modes.
+// the tcl defines VTR_RAM_ABITS from the arch; 15 is the k6 fallback.
+
+`ifndef VTR_RAM_ABITS
+`define VTR_RAM_ABITS 15
+`endif
 
 (* blackbox *)
 module vtr_sp_ram_bit (
     input clk,
-    input [14:0] addr,
+    input [`VTR_RAM_ABITS-1:0] addr,
     input data,
     input we,
     output out
@@ -23,8 +28,8 @@ endmodule
 (* blackbox *)
 module vtr_dp_ram_bit (
     input clk,
-    input [14:0] addr1,
-    input [14:0] addr2,
+    input [`VTR_RAM_ABITS-1:0] addr1,
+    input [`VTR_RAM_ABITS-1:0] addr2,
     input data1,
     input data2,
     input we1,
@@ -46,13 +51,12 @@ module single_port_ram #(
     output [DATA_WIDTH-1:0] out
 );
 
-    // k6 max abits is 15
-    wire [14:0] addrPad;
+    wire [`VTR_RAM_ABITS-1:0] addrPad;
     generate
-        if (ADDR_WIDTH >= 15)
-            assign addrPad = addr[14:0];
+        if (ADDR_WIDTH >= `VTR_RAM_ABITS)
+            assign addrPad = addr[`VTR_RAM_ABITS-1:0];
         else
-            assign addrPad = {{(15 - ADDR_WIDTH){1'b0}}, addr};
+            assign addrPad = {{(`VTR_RAM_ABITS - ADDR_WIDTH){1'b0}}, addr};
     endgenerate
 
     genvar bitIdx;
@@ -86,15 +90,15 @@ module dual_port_ram #(
     output [DATA_WIDTH-1:0] out2
 );
 
-    wire [14:0] addrPad1;
-    wire [14:0] addrPad2;
+    wire [`VTR_RAM_ABITS-1:0] addrPad1;
+    wire [`VTR_RAM_ABITS-1:0] addrPad2;
     generate
-        if (ADDR_WIDTH >= 15) begin
-            assign addrPad1 = addr1[14:0];
-            assign addrPad2 = addr2[14:0];
+        if (ADDR_WIDTH >= `VTR_RAM_ABITS) begin
+            assign addrPad1 = addr1[`VTR_RAM_ABITS-1:0];
+            assign addrPad2 = addr2[`VTR_RAM_ABITS-1:0];
         end else begin
-            assign addrPad1 = {{(15 - ADDR_WIDTH){1'b0}}, addr1};
-            assign addrPad2 = {{(15 - ADDR_WIDTH){1'b0}}, addr2};
+            assign addrPad1 = {{(`VTR_RAM_ABITS - ADDR_WIDTH){1'b0}}, addr1};
+            assign addrPad2 = {{(`VTR_RAM_ABITS - ADDR_WIDTH){1'b0}}, addr2};
         end
     endgenerate
 

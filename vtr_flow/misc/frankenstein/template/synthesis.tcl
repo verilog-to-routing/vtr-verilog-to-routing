@@ -79,6 +79,14 @@ set multMapFile      "$archRulesDir/mult_map.v"
 set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
 set addSubMapFile    "$archRulesDir/add_sub_map.v"
 
+# arch-derived knobs (ram addr width). default 15 matches the k6 arch; the
+# generated vtr_ram_knobs.tcl overrides per-arch (koios has 11).
+set vtrRamAbits 15
+set vtrRamKnobsFile "$archRulesDir/vtr_ram_knobs.tcl"
+if { [file exists $vtrRamKnobsFile] } {
+    source $vtrRamKnobsFile
+}
+
 # exotic keep types from stub-all (opt-in via arch_config); append so the
 # arch_config keepCellTypes builtins stay first
 set keepTypesFile "$archRulesDir/hardblock_keep_types.txt"
@@ -181,7 +189,7 @@ if { "TTT" ne "" } {
 
 # no -lib here so the generate loops expand at the real DATA_WIDTH. top is
 # already set so a plain hierarchy re-elaborates without -auto-top.
-read_verilog -overwrite $templateDir/vtr_ram_whitebox.v
+read_verilog -overwrite -D VTR_RAM_ABITS=$vtrRamAbits $templateDir/vtr_ram_whitebox.v
 hierarchy -check -purge_lib
 opt_expr
 opt_clean
@@ -250,7 +258,7 @@ delete single_port_ram dual_port_ram
 chtype -map vtr_sp_ram_bit single_port_ram
 chtype -map vtr_dp_ram_bit dual_port_ram
 delete vtr_sp_ram_bit vtr_dp_ram_bit
-read_verilog -lib $templateDir/vtr_ram_bit_lib.v
+read_verilog -lib -D VTR_RAM_ABITS=$vtrRamAbits $templateDir/vtr_ram_bit_lib.v
 
 # last chance to shrink soft cones before hard mapping freezes the edges
 opt -full
