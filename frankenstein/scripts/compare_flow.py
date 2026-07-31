@@ -13,6 +13,9 @@ usage (from the vtr repo root):
   python3 frankenstein/scripts/compare_flow.py --no-clean
   python3 frankenstein/scripts/compare_flow.py --outdir <dir> --csv <path.csv>
   python3 frankenstein/scripts/compare_flow.py --reuse-vanilla <prior.csv>
+  python3 frankenstein/scripts/compare_flow.py --arch <path/to/arch.xml> \
+      --benchmark-dir vtr_flow/benchmarks/verilog/koios \
+      --designs lenet gemm_layer --include hard_block_include.v
 
 defaults:
   arch      vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
@@ -21,7 +24,7 @@ defaults:
   csv       <outdir>/compare_results_<YYYYMMDD_HHMMSS>.csv
 
 flags:
-  --arch <xml>           architecture file
+  --arch <xml>           architecture file (required to target a non-default arch)
   --benchmark-dir <dir>  directory holding <design>.v files
   --designs <names...>   circuit stems (default: eight readme circuits)
   --include <files...>   -include paths for run_vtr_flow (relative to
@@ -72,18 +75,6 @@ defaultDesigns = (
     "stereovision1",
     "stereovision2",
 )
-# small koios smoke set for frankenstein vs parmys on the complex-dsp arch
-defaultKoiosDesigns = (
-    "lenet",
-    "gemm_layer",
-    "conv_layer",
-    "eltwise_layer",
-)
-koiosArchRel = (
-    "vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml"
-)
-koiosBenchRel = "vtr_flow/benchmarks/verilog/koios"
-koiosIncludeRel = "hard_block_include.v"
 
 flows = {
     "vanilla_vtr": {"start": "parmys"},
@@ -712,7 +703,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="vanilla_vtr vs frankenstein vtr qor compare"
     )
-    parser.add_argument("--arch", default=defaultArchRel)
+    parser.add_argument(
+        "--arch",
+        default=defaultArchRel,
+        help=f"architecture xml (default: {defaultArchRel})",
+    )
     parser.add_argument("--benchmark-dir", default=defaultBenchRel)
     parser.add_argument("--designs", nargs="+", default=None)
     parser.add_argument(
@@ -720,15 +715,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         nargs="+",
         default=None,
         help="include files for -include (relative to --benchmark-dir or absolute)",
-    )
-    parser.add_argument(
-        "--koios",
-        action="store_true",
-        help=(
-            f"preset for koios: arch={koiosArchRel}, "
-            f"benchmark-dir={koiosBenchRel}, designs={','.join(defaultKoiosDesigns)}, "
-            f"include={koiosIncludeRel} (explicit flags still win)"
-        ),
     )
     parser.add_argument("--flows", nargs="+", default=None)
     parser.add_argument("--jobs", type=int, default=4)
@@ -747,17 +733,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--no-clean", action="store_true")
     parser.add_argument("--no-rerun", action="store_true")
     args = parser.parse_args(argv)
-
-    # --koios fills defaults only when the user did not override them
-    if args.koios:
-        if args.arch == defaultArchRel:
-            args.arch = koiosArchRel
-        if args.benchmark_dir == defaultBenchRel:
-            args.benchmark_dir = koiosBenchRel
-        if args.designs is None:
-            args.designs = list(defaultKoiosDesigns)
-        if args.include is None:
-            args.include = [koiosIncludeRel]
 
     archFile = resolvePath(args.arch, vtrRoot)
     benchDir = resolvePath(args.benchmark_dir, vtrRoot)

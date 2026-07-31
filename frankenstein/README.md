@@ -74,14 +74,11 @@ python3 frankenstein/scripts/compare_flow.py --jobs 4
 python3 frankenstein/scripts/watch_compare.py
 ```
 
-Useful flags: `--arch <other_arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8`, `--no-rerun`, `--include <file>`, `--koios`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`).
+Useful flags: `--arch <arch.xml>`, `--flows frankenstein`, `--designs arm_core bgm`, `--jobs 8`, `--no-rerun`, `--include <file>`. Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`).
 
 ### Koios compare
+Pass the koios arch with `--arch` (plus bench dir / designs / include as needed):
 ```shell
-# preset: koios arch, koios benchmarks, hard_block_include.v, small design set
-python3 frankenstein/scripts/compare_flow.py --koios --jobs 2
-
-# equivalent explicit form
 python3 frankenstein/scripts/compare_flow.py \
   --arch vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \
   --benchmark-dir vtr_flow/benchmarks/verilog/koios \
