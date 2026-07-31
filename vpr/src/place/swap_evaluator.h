@@ -9,7 +9,6 @@
 #include "net_cost_handler.h"
 #include "placer_state.h"
 
-#include <functional>
 #include <optional>
 
 class PlaceDelayModel;
@@ -91,7 +90,7 @@ class SwapEvaluator {
      */
     t_swap_cost_deltas apply_and_evaluate(t_pl_blocks_to_be_moved& blocks_affected,
                                           const t_place_algorithm& place_algorithm,
-                                          const std::function<bool()>& should_cancel = {});
+                                          t_swap_cancel_token cancel_token = {});
 
     /**
      * @brief Makes an applied move permanent: writes the committed net bounding

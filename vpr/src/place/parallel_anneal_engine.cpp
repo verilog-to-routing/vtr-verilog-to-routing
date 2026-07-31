@@ -277,12 +277,9 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
     // Early cancellation: once a lower-id attempt is known to be accepted, this
     // one can neither win nor retire, so its remaining work is skipped. Nothing at
     // or below the eventual winner id is cancelled, so the trajectory is unaffected.
-    // Relaxed ordering suffices: a stale read only delays a cancellation.
-    auto is_stale = [this, slot_index]() {
-        return slot_index > first_accepted_id_.load(std::memory_order_relaxed);
-    };
+    const t_swap_cancel_token cancel_token{&first_accepted_id_, slot_index};
 
-    if (is_stale()) {
+    if (cancel_token.cancelled()) {
         return;
     }
 
@@ -308,10 +305,10 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
         return;
     }
 
-    // The cancellation callback is also polled inside the evaluation, so a long
+    // The cancellation token is also polled inside the evaluation, so a long
     // evaluation of a stale attempt is abandoned partway.
     attempt.deltas = replica.evaluator->apply_and_evaluate(replica.blocks_affected, placer_opts_.place_algorithm,
-                                                         is_stale);
+                                                           cancel_token);
     if (attempt.deltas.cancelled) {
         // The blocks have already been moved and some affected nets already
         // have proposed costs, so both must be undone.
@@ -327,7 +324,7 @@ void ParallelAnnealEngine::propose_and_evaluate_attempt_(EvalReplica& replica,
     // without re-evaluating, then publish this id for early cancellation.
     // Nothing is captured once a lower id is accepted, which never happens to
     // the eventual winner: it is the minimum accepted id.
-    if (attempt.move_result == e_move_result::ACCEPTED && !is_stale()) {
+    if (attempt.move_result == e_move_result::ACCEPTED && !cancel_token.cancelled()) {
         VTR_ASSERT_SAFE(!attempt.deltas.update_interposer_costs);
         attempt.moved_blocks = replica.blocks_affected.moved_blocks;
         replica.evaluator->extract_commit_record(replica.blocks_affected,

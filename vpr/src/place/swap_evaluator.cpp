@@ -23,7 +23,7 @@ SwapEvaluator::SwapEvaluator(const t_placer_opts& placer_opts,
 
 t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& blocks_affected,
                                                      const t_place_algorithm& place_algorithm,
-                                                     const std::function<bool()>& should_cancel) {
+                                                     t_swap_cancel_token cancel_token) {
     t_swap_cost_deltas deltas;
 
     // To make evaluating the move simpler (e.g. calculating changed bounding box),
@@ -45,7 +45,7 @@ t_swap_cost_deltas SwapEvaluator::apply_and_evaluate(t_pl_blocks_to_be_moved& bl
     bool completed = net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected,
                                                                            deltas.cost_terms_delta,
                                                                            deltas.timing_delta_c,
-                                                                           should_cancel);
+                                                                           cancel_token);
     if (!completed) {
         // Cancellation may be requested by the parallel engine, when
         // another worker has already accepted a lower-id attempt. This
