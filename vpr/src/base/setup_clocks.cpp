@@ -133,9 +133,9 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                     clock_network_arch.switch_grid.metal_layer,
                     clock_metal_layers,
                     clock_network_arch.name));
-                switch_grid->set_grid_start_location(
-                    p.parse_formula(clock_network_arch.switch_grid.startx, vars),
-                    p.parse_formula(clock_network_arch.switch_grid.starty, vars));
+                int grid_startx = p.parse_formula(clock_network_arch.switch_grid.startx, vars);
+                int grid_starty = p.parse_formula(clock_network_arch.switch_grid.starty, vars);
+                switch_grid->set_grid_start_location(grid_startx, grid_starty);
                 switch_grid->set_wire_repeat(
                     p.parse_formula(clock_network_arch.switch_grid.repeatx, vars),
                     p.parse_formula(clock_network_arch.switch_grid.repeaty, vars));
@@ -149,8 +149,12 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                                                     ? SwitchGridPointType::DRIVE
                                                     : SwitchGridPointType::TAP;
 
-                    int base_x = p.parse_formula(point.xoffset, vars);
-                    int base_y = p.parse_formula(point.yoffset, vars);
+                    // xoffset/yoffset are relative to the switch grid's own startx/starty,
+                    // matching the rib/spine convention where drive/tap offsets are relative
+                    // to that network's start point (see ClockRib::set_drive_location /
+                    // ClockSpine::set_drive_location).
+                    int base_x = grid_startx + p.parse_formula(point.xoffset, vars);
+                    int base_y = grid_starty + p.parse_formula(point.yoffset, vars);
                     int xincr = p.parse_formula(point.xincr, vars);
                     int yincr = p.parse_formula(point.yincr, vars);
 
