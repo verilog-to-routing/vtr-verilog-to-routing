@@ -7,6 +7,8 @@
 #include "vpr_error.h"
 
 #include "vpr_utils.h"
+#include "vtr_token.h"
+#include "vtr_util.h"
 
 #include <string>
 #include <iostream>
@@ -17,12 +19,26 @@
 using vtr::FormulaParser;
 using vtr::t_formula_data;
 
+// Describes a "TILE.<tile_name>[hi:lo].<port_name>[hi:lo]" clock tap spec, as parsed
+// from the architecture file's "from" attribute of a <clock_routing><tap> entry.
+// The [hi:lo] ranges are optional; {-1, -1} means "not specified" (use the full range),
+// resolved once the tile type at the tap's location is known (see
+// TileToClockConnection::create_switches).
+struct t_tile_tap_spec {
+    std::string tile_name;
+    std::pair<int, int> subtile_range = {-1, -1};
+    std::string port_name;
+    std::pair<int, int> pin_range = {-1, -1};
+};
+
 static MetalLayer get_metal_layer_from_name(
     std::string metal_layer_name,
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
     std::string clock_network_name);
 static void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector<t_segment_inf>& segment_inf);
 static void setup_clock_connections(const t_arch& Arch, FormulaParser& p);
+static bool is_tile_tap_spec(const std::string& from);
+static t_tile_tap_spec parse_tile_tap_spec(const std::string& spec);
 
 void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
     // This function may be called more than once if the device grid is
@@ -199,6 +215,94 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
     clock_networks_device.shrink_to_fit();
 }
 
+bool is_tile_tap_spec(const std::string& from) {
+    return from.rfind("TILE.", 0) == 0;
+}
+
+// Parses an optional "[hi:lo]" (or "[idx]") range at tokens[token_index], advancing
+// token_index past it. Returns {-1, -1} (leaving token_index unchanged) if there is
+// no bracket at this position, since the range is optional in the tap grammar.
+static std::pair<int, int> parse_optional_bracket_range(const Tokens& tokens, size_t& token_index, const std::string& spec) {
+    if (tokens[token_index].type != e_token_type::OPEN_SQUARE_BRACKET) {
+        return {-1, -1};
+    }
+    token_index++;
+
+    if (tokens[token_index].type != e_token_type::INT) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': expected integer after '['.\n", spec.c_str());
+    }
+    int first = vtr::atoi(tokens[token_index].data);
+    token_index++;
+
+    int second = first;
+    if (tokens[token_index].type == e_token_type::COLON) {
+        token_index++;
+        if (tokens[token_index].type != e_token_type::INT) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': expected integer after ':'.\n", spec.c_str());
+        }
+        second = vtr::atoi(tokens[token_index].data);
+        token_index++;
+    }
+
+    if (tokens[token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': missing closing ']'.\n", spec.c_str());
+    }
+    token_index++;
+
+    if (first > second) {
+        std::swap(first, second);
+    }
+    return {first, second};
+}
+
+// Parses a "TILE.<tile_name>[hi:lo].<port_name>[hi:lo]" clock tap spec (both [hi:lo]
+// ranges optional). Only validates syntax; resolving the tile/port names and ranges
+// against the actual architecture happens later, in TileToClockConnection::create_switches,
+// once the tile type placed at the tap's location is known.
+t_tile_tap_spec parse_tile_tap_spec(const std::string& spec) {
+    Tokens tokens(spec);
+    size_t token_index = 0;
+
+    if (tokens[token_index].type != e_token_type::STRING || tokens[token_index].data != "TILE") {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': expected to start with 'TILE.'.\n", spec.c_str());
+    }
+    token_index++;
+
+    if (tokens[token_index].type != e_token_type::DOT) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': expected '.' after 'TILE'.\n", spec.c_str());
+    }
+    token_index++;
+
+    t_tile_tap_spec result;
+
+    if (tokens[token_index].type != e_token_type::STRING) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': expected a tile name.\n", spec.c_str());
+    }
+    result.tile_name = tokens[token_index].data;
+    token_index++;
+
+    result.subtile_range = parse_optional_bracket_range(tokens, token_index, spec);
+
+    if (tokens[token_index].type != e_token_type::DOT) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': expected '.' after tile name.\n", spec.c_str());
+    }
+    token_index++;
+
+    if (tokens[token_index].type != e_token_type::STRING) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': expected a port name.\n", spec.c_str());
+    }
+    result.port_name = tokens[token_index].data;
+    token_index++;
+
+    result.pin_range = parse_optional_bracket_range(tokens, token_index, spec);
+
+    if (token_index != tokens.size()) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid clock tap tile spec '%s': unexpected trailing characters.\n", spec.c_str());
+    }
+
+    return result;
+}
+
 void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_connections_device = device_ctx.clock_connections;
@@ -211,15 +315,16 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
     vars.set_var_value("W", grid.width());
     vars.set_var_value("H", grid.height());
 
-    // A clock network's ROUTING->clock drive points all share one virtual sink node
-    // in the RR graph (see RoutingToClockConnection::create_switches), so pick a
-    // single representative location for that shared node up front: the centroid of
-    // all of this network's drive point locations, rather than arbitrarily using
-    // whichever drive point happens to be processed first.
+    // A clock network's drive points -- whether from general routing (ROUTING) or a tile
+    // port/pin (TILE.*) -- all share one virtual sink node in the RR graph (see
+    // get_or_create_virtual_clock_network_root in clock_connection_builders.cpp), so pick
+    // a single representative location for that shared node up front: the centroid of all
+    // of this network's drive point locations, rather than arbitrarily using whichever
+    // drive point happens to be processed first.
     std::unordered_map<std::string, std::pair<int, int>> drive_location_sum;
     std::unordered_map<std::string, int> drive_location_count;
     for (const t_clock_connection_arch& clock_connection_arch : clock_connections_arch) {
-        if (clock_connection_arch.from == "ROUTING") {
+        if (clock_connection_arch.from == "ROUTING" || is_tile_tap_spec(clock_connection_arch.from)) {
             std::string clock_name = vtr::StringToken(clock_connection_arch.to).split(".")[0];
             drive_location_sum[clock_name].first += p.parse_formula(clock_connection_arch.locationx, vars);
             drive_location_sum[clock_name].second += p.parse_formula(clock_connection_arch.locationy, vars);
@@ -246,6 +351,32 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
 
                 int count = drive_location_count[names[0]];
                 routing_to_clock->set_virtual_sink_location(
+                    drive_location_sum[names[0]].first / count,
+                    drive_location_sum[names[0]].second / count);
+            }
+
+        } else if (is_tile_tap_spec(clock_connection_arch.from)) {
+            clock_connections_device.emplace_back(new TileToClockConnection);
+            if (TileToClockConnection* tile_to_clock = dynamic_cast<TileToClockConnection*>(clock_connections_device.back().get())) {
+                t_tile_tap_spec tile_spec = parse_tile_tap_spec(clock_connection_arch.from);
+
+                std::vector<std::string> names = vtr::StringToken(clock_connection_arch.to).split(".");
+                VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
+                tile_to_clock->set_clock_name_to_connect_to(names[0]);
+                tile_to_clock->set_clock_switch_point_name(names[1]);
+
+                tile_to_clock->set_location(
+                    p.parse_formula(clock_connection_arch.locationx, vars),
+                    p.parse_formula(clock_connection_arch.locationy, vars));
+                tile_to_clock->set_tile_name(tile_spec.tile_name);
+                tile_to_clock->set_subtile_range(tile_spec.subtile_range.first, tile_spec.subtile_range.second);
+                tile_to_clock->set_port_name(tile_spec.port_name);
+                tile_to_clock->set_pin_range(tile_spec.pin_range.first, tile_spec.pin_range.second);
+                tile_to_clock->set_switch(clock_connection_arch.arch_switch_idx);
+                tile_to_clock->set_fc_val(clock_connection_arch.fc);
+
+                int count = drive_location_count[names[0]];
+                tile_to_clock->set_virtual_sink_location(
                     drive_location_sum[names[0]].first / count,
                     drive_location_sum[names[0]].second / count);
             }
