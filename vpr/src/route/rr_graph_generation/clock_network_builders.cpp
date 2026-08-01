@@ -441,7 +441,11 @@ void ClockRib::record_tap_locations(unsigned x_start,
                                     int left_rr_node_idx,
                                     int right_rr_node_idx,
                                     ClockRRGraphBuilder& clock_graph) {
-    for (unsigned x = x_start + tap_.offset; x <= x_end; x += tap_.increment) {
+    // An increment of 0 (the default when xincr is omitted) means a single,
+    // non-repeating tap point at the given offset, mirroring how ClockSwitchGrid
+    // treats an unspecified xincr/yincr.
+    unsigned x_step = (tap_.increment > 0) ? tap_.increment : x_end - x_start + 1;
+    for (unsigned x = x_start + tap_.offset; x <= x_end; x += x_step) {
         // left_rr_node_idx spans [x_start, drive_x - 1], so the split must be at
         // drive_x itself, taken as-is from the caller rather than re-derived here
         // as x_start + drive_.offset: x_start at this point is already the
@@ -825,7 +829,11 @@ void ClockSpine::record_tap_locations(unsigned y_start,
                                       int left_node_idx,
                                       int right_node_idx,
                                       ClockRRGraphBuilder& clock_graph) {
-    for (unsigned y = y_start + tap.offset; y <= y_end; y += tap.increment) {
+    // An increment of 0 (the default when yincr is omitted) means a single,
+    // non-repeating tap point at the given offset, mirroring how ClockSwitchGrid
+    // treats an unspecified xincr/yincr.
+    unsigned y_step = (tap.increment > 0) ? tap.increment : y_end - y_start + 1;
+    for (unsigned y = y_start + tap.offset; y <= y_end; y += y_step) {
         // left_node_idx spans [y_start, drive_y - 1], so the split must be at
         // drive_y itself, taken as-is from the caller rather than re-derived here
         // as y_start + drive.offset: y_start at this point is already the

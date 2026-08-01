@@ -4967,12 +4967,12 @@ static void process_clock_switch_points(pugi::xml_node parent,
             if (clock_network.type == e_clock_type::SPINE) {
                 expect_only_attributes(curr_switch, expected_spine_tap_attributes, loc_data);
                 offset = get_attribute(curr_switch, "yoffset", loc_data).value();
-                increment = get_attribute(curr_switch, "yincr", loc_data).value();
+                increment = get_attribute(curr_switch, "yincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
             } else {
                 VTR_ASSERT(clock_network.type == e_clock_type::RIB);
                 expect_only_attributes(curr_switch, expected_rib_tap_attributes, loc_data);
                 offset = get_attribute(curr_switch, "xoffset", loc_data).value();
-                increment = get_attribute(curr_switch, "xincr", loc_data).value();
+                increment = get_attribute(curr_switch, "xincr", loc_data, ReqOpt::OPTIONAL).as_string("0");
             }
 
             tap.name = name;

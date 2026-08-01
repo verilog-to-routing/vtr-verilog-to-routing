@@ -207,10 +207,8 @@
     <clock_network name="rib_upper" num_inst="2">
       <!-- Create a central rib from the clock switch grid to the global spine. -->
       <rib metal_layer="global_rib" y="1+((H-3)/2)" startx="1" endx="1+((W-3)/2)">
-        <switch_point type="drive" name="drive" xoffset="0" switch_name="drive_buff"/>\
-        <!-- FIXME: We need to specify an xincr which does not make sense here.
-                    Set to the width of the device but should be made optional. -->
-        <switch_point type="tap" name="tap" xoffset="(W-3)/2" xincr="W"/>
+        <switch_point type="drive" name="drive" xoffset="0" switch_name="drive_buff"/>
+        <switch_point type="tap" name="tap" xoffset="(W-3)/2"/>
       </rib>
     </clock_network>
     <clock_network name="spine1" num_inst="2">
@@ -232,7 +230,8 @@
       <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="1" locationy="1" switch="0" fc_val="1.0"/>
       <!-- Tap from the clk SB network into the upper rib. -->
       <tap from="global_clk_switch_network.tap" to="rib_upper.drive" switch="0" fc_val="1"/>
-      <tap from="rib_upper.tap" to="spine1.drive" switch="0" fc_val="1"/>
+      <!-- Tap from the upper rib into the central spine. -->
+      <tap from="rib_upper.tap" to="spine1.drive" switch="0" fc_val="0.5"/>
       <!-- Tap from the spine into the ribs. -->
       <tap from="spine1.tap" to="rib1.drive" switch="0" fc_val="0.5"/>
       <!-- Tap from the ribs into the clk pins. -->
