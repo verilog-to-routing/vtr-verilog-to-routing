@@ -426,7 +426,7 @@ static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& path
     for (std::size_t path_idx = 0; path_idx < paths.size(); path_idx++) {
         const tatum::TimingPath& path = paths[path_idx];
         auto elements = path.data_arrival_path().elements();
-    
+
         tatum::NodeId prev_node = tatum::NodeId::INVALID();
         for (const tatum::TimingPathElem& elem : elements) {
             tatum::NodeId node = elem.node();
@@ -500,7 +500,7 @@ static void draw_routed_timing_connections(const std::vector<tatum::TimingPath>&
 
     for (const tatum::TimingPath& path : paths) {
         auto elements = path.data_arrival_path().elements();
-    
+
         tatum::NodeId prev_node = tatum::NodeId::INVALID();
         for (const tatum::TimingPathElem& elem : elements) {
             tatum::NodeId node = elem.node();
