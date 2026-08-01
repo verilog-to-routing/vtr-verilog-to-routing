@@ -1119,11 +1119,56 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
         }
     }
 
+    // Pass 3: connect switch points that sit on a channel between switch boxes,
+    // rather than at a switch box location itself. This models clock architectures
+    // where a lower-level network (or a complex block's clock pin) branches directly
+    // off the channel wire running between two switch boxes, instead of always
+    // routing through a full switch box. A channel tap is identified by having
+    // exactly one of its (x,y) coordinates aligned to the switch-box lattice (the
+    // column/row the channel runs along) with the other coordinate falling within
+    // the grid but off the lattice (i.e. strictly between two switch boxes on that
+    // channel, or coincident with one -- either way not itself a switch box row/col).
+    for (size_t i = 0; i < switch_points_.size(); i++) {
+        if (switch_point_registered[i]) continue;
+
+        int x = switch_points_[i].x;
+        int y = switch_points_[i].y;
+        bool x_on_lattice = (x >= start_x_ && x <= x_max && (x - start_x_) % repeat_.x == 0);
+        bool y_on_lattice = (y >= start_y_ && y <= y_max && (y - start_y_) % repeat_.y == 0);
+        bool x_in_range = (x >= start_x_ && x <= x_max);
+        bool y_in_range = (y >= start_y_ && y <= y_max);
+
+        e_parallel_axis axis;
+        if (x_on_lattice && !y_on_lattice && y_in_range) {
+            axis = e_parallel_axis::Y_AXIS; // tap into the vertical channel running through column x
+        } else if (y_on_lattice && !x_on_lattice && x_in_range) {
+            axis = e_parallel_axis::X_AXIS; // tap into the horizontal channel running through row y
+        } else {
+            continue; // not on any channel; falls through to the warning below
+        }
+
+        for (int track = 0; track < chan_w_; track++) {
+            int cov_idx = covering_wire_at(x, y, axis, track);
+            if (cov_idx < 0) continue; // this track's wire (if staggered) doesn't reach here
+
+            int hub_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+            int hub_idx = create_chanx_node(layer_num, x, x, y, hub_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
+
+            clock_graph.add_switch_location(get_name(), switch_points_[i].name, x, y, hub_idx);
+            switch_point_registered[i] = true;
+
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+        }
+    }
+
     for (size_t i = 0; i < switch_points_.size(); i++) {
         if (!switch_point_registered[i]) {
             vtr::printf_warning(__FILE__, __LINE__,
                                 "Switch point '%s' of clock network '%s' at location (%d,%d) does not"
-                                " correspond to any switch box location produced by startx/starty/repeatx/repeaty."
+                                " correspond to any switch box location produced by startx/starty/repeatx/repeaty,"
+                                " and is not a valid channel tap (exactly one of its x/y coordinates must be on"
+                                " that lattice, with the other coordinate inside the grid)."
                                 " This can lead to an unroutable architecture.\n",
                                 switch_points_[i].name.c_str(), clock_name_.c_str(),
                                 switch_points_[i].x, switch_points_[i].y);
