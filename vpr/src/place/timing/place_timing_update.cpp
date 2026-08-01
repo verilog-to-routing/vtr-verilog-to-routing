@@ -238,7 +238,7 @@ bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
 /**
  * @brief Incrementally updates timing cost based on the current delays and criticality estimates.
  *
- * Unlike comp_td_costs(), this only updates connections who's criticality has changed.
+ * Unlike comp_td_costs(), this only updates connections whose criticality has changed.
  * This is a superset of those connections whose connection delay has changed. For a
  * from-scratch recalculation, refer to comp_td_cost().
  *
@@ -348,7 +348,7 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
 /**
  * @brief Calculates the timing cost of the specified connection.
  *
- * This routine assumes that it is only called either compt_td_cost() or
+ * This routine assumes that it is only called either comp_td_cost() or
  * update_td_costs(). Otherwise, various assertions below would fail.
  */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
