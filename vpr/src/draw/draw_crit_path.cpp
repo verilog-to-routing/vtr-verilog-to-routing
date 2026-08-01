@@ -53,7 +53,7 @@ static constexpr int ENDPOINT_STAR_SIZE = 16;
  * 
  * Used for both x and y-direction padding.
  */
-static constexpr int PADDING = 5;
+static constexpr int DELAY_MSG_RECT_PADDING = 5;
 
 /**
  * @brief Highly contrasting colours that are useful for visualization.
@@ -399,11 +399,8 @@ void draw_crit_path(ezgl::renderer* g) {
         return;
     }
 
-    // The user can set the number of critical paths to draw through a UI spinbox, which controls draw_state->num_crit_paths.
-    // The requested number should be in the range [1, 10], and the range limit is enforced by the UI spinbox.
-    // However, if the number is out of range, someone must have directly tampered with the variable, and that is bad.
-    VTR_ASSERT(draw_state->num_crit_paths >= 1 && draw_state->num_crit_paths <= 10);
-    // If the requested number exceeds the currently available critical paths, the function only returns all available ones.
+    // Request a number of critical paths set by the user through draw_state->num_crit_paths.
+    // If the number exceeds the currently available critical paths, only the available ones are returned.
     auto paths = path_collector.collect_worst_setup_timing_paths(
         *timing_ctx.graph,
         *(draw_state->setup_timing_info->setup_analyzer()), draw_state->num_crit_paths);
@@ -429,12 +426,8 @@ static void draw_timing_edge_flylines(const std::vector<tatum::TimingPath>& path
     for (std::size_t path_idx = 0; path_idx < paths.size(); path_idx++) {
         const tatum::TimingPath& path = paths[path_idx];
         auto elements = path.data_arrival_path().elements();
-        // elements.size() returns the number of timing nodes. No flyline to draw when there is less than or equal to one node.
-        if (elements.size() <= 1) {
-            continue;
-        }
-
-        tatum::NodeId prev_node;
+    
+        tatum::NodeId prev_node = tatum::NodeId::INVALID();
         for (const tatum::TimingPathElem& elem : elements) {
             tatum::NodeId node = elem.node();
             // Skip the first iteration because prev_node is not yet assigned to an actual node.
@@ -507,12 +500,8 @@ static void draw_routed_timing_connections(const std::vector<tatum::TimingPath>&
 
     for (const tatum::TimingPath& path : paths) {
         auto elements = path.data_arrival_path().elements();
-        // elements.size() returns the number of timing nodes. No connection to draw when there is less than or equal to one node.
-        if (elements.size() <= 1) {
-            continue;
-        }
-
-        tatum::NodeId prev_node;
+    
+        tatum::NodeId prev_node = tatum::NodeId::INVALID();
         for (const tatum::TimingPathElem& elem : elements) {
             tatum::NodeId node = elem.node();
             // Skip the first iteration because prev_node is not yet assigned to an actual node.
@@ -684,12 +673,8 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
 
     for (const tatum::TimingPath& path : paths) {
         auto elements = path.data_arrival_path().elements();
-        // elements.size() returns the number of timing nodes. No label to draw when there is less than or equal to one node.
-        if (elements.size() <= 1) {
-            continue;
-        }
 
-        tatum::NodeId prev_node;
+        tatum::NodeId prev_node = tatum::NodeId::INVALID();
         float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
         for (const tatum::TimingPathElem& elem : elements) {
             tatum::NodeId node = elem.node();
@@ -1049,19 +1034,19 @@ static void draw_total_delay_messages(const std::vector<tatum::TimingPath>& path
 
     // The width of the rectangle before padding is max_msg_width. Subtract half of that from the center to reach its left side.
     // Finally, apply padding to create the actual left side of the rectangle.
-    double rect_left = background_rect_center_x - max_msg_width / 2 - PADDING;
+    double rect_left = background_rect_center_x - max_msg_width / 2 - DELAY_MSG_RECT_PADDING;
 
     // The first total delay message will be drawn at y = msg_height. To reach the text ceiling (the rough rectangle top),
     // we need to subtract half the height from where it is drawn, and this gives us y = msg_height - msg_height / 2 = msg_height / 2.
     // Finally, apply padding to create the actual top side of the rectangle.
-    double rect_top = msg_height / 2 - PADDING;
+    double rect_top = msg_height / 2 - DELAY_MSG_RECT_PADDING;
 
     // Take into account padding on the left and right.
-    double rect_width = max_msg_width + 2 * PADDING;
+    double rect_width = max_msg_width + 2 * DELAY_MSG_RECT_PADDING;
 
     // The message height multiplied by the number of messages gives the rough rectangle height.
     // Also take into account padding on the top and bottom.
-    double rect_height = msg_height * total_delay_messages.size() + 2 * PADDING;
+    double rect_height = msg_height * total_delay_messages.size() + 2 * DELAY_MSG_RECT_PADDING;
 
     ezgl::rectangle rect(ezgl::point2d{rect_left, rect_top}, rect_width, rect_height);
     // Draw the background rectangle with a little translucency for good visual effect. 0 is transparent and 255 is opaque.
