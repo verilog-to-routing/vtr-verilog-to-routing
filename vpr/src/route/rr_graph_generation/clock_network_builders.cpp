@@ -187,7 +187,15 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     index = right_seg_idx_;
     name = clock_name_ + "_right";
-    length = (x_chan_wire_.length - drive_.offset) - 1;
+    // Clamped to a minimum of 1: when the drive point sits at the rib's right
+    // endpoint, no right segment is ever built (see
+    // create_rr_nodes_and_internal_edges_for_one_instance) and no RR node ever
+    // references this segment_inf entry. A length of 1 (rather than 0) is used
+    // as its nominal placeholder length, since a length of 0 makes inv_length
+    // (1/length, see alloc_and_load_rr_indexed_data.cpp) infinite, which can
+    // corrupt router lookahead cost-map construction even though the segment
+    // itself is unused.
+    length = std::max((x_chan_wire_.length - drive_.offset) - 1, 1);
 
     populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS);
 
@@ -197,9 +205,15 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     index = left_seg_idx_;
     name = clock_name_ + "_left";
-    length = drive_.offset - 1;
+    // Clamped to a minimum of 1 -- see the comment on the right segment above.
+    length = std::max(drive_.offset - 1, 1);
 
     populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS);
+
+    // Snapshot the unified-space indices for map_relative_seg_indices to remap from.
+    drive_seg_idx_unified_ = drive_seg_idx_;
+    right_seg_idx_unified_ = right_seg_idx_;
+    left_seg_idx_unified_ = left_seg_idx_;
 }
 
 size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
@@ -225,13 +239,15 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
                 x_end = grid.width() - 2; // CHANX wires right boundary
             }
 
+            unsigned x_start_adj = x_start + x_offset;
+
             // Dont create rib if drive point is not reachable
-            if (drive_x > grid.width() - 2 || drive_x >= x_end || drive_x <= (x_start + x_offset)) {
+            if (drive_x > grid.width() - 2 || drive_x < x_start_adj || drive_x > x_end) {
                 continue;
             }
 
             // Dont create rib if wire segment is too small
-            if ((x_start + x_offset) >= x_end) {
+            if (x_start_adj >= x_end) {
                 continue;
             }
 
@@ -280,8 +296,13 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                 x_end = grid.width() - 2; // CHANX wires right boundary
             }
 
-            // Dont create rib if drive point is not reachable
-            if (drive_x > grid.width() - 2 || drive_x >= x_end || drive_x <= (x_start + x_offset)) {
+            unsigned x_start_adj = x_start + x_offset;
+
+            // Dont create rib if the drive point falls outside the buildable span.
+            // The drive point itself is allowed to sit on either endpoint (x_start_adj
+            // or x_end): in that case the segment on that side is simply omitted rather
+            // than being an inverted/empty range.
+            if (drive_x > grid.width() - 2 || drive_x < x_start_adj || drive_x > x_end) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "A rib part of clock network '%s' was not"
                                     " created because the drive point is not reachable. "
@@ -291,14 +312,17 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
             }
 
             // Dont create rib if wire segment is too small
-            if ((x_start + x_offset) >= x_end) {
+            if (x_start_adj >= x_end) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "Rib start '%d' and end '%d' values are "
                                     "not successive for clock network '%s' due to not meeting boundary conditions."
                                     " This can lead to an unroutable architecture.\n",
-                                    (x_start + x_offset), x_end, clock_name_.c_str());
+                                    x_start_adj, x_end, clock_name_.c_str());
                 continue;
             }
+
+            bool has_left = drive_x > x_start_adj;
+            bool has_right = drive_x < x_end;
 
             // create drive point (length zero wire)
             auto drive_node_idx = create_chanx_wire(layer_num,
@@ -311,34 +335,43 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                                     rr_graph_builder);
             clock_graph.add_switch_location(get_name(), drive_.name, drive_x, y, drive_node_idx);
 
-            // create rib wire to the right and left of the drive point
-            auto left_node_idx = create_chanx_wire(layer_num,
-                                                   x_start + x_offset,
-                                                   drive_x - 1,
+            // create rib wire to the right and/or left of the drive point. When the
+            // drive point is placed at one of the rib's endpoints, that side is skipped
+            // entirely instead of being built as a degenerate zero/negative-length wire.
+            int left_node_idx = -1;
+            if (has_left) {
+                left_node_idx = create_chanx_wire(layer_num,
+                                                  x_start_adj,
+                                                  drive_x - 1,
+                                                  y,
+                                                  ptc_num,
+                                                  Direction::DEC,
+                                                  rr_nodes,
+                                                  rr_graph_builder);
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive_.switch_idx, false);
+            }
+
+            int right_node_idx = -1;
+            if (has_right) {
+                right_node_idx = create_chanx_wire(layer_num,
+                                                   drive_x + 1,
+                                                   x_end,
                                                    y,
                                                    ptc_num,
-                                                   Direction::DEC,
+                                                   Direction::INC,
                                                    rr_nodes,
                                                    rr_graph_builder);
-            auto right_node_idx = create_chanx_wire(layer_num,
-                                                    drive_x + 1,
-                                                    x_end,
-                                                    y,
-                                                    ptc_num,
-                                                    Direction::INC,
-                                                    rr_nodes,
-                                                    rr_graph_builder);
-            record_tap_locations(x_start + x_offset,
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive_.switch_idx, false);
+            }
+
+            record_tap_locations(x_start_adj,
                                  x_end,
                                  drive_x,
                                  y,
+                                 drive_node_idx,
                                  left_node_idx,
                                  right_node_idx,
                                  clock_graph);
-
-            // connect drive point to each half rib using a directed switch
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive_.switch_idx, false);
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive_.switch_idx, false);
         }
     }
 }
@@ -404,6 +437,7 @@ void ClockRib::record_tap_locations(unsigned x_start,
                                     unsigned x_end,
                                     unsigned drive_x,
                                     unsigned y,
+                                    int drive_node_idx,
                                     int left_rr_node_idx,
                                     int right_rr_node_idx,
                                     ClockRRGraphBuilder& clock_graph) {
@@ -417,26 +451,34 @@ void ClockRib::record_tap_locations(unsigned x_start,
         // of the right node as belonging to left instead.
         if (x < drive_x) {
             clock_graph.add_switch_location(get_name(), tap_.name, x, y, left_rr_node_idx);
-        } else {
+        } else if (x > drive_x) {
             clock_graph.add_switch_location(get_name(), tap_.name, x, y, right_rr_node_idx);
+        } else {
+            clock_graph.add_switch_location(get_name(), tap_.name, x, y, drive_node_idx);
         }
     }
 }
 
 /* AA: Map drive_seg_idx, left_seg_idx, and right_seg_idx to equivalent index in segment_inf_x as produced in rr_graph.cpp:build_rr_graph */
 void ClockRib::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
-    // We have horizontal segments in clock-ribs so we search for X_AXIS
+    // We have horizontal segments in clock-ribs so we search for X_AXIS.
+    //
+    // Always remap from the unified-space originals (*_seg_idx_unified_), not from
+    // drive_seg_idx_/left_seg_idx_/right_seg_idx_ themselves: build_rr_graph (and
+    // therefore this function) can run more than once per VPR invocation on this
+    // same object, and re-remapping an already-remapped parallel-space index as if
+    // it were still unified would silently corrupt it.
 
     int seg_idx;
 
-    seg_idx = get_parallel_seg_index(drive_seg_idx_, indices_map, e_parallel_axis::X_AXIS);
-    drive_seg_idx_ = (seg_idx >= 0) ? seg_idx : drive_seg_idx_;
+    seg_idx = get_parallel_seg_index(drive_seg_idx_unified_, indices_map, e_parallel_axis::X_AXIS);
+    drive_seg_idx_ = (seg_idx >= 0) ? seg_idx : drive_seg_idx_unified_;
 
-    seg_idx = get_parallel_seg_index(left_seg_idx_, indices_map, e_parallel_axis::X_AXIS);
-    left_seg_idx_ = (seg_idx >= 0) ? seg_idx : left_seg_idx_;
+    seg_idx = get_parallel_seg_index(left_seg_idx_unified_, indices_map, e_parallel_axis::X_AXIS);
+    left_seg_idx_ = (seg_idx >= 0) ? seg_idx : left_seg_idx_unified_;
 
-    seg_idx = get_parallel_seg_index(right_seg_idx_, indices_map, e_parallel_axis::X_AXIS);
-    right_seg_idx_ = (seg_idx >= 0) ? seg_idx : right_seg_idx_;
+    seg_idx = get_parallel_seg_index(right_seg_idx_unified_, indices_map, e_parallel_axis::X_AXIS);
+    right_seg_idx_ = (seg_idx >= 0) ? seg_idx : right_seg_idx_unified_;
 }
 
 /*********************************************************************************
@@ -538,7 +580,9 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     index = right_seg_idx;
     name = clock_name_ + "_right";
-    length = (y_chan_wire.length - drive.offset) - 1;
+    // Clamped to a minimum of 1 -- see the comment on ClockRib's right segment
+    // in ClockRib::create_segments above; the same reasoning applies here.
+    length = std::max((y_chan_wire.length - drive.offset) - 1, 1);
 
     populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
 
@@ -548,9 +592,15 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     index = left_seg_idx;
     name = clock_name_ + "_left";
-    length = drive.offset - 1;
+    // Clamped to a minimum of 1 -- see the comment above.
+    length = std::max(drive.offset - 1, 1);
 
     populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
+
+    // Snapshot the unified-space indices for map_relative_seg_indices to remap from.
+    drive_seg_idx_unified = drive_seg_idx;
+    right_seg_idx_unified = right_seg_idx;
+    left_seg_idx_unified = left_seg_idx;
 }
 
 size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
@@ -577,13 +627,15 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
                 y_end = grid.height() - 2; // CHANY wires top boundary, dont go above the LB
             }
 
+            unsigned y_start_adj = y_start + y_offset;
+
             // Dont create spine if drive point is not reachable
-            if (drive_y > grid.width() - 2 || drive_y >= y_end || drive_y <= (y_start + y_offset)) {
+            if (drive_y > grid.width() - 2 || drive_y < y_start_adj || drive_y > y_end) {
                 continue;
             }
 
             // Dont create spine if wire segment is too small
-            if ((y_start + y_offset) >= y_end) {
+            if (y_start_adj >= y_end) {
                 continue;
             }
 
@@ -626,8 +678,13 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                 y_end = grid.height() - 2; // CHANY wires top boundary, dont go above the LB
             }
 
-            // Dont create spine if drive point is not reachable
-            if (drive_y > grid.width() - 2 || drive_y >= y_end || drive_y <= (y_start + y_offset)) {
+            unsigned y_start_adj = y_start + y_offset;
+
+            // Dont create spine if the drive point falls outside the buildable span.
+            // The drive point itself is allowed to sit on either endpoint (y_start_adj
+            // or y_end): in that case the segment on that side is simply omitted rather
+            // than being an inverted/empty range.
+            if (drive_y > grid.width() - 2 || drive_y < y_start_adj || drive_y > y_end) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "A spine part of clock network '%s' was not"
                                     " created because the drive point is not reachable. "
@@ -637,14 +694,17 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             }
 
             // Dont create spine if wire segment is too small
-            if ((y_start + y_offset) >= y_end) {
+            if (y_start_adj >= y_end) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "Spine start '%d' and end '%d' values are "
                                     "not successive for clock network '%s' due to not meeting boundary conditions."
                                     " This can lead to an unroutable architecture.\n",
-                                    (y_start + y_offset), y_end, clock_name_.c_str());
+                                    y_start_adj, y_end, clock_name_.c_str());
                 continue;
             }
+
+            bool has_left = drive_y > y_start_adj;
+            bool has_right = drive_y < y_end;
 
             //create drive point (length zero wire)
             auto drive_node_idx = create_chany_wire(layer_num,
@@ -658,39 +718,47 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                     num_segments_x);
             clock_graph.add_switch_location(get_name(), drive.name, x, drive_y, drive_node_idx);
 
-            // create spine wire above and below the drive point
-            auto left_node_idx = create_chany_wire(layer_num,
-                                                   y_start + y_offset,
-                                                   drive_y - 1,
+            // create spine wire above and/or below the drive point. When the drive point
+            // is placed at one of the spine's endpoints, that side is skipped entirely
+            // instead of being built as a degenerate zero/negative-length wire.
+            int left_node_idx = -1;
+            if (has_left) {
+                left_node_idx = create_chany_wire(layer_num,
+                                                  y_start_adj,
+                                                  drive_y - 1,
+                                                  x,
+                                                  ptc_num,
+                                                  Direction::DEC,
+                                                  rr_nodes,
+                                                  rr_graph_builder,
+                                                  num_segments_x);
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx, false);
+            }
+
+            int right_node_idx = -1;
+            if (has_right) {
+                right_node_idx = create_chany_wire(layer_num,
+                                                   drive_y + 1,
+                                                   y_end,
                                                    x,
                                                    ptc_num,
-                                                   Direction::DEC,
+                                                   Direction::INC,
                                                    rr_nodes,
                                                    rr_graph_builder,
                                                    num_segments_x);
-            auto right_node_idx = create_chany_wire(layer_num,
-                                                    drive_y + 1,
-                                                    y_end,
-                                                    x,
-                                                    ptc_num,
-                                                    Direction::INC,
-                                                    rr_nodes,
-                                                    rr_graph_builder,
-                                                    num_segments_x);
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx, false);
+            }
 
             // Keep a record of the rr_node idx that we will use to connects switches to at
             // the tap point
-            record_tap_locations(y_start + y_offset,
+            record_tap_locations(y_start_adj,
                                  y_end,
                                  drive_y,
                                  x,
+                                 drive_node_idx,
                                  left_node_idx,
                                  right_node_idx,
                                  clock_graph);
-
-            // connect drive point to each half spine using a directed switch
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx, false);
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx, false);
         }
     }
 }
@@ -753,6 +821,7 @@ void ClockSpine::record_tap_locations(unsigned y_start,
                                       unsigned y_end,
                                       unsigned drive_y,
                                       unsigned x,
+                                      int drive_node_idx,
                                       int left_node_idx,
                                       int right_node_idx,
                                       ClockRRGraphBuilder& clock_graph) {
@@ -766,26 +835,32 @@ void ClockSpine::record_tap_locations(unsigned y_start,
         // of the right node as belonging to left instead.
         if (y < drive_y) {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, left_node_idx);
-        } else {
+        } else if (y > drive_y) {
             clock_graph.add_switch_location(get_name(), tap.name, x, y, right_node_idx);
+        } else {
+            clock_graph.add_switch_location(get_name(), tap.name, x, y, drive_node_idx);
         }
     }
 }
 
 /* AA: Map drive_seg_idx, left_seg_idx, and right_seg_idx to equivalent index in segment_inf_y as produced in rr_graph.cpp:build_rr_graph */
 void ClockSpine::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
-    // We have vertical segments in clock-spines so we search for Y_AXIS
+    // We have vertical segments in clock-spines so we search for Y_AXIS.
+    //
+    // Always remap from the unified-space originals (*_seg_idx_unified), not from
+    // drive_seg_idx/left_seg_idx/right_seg_idx themselves -- see the longer comment
+    // on ClockRib::map_relative_seg_indices.
 
     int seg_idx;
 
-    seg_idx = get_parallel_seg_index(drive_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
-    drive_seg_idx = (seg_idx >= 0) ? seg_idx : drive_seg_idx;
+    seg_idx = get_parallel_seg_index(drive_seg_idx_unified, indices_map, e_parallel_axis::Y_AXIS);
+    drive_seg_idx = (seg_idx >= 0) ? seg_idx : drive_seg_idx_unified;
 
-    seg_idx = get_parallel_seg_index(left_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
-    left_seg_idx = (seg_idx >= 0) ? seg_idx : left_seg_idx;
+    seg_idx = get_parallel_seg_index(left_seg_idx_unified, indices_map, e_parallel_axis::Y_AXIS);
+    left_seg_idx = (seg_idx >= 0) ? seg_idx : left_seg_idx_unified;
 
-    seg_idx = get_parallel_seg_index(right_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
-    right_seg_idx = (seg_idx >= 0) ? seg_idx : right_seg_idx;
+    seg_idx = get_parallel_seg_index(right_seg_idx_unified, indices_map, e_parallel_axis::Y_AXIS);
+    right_seg_idx = (seg_idx >= 0) ? seg_idx : right_seg_idx_unified;
 }
 
 /*********************************************************************************
@@ -878,6 +953,10 @@ void ClockSwitchGrid::create_segments(std::vector<t_segment_inf>& segment_inf) {
     segment_inf.emplace_back();
     y_seg_idx_ = segment_inf.size() - 1;
     populate_segment_values(y_seg_idx_, clock_name_ + "_y", length_hops_ * repeat_.y, layer_, segment_inf, e_parallel_axis::Y_AXIS);
+
+    // Snapshot the unified-space indices for map_relative_seg_indices to remap from.
+    x_seg_idx_unified_ = x_seg_idx_;
+    y_seg_idx_unified_ = y_seg_idx_;
 }
 
 int ClockSwitchGrid::num_grid_locations(const DeviceGrid& grid) const {
@@ -1254,13 +1333,17 @@ int ClockSwitchGrid::create_chany_node(int layer,
 }
 
 void ClockSwitchGrid::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
+    // Always remap from the unified-space originals (*_seg_idx_unified_), not from
+    // x_seg_idx_/y_seg_idx_ themselves -- see the longer comment on
+    // ClockRib::map_relative_seg_indices.
+
     int seg_idx;
 
-    seg_idx = get_parallel_seg_index(x_seg_idx_, indices_map, e_parallel_axis::X_AXIS);
-    x_seg_idx_ = (seg_idx >= 0) ? seg_idx : x_seg_idx_;
+    seg_idx = get_parallel_seg_index(x_seg_idx_unified_, indices_map, e_parallel_axis::X_AXIS);
+    x_seg_idx_ = (seg_idx >= 0) ? seg_idx : x_seg_idx_unified_;
 
-    seg_idx = get_parallel_seg_index(y_seg_idx_, indices_map, e_parallel_axis::Y_AXIS);
-    y_seg_idx_ = (seg_idx >= 0) ? seg_idx : y_seg_idx_;
+    seg_idx = get_parallel_seg_index(y_seg_idx_unified_, indices_map, e_parallel_axis::Y_AXIS);
+    y_seg_idx_ = (seg_idx >= 0) ? seg_idx : y_seg_idx_unified_;
 }
 
 /*********************************************************************************

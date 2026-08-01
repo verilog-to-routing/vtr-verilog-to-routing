@@ -137,10 +137,22 @@ class ClockRib : public ClockNetwork {
     // offset and incr in the x
     RibTaps tap_;
 
-    // segment indices
+    // segment indices, relative to the **parallel** (axis-specific) segment vector.
+    // Initially (as set by create_segments) these are relative to the **unified**
+    // segment_inf vector instead; map_relative_seg_indices remaps them once
+    // build_rr_graph has split segment_inf into its per-axis vectors. That remap
+    // always reads from *_seg_idx_unified_ (set once, in create_segments, and never
+    // modified again) rather than from these fields themselves, since build_rr_graph
+    // -- and therefore map_relative_seg_indices -- can run more than once per VPR
+    // invocation (e.g. once for the placement delay model, once for the real routing
+    // resource graph) on this same long-lived object; remapping an already-remapped
+    // parallel index as though it were still a unified one would silently corrupt it.
     int right_seg_idx_ = UNDEFINED;
     int left_seg_idx_ = UNDEFINED;
     int drive_seg_idx_ = UNDEFINED;
+    int right_seg_idx_unified_ = UNDEFINED;
+    int left_seg_idx_unified_ = UNDEFINED;
+    int drive_seg_idx_unified_ = UNDEFINED;
 
   public:
     /** Constructor**/
@@ -193,6 +205,7 @@ class ClockRib : public ClockNetwork {
                               unsigned x_end,
                               unsigned drive_x,
                               unsigned y,
+                              int drive_node_idx,
                               int left_rr_node_idx,
                               int right_rr_node_idx,
                               ClockRRGraphBuilder& clock_graph);
@@ -212,13 +225,21 @@ class ClockSpine : public ClockNetwork {
 
     // segment indices
     /* AA:Initially, after loading up these values in device setup, the indices will be relative to the **unified** segment_inf vector which
-     * is carried in the device.Arch; The sole purpose of these indices is for calculating the cost index when allocating the drive, left, and 
+     * is carried in the device.Arch; The sole purpose of these indices is for calculating the cost index when allocating the drive, left, and
      * right nodes for the network. We now use segment indices relative to the **parallel** vector of segments to setup the cost index, so these
      * will be remapped later in the map_relative_seg_indices.  */
 
     int right_seg_idx = UNDEFINED;
     int left_seg_idx = UNDEFINED;
     int drive_seg_idx = UNDEFINED;
+
+    // Unified-space originals, set once by create_segments and never modified again.
+    // map_relative_seg_indices always remaps from these (not from the fields above)
+    // so that it stays idempotent across the multiple times build_rr_graph runs per
+    // VPR invocation -- see the longer comment on ClockRib's equivalent fields.
+    int right_seg_idx_unified = UNDEFINED;
+    int left_seg_idx_unified = UNDEFINED;
+    int drive_seg_idx_unified = UNDEFINED;
 
   public:
     /*
@@ -263,6 +284,7 @@ class ClockSpine : public ClockNetwork {
                               unsigned y_end,
                               unsigned drive_y,
                               unsigned x,
+                              int drive_node_idx,
                               int left_node_idx,
                               int right_node_idx,
                               ClockRRGraphBuilder& clock_graph);
@@ -311,6 +333,13 @@ class ClockSwitchGrid : public ClockNetwork {
     // segment indices for the horizontal/vertical inter-switch-box wires
     int x_seg_idx_ = UNDEFINED;
     int y_seg_idx_ = UNDEFINED;
+
+    // Unified-space originals, set once by create_segments and never modified again.
+    // map_relative_seg_indices always remaps from these (not from the fields above)
+    // so that it stays idempotent across the multiple times build_rr_graph runs per
+    // VPR invocation -- see the longer comment on ClockRib's equivalent fields.
+    int x_seg_idx_unified_ = UNDEFINED;
+    int y_seg_idx_unified_ = UNDEFINED;
 
     std::vector<SwitchGridPoint> switch_points_;
 
