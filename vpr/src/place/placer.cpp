@@ -33,7 +33,6 @@ Placer::Placer(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
-               const IntraLbPbPinLookup& pb_gpin_lookup,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
@@ -44,7 +43,6 @@ Placer::Placer(const Netlist<>& net_list,
     : placer_opts_(placer_opts)
     , analysis_opts_(analysis_opts)
     , noc_opts_(noc_opts)
-    , pb_gpin_lookup_(pb_gpin_lookup)
     , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
     , placer_state_(placer_opts.place_algorithm.is_timing_driven())
