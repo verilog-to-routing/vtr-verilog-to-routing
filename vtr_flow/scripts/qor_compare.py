@@ -146,7 +146,7 @@ def main():
         avail_metrics.update(df.columns)  # Record available metrics
 
         # Convert to work sheet
-        sheet_name = safe_sheet_title("{}".format(args.result_names[i]))
+        sheet_name = safe_sheet_title(str(args.result_names[i]))
         ws = dataframe_to_sheet(wb, df, sheet_name)
 
         raw_sheets[sheet_name] = ws
