@@ -271,7 +271,7 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
         raw_header = raw_sheet.cell(row=1, column=ref_col)
 
         ref_header_name = ref_header.value.strip()
-        raw_header_name = ref_header.value.strip()
+        raw_header_name = raw_header.value.strip()
         assert ref_header_name == raw_header_name, "Header values must match"
 
         if ref_header_name not in keys + metrics:
