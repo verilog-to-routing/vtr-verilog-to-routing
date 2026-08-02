@@ -132,7 +132,7 @@ class PlacerCriticalities {
      */
     void update_criticalities(const PlaceCritParams& crit_params);
 
-    ///@bried Enable the recompute_required flag to enforce from scratch update.
+    ///@brief Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required();
 
     /**
