@@ -240,6 +240,31 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     void initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const;
 
     /**
+     * @brief Directional finite-difference audit of the objective gradient.
+     *
+     * Sweeps the finite-difference step over probes at tile boundaries,
+     * zero-capacity sites, and cell interiors. Also audits fillers through their
+     * separate density-gradient path. Enabled only at diagnostic verbosity.
+     */
+    void audit_gradient_(const PartialPlacement& p_placement,
+                         const std::vector<PrimitiveVectorDim>& dimensions,
+                         const std::vector<double>& density_multipliers,
+                         std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
+                         double proximity_weight,
+                         const FillerState& fillers) const;
+
+    /**
+     * @brief Diagnostic: report how much density force aims at unusable tiles.
+     *
+     * Compares the force-weighted unusable-tile hit rate with the unusable share
+     * of the device. Reads the potential from the latest density evaluation.
+     */
+    void report_density_force_leak_(const PartialPlacement& p_placement,
+                                    const std::vector<PrimitiveVectorDim>& dimensions,
+                                    const std::vector<double>& density_multipliers,
+                                    size_t epoch) const;
+
+    /**
      * @brief Build dynamic filler particles from seed whitespace.
      *
      * Fillers approximate movable whitespace in the electrostatic system: each
@@ -384,6 +409,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
 
     vtr::vector<APBlockId, double> block_precond_;      ///< Per-block diagonal preconditioner (objective curvature estimate).
+    vtr::vector<APBlockId, float> pin_density_inflation_; ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
     bool precond_active_ = false;                       ///< Whether the preconditioner is applied in the current optimization run.
     double precond_alpha_active_ = 1.0;                 ///< Preconditioner strength exponent for the current optimization run.
     std::vector<bool> boundary_confined_dims_;          ///< [dim index] true if target capacity lies almost entirely on the device boundary.
@@ -408,7 +434,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     mutable std::vector<std::vector<double>> density_utilization_workspace_; ///< [dim][site] deposited block/filler mass.
     mutable std::vector<std::vector<double>> density_potential_workspace_;   ///< [dim][site] electrostatic potential.
     mutable std::vector<double> density_charge_workspace_;                   ///< [site] current resource dimension's charge.
-    mutable std::vector<bool> density_active_workspace_;                     ///< [site] whether the current dimension has density charge/capacity.
     mutable std::vector<double> density_layer_charge_workspace_;             ///< One layer extracted for the Poisson solve.
     mutable std::vector<double> density_layer_potential_workspace_;          ///< One layer returned by the Poisson solve.
 
@@ -439,8 +464,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        the sparse gate. The electrostatic field then has nothing to spread,
     ///        so the epoch loop is capped to a cheap filler-free probe instead of
     ///        the full schedule (whose result was measured to be discarded in
-    ///        favor of the seed on sparse Titanium designs, at up to 11x the
-    ///        lp-b2b global-placement runtime).
+    ///        favor of the seed on sparse designs, at up to 11x the baseline
+    ///        placer's global-placement runtime).
     bool sparse_seed_ = false;
     double warmstart_seed_overflow_ = 0.; ///< Physical overflow of the dense warm-start seed used by the QoR gate.
 };
