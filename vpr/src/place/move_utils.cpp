@@ -1302,35 +1302,6 @@ std::string e_move_result_to_string(e_move_result move_outcome) {
     }
 }
 
-int find_free_layer(t_logical_block_type_ptr logical_block,
-                    const t_pl_loc& loc,
-                    const BlkLocRegistry& blk_loc_registry) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& compressed_grids = g_vpr_ctx.placement().compressed_block_grids;
-    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-
-    // TODO: Compatible layer vector should be shuffled first, and then iterated through
-    int free_layer = loc.layer;
-    VTR_ASSERT(loc.layer != UNDEFINED);
-    if (device_ctx.grid.get_num_layers() > 1) {
-        const auto& compatible_layers = compressed_grids[logical_block->index].get_layer_nums();
-        if (compatible_layers.size() > 1) {
-            if (grid_blocks.block_at_location(loc)) {
-                for (const auto& layer : compatible_layers) {
-                    if (layer != free_layer) {
-                        if (grid_blocks.block_at_location(loc) == ClusterBlockId::INVALID()) {
-                            free_layer = layer;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return free_layer;
-}
-
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng) {
     const auto& compatible_layers = g_vpr_ctx.placement().compressed_block_grids[logical_block->index].get_layer_nums();
     VTR_ASSERT(!compatible_layers.empty());

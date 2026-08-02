@@ -433,15 +433,6 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
 
 std::string e_move_result_to_string(e_move_result move_outcome);
 
-/**
- * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accommodate "logical_block".
- * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
- * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
- */
-int find_free_layer(t_logical_block_type_ptr logical_block,
-                    const t_pl_loc& loc,
-                    const BlkLocRegistry& blk_loc_registry);
-
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
 
 /**
