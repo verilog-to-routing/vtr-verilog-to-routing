@@ -1378,7 +1378,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const Plac
     const FloorplanningContext& floorplan_ctx = g_vpr_ctx.floorplanning();
 
     t_block_score score;
-    
+
     vtr::vector<ClusterBlockId, t_block_score> block_scores;
 
     block_scores.resize(cluster_ctx.clb_nlist.blocks().size());

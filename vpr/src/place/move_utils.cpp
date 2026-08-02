@@ -430,11 +430,11 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     // Collect the macros affected
     std::vector<int> affected_macros;
     e_block_move_result outcome = identify_macro_self_swap_affected_macros(affected_macros,
-                                                                          imacro,
-                                                                          swap_offset,
-                                                                          blk_loc_registry,
-                                                                          place_macros,
-                                                                          blocks_affected.move_abortion_logger);
+                                                                           imacro,
+                                                                           swap_offset,
+                                                                           blk_loc_registry,
+                                                                           place_macros,
+                                                                           blocks_affected.move_abortion_logger);
 
     if (outcome != e_block_move_result::VALID) {
         return outcome;
