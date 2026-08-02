@@ -39,6 +39,7 @@ DEFAULT_METRICS = [
     "abc_synth_time",
     "pack_time",
     "place_time",
+    "ap_time",
     "min_chan_width_route_time",
     "crit_path_route_time",
     "vtr_flow_elapsed_time",
