@@ -112,9 +112,8 @@ def parse_args():
         args.result_names = args.parse_result_files
     elif len(args.result_names) != len(args.parse_result_files):
         raise RuntimeError(
-            "Number of result names ({}) does not match number of result files ({})".format(
-                len(args.result_names), len(args.parse_result_files)
-            )
+            f"Number of result names ({len(args.result_names)}) does not match "
+            f"number of result files ({len(args.parse_result_files)})"
         )
 
     return args
@@ -183,9 +182,8 @@ def make_transpose(dest_sheet, ref_sheet):
             ref_cell = ref_sheet.cell(row=ref_row, column=ref_col)
 
             dest_cell = dest_sheet.cell(row=ref_col, column=ref_row)
-            dest_cell.value = '=IF(OR(ISBLANK({cell}),ISERROR({cell})),"",{cell})'.format(
-                cell=value_ref(ref_cell)
-            )
+            cell = value_ref(ref_cell)
+            dest_cell.value = f'=IF(OR(ISBLANK({cell}),ISERROR({cell})),"",{cell})'
 
 
 def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
@@ -203,7 +201,7 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
                     continue
                 else:
                     dest_cell = summary_sheet.cell(row=dest_row, column=dest_col)
-                    dest_cell.value = "={}".format(value_ref(ratio_cell))
+                    dest_cell.value = f"={value_ref(ratio_cell)}"
                     dest_col += 1
             dest_row += 1
             dest_col = 1  # Reset for next row
@@ -224,7 +222,7 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
             ratio_cell = ratio_sheet.cell(row=ratio_row, column=ratio_col)
 
             dest_cell = summary_sheet.cell(row=dest_row, column=dest_col)
-            dest_cell.value = "={}".format(value_ref(ratio_cell))
+            dest_cell.value = f"={value_ref(ratio_cell)}"
 
             dest_col += 1
 
@@ -285,9 +283,9 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
             if ref_header_name in keys:
                 assert ref_cell.value == raw_cell.value, "Key value must match"
 
-                dest_cell.value = "={}".format(value_ref(ref_cell))
+                dest_cell.value = f"={value_ref(ref_cell)}"
             elif ref_header.value in metrics and ref_cell.data_type == TYPE_NUMERIC:
-                dest_cell.value = "={}".format(safe_ratio_ref(raw_cell, ref_cell))
+                dest_cell.value = f"={safe_ratio_ref(raw_cell, ref_cell)}"
             else:
                 pass
                 # assert False
@@ -305,7 +303,7 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
             )
             end_cell = ws.cell(row=dest_row + row_offset - 1, column=dest_col + col_offset)
 
-            dest_cell.value = "=GEOMEAN({}:{})".format(start_cell.coordinate, end_cell.coordinate)
+            dest_cell.value = f"=GEOMEAN({start_cell.coordinate}:{end_cell.coordinate})"
 
         row_offset += 1
         col_offset += 1
@@ -316,13 +314,13 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
 
 
 def value_ref(cell):
-    return "{}!{}".format(cell.parent.title, cell.coordinate)
+    return f"{cell.parent.title}!{cell.coordinate}"
 
 
 def safe_ratio_ref(num_cell, denom_cell):
-    return 'IF(OR({denom} = 0,{denom}=-1),"",{num} / {denom})'.format(
-        num=value_ref(num_cell), denom=value_ref(denom_cell)
-    )
+    num = value_ref(num_cell)
+    denom = value_ref(denom_cell)
+    return f'IF(OR({denom} = 0,{denom}=-1),"",{num} / {denom})'
 
 
 def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
@@ -336,7 +334,7 @@ def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
 
         dest_cell = dest_sheet.cell(row=row, column=dest_col)
 
-        dest_cell.value = "={}".format(value_ref(ref_cell))
+        dest_cell.value = f"={value_ref(ref_cell)}"
 
         dest_col += 1
 
@@ -374,21 +372,17 @@ def safe_sheet_title(raw_title):
 def get_task_result_files(task_name):
     task_path = os.path.join("..", "tasks", task_name)
     if not os.path.isdir(task_path):
-        raise RuntimeError("Task is not found at {}".format(task_path))
+        raise RuntimeError(f"Task is not found at {task_path}")
 
     task_result_files = []
     task_result_files.append(os.path.join("..", "tasks", task_name, "config", "golden_results.txt"))
     task_result_files.append(os.path.join("..", "tasks", task_name, "latest", "parse_results.txt"))
 
     if not os.path.isfile(task_result_files[0]):
-        raise RuntimeError(
-            'Golden results of task "{}" doesn\'t exist'.format(task_result_files[0])
-        )
+        raise RuntimeError(f'Golden results of task "{task_result_files[0]}" doesn\'t exist')
 
     if not os.path.isfile(task_result_files[1]):
-        raise RuntimeError(
-            'Latest parse results of task "{}" doesn\'t exist'.format(task_result_files[1])
-        )
+        raise RuntimeError(f'Latest parse results of task "{task_result_files[1]}" doesn\'t exist')
 
     return task_result_files
 
