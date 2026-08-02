@@ -294,7 +294,7 @@ class PlacementAnnealer {
 
     /**
      * @brief Returns true when the inner loop should run with speculative
-     * parallel swap evaluation (see parallel_anneal_engine.h).
+     * parallel swap evaluation.
      *
      * Requires --place_swap_eval_num_workers > 1 and a configuration the parallel
      * engine supports (CRITICALITY_TIMING_PLACE or BOUNDING_BOX_PLACE, no NoC

@@ -914,21 +914,11 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
     MoveGenerator& move_generator = select_move_generator(move_generator_1_, move_generator_2_, agent_state_,
                                                           placer_opts_, quench_started_);
     // Replicas mirror the annealer's generator pair; tell the engine which one
-    // this inner loop uses.
+    // this loop iteration uses.
     const bool use_second_generator = (&move_generator == move_generator_2_.get());
 
-    // The outer loop mutates master state the batches do not track (timing
-    // updates); bring every replica up to date. After the first (full) sync this
-    // only copies the timing data, since winner commits keep the replicas'
-    // committed state identical to the master's.
+    // Bring every replica up to date with the timing updates made by the outer loop.
     parallel_engine_->sync_replicas();
-
-    // Fixed speculative window: every batch issues one attempt per evaluator.
-    // A batch's wall time is one evaluation regardless of how many attempts it
-    // issues, and the expected number of retired attempts per batch grows with
-    // the window, so the full window maximizes throughput; attempts discarded
-    // past the winner only cost workers that would otherwise have been idle.
-    const int window = placer_opts_.swap_eval_num_workers;
 
     const int recompute_limit = quench_started_ ? quench_recompute_limit_ : inner_recompute_limit_;
     const bool timing_driven = placer_opts_.place_algorithm.is_timing_driven();
@@ -939,17 +929,11 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
     int inner_crit_iter_count = 0;
 
     while (inner_iter < annealing_state_.move_lim) {
-        // Cap the batch so it never straddles a synchronization point: the end of
-        // the inner loop, a periodic timing update, or a from-scratch cost
-        // recompute. All bounds are deterministic counters, so the batch sequence
-        // (and therefore the result) is reproducible for a fixed seed and worker count.
-        int batch_size = std::min(window, annealing_state_.move_lim - inner_iter);
-        if (timing_driven) {
-            batch_size = std::min(batch_size, std::max(recompute_limit - inner_crit_iter_count, 1));
-        }
-        batch_size = std::min(batch_size, std::max(MAX_MOVES_BEFORE_RECOMPUTE - moves_since_cost_recompute_ + 1, 1));
-
-        t_batch_outcome batch_outcome = parallel_engine_->run_batch(batch_size, move_generator, use_second_generator,
+        // Every batch issues one attempt per worker. The last batch can overshoot
+        // move_lim, and the timing/cost recomputes below can lag their limits, by up
+        // to one batch.
+        t_batch_outcome batch_outcome = parallel_engine_->run_batch(placer_opts_.swap_eval_num_workers,
+                                                                    move_generator, use_second_generator,
                                                                     annealing_state_.t, annealing_state_.rlim);
 
         // Bookkeeping for the attempts that retired, in attempt order.
