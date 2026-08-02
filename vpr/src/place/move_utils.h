@@ -144,6 +144,14 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       const BlkLocRegistry& blk_loc_registry,
                                       const PlaceMacros& place_macros);
 
+/**
+ * @brief Returns the set of macros affected by moving imacro by the specified offset.
+ *
+ * A macro is appended to macros only if it is not already present, so the result
+ * contains no duplicates.
+
+ * @return ABORT if a macro member would move to an illegal location, VALID otherwise.
+ */
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
