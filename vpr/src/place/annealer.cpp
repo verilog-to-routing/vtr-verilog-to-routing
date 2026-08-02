@@ -888,30 +888,25 @@ bool PlacementAnnealer::should_use_parallel_inner_loop_() {
     return true;
 }
 
-void PlacementAnnealer::init_parallel_engine_() {
-    VTR_ASSERT(!parallel_engine_);
-
-    const int num_workers = placer_opts_.swap_eval_num_workers;
-    VTR_LOG("Parallel swap evaluation enabled: %d workers\n", num_workers);
-
-    parallel_engine_ = std::make_unique<ParallelAnnealEngine>(num_workers,
-                                                              placer_opts_,
-                                                              place_macros_,
-                                                              costs_,
-                                                              placer_state_,
-                                                              net_cost_handler_,
-                                                              annealing_state_.move_lim,
-                                                              noc_opts_.noc_centroid_weight,
-                                                              delay_model_,
-                                                              criticalities_,
-                                                              pin_timing_invalidator_,
-                                                              *swap_evaluator_,
-                                                              blocks_affected_);
-}
-
 void PlacementAnnealer::placement_inner_loop_parallel_() {
+    // Create the engine and its worker replicas on the first inner loop iteration.
     if (!parallel_engine_) {
-        init_parallel_engine_();
+        const int num_workers = placer_opts_.swap_eval_num_workers;
+        VTR_LOG("Parallel swap evaluation enabled: %d workers\n", num_workers);
+
+        parallel_engine_ = std::make_unique<ParallelAnnealEngine>(num_workers,
+                                                                  placer_opts_,
+                                                                  place_macros_,
+                                                                  costs_,
+                                                                  placer_state_,
+                                                                  net_cost_handler_,
+                                                                  annealing_state_.move_lim,
+                                                                  noc_opts_.noc_centroid_weight,
+                                                                  delay_model_,
+                                                                  criticalities_,
+                                                                  pin_timing_invalidator_,
+                                                                  *swap_evaluator_,
+                                                                  blocks_affected_);
     }
 
     placer_stats_.reset();

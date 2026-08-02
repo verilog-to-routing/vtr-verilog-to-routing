@@ -304,9 +304,6 @@ class PlacementAnnealer {
      */
     bool should_use_parallel_inner_loop_();
 
-    /// @brief Lazily creates the parallel swap evaluation engine and its worker replicas.
-    void init_parallel_engine_();
-
     /**
      * @brief Parallel counterpart of placement_inner_loop().
      *
