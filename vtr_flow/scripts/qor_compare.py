@@ -116,8 +116,6 @@ def parse_args():
                 len(args.result_names), len(args.parse_result_files)
             )
         )
-    else:
-        assert len(args.result_names) == len(args.parse_result_files)
 
     return args
 
