@@ -333,7 +333,7 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
 
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-            float conn_timing_cost = comp_td_connection_cost(delay_model, place_crit, placer_state, net_id, ipin);
+            double conn_timing_cost = comp_td_connection_cost(delay_model, place_crit, placer_state, net_id, ipin);
 
             // Record new value
             connection_timing_cost[net_id][ipin] = conn_timing_cost;
