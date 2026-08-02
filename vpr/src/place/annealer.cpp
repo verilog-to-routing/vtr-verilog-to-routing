@@ -965,9 +965,8 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
             move_outcome_stats.delta_bb_cost_abs = attempt.deltas.cost_terms_delta.bb_cost;
             move_outcome_stats.delta_timing_cost_abs = attempt.deltas.timing_delta_c;
 
-            // Rewards are replayed to the agent in attempt order. Restore the
-            // agent action captured at proposal time so the reward credits the
-            // arm that actually proposed this attempt.
+            // Restore the action captured at proposal time so the reward credits
+            // the arm that actually proposed this attempt.
             move_generator.set_last_action(attempt.agent_action);
             move_generator.calculate_reward_and_process_outcome(move_outcome_stats, attempt.deltas.delta_c,
                                                                 REWARD_BB_TIMING_RELATIVE_WEIGHT);
@@ -982,8 +981,7 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
         inner_crit_iter_count += batch_outcome.num_retired_attempts;
         moves_since_cost_recompute_ += batch_outcome.num_retired_attempts;
 
-        // Periodic timing update, aligned to retired attempt counts (skipped at
-        // the very end of the loop like in the sequential inner loop).
+        // Periodic timing update, aligned to retired attempt counts.
         if (timing_driven && inner_crit_iter_count >= recompute_limit
             && inner_iter < annealing_state_.move_lim) {
             inner_crit_iter_count = 0;
@@ -999,11 +997,8 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
             parallel_engine_->sync_replicas_timing();
         }
 
-        /* Lines below prevent too much round-off error from accumulating
-         * in the cost over many iterations (due to incremental updates).
-         * This round-off can lead to error checks failing because the cost
-         * is different from what you get when you recompute from scratch.
-         */
+        // Recompute periodically so round-off from the incremental updates does not
+        // accumulate enough to fail the cost error checks.
         if (moves_since_cost_recompute_ > MAX_MOVES_BEFORE_RECOMPUTE) {
             net_cost_handler_.recompute_costs_from_scratch(delay_model_, criticalities_, costs_);
 
@@ -1022,12 +1017,7 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
             }
         }
     }
-
-#ifdef VPR_USE_SIGACTION
-    // Save the block locations after each inner loop for checkpointing.
-    g_vpr_ctx.mutable_placement().mutable_block_locs() = placer_state_.block_locs();
-#endif
-
+    
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
 

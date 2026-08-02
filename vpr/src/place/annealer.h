@@ -307,10 +307,8 @@ class PlacementAnnealer {
     /**
      * @brief Parallel counterpart of placement_inner_loop().
      *
-     * Runs the inner loop as a sequence of speculative batches (see
-     * ParallelAnnealEngine::run_batch()), each issuing one attempt per evaluator
-     * (--place_swap_eval_num_workers). The result is deterministic for a fixed
-     * seed and worker count.
+     * Runs the inner loop as a sequence of speculative batches,
+     * each issuing one attempt per evaluator.
      */
     void placement_inner_loop_parallel_();
 
@@ -357,9 +355,9 @@ class PlacementAnnealer {
     /// Keep record of moved blocks and affected pins in a swap
     t_pl_blocks_to_be_moved blocks_affected_;
 
-    /// Evaluates/commits/reverts swaps against the master placement state
+    /// Evaluates/commits/reverts swaps
     std::unique_ptr<SwapEvaluator> swap_evaluator_;
-    /// Speculative parallel swap evaluation engine (created lazily when enabled)
+    /// Speculative parallel swap evaluation engine.
     std::unique_ptr<ParallelAnnealEngine> parallel_engine_;
     /// Ensures the fallback-to-sequential warning is only printed once
     bool parallel_fallback_warned_ = false;
