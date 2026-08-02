@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-from collections import OrderedDict
 
 import openpyxl  # Excel spreadsheet manipulation library
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -135,12 +134,12 @@ def main():
     avail_metrics = set()
 
     # Load all the raw data into separate sheets
-    raw_sheets = OrderedDict()
+    raw_sheets = {}
     for i, csv in enumerate(args.parse_result_files):
         # Load as CSV
         print("Loading", csv)
 
-        base, ext = os.path.splitext(csv)
+        _, ext = os.path.splitext(csv)
         if ext == ".txt":
             sep = "\t"
         else:
@@ -239,7 +238,7 @@ def make_ratios(ratio_sheet, raw_sheets, keys, metrics):
 
     ref_sheet = raw_sheets[ref_sheet_title]  # Get the first raw sheet
 
-    cell_ranges = OrderedDict()
+    cell_ranges = {}
 
     row = 1
     for raw_sheet_title, raw_sheet in raw_sheets.items():
@@ -322,10 +321,6 @@ def value_ref(cell):
     return "{}!{}".format(cell.parent.title, cell.coordinate)
 
 
-def ratio_ref(num_cell, denom_cell):
-    return "{num} / {denom}".format(num=value_ref(num_cell), denom=value_ref(denom_cell))
-
-
 def safe_ratio_ref(num_cell, denom_cell):
     return 'IF(OR({denom} = 0,{denom}=-1),"",{num} / {denom})'.format(
         num=value_ref(num_cell), denom=value_ref(denom_cell)
@@ -338,7 +333,7 @@ def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
     for col in range(1, ref_sheet.max_column + 1):
         ref_cell = ref_sheet.cell(row=1, column=col)
 
-        if values != None and ref_cell.value.strip() not in values:
+        if values is not None and ref_cell.value.strip() not in values:
             continue
 
         dest_cell = dest_sheet.cell(row=row, column=dest_col)
