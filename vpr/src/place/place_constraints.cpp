@@ -400,11 +400,11 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  * and the routine will return false.
  */
 bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
 
     Region intersect_reg(0, 0,
-                         (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height(),
+                         (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1,
                          0, num_layers - 1);
 
     const std::vector<Region>& regions = pr.get_regions();
