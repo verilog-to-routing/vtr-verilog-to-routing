@@ -317,8 +317,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     annealing_state_.t = estimate_starting_temperature_() * auto_init_t_scale;
 }
 
-// Out-of-line so std::unique_ptr<ParallelAnnealEngine> can destroy a type that is
-// only forward-declared in the header.
+// Defined here, not in the header: ParallelAnnealEngine is only forward-declared there.
 PlacementAnnealer::~PlacementAnnealer() = default;
 
 float PlacementAnnealer::estimate_starting_temperature_() {
@@ -595,7 +594,6 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
         // Apply the move to block_locs and compute the resulting cost deltas.
-        // See SwapEvaluator::apply_and_evaluate() for details.
         t_swap_cost_deltas deltas = swap_evaluator_->apply_and_evaluate(blocks_affected_, place_algorithm);
         cost_terms_delta = deltas.cost_terms_delta;
         timing_delta_c = deltas.timing_delta_c;
@@ -666,7 +664,6 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                 costs_.interposer_cost += cost_terms_delta.interposer_cost;
                 costs_.interposer_cong_cost += cost_terms_delta.interposer_cong_cost;
             }
-            bool commit_td = false;
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
 
@@ -674,10 +671,6 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                  * timing updates. These invalidations are accumulated for a
                  * big timing update in the outer loop. */
                 pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_);
-
-                // The proposed connection delays and timing costs are committed
-                // by SwapEvaluator::commit() below.
-                commit_td = true;
             } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 // Update the timing driven cost as usual
                 costs_.timing_cost += timing_delta_c;
@@ -687,9 +680,11 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                 commit_setup_slacks(setup_slacks_, placer_state_);
             }
 
-            // Commit the move to the commit-only placement state (committed net
-            // costs, interposer costs, connection delays/timing costs, grid_blocks).
-            swap_evaluator_->commit(blocks_affected_, update_interposer_costs, commit_td);
+            // Make the move permanent. Connection delays and timing costs are committed
+            // only in CRITICALITY_TIMING_PLACE mode; SLACK_TIMING_PLACE already committed
+            // them before its timing analysis.
+            swap_evaluator_->commit(blocks_affected_, update_interposer_costs,
+                                    /*commit_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
             if (noc_opts_.noc) {
                 noc_cost_handler_->commit_noc_costs();
@@ -708,7 +703,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
             // Restore block_locs and reset the scratch/proposed state.
             swap_evaluator_->revert(blocks_affected_,
-                                    place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
+                                    /*revert_td=*/place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE);
 
             if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.
