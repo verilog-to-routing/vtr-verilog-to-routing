@@ -10,6 +10,7 @@
 #include "PlacerSetupSlacks.h"
 #include "placer_state.h"
 #include "place_util.h"
+#include "vtr_math.h"
 #include "vtr_time.h"
 
 // Routines local to place_timing_update.cpp
@@ -243,15 +244,17 @@ bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
  * from-scratch recalculation, refer to comp_td_cost().
  *
  * We must be careful calculating the total timing cost incrementally, due to limited
- * floating point precision, so that we get a bit-identical result matching the one
- * calculated by comp_td_costs().
+ * floating point precision, so that the result stays consistent with the one calculated
+ * from scratch by comp_td_costs().
  *
  * In particular, we can not simply calculate the incremental delta's caused by changed
  * connection timing costs and adjust the timing cost. Due to limited precision, the results
- * of floating point math operations are order dependent and we would get a different result.
+ * of floating point math operations are order dependent and the accumulated round-off would
+ * drift away from the from-scratch value over many updates.
  *
- * To get around this, we calculate the timing costs hierarchically, to ensure that we
- * calculate the sum with the same order of operations as comp_td_costs().
+ * To get around this, we sum the timing costs with a fixed order of operations,
+ * using the binary tree of partial sums in PlacerTimingCosts. This keeps the result
+ * within round-off of comp_td_costs() no matter how many updates are performed.
  *
  * See PlacerTimingCosts object used to represent connection_timing_costs for details.
  */
@@ -301,7 +304,11 @@ void update_td_costs(const PlaceDelayModel* delay_model,
 #ifdef VTR_ASSERT_DEBUG_ENABLED
     double check_timing_cost = 0.;
     comp_td_costs(delay_model, place_crit, placer_state, &check_timing_cost);
-    VTR_ASSERT_DEBUG_MSG(check_timing_cost == *timing_cost,
+    // The incremental total is summed via the PlacerTimingCosts binary tree, while
+    // comp_td_costs() sums linearly (per net, then over nets). Floating point addition
+    // is not associative, so the two totals can differ by round-off; compare with a
+    // small relative tolerance instead of exact equality.
+    VTR_ASSERT_DEBUG_MSG(vtr::isclose(check_timing_cost, *timing_cost),
                          "Total timing cost calculated incrementally in update_td_costs() is "
                          "not consistent with value calculated from scratch in comp_td_costs()");
 #endif
@@ -341,7 +348,6 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
         // Store net timing cost for more efficient incremental updating
         net_timing_cost[net_id] = sum_td_net_cost(net_id, placer_state);
     }
-    // Make sure timing cost does not go above MIN_TIMING_COST.
     *timing_cost = sum_td_costs(placer_state);
 }
 
