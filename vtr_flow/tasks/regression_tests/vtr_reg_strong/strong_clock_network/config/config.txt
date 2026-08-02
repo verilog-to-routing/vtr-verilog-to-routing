@@ -33,6 +33,8 @@ arch_list_add=spine_regions/k6_frac_N10_frac_chain_mem32K_clk_1_by_1.xml
 arch_list_add=spine_regions/k6_frac_N10_frac_chain_mem32K_clk_2_by_2.xml
 # arch_list_add=spine_regions/k6_frac_N10_frac_chain_mem32K_clk_4_by_4.xml
 # arch_list_add=spine_regions/k6_frac_N10_frac_chain_mem32K_clk_8_by_8.xml
+# arch_list_add=spine_regions/k6_frac_N10_frac_chain_mem32K_clk_16_by_16.xml
+# arch_list_add=spine_regions/k6_frac_N10_frac_chain_mem32K_clk_32_by_32.xml
 
 # Parse info and how to parse
 parse_file=vpr_clock_modeling.txt

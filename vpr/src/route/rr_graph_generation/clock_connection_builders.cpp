@@ -388,21 +388,61 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
             x,
             y);
 
-        // boundary conditions:
-        // y at grid height and height -1 connections share the same drive point
-        if (y == int(grid.height() - 2)) {
-            y = y - 1;
-        }
-        // y at 0 and y at 1 share the same drive point
-        if (y == 0) {
-            y = 1;
-        }
-
+        // Try the exact (x, y) first. Some "from" networks -- e.g. a clock_switch_grid's
+        // sparse taps -- register nodes at the unclamped grid location. Others -- spine/rib
+        // wires -- clamp their endpoint inward by one tile near the top/bottom device
+        // boundary to avoid overlapping the perimeter I/O ring (see the y_offset clamp in
+        // ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance), so their node
+        // ends up one tile away from where a naive offset calculation would expect. Probe
+        // the exact location first (non-fatal) and only fall back to the boundary-shifted
+        // position if nothing is registered there.
+        //
+        // FIXME: the boundary shift below -- and the spine/rib clamp it works around --
+        // both hardcode the assumption that I/O lives on the device perimeter. That isn't
+        // generally true, so this whole boundary-handling scheme needs to be reworked to
+        // derive the valid span from the actual device/block layout. See the matching FIXME
+        // on ClockRib::estimate_additional_nodes in clock_network_builders.cpp. This
+        // required=false probe keeps things working in the meantime, but doesn't fix the
+        // underlying assumption.
         auto from_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
             from_clock,
             from_switch,
             x,
-            y);
+            y,
+            /*required=*/false);
+
+        if (from_rr_node_indices.empty()) {
+            int shifted_y = y;
+            // boundary conditions:
+            // y at grid height and height -1 connections share the same drive point
+            if (y == int(grid.height() - 2)) {
+                shifted_y = y - 1;
+            }
+            // y at 0 and y at 1 share the same drive point
+            if (y == 0) {
+                shifted_y = 1;
+            }
+
+            if (shifted_y != y) {
+                from_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
+                    from_clock,
+                    from_switch,
+                    x,
+                    shifted_y,
+                    /*required=*/false);
+            }
+        }
+
+        if (from_rr_node_indices.empty()) {
+            // Neither the exact nor the boundary-shifted location has any nodes -- this is
+            // a genuine arch mismatch. Re-query with required=true to raise the standard
+            // fatal error with its usual diagnostic message.
+            from_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
+                from_clock,
+                from_switch,
+                x,
+                y);
+        }
 
         auto from_itter = from_rr_node_indices.begin();
         size_t num_connections = ceil(from_rr_node_indices.size() * fc);

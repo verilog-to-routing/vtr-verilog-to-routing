@@ -228,6 +228,14 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
             unsigned drive_x = x_start + drive_.offset;
             unsigned x_end = x_start + x_chan_wire_.length;
 
+            // FIXME: this clamp (and its 3 siblings in this file, plus the matching
+            // boundary-shift heuristic in ClockToClockConneciton::create_switches in
+            // clock_connection_builders.cpp) hardcodes the assumption that I/O lives on
+            // the device perimeter, so rib/spine wires must stop 1 tile short of the
+            // edge ("dont go above the LB"). That assumption doesn't generally hold --
+            // nothing guarantees I/O is perimeter-only -- so this logic should be
+            // reworked to derive the valid span from the actual device/block layout
+            // instead of a hardcoded "-2" offset. Needs investigation.
             // Adjust for boundary conditions
             int x_offset = 0;
             if ((x_start == 0) ||               // CHANX wires left boundary
@@ -285,6 +293,8 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
             unsigned drive_x = x_start + drive_.offset;
             unsigned x_end = x_start + x_chan_wire_.length;
 
+            // FIXME: see the perimeter-I/O assumption note on the matching clamp in
+            // ClockRib::estimate_additional_nodes above.
             // Adjust for boundary conditions
             int x_offset = 0;
             if ((x_start == 0) ||               // CHANX wires left boundary
@@ -620,6 +630,8 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
             unsigned drive_y = y_start + drive.offset;
             unsigned y_end = y_start + y_chan_wire.length;
 
+            // FIXME: see the perimeter-I/O assumption note on the matching clamp in
+            // ClockRib::estimate_additional_nodes above.
             // Adjust for boundary conditions
             unsigned y_offset = 0;
             if ((y_start == 0) ||              // CHANY wires bottom boundary, start above the LB
@@ -671,6 +683,11 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             unsigned drive_y = y_start + drive.offset;
             unsigned y_end = y_start + y_chan_wire.length;
 
+            // FIXME: see the perimeter-I/O assumption note on the matching clamp in
+            // ClockRib::estimate_additional_nodes above. This is the specific clamp
+            // that produces the node-placement quirk ClockToClockConneciton::create_switches
+            // (in clock_connection_builders.cpp) works around with its boundary-shift
+            // fallback -- that workaround only exists because of this assumption.
             // Adjust for boundary conditions
             unsigned y_offset = 0;
             if ((y_start == 0) ||              // CHANY wires bottom boundary, start above the LB
