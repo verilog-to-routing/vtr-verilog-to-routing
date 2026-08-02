@@ -1017,7 +1017,7 @@ void PlacementAnnealer::placement_inner_loop_parallel_() {
             }
         }
     }
-    
+
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
 
