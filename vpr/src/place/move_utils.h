@@ -286,7 +286,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
  */
 bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& from_loc,
-                          const t_pl_loc& centeroid,
+                          const t_pl_loc& centroid,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from,

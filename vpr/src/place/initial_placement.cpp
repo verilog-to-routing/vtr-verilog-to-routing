@@ -4,6 +4,7 @@
 #include "flat_placement_utils.h"
 #include "physical_types_util.h"
 #include "place_macro.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_ndmatrix.h"
@@ -1373,17 +1374,16 @@ static bool place_macro(int macros_max_num_tries,
 }
 
 static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const PlaceMacros& place_macros) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& floorplan_ctx = g_vpr_ctx.floorplanning();
-    ;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const FloorplanningContext& floorplan_ctx = g_vpr_ctx.floorplanning();
 
     t_block_score score;
-
+    
     vtr::vector<ClusterBlockId, t_block_score> block_scores;
 
     block_scores.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    //GridTileLookup class provides info needed for calculating number of tiles covered by a region
+    // GridTileLookup class provides info needed for calculating number of tiles covered by a region
     GridTileLookup grid_tiles;
 
     /*

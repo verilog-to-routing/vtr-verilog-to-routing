@@ -456,13 +456,13 @@ void Placer::place() {
 }
 
 void Placer::update_global_state() {
-    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+    PlacementContext& mutable_place_ctx = g_vpr_ctx.mutable_placement();
 
     // the placement location variables should be unlocked before being accessed
-    mutable_palce_ctx.unlock_loc_vars();
+    mutable_place_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
+    BlkLocRegistry& global_blk_loc_registry = mutable_place_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
 #ifndef NO_GRAPHICS

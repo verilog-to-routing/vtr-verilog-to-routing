@@ -230,7 +230,7 @@ class NocCostHandler {
      * This should be used after initial placement to determine the starting
      * congestion cost of the NoC.
      *
-     * @returndouble The congestion cost of the NoC
+     * @return double The congestion cost of the NoC
      */
     double comp_noc_congestion_cost();
 
@@ -523,16 +523,16 @@ class NocCostHandler {
 
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs_ref;
 
-    /// Proposed and actual cost of a noc traffic flow used for each move assessment */
+    /// Proposed and actual cost of a noc traffic flow used for each move assessment
     vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;
 
-    /// Keeps track of traffic flows that have been updated at each attempted placement move*/
+    /// Keeps track of traffic flows that have been updated at each attempted placement move
     std::vector<NocTrafficFlowId> affected_traffic_flows;
 
     /// Proposed and actual congestion cost of a NoC link used for each move assessment
     vtr::vector<NocLinkId, double> link_congestion_costs, proposed_link_congestion_costs;
 
-    /// Keeps track of NoC links whose bandwidth usage have been updated at each attempted placement move*/
+    /// Keeps track of NoC links whose bandwidth usage have been updated at each attempted placement move
     std::unordered_set<NocLinkId> affected_noc_links;
 
     /**
@@ -563,7 +563,7 @@ class NocCostHandler {
  * @brief Determines the aggregate bandwidth cost of a routed traffic flow.
  * The cost is calculated as the number of links in the traffic flow multiplied
  * by the traffic flow bandwidth. This is then scaled by the priority of the
- * traffic flow. THis assumes the provided traffic flow has been routed.
+ * traffic flow. This assumes the provided traffic flow has been routed.
  * 
  * @param traffic_flow_route The routed path for a traffic flow. This
  * contains a collection of links in the NoC.
@@ -666,7 +666,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
  * @brief Writes out the locations of the router cluster blocks in the
  * final placement. This file contains only NoC routers and the 
  * information is written out in a format that is compatible with the RADSim
- * imulator place file. The output of this function is a text file.
+ * simulator place file. The output of this function is a text file.
  * 
  * Sample placement file output:
  *      router_cluster_name layer_number physical_router_id
