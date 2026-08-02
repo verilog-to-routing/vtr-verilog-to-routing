@@ -185,7 +185,7 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
         //not constrained so will not have floorplanning issues
         floorplanning_good = true;
     } else {
-        PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
         bool in_pr = pr.is_loc_in_part_reg(loc);
 
         //if location is in partitionregion, floorplanning is respected
@@ -244,7 +244,7 @@ void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry) {
         if (!is_cluster_constrained(blk_id)) {
             continue;
         }
-        PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
         t_pl_loc loc;
 
