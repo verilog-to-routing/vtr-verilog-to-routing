@@ -97,7 +97,7 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
                             t_2D_bb& bb_edge_new,
                             t_2D_bb& bb_coord_new);
 
-/******************************* End of Function definitions ************************************/
+/****************************** End of Function declarations ************************************/
 
 NetCostHandler::NetCostHandler(PlacerState& placer_state,
                                bool cube_bb,
@@ -141,7 +141,7 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
         get_non_updatable_bb_functor_ = std::bind(&NetCostHandler::get_non_updatable_per_layer_bb_, this, std::placeholders::_1, /*use_ts=*/true);
     }
 
-    // This initializes the whole matrix to OPEN which is an invalid value
+    // This initializes the whole matrix to UNDEFINED which is an invalid value
     ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, UNDEFINED);
     num_sink_pin_layer_.resize({num_nets, size_t(num_layers)}, UNDEFINED);
 
@@ -149,11 +149,13 @@ NetCostHandler::NetCostHandler(PlacerState& placer_state,
 
     // negative net costs mean the cost is not valid.
     net_cost_.resize(num_nets, -1.);
-    proposed_net_cost_.resize(num_nets, -1.);
 
     // Used to store costs for moves not yet made and to indicate when a net's
-    // cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
+    // cost has been recomputed. proposed_net_cost_[inet] < 0 means net's cost hasn't
     // been recomputed.
+    proposed_net_cost_.resize(num_nets, -1.);
+
+    // Tracks how far each net's bounding box has been updated for the proposed move.
     bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
 
     alloc_and_load_chan_w_factors_for_place_cost_();
@@ -1051,7 +1053,7 @@ inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
     VTR_ASSERT_SAFE(old_layer_num != new_layer_num);
 
     /*
-     * This funcitn is called when BB per layer is used and when the moving block is moving from one layer to another.
+     * This function is called when BB per layer is used and when the moving block is moving from one layer to another.
      * Thus, we need to update bounding box on both "from" and "to" layer. Here, we update the bounding box on "from" or
      * "old_layer". Then, "add_block_to_bb" is called to update the bounding box on the new layer.
      */
