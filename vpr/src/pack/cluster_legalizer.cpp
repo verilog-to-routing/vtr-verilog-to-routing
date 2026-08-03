@@ -913,7 +913,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         }
     }
 
-    std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
+    // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
+    primitives_list_.assign(max_molecule_size_, nullptr);
+    std::vector<t_pb_graph_node*>& primitives_list = primitives_list_;
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
                                                                                                                                  molecule_id,
