@@ -487,14 +487,14 @@ void GreedyCandidateSelector::update_connection_gain_values(
     num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
     LegalizationClusterId legalization_cluster_id = cluster_legalizer.get_atom_cluster(clustered_blk_id);
+    // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
+    // in this class is very strange
+    const t_pb* cluster_pb = cluster_legalizer.atom_pb_lookup().atom_pb(clustered_blk_id);
 
     /* may wish to speed things up by ignoring clock nets since they are high fanout */
     for (AtomPinId pin_id : atom_netlist_.net_pins(net_id)) {
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
-        // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
-        // in this class is very strange
         const t_pb* pin_block_pb = cluster_legalizer.atom_pb_lookup().atom_pb(blk_id);
-        const t_pb* cluster_pb = cluster_legalizer.atom_pb_lookup().atom_pb(clustered_blk_id);
 
         if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id && is_pb_in_cluster_pb(pin_block_pb, cluster_pb)) {
             num_internal_connections++;
