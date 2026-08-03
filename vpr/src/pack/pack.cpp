@@ -614,9 +614,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     for (AtomBlockId blk_id : atom_ctx.netlist().blocks()) {
         for (AtomPinId pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
             AtomNetId net_id = atom_ctx.netlist().pin_net(pin_id);
-            if (!is_clock.count(net_id)) {
-                is_clock.insert(net_id);
-            }
+            is_clock.insert(net_id);
         }
     }
 
