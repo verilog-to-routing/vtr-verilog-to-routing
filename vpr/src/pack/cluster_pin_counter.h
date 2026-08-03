@@ -180,6 +180,53 @@ class ClusterPinCounter {
      */
     bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util);
 
+    /// @brief Which side of the per pb state to compare against a full recompute.
+    enum class VerifySide { COMMITTED,
+                            LOOKAHEAD };
+
+    /**
+     * @brief Debug-only equivalence check against a from-scratch recompute.
+     *
+     * Constructs a scratch ClusterPinCounter over the same pb set as this
+     * counter, runs the full recompute path on it over the given molecule
+     * list, and asserts that every (pb, class) has an identical set of
+     * claiming nets on the specified side of this counter. Comparison is
+     * over distinct-net sets, not vector order.
+     *
+     * Callers must gate the call under VTR_ASSERT_SAFE_ENABLED (or an
+     * equivalent debug flag): this method is expensive and must never run
+     * in release builds.
+     *
+     * @param molecules     Molecule ids representing the intended cluster
+     *                      state at the call site. For LOOKAHEAD, the
+     *                      accepted set plus the candidate under evaluation;
+     *                      for COMMITTED, the accepted set alone.
+     * @param prepacker     Used to resolve each PackMoleculeId to its atom list.
+     * @param atom_cluster  Maps atoms to the legalization cluster that owns them.
+     * @param atom_to_pb    Maps atoms to their assigned primitive pb.
+     * @param side          Which side of this counter to compare.
+     */
+    void verify_against_full_recompute(const std::vector<PackMoleculeId>& molecules,
+                                       const Prepacker& prepacker,
+                                       const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                       const AtomPBBimap& atom_to_pb,
+                                       VerifySide side) const;
+
+    /**
+     * @brief Debug-only reachability check for the tracked pb set.
+     *
+     * Walks the pb subtree rooted at cluster_root and asserts that every pb
+     * currently tracked in per_pb_state_ appears in that subtree. A tracked
+     * pb that is unreachable indicates a lifetime bug: some code path freed
+     * the pb without asking this counter to deallocate its state first,
+     * leaving a dangling pointer as a live key.
+     *
+     * @param cluster_root  The cluster root pb; every key in per_pb_state_
+     *                      must be reachable via child_pbs traversal from
+     *                      here.
+     */
+    void assert_all_pbs_reachable_from(const t_pb* cluster_root) const;
+
   private:
     /**
      * @brief Add the given atom's pin usage contribution to the lookahead state.

@@ -19,6 +19,7 @@
 #include "globals.h"
 #include "physical_types.h"
 #include "vpr_context.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
@@ -449,4 +450,123 @@ bool ClusterPinCounter::check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util m
     }
 
     return true;
+}
+
+/**
+ * @brief Compare two per class net lists as sets and fatally error on any
+ *        mismatch, reporting the symmetric difference for debugging.
+ */
+static void compare_class_nets_or_die(const t_pb* pb,
+                                      bool is_input,
+                                      const std::vector<std::vector<AtomNetId>>& actual,
+                                      const std::vector<std::vector<AtomNetId>>& reference,
+                                      ClusterPinCounter::VerifySide side) {
+    // Both counters allocated over the same pb set, so class counts must match.
+    VTR_ASSERT(actual.size() == reference.size());
+
+    for (size_t class_id = 0; class_id < actual.size(); ++class_id) {
+        const std::unordered_set<AtomNetId> actual_set(actual[class_id].begin(),
+                                                       actual[class_id].end());
+        const std::unordered_set<AtomNetId> ref_set(reference[class_id].begin(),
+                                                    reference[class_id].end());
+
+        if (actual_set == ref_set) {
+            continue;
+        }
+
+        std::string only_in_actual, only_in_ref;
+        for (const AtomNetId n : actual_set) {
+            if (ref_set.count(n) == 0)
+                only_in_actual += std::to_string(size_t(n)) + " ";
+        }
+        for (const AtomNetId n : ref_set) {
+            if (actual_set.count(n) == 0)
+                only_in_ref += std::to_string(size_t(n)) + " ";
+        }
+
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "ClusterPinCounter %s side %s state diverged from full recompute "
+                        "at pb '%s', class %zu.\n"
+                        "  Only in actual: [ %s]\n"
+                        "  Only in reference: [ %s]\n",
+                        side == ClusterPinCounter::VerifySide::LOOKAHEAD ? "LOOKAHEAD" : "COMMITTED",
+                        is_input ? "input" : "output",
+                        pb->name ? pb->name : "<unnamed>",
+                        class_id,
+                        only_in_actual.c_str(),
+                        only_in_ref.c_str());
+    }
+}
+
+void ClusterPinCounter::verify_against_full_recompute(
+    const std::vector<PackMoleculeId>& molecules,
+    const Prepacker& prepacker,
+    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+    const AtomPBBimap& atom_to_pb,
+    VerifySide side) const {
+    // Build a scratch counter with the same pb topology as this counter and
+    // let it fill its lookahead side via the full recompute path.
+    ClusterPinCounter scratch;
+    for (const auto& [pb, _] : per_pb_state_) {
+        scratch.allocate_pin_count_state(pb);
+    }
+    scratch.try_update_lookahead_pins_used(molecules, prepacker, atom_cluster, atom_to_pb);
+
+    for (const auto& [pb, this_state] : per_pb_state_) {
+        const PerPbState& scratch_state = scratch.per_pb_state_.at(pb);
+
+        const auto& this_input = (side == VerifySide::LOOKAHEAD)
+                                     ? this_state.lookahead_input_pin_class_nets
+                                     : this_state.committed_input_pin_class_nets;
+        const auto& this_output = (side == VerifySide::LOOKAHEAD)
+                                      ? this_state.lookahead_output_pin_class_nets
+                                      : this_state.committed_output_pin_class_nets;
+
+        // The scratch counter only ever populates its lookahead side.
+        compare_class_nets_or_die(pb, /*is_input=*/true, this_input,
+                                  scratch_state.lookahead_input_pin_class_nets, side);
+        compare_class_nets_or_die(pb, /*is_input=*/false, this_output,
+                                  scratch_state.lookahead_output_pin_class_nets, side);
+    }
+}
+
+/**
+ * @brief Collect every pb reachable from the given root via child_pbs traversal
+ *        into the given set.
+ */
+static void collect_reachable_pbs(const t_pb* pb, std::unordered_set<const t_pb*>& out) {
+    if (pb == nullptr)
+        return;
+    out.insert(pb);
+
+    const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
+    if (pb_type->is_primitive())
+        return;
+    if (pb->child_pbs == nullptr)
+        return;
+
+    const int mode = pb->mode;
+    for (int c = 0; c < pb_type->modes[mode].num_pb_type_children; ++c) {
+        if (!pb->child_pbs[c])
+            continue;
+        for (int i = 0; i < pb_type->modes[mode].pb_type_children[c].num_pb; ++i) {
+            collect_reachable_pbs(&pb->child_pbs[c][i], out);
+        }
+    }
+}
+
+void ClusterPinCounter::assert_all_pbs_reachable_from(const t_pb* cluster_root) const {
+    std::unordered_set<const t_pb*> reachable;
+    collect_reachable_pbs(cluster_root, reachable);
+
+    for (const auto& [pb, _] : per_pb_state_) {
+        if (reachable.count(pb) == 0) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "ClusterPinCounter tracks a pb (raw pointer %p) that is not "
+                            "reachable from the cluster root. A free/cleanup site freed "
+                            "the pb without calling deallocate_pin_count_state_recursive "
+                            "first, leaving a dangling pointer as a key.\n",
+                            static_cast<const void*>(pb));
+        }
+    }
 }

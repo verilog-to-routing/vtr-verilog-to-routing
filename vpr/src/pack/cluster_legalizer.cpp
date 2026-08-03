@@ -761,8 +761,11 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
  * The cleaning itself includes deleting all child pbs, resetting mode of the
  * pb and also freeing its name. This prepares the pb for another round of
  * molecule packing tryout.
+ *
+ * pin_counter is threaded through so we can drop per pb state for the pbs
+ * we free. Otherwise per_pb_state_ retains dangling pointers as keys.
  */
-static bool cleanup_pb(t_pb* pb) {
+static bool cleanup_pb(t_pb* pb, ClusterPinCounter& pin_counter) {
     bool can_free = true;
 
     /* Recursively check if there are any children with already assigned atoms */
@@ -787,7 +790,7 @@ static bool cleanup_pb(t_pb* pb) {
 
                     /* Non-primitive, recurse */
                     else {
-                        if (!cleanup_pb(pb_child)) {
+                        if (!cleanup_pb(pb_child, pin_counter)) {
                             can_free = false;
                         }
                     }
@@ -799,6 +802,11 @@ static bool cleanup_pb(t_pb* pb) {
         if (can_free) {
             for (int i = 0; i < mode->num_pb_type_children; ++i) {
                 if (pb->child_pbs[i] != nullptr) {
+                    // Drop counter state for each pb we're about to free so
+                    // per_pb_state_ does not retain dangling pointer keys.
+                    for (int j = 0; j < mode->pb_type_children[i].num_pb; ++j) {
+                        pin_counter.deallocate_pin_count_state_recursive(&pb->child_pbs[i][j]);
+                    }
                     delete[] pb->child_pbs[i];
                 }
             }
@@ -971,6 +979,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // already be in cluster.molecules, which is satisfied by the push above.
                 cluster.pin_counter.reset_lookahead();
                 cluster.pin_counter.try_update_lookahead_pins_used(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+#ifdef VTR_ASSERT_SAFE_ENABLED
+                // Lookahead was just built over cluster.molecules (candidate included).
+                cluster.pin_counter.verify_against_full_recompute(
+                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup(),
+                    ClusterPinCounter::VerifySide::LOOKAHEAD);
+#endif
                 if (!cluster.pin_counter.check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                     block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
@@ -1135,6 +1149,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
                 // Update the lookahead pins used.
                 cluster.pin_counter.commit_lookahead();
+#ifdef VTR_ASSERT_SAFE_ENABLED
+                // Post commit: committed side should match a recompute over
+                // cluster.molecules (which includes the just-accepted candidate).
+                cluster.pin_counter.verify_against_full_recompute(
+                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup(),
+                    ClusterPinCounter::VerifySide::COMMITTED);
+#endif
             }
         }
 
@@ -1167,7 +1188,18 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
              * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
              * their modes reset. This task is performed by the cleanup_pb() function below. */
-            cleanup_pb(cluster.pb);
+            cleanup_pb(cluster.pb, cluster.pin_counter);
+
+#ifdef VTR_ASSERT_SAFE_ENABLED
+            // Post rollback: every key in the pin counter must still point to
+            // a live pb reachable from cluster.pb, and the committed side must
+            // match a recompute over the accepted-only molecule list (candidate
+            // was popped from cluster.molecules above).
+            cluster.pin_counter.assert_all_pbs_reachable_from(cluster.pb);
+            cluster.pin_counter.verify_against_full_recompute(
+                cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup(),
+                ClusterPinCounter::VerifySide::COMMITTED);
+#endif
 
             // Move failed primitive that is inflight to the tried map.
             cluster.placement_stats->move_inflight_to_tried();
