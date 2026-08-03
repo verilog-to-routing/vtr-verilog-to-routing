@@ -411,8 +411,9 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
         return;
     }
 
-    /* Mark atom net as being visited, if necessary. */
-    if (cluster_gain_stats.num_pins_of_net_in_pb.count(net_id) == 0) {
+    // Insert the net into the visited set; if new, record it in marked_nets.
+    auto [net_pin_count_it, net_is_new] = cluster_gain_stats.num_pins_of_net_in_pb.emplace(net_id, 0);
+    if (net_is_new) {
         cluster_gain_stats.marked_nets.push_back(net_id);
     }
 
@@ -426,7 +427,7 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
             //(i.e. the net loops back to the block only once)
             pins = atom_netlist_.net_sinks(net_id);
 
-        if (cluster_gain_stats.num_pins_of_net_in_pb.count(net_id) == 0) {
+        if (net_is_new) {
             for (AtomPinId pin_id : pins) {
                 AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
                 if (!cluster_legalizer.is_atom_clustered(blk_id)) {
@@ -455,10 +456,7 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
                                       net_relation_to_clustered_block);
         }
     }
-    if (cluster_gain_stats.num_pins_of_net_in_pb.count(net_id) == 0) {
-        cluster_gain_stats.num_pins_of_net_in_pb[net_id] = 0;
-    }
-    cluster_gain_stats.num_pins_of_net_in_pb[net_id]++;
+    net_pin_count_it->second++;
 }
 
 /**
