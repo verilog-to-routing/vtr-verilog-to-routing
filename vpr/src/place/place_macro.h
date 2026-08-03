@@ -191,6 +191,18 @@ class PlaceMacros {
     const std::vector<t_pl_macro>& macros() const;
 
     /**
+     * @brief Whether any macro came from user relative placement constraints.
+     *
+     * Architecture-derived macros (carry chains) are type-homogeneous and
+     * one-dimensional, while user relative placement macros may mix block types
+     * and extend in both dimensions. Code paths that only need to handle the
+     * latter can be skipped when this is false, keeping designs without
+     * relative placement constraints on exactly the same path as before the
+     * feature was added.
+     */
+    bool has_user_defined_macros() const { return has_user_defined_macros_; }
+
+    /**
      * @brief Returns the placement macro associated with a macro index.
      * @param idx An index specifying a macro. get_imacro_from_iblk() can
      * be called to find out a the macro index of the placement macro a
@@ -225,6 +237,10 @@ class PlaceMacros {
 
     ///@brief Stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros_;
+
+    /// @brief True if any entry of pl_macros_ came from user relative placement
+    ///        constraints. See has_user_defined_macros().
+    bool has_user_defined_macros_ = false;
 
   private:
     int find_all_the_macro_(const ClusteredNetlist& clb_nlist,

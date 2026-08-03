@@ -186,6 +186,7 @@ void PlaceMacros::append_user_defined_macros_(const ClusteredNetlist& clb_nlist,
         }
     }
 
+    size_t num_user_macros_created = 0;
     for (size_t imacro = 0; imacro < relative_macros.get_num_macros(); imacro++) {
         const UserRelativeMacro& user_macro = relative_macros.get_macro(UserRelativeMacroId(imacro));
 
@@ -209,6 +210,9 @@ void PlaceMacros::append_user_defined_macros_(const ClusteredNetlist& clb_nlist,
             }
 
             if (arch_macro_blocks.count(blk_id) > 0) {
+                // The cluster hosting this group is already a member of an
+                // architecture-derived macro (carry chain). A cluster may belong
+                // to at most one placement macro.
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                                 "Cluster '%s' of relative macro '%s' (group %zu) is also a member of an "
                                 "architecture-derived placement macro (e.g. a carry chain). A cluster may "
@@ -230,12 +234,16 @@ void PlaceMacros::append_user_defined_macros_(const ClusteredNetlist& clb_nlist,
             pl_macro.members.push_back(member);
         }
 
+        // The loader requires a reference group plus at least one relative group.
+        VTR_ASSERT(pl_macro.members.size() >= 2);
         VTR_ASSERT(pl_macro.members[0].offset == t_pl_offset(0, 0, 0, 0));
         pl_macros_.push_back(std::move(pl_macro));
+        has_user_defined_macros_ = true;
+        num_user_macros_created++;
     }
 
     VTR_LOG("Created %zu placement macro(s) from relative placement constraints.\n",
-            relative_macros.get_num_macros());
+            num_user_macros_created);
 }
 
 ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
