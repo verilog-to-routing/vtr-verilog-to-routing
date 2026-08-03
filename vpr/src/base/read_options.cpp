@@ -2351,18 +2351,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument<bool, ParseOnOff>(args.pack_relative_group_best_effort, "--pack_relative_group_best_effort")
-        .help(
-            "Controls what happens when a user-defined relative placement group cannot be"
-            " packed into a single cluster after all packing retries.\n"
-            " * off : Abort with a fatal error (default).\n"
-            " * on  : Release that group and continue, with a warning per released group. A"
-            " released group's atoms become fully unconstrained (they are not kept in one cluster"
-            " and get no relative placement offset); the macro's other groups are still honored."
-            " See the Relative Placement Constraints documentation for details.")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     pack_grp.add_argument<e_balance_block_type_util, ParseBalanceBlockTypeUtil>(args.balance_block_type_utilization, "--balance_block_type_utilization")
         .help(
             "If enabled, when a primitive can potentially be mapped to multiple block types the packer will\n"
