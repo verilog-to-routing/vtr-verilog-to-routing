@@ -82,18 +82,9 @@ The ``<vpr_constraints>`` top-level tag may contain one ``<relative_macro_list>`
 Semantics and Restrictions
 --------------------------
 
-* **One group, one cluster.** All atoms of a group must fit into a single cluster; this is enforced. If a group cannot be packed into one cluster (e.g. it is larger than the cluster type allows, or conflicts with architectural pack patterns), packing fails with an error naming the group — unless :option:`vpr --pack_relative_group_best_effort` is enabled, in which case that group is released and the run continues (see :ref:`rpm_best_effort`). Prepacked molecules (e.g. a LUT and the FF it drives, or carry-chain segments) that mix a constrained atom with unconstrained atoms are pulled into the group's cluster as a whole. A molecule whose atoms belong to two *different* groups is reported as an error: a molecule is indivisible (all its atoms always pack into one cluster), so it can never satisfy constraints that require its atoms to be in different clusters.
+* **One group, one cluster.** All atoms of a group must fit into a single cluster; this is enforced. If a group cannot be packed into one cluster (e.g. it is larger than the cluster type allows, or conflicts with architectural pack patterns), packing fails with an error naming the group. Prepacked molecules (e.g. a LUT and the FF it drives, or carry-chain segments) that mix a constrained atom with unconstrained atoms are pulled into the group's cluster as a whole. A molecule whose atoms belong to two *different* groups is reported as an error: a molecule is indivisible (all its atoms always pack into one cluster), so it can never satisfy constraints that require its atoms to be in different clusters.
 * **Groups never share a cluster.** This holds between groups of the same macro and between groups of different macros. Unconstrained atoms may fill the remaining capacity of any group's cluster.
 * **Offsets must match the device grid.** The placer never adjusts an offset: it only uses positions where every member of the macro lands on a tile that can host its cluster. For example, ``x_offset="1"`` between a RAM cluster and a CLB cluster only works if the device has a CLB column immediately to the right of a RAM column — and if the RAM tile spans four grid rows, the RAM must sit on a RAM tile's first row, so the macro can only move vertically in steps of four. If no position on the device satisfies all members, placement fails after an exhaustive search.
 * **Members may have different block types** (e.g. a CLB next to a DSP).
-* **Interaction with carry chains:** a cluster cannot belong to both a relative macro and an architecture-derived placement macro (carry chain); this is reported as an error, or releases just the conflicting group under :option:`vpr --pack_relative_group_best_effort` (see :ref:`rpm_best_effort`).
+* **Interaction with carry chains:** a cluster cannot belong to both a relative macro and an architecture-derived placement macro (carry chain); this is reported as an error.
 * Relative macro constraints are validated when a packed netlist (``.net``) or placement (``.place``) file is loaded, so stale files that do not satisfy the constraints are rejected.
-
-.. _rpm_best_effort:
-
-Best-Effort Mode
-----------------
-
-By default any group that cannot be honored aborts the run. :option:`vpr --pack_relative_group_best_effort` instead *releases* such a group and continues, warning once per released group and reporting the total.
-
-A released group's atoms become **fully unconstrained**: they stay in the different clusters the packer already spread them across, and they receive no relative placement offset.
