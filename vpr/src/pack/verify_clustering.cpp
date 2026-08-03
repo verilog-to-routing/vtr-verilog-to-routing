@@ -310,14 +310,16 @@ static unsigned check_clustering_floorplanning_consistency(
             // is non-empty. This implies that a placement could theoretically
             // exist.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
                 // If the atom has no floorplan constraint, continue.
-                if (!atom_has_floorplan_constraint(constraints, atom_blk_id))
+                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
+                if (!atom_part_id.is_valid())
+                    continue;
+                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
+                if (atom_pr.empty())
                     continue;
                 // Check if an intersection exists between the atom's PR and the
                 // cluster's PR.
                 bool intersection_exists = false;
-                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
                 for (const auto& cluster_region : cluster_pr.get_regions()) {
                     for (const auto& atom_region : atom_pr.get_regions()) {
                         Region intersect_region = intersection(cluster_region, atom_region);
@@ -340,13 +342,15 @@ static unsigned check_clustering_floorplanning_consistency(
             // Compute the intersection of all the atom PRs in the cluster.
             PartitionRegion calc_cluster_pr;
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
                 // If the atom has no floorplan constraint, continue.
-                if (!atom_has_floorplan_constraint(constraints, atom_blk_id))
+                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
+                if (!atom_part_id.is_valid())
+                    continue;
+                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
+                if (atom_pr.empty())
                     continue;
                 // Get the intersection of the atom's PR and the intersection of
                 // all atom PRs that came before.
-                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
                 if (calc_cluster_pr.empty()) {
                     calc_cluster_pr = atom_pr;
                     continue;
