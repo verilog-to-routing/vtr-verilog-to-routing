@@ -1598,7 +1598,7 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
         auto reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
         // sort the reachable output pins to compare them later using set_intersection
         std::stable_sort(reachable_output_pins.begin(), reachable_output_pins.end());
-        reachable_pins.push_back(reachable_output_pins);
+        reachable_pins.push_back(std::move(reachable_output_pins));
     }
 
     // Search for intersections between reachable pins. Intersection
@@ -1653,7 +1653,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
          */
         VTR_ASSERT(connected_primitive_pins.size());
 
-        primitive_input_pins.push_back(connected_primitive_pins);
+        primitive_input_pins.push_back(std::move(connected_primitive_pins));
     }
 
     chain_pattern->chain_root_pins = primitive_input_pins;

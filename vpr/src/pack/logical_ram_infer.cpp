@@ -48,7 +48,7 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
             continue;
 
         LogicalModelId root_model_id = atom_nlist.block_model(atom_blk_id);
-        std::vector<t_logical_block_type_ptr> candidate_types =
+        const std::vector<t_logical_block_type_ptr>& candidate_types =
             primitive_candidate_block_types[root_model_id];
 
         // Try to add this atom to an existing sibling-feasible group.
@@ -79,7 +79,7 @@ group_ram_atoms(const AtomNetlist& atom_nlist, const Prepacker& prepacker) {
                 new_group.is_output_registered =
                     blif_model.find("output_type{reg}") != std::string::npos;
             }
-            groups.push_back(new_group);
+            groups.push_back(std::move(new_group));
         }
     }
 
@@ -319,7 +319,7 @@ vtr::vector<PhysicalRamGroupId, PhysicalRamGroup> RamMapper::create_physical_ram
             }
 
             if (!current_group.atoms.empty())
-                physical_groups.push_back(current_group);
+                physical_groups.push_back(std::move(current_group));
             unmapped_atoms = std::move(remaining_atoms);
         }
     }
