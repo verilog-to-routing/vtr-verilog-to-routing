@@ -617,16 +617,17 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
     int cur_pin_id = UNDEFINED;
     const int total_pins = logic_block_type->pb_graph_head->total_pb_pins;
     if (ipin < total_pins) {
-        /* This routing node corresponds with a pin.  This node is virtual (ie. sink or source node) */
+        // This routing node corresponds with a pin.  This node is virtual (ie. sink or source node)
         cur_pin_id = ipin;
-        if (!pb_route.count(ipin)) {
-            pb_route.insert(std::make_pair(cur_pin_id, t_pb_route()));
-            pb_route[cur_pin_id].atom_net_id = net_id;
-            pb_route[cur_pin_id].driver_pb_pin_id = driver_pb_pin_id;
-            const t_pb_graph_pin* pb_graph_pin = intra_lb_pb_pin_lookup.pb_gpin(logic_block_type->index, cur_pin_id);
-            pb_route[cur_pin_id].pb_graph_pin = pb_graph_pin;
+        // insert() leaves the existing entry untouched if cur_pin_id is already in the map.
+        auto [pin_route_it, inserted] = pb_route.insert(std::make_pair(cur_pin_id, t_pb_route()));
+        t_pb_route& pin_route = pin_route_it->second;
+        if (inserted) {
+            pin_route.atom_net_id = net_id;
+            pin_route.driver_pb_pin_id = driver_pb_pin_id;
+            pin_route.pb_graph_pin = intra_lb_pb_pin_lookup.pb_gpin(logic_block_type->index, cur_pin_id);
         } else {
-            VTR_ASSERT(pb_route[cur_pin_id].atom_net_id == net_id);
+            VTR_ASSERT(pin_route.atom_net_id == net_id);
         }
     }
     for (const auto& nxt_trace : trace.next_nodes) {
