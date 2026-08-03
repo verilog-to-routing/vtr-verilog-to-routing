@@ -975,17 +975,18 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             candidate_molecule_added_to_cluster = true;
 
             if (enable_pin_feasibility_filter_) {
-                // try_update_lookahead_pins_used requires the candidate molecule to
-                // already be in cluster.molecules, which is satisfied by the push above.
-                cluster.pin_counter.reset_lookahead();
-                cluster.pin_counter.try_update_lookahead_pins_used(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                // full_recompute_from_molecules requires the candidate molecule
+                // to already be in cluster.molecules, which is satisfied by the
+                // push above. Snapshot the root class sizes first: they capture
+                // the pre-check (accepted-only) sizes and are read by check_pins_used
+                // to implement the root clamp.
+                cluster.pin_counter.snapshot_root_class_sizes(cluster.pb);
+                cluster.pin_counter.full_recompute_from_molecules(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #ifdef VTR_ASSERT_SAFE_ENABLED
-                // Lookahead was just built over cluster.molecules (candidate included).
                 cluster.pin_counter.verify_against_full_recompute(
-                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup(),
-                    ClusterPinCounter::VerifySide::LOOKAHEAD);
+                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
-                if (!cluster.pin_counter.check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
+                if (!cluster.pin_counter.check_pins_used(cluster.pb, max_external_pin_util)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                     block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
                 } else {
@@ -1147,14 +1148,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     }
                 }
 
-                // Update the lookahead pins used.
-                cluster.pin_counter.commit_lookahead();
+                // Accept the pin state produced during this check: the journal
+                // is discarded and the current state becomes the new accepted
+                // baseline for the next candidate.
+                cluster.pin_counter.commit_check();
 #ifdef VTR_ASSERT_SAFE_ENABLED
-                // Post commit: committed side should match a recompute over
-                // cluster.molecules (which includes the just-accepted candidate).
                 cluster.pin_counter.verify_against_full_recompute(
-                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup(),
-                    ClusterPinCounter::VerifySide::COMMITTED);
+                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
             }
         }
@@ -1165,6 +1165,17 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 VTR_ASSERT_SAFE(cluster.molecules.back() == molecule_id);
                 cluster.molecules.pop_back();
             }
+
+            // Undo the pin state mutations recorded during this check BEFORE
+            // revert_place_atom_block or cleanup_pb free any pbs: the journal
+            // stores raw pb pointers and rollback needs the pbs to still be
+            // in per_pb_state_. Rollback is tolerant of erased pbs as defence
+            // in depth, but ordering it first keeps reasoning local.
+            //
+            // Safe on paths that never reached full_recompute (e.g. failure
+            // during try_place_atom_block_rec): the journal is empty and the
+            // call is a no-op.
+            cluster.pin_counter.rollback_check();
 
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
@@ -1192,13 +1203,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
             // Post rollback: every key in the pin counter must still point to
-            // a live pb reachable from cluster.pb, and the committed side must
+            // a live pb reachable from cluster.pb, and the current state must
             // match a recompute over the accepted-only molecule list (candidate
             // was popped from cluster.molecules above).
             cluster.pin_counter.assert_all_pbs_reachable_from(cluster.pb);
             cluster.pin_counter.verify_against_full_recompute(
-                cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup(),
-                ClusterPinCounter::VerifySide::COMMITTED);
+                cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
 
             // Move failed primitive that is inflight to the tried map.
@@ -1638,7 +1648,7 @@ size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId 
     // Count the number of inputs available per pin class.
     size_t inputs_avail = 0;
     for (size_t class_id = 0; class_id < cluster.pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
-        inputs_avail += cluster.pin_counter.committed_input_size(cluster.pb, class_id);
+        inputs_avail += cluster.pin_counter.input_size(cluster.pb, class_id);
     }
 
     return inputs_avail;
