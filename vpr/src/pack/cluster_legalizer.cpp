@@ -660,7 +660,7 @@ void ClusterLegalizer::update_clustering_chain_info(PackMoleculeId chain_molecul
     // Since for long chains the molecule size is already equal to the
     // total number of adders in the cluster. Therefore, it should
     // always be placed at the very first adder in this cluster.
-    auto chain_root_pins = chain_molecule.pack_pattern->chain_root_pins;
+    const std::vector<std::vector<t_pb_graph_pin*>>& chain_root_pins = chain_molecule.pack_pattern->chain_root_pins;
     for (size_t chainId = 0; chainId < chain_root_pins.size(); chainId++) {
         if (chain_root_pins[chainId][0]->parent_node == root_primitive) {
             clustering_chain_info.chain_id = chainId;
