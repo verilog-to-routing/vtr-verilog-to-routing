@@ -1433,20 +1433,20 @@ std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& 
         AtomNetId atom_net = intra_lb_nets_[inet].atom_net_id;
 
         //Walk the lb_traceback to find congested RR nodes for each net
-        std::queue<t_lb_trace> q;
+        std::queue<const t_lb_trace*> q;
 
         if (intra_lb_nets_[inet].rt_tree.current_node != UNDEFINED) {
-            q.push(intra_lb_nets_[inet].rt_tree);
+            q.push(&intra_lb_nets_[inet].rt_tree);
         }
         while (!q.empty()) {
-            t_lb_trace curr = q.front();
+            const t_lb_trace* curr = q.front();
             q.pop();
 
-            for (const t_lb_trace& next_trace : curr.next_nodes) {
-                q.push(next_trace);
+            for (const t_lb_trace& next_trace : curr->next_nodes) {
+                q.push(&next_trace);
             }
 
-            int inode = curr.current_node;
+            int inode = curr->current_node;
             const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
             const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats_[inode];
 
