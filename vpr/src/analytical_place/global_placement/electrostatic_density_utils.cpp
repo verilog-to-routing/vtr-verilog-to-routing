@@ -98,9 +98,9 @@ size_t density_site_index(size_t layer,
 } // namespace
 
 BilinearDensityStencil make_bilinear_density_stencil(double x,
-                                                      double y,
-                                                      size_t width,
-                                                      size_t height) {
+                                                     double y,
+                                                     size_t width,
+                                                     size_t height) {
     VTR_ASSERT(width > 0);
     VTR_ASSERT(height > 0);
 

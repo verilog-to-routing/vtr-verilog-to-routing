@@ -408,20 +408,20 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     std::vector<APBlockId> moveable_blocks_;   ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
 
-    vtr::vector<APBlockId, double> block_precond_;      ///< Per-block diagonal preconditioner (objective curvature estimate).
+    vtr::vector<APBlockId, double> block_precond_;        ///< Per-block diagonal preconditioner (objective curvature estimate).
     vtr::vector<APBlockId, float> pin_density_inflation_; ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
-    bool precond_active_ = false;                       ///< Whether the preconditioner is applied in the current optimization run.
-    double precond_alpha_active_ = 1.0;                 ///< Preconditioner strength exponent for the current optimization run.
-    std::vector<bool> boundary_confined_dims_;          ///< [dim index] true if target capacity lies almost entirely on the device boundary.
-    vtr::vector<APNetId, bool> boundary_cohesion_nets_; ///< AP nets that receive I/O-only cohesion weight.
-    vtr::vector<APNetId, bool> io_chain_cohesion_nets_; ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
-    vtr::vector<APNetId, bool> io_pair_locality_nets_;  ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
-    std::vector<AffinityGroup> affinity_groups_;        ///< All detected affinity-spring groups.
-    size_t num_io_pair_affinity_groups_ = 0;            ///< Count of IO_PAIR affinity groups.
-    size_t num_pack_pattern_affinity_groups_ = 0;       ///< Count of PACK_PATTERN affinity groups.
-    size_t num_io_chain_cohesion_nets_ = 0;             ///< Number of flagged direct I/O-chain AP nets.
-    std::vector<double> filler_unit_mass_;              ///< [dim] density mass per dynamic filler.
-    std::vector<double> filler_precond_;                ///< [dim] density-only filler preconditioner.
+    bool precond_active_ = false;                         ///< Whether the preconditioner is applied in the current optimization run.
+    double precond_alpha_active_ = 1.0;                   ///< Preconditioner strength exponent for the current optimization run.
+    std::vector<bool> boundary_confined_dims_;            ///< [dim index] true if target capacity lies almost entirely on the device boundary.
+    vtr::vector<APNetId, bool> boundary_cohesion_nets_;   ///< AP nets that receive I/O-only cohesion weight.
+    vtr::vector<APNetId, bool> io_chain_cohesion_nets_;   ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
+    vtr::vector<APNetId, bool> io_pair_locality_nets_;    ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
+    std::vector<AffinityGroup> affinity_groups_;          ///< All detected affinity-spring groups.
+    size_t num_io_pair_affinity_groups_ = 0;              ///< Count of IO_PAIR affinity groups.
+    size_t num_pack_pattern_affinity_groups_ = 0;         ///< Count of PACK_PATTERN affinity groups.
+    size_t num_io_chain_cohesion_nets_ = 0;               ///< Number of flagged direct I/O-chain AP nets.
+    std::vector<double> filler_unit_mass_;                ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                  ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
     // reused across every objective evaluation instead of being rebuilt.

@@ -1629,9 +1629,9 @@ double NonlinearNesterovPlacer::add_affinity_spring_gradient_(const PartialPlace
 }
 
 void NonlinearNesterovPlacer::report_density_force_leak_(const PartialPlacement& p_placement,
-                                                        const std::vector<PrimitiveVectorDim>& dimensions,
-                                                        const std::vector<double>& density_multipliers,
-                                                        size_t epoch) const {
+                                                         const std::vector<PrimitiveVectorDim>& dimensions,
+                                                         const std::vector<double>& density_multipliers,
+                                                         size_t epoch) const {
     if (dimensions.empty() || density_potential_workspace_.size() < dimensions.size())
         return;
 
@@ -1810,7 +1810,10 @@ void NonlinearNesterovPlacer::audit_gradient_(const PartialPlacement& p_placemen
             control.push_back(blk_id);
     }
 
-    struct Group { const char* name; const std::vector<APBlockId>* blks; };
+    struct Group {
+        const char* name;
+        const std::vector<APBlockId>* blks;
+    };
     const Group groups[] = {{"at tile boundary", &at_tile_edge},
                             {"on zero-capacity site", &in_void},
                             {"control (interior)", &control}};
@@ -1818,7 +1821,10 @@ void NonlinearNesterovPlacer::audit_gradient_(const PartialPlacement& p_placemen
     // Two weight settings: full objective, and density switched off so the
     // wirelength/affinity/proximity part can be audited on its own.
     std::vector<double> zero_multipliers(density_multipliers.size(), 0.);
-    struct Config { const char* name; const std::vector<double>* mult; };
+    struct Config {
+        const char* name;
+        const std::vector<double>* mult;
+    };
     const Config configs[] = {{"full objective", &density_multipliers},
                               {"density weights = 0 (WL+affinity+proximity)", &zero_multipliers}};
 
@@ -2368,10 +2374,10 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
                 // interpolating grid-point finite differences is a different
                 // discretization. Degenerate cells correctly produce zero.
                 std::pair<double, double> local_field = gradient_bilinear_density(potential[dim_idx],
-                                                                                   layer,
-                                                                                   width,
-                                                                                   height,
-                                                                                   stencil);
+                                                                                  layer,
+                                                                                  width,
+                                                                                  height,
+                                                                                  stencil);
                 local_field_x = local_field.first;
                 local_field_y = local_field.second;
             }

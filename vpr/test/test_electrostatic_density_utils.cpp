@@ -66,17 +66,17 @@ double poisson_energy(const std::vector<double>& charge,
 }
 
 struct SyntheticParticle {
-    double x = 0.;     ///< Continuous x coordinate.
-    double y = 0.;     ///< Continuous y coordinate.
-    size_t layer = 0;  ///< Discrete device layer.
-    double mass = 1.;  ///< Density mass, including any inflation.
+    double x = 0.;    ///< Continuous x coordinate.
+    double y = 0.;    ///< Continuous y coordinate.
+    size_t layer = 0; ///< Discrete device layer.
+    double mass = 1.; ///< Density mass, including any inflation.
 };
 
 struct SyntheticEvaluation {
-    double energy = 0.;                                  ///< Electrostatic energy.
-    std::vector<std::pair<double, double>> gradients;     ///< Per-particle x/y gradient.
-    std::vector<double> charge;                           ///< Neutralized charge.
-    std::vector<double> potential;                        ///< Per-layer potential.
+    double energy = 0.;                               ///< Electrostatic energy.
+    std::vector<std::pair<double, double>> gradients; ///< Per-particle x/y gradient.
+    std::vector<double> charge;                       ///< Neutralized charge.
+    std::vector<double> potential;                    ///< Per-layer potential.
 };
 
 /**
@@ -127,10 +127,7 @@ SyntheticEvaluation evaluate_synthetic_density(size_t width,
                   layer_potential.end(),
                   result.potential.begin() + layer * layer_size);
     }
-    result.energy = 0.5 * std::inner_product(result.charge.begin(),
-                                             result.charge.end(),
-                                             result.potential.begin(),
-                                             0.);
+    result.energy = 0.5 * std::inner_product(result.charge.begin(), result.charge.end(), result.potential.begin(), 0.);
 
     result.gradients.reserve(particles.size());
     for (const SyntheticParticle& particle : particles) {
@@ -207,7 +204,12 @@ void require_synthetic_gradients(size_t width,
 
 TEST_CASE("electrostatic Poisson solve covers degenerate and rectangular grids", "[vpr_ap][density_gradient]") {
     const std::vector<std::pair<size_t, size_t>> shapes = {
-        {1, 1}, {1, 7}, {8, 1}, {2, 2}, {5, 4}, {6, 7},
+        {1, 1},
+        {1, 7},
+        {8, 1},
+        {2, 2},
+        {5, 4},
+        {6, 7},
     };
     for (const auto& [width, height] : shapes) {
         DYNAMIC_SECTION("grid " << width << "x" << height) {
@@ -260,7 +262,11 @@ TEST_CASE("electrostatic Poisson solve covers degenerate and rectangular grids",
 
 TEST_CASE("bilinear density stencil conserves mass and differentiates its interpolant", "[vpr_ap][density_gradient]") {
     const std::vector<std::pair<size_t, size_t>> shapes = {
-        {1, 1}, {1, 6}, {7, 1}, {2, 2}, {5, 4},
+        {1, 1},
+        {1, 6},
+        {7, 1},
+        {2, 2},
+        {5, 4},
     };
     for (const auto& [width, height] : shapes) {
         DYNAMIC_SECTION("grid " << width << "x" << height) {
@@ -514,10 +520,10 @@ TEST_CASE("full electrostatic gradient covers architectural capacity masks and l
             };
             require_synthetic_gradients(width, height, layers, target, particles);
             SyntheticEvaluation evaluation = evaluate_synthetic_density(width,
-                                                                         height,
-                                                                         layers,
-                                                                         target,
-                                                                         particles);
+                                                                        height,
+                                                                        layers,
+                                                                        target,
+                                                                        particles);
             for (const auto& gradient : evaluation.gradients)
                 REQUIRE(gradient.first == 0.);
         }
@@ -532,10 +538,10 @@ TEST_CASE("full electrostatic gradient covers architectural capacity masks and l
             };
             require_synthetic_gradients(width, height, layers, target, particles);
             SyntheticEvaluation evaluation = evaluate_synthetic_density(width,
-                                                                         height,
-                                                                         layers,
-                                                                         target,
-                                                                         particles);
+                                                                        height,
+                                                                        layers,
+                                                                        target,
+                                                                        particles);
             for (const auto& gradient : evaluation.gradients)
                 REQUIRE(gradient.second == 0.);
         }

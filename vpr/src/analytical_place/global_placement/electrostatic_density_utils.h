@@ -17,10 +17,10 @@ constexpr double kDensityDeviceBoundaryEpsilon = 1e-6;
  * and outside the projected device interval.
  */
 struct BilinearDensityStencil {
-    size_t xs[2] = {0, 0}; ///< Supporting x indices.
-    size_t ys[2] = {0, 0}; ///< Supporting y indices.
-    double wx[2] = {1., 0.}; ///< Bilinear x weights.
-    double wy[2] = {1., 0.}; ///< Bilinear y weights.
+    size_t xs[2] = {0, 0};    ///< Supporting x indices.
+    size_t ys[2] = {0, 0};    ///< Supporting y indices.
+    double wx[2] = {1., 0.};  ///< Bilinear x weights.
+    double wy[2] = {1., 0.};  ///< Bilinear y weights.
     double dwx[2] = {0., 0.}; ///< Derivatives of x weights.
     double dwy[2] = {0., 0.}; ///< Derivatives of y weights.
 };
@@ -32,9 +32,9 @@ struct BilinearDensityStencil {
  * height must both be non-zero.
  */
 BilinearDensityStencil make_bilinear_density_stencil(double x,
-                                                      double y,
-                                                      size_t width,
-                                                      size_t height);
+                                                     double y,
+                                                     size_t width,
+                                                     size_t height);
 
 /**
  * @brief Deposit mass through a bilinear stencil into one flattened layer grid.
