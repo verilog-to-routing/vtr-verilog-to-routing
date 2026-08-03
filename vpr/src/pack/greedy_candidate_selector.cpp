@@ -514,14 +514,12 @@ void GreedyCandidateSelector::update_connection_gain_values(
                 /* TODO: Gain function accurate only if net has one connection to block,
                  * TODO: Should we handle case where net has multi-connection to block?
                  *       Gain computation is only off by a bit in this case */
-                if (cluster_gain_stats.connection_gain.count(blk_id) == 0) {
-                    cluster_gain_stats.connection_gain[blk_id] = 0;
-                }
-
+                // operator[] value-initializes the connection gain to 0 if blk_id is not in the map.
+                float& blk_connection_gain = cluster_gain_stats.connection_gain[blk_id];
                 if (num_internal_connections > 1) {
-                    cluster_gain_stats.connection_gain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
+                    blk_connection_gain -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
                 }
-                cluster_gain_stats.connection_gain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
+                blk_connection_gain += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
             }
         }
     }
@@ -534,13 +532,12 @@ void GreedyCandidateSelector::update_connection_gain_values(
         AtomBlockId blk_id = atom_netlist_.pin_block(driver_pin_id);
 
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-            if (cluster_gain_stats.connection_gain.count(blk_id) == 0) {
-                cluster_gain_stats.connection_gain[blk_id] = 0;
-            }
+            // operator[] value-initializes the connection gain to 0 if blk_id is not in the map.
+            float& blk_connection_gain = cluster_gain_stats.connection_gain[blk_id];
             if (num_internal_connections > 1) {
-                cluster_gain_stats.connection_gain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
+                blk_connection_gain -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
             }
-            cluster_gain_stats.connection_gain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
+            blk_connection_gain += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
         }
     }
 }
@@ -570,11 +567,10 @@ void GreedyCandidateSelector::update_timing_gain_values(
             if (!cluster_legalizer.is_atom_clustered(blk_id)) {
                 double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
-                if (cluster_gain_stats.timing_gain.count(blk_id) == 0) {
-                    cluster_gain_stats.timing_gain[blk_id] = 0;
-                }
-                if (timing_gain > cluster_gain_stats.timing_gain[blk_id])
-                    cluster_gain_stats.timing_gain[blk_id] = timing_gain;
+                // operator[] value-initializes the timing gain to 0 if blk_id is not in the map.
+                float& blk_timing_gain = cluster_gain_stats.timing_gain[blk_id];
+                if (timing_gain > blk_timing_gain)
+                    blk_timing_gain = timing_gain;
             }
         }
     }
@@ -590,11 +586,10 @@ void GreedyCandidateSelector::update_timing_gain_values(
             for (AtomPinId pin_id : atom_netlist_.net_sinks(net_id)) {
                 double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
-                if (cluster_gain_stats.timing_gain.count(new_blk_id) == 0) {
-                    cluster_gain_stats.timing_gain[new_blk_id] = 0;
-                }
-                if (timing_gain > cluster_gain_stats.timing_gain[new_blk_id])
-                    cluster_gain_stats.timing_gain[new_blk_id] = timing_gain;
+                // operator[] value-initializes the timing gain to 0 if new_blk_id is not in the map.
+                float& blk_timing_gain = cluster_gain_stats.timing_gain[new_blk_id];
+                if (timing_gain > blk_timing_gain)
+                    blk_timing_gain = timing_gain;
             }
         }
     }
@@ -1244,11 +1239,8 @@ void GreedyCandidateSelector::load_transitive_fanout_candidates(
                     // This transitive atom is not packed, score and add
                     auto& transitive_fanout_candidates = cluster_gain_stats.transitive_fanout_candidates;
 
-                    if (cluster_gain_stats.gain.count(blk_id) == 0) {
-                        cluster_gain_stats.gain[blk_id] = 0.001;
-                    } else {
-                        cluster_gain_stats.gain[blk_id] += 0.001;
-                    }
+                    // operator[] value-initializes the gain to 0 if blk_id is not in the map.
+                    cluster_gain_stats.gain[blk_id] += 0.001;
                     PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
                     VTR_ASSERT(!cluster_legalizer.is_mol_clustered(molecule_id));
                     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
