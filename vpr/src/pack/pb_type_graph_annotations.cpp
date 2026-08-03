@@ -283,6 +283,7 @@ static void load_delay_annotations(const int line_num,
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
         //Annotate primitive sequential timing information
+        t_pb_graph_pin* clock_pin = find_clock_pin(pb_graph_node, clock, line_num);
         k = 0;
         for (i = 0; i < num_in_sets; i++) {
             for (j = 0; j < num_in_ptrs[i]; j++) {
@@ -296,7 +297,7 @@ static void load_delay_annotations(const int line_num,
                     VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN);
                     in_port[i][j]->tco_min = delay_matrix[k][0];
                 }
-                in_port[i][j]->associated_clock_pin = find_clock_pin(pb_graph_node, clock, line_num);
+                in_port[i][j]->associated_clock_pin = clock_pin;
                 k++;
             }
         }
