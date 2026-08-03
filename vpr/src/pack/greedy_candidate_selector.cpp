@@ -1118,8 +1118,9 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         if (!blk_id.is_valid())
             continue;
 
-        if (cluster_gain_stats.gain.count(blk_id) > 0) {
-            gain += cluster_gain_stats.gain[blk_id];
+        auto gain_it = cluster_gain_stats.gain.find(blk_id);
+        if (gain_it != cluster_gain_stats.gain.end()) {
+            gain += gain_it->second;
         } else {
             /* This block has no connection with current cluster, penalize molecule for having this block
              */
