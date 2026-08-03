@@ -67,11 +67,11 @@ static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         t_logical_block_type_ptr logical_block = cluster_legalizer.get_cluster_type(cluster_id);
         t_physical_tile_type_ptr physical_tile = pick_physical_type(logical_block);
+        const t_pb* pb = cluster_legalizer.get_cluster_pb(cluster_id);
         for (int ipin = 0; ipin < logical_block->pb_type->num_pins; ipin++) {
             int physical_pin = get_physical_pin(physical_tile, logical_block, ipin);
             e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
-            const t_pb* pb = cluster_legalizer.get_cluster_pb(cluster_id);
             if (pb->pb_route.empty())
                 continue;
             count_clb_inputs_and_outputs_from_pb_route(pb,
@@ -614,12 +614,13 @@ static void clustering_xml_blocks_from_legalizer(pugi::xml_node& block_node,
     // its pb_route calculated.
     cluster_legalizer.finalize();
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+        t_pb* pb = cluster_legalizer.get_cluster_pb(cluster_id);
         clustering_xml_block(block_node,
                              cluster_legalizer.get_cluster_type(cluster_id),
                              pb_graph_pin_lookup_from_index_by_type,
-                             cluster_legalizer.get_cluster_pb(cluster_id),
+                             pb,
                              size_t(cluster_id),
-                             cluster_legalizer.get_cluster_pb(cluster_id)->pb_route);
+                             pb->pb_route);
     }
 }
 
