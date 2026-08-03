@@ -138,24 +138,14 @@ static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_p
     for (auto it = path.rbegin(); it != path.rend(); ++it) {
         cur_pin = *it;
         int cur_pin_id = cur_pin->pin_count_in_cluster;
-        t_pb_route* cur_pb_route;
 
-        if (out_pb_routes.count(cur_pin_id))
-            cur_pb_route = &out_pb_routes[cur_pin_id];
-        else {
-            t_pb_route pb_route = {
-                net_id,
-                -1,
-                {},
-                cur_pin};
-            out_pb_routes.insert(std::make_pair<>(cur_pin_id, pb_route));
-            cur_pb_route = &out_pb_routes[cur_pin_id];
-        }
+        // insert() leaves the existing entry untouched if cur_pin_id is already in the map.
+        t_pb_route& cur_pb_route = out_pb_routes.insert(std::make_pair(cur_pin_id, t_pb_route{net_id, -1, {}, cur_pin})).first->second;
 
         if (prev_pin_id != -1) {
             t_pb_route& prev_pb_route = out_pb_routes[prev_pin_id];
             prev_pb_route.sink_pb_pin_ids.push_back(cur_pin_id);
-            cur_pb_route->driver_pb_pin_id = prev_pb_route.pb_graph_pin->pin_count_in_cluster;
+            cur_pb_route.driver_pb_pin_id = prev_pb_route.pb_graph_pin->pin_count_in_cluster;
         }
 
         prev_pin_id = cur_pin_id;
