@@ -117,15 +117,15 @@ void AttractionInfo::create_att_groups_for_all_regions() {
 }
 
 void AttractionInfo::assign_atom_attraction_ids() {
-    //Fill in the group id for the atoms that do have an attraction group
+    // Fill in the group id for the atoms that do have an attraction group
     int num_att_grps = attraction_groups.size();
 
     for (int igroup = 0; igroup < num_att_grps; igroup++) {
         AttractGroupId group_id(igroup);
 
-        AttractionGroup att_group = attraction_groups[group_id];
+        const AttractionGroup& att_group = attraction_groups[group_id];
 
-        for (auto group_atom : att_group.group_atoms) {
+        for (AtomBlockId group_atom : att_group.group_atoms) {
             atom_attraction_group[group_atom] = group_id;
         }
     }
