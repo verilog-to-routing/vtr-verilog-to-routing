@@ -401,7 +401,7 @@ static void fixup_atom_pb_graph_pin_mapping(void) {
         /* Collect all innermost pb routes */
         std::vector<int> sink_pb_route_ids;
         t_pb* clb_pb = cluster_ctx.clb_nlist.block_pb(clb);
-        for (auto [pb_route_id, pb_route] : clb_pb->pb_route) {
+        for (const auto& [pb_route_id, pb_route] : clb_pb->pb_route) {
             if (pb_route.sink_pb_pin_ids.empty())
                 sink_pb_route_ids.push_back(pb_route_id);
         }
