@@ -7,6 +7,8 @@
  */
 
 #include <map>
+#include <set>
+#include <unordered_set>
 #include <utility>
 
 #include "user_relative_macros.h"
@@ -101,6 +103,45 @@ class AttractionInfo {
      */
     void boost_relative_group_gain(UserRelativeMacroId macro_id, int group_idx, float multiplier);
 
+    /**
+     * @brief Mark an atom of a relative placement group as a priority atom for
+     *        the next packing iterations.
+     *
+     * Used for atoms that were left stranded outside their group's cluster in
+     * a previous packing iteration. The candidate selector packs priority
+     * atoms into their group's cluster as early as possible, so they get
+     * first pick of the cluster's resources instead of hitting an
+     * order-dependent dead end at the end of the cluster's growth (greedy
+     * intra-cluster placement cannot rip up already-placed atoms).
+     *
+     * The set persists across attraction group rebuilds and packing
+     * iterations, and accumulates atoms from all previous iterations.
+     */
+    void add_relative_group_priority_atom(AtomBlockId atom_id);
+
+    /// @brief Returns true if the atom was marked by add_relative_group_priority_atom().
+    bool is_relative_group_priority_atom(AtomBlockId atom_id) const;
+
+    /**
+     * @brief Record which relative placement groups were split across
+     *        clusters in the packing iteration that just finished, and count
+     *        one more re-pack retry.
+     *
+     * The clusterer diversifies the packing order of still-split groups on
+     * every retry (see is_relative_group_split() and
+     * get_relative_group_retry_count()), so repeated retries explore
+     * different intra-cluster arrangements instead of deterministically
+     * repeating the same failing one.
+     */
+    void record_split_relative_groups(const std::vector<std::pair<UserRelativeMacroId, int>>& split_groups);
+
+    /// @brief Returns true if the group was split in the previous packing
+    ///        iteration (see record_split_relative_groups()).
+    bool is_relative_group_split(UserRelativeMacroId macro_id, int group_idx) const;
+
+    /// @brief Number of re-pack retries recorded by record_split_relative_groups().
+    int get_relative_group_retry_count() const;
+
     void assign_atom_attraction_ids();
 
     //Setters and getters for the class
@@ -163,6 +204,21 @@ class AttractionInfo {
      *        that method drop and rebuild them safely on repeated calls.
      */
     int num_relative_att_groups_ = 0;
+
+    /**
+     * @brief Atoms of relative placement groups that were left stranded outside
+     *        their group's cluster in a previous packing iteration. See
+     *        add_relative_group_priority_atom().
+     */
+    std::unordered_set<AtomBlockId> rel_group_priority_atoms_;
+
+    /// @brief Relative placement groups split across clusters in the previous
+    ///        packing iteration. See record_split_relative_groups().
+    std::set<std::pair<UserRelativeMacroId, int>> split_rel_groups_;
+
+    /// @brief Number of re-pack retries triggered by split relative placement
+    ///        groups so far. See record_split_relative_groups().
+    int rel_group_retry_count_ = 0;
 };
 
 inline int AttractionInfo::get_att_group_pulls() const {
@@ -196,4 +252,26 @@ inline void AttractionInfo::set_attraction_group_gain(const AttractGroupId group
 
 inline AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
     return attraction_groups[group_id];
+}
+
+inline void AttractionInfo::add_relative_group_priority_atom(AtomBlockId atom_id) {
+    rel_group_priority_atoms_.insert(atom_id);
+}
+
+inline bool AttractionInfo::is_relative_group_priority_atom(AtomBlockId atom_id) const {
+    return !rel_group_priority_atoms_.empty() && rel_group_priority_atoms_.count(atom_id) > 0;
+}
+
+inline void AttractionInfo::record_split_relative_groups(const std::vector<std::pair<UserRelativeMacroId, int>>& split_groups) {
+    split_rel_groups_.clear();
+    split_rel_groups_.insert(split_groups.begin(), split_groups.end());
+    rel_group_retry_count_++;
+}
+
+inline bool AttractionInfo::is_relative_group_split(UserRelativeMacroId macro_id, int group_idx) const {
+    return split_rel_groups_.count({macro_id, group_idx}) > 0;
+}
+
+inline int AttractionInfo::get_relative_group_retry_count() const {
+    return rel_group_retry_count_;
 }
