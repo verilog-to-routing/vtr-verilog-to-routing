@@ -722,6 +722,24 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``auto``
 
+.. option:: --pack_relative_group_best_effort {on, off}
+
+    Controls what happens when a group of a :ref:`relative placement macro <relative_placement_constraints>` cannot be honored during packing; either because its atoms could not all be packed into a single cluster after every packing retry, or because its cluster also belongs to an architecture-derived placement macro (a carry chain), which is not allowed.
+
+     * ``on``  : Release the offending group and continue packing, emitting a warning per released group.
+     * ``off`` : Abort with a fatal error naming the offending group(s).
+
+    Releasing a group makes its atoms **fully unconstrained**:
+
+    * They are left in the different clusters the packer already spread them across.
+    * They receive no relative placement offset, so the placer positions their clusters freely.
+    * The remaining groups of the same macro are still honored, with their offsets measured from the macro's first surviving group.
+    * A macro left with fewer than two surviving groups is dropped entirely, since a single group constrains nothing.
+
+    The log names every released group and reports the total.
+
+    **Default:** ``off``
+
 .. option:: --target_ext_pin_util { auto | <float> | <float>,<float> | <string>:<float> | <string>:<float>,<float> }
 
     Sets the external pin utilization target (fraction between 0.0 and 1.0) during clustering.
