@@ -107,8 +107,14 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         // Record down the relative position of the swap
         t_pl_offset swap_offset = to - from;
 
+        // Macros entered while expanding this move; used to abort on displacement cycles
+        std::unordered_set<int> visited_macros;
+
         int imember_from = 0;
-        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry, place_macros);
+        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry, place_macros, visited_macros);
+
+        blocks_affected.move_abortion_logger.log_macro_move_proposal(place_macros[imacro_from].user_defined,
+                                                                     outcome == e_block_move_result::ABORT);
 
         VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(place_macros[imacro_from].members.size()));
 
@@ -189,9 +195,23 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
                                        const BlkLocRegistry& blk_loc_registry,
-                                       const PlaceMacros& place_macros) {
+                                       const PlaceMacros& place_macros,
+                                       std::unordered_set<int>& visited_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+
+    // Detect cycles between user-defined relative-placement macros. A cycle can
+    // occur when moving one macro displaces another, whose counter-move reaches the
+    // first macro again. Since no block move may have been recorded yet, the
+    // recursion would otherwise never terminate.
+    //
+    // This check is limited to designs with user-defined macros. Architecture-based
+    // macros, such as carry chains, may legally re-enter a macro and should not be
+    // rejected.
+    if (place_macros.has_user_defined_macros() && !visited_macros.insert(imacro_from).second) {
+        blocks_affected.move_abortion_logger.log_move_abort("macro swap cycle");
+        return e_block_move_result::ABORT;
+    }
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
@@ -226,7 +246,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                     imember_from = place_macros[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
-                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry, place_macros);
+                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry, place_macros, visited_macros);
                     if (outcome == e_block_move_result::INVERT_VALID) {
                         break; //The move was inverted and successfully proposed, don't need to continue the loop
                     }
@@ -252,7 +272,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             const PlaceMacros& pl_macros) {
+                                             const PlaceMacros& pl_macros,
+                                             std::unordered_set<int>& visited_macros) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
@@ -269,7 +290,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //allows these blocks to swap)
     if (pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
-        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
+        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros, visited_macros);
         if (outcome == e_block_move_result::INVERT) {
             blocks_affected.move_abortion_logger.log_move_abort("invert recursion2");
             outcome = e_block_move_result::ABORT;
@@ -338,7 +359,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         //
         //Swap the remainder of the 'to' macro to locations after the 'from' macro.
         //Note that we are swapping in the opposite direction so the swap offsets are inverted.
-        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
+        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros, visited_macros);
     }
 
     return e_block_move_result::VALID;
@@ -468,11 +489,36 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     VTR_ASSERT_SAFE(empty_locs.size() >= non_macro_displaced_blocks.size());
 
-    //Fit the displaced blocks into the empty locations
-    auto loc_itr = empty_locs.begin();
+    //Fit the displaced blocks into the empty locations.
+    //
+    //Each block needs a hole it actually fits: same tile type, a compatible
+    //sub-tile, and a tile root. Carry chains vacate holes that are all one type,
+    //so any pairing works, but a relative placement macro mixing types (say a CLB
+    //and a DSP) leaves mixed holes, and handing them out in order can drop a block
+    //on the wrong tile; caught much later by the placement consistency check.
+    //So match each block to a hole that fits, and abort if one has no such hole.
+    std::vector<t_pl_loc> empty_loc_vec(empty_locs.begin(), empty_locs.end());
+    std::vector<bool> hole_used(empty_loc_vec.size(), false);
     for (ClusterBlockId blk : non_macro_displaced_blocks) {
-        outcome = blocks_affected.record_block_move(blk, *loc_itr, blk_loc_registry);
-        ++loc_itr;
+        bool assigned = false;
+        for (size_t h = 0; h < empty_loc_vec.size(); ++h) {
+            if (hole_used[h]) {
+                continue;
+            }
+            if (is_legal_swap_to_location(blk, empty_loc_vec[h], blk_loc_registry, place_macros)) {
+                outcome = blocks_affected.record_block_move(blk, empty_loc_vec[h], blk_loc_registry);
+                hole_used[h] = true;
+                assigned = true;
+                break;
+            }
+        }
+        if (!assigned) {
+            blocks_affected.move_abortion_logger.log_move_abort("macro self-swap incompatible displaced block");
+            return e_block_move_result::ABORT;
+        }
+        if (outcome != e_block_move_result::VALID) {
+            return outcome;
+        }
     }
 
     return outcome;
@@ -502,11 +548,12 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
         return false;
     }
 
-    // The to location must be the root of a tile: blocks are always placed at
-    // tile roots. A non-root position can be proposed for a member of a macro
-    // whose members sit on tiles of different sizes (e.g. a relative placement
-    // macro anchoring a CLB to a multi-row RAM tile): shifting the macro can
-    // land a member mid-tile even though the moved block itself is at a root.
+    // A block can only be placed at the root cell of a tile, so reject non-root
+    // targets. This can happen with user-defined relative-placement macros that mix
+    // block types. The moved block is placed on a valid root for its own type, but
+    // the same displacement is applied to the other macro members. If their tile
+    // sizes differ, a member may land on a non-root cell that appears type-compatible
+    // but cannot actually hold a block.
     if (device_ctx.grid.get_width_offset({to.x, to.y, to.layer}) != 0
         || device_ctx.grid.get_height_offset({to.x, to.y, to.layer}) != 0) {
         return false;
