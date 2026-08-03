@@ -279,12 +279,12 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
     // Initialize variables
     float cost = std::numeric_limits<float>::max();
     int encounter_order = 0;
+    const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
 
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
         if (!cluster_placement_stats->valid_primitives[i].empty()) {
             t_cluster_placement_primitive* cur_cluster_placement_primitive = cluster_placement_stats->valid_primitives[i].begin()->second;
-            const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
             if (primitive_type_feasible(molecule.atom_block_ids[molecule.root], cur_cluster_placement_primitive->pb_graph_node->pb_type)) {
                 // Iterate over the unordered_multimap of the valid primitives of a specific pb primitive type
                 for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
@@ -561,6 +561,8 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
     t_pb_graph_pin *cur_pin, *next_pin;
     t_pack_pattern_block* next_block;
 
+    const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
+
     cur = pack_pattern_block->connections;
     while (cur) {
         if (cur->from_block == pack_pattern_block) {
@@ -568,7 +570,6 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
         } else {
             next_block = cur->from_block;
         }
-        const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
         if (primitives_list[next_block->block_id] == nullptr && molecule.atom_block_ids[next_block->block_id]) {
             /* first time visiting location */
 
