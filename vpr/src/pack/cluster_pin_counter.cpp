@@ -145,12 +145,101 @@ void ClusterPinCounter::wipe_all_marks_journaled() {
     }
 }
 
+void ClusterPinCounter::record_input_mark(AtomPinId pin, const t_pb* pb) {
+    input_mark_record_[pin].push_back(pb);
+    record_journal_.push_back({pin, pb, /*is_input=*/true, +1});
+}
+
+void ClusterPinCounter::record_output_mark(AtomPinId pin, const t_pb* pb) {
+    output_mark_record_[pin].push_back(pb);
+    record_journal_.push_back({pin, pb, /*is_input=*/false, +1});
+}
+
+void ClusterPinCounter::unmark_input_pin(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
+    auto it = input_mark_record_.find(pin_id);
+    if (it == input_mark_record_.end()) {
+        return; // pin never contributed a mark on the input side
+    }
+
+    const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
+    const t_pb_graph_pin* gpin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
+    const AtomNetId net_id = netlist.pin_net(pin_id);
+
+    for (const t_pb* pb : it->second) {
+        // Defensive: skip stale pointers. See class doc — expected to be
+        // unreachable under the current lifetime invariants.
+        if (per_pb_state_.find(pb) == per_pb_state_.end()) {
+            continue;
+        }
+
+        const int depth = pb->pb_graph_node->pb_type->depth;
+        const int class_id = gpin->parent_pin_class[depth];
+        VTR_ASSERT(class_id != UNDEFINED);
+
+        remove_mark(pb, /*is_input=*/true, class_id, net_id);
+        record_journal_.push_back({pin_id, pb, /*is_input=*/true, -1});
+    }
+    input_mark_record_.erase(it);
+}
+
+void ClusterPinCounter::unmark_output_pin(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
+    auto it = output_mark_record_.find(pin_id);
+    if (it == output_mark_record_.end()) {
+        return;
+    }
+
+    const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
+    const t_pb_graph_pin* gpin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
+    const AtomNetId net_id = netlist.pin_net(pin_id);
+
+    for (const t_pb* pb : it->second) {
+        if (per_pb_state_.find(pb) == per_pb_state_.end()) {
+            continue;
+        }
+
+        const int depth = pb->pb_graph_node->pb_type->depth;
+        const int class_id = gpin->parent_pin_class[depth];
+        VTR_ASSERT(class_id != UNDEFINED);
+
+        remove_mark(pb, /*is_input=*/false, class_id, net_id);
+        record_journal_.push_back({pin_id, pb, /*is_input=*/false, -1});
+    }
+    output_mark_record_.erase(it);
+}
+
 void ClusterPinCounter::commit_check() {
     journal_.clear();
+    record_journal_.clear();
 }
 
 void ClusterPinCounter::rollback_check() {
-    // Replay in reverse: apply the negation of each recorded change.
+    // Replay record mutations in reverse first, then state mutations in
+    // reverse. The two journals are independent (records vs. state maps),
+    // but undoing records first keeps the pb -> record correspondence
+    // consistent while unmark-style state ops are being reversed below.
+    while (!record_journal_.empty()) {
+        const MarkRecordDelta e = record_journal_.back();
+        record_journal_.pop_back();
+
+        auto& record_map = e.is_input ? input_mark_record_ : output_mark_record_;
+
+        if (e.change == +1) {
+            // Undo an append: pop the last entry (which must be pb).
+            auto it = record_map.find(e.pin);
+            VTR_ASSERT(it != record_map.end() && !it->second.empty());
+            VTR_ASSERT_SAFE(it->second.back() == e.pb);
+            it->second.pop_back();
+            if (it->second.empty()) {
+                record_map.erase(it);
+            }
+        } else {
+            VTR_ASSERT(e.change == -1);
+            // Undo a removal (from unmark_*_pin's bulk clear): push pb back.
+            // Creates the map entry if the key had been erased.
+            record_map[e.pin].push_back(e.pb);
+        }
+    }
+
     while (!journal_.empty()) {
         const MarkDelta e = journal_.back();
         journal_.pop_back();
@@ -236,7 +325,8 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
     return nullptr;
 }
 
-void ClusterPinCounter::compute_and_mark_pins_used_for_input_pin(const t_pb_graph_pin* pb_graph_pin,
+void ClusterPinCounter::compute_and_mark_pins_used_for_input_pin(AtomPinId pin_id,
+                                                                 const t_pb_graph_pin* pb_graph_pin,
                                                                  const t_pb* primitive_pb,
                                                                  AtomNetId net_id,
                                                                  const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
@@ -285,11 +375,13 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_input_pin(const t_pb_grap
 
         if (!is_reachable) {
             add_mark(cur_pb, /*is_input=*/true, pin_class, net_id);
+            record_input_mark(pin_id, cur_pb);
         }
     }
 }
 
-void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(const t_pb_graph_pin* pb_graph_pin,
+void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_id,
+                                                                  const t_pb_graph_pin* pb_graph_pin,
                                                                   const t_pb* primitive_pb,
                                                                   AtomNetId net_id,
                                                                   const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
@@ -338,8 +430,8 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(const t_pb_gra
             if (!all_sinks_in_cur_cluster_computed) {
                 const LegalizationClusterId driver_cluster = atom_cluster[driver_blk_id];
                 all_sinks_in_cur_cluster = true;
-                for (auto pin_id : atom_ctx.netlist().net_sinks(net_id)) {
-                    if (atom_cluster[atom_ctx.netlist().pin_block(pin_id)] != driver_cluster) {
+                for (auto sink_pin_id : atom_ctx.netlist().net_sinks(net_id)) {
+                    if (atom_cluster[atom_ctx.netlist().pin_block(sink_pin_id)] != driver_cluster) {
                         all_sinks_in_cur_cluster = false;
                         break;
                     }
@@ -362,6 +454,7 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(const t_pb_gra
 
         if (net_exits_cluster) {
             add_mark(cur_pb, /*is_input=*/false, pin_class, net_id);
+            record_output_mark(pin_id, cur_pb);
         }
     }
 }
@@ -380,9 +473,9 @@ void ClusterPinCounter::compute_and_mark_pins_used(
         const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
 
         if (pb_graph_pin->port->type == IN_PORT) {
-            compute_and_mark_pins_used_for_input_pin(pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
+            compute_and_mark_pins_used_for_input_pin(pin_id, pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
         } else {
-            compute_and_mark_pins_used_for_output_pin(pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
+            compute_and_mark_pins_used_for_output_pin(pin_id, pb_graph_pin, cur_pb, net_id, atom_cluster, atom_to_pb);
         }
     }
 }
@@ -411,7 +504,7 @@ void ClusterPinCounter::full_recompute_from_molecules(
     }
 }
 
-bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const {
+bool ClusterPinCounter::check_pins_used_full_reference(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
     if (!pb_type->is_primitive() && cur_pb->name) {
@@ -456,7 +549,7 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
             for (int child_num = 0; child_num < pb_type->modes[cur_pb->mode].num_pb_type_children; child_num++) {
                 if (cur_pb->child_pbs[child_num]) {
                     for (int pb_instance = 0; pb_instance < pb_type->modes[cur_pb->mode].pb_type_children[child_num].num_pb; pb_instance++) {
-                        if (!check_pins_used(&cur_pb->child_pbs[child_num][pb_instance], max_external_pin_util))
+                        if (!check_pins_used_full_reference(&cur_pb->child_pbs[child_num][pb_instance], max_external_pin_util))
                             return false;
                     }
                 }
@@ -465,6 +558,179 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
     }
 
     return true;
+}
+
+/**
+ * @brief Test a single (pb, class) pair against its supply, applying the root
+ *        clamp when appropriate. Returns true if the class is feasible.
+ */
+static bool class_is_feasible(const ClusterPinCounter& counter,
+                              const t_pb* pb,
+                              bool is_input,
+                              size_t class_id,
+                              t_ext_pin_util max_external_pin_util,
+                              const std::vector<size_t>& root_input_snapshot,
+                              const std::vector<size_t>& root_output_snapshot) {
+    const t_pb_graph_node* gnode = pb->pb_graph_node;
+    size_t class_size = is_input ? gnode->input_pin_class_sizes[class_id]
+                                 : gnode->output_pin_class_sizes[class_id];
+
+    if (pb->is_root()) {
+        const float util = is_input ? max_external_pin_util.input_pin_util
+                                    : max_external_pin_util.output_pin_util;
+        class_size = std::ceil(util * class_size);
+        const auto& snap = is_input ? root_input_snapshot : root_output_snapshot;
+        VTR_ASSERT(class_id < snap.size());
+        class_size = std::max<size_t>(class_size, snap[class_id]);
+    }
+
+    const size_t current = is_input ? counter.input_size(pb, class_id)
+                                    : counter.output_size(pb, class_id);
+    return current <= class_size;
+}
+
+bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const {
+    // Only (pb, is_input, class_id) tuples that were incremented during this
+    // check can have become infeasible: the pre-delta state was feasible,
+    // decrements cannot break feasibility, and the root clamp handles the
+    // one edge case (seed utilization transition, spec §5.3). Iterate the
+    // state journal, dedup via a small vector + sort, and probe each.
+    struct TouchedKey {
+        const t_pb* pb;
+        uint32_t class_id;
+        bool is_input;
+        bool operator<(const TouchedKey& o) const {
+            if (pb != o.pb) return pb < o.pb;
+            if (is_input != o.is_input) return is_input < o.is_input;
+            return class_id < o.class_id;
+        }
+        bool operator==(const TouchedKey& o) const {
+            return pb == o.pb && class_id == o.class_id && is_input == o.is_input;
+        }
+    };
+
+    std::vector<TouchedKey> touched;
+    touched.reserve(journal_.size());
+    for (const MarkDelta& d : journal_) {
+        if (d.change != +1) continue;
+        touched.push_back({d.pb, d.class_id, d.is_input});
+    }
+    std::sort(touched.begin(), touched.end());
+    touched.erase(std::unique(touched.begin(), touched.end()), touched.end());
+
+    bool incremental_result = true;
+    for (const TouchedKey& k : touched) {
+        // Non-primitive pbs with a name only. Match the guard in the
+        // reference walk: primitive pbs and unnamed containers are not
+        // checked.
+        if (k.pb->pb_graph_node->pb_type->is_primitive()) continue;
+        if (k.pb->name == nullptr) continue;
+
+        if (!class_is_feasible(*this, k.pb, k.is_input, k.class_id,
+                               max_external_pin_util,
+                               root_input_class_size_snapshot_,
+                               root_output_class_size_snapshot_)) {
+            incremental_result = false;
+            break;
+        }
+    }
+
+#ifdef VTR_ASSERT_SAFE_ENABLED
+    // Debug oracle: run the full-tree walk and assert agreement.
+    const bool full_result = check_pins_used_full_reference(cur_pb, max_external_pin_util);
+    if (incremental_result != full_result) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Incremental check_pins_used disagrees with the reference "
+                        "full-tree check: incremental=%s reference=%s\n",
+                        incremental_result ? "pass" : "fail",
+                        full_result ? "pass" : "fail");
+    }
+#else
+    (void)cur_pb;
+#endif
+
+    return incremental_result;
+}
+
+void ClusterPinCounter::apply_molecule_delta(
+    PackMoleculeId candidate_id,
+    const Prepacker& prepacker,
+    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+    const AtomPBBimap& atom_to_pb) {
+    const t_pack_molecule& molecule = prepacker.get_molecule(candidate_id);
+    const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
+
+    // Build the set of atoms in M for O(1) membership tests.
+    std::unordered_set<AtomBlockId> molecule_atoms;
+    for (AtomBlockId blk : molecule.atom_block_ids) {
+        if (blk.is_valid()) molecule_atoms.insert(blk);
+    }
+    VTR_ASSERT(!molecule_atoms.empty());
+
+    // Every atom in M has already been placed and its cluster recorded by
+    // try_place_atom_block_rec, so any of them tells us which cluster we're
+    // in. Used to filter "atom is in this cluster" checks below.
+    const LegalizationClusterId our_cluster = atom_cluster[*molecule_atoms.begin()];
+    VTR_ASSERT(our_cluster.is_valid());
+
+    // Step 1: every net M now drives -> re-evaluate every pre-existing sink.
+    // A net has a single driver; no dedup needed on driven-net collection.
+    std::unordered_set<AtomNetId> driven_nets;
+    for (AtomBlockId blk : molecule_atoms) {
+        for (AtomPinId pin : netlist.block_output_pins(blk)) {
+            const AtomNetId n = netlist.pin_net(pin);
+            if (n.is_valid()) driven_nets.insert(n);
+        }
+    }
+    for (AtomNetId n : driven_nets) {
+        for (AtomPinId sink_pin : netlist.net_sinks(n)) {
+            const AtomBlockId sink_atom = netlist.pin_block(sink_pin);
+            if (molecule_atoms.count(sink_atom)) continue;
+            if (atom_cluster[sink_atom] != our_cluster) continue;
+
+            const t_pb* sink_prim_pb = atom_to_pb.atom_pb(sink_atom);
+            if (sink_prim_pb == nullptr) continue;
+
+            unmark_input_pin(sink_pin, n, atom_to_pb);
+            const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(netlist, atom_to_pb, sink_pin);
+            compute_and_mark_pins_used_for_input_pin(sink_pin, sink_gpin, sink_prim_pb, n,
+                                                     atom_cluster, atom_to_pb);
+        }
+    }
+
+    // Step 2: every net M now sinks -> re-evaluate the driver.
+    // Multiple atoms in M can sink the same net, so a set is required.
+    std::unordered_set<AtomNetId> sunk_nets;
+    for (AtomBlockId blk : molecule_atoms) {
+        for (AtomPinId pin : netlist.block_input_pins(blk)) {
+            const AtomNetId n = netlist.pin_net(pin);
+            if (n.is_valid()) sunk_nets.insert(n);
+        }
+    }
+    for (AtomNetId n : sunk_nets) {
+        const AtomPinId driver_pin = netlist.net_driver(n);
+        if (!driver_pin.is_valid()) continue;
+        const AtomBlockId driver_atom = netlist.pin_block(driver_pin);
+        if (molecule_atoms.count(driver_atom)) continue;
+        if (atom_cluster[driver_atom] != our_cluster) continue;
+
+        const t_pb* driver_prim_pb = atom_to_pb.atom_pb(driver_atom);
+        if (driver_prim_pb == nullptr) continue;
+
+        unmark_output_pin(driver_pin, n, atom_to_pb);
+        const t_pb_graph_pin* driver_gpin = find_pb_graph_pin(netlist, atom_to_pb, driver_pin);
+        compute_and_mark_pins_used_for_output_pin(driver_pin, driver_gpin, driver_prim_pb, n,
+                                                  atom_cluster, atom_to_pb);
+    }
+
+    // Step 3: mark every pin of every atom in M.
+    for (AtomBlockId blk : molecule_atoms) {
+        const t_pb* prim_pb = atom_to_pb.atom_pb(blk);
+        VTR_ASSERT_SAFE(prim_pb != nullptr);
+        VTR_ASSERT_SAFE(prim_pb->pb_graph_node->pb_type->is_primitive());
+        VTR_ASSERT(prim_pb->pb_graph_node->pb_type->blif_model != nullptr);
+        compute_and_mark_pins_used(blk, atom_cluster, atom_to_pb);
+    }
 }
 
 /**

@@ -975,13 +975,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             candidate_molecule_added_to_cluster = true;
 
             if (enable_pin_feasibility_filter_) {
-                // full_recompute_from_molecules requires the candidate molecule
-                // to already be in cluster.molecules, which is satisfied by the
-                // push above. Snapshot the root class sizes first: they capture
-                // the pre-check (accepted-only) sizes and are read by check_pins_used
-                // to implement the root clamp.
+                // Snapshot the root class sizes first: they capture the pre-check
+                // (accepted-only) sizes and are read by check_pins_used to
+                // implement the root clamp. apply_molecule_delta then mutates the
+                // state to reflect adding this candidate; the change is journaled
+                // so rollback_check can restore the pre-check state on failure.
                 cluster.pin_counter.snapshot_root_class_sizes(cluster.pb);
-                cluster.pin_counter.full_recompute_from_molecules(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                cluster.pin_counter.apply_molecule_delta(molecule_id, prepacker_, atom_cluster_, atom_pb_lookup());
 #ifdef VTR_ASSERT_SAFE_ENABLED
                 cluster.pin_counter.verify_against_full_recompute(
                     cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
