@@ -21,7 +21,7 @@
 //   mult_map.v            $mul -> multiply techmap with arch mode widths
 //   mul2dsp_map.v         mul2dsp _dsp_block_ -> multiply with the same modes
 //   add_sub_map.v         $add/$sub -> carry-chain adder techmap
-//   <model>_map.v         one per -exotic comb block
+//   <model>_map.v         one per -exotic combinational block
 
 // files are required because the yosys consumers (memory_libmap -lib,
 // techmap -map, read_verilog -lib) only accept file paths; the one rule
@@ -73,7 +73,7 @@ struct VtrArchRulesPass : public Pass {
     log("rule files are template-backed: -tpldir points at the template dir\n");
     log("(default: vtr_flow/misc/mosaic/template/templates). -blocks selects a\n");
     log("subset of bram,adder,multiply,hardblock-lib (default: all). -exotic\n");
-    log("adds a generic comb-block generator for <model> using <file> as its\n");
+    log("adds a generic combinational-block generator for <model> using <file> as its\n");
     log("techmap template; it may be repeated and pairs by order.\n");
     log("\n");
     log("-stub-all-hardblocks emits generic blackbox stubs for every hardblock\n");
@@ -206,7 +206,7 @@ struct VtrArchRulesPass : public Pass {
       gens.push_back(mosaic::makeExoticRuleGen(request));
     }
 
-    // emit enabled generators in registry order, collecting the comb-kind
+    // emit enabled generators in registry order, collecting the combinational-kind
     // ones as stub providers for the hardblock lib. when stubbing all
     // exotics, per-model -exotic gens still emit techmaps but their stubs
     // are skipped so the lib does not get duplicate modules.

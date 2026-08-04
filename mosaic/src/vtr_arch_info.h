@@ -71,7 +71,7 @@ struct VtrArchInfo {
   int lutK1 = 0;
 
   // every pb_type blif_model ".subckt <name>" binding, keyed by model name
-  // (includes the ram models and any exotic comb blocks the arch carries).
+  // (includes the ram models and any exotic combinational blocks the arch carries).
   std::map<std::string, ModelGeometry> hardblockModels;
 
   // adder / multiply convenience accessors, derived from hardblockModels

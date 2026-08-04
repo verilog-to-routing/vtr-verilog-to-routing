@@ -258,7 +258,7 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// AdderRuleGen (comb kind): add_sub_map.v + adder lib stub
+// AdderRuleGen (combinational kind): add_sub_map.v + adder lib stub
 // ---------------------------------------------------------------------------
 
 // built-in always-fail map for archs without an adder model.
@@ -318,7 +318,7 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// MultiplyRuleGen (comb kind): mult_map.v + multiply lib stub
+// MultiplyRuleGen (combinational kind): mult_map.v + multiply lib stub
 // ---------------------------------------------------------------------------
 
 // built-in always-fail map for archs without a multiply model.
@@ -411,7 +411,7 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// ExoticCombRuleGen (comb kind): generic -exotic extension point
+// ExoticCombRuleGen (combinational kind): generic -exotic extension point
 // ---------------------------------------------------------------------------
 
 // token-safe port name: uppercase, non-alnum -> '_'
@@ -568,7 +568,7 @@ private:
 };
 
 // ---------------------------------------------------------------------------
-// HardblockLibGen: aggregates comb-kind stubs into vtr_hardblock_lib.v
+// HardblockLibGen: aggregates combinational-kind stubs into vtr_hardblock_lib.v
 // ---------------------------------------------------------------------------
 
 class HardblockLibGen : public ArchRuleGen {

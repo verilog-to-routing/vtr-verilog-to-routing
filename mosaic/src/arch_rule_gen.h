@@ -11,13 +11,13 @@
 //
 // each ArchRuleGen turns one slice of the scanned arch (vtr_arch_info) plus
 // the flow policy knobs into rule files under -outdir, substituting
-// arch-derived values into template files from -tpldir. comb-kind
+// arch-derived values into template files from -tpldir. combinational-kind
 // generators additionally contribute a stub section that the hardblock-lib
 // generator aggregates into the single vtr_hardblock_lib.v.
 //
 // block kinds:
-//   memory  (bram):        emits libmap rules + techmap, no lib stub
-//   comb    (adder/multiply/exotic): techmap and/or lib stub section
+//   memory         (bram): emits libmap rules + techmap, no lib stub
+//   combinational  (adder/multiply/exotic): techmap and/or lib stub section
 //   carry-chain blocks would subclass ArchRuleGen the same way; only the
 //   stub/techmap text differs.
 namespace mosaic {
@@ -50,7 +50,7 @@ public:
   virtual void emit(const VtrArchInfo &info, const ArchRulePolicy &policy,
                     const std::string &outDir) const = 0;
 
-  // comb-kind generators contribute a vtr_hardblock_lib.v stub section
+  // combinational-kind generators contribute a vtr_hardblock_lib.v stub section
   // (text ends with one blank line). default: empty (memory-kind blocks
   // and models absent from the arch contribute nothing).
   virtual std::string hardblockStub(const VtrArchInfo &info,
@@ -67,7 +67,7 @@ private:
 // built-in generators in emission/stub order: bram, adder, multiply.
 std::vector<std::unique_ptr<ArchRuleGen>> makeBuiltinRuleGens();
 
-// generic comb-block extension point (-exotic); block name is the model
+// generic combinational-block extension point (-exotic); block name is the model
 // name. when the model is absent from the arch the generator emits an
 // always-_TECHMAP_FAIL_ map and contributes no stub.
 std::unique_ptr<ArchRuleGen> makeExoticRuleGen(const ExoticRequest &request);

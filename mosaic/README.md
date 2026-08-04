@@ -43,7 +43,8 @@ This builds `wildebeest/` against the vtr yosys and installs `wildebeest.so` int
 ./vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start mosaic
 ```
 
-Options are thhe following:
+Options are the following:
+
 - `-mosaic_script <path>`: custom yosys template script (default `vtr_flow/misc/mosaic/template/synthesis.tcl`)
 - `-top_module <name>`: top module; leaving it empty means yosys `-auto-top`
 
@@ -55,13 +56,14 @@ The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, and post-process
 - `mosaic/build_mosaic.sh`: builds and installs the plugin
 - `vtr_flow/misc/mosaic/template/`: architecture-agnostic yosys synthesis template + rule templates
 - `vtr_flow/misc/mosaic/template/templates/*.tmpl`: templates used by `vtr_arch_rules -tpldir` to generate BRAM, multiply, and hardblock stub files
-- `vtr_flow/misc/mosaic/k6/`: K6 per-arch knob config (`arch_config.tcl`)
-- `vtr_flow/misc/mosaic/koios/`: Koios complex-DSP arch knobs (`dspMaxWidth 27`, `stubAllHardblocks 1` for exotic DSP passthrough)
 - `vtr_flow/scripts/python_libs/vtr/mosaic/`: the vtr flow stage module (selects the support dir from the arch xml stem)
+- `mosaic/scripts/dump_arch_info.py`: dump parsed arch summary (optional; compare against `mosaic/tests/golden/`)
 - `mosaic/scripts/run_vtr_batch.py`: batch `run_vtr_flow.py` (1 core per run), live csv/status, optional `--watch`
 - `mosaic/scripts/watch_compare.py`: live status table (used by `--watch`, or run alone in a second terminal)
 
 The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is the per-arch support dir (`k6/` or `koios/`, chosen from the architecture file).
+
+`vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `stubAllHardblocks`). Do not put dsp/ram widths in `arch_config.tcl`.
 
 ## QoR Compare (vanilla_vtr vs mosaic)
 `run_vtr_batch.py` wraps the default `run_vtr_flow.py` call. Each run is pinned

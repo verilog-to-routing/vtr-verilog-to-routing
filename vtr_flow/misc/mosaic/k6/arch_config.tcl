@@ -11,6 +11,8 @@ set cmpLutWidth    6
 set lutCost        "5:13,6:20"
 # 12 under-mapped real datapath adds on k6 at the old higher cutoff
 set hardAdderThreshold 3
+# minimum operand width for mul2dsp chunking (policy; facts set dspMaxWidth)
+set dspMinWidth    2
 set sweepMaxIters  64
 set abcOptScript   "$templateDir/k6_delay_gia_opt.scr"
 set abcMapScript   "$templateDir/k6_delay.scr"

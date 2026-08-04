@@ -69,6 +69,9 @@ if { $archConfigFile ne "" && [file exists $archConfigFile] } {
 if { $primitiveProfile eq "passthrough_exotics" } {
     set stubAllHardblocks 1
 }
+# mul2dsp minimum operand width is policy; facts may overwrite dspMinWidth
+# with the smallest multiply mode when arch_facts.tcl is sourced later
+set mul2dspMinWidth $dspMinWidth
 
 # ----------------------------------------------------------------------------
 # rule files  all derived from the arch xml by vtr_arch_rules at runtime.
@@ -99,6 +102,8 @@ set multiplyModes    ""
 set archFactsFile "$archRulesDir/arch_facts.tcl"
 if { [file exists $archFactsFile] } {
     source $archFactsFile
+    # policy dspMinWidth (from arch_config / defaults) wins over facts min mode
+    set dspMinWidth $mul2dspMinWidth
 }
 
 # exotic keep types from stub-all (opt-in via arch_config); append so the
