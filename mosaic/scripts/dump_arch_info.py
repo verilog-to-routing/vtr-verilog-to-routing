@@ -29,6 +29,7 @@ DEFAULT_ARCHES = [
     REPO_ROOT
     / "vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml",
     FIXTURE_DIR / "min_bram_adder_no_mult.xml",
+    FIXTURE_DIR / "min_exotic_integer_mul.xml",
 ]
 
 

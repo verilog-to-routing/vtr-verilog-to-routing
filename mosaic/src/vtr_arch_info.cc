@@ -72,11 +72,13 @@ void scanModels(const pugi::xml_node &root, VtrArchInfo &info) {
 }
 
 void scanBramModes(const std::vector<pugi::xml_node> &pbTypes,
-                   VtrArchInfo &info) {
+                   const ClassicModelNames &classic, VtrArchInfo &info) {
   for (const pugi::xml_node pb : pbTypes) {
     const std::string blif = attrStr(pb, "blif_model");
-    const bool isSp = blif == ".subckt single_port_ram";
-    const bool isDp = blif == ".subckt dual_port_ram";
+    const std::string spModel = ".subckt " + classic.singlePortRam;
+    const std::string dpModel = ".subckt " + classic.dualPortRam;
+    const bool isSp = blif == spModel;
+    const bool isDp = blif == dpModel;
     if (!isSp && !isDp)
       continue;
     const auto pins = directPins(pb, "input");
@@ -178,14 +180,15 @@ void scanHardblockModels(const std::vector<pugi::xml_node> &pbTypes,
 }
 
 // fill adder / multiply convenience fields from hardblockModels.
-void deriveHardblockAliases(VtrArchInfo &info) {
-  auto mult = info.hardblockModels.find("multiply");
+void deriveHardblockAliases(const ClassicModelNames &classic,
+                            VtrArchInfo &info) {
+  auto mult = info.hardblockModels.find(classic.multiply);
   if (mult != info.hardblockModels.end() && !mult->second.modes.empty()) {
     info.multiply.present = true;
     info.multiply.aWidth = mult->second.modes.back();
     info.multiplyModes = mult->second.modes;
   }
-  auto add = info.hardblockModels.find("adder");
+  auto add = info.hardblockModels.find(classic.adder);
   if (add != info.hardblockModels.end()) {
     auto a = add->second.inputWidths.find("a");
     if (a != add->second.inputWidths.end() && a->second > 0) {
@@ -207,7 +210,7 @@ void deriveHardblockAliases(VtrArchInfo &info) {
 } // namespace
 
 bool readArchInfo(const std::string &xmlPath, VtrArchInfo &info,
-                  std::string *errorOut) {
+                  const ClassicModelNames &classic, std::string *errorOut) {
   pugi::xml_document doc;
   const pugi::xml_parse_result result = doc.load_file(xmlPath.c_str());
   if (!result) {
@@ -222,10 +225,10 @@ bool readArchInfo(const std::string &xmlPath, VtrArchInfo &info,
 
   std::vector<pugi::xml_node> pbTypes;
   collectAll(root, "pb_type", pbTypes);
-  scanBramModes(pbTypes, info);
+  scanBramModes(pbTypes, classic, info);
   scanLutCost(pbTypes, info);
   scanHardblockModels(pbTypes, info);
-  deriveHardblockAliases(info);
+  deriveHardblockAliases(classic, info);
   return true;
 }
 

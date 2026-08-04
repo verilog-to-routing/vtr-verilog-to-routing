@@ -23,7 +23,27 @@
 // the xml is parsed with pugixml from vtr's vendored copy
 // (libs/EXTERNAL/libpugixml), so there is no libarchfpga/libvtrutil link and
 // the plugin keeps building against yosys alone.
+//
+// synth-facts checklist (expand scanner + goldens when claiming support):
+//   [x] bram sp/dp modes (addr/data widths; aliased model names)
+//   [x] multiply modes from 'a' port; adder presence + carryChain
+//   [x] hardblockModels port widths + clock pins folded into inputs
+//   [x] lutK / lutK1 fracturable lut geometry
+//   [x] clockedModels from <models> is_clock
+//   [ ] timing / delay annotations (not needed for techmap legality)
+//   [ ] non-'a' mode axes / asymmetric mult ports beyond max widths
+//   [ ] memory depth-splitting metadata beyond scanned modes
+//   [ ] full mode hierarchy parity with libarchfpga (optional later)
 namespace mosaic {
+
+// classic vtr hardblock model names; may be overridden via -alias on
+// vtr_arch_rules or alias* knobs in arch_config.tcl.
+struct ClassicModelNames {
+  std::string multiply = "multiply";
+  std::string adder = "adder";
+  std::string singlePortRam = "single_port_ram";
+  std::string dualPortRam = "dual_port_ram";
+};
 
 // one concrete bram mode from a pb_type with blif_model
 // ".subckt single_port_ram" / ".subckt dual_port_ram".
@@ -85,6 +105,7 @@ struct VtrArchInfo {
 // parse the arch xml at xmlPath into info. returns false and sets errorOut
 // (when non-null) on read/parse failure; partial data may be present.
 bool readArchInfo(const std::string &xmlPath, VtrArchInfo &info,
+                  const ClassicModelNames &classic = ClassicModelNames(),
                   std::string *errorOut = nullptr);
 
 } // namespace mosaic
