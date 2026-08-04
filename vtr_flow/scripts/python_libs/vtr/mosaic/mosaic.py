@@ -268,8 +268,15 @@ def run(
     shutil.copyfile(str(raw_netlist), str(output_netlist))
     prune_blif_models_not_in_arch(output_netlist, architecture_file)
 
+    # arch_facts.tcl is written into the run dir by vtr_arch_rules; pass it so
+    # ram addr-pad rewrites recognize aliased sp/dp model names
+    fixBlifCmd = [sys.executable, str(fix_blif_script), output_netlist.name]
+    archFactsPath = temp_dir / "arch_facts.tcl"
+    if archFactsPath.is_file():
+        fixBlifCmd += ["--arch-facts", archFactsPath.name]
+
     command_runner.run_system_command(
-        [sys.executable, str(fix_blif_script), output_netlist.name],
+        fixBlifCmd,
         temp_dir=temp_dir,
         log_filename="mosaic_fix_blif.out",
         indent_depth=1,

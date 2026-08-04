@@ -26,12 +26,18 @@ import sys
 from pathlib import Path
 
 
-ramSubcktRe = re.compile(r"^\.subckt\s+(?:single_port_ram|dual_port_ram)\b")
 latchSubcktRe = re.compile(r"^\.subckt\s+latch_")
 addrGndRe = re.compile(r"\b((?:addr|addr1|addr2)\[\d+\]=)gnd\b")
 # hierarchical separator inside identifiers  word.word not directive dots
 hierDotRe = re.compile(r"(?<=[\w\]])(\.)(?=[\w$])")
 latchQSuffix = "$lq"
+
+
+def makeRamSubcktRe(spRamModel: str, dpRamModel: str) -> re.Pattern[str]:
+    """match .subckt lines for the (possibly aliased) ram model names."""
+    names = sorted({spRamModel, dpRamModel})
+    escaped = "|".join(re.escape(name) for name in names)
+    return re.compile(r"^\.subckt\s+(?:" + escaped + r")\b")
 
 
 def joinContinuedLines(text: str) -> list[str]:
@@ -50,7 +56,7 @@ def joinContinuedLines(text: str) -> list[str]:
     return lines
 
 
-def fixRamAddrPads(line: str) -> tuple[str, int]:
+def fixRamAddrPads(line: str, ramSubcktRe: re.Pattern[str]) -> tuple[str, int]:
     if not ramSubcktRe.match(line):
         return line, 0
     nHits = len(addrGndRe.findall(line))
@@ -154,17 +160,22 @@ def uniquifyLatchQCollisions(lines: list[str]) -> tuple[list[str], int]:
     return outLines, nRenamed
 
 
-def fixBlifText(text: str) -> tuple[str, dict]:
+def fixBlifText(
+    text: str,
+    spRamModel: str = "single_port_ram",
+    dpRamModel: str = "dual_port_ram",
+) -> tuple[str, dict]:
     stats = {
         "ramAddrGndToUnconn": 0,
         "hierDots": 0,
         "latchQUniquified": 0,
     }
+    ramSubcktRe = makeRamSubcktRe(spRamModel, dpRamModel)
     # work on logical lines so latch/subckt rewrites see full statements
     logical = joinContinuedLines(text)
     outLogical: list[str] = []
     for line in logical:
-        line, nAddr = fixRamAddrPads(line)
+        line, nAddr = fixRamAddrPads(line, ramSubcktRe)
         stats["ramAddrGndToUnconn"] += nAddr
         line, nDots = fixHierDots(line)
         stats["hierDots"] += nDots
@@ -179,23 +190,71 @@ def fixBlifText(text: str) -> tuple[str, dict]:
     return out, stats
 
 
-def fixBlifFile(blifPath: Path) -> dict:
+def fixBlifFile(
+    blifPath: Path,
+    spRamModel: str = "single_port_ram",
+    dpRamModel: str = "dual_port_ram",
+) -> dict:
     text = blifPath.read_text(encoding="utf-8", errors="replace")
-    out, stats = fixBlifText(text)
+    out, stats = fixBlifText(text, spRamModel=spRamModel, dpRamModel=dpRamModel)
     blifPath.write_text(out, encoding="utf-8")
     return stats
+
+
+def readRamModelsFromArchFacts(archFactsPath: Path) -> tuple[str, str]:
+    """parse spRamModel/dpRamModel from arch_facts.tcl; classic defaults."""
+    spRamModel = "single_port_ram"
+    dpRamModel = "dual_port_ram"
+    if not archFactsPath.is_file():
+        return spRamModel, dpRamModel
+    for line in archFactsPath.read_text(encoding="utf-8", errors="replace").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("set spRamModel "):
+            spRamModel = stripped.split(None, 2)[2].strip().strip('"')
+        elif stripped.startswith("set dpRamModel "):
+            dpRamModel = stripped.split(None, 2)[2].strip().strip('"')
+    return spRamModel, dpRamModel
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("blif", type=Path, help="blif file to rewrite in place")
+    parser.add_argument(
+        "--sp-ram",
+        default=None,
+        help="single-port ram model name (default: single_port_ram or arch_facts)",
+    )
+    parser.add_argument(
+        "--dp-ram",
+        default=None,
+        help="dual-port ram model name (default: dual_port_ram or arch_facts)",
+    )
+    parser.add_argument(
+        "--arch-facts",
+        type=Path,
+        default=None,
+        help="optional arch_facts.tcl with spRamModel/dpRamModel",
+    )
     args = parser.parse_args(argv)
     if not args.blif.is_file():
         print(f"error: missing blif {args.blif}", file=sys.stderr)
         return 1
-    stats = fixBlifFile(args.blif)
+    spRamModel = args.sp_ram
+    dpRamModel = args.dp_ram
+    if spRamModel is None or dpRamModel is None:
+        factsSp, factsDp = readRamModelsFromArchFacts(
+            args.arch_facts
+            if args.arch_facts is not None
+            else args.blif.parent / "arch_facts.tcl"
+        )
+        if spRamModel is None:
+            spRamModel = factsSp
+        if dpRamModel is None:
+            dpRamModel = factsDp
+    stats = fixBlifFile(args.blif, spRamModel=spRamModel, dpRamModel=dpRamModel)
     print(
         f"fix_blif_for_vpr: {args.blif} "
+        f"sp={spRamModel} dp={dpRamModel} "
         f"ramAddrGndToUnconn={stats['ramAddrGndToUnconn']} "
         f"hierDots={stats['hierDots']} "
         f"latchQUniquified={stats['latchQUniquified']}"
