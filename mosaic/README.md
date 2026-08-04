@@ -50,20 +50,44 @@ Options are the following:
 
 The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, and post-processes the blif (prunes unused blackbox model declarations yosys emits but the design never instantiates, instantiated models are always kept, then applies `vtr_flow/misc/mosaic/template/fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify). After that the flow continues through abc and vpr exactly like the odin and parmys legs.
 
+## Classic model contract
+
+Required for a normal mosaic run: `single_port_ram` and `dual_port_ram` (or aliases). Optional: `multiply`, `adder`. Carry-chain `add_sub_map` is emitted only when the adder has `cin`/`cout`/`sumout`; otherwise `$add`/`$sub` stay soft.
+
+If the arch uses different model names, set in `arch_config.tcl`:
+
+```tcl
+set aliasMultiply my_dsp_mult
+set aliasAdder my_carry
+set aliasSinglePortRam my_spram
+set aliasDualPortRam my_dpram
+```
+
+These become `vtr_arch_rules -alias role=model`. Multiply/adder maps instantiate the aliased names. Ram aliases flow through generated whitebox / bit-lib stubs, `chtype`, keep lists, and `fix_blif_for_vpr.py` so BLIF `.subckt` names match the arch. Fixture: `mosaic/tests/fixtures/min_aliased_ram.xml` with `vtr_flow/misc/mosaic/min_aliased_ram/`.
+
+## Exotic hardblocks
+
+- `stubAllHardblocks` / `passthrough_exotics`: blackbox stubs, keep list, and `exotic_identity_maps.v`. Does not bind `$mul`/`$add`; rtl must instantiate the cell.
+- `exoticTemplatePairs {{model path/to.tmpl}}` or `-exotic` / `-exotic-template`: per-model map templates. Binds inferred ops only if the template does.
+- `exoticRoles {{model role}}`: stock `templates/roles/<role>_map.v.tmpl` (`integer_mul` / `integer_mac` when ports match).
+
+Example template: `templates/examples/mult_fp_16_passthrough.v.tmpl`. Smoke fixture: `mosaic/tests/fixtures/min_exotic_integer_mul.xml` with support dir `vtr_flow/misc/mosaic/min_exotic_integer_mul/` (`exoticRoles {{my_mul integer_mul}}`). When classic `multiply` is present, `integer_mul` roles are skipped so behavioral mul keeps using the classic map.
+
 ## Layout
 - `mosaic/wildebeest/src/`: wildebeest-originated sources (`clk_domains.cc` / `max_level`, with the `-vtr_arch` patch)
 - `mosaic/src/`: mosaic-only sources (`vtr_arch_*`, `arch_rule_gen`) compiled into the same plugin
 - `mosaic/build_mosaic.sh`: builds and installs the plugin
 - `vtr_flow/misc/mosaic/template/`: architecture-agnostic yosys synthesis template + rule templates
 - `vtr_flow/misc/mosaic/template/templates/*.tmpl`: templates used by `vtr_arch_rules -tpldir` to generate BRAM, multiply, and hardblock stub files
-- `vtr_flow/scripts/python_libs/vtr/mosaic/`: the vtr flow stage module (selects the support dir from the arch xml stem)
+- `vtr_flow/misc/mosaic/<arch_xml_stem>/`: optional per-arch policy (`arch_config.tcl`)
+- `vtr_flow/scripts/python_libs/vtr/mosaic/`: the vtr flow stage module (stem-named support dir only)
 - `mosaic/scripts/dump_arch_info.py`: dump parsed arch summary (optional; compare against `mosaic/tests/golden/`)
 - `mosaic/scripts/run_vtr_batch.py`: batch `run_vtr_flow.py` (1 core per run), live csv/status, optional `--watch`
 - `mosaic/scripts/watch_compare.py`: live status table (used by `--watch`, or run alone in a second terminal)
 
-The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is the per-arch support dir (`k6/` or `koios/`, chosen from the architecture file).
+The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is `vtr_flow/misc/mosaic/<arch_xml_stem>/` when that dir has `arch_config.tcl`; otherwise the run is facts-only.
 
-`vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `stubAllHardblocks`). Do not put dsp/ram widths in `arch_config.tcl`.
+`vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `stubAllHardblocks`, aliases, exotic roles). Do not put dsp/ram widths in `arch_config.tcl`. Shared abc scripts live under `template/delay_*.scr` (rebuild with `build_delay_scr.py`).
 
 ## QoR Compare (vanilla_vtr vs mosaic)
 `run_vtr_batch.py` wraps the default `run_vtr_flow.py` call. Each run is pinned
@@ -106,6 +130,14 @@ The `vtr_reg_basic_mosaic` suite runs basic_timing circuits (`ch_intrinsics.v`, 
 
 ```shell
 ./run_reg_test.py vtr_reg_basic_mosaic -j4
+```
+
+Parmys vs Mosaic hardblock BLIF model compare (also run in `RegressionWithMosaic` CI):
+
+```shell
+python3 mosaic/scripts/compare_frontend_blif_models.py --run \
+  --circuit vtr_flow/benchmarks/verilog/diffeq1.v \
+  --arch vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
 ```
 
 A separate koios mosaic smoke task lives at `vtr_flow/tasks/regression_tests/vtr_reg_basic_mosaic/koios` (`test.v` + `hard_block_include.v` on the complex-DSP arch). Run it with:
