@@ -51,6 +51,10 @@ set sweepMaxIters  64
 set abcOptScript   ""
 set abcMapScript   ""
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
+# primitive mapping profile:
+#   vtr_classic         - techmap inferred $mul/$add/$sub to standard models
+#   passthrough_exotics - stubAllHardblocks + keep rtl-instantiated exotics
+set primitiveProfile vtr_classic
 # when 1, vtr_arch_rules emits generic stubs for every exotic hardblock model
 # and writes hardblock_keep_types.txt so rtl-instantiated cells survive synth
 set stubAllHardblocks 0
@@ -61,6 +65,9 @@ if { $archSupportDir ne "" } {
 }
 if { $archConfigFile ne "" && [file exists $archConfigFile] } {
     source $archConfigFile
+}
+if { $primitiveProfile eq "passthrough_exotics" } {
+    set stubAllHardblocks 1
 }
 
 # ----------------------------------------------------------------------------
