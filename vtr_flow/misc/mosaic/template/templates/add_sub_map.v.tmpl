@@ -49,7 +49,7 @@ module \$add (A, B, Y);
     // ci=0  majority(0 0 0)=0 so carry[0] starts clear
     wire boot_cout;
     wire boot_sumout;
-    adder _boot (
+    @ADDER_MODEL@ _boot (
         .a(1'b0), .b(1'b0), .cin(1'b0),
         .sumout(boot_sumout), .cout(boot_cout)
     );
@@ -60,7 +60,7 @@ module \$add (A, B, Y);
     genvar i;
     generate
         for (i = 0; i < Y_WIDTH; i = i + 1) begin : faChain
-            adder _adder (
+            @ADDER_MODEL@ _adder (
                 .a     (aa[i]),
                 .b     (bb[i]),
                 .cin   (carry[i]),
@@ -108,7 +108,7 @@ module \$sub (A, B, Y);
     // ci=1  majority(1 1 0)=1 so carry[0] starts set for the +1
     wire boot_cout;
     wire boot_sumout;
-    adder _boot (
+    @ADDER_MODEL@ _boot (
         .a(1'b1), .b(1'b1), .cin(1'b0),
         .sumout(boot_sumout), .cout(boot_cout)
     );
@@ -119,7 +119,7 @@ module \$sub (A, B, Y);
     genvar i;
     generate
         for (i = 0; i < Y_WIDTH; i = i + 1) begin : faChain
-            adder _adder (
+            @ADDER_MODEL@ _adder (
                 .a     (aa[i]),
                 .b     (bb_inv[i]),
                 .cin   (carry[i]),

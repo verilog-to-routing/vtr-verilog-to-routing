@@ -57,7 +57,7 @@ module \$mul (A, B, Y);
 
     wire [2*MULT_W-1:0] fullOut;
 
-    multiply #(.WIDTH(MULT_W)) _TECHMAP_REPLACE_ (
+    @MULT_MODEL@ #(.WIDTH(MULT_W)) _TECHMAP_REPLACE_ (
         .a   (aa),
         .b   (bb),
         .out (fullOut)

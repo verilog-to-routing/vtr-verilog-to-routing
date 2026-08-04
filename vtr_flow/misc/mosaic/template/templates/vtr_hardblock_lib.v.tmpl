@@ -17,7 +17,7 @@
 
 @@HARDBLOCK_STUBS@@
 (* blackbox *)
-module single_port_ram #(
+module @SP_RAM_MODEL@ #(
     parameter ADDR_WIDTH = 16,
     parameter DATA_WIDTH = @RAM_STUB_DATA_WIDTH@
 ) (
@@ -30,7 +30,7 @@ module single_port_ram #(
 endmodule
 
 (* blackbox *)
-module dual_port_ram #(
+module @DP_RAM_MODEL@ #(
     parameter ADDR_WIDTH = 16,
     parameter DATA_WIDTH = @RAM_STUB_DATA_WIDTH@
 ) (
