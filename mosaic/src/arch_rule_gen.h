@@ -83,6 +83,11 @@ std::unique_ptr<ArchRuleGen> makeStubAllExoticsGen();
 std::unique_ptr<ArchRuleGen>
 makeHardblockLibGen(std::vector<const ArchRuleGen *> providers);
 
+// emit arch_facts.tcl: arch-derived scalars consumed by synthesis.tcl
+// (not flow policy knobs from arch_config.tcl).
+void emitArchFacts(const VtrArchInfo &info, const ArchRulePolicy &policy,
+                   const std::string &outDir);
+
 } // namespace mosaic
 
 #endif // MOSAIC_ARCH_RULE_GEN_H

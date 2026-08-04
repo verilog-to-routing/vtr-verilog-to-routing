@@ -173,12 +173,21 @@ struct VtrArchRulesPass : public Pass {
       log_cmd_error("vtr_arch_rules: %s\n", error.c_str());
 
     const std::string archName = archNameFromPath(xmlPath);
+    const bool multiplyPresent =
+        info.multiply.present && !info.multiplyModes.empty();
+    int maxRamAbits = 0;
+    for (const auto &m : info.bramModes)
+      maxRamAbits = std::max(maxRamAbits, m.addrBitsA);
     log("vtr_arch_rules: %s: %zu bram modes, multiply modes [%s], adder %s, "
         "lut K=%d K-1=%d\n",
         archName.c_str(), info.bramModes.size(),
         info.multiplyModes.empty() ? "-"
                                    : joinInts(info.multiplyModes, ",").c_str(),
         info.adder.present ? "present" : "absent", info.lutK, info.lutK1);
+    log("vtr_arch_rules: arch facts: vtrRamAbits=%d dspMaxWidth=%d "
+        "multiplyPresent=%d adderPresent=%d\n",
+        maxRamAbits, multiplyPresent ? info.multiplyModes.back() : 0,
+        multiplyPresent ? 1 : 0, info.adder.present ? 1 : 0);
 
     mosaic::ArchRulePolicy policy;
     policy.archName = archName;
@@ -186,6 +195,8 @@ struct VtrArchRulesPass : public Pass {
     policy.spCost = spCost;
     policy.dpCost = dpCost;
     policy.hardAdderThreshold = hardAdderThreshold;
+
+    mosaic::emitArchFacts(info, policy, outDir);
 
     auto gens = mosaic::makeBuiltinRuleGens();
     for (size_t i = 0; i < exoticModels.size(); ++i) {

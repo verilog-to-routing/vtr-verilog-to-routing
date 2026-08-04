@@ -1,9 +1,7 @@
-# arch_config.tcl for k6FracN10LB_mem20K_complexDSP_customSB_22nm (koios)
-# sourced by the generic template after archSupportDir is set
+# policy knobs for k6FracN10LB_mem20K_complexDSP_customSB_22nm (koios)
+# sourced by the generic template after archSupportDir is set.
+# dsp widths and ram abits come from arch_facts.tcl (generated from the xml).
 
-# widest multiply mode on the koios complex dsp is 27x27
-set dspMaxWidth    27
-set dspMinWidth    2
 set bramRomCost    0.5
 # aggressive enough that borderline memories go hard rather than soft;
 # koios brams are 20k so keep the same hard-bram bias as k6

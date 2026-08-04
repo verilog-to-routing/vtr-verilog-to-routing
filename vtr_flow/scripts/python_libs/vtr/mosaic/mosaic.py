@@ -6,6 +6,7 @@ Module to run Mosaic (the vendored wildebeest yosys plugin with the
 import re
 import shutil
 import sys
+import warnings
 from collections import OrderedDict
 from pathlib import Path
 import vtr
@@ -28,15 +29,15 @@ _ARCH_SUPPORT_ALIASES = {
 
 
 def resolve_arch_support_dir(architecture_file_path):
-    """pick the mosaic per-arch support dir for an architecture xml.
+    """pick the mosaic per-arch policy support dir for an architecture xml.
 
     resolution order:
       1. exact stem alias in _ARCH_SUPPORT_ALIASES
       2. koios family prefix (k6FracN10LB_mem20K_complexDSP*)
       3. a dir under mosaic_misc_path named after the stem with arch_config.tcl
-      4. fall back to k6
 
-    raises if the chosen dir has no arch_config.tcl
+    when no dir matches, returns None so synthesis runs facts-only from the
+    arch xml (no silent k6 policy fallback).
     """
     archPath = Path(architecture_file_path)
     archStem = archPath.stem
@@ -53,7 +54,13 @@ def resolve_arch_support_dir(architecture_file_path):
             supportName = archStem
 
     if supportName is None:
-        supportName = "k6"
+        warnings.warn(
+            "mosaic: no policy support dir for arch '{}'; "
+            "running facts-only (arch_facts.tcl from xml, no arch_config.tcl)"
+            .format(archStem),
+            stacklevel=2,
+        )
+        return None
 
     supportDir = miscPath / supportName
     configFile = supportDir / "arch_config.tcl"
@@ -75,9 +82,11 @@ def init_script_file(
 ):
     """fill the template tokens in the copied mosaic yosys script"""
     # yosys tcl wants forward slashes even on windows
-    archSupportDir = str(resolve_arch_support_dir(architecture_file_path).resolve()).replace(
-        "\\", "/"
-    )
+    supportDir = resolve_arch_support_dir(architecture_file_path)
+    if supportDir is None:
+        archSupportDir = ""
+    else:
+        archSupportDir = str(supportDir.resolve()).replace("\\", "/")
     templateDir = str(vtr.paths.mosaic_template_path.resolve()).replace("\\", "/")
 
     # YYY is what makes this the mosaic leg: max_level -clk2clk takes

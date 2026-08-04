@@ -191,6 +191,15 @@ void deriveHardblockAliases(VtrArchInfo &info) {
     if (a != add->second.inputWidths.end() && a->second > 0) {
       info.adder.present = true;
       info.adder.aWidth = a->second;
+      const bool hasCin =
+          add->second.inputWidths.find("cin") != add->second.inputWidths.end();
+      const bool hasCout =
+          add->second.outputWidths.find("cout") !=
+          add->second.outputWidths.end();
+      const bool hasSumout =
+          add->second.outputWidths.find("sumout") !=
+          add->second.outputWidths.end();
+      info.adder.carryChain = hasCin && hasCout && hasSumout;
     }
   }
 }
