@@ -50,6 +50,11 @@ set sweepMaxIters  64
 # empty means skip the two-pass abc and do one plain -luts pass
 set abcOptScript   ""
 set abcMapScript   ""
+# overwritten after arch_facts when aliases remap classic model names
+set multiplyModel  "multiply"
+set adderModel     "adder"
+set spRamModel     "single_port_ram"
+set dpRamModel     "dual_port_ram"
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
 # primitive mapping profile:
 #   vtr_classic         - techmap inferred $mul/$add/$sub to standard models
@@ -58,6 +63,15 @@ set primitiveProfile vtr_classic
 # when 1, vtr_arch_rules emits generic stubs for every exotic hardblock model
 # and writes hardblock_keep_types.txt so rtl-instantiated cells survive synth
 set stubAllHardblocks 0
+# classic model aliases when arch xml uses non-standard model names
+set aliasMultiply ""
+set aliasAdder ""
+set aliasSinglePortRam ""
+set aliasDualPortRam ""
+# {model template_path} pairs -> -exotic/-exotic-template
+set exoticTemplatePairs {}
+# {model role} pairs -> -exotic-role (stock tpldir/roles/<role>_map.v.tmpl)
+set exoticRoles {}
 
 set archConfigFile ""
 if { $archSupportDir ne "" } {
@@ -69,6 +83,9 @@ if { $archConfigFile ne "" && [file exists $archConfigFile] } {
 if { $primitiveProfile eq "passthrough_exotics" } {
     set stubAllHardblocks 1
 }
+# remember policy keep list so extras (e.g. role-bound models) survive the
+# post-facts rebuild of classic/aliased builtins
+set keepCellTypesFromConfig $keepCellTypes
 # mul2dsp minimum operand width is policy; facts may overwrite dspMinWidth
 # with the smallest multiply mode when arch_facts.tcl is sourced later
 set mul2dspMinWidth $dspMinWidth
@@ -80,11 +97,29 @@ set mul2dspMinWidth $dspMinWidth
 if { $archXmlPath eq "" } {
     error "mosaic synthesis requires an arch xml (VVV)"
 }
-if { $stubAllHardblocks } {
-    vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold -stub-all-hardblocks
-} else {
-    vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold
+set archRulesCmd "vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold"
+if { $aliasMultiply ne "" } {
+    append archRulesCmd " -alias multiply=$aliasMultiply"
 }
+if { $aliasAdder ne "" } {
+    append archRulesCmd " -alias adder=$aliasAdder"
+}
+if { $aliasSinglePortRam ne "" } {
+    append archRulesCmd " -alias single_port_ram=$aliasSinglePortRam"
+}
+if { $aliasDualPortRam ne "" } {
+    append archRulesCmd " -alias dual_port_ram=$aliasDualPortRam"
+}
+if { $stubAllHardblocks } {
+    append archRulesCmd " -stub-all-hardblocks"
+}
+foreach exoticPair $exoticTemplatePairs {
+    append archRulesCmd " -exotic [lindex $exoticPair 0] -exotic-template [lindex $exoticPair 1]"
+}
+foreach rolePair $exoticRoles {
+    append archRulesCmd " -exotic-role [lindex $rolePair 0] [lindex $rolePair 1]"
+}
+eval $archRulesCmd
 set bramMapFile      "$archRulesDir/bram_memory_map.txt"
 set techBramFile     "$archRulesDir/tech_bram.v"
 set hardblockLibFile "$archRulesDir/vtr_hardblock_lib.v"
@@ -98,12 +133,26 @@ set archName         ""
 set vtrRamAbits      0
 set multiplyPresent  0
 set adderPresent     0
+set adderCarryChain  0
+set lutK             0
+set lutK1            0
 set multiplyModes    ""
 set archFactsFile "$archRulesDir/arch_facts.tcl"
 if { [file exists $archFactsFile] } {
     source $archFactsFile
     # policy dspMinWidth (from arch_config / defaults) wins over facts min mode
     set dspMinWidth $mul2dspMinWidth
+    # when policy left the generic lutCost default, prefer scanned lutK
+    if { $lutK > 0 && $lutCost eq "6:1" } {
+        set lutCost "$lutK:1"
+    }
+}
+# keep lists must name the models that appear in the blif (aliases win)
+set keepCellTypes "t:$multiplyModel t:$adderModel t:$spRamModel t:$dpRamModel"
+foreach tok $keepCellTypesFromConfig {
+    if { $tok ne "" && [string first $tok $keepCellTypes] < 0 } {
+        append keepCellTypes " $tok"
+    }
 }
 
 # exotic keep types from stub-all (opt-in via arch_config); append so the
@@ -208,7 +257,8 @@ if { "TTT" ne "" } {
 
 # no -lib here so the generate loops expand at the real DATA_WIDTH. top is
 # already set so a plain hierarchy re-elaborates without -auto-top.
-read_verilog -overwrite -D VTR_RAM_ABITS=$vtrRamAbits $templateDir/vtr_ram_whitebox.v
+# whitebox module names follow spRamModel/dpRamModel (classic or aliases).
+read_verilog -overwrite $archRulesDir/vtr_ram_whitebox.v
 hierarchy -check -purge_lib
 opt_expr
 opt_clean
@@ -260,6 +310,12 @@ opt_clean
 # whitebox bit cells so only multiply and adder need restoring
 read_verilog -lib $hardblockLibFile
 
+# identity passthrough for rtl-instantiated exotic hardblocks
+set exoticIdentityMapFile "$archRulesDir/exotic_identity_maps.v"
+if { [file exists $exoticIdentityMapFile] } {
+    techmap -map $exoticIdentityMapFile
+}
+
 # ----------------------------------------------------------------------------
 # bram
 # ----------------------------------------------------------------------------
@@ -273,11 +329,11 @@ memory_map
 techmap -map $techBramFile
 
 # write_blif needs the arch model names not the internal bit-cell names
-delete single_port_ram dual_port_ram
-chtype -map vtr_sp_ram_bit single_port_ram
-chtype -map vtr_dp_ram_bit dual_port_ram
+delete $spRamModel $dpRamModel
+chtype -map vtr_sp_ram_bit $spRamModel
+chtype -map vtr_dp_ram_bit $dpRamModel
 delete vtr_sp_ram_bit vtr_dp_ram_bit
-read_verilog -lib -D VTR_RAM_ABITS=$vtrRamAbits $templateDir/vtr_ram_bit_lib.v
+read_verilog -lib $archRulesDir/vtr_ram_bit_lib.v
 
 # last chance to shrink soft cones before hard mapping freezes the edges
 opt -full
@@ -301,6 +357,24 @@ select -clear
 chtype -set {$mul} {t:$__soft_mul}
 techmap -map $multMapFile
 
+# role maps that bind $mul (integer_mul) run after classic mult_map.
+# integer_mul is skipped at rule-gen time when classic multiply is present.
+proc mosaicApplyRoleMaps {} {
+    global archRulesDir
+    set roleMapListFile "$archRulesDir/role_map_files.txt"
+    if { ![file exists $roleMapListFile] } {
+        return
+    }
+    set roleMapFd [open $roleMapListFile r]
+    foreach roleMapPath [split [string trim [read $roleMapFd]] "\n"] {
+        if { $roleMapPath ne "" } {
+            techmap -map $roleMapPath
+        }
+    }
+    close $roleMapFd
+}
+mosaicApplyRoleMaps
+
 # ----------------------------------------------------------------------------
 # adder / carry chain
 # ----------------------------------------------------------------------------
@@ -309,6 +383,9 @@ techmap -map $multMapFile
 techmap -map $addSubMapFile
 
 alumacc
+
+# role maps that bind $macc (integer_mac) need alumacc first
+mosaicApplyRoleMaps
 
 # no $alu to adder map  comparing through a hard adder is a qor loss
 # sweep while keep is unset; do not densify/setundef until after final sweep
