@@ -6,8 +6,8 @@ plugin -i wildebeest
 # ============================================================================
 #
 # synth_fpga only works with a zeroasic partname so for vtr archs we drive
-# the individual passes ourselves. wildebeest is loaded for max_level and
-# vtr_arch_rules.
+# the individual passes ourselves. the mosaic plugin is loaded as
+# wildebeest and provides max_level plus vtr_arch_rules.
 #
 # put arch_config.tcl in the arch support dir named by ARCH_SUPPORT_DIR; it is the only
 # genuinely per-arch artifact the script needs
@@ -22,7 +22,7 @@ plugin -i wildebeest
 #   ARCH_SUPPORT_DIR arch support dir
 #   TDIR this templates parent dir  its templates/ subdir is -tpldir
 #   VVV arch xml
-#   YYY max_level flag  empty for the vanilla wildebeest leg
+#   YYY max_level flag  empty when -vtr_arch is omitted
 
 # ----------------------------------------------------------------------------
 # knobs  generic defaults then per-arch overrides from arch_config.tcl

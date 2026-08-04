@@ -807,8 +807,8 @@ jobs:
       run: |
         tar -xvzf build.tar.gz
 
-    # builds the vendored wildebeest tree against the unpacked yosys and
-    # installs wildebeest.so into build/share/yosys/plugins
+    # builds the mosaic plugin against the unpacked yosys and installs
+    # it as wildebeest.so into build/share/yosys/plugins
     - name: Build Mosaic Plugin
       shell: bash
       env:
@@ -820,6 +820,14 @@ jobs:
       timeout-minutes: 30
       run: |
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: Compare Parmys and Mosaic hardblock BLIF models
+      timeout-minutes: 20
+      run: |
+        python3 mosaic/scripts/compare_frontend_blif_models.py --run \
+          --circuit vtr_flow/benchmarks/verilog/diffeq1.v \
+          --arch vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml \
+          --work-dir mosaic_blif_model_compare
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}

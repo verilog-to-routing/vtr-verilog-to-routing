@@ -1,6 +1,8 @@
-"""
-Module to run Mosaic (the vendored wildebeest yosys plugin with the
--vtr_arch overlay) as a synthesis frontend for the VTR flow
+﻿"""
+Module to run Mosaic as a synthesis frontend for the VTR flow.
+
+Mosaic is a yosys plugin that combines wildebeest-originated passes
+(max_level / clk_domains) with mosaic-only arch rules (-vtr_arch).
 """
 
 import re
@@ -142,8 +144,7 @@ def run(
     mosaic_script=None,
 ):
     """
-    Runs Mosaic (Yosys + wildebeest plugin) on the specified
-    architecture file and circuit
+    Runs Mosaic on the specified architecture file and circuit
 
     .. note :: Usage: vtr.mosaic.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
 
@@ -209,7 +210,9 @@ def run(
     plugin_path = Path(vtr.paths.wildebeest_plugin_path)
     if not plugin_path.is_file():
         raise vtr.VtrError(
-            "wildebeest plugin not found at {}\n".format(plugin_path)
+            "mosaic plugin not found at {} (installed as wildebeest.so)\n".format(
+                plugin_path
+            )
             + "build it with: bash {}".format(vtr.paths.mosaic_build_script_path)
         )
 

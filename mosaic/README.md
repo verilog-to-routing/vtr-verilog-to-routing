@@ -1,6 +1,6 @@
 # Mosaic Flow
 
-Mosaic is an opt-in synthesis frontend for the vtr flow (use `-start mosaic`; parmys remains the default). It uses the wildebeest yosys plugin to synthesize verilog into a blif netlist that then goes through the standard abc and vpr stages.
+Mosaic is an opt-in synthesis frontend for the vtr flow (use `-start mosaic`; parmys remains the default).
 
 | Design        | Flow         | LUTs (packed) | BRAMs (packed) | DSPs (packed) | Adders (packed) | CLBs | Wire length | CPD ns | Fmax MHz | WNS ns |
 | ------------- | ------------ | ------------: | -------------: | ------------: | --------------: | ---: | ----------: | -----: | -------: | -----: |
@@ -28,17 +28,17 @@ Mosaic is an opt-in synthesis frontend for the vtr flow (use `-start mosaic`; pa
 | % diff (mosaic/vanilla_vtr) |       -10.39% |         -1.73% |       +58.08% |         +12.86% |  -8.70% |      -1.79% | -6.56% |   +7.05% |
 | x diff (mosaic/vanilla_vtr) |         0.90x |          0.98x |         1.58x |           1.13x |   0.91x |       0.98x |  0.93x |    1.07x |
 
-## Building the Plugin
-Requires a built vtr tree (`build/bin/yosys-config` must exist). The plugin only needs yosys headers; it does not link any vtr library.
+## Building Mosaic
+Requires a built vtr tree (`build/bin/yosys-config` must exist). The mosaic plugin only needs yosys headers; it does not link any vtr library. It compiles wildebeest-originated sources under `mosaic/wildebeest/` together with mosaic-only sources under `mosaic/src/`.
 
 ```shell
 make -j$(nproc)
 bash mosaic/build_mosaic.sh
 ```
 
-This builds `wildebeest/` against the vtr yosys and installs `wildebeest.so` into `build/share/yosys/plugins/`.
+This builds the mosaic plugin against the vtr yosys and installs it as `wildebeest.so` into `build/share/yosys/plugins/` (yosys loads it with `plugin -i wildebeest`).
 
-## Running the Plugin
+## Running Mosaic
 ```shell
 ./vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start mosaic
 ```
@@ -114,7 +114,7 @@ python3 mosaic/scripts/watch_compare.py --dir compare_output_<arch_stem>
 Useful flags: `--flows mosaic`, `--no-rerun`. Omit `--designs` to take
 every `*.v` in the bench dir (except `*_include.v`).
 
-Single-circuit smoke (after rebuilding the plugin if C++ changed):
+Single-circuit smoke (after rebuilding mosaic if C++ changed):
 ```shell
 ./vtr_flow/scripts/run_vtr_flow.py vtr_flow/benchmarks/verilog/diffeq1.v \
   vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \
@@ -146,7 +146,7 @@ A separate koios mosaic smoke task lives at `vtr_flow/tasks/regression_tests/vtr
 ./vtr_flow/scripts/run_vtr_task.py regression_tests/vtr_reg_basic_mosaic/koios
 ```
 
-The `RegressionWithMosaic` job in `.github/workflows/test.yml` builds the plugin on top of the regular release build artifact and runs the basic suite.
+The `RegressionWithMosaic` job in `.github/workflows/test.yml` builds mosaic on top of the regular release build artifact and runs the basic suite.
 
 ## Verilator Check
 The `mosaic/verilator_check/` flow checks functional equivalence between the original rtl and the generated post-synthesis and post-abc blifs.

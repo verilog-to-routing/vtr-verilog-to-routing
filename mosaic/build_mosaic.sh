@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build the mosaic wildebeest plugin against the yosys that ships inside
+# build the mosaic plugin against the yosys that ships inside
 # the vtr build. sources are split:
 #   mosaic/wildebeest/src  wildebeest-originated (clk_domains / max_level)
 #   mosaic/src             mosaic-only (vtr_arch_* / arch_rule_gen)
@@ -48,7 +48,7 @@ if [[ ! -f "${mosaicSrc}/vtr_arch_rules.cc" ]]; then
 fi
 
 echo ""
-echo "=== step 1: configure + build the plugin ==="
+echo "=== step 1: configure + build mosaic (wildebeest.so) ==="
 cmake -S "${wildebeestSrc}" -B "${wildebeestSrc}/build" -DYOSYS_CONFIG="${yosysConfig}"
 cmake --build "${wildebeestSrc}/build" -j"${jobCount}"
 
@@ -59,7 +59,7 @@ if [[ ! -f "${plugin}" ]]; then
 fi
 
 echo ""
-echo "=== step 2: install plugin + share files into the vtr yosys tree ==="
+echo "=== step 2: install mosaic plugin + share files into the vtr yosys tree ==="
 cmake --install "${wildebeestSrc}/build"
 
 echo ""
