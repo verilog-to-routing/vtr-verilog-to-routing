@@ -21,6 +21,7 @@ struct APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
+struct ClusterGainStats;
 struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
@@ -205,6 +206,25 @@ class GreedyClusterer {
                                           LegalizationClusterId legalization_cluster_id,
                                           ClusterLegalizer& cluster_legalizer,
                                           const Prepacker& prepacker);
+
+    /**
+     * @brief Pack the relative placement group of the seed molecule into the
+     *        freshly seeded cluster.
+     *
+     * Only used on re-pack iterations triggered by split relative placement
+     * groups. The group's molecules are added to the cluster immediately,
+     * largest first (rather than being proposed one at a time by the candidate
+     * selector, by which time unconstrained molecules may have consumed the
+     * cluster's capacity). A molecule that fails to add stays unclustered: the
+     * group is split this iteration and the re-pack retry loop handles it.
+     */
+    void pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
+                                          LegalizationClusterId legalization_cluster_id,
+                                          ClusterGainStats& cluster_gain_stats,
+                                          GreedyCandidateSelector& candidate_selector,
+                                          ClusterLegalizer& cluster_legalizer,
+                                          const Prepacker& prepacker,
+                                          AttractionInfo& attraction_groups);
 
     /**
      * @brief Log the physical block usage of the logic element in the

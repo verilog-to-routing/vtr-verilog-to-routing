@@ -40,6 +40,7 @@
 #include <cstdio>
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include "appack_context.h"
 #include "setup_grid.h"
@@ -49,6 +50,7 @@
 #include "cluster_util.h"
 #include "greedy_candidate_selector.h"
 #include "greedy_seed_selector.h"
+#include "globals.h"
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
@@ -264,6 +266,20 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
                                                                                        legalization_cluster_id,
                                                                                        cluster_legalizer,
                                                                                        attraction_groups);
+
+    // On re-pack iterations triggered by split relative placement groups, a
+    // cluster seeded by a relative-group molecule packs its entire group
+    // right away instead of relying on the candidate selector to propose the
+    // group's molecules one at a time. See the method for details.
+    if (cluster_legalizer.reserving_relative_group_capacity()) {
+        pack_relative_group_into_cluster(seed_mol_id,
+                                         legalization_cluster_id,
+                                         cluster_gain_stats,
+                                         candidate_selector,
+                                         cluster_legalizer,
+                                         prepacker,
+                                         attraction_groups);
+    }
 
     // Select the first candidate molecule to try to add to this cluster.
     PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
@@ -581,6 +597,102 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
     }
 
     return pack_status == e_block_pack_status::BLK_PASSED;
+}
+
+void GreedyClusterer::pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
+                                                       LegalizationClusterId legalization_cluster_id,
+                                                       ClusterGainStats& cluster_gain_stats,
+                                                       GreedyCandidateSelector& candidate_selector,
+                                                       ClusterLegalizer& cluster_legalizer,
+                                                       const Prepacker& prepacker,
+                                                       AttractionInfo& attraction_groups) {
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    if (relative_macros.get_num_macros() == 0)
+        return;
+
+    // Find the relative placement group of the seed molecule (if any).
+    std::pair<UserRelativeMacroId, int> group = {UserRelativeMacroId::INVALID(), -1};
+    for (AtomBlockId blk_id : prepacker.get_molecule(seed_mol_id).atom_block_ids) {
+        if (!blk_id.is_valid())
+            continue;
+        group = relative_macros.get_atom_group(blk_id);
+        if (group.first.is_valid())
+            break;
+    }
+    if (!group.first.is_valid())
+        return;
+
+    // Collect the group's molecules that are not clustered yet (the seed
+    // molecule is already in the cluster).
+    //
+    // A group molecule already in a DIFFERENT cluster means the group is split
+    // (an earlier cluster adopted the group but could not take all of it).
+    // Ripping it out is not possible, so just log it here and let the
+    // end-of-pass check in pack.cpp handle the split.
+    std::vector<PackMoleculeId> order;
+    std::unordered_set<PackMoleculeId> seen = {seed_mol_id};
+    for (AtomBlockId blk_id : relative_macros.get_macro(group.first).groups[group.second].atoms) {
+        PackMoleculeId mol_id = prepacker.get_atom_molecule(blk_id);
+        if (seen.count(mol_id))
+            continue;
+        seen.insert(mol_id);
+        if (!cluster_legalizer.is_mol_clustered(mol_id)) {
+            order.push_back(mol_id);
+        } else if (cluster_legalizer.get_atom_cluster(blk_id) != legalization_cluster_id) {
+            // Already in a different cluster, so the group is split (see above).
+            VTR_LOGV(log_verbosity_ > 1,
+                     "\tRelative macro '%s' group %d is split: molecule of atom '%s' is already in "
+                     "cluster %zu while cluster %zu is being seeded with the same group.\n",
+                     relative_macros.get_macro(group.first).name.c_str(), group.second,
+                     atom_netlist_.block_name(blk_id).c_str(),
+                     (size_t)cluster_legalizer.get_atom_cluster(blk_id),
+                     (size_t)legalization_cluster_id);
+        }
+    }
+    if (order.empty())
+        return;
+
+    // Add the largest molecules first: multi-atom molecules (carry chains and
+    // other pack patterns) have far fewer legal placements inside a cluster
+    // than single-atom molecules, so they dead-end easily once the cluster
+    // starts filling up. Greedy intra-cluster placement cannot rip up
+    // already-placed atoms.
+    auto molecule_num_atoms = [&](PackMoleculeId mol_id) {
+        size_t num_atoms = 0;
+        for (AtomBlockId blk_id : prepacker.get_molecule(mol_id).atom_block_ids) {
+            if (blk_id.is_valid())
+                num_atoms++;
+        }
+        return num_atoms;
+    };
+    std::stable_sort(order.begin(), order.end(), [&](PackMoleculeId lhs, PackMoleculeId rhs) {
+        return molecule_num_atoms(lhs) > molecule_num_atoms(rhs);
+    });
+
+    // Add each molecule. If the speculative pin feasibility filter rejects
+    // one, retry it once with the filter bypassed.
+    // A molecule that still fails stays unclustered and the re-pack retry
+    // loop handles the split.
+    for (PackMoleculeId mol_id : order) {
+        if (cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id) == e_block_pack_status::BLK_PASSED)
+            continue;
+        cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id,
+                                             /*bypass_pin_feasibility_filter=*/true);
+    }
+
+    // Update the candidate selector's bookkeeping (gains, marked blocks,
+    // cluster attraction group) for each molecule in the cluster. The
+    // molecule the cluster was created with is skipped: the caller's
+    // create_cluster_gain_stats() call already accounted for it.
+    for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(legalization_cluster_id)) {
+        if (mol_id == seed_mol_id)
+            continue;
+        candidate_selector.update_cluster_gain_stats_candidate_success(cluster_gain_stats,
+                                                                       mol_id,
+                                                                       legalization_cluster_id,
+                                                                       cluster_legalizer,
+                                                                       attraction_groups);
+    }
 }
 
 void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer) {
