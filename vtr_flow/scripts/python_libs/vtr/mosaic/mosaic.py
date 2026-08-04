@@ -20,55 +20,30 @@ FILE_TYPES = {
     ".svh": "SystemVerilog",
 }
 
-# arch xml stem -> support dir name under vtr_flow/misc/mosaic/
-# denser/coupled/etc koios variants share the koios knobs via prefix match below
-_ARCH_SUPPORT_ALIASES = {
-    "k6_frac_N10_frac_chain_mem32K_40nm": "k6",
-    "k6FracN10LB_mem20K_complexDSP_customSB_22nm": "koios",
-}
-
 
 def resolve_arch_support_dir(architecture_file_path):
     """pick the mosaic per-arch policy support dir for an architecture xml.
 
-    resolution order:
-      1. exact stem alias in _ARCH_SUPPORT_ALIASES
-      2. koios family prefix (k6FracN10LB_mem20K_complexDSP*)
-      3. a dir under mosaic_misc_path named after the stem with arch_config.tcl
-
-    when no dir matches, returns None so synthesis runs facts-only from the
-    arch xml (no silent k6 policy fallback).
+    looks for vtr_flow/misc/mosaic/<arch_stem>/arch_config.tcl only.
+    when missing, returns None so synthesis runs facts-only from the arch
+    xml (no silent family fallback or stem alias table).
     """
     archPath = Path(architecture_file_path)
     archStem = archPath.stem
     miscPath = Path(vtr.paths.mosaic_misc_path)
+    supportDir = miscPath / archStem
+    configFile = supportDir / "arch_config.tcl"
 
-    supportName = None
-    if archStem in _ARCH_SUPPORT_ALIASES:
-        supportName = _ARCH_SUPPORT_ALIASES[archStem]
-    elif archStem.startswith("k6FracN10LB_mem20K_complexDSP"):
-        supportName = "koios"
-    else:
-        candidate = miscPath / archStem
-        if (candidate / "arch_config.tcl").is_file():
-            supportName = archStem
-
-    if supportName is None:
+    if not configFile.is_file():
         warnings.warn(
             "mosaic: no policy support dir for arch '{}'; "
-            "running facts-only (arch_facts.tcl from xml, no arch_config.tcl)"
-            .format(archStem),
+            "running facts-only (arch_facts.tcl from xml, no arch_config.tcl). "
+            "add {} to supply costs/scripts/thresholds."
+            .format(archStem, configFile),
             stacklevel=2,
         )
         return None
 
-    supportDir = miscPath / supportName
-    configFile = supportDir / "arch_config.tcl"
-    if not configFile.is_file():
-        raise vtr.VtrError(
-            "mosaic arch support dir for '{}' resolved to '{}' "
-            "but {} is missing".format(archStem, supportDir, configFile)
-        )
     return supportDir
 
 
