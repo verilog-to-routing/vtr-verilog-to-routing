@@ -1,7 +1,6 @@
 # Mosaic Flow
-Needs to be renamed!
 
-Mosaic is a third synthesis frontend for the vtr flow, alongside Odin II and parmys. It uses the wildebeest yosys plugin to synthesize verilog into a blif netlist that then goes through the standard abc and vpr stages.
+Mosaic is an opt-in synthesis frontend for the vtr flow (use `-start mosaic`; parmys remains the default). It uses the wildebeest yosys plugin to synthesize verilog into a blif netlist that then goes through the standard abc and vpr stages.
 
 | Design        | Flow         | LUTs (packed) | BRAMs (packed) | DSPs (packed) | Adders (packed) | CLBs | Wire length | CPD ns | Fmax MHz | WNS ns |
 | ------------- | ------------ | ------------: | -------------: | ------------: | --------------: | ---: | ----------: | -----: | -------: | -----: |
@@ -62,7 +61,7 @@ The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, and post-process
 - `mosaic/scripts/run_vtr_batch.py`: batch `run_vtr_flow.py` (1 core per run), live csv/status, optional `--watch`
 - `mosaic/scripts/watch_compare.py`: live status table (used by `--watch`, or run alone in a second terminal)
 
-The synthesis template is architecture agnostic. Its tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `K6D`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `K6D` is the per-arch support dir (`k6/` or `koios/`, chosen from the architecture file).
+The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is the per-arch support dir (`k6/` or `koios/`, chosen from the architecture file).
 
 ## QoR Compare (vanilla_vtr vs mosaic)
 `run_vtr_batch.py` wraps the default `run_vtr_flow.py` call. Each run is pinned

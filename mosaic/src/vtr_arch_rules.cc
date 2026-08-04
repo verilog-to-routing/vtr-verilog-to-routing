@@ -30,8 +30,7 @@
 
 // arch facts (mode addr/data widths, multiply modes, hardblock presence)
 // come from the xml; flow policy (libmap costs) arrives as pass options
-// from the synthesis.tcl knob block, so generated k6 rules are semantically
-// identical to the committed statics.
+// from the synthesis.tcl knob block.
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
 
@@ -71,8 +70,8 @@ struct VtrArchRulesPass : public Pass {
     log("xml. emits bram_memory_map.txt, tech_bram.v, vtr_hardblock_lib.v and\n");
     log("mult_map.v into <dir> (default: current directory).\n");
     log("\n");
-    log("rule files are template-backed: -tpldir points at the arch family's\n");
-    log("template dir (k6: mosaic/yosys/k6/templates). -blocks selects a\n");
+    log("rule files are template-backed: -tpldir points at the template dir\n");
+    log("(default: vtr_flow/misc/mosaic/template/templates). -blocks selects a\n");
     log("subset of bram,adder,multiply,hardblock-lib (default: all). -exotic\n");
     log("adds a generic comb-block generator for <model> using <file> as its\n");
     log("techmap template; it may be repeated and pairs by order.\n");

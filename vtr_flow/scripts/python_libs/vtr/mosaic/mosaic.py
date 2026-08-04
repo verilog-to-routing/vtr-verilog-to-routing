@@ -91,7 +91,7 @@ def init_script_file(
             "TDIR": templateDir,
             "TTT": top_module,
             "ZZZ": raw_netlist_name,
-            "K6D": archSupportDir,
+            "ARCH_SUPPORT_DIR": archSupportDir,
             "VVV": architecture_file_path,
             "YYY": vtrArchFlag,
         },

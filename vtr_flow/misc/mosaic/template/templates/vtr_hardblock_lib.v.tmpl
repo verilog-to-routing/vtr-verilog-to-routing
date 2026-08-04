@@ -6,11 +6,11 @@
 // undriven. these stubs use the real max widths instead.
 //
 // the ram stubs are only here so the first hierarchy can resolve rtl
-// instances without -auto-top wandering into a whitebox. DATA_WIDTH has to
-// beat every rtl memory in the suite or high bits get truncated at read.
-// the whitebox later bit-slices them. keep the modules bodiless.
+// instances without -auto-top wandering into a whitebox. DATA_WIDTH must
+// be wide enough that rtl buses are not truncated at read; the whitebox
+// later bit-slices them. keep the modules bodiless.
 
-@@HARDBLOCK_STUBS@@// 512 beats the widest rtl memory in the suite (313 on mkDelayWorker32B)
+@@HARDBLOCK_STUBS@@
 (* blackbox *)
 module single_port_ram #(
     parameter ADDR_WIDTH = 16,

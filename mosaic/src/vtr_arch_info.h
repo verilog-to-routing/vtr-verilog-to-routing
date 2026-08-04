@@ -39,7 +39,7 @@ struct ModelGeometry {
 };
 
 // port width of a hardblock model, read from the pb_type that binds the
-// blif model. adder in k6-style archs is a 1-bit carry element.
+// blif model. adder is often a 1-bit carry element.
 struct HardblockInfo {
   bool present = false;
   int aWidth = 0;

@@ -9,7 +9,7 @@ plugin -i wildebeest
 # the individual passes ourselves. wildebeest is loaded for max_level and
 # vtr_arch_rules.
 #
-# put arch_config.tcl in the arch support dir named by K6D; it is the only
+# put arch_config.tcl in the arch support dir named by ARCH_SUPPORT_DIR; it is the only
 # genuinely per-arch artifact the script needs
 # shared arch-independent support lives in the template dir TDIR
 #   vtr_ram_whitebox.v vtr_ram_bit_lib.v and whatever abc scripts the
@@ -19,7 +19,7 @@ plugin -i wildebeest
 #   XXX circuit verilog
 #   TTT top module  empty means -auto-top
 #   ZZZ output blif
-#   K6D arch support dir
+#   ARCH_SUPPORT_DIR arch support dir
 #   TDIR this templates parent dir  its templates/ subdir is -tpldir
 #   VVV arch xml
 #   YYY max_level flag  empty for the vanilla wildebeest leg
@@ -27,7 +27,7 @@ plugin -i wildebeest
 # ----------------------------------------------------------------------------
 # knobs  generic defaults then per-arch overrides from arch_config.tcl
 # ----------------------------------------------------------------------------
-set archSupportDir "K6D"
+set archSupportDir "ARCH_SUPPORT_DIR"
 set archXmlPath    "VVV"
 set archRulesDir   "."
 set templateDir    "TDIR"
@@ -79,8 +79,8 @@ set multMapFile      "$archRulesDir/mult_map.v"
 set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
 set addSubMapFile    "$archRulesDir/add_sub_map.v"
 
-# arch-derived knobs (ram addr width). default 15 matches the k6 arch; the
-# generated vtr_ram_knobs.tcl overrides per-arch (koios has 11).
+# arch-derived knobs (ram addr width). default 15 until vtr_ram_knobs.tcl
+# overrides from the scanned arch.
 set vtrRamAbits 15
 set vtrRamKnobsFile "$archRulesDir/vtr_ram_knobs.tcl"
 if { [file exists $vtrRamKnobsFile] } {
@@ -142,7 +142,7 @@ proc mosaicDensifyLutInputs {{withOptLut 0}} {
 }
 
 proc mosaicWarnAsyncFf {} {
-    # k6/vpr has no async ff primitive; adff2dff is required but changes timing
+    # vpr has no async ff primitive; adff2dff is required but changes timing
     set asyncFfDump "mosaic_async_ff.select"
     tee -q -o $asyncFfDump select -list {t:$adff} {t:$adffe} {t:$aldff} {t:$aldffe}
     set asyncFfPresent 0
@@ -160,7 +160,7 @@ proc mosaicWarnAsyncFf {} {
     }
     select -clear
     if {$asyncFfPresent} {
-        log -warning "mosaic: \$adff/\$adffe/\$aldff/\$aldffe present; k6/vpr has no async ff so adff2dff maps them to sync dff (async reset becomes clocked)."
+        log -warning "mosaic: \$adff/\$adffe/\$aldff/\$aldffe present; vpr has no async ff so adff2dff maps them to sync dff (async reset becomes clocked)."
     }
 }
 
@@ -210,7 +210,7 @@ flatten
 
 opt -full
 
-# async assert becomes clocked; required because k6/vpr has no async ff
+# async assert becomes clocked; required because vpr has no async ff
 mosaicWarnAsyncFf
 techmap -map +/parmys/adff2dff.v
 techmap -map +/parmys/adffe2dff.v

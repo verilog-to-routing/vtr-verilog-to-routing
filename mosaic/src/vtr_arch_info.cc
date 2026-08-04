@@ -12,7 +12,7 @@ namespace mosaic {
 namespace {
 
 // ---------------------------------------------------------------------------
-// extraction helpers (mirror the legacy offline generator semantics)
+// extraction helpers
 // ---------------------------------------------------------------------------
 
 void collectAll(const pugi::xml_node &node, const char *name,
