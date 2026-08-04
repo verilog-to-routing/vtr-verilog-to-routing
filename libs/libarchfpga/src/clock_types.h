@@ -95,6 +95,12 @@ struct t_clock_switch_grid_arch {
     // the same topology.
     std::string length = "1";
 
+    // Whether the grid's hop wires are BI_DIRECTIONAL (one node per track, entered
+    // and exited from either end -- the original/default behavior) or UNI_DIRECTIONAL
+    // (each track flows one way, like general routing's unidirectional segments).
+    // Unidirectional requires an even chan_w (half the tracks INC, half DEC).
+    e_directionality directionality = BI_DIRECTIONAL;
+
     std::vector<t_clock_switch_grid_point> switch_points;
 };
 

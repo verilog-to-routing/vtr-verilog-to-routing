@@ -15,20 +15,22 @@ void static populate_segment_values(int seg_index,
                                     int length,
                                     MetalLayer layer,
                                     std::vector<t_segment_inf>& segment_inf,
-                                    e_parallel_axis parallel_axis);
+                                    e_parallel_axis parallel_axis,
+                                    e_directionality directionality);
 
 void populate_segment_values(int seg_index,
                              std::string name,
                              int length,
                              MetalLayer layer,
                              std::vector<t_segment_inf>& segment_inf,
-                             e_parallel_axis parallel_axis) {
+                             e_parallel_axis parallel_axis,
+                             e_directionality directionality) {
     segment_inf[seg_index].name = name;
     segment_inf[seg_index].length = length;
     segment_inf[seg_index].frequency = 1;
     segment_inf[seg_index].Rmetal = layer.r_metal;
     segment_inf[seg_index].Cmetal = layer.c_metal;
-    segment_inf[seg_index].directionality = UNI_DIRECTIONAL;
+    segment_inf[seg_index].directionality = directionality;
     segment_inf[seg_index].longline = false;
     segment_inf[seg_index].parallel_axis = parallel_axis;
 
@@ -179,7 +181,11 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     /*AA: ClockRibs are assumed to be horizontal currently. */
 
-    populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS);
+    // The drive point node is a degenerate zero-length hub (see create_chanx_wire),
+    // not a real wire span, and is tagged Direction::BIDIR; the left/right "wing"
+    // nodes it feeds are already unidirectional (Direction::DEC/INC respectively).
+    // Segment directionality here is tagged to match each node's real Direction.
+    populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS, BI_DIRECTIONAL);
 
     // Segment to the right of the drive point
     segment_inf.emplace_back();
@@ -197,7 +203,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     // itself is unused.
     length = std::max((x_chan_wire_.length - drive_.offset) - 1, 1);
 
-    populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS);
+    populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS, UNI_DIRECTIONAL);
 
     // Segment to the left of the drive point
     segment_inf.emplace_back();
@@ -208,7 +214,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     // Clamped to a minimum of 1 -- see the comment on the right segment above.
     length = std::max(drive_.offset - 1, 1);
 
-    populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS);
+    populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS, UNI_DIRECTIONAL);
 
     // Snapshot the unified-space indices for map_relative_seg_indices to remap from.
     drive_seg_idx_unified_ = drive_seg_idx_;
@@ -413,6 +419,13 @@ int ClockRib::create_chanx_wire(int layer,
     rr_graph_builder.set_node_rc_index(chanx_node, rc_index);
     rr_graph_builder.set_node_direction(chanx_node, direction);
 
+    // Rib wings are already unidirectional by construction: create_rr_nodes_and_
+    // internal_edges_for_one_instance below always calls this with Direction::DEC
+    // for the left wing and Direction::INC for the right wing, each a real wire
+    // span flowing away from the drive point. Direction::BIDIR is only ever passed
+    // for the drive point itself, a degenerate zero-length (x_start == x_end) hub
+    // node, not a wire -- so it has no "direction" in any physical sense; BIDIR
+    // here just reflects that it's enterable/exitable from either wing.
     short seg_index = 0;
     switch (direction) {
         case Direction::BIDIR:
@@ -586,7 +599,10 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     length = 1; // Since drive segment has one length, the left and right segments have length - 1
 
     /* AA: ClockSpines are assumed to be vertical currently. */
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
+    // See the matching comment in ClockRib::create_segments above: the drive point
+    // is a degenerate BIDIR hub, the left/right wings are already unidirectional
+    // (DEC/INC) nodes, and segment directionality here matches each accordingly.
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS, BI_DIRECTIONAL);
 
     // Segment to the right of the drive point
     segment_inf.emplace_back();
@@ -598,7 +614,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     // in ClockRib::create_segments above; the same reasoning applies here.
     length = std::max((y_chan_wire.length - drive.offset) - 1, 1);
 
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS, UNI_DIRECTIONAL);
 
     // Segment to the left of the drive point
     segment_inf.emplace_back();
@@ -609,7 +625,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     // Clamped to a minimum of 1 -- see the comment above.
     length = std::max(drive.offset - 1, 1);
 
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS, UNI_DIRECTIONAL);
 
     // Snapshot the unified-space indices for map_relative_seg_indices to remap from.
     drive_seg_idx_unified = drive_seg_idx;
@@ -808,6 +824,10 @@ int ClockSpine::create_chany_wire(int layer,
     rr_graph_builder.set_node_rc_index(chany_node, rc_index);
     rr_graph_builder.set_node_direction(chany_node, direction);
 
+    // See the matching comment in ClockRib::create_chanx_wire above: the spine
+    // wings are already unidirectional (DEC below the drive point, INC above it);
+    // BIDIR is only ever passed for the drive point's own degenerate zero-length
+    // hub node.
     short seg_index = 0;
     switch (direction) {
         case Direction::BIDIR:
@@ -952,6 +972,10 @@ void ClockSwitchGrid::set_length(int length_hops) {
     length_hops_ = length_hops;
 }
 
+void ClockSwitchGrid::set_directionality(e_directionality directionality) {
+    directionality_ = directionality;
+}
+
 void ClockSwitchGrid::add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx) {
     SwitchGridPoint point;
     point.name = std::move(name);
@@ -973,11 +997,11 @@ void ClockSwitchGrid::create_segments(std::vector<t_segment_inf>& segment_inf) {
     // units: a hop wire physically spans length_hops_ * repeat tiles.
     segment_inf.emplace_back();
     x_seg_idx_ = segment_inf.size() - 1;
-    populate_segment_values(x_seg_idx_, clock_name_ + "_x", length_hops_ * repeat_.x, layer_, segment_inf, e_parallel_axis::X_AXIS);
+    populate_segment_values(x_seg_idx_, clock_name_ + "_x", length_hops_ * repeat_.x, layer_, segment_inf, e_parallel_axis::X_AXIS, directionality_);
 
     segment_inf.emplace_back();
     y_seg_idx_ = segment_inf.size() - 1;
-    populate_segment_values(y_seg_idx_, clock_name_ + "_y", length_hops_ * repeat_.y, layer_, segment_inf, e_parallel_axis::Y_AXIS);
+    populate_segment_values(y_seg_idx_, clock_name_ + "_y", length_hops_ * repeat_.y, layer_, segment_inf, e_parallel_axis::Y_AXIS, directionality_);
 
     // Snapshot the unified-space indices for map_relative_seg_indices to remap from.
     x_seg_idx_unified_ = x_seg_idx_;
@@ -1034,6 +1058,19 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
     std::vector<std::map<std::pair<int, int>, int>> east_wire(chan_w_);
     std::vector<std::map<std::pair<int, int>, int>> north_wire(chan_w_);
 
+    // The Direction a given track's hop wires are built with. BI_DIRECTIONAL grids
+    // always use BIDIR (one node per track, enterable/exitable from either end, same
+    // as before this was configurable). UNI_DIRECTIONAL grids alternate INC/DEC by
+    // track parity, matching rr_graph_chan_seg_details.cpp's general-routing
+    // convention; set_directionality (via setup_clocks.cpp) already validated chan_w_
+    // is even in that case, so tracks pair up evenly.
+    auto track_direction = [&](int track) -> Direction {
+        if (directionality_ == BI_DIRECTIONAL) {
+            return Direction::BIDIR;
+        }
+        return (track % 2 == 0) ? Direction::INC : Direction::DEC;
+    };
+
     // Pass 1: create the hop wires themselves (independent of switch-block pattern).
     // A wire spans length_hops_ switch-box pitches, not necessarily just one. Each
     // track's wires are staggered by (track % length_hops_) pitches -- mirroring how
@@ -1051,7 +1088,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                 if (east_x > x_max) break;
 
                 int wire_ptc = clock_graph.get_and_increment_chanx_ptc_num();
-                int wire_idx = create_chanx_node(layer_num, bx, east_x, by, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
+                int wire_idx = create_chanx_node(layer_num, bx, east_x, by, wire_ptc, track_direction(track), rr_nodes, rr_graph_builder);
                 east_wire[track][{bx, by}] = wire_idx;
             }
         }
@@ -1063,7 +1100,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                 if (north_y > y_max) break;
 
                 int wire_ptc = clock_graph.get_and_increment_chany_ptc_num();
-                int wire_idx = create_chany_node(layer_num, by, north_y, bx, wire_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder, num_segments_x);
+                int wire_idx = create_chany_node(layer_num, by, north_y, bx, wire_ptc, track_direction(track), rr_nodes, rr_graph_builder, num_segments_x);
                 north_wire[track][{bx, by}] = wire_idx;
             }
         }
@@ -1126,6 +1163,20 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
         }
     };
 
+    // A unidirectional wire's flow direction relative to the switch box it's being
+    // queried from: true if the wire carries a signal away from this box (a valid
+    // switch-block/hub "from"/fan-out target), false if it carries a signal into this
+    // box (a valid "to"/fan-in source). A box touches a wire on RIGHT/TOP at the
+    // wire's low-coordinate end (see east_wire/north_wire above: keyed by the box at
+    // that end) and on LEFT/BOTTOM at its high-coordinate end. Only meaningful for
+    // INC/DEC tracks -- never called for BI_DIRECTIONAL grids, where every wire is
+    // both.
+    auto is_outgoing = [](e_side side, Direction dir) -> bool {
+        bool low_coord_end = (side == RIGHT || side == TOP);
+        bool inc = (dir == Direction::INC);
+        return low_coord_end == inc;
+    };
+
     // Pass 2: connect the switch boxes.
     for (int by = start_y_; by <= y_max; by += repeat_.y) {
         for (int bx = start_x_; bx <= x_max; bx += repeat_.x) {
@@ -1151,6 +1202,12 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                         switch_point_registered[i] = true;
                     }
 
+                    // A shared hub can serve both DRIVE (fan-out onto outgoing wires)
+                    // and TAP (fan-in from incoming wires) roles at once: for a
+                    // BI_DIRECTIONAL grid every incident wire gets both edges, as
+                    // before; for UNI_DIRECTIONAL, each incident wire only gets the
+                    // one edge matching its actual flow direction at this box.
+                    Direction track_dir = track_direction(track);
                     bool x_tapped = false;
                     bool y_tapped = false;
                     for (e_side side : TOTAL_2D_SIDES) {
@@ -1163,25 +1220,42 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                             y_tapped = true;
                         }
 
-                        clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), internal_switch_idx_, false);
-                        clock_graph.add_edge(rr_edges_to_create, RRNodeId(stub_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                        if (directionality_ == BI_DIRECTIONAL) {
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), internal_switch_idx_, false);
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(stub_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                        } else if (is_outgoing(side, track_dir)) {
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(stub_idx), internal_switch_idx_, false);
+                        } else {
+                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(stub_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
+                        }
                     }
 
                     // This switch box isn't a true endpoint of this track's horizontal
                     // and/or vertical wire (only possible once length_hops_ > 1). The
                     // switch_point still needs tap access here even though no
                     // wire-to-wire turn is available at this location for this track.
+                    // For UNI_DIRECTIONAL grids this fallback only supports fan-in
+                    // (covering wire -> hub): injecting into the middle of a wire's
+                    // span would require splitting that wire's node, which isn't
+                    // supported, so a DRIVE point that only ever reaches a track via
+                    // this fallback silently has no fan-out for that track (the same
+                    // partial-coverage tolerance this function already applies to
+                    // length_hops_ > 1 stagger gaps elsewhere).
                     if (!x_tapped) {
                         int cov_idx = covering_wire_at(bx, by, e_parallel_axis::X_AXIS, track);
                         if (cov_idx >= 0) {
-                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                            if (directionality_ == BI_DIRECTIONAL) {
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                            }
                             clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
                         }
                     }
                     if (!y_tapped) {
                         int cov_idx = covering_wire_at(bx, by, e_parallel_axis::Y_AXIS, track);
                         if (cov_idx >= 0) {
-                            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                            if (directionality_ == BI_DIRECTIONAL) {
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+                            }
                             clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
                         }
                     }
@@ -1195,6 +1269,11 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                     int from_idx = stub_at(bx, by, from_side, from_track);
                     if (from_idx < 0) continue;
 
+                    // A turn's source must be a wire carrying signal into this box.
+                    if (directionality_ == UNI_DIRECTIONAL && is_outgoing(from_side, track_direction(from_track))) {
+                        continue;
+                    }
+
                     for (e_side to_side : TOTAL_2D_SIDES) {
                         if (to_side == from_side) continue;
 
@@ -1203,14 +1282,43 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                             // no meaningful single to_track to permute to).
                             for (int to_track = 0; to_track < chan_w_; to_track++) {
                                 int to_idx = stub_at(bx, by, to_side, to_track);
-                                if (to_idx >= 0) {
-                                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(from_idx), RRNodeId(to_idx), internal_switch_idx_, false);
+                                if (to_idx < 0) continue;
+                                // A turn's destination must be a wire carrying signal
+                                // away from this box.
+                                if (directionality_ == UNI_DIRECTIONAL && !is_outgoing(to_side, track_direction(to_track))) {
+                                    continue;
                                 }
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(from_idx), RRNodeId(to_idx), internal_switch_idx_, false);
                             }
-                        } else {
+                        } else if (directionality_ == BI_DIRECTIONAL) {
                             int to_track = get_simple_switch_block_track(from_side, to_side, from_track,
                                                                          switch_block_type_, chan_w_, chan_w_);
                             if (to_track < 0 || to_track >= chan_w_) continue;
+
+                            int to_idx = stub_at(bx, by, to_side, to_track);
+                            if (to_idx >= 0) {
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(from_idx), RRNodeId(to_idx), internal_switch_idx_, false);
+                            }
+                        } else {
+                            // SUBSET/WILTON/UNIVERSAL for a unidirectional grid: reuse
+                            // get_simple_switch_block_track's existing turn geometry at
+                            // the track-*pair* level (each INC/DEC pair sharing one
+                            // physical lane, chan_w_/2 lanes total -- chan_w_ is
+                            // guaranteed even, see the setup_clocks.cpp validation),
+                            // then resolve to the specific track of the destination
+                            // lane that actually flows away from this box on to_side.
+                            int from_lane = from_track / 2;
+                            int to_lane = get_simple_switch_block_track(from_side, to_side, from_lane,
+                                                                        switch_block_type_, chan_w_ / 2, chan_w_ / 2);
+                            if (to_lane < 0 || to_lane >= chan_w_ / 2) continue;
+
+                            int to_track = -1;
+                            if (is_outgoing(to_side, track_direction(2 * to_lane))) {
+                                to_track = 2 * to_lane;
+                            } else if (is_outgoing(to_side, track_direction(2 * to_lane + 1))) {
+                                to_track = 2 * to_lane + 1;
+                            }
+                            if (to_track < 0) continue;
 
                             int to_idx = stub_at(bx, by, to_side, to_track);
                             if (to_idx >= 0) {
@@ -1251,6 +1359,18 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
             continue; // not on any channel; falls through to the warning below
         }
 
+        // A mid-span tap can only receive from the wire it lands on: injecting into
+        // the middle of a unidirectional wire's span would require splitting that
+        // wire's node, which isn't supported. DRIVE points must therefore sit exactly
+        // on the switch-box lattice for a unidirectional grid.
+        if (directionality_ == UNI_DIRECTIONAL && switch_points_[i].type == SwitchGridPointType::DRIVE) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Drive point '%s' of unidirectional clock network '%s' at (%d,%d) is not aligned "
+                            "to a switch-box location. Unidirectional clock switch grid drive points must sit "
+                            "exactly on the switch-box lattice (startx/starty/repeatx/repeaty).\n",
+                            switch_points_[i].name.c_str(), clock_name_.c_str(), x, y);
+        }
+
         for (int track = 0; track < chan_w_; track++) {
             int cov_idx = covering_wire_at(x, y, axis, track);
             if (cov_idx < 0) continue; // this track's wire (if staggered) doesn't reach here
@@ -1261,7 +1381,9 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
             clock_graph.add_switch_location(get_name(), switch_points_[i].name, x, y, hub_idx);
             switch_point_registered[i] = true;
 
-            clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+            if (directionality_ == BI_DIRECTIONAL) {
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(hub_idx), RRNodeId(cov_idx), internal_switch_idx_, false);
+            }
             clock_graph.add_edge(rr_edges_to_create, RRNodeId(cov_idx), RRNodeId(hub_idx), internal_switch_idx_, false);
         }
     }

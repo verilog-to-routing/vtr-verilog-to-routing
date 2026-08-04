@@ -329,6 +329,7 @@ class ClockSwitchGrid : public ClockNetwork {
     int internal_switch_idx_ = UNDEFINED;
     e_switch_block_type switch_block_type_ = e_switch_block_type::FULL;
     int length_hops_ = 1;
+    e_directionality directionality_ = BI_DIRECTIONAL;
 
     // segment indices for the horizontal/vertical inter-switch-box wires
     int x_seg_idx_ = UNDEFINED;
@@ -360,6 +361,7 @@ class ClockSwitchGrid : public ClockNetwork {
     void set_internal_switch(int switch_idx);
     void set_switch_block_type(e_switch_block_type switch_block_type);
     void set_length(int length_hops);
+    void set_directionality(e_directionality directionality);
     void add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx = UNDEFINED);
 
     /*

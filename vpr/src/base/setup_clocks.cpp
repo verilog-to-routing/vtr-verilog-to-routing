@@ -155,10 +155,18 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                 switch_grid->set_wire_repeat(
                     p.parse_formula(clock_network_arch.switch_grid.repeatx, vars),
                     p.parse_formula(clock_network_arch.switch_grid.repeaty, vars));
-                switch_grid->set_chan_width(p.parse_formula(clock_network_arch.switch_grid.chan_w, vars));
+                int switch_grid_chan_w = p.parse_formula(clock_network_arch.switch_grid.chan_w, vars);
+                if (clock_network_arch.switch_grid.directionality == UNI_DIRECTIONAL && switch_grid_chan_w % 2 != 0) {
+                    VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                    "Clock switch grid channel width must be even for unidirectional wires "
+                                    "(got %d) for clock network '%s'.\n",
+                                    switch_grid_chan_w, clock_network_arch.name.c_str());
+                }
+                switch_grid->set_chan_width(switch_grid_chan_w);
                 switch_grid->set_internal_switch(clock_network_arch.switch_grid.arch_switch_idx);
                 switch_grid->set_switch_block_type(clock_network_arch.switch_grid.switch_block_type);
                 switch_grid->set_length(p.parse_formula(clock_network_arch.switch_grid.length, vars));
+                switch_grid->set_directionality(clock_network_arch.switch_grid.directionality);
 
                 for (const t_clock_switch_grid_point& point : clock_network_arch.switch_grid.switch_points) {
                     SwitchGridPointType type = (point.type == e_clock_switch_grid_point_type::DRIVE)

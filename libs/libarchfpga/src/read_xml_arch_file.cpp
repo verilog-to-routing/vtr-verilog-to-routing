@@ -4706,7 +4706,7 @@ static void process_clock_networks(pugi::xml_node parent,
                                    pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty", "endx"};
     std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty", "endy"};
-    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name", "switch_block_type", "length"};
+    std::vector<std::string> expected_switch_grid_attributes = {"metal_layer", "startx", "starty", "repeatx", "repeaty", "chan_w", "switch_name", "switch_block_type", "length", "directionality"};
     std::vector<std::string> expected_children = {"rib", "spine", "clock_switch_grid"};
 
     int num_clock_networks = count_children(parent, "clock_network", loc_data);
@@ -4891,6 +4891,19 @@ static void process_clock_networks(pugi::xml_node parent,
             }
 
             clock_network.switch_grid.length = get_attribute(curr_type, "length", loc_data, ReqOpt::OPTIONAL).as_string("1");
+
+            std::string directionality_str = get_attribute(curr_type, "directionality", loc_data, ReqOpt::OPTIONAL).as_string("bidir");
+            if (directionality_str == "bidir") {
+                clock_network.switch_grid.directionality = BI_DIRECTIONAL;
+            } else if (directionality_str == "unidir") {
+                clock_network.switch_grid.directionality = UNI_DIRECTIONAL;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                               vtr::string_fmt("Unknown directionality '%s' for clock_switch_grid. "
+                                               "Expected one of: bidir, unidir.\n",
+                                               directionality_str.c_str())
+                                   .c_str());
+            }
 
             process_clock_switch_grid_points(curr_type, clock_network, switches, loc_data);
         }
