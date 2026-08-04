@@ -127,9 +127,12 @@ When the **Highlight Block Fan-in and Fan-out** option is enabled, clicking on a
 
 Clicking on a clb (not the internal physical blocks) will also highlight all the fan-in and fan-out routed nets in blue and red, respectively.
 
-Critical Path
+Critical Paths
 -----------------------------
-During placement and routing you can click on the **Display Critical Path** switch under the **Net** tab to visualize the critical path.
+During placement and routing you can click on the **Display Critical Paths** switch under the **Net** tab to visualize the critical paths.
+The user can choose the number of critical paths to visualize (between 1 to 10) using the **Num Critical Paths** spinbox.
+If the requested number exceeds what are currently available, only the available paths are visualized.
+
 Each stage between primitive pins is shown in a different colour.
 
 .. figure:: ../Images/crit_path.png
@@ -255,92 +258,54 @@ Layers are drawn in ascending order for many drawing features (e.g. blocks); tha
 The visibility and transparency of a layer can be changed, which will affect blocks, nets, routing, and critical path.
 Cross-layer connections refer to connections that are in different layers. 
 
-Button Description Table
-------------------------
-+-------------------+-------------------+------------------------------+------------------------------+
-|      Buttons      |      Stages       |        Functionalities       |     Detailed Descriptions    |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Blk Internal      | Placement/Routing | Controls depth of sub-blocks | Click multiple times to show |
-|                   |                   | shown                        | more details; Click to reset |
-|                   |                   |                              | when reached maximum level   |
-|                   |                   |                              | of detail                    |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Toggle Block      | Placement/Routing | Adjusts the level of         | Click multiple times to      |
-| Internal          |                   | visualized block detail      | go deeper into the           |
-|                   |                   |                              | hierarchy within the cluster |
-|                   |                   |                              | level block                  |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Blk Pin Util      | Placement/Routing | Visualizes block pin         | Click multiple times to      |
-|                   |                   | utilization                  | visualize all block pin      |
-|                   |                   |                              | utilization, input block pin |
-|                   |                   |                              | utilization, or output block |
-|                   |                   |                              | pin utilization              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Cong. Cost        | Routing           | Visualizes the congestion    |                              |
-|                   |                   | costs of routing resources   |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Congestion        | Routing           | Visualizes a heat map of     |                              |
-|                   |                   | overused routing resources   |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Crit. Path        | Placement/Routing | Visualizes the critical path |                              |
-|                   |                   | of the circuit               |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Draw Partitions   | Placement/Routing | Visualizes placement         |                              |
-|                   |                   | constraints                  |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Place Macros      | Placement/Routing | Visualizes placement macros  |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Route BB          | Routing           | Visualizes net bounding      | Click multiple times to      |
-|                   |                   | boxes one by one             | sequence through the net     |
-|                   |                   |                              | being shown                  |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Router Cost       | Routing           | Visualizes the router costs  |                              |
-|                   |                   | of different routing         |                              |
-|                   |                   | resources                    |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Routing Util      | Routing           | Visualizes routing channel   |                              |
-|                   |                   | utilization with colors      |                              |
-|                   |                   | indicating the fraction of   |                              |
-|                   |                   | wires used within a channel  |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Toggle Nets       | Placement/Routing | Visualizes the nets in the   | Click multiple times to      |
-|                   |                   | circuit                      | set the nets to be visible / |
-|                   |                   |                              | invisible                    |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Toggle RR         | Placement/Routing | Visualizes different views   | Click multiple times to      |
-|                   |                   | of the routing resources     | switch between routing       |
-|                   |                   |                              | resources available in the   |
-|                   |                   |                              | FPGA                         |
-+-------------------+-------------------+------------------------------+------------------------------+
+Misc. Display Controls
+----------------------
 
-Manual Moves
-------------
-
-The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
-
-.. _fig-misc-tab:
-.. figure:: ../Images/manual_move.png
+The **Misc.** drop-down menu provides several useful control tools to facilitate user interaction.
+.. figure:: ../Images/misc_tab.png
     :align: center
     :width: 25%
 
     Misc. Tab
 
-To enable the feature, activate the **Manual Move** toggle button under the **Misc.** tab and press Done. Alternatively, the user can activate the **Manual Move** toggle button and click on the block to be moved.
+Proceed by Step
+~~~~~~~~~~~~~~~
+
+The **Proceed by Step** switch allows the user to frreze the graphics after a custom number of steps (see below the definition of step).
+The user can use the **Steps to Proceed** spinbox to set how many steps to proceed before the graphics freezes.
+
+During global (analytical) placement, step refers to every solver or legalizer iteration.
+During detailed (SA) placement, step refers to every temperature update.
+During routing, step refers to every router iteration.
+
+After freezing, clicking **Proceed** resumes the graphics until the next selected step boundary, unless another
+major program update (e.g. a state change) freezes the graphics early. In the latter case, the number of steps completed
+since the last freeze will not be carried over. A new step count will be performed from the current freeze.
+
+Turn off **Proceed by Step** to only freeze the graphics at major program updates.
+
+Save
+~~~~
+
+The **Save** button allows the user to output the current graphics into an image file. A popup will ask the user for file name and format.
+.. figure:: ../Images/save_popup.png
+    :align: center
+    :width: 50%
+
+    Save Popup
+
+Debug
+~~~~~
+
+The CAD optimization algorithms can be paused at different user-specified points so you can examine the current placement
+and/or routing solution, as detailed `here <https://vtr-verilog-to-routing.readthedocs.io/en/master/vpr/debug_aids/#placer-and-router-debugger>`_.
+
+Manual Moves
+~~~~~~~~~~~~
+
+The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
+
+To enable the feature, activate the **Manual Move** checkbox and press Done. Alternatively, the user can activate the **Manual Move** checkbox and click on the block to be moved.
 
 .. figure:: https://www.verilogtorouting.org/img/draw_manual_moves_window.png
    :align: center
@@ -359,20 +324,4 @@ If the manual move is legal, the cost summary window will display the delta cost
    :align: center
    :width: 50%
 
-The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown. 
-
-Proceed by Step
-------------
-
-The **Proceed by Step** switch allows the user to freeze the graphics after a user-selected number of steps (see below the definition of step).
-The **Steps to Proceed** spinbox sets how many steps the graphics should proceed before freezing.
-These two UI elements can be found under the **Misc.** tab (see :ref:`fig-misc-tab`)
-
-When enabled during global analytical placement, step refers to every solver/legalizer iteration.
-When enabled during detailed simulated-annealing placement, step refers to every temperature update.
-When enabled during routing, step refers to every router iteration.
-After freezing, clicking **Proceed** resumes the graphics until the next selected step boundary, unless another
-major program update (e.g. a state change) freezes the graphics early. In the latter case, the number of steps completed
-since the last freeze will not be carried over. A new step count will be performed from the current freeze.
-
-Turn off **Proceed by Step** to only freeze the graphics at major program updates.
+The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown.
