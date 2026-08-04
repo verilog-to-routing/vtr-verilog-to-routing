@@ -77,13 +77,22 @@ Navigation
 
 Placement
 --------------------------------
-By default VPR's graphics displays the FPGA floorplan (block grid) and current placement.
+By default VPR's graphics displays the FPGA floorplan (block grid) and current placement during global (analytical) placement
+and detailed (SA) placement.
 
-.. figure:: ../Images/Overall_view.png
+The FPGA floorplan during global placement does not preserve inter-block spacing and is therefore easy to distinguish.
+
+.. figure:: ../Images/analytical_place.png
     :align: center 
     :width: 50%
 
-    FPGA floorplan (block grid)    
+    FPGA floorplan (block grid) during analytical placement
+
+.. figure:: ../Images/detailed_place.png
+    :align: center 
+    :width: 50%
+
+    FPGA floorplan (block grid) during detailed placement  
 
 If the **Placement Macros** drop down is set, any placement macros (e.g. carry chains, which require specific relative placements between some blocks) will be highlighted.
 
@@ -130,6 +139,7 @@ Clicking on a clb (not the internal physical blocks) will also highlight all the
 Critical Paths
 -----------------------------
 During placement and routing you can click on the **Display Critical Paths** switch under the **Net** tab to visualize the critical paths.
+
 The user can choose the number of critical paths to visualize (between 1 to 10) using the **Num Critical Paths** spinbox.
 If the requested number exceeds what are currently available, only the available paths are visualized.
 
@@ -262,6 +272,7 @@ Misc. Display Controls
 ----------------------
 
 The **Misc.** drop-down menu provides several useful control tools to facilitate user interaction.
+
 .. figure:: ../Images/misc_tab.png
     :align: center
     :width: 25%
@@ -288,6 +299,7 @@ Save
 ~~~~
 
 The **Save** button allows the user to output the current graphics into an image file. A popup will ask the user for file name and format.
+
 .. figure:: ../Images/save_popup.png
     :align: center
     :width: 50%
