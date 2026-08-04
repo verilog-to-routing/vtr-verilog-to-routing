@@ -10,7 +10,7 @@
 #include <utility>
 
 // rule generators and template substitution for vtr_arch_rules.
-// templates live under vtr_flow/misc/mosaic/template/templates/ with:
+// templates live under vtr_flow/misc/mosaic/template/rules/ with:
 //   @NAME@    scalar arch/policy values
 //   @@NAME@@  computed snippets (e.g. one arm per bram/multiply mode)
 USING_YOSYS_NAMESPACE

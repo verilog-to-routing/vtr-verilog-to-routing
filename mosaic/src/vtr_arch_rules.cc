@@ -99,7 +99,7 @@ struct VtrArchRulesPass : public Pass {
     log("mult_map.v into <dir> (default: current directory).\n");
     log("\n");
     log("rule files are template-backed: -tpldir points at the template dir\n");
-    log("(default: vtr_flow/misc/mosaic/template/templates). -blocks selects a\n");
+    log("(default: vtr_flow/misc/mosaic/template/rules). -blocks selects a\n");
     log("subset of bram,adder,multiply,hardblock-lib (default: all). -exotic\n");
     log("adds a generic combinational-block generator for <model> using <file> as its\n");
     log("techmap template; it may be repeated and pairs by order.\n");

@@ -3,7 +3,7 @@
 # shaped ports (e.g. a/b/out for integer_mul).
 #
 # synthesis.tcl passes each {model role} pair to vtr_arch_rules -exotic-role.
-# stock templates live under template/templates/roles/<role>_map.v.tmpl.
+# stock templates live under template/rules/roles/<role>_map.v.tmpl.
 #
 # working smoke fixture (no classic multiply):
 #   mosaic/tests/fixtures/min_exotic_integer_mul.xml

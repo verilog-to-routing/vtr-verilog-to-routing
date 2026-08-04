@@ -15,8 +15,8 @@ set hardAdderThreshold 3
 set dspMinWidth    2
 set sweepMaxIters  64
 # reuse the shared delay abc scripts until an arch-tuned pair is justified
-set abcOptScript   "$templateDir/delay_gia_opt.scr"
-set abcMapScript   "$templateDir/delay_map.scr"
+set abcOptScript   "$templateDir/abc/delay_gia_opt.scr"
+set abcMapScript   "$templateDir/abc/delay_map.scr"
 # builtins only; exotic complex-dsp models are appended from
 # hardblock_keep_types.txt when stubAllHardblocks is on
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"

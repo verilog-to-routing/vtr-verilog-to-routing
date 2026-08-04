@@ -11,16 +11,15 @@ plugin -i wildebeest
 #
 # put arch_config.tcl in the arch support dir named by ARCH_SUPPORT_DIR; it is the only
 # genuinely per-arch artifact the script needs
-# shared arch-independent support lives in the template dir TDIR
-#   vtr_ram_whitebox.v vtr_ram_bit_lib.v and whatever abc scripts the
-#   config points at
+# shared arch-independent support lives in the template dir TDIR:
+#   abc/delay_*.scr, lut_models/, rules/*.tmpl (-tpldir)
 #
 # harness fills these tokens before yosys sees the script
 #   XXX circuit verilog
 #   TTT top module  empty means -auto-top
 #   ZZZ output blif
 #   ARCH_SUPPORT_DIR arch support dir
-#   TDIR this templates parent dir  its templates/ subdir is -tpldir
+#   TDIR this template dir  rules/ is -tpldir
 #   VVV arch xml
 #   YYY max_level flag  empty when -vtr_arch is omitted
 
@@ -97,7 +96,7 @@ set mul2dspMinWidth $dspMinWidth
 if { $archXmlPath eq "" } {
     error "mosaic synthesis requires an arch xml (VVV)"
 }
-set archRulesCmd "vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/templates -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold"
+set archRulesCmd "vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/rules -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold"
 if { $aliasMultiply ne "" } {
     append archRulesCmd " -alias multiply=$aliasMultiply"
 }

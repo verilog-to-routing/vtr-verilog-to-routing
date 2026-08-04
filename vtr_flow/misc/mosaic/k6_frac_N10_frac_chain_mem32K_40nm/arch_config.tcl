@@ -14,8 +14,8 @@ set hardAdderThreshold 3
 # minimum operand width for mul2dsp chunking (policy; facts set dspMaxWidth)
 set dspMinWidth    2
 set sweepMaxIters  64
-set abcOptScript   "$templateDir/delay_gia_opt.scr"
-set abcMapScript   "$templateDir/delay_map.scr"
+set abcOptScript   "$templateDir/abc/delay_gia_opt.scr"
+set abcMapScript   "$templateDir/abc/delay_map.scr"
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
 
-# rebuild the abc scripts with vtr_flow/misc/mosaic/template/build_delay_scr.py
+# rebuild the abc scripts with vtr_flow/misc/mosaic/template/abc/build_delay_scr.py

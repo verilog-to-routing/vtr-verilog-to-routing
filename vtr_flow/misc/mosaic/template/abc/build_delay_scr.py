@@ -11,7 +11,7 @@ gia and mapping with abc -luts avoids that path.
 from pathlib import Path
 
 here = Path(__file__).resolve().parent
-repoRoot = here.parents[3]
+repoRoot = here.parents[4]
 src = repoRoot / "mosaic/wildebeest/src/abc_scripts/LUT6/BEST/delay_lut6.scr"
 text = src.read_text(encoding="utf-8").replace("\r\n", "\n")
 text = text.replace("delay_lut6.blif", "delay_scratch.blif")
