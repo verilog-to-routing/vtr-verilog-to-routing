@@ -91,7 +91,7 @@ def _normalizeNetExpr(net: str) -> str:
 
 
 def packBitBlastedHardblockPorts(verilogText: str) -> str:
-    """rewrite .\\a[0](n0), .\\a[1](n1) → .a({n1, n0}) for sim_hardblocks vector ports.
+    """rewrite .\\a[0](n0), .\\a[1](n1) --> .a({n1, n0}) for sim_hardblocks vector ports.
 
     yosys write_verilog keeps blif-style bitblasted pin names after read_blif of
     blackbox .model definitions. verilator then fails with PINNOTFOUND against
@@ -100,7 +100,7 @@ def packBitBlastedHardblockPorts(verilogText: str) -> str:
     instances with no bit-blasted pins are left unchanged so we do not strip the
     trailing spaces yosys already emitted on escaped net names.
     """
-    # yosys emits: .\a[0] (net) — '.' + escaped-id '\a[0] '
+    # yosys emits: .\a[0] (net), '.' + escaped-id '\a[0] '
     bitPinRe = re.compile(
         r"^\.\\(?P<port>[A-Za-z_]\w*)\[(?P<idx>\d+)\]\s*\((?P<net>.*)\)$"
     )
@@ -164,7 +164,7 @@ def packBitBlastedHardblockPorts(verilogText: str) -> str:
 def packBitBlastedTopPorts(verilogText: str) -> str:
     """rewrite module ports like \\a_in[0], \\a_in[1] into vector a_in[1:0].
 
-    also rewrites body references \\a_in[i] → a_in[i] so the tb can connect
+    also rewrites body references \\a_in[i] --> a_in[i] so the tb can connect
     .a_in(a_in) against rtl vector ports.
     """
     modMatch = re.search(
@@ -185,7 +185,7 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
         if m:
             vectorBits.setdefault(m.group("base"), []).append(int(m.group("idx")))
         else:
-            # strip escape if present: \clock → clock? keep as-is name token
+            # strip escape if present: \clock --> clock? keep as-is name token
             scalarPorts.append(port)
 
     if not vectorBits:
@@ -240,7 +240,7 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
             flags=re.S,
         )
 
-    # rewrite body references \base[i] → base[i] (keep trailing space if any)
+    # rewrite body references \base[i] --> base[i] (keep trailing space if any)
     for base, idxs in vectorBits.items():
         text = re.sub(
             rf"\\{re.escape(base)}\[(\d+)\](\s?)",
@@ -284,7 +284,7 @@ def blifToVerilog(
     yosysPath: Path | None = None,
     logPath: Path | None = None,
 ) -> None:
-    """read_blif → optional hierarchy -top → write_verilog -noattr."""
+    """read_blif --> optional hierarchy -top --> write_verilog -noattr."""
     yosys = resolveYosys(yosysPath)
     outVerilog.parent.mkdir(parents=True, exist_ok=True)
     # -wideports packs top-level a[0],a[1] into buses when possible; hardblock
@@ -306,7 +306,7 @@ def blifToVerilog(
         logPath.write_text(result.stdout + "\n" + result.stderr, encoding="utf-8")
     if result.returncode != 0 or not outVerilog.is_file():
         raise RuntimeError(
-            f"yosys blif→verilog failed for {blifPath} "
+            f"yosys blif-->verilog failed for {blifPath} "
             f"(rc={result.returncode}); see {logPath}"
         )
     cleaned = stripHardblockModuleDefs(

@@ -1,20 +1,19 @@
-#ifndef WILDEBEEST_VTR_ARCH_INFO_H
-#define WILDEBEEST_VTR_ARCH_INFO_H
+#ifndef MOSAIC_VTR_ARCH_INFO_H
+#define MOSAIC_VTR_ARCH_INFO_H
 
 #include <map>
 #include <string>
 #include <vector>
 
-// generalized reader for the slices of a vtr architecture xml that the
-// mosaic flow needs at synthesis time.
-//
-// the xml is parsed with pugixml, source-compiled into the plugin from vtr's
-// vendored copy (libs/EXTERNAL/libpugixml), so there is still no
-// libarchfpga/libvtrutil link and the plugin keeps building against yosys
-// alone. it walks the pb_type hierarchy for bram modes, lut fracturability
-// and hardblock port widths — the data the old offline python generators
-// used to produce statically.
-namespace wildebeestVtr {
+// generalized reader for the slices of a vtr architecture xml that mosaic
+// needs at synthesis time.
+
+// the xml is parsed with pugixml from vtr's vendored copy
+// (libs/EXTERNAL/libpugixml), so there is no libarchfpga/libvtrutil link and
+// the plugin keeps building against yosys alone. it walks the pb_type
+// hierarchy for bram modes, lut fracturability, and hardblock port widths,
+// the data that must come from the live arch rather than hardcoded statics.
+namespace mosaic {
 
 // one concrete bram mode from a pb_type with blif_model
 // ".subckt single_port_ram" / ".subckt dual_port_ram".
@@ -76,6 +75,6 @@ struct VtrArchInfo {
 bool readArchInfo(const std::string &xmlPath, VtrArchInfo &info,
                   std::string *errorOut = nullptr);
 
-} // namespace wildebeestVtr
+} // namespace mosaic
 
-#endif // WILDEBEEST_VTR_ARCH_INFO_H
+#endif // MOSAIC_VTR_ARCH_INFO_H

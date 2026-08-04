@@ -48,7 +48,7 @@ Options are thhe following:
 - `-mosaic_script <path>`: custom yosys template script (default `vtr_flow/misc/mosaic/template/synthesis.tcl`)
 - `-top_module <name>`: top module; leaving it empty means yosys `-auto-top`
 
-The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, and post-processes the blif (prunes unused blackbox model declarations yosys emits but the design never instantiates — instantiated models are always kept — then applies `vtr_flow/misc/mosaic/template/fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify). After that the flow continues through abc and vpr exactly like the odin and parmys legs.
+The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, and post-processes the blif (prunes unused blackbox model declarations yosys emits but the design never instantiates, instantiated models are always kept, then applies `vtr_flow/misc/mosaic/template/fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify). After that the flow continues through abc and vpr exactly like the odin and parmys legs.
 
 ## Layout
 - `mosaic/wildebeest/src/`: wildebeest-originated sources (`clk_domains.cc` / `max_level`, with the `-vtr_arch` patch)

@@ -165,7 +165,7 @@ module dffe (
     end
 endmodule
 
-// yosys latch form sometimes survives as .latch → converted to latch cell
+// yosys latch form sometimes survives as .latch --> converted to latch cell
 module latch (
     input D,
     input G,

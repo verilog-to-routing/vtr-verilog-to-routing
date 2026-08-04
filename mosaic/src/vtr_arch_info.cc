@@ -7,7 +7,7 @@
 
 #include "pugixml.hpp"
 
-namespace wildebeestVtr {
+namespace mosaic {
 
 namespace {
 
@@ -144,12 +144,9 @@ void scanLutCost(const std::vector<pugi::xml_node> &pbTypes,
   info.lutK1 = subK;
 }
 
-// generic hardblock scan: every pb_type with a blif_model ".subckt <name>"
-// binding contributes its direct port widths to hardblockModels[<name>].
-// this replaces the old adder/multiply-only scan; those two are derived
-// from the generic map below. clock ports are <clock> children (not
-// <input>), but they are still model inputs and must appear on stubs so
-// rtl connections like .clk(clk) on mult_fp_clk_16 / int_sop_2 resolve.
+// every pb_type with blif_model ".subckt <name>" contributes port widths to
+// hardblockModels[<name>]. <clock> children are folded into inputWidths so
+// stubs expose clk ports for rtl connections (e.g. mult_fp_clk_16).
 void scanHardblockModels(const std::vector<pugi::xml_node> &pbTypes,
                          VtrArchInfo &info) {
   const std::string prefix = ".subckt ";
@@ -180,8 +177,7 @@ void scanHardblockModels(const std::vector<pugi::xml_node> &pbTypes,
     std::sort(kv.second.modes.begin(), kv.second.modes.end());
 }
 
-// fill the legacy adder/multiply accessors from the generic map so existing
-// consumers (vtr_arch_clocks wrapper, rule generators) keep working.
+// fill adder / multiply convenience fields from hardblockModels.
 void deriveHardblockAliases(VtrArchInfo &info) {
   auto mult = info.hardblockModels.find("multiply");
   if (mult != info.hardblockModels.end() && !mult->second.modes.empty()) {
@@ -224,4 +220,4 @@ bool readArchInfo(const std::string &xmlPath, VtrArchInfo &info,
   return true;
 }
 
-} // namespace wildebeestVtr
+} // namespace mosaic

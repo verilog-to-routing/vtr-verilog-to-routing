@@ -2,10 +2,7 @@
 
 #include "vtr_arch_info.h"
 
-// thin compatibility wrapper: the clocked-model scan now lives in the
-// generalized arch reader (vtr_arch_info). the standalone clock-scan code
-// that used to live here has been folded into readArchInfo's models pass.
-namespace wildebeestVtr {
+namespace mosaic {
 
 std::vector<std::string> readClockedModelNames(const std::string &xmlPath,
                                                std::string *errorOut) {
@@ -15,4 +12,4 @@ std::vector<std::string> readClockedModelNames(const std::string &xmlPath,
   return info.clockedModels;
 }
 
-} // namespace wildebeestVtr
+} // namespace mosaic

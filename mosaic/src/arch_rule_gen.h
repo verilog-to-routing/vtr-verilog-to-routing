@@ -1,5 +1,5 @@
-#ifndef WILDEBEEST_ARCH_RULE_GEN_H
-#define WILDEBEEST_ARCH_RULE_GEN_H
+#ifndef MOSAIC_ARCH_RULE_GEN_H
+#define MOSAIC_ARCH_RULE_GEN_H
 
 #include "vtr_arch_info.h"
 
@@ -20,7 +20,7 @@
 //   comb    (adder/multiply/exotic): techmap and/or lib stub section
 //   carry-chain blocks would subclass ArchRuleGen the same way; only the
 //   stub/techmap text differs.
-namespace wildebeestVtr {
+namespace mosaic {
 
 // flow policy that is not arch-derivable; arrives as pass options.
 struct ArchRulePolicy {
@@ -83,6 +83,6 @@ std::unique_ptr<ArchRuleGen> makeStubAllExoticsGen();
 std::unique_ptr<ArchRuleGen>
 makeHardblockLibGen(std::vector<const ArchRuleGen *> providers);
 
-} // namespace wildebeestVtr
+} // namespace mosaic
 
-#endif // WILDEBEEST_ARCH_RULE_GEN_H
+#endif // MOSAIC_ARCH_RULE_GEN_H

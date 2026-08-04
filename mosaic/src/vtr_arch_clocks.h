@@ -1,24 +1,18 @@
-#ifndef WILDEBEEST_VTR_ARCH_CLOCKS_H
-#define WILDEBEEST_VTR_ARCH_CLOCKS_H
+#ifndef MOSAIC_VTR_ARCH_CLOCKS_H
+#define MOSAIC_VTR_ARCH_CLOCKS_H
 
 #include <string>
 #include <vector>
 
-// self-contained reader for the one piece of the vtr architecture xml that the
-// mosaic flow needs: the names of <model>s that own a clock input port.
-//
-// this reproduces what parmys pulls out of the arch through vtr's libarchfpga
-// (models whose input <port> carries is_clock="1") but without linking any vtr
-// static library, so the wildebeest plugin stays standalone. only the
-// <models> section is scanned; routing/layout/tile data is ignored.
-namespace wildebeestVtr {
+// names of <model>s with an is_clock input port, for max_level -vtr_arch
+// clk2clk cut points (clk_domains.cc). only that model list is needed here;
+// routing/layout/tile data is used later by vpr, not by this scan.
+namespace mosaic {
 
-// parse the arch xml at xmlPath and return the names of every <model> that has
-// an <input_ports> child <port ... is_clock="1"/>. on read failure the result
-// is empty and errorOut (when non-null) carries a message.
+// on read failure returns empty and sets errorOut when non-null.
 std::vector<std::string> readClockedModelNames(const std::string &xmlPath,
                                                std::string *errorOut = nullptr);
 
-} // namespace wildebeestVtr
+} // namespace mosaic
 
-#endif // WILDEBEEST_VTR_ARCH_CLOCKS_H
+#endif // MOSAIC_VTR_ARCH_CLOCKS_H

@@ -9,18 +9,13 @@
 #include <sstream>
 #include <utility>
 
-// concrete rule generators + the template substitution engine behind
-// vtr_arch_rules. the emitters are template-backed: template files live in
-// the arch family's templates dir (k6: mosaic/yosys/k6/templates) and
-// carry two token flavours:
-//   @NAME@    scalar arch/policy values (widths, costs, arch name)
-//   @@NAME@@  computed snippets (data-dependent code: N modes -> N arms)
-// snippet text is built here with the same logic the old string-stream
-// emitters used; everything else is verbatim template text, so k6 output
-// stays byte-identical to the committed statics (header comment aside).
+// rule generators and template substitution for vtr_arch_rules.
+// templates live under vtr_flow/misc/mosaic/template/templates/ with:
+//   @NAME@    scalar arch/policy values
+//   @@NAME@@  computed snippets (e.g. one arm per bram/multiply mode)
 USING_YOSYS_NAMESPACE
 
-namespace wildebeestVtr {
+namespace mosaic {
 
 namespace {
 
@@ -658,4 +653,4 @@ makeHardblockLibGen(std::vector<const ArchRuleGen *> providers) {
       new HardblockLibGen(std::move(providers)));
 }
 
-} // namespace wildebeestVtr
+} // namespace mosaic

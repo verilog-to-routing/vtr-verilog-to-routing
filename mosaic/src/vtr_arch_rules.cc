@@ -11,11 +11,10 @@
 
 // vtr_arch_rules: generate the arch-specific mapping rules for the
 // mosaic flow at synthesis time, directly from the vtr arch xml.
-//
-// this replaces the offline python generators and the hand-maintained k6
-// statics. the pass is a thin cli over the rule-generator registry in
-// arch_rule_gen.{h,cc}: each enabled generator substitutes arch-derived
-// values into template files (-tpldir) and writes rule files into -outdir:
+
+// thin cli over the rule-generator registry in arch_rule_gen.{h,cc}: each
+// enabled generator substitutes arch-derived values into template files
+// (-tpldir) and writes rule files into -outdir:
 //   bram_memory_map.txt   memory_libmap rules for the arch's bram modes
 //   tech_bram.v           recursive bit-sliced bram techmap
 //   vtr_hardblock_lib.v   -lib stubs sized from the arch hardblock models
@@ -23,12 +22,12 @@
 //   mul2dsp_map.v         mul2dsp _dsp_block_ -> multiply with the same modes
 //   add_sub_map.v         $add/$sub -> carry-chain adder techmap
 //   <model>_map.v         one per -exotic comb block
-//
+
 // files are required because the yosys consumers (memory_libmap -lib,
 // techmap -map, read_verilog -lib) only accept file paths; the one rule
-// that could be inline (the abc -luts cost spec) is not emitted — it lives
+// that could be inline (the abc -luts cost spec) is not emitted, it lives
 // as the lutCost knob in synthesis.tcl.
-//
+
 // arch facts (mode addr/data widths, multiply modes, hardblock presence)
 // come from the xml; flow policy (libmap costs) arrives as pass options
 // from the synthesis.tcl knob block, so generated k6 rules are semantically
@@ -68,9 +67,8 @@ struct VtrArchRulesPass : public Pass {
     log("                    [-stub-all-hardblocks]\n");
     log("                    [-exotic <model> -exotic-template <file>]...\n");
     log("\n");
-    log("generate the mosaic flow's arch-specific mapping rules from the\n");
-    log("vtr architecture xml at runtime (replaces the offline python generators).\n");
-    log("emits bram_memory_map.txt, tech_bram.v, vtr_hardblock_lib.v and\n");
+    log("generate mosaic arch-specific mapping rules from a vtr architecture\n");
+    log("xml. emits bram_memory_map.txt, tech_bram.v, vtr_hardblock_lib.v and\n");
     log("mult_map.v into <dir> (default: current directory).\n");
     log("\n");
     log("rule files are template-backed: -tpldir points at the arch family's\n");
@@ -170,9 +168,9 @@ struct VtrArchRulesPass : public Pass {
       }
     }
 
-    wildebeestVtr::VtrArchInfo info;
+    mosaic::VtrArchInfo info;
     std::string error;
-    if (!wildebeestVtr::readArchInfo(xmlPath, info, &error))
+    if (!mosaic::readArchInfo(xmlPath, info, &error))
       log_cmd_error("vtr_arch_rules: %s\n", error.c_str());
 
     const std::string archName = archNameFromPath(xmlPath);
@@ -183,26 +181,26 @@ struct VtrArchRulesPass : public Pass {
                                    : joinInts(info.multiplyModes, ",").c_str(),
         info.adder.present ? "present" : "absent", info.lutK, info.lutK1);
 
-    wildebeestVtr::ArchRulePolicy policy;
+    mosaic::ArchRulePolicy policy;
     policy.archName = archName;
     policy.tplDir = tplDir;
     policy.spCost = spCost;
     policy.dpCost = dpCost;
     policy.hardAdderThreshold = hardAdderThreshold;
 
-    auto gens = wildebeestVtr::makeBuiltinRuleGens();
+    auto gens = mosaic::makeBuiltinRuleGens();
     for (size_t i = 0; i < exoticModels.size(); ++i) {
-      wildebeestVtr::ExoticRequest request;
+      mosaic::ExoticRequest request;
       request.modelName = exoticModels[i];
       request.templatePath = exoticTemplates[i];
-      gens.push_back(wildebeestVtr::makeExoticRuleGen(request));
+      gens.push_back(mosaic::makeExoticRuleGen(request));
     }
 
     // emit enabled generators in registry order, collecting the comb-kind
     // ones as stub providers for the hardblock lib. when stubbing all
     // exotics, per-model -exotic gens still emit techmaps but their stubs
     // are skipped so the lib does not get duplicate modules.
-    std::vector<const wildebeestVtr::ArchRuleGen *> stubProviders;
+    std::vector<const mosaic::ArchRuleGen *> stubProviders;
     for (const auto &gen : gens) {
       const bool isExotic = !builtinBlocks.count(gen->blockName());
       if (!isExotic && !enabled.count(gen->blockName()))
@@ -215,9 +213,9 @@ struct VtrArchRulesPass : public Pass {
       stubProviders.push_back(gen.get());
     }
 
-    std::unique_ptr<wildebeestVtr::ArchRuleGen> stubAllGen;
+    std::unique_ptr<mosaic::ArchRuleGen> stubAllGen;
     if (stubAllHardblocks) {
-      stubAllGen = wildebeestVtr::makeStubAllExoticsGen();
+      stubAllGen = mosaic::makeStubAllExoticsGen();
       stubAllGen->emit(info, policy, outDir);
       stubProviders.push_back(stubAllGen.get());
       size_t exoticCount = 0;
@@ -231,7 +229,7 @@ struct VtrArchRulesPass : public Pass {
     }
 
     if (enabled.count("hardblock-lib"))
-      wildebeestVtr::makeHardblockLibGen(stubProviders)
+      mosaic::makeHardblockLibGen(stubProviders)
           ->emit(info, policy, outDir);
   }
 } VtrArchRulesPass;

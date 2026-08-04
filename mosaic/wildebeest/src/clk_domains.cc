@@ -65,7 +65,7 @@ struct MaxLvlPass : public ScriptPass {
 
       std::string parse_error;
       std::vector<std::string> clocked_models =
-          wildebeestVtr::readClockedModelNames(xml_file, &parse_error);
+          mosaic::readClockedModelNames(xml_file, &parse_error);
 
       if (!parse_error.empty()) {
         log_error("max_level -vtr_arch: %s\n", parse_error.c_str());

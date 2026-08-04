@@ -119,13 +119,13 @@ def checkMemInitMismatch(rtlPath: Path, synthBlif: Path, synthVerilog: Optional[
         print(f"  - {item}")
     if synthUsesHardRam(synthBlif, synthVerilog):
         print(
-            "mem-init check: FAIL — synth uses hard single_port_ram/dual_port_ram "
+            "mem-init check: FAIL, synth uses hard single_port_ram/dual_port_ram "
             "blackboxes with no INIT ports; rtl init cannot be preserved",
             file=sys.stderr,
         )
         return 1
     print(
-        "mem-init check: WARN — rtl has init but no hard ram cells found in synth; "
+        "mem-init check: WARN, rtl has init but no hard ram cells found in synth; "
         "soft-mapped init may or may not have survived (manual review)",
         file=sys.stderr,
     )
@@ -287,7 +287,7 @@ def buildWorkDir(
     tbPath = workDir / "tb.sv"
     tbPath.write_text(tbText, encoding="utf-8")
 
-    # use sim_hardblocks only — do not also link vtr_flow/primitives.v
+    # use sim_hardblocks only, do not also link vtr_flow/primitives.v
     # (duplicate adder/dff module definitions).
     sources = [str(tbPath), str(rtlDut), str(synthDut), str(abcDut), str(modelsV)]
     return tbPath, sources, synthDut

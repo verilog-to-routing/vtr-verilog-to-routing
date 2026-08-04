@@ -90,7 +90,7 @@ geomeanColumns = (
 
 
 def parseStatusLine(text: str) -> Dict[str, str]:
-    # "label: status key=val ..." — status may be "FAIL (reason with spaces)"
+    # "label: status key=val ...", status may be "FAIL (reason with spaces)"
     row: Dict[str, str] = {}
     line = text.strip()
     if not line:
@@ -400,7 +400,7 @@ def findOutputDirs() -> List[Path]:
 
 def watchDir(targetDir: Path, interval: float, once: bool) -> None:
     logsDir = targetDir / "logs"
-    print(f"watching {targetDir} (interval={interval}s) — Ctrl-C to stop")
+    print(f"watching {targetDir} (interval={interval}s), Ctrl-C to stop")
     try:
         while True:
             labels = readLabels(targetDir)

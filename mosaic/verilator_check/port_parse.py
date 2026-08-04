@@ -49,7 +49,7 @@ def _parseWidth(tokenBlock: str) -> int:
 
 def _stripVerilogComments(text: str) -> str:
     """remove // and /* */ comments without treating //*** headers as /*."""
-    # line comments first — vtr headers like //***** contain the substring /*
+    # line comments first, vtr headers like //***** contain the substring /*
     text = re.sub(r"//.*?$", "", text, flags=re.M)
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
     return text
@@ -193,7 +193,7 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
     if not modelName:
         raise ValueError(f"no .model found in {blifPath}")
 
-    # blif bus bits like a[0] → collapse to bus a with width
+    # blif bus bits like a[0] --> collapse to bus a with width
     def collapse(names: list[str], direction: str) -> List[PortDecl]:
         buses: dict[str, list[int]] = {}
         scalars: list[str] = []
@@ -211,7 +211,7 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
             ports.append(PortDecl(n, direction, 1))
         return ports
 
-    # prefer keeping bit-blasted names as individual 1-bit ports — matches
+    # prefer keeping bit-blasted names as individual 1-bit ports, matches
     # yosys write_verilog from blif which usually keeps a[0] style as separate
     # nets OR as buses. for tb driving we use the rtl port list as source of
     # truth; blif parse is only a fallback.
