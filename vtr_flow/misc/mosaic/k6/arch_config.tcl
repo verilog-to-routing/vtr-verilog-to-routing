@@ -1,8 +1,7 @@
-# arch_config.tcl for k6_frac_N10_frac_chain_mem32K_40nm
-# sourced by the generic template after archSupportDir is set
+# policy knobs for k6_frac_N10_frac_chain_mem32K_40nm
+# sourced by the generic template after archSupportDir is set.
+# dsp widths and ram abits come from arch_facts.tcl (generated from the xml).
 
-set dspMaxWidth    18
-set dspMinWidth    2
 set bramRomCost    0.5
 # aggressive enough that borderline memories go hard rather than soft
 set bramSpCost     30

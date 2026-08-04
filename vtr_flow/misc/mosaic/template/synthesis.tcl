@@ -32,7 +32,7 @@ set archXmlPath    "VVV"
 set archRulesDir   "."
 set templateDir    "TDIR"
 
-set dspMaxWidth    18
+set dspMaxWidth    0
 set dspMinWidth    2
 # half cost so zero/undef roms prefer hard bram over soft luts.
 # non-zero init is refused by bram_memory_map (init zero) and soft-maps.
@@ -55,8 +55,11 @@ set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
 # and writes hardblock_keep_types.txt so rtl-instantiated cells survive synth
 set stubAllHardblocks 0
 
-set archConfigFile "$archSupportDir/arch_config.tcl"
-if { [file exists $archConfigFile] } {
+set archConfigFile ""
+if { $archSupportDir ne "" } {
+    set archConfigFile "$archSupportDir/arch_config.tcl"
+}
+if { $archConfigFile ne "" && [file exists $archConfigFile] } {
     source $archConfigFile
 }
 
@@ -79,12 +82,16 @@ set multMapFile      "$archRulesDir/mult_map.v"
 set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
 set addSubMapFile    "$archRulesDir/add_sub_map.v"
 
-# arch-derived knobs (ram addr width). default 15 matches the k6 arch; the
-# generated vtr_ram_knobs.tcl overrides per-arch (koios has 11).
-set vtrRamAbits 15
-set vtrRamKnobsFile "$archRulesDir/vtr_ram_knobs.tcl"
-if { [file exists $vtrRamKnobsFile] } {
-    source $vtrRamKnobsFile
+# arch-derived facts from the xml (dsp widths, ram abits, hardblock presence).
+# defaults below are overwritten when arch_facts.tcl exists.
+set archName         ""
+set vtrRamAbits      0
+set multiplyPresent  0
+set adderPresent     0
+set multiplyModes    ""
+set archFactsFile "$archRulesDir/arch_facts.tcl"
+if { [file exists $archFactsFile] } {
+    source $archFactsFile
 }
 
 # exotic keep types from stub-all (opt-in via arch_config); append so the
