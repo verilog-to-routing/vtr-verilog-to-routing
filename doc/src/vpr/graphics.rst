@@ -84,13 +84,13 @@ The FPGA floorplan during global placement does not preserve inter-block spacing
 
 .. figure:: ../Images/analytical_place.png
     :align: center 
-    :width: 50%
+    :width: 75%
 
     FPGA floorplan (block grid) during analytical placement
 
 .. figure:: ../Images/detailed_place.png
     :align: center 
-    :width: 50%
+    :width: 75%
 
     FPGA floorplan (block grid) during detailed placement  
 
@@ -147,7 +147,7 @@ Each stage between primitive pins is shown in a different colour.
 
 .. figure:: ../Images/crit_paths.png
     :align: center 
-    :width: 100%
+    :width: 75%
 
     Critical Path with all options enabled.
 
