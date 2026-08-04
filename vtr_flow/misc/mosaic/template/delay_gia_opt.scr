@@ -1,4 +1,4 @@
-# k6_delay_gia_opt.scr
+# delay_gia_opt.scr
 # wildebeest LUT6/BEST/delay_lut6.scr gia delay opts, end as gates/aig.
 # invoke (pass1): abc -script <this file>
 # then (pass2):   abc -luts <cost>
@@ -9,7 +9,7 @@ echo " "
 echo "** Starting ABC DELAY LUT6 optimization and mapping (Zero Asic Corp.)"
 echo ""
 
-write_blif k6_delay_scratch.blif
+write_blif delay_scratch.blif
 
 &get -n -m
 
@@ -20,7 +20,7 @@ echo "&st; &if -sz -C 3 -K 11 -S 66 "
 &st; &if -sz -C 3 -K 11 -S 66 ; &save; &ps; time
 &put
 
-read_blif k6_delay_scratch.blif
+read_blif delay_scratch.blif
 
 &get -n -m
 
@@ -28,7 +28,7 @@ echo ""
 echo "&st; &if -K 6 ;"
 &st; &if -K 6 ; &ps; time
 
-read_blif k6_delay_scratch.blif
+read_blif delay_scratch.blif
 
 &get -n -m
 
@@ -37,7 +37,7 @@ echo "&st; &lf -K 6 -e;"
 &st; &lf -K 6 -e; &save; &ps; time
 &put
 
-read_blif k6_delay_scratch.blif
+read_blif delay_scratch.blif
 
 &get -n -m;
 
@@ -147,5 +147,5 @@ echo "&load; &ps"
 # do not -dress: dress does not fix PI/PO and can abort write_blif.
 # do not strash here: strash errors on mapped networks ("only for logic networks").
 &put
-move_names k6_delay_scratch.blif
+move_names delay_scratch.blif
 

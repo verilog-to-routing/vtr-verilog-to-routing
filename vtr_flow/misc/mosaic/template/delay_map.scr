@@ -1,4 +1,4 @@
-# k6_delay.scr - pass2 fracturable lut map (after gia opt) or standalone
+# delay_map.scr - pass2 fracturable lut map (after gia opt) or standalone
 # invoke: abc -luts <cost> -script <this file>
 # LF-only ASCII. classic only.
 
