@@ -70,7 +70,7 @@ class PlacerSetupSlacks {
      */
     void update_setup_slacks();
 
-    ///@bried Enable the recompute_required flag to enforce from scratch update.
+    ///@brief Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required() { recompute_required = true; }
 
     ///@brief Override the setup slack of a particular connection.
