@@ -1,4 +1,7 @@
 // vtr_ram_bit_lib.v
+// legacy static copy: synthesis.tcl uses the generated
+// $archRulesDir/vtr_ram_bit_lib.v (from templates/vtr_ram_bit_lib.v.tmpl).
+//
 // 1-bit -lib stubs used after chtype from vtr_*_ram_bit.
 // the arch model ports are unsized so vpr width is 1. scalar data and out
 // (not data[0]) keep the blif matching what vanilla emits.
