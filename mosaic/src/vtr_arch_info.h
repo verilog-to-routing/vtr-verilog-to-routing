@@ -5,14 +5,24 @@
 #include <string>
 #include <vector>
 
-// generalized reader for the slices of a vtr architecture xml that mosaic
-// needs at synthesis time.
-
+// reader for the slices of a vtr architecture xml that mosaic needs at
+// synthesis time.
+//
+// contract (what readArchInfo guarantees):
+//   - bramModes: at least one single_port_ram and one dual_port_ram mode are
+//     required for synthesis; callers that emit bram maps should fail if either
+//     is missing after parsing.
+//   - multiply / adder: optional. when absent, multiplyModes is empty and
+//     multiply.present / adder.present are false.
+//   - hardblockModels: every pb_type with blif_model ".subckt <name>" is
+//     recorded with max port widths and sorted multiply-style modes from the
+//     'a' input when present.
+//   - clockedModels: model names that declare an is_clock input port.
+//   - lutK / lutK1: fracturable lut geometry when detected (0 otherwise).
+//
 // the xml is parsed with pugixml from vtr's vendored copy
 // (libs/EXTERNAL/libpugixml), so there is no libarchfpga/libvtrutil link and
-// the plugin keeps building against yosys alone. it walks the pb_type
-// hierarchy for bram modes, lut fracturability, and hardblock port widths,
-// the data that must come from the live arch rather than hardcoded statics.
+// the plugin keeps building against yosys alone.
 namespace mosaic {
 
 // one concrete bram mode from a pb_type with blif_model
@@ -38,11 +48,13 @@ struct ModelGeometry {
   std::vector<int> modes;
 };
 
-// port width of a hardblock model, read from the pb_type that binds the
-// blif model. adder in k6-style archs is a 1-bit carry element.
+// hardblock model presence and geometry derived from hardblockModels.
+// adder.carryChain is true when cin/cout/sumout ports are all present
+// (classic vtr carry-chain element).
 struct HardblockInfo {
   bool present = false;
   int aWidth = 0;
+  bool carryChain = false;
 };
 
 struct VtrArchInfo {
