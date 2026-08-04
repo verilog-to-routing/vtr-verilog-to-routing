@@ -31,12 +31,20 @@ struct ArchRulePolicy {
   // $add/$sub at or below this width stay soft so abc can optimize
   // across them (hard adders are black boxes).
   int hardAdderThreshold = 3;
+  ClassicModelNames classic;
 };
 
 // one -exotic <model> -exotic-template <file> request.
 struct ExoticRequest {
   std::string modelName;
   std::string templatePath;
+};
+
+// one -exotic-role <model> <role> request (stock template under
+// tpldir/roles/<role>_map.v.tmpl).
+struct ExoticRoleRequest {
+  std::string modelName;
+  std::string roleName;
 };
 
 class ArchRuleGen {
@@ -71,6 +79,12 @@ std::vector<std::unique_ptr<ArchRuleGen>> makeBuiltinRuleGens();
 // name. when the model is absent from the arch the generator emits an
 // always-_TECHMAP_FAIL_ map and contributes no stub.
 std::unique_ptr<ArchRuleGen> makeExoticRuleGen(const ExoticRequest &request);
+
+// role-based exotic techmap (-exotic-role); uses tpldir/roles/<role>_map.v.tmpl.
+// sets *emittedMapPath to the written map path (empty when integer_mul is
+// skipped because classic multiply is present).
+std::unique_ptr<ArchRuleGen>
+makeRoleRuleGen(const ExoticRoleRequest &request, std::string *emittedMapPath);
 
 // stub-only generator for every hardblock model that is not a builtin
 // (multiply/adder/rams). emit() writes hardblock_keep_types.txt; the

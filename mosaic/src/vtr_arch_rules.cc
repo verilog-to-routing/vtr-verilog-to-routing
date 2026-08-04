@@ -4,6 +4,7 @@
 #include "kernel/yosys.h"
 
 #include <cstdlib>
+#include <fstream>
 #include <set>
 #include <sstream>
 #include <string>
@@ -54,6 +55,31 @@ std::string joinInts(const std::vector<int> &vals, const char *sep) {
   return out.str();
 }
 
+void applyClassicAlias(mosaic::ClassicModelNames &classic,
+                       const std::string &arg) {
+  const size_t eq = arg.find('=');
+  if (eq == std::string::npos)
+    log_cmd_error("vtr_arch_rules: -alias requires <role>=<model>, got '%s'\n",
+                  arg.c_str());
+  const std::string role = arg.substr(0, eq);
+  const std::string model = arg.substr(eq + 1);
+  if (model.empty())
+    log_cmd_error("vtr_arch_rules: -alias requires <role>=<model>, got '%s'\n",
+                  arg.c_str());
+  if (role == "multiply")
+    classic.multiply = model;
+  else if (role == "adder")
+    classic.adder = model;
+  else if (role == "single_port_ram")
+    classic.singlePortRam = model;
+  else if (role == "dual_port_ram")
+    classic.dualPortRam = model;
+  else
+    log_cmd_error("vtr_arch_rules: unknown -alias role '%s' (valid: multiply, "
+                  "adder, single_port_ram, dual_port_ram)\n",
+                  role.c_str());
+}
+
 struct VtrArchRulesPass : public Pass {
   VtrArchRulesPass()
       : Pass("vtr_arch_rules", "generate arch mapping rules from a vtr arch xml") {}
@@ -64,7 +90,9 @@ struct VtrArchRulesPass : public Pass {
     log("                    [-sp-cost N] [-dp-cost N] [-blocks a,b,...]\n");
     log("                    [-hard-adder-threshold N]\n");
     log("                    [-stub-all-hardblocks]\n");
+    log("                    [-alias <role>=<model>]...\n");
     log("                    [-exotic <model> -exotic-template <file>]...\n");
+    log("                    [-exotic-role <model> <role>]...\n");
     log("\n");
     log("generate mosaic arch-specific mapping rules from a vtr architecture\n");
     log("xml. emits bram_memory_map.txt, tech_bram.v, vtr_hardblock_lib.v and\n");
@@ -77,8 +105,15 @@ struct VtrArchRulesPass : public Pass {
     log("techmap template; it may be repeated and pairs by order.\n");
     log("\n");
     log("-stub-all-hardblocks emits generic blackbox stubs for every hardblock\n");
-    log("model except multiply/adder/rams, and writes hardblock_keep_types.txt\n");
-    log("so synthesis.tcl can setattr keep on rtl-instantiated exotic cells.\n");
+    log("model except multiply/adder/rams, writes hardblock_keep_types.txt,\n");
+    log("and emits exotic_identity_maps.v for identity passthrough.\n");
+    log("\n");
+    log("-alias maps classic roles (multiply, adder, single_port_ram,\n");
+    log("dual_port_ram) to arch model names when they differ from the defaults.\n");
+    log("\n");
+    log("-exotic-role binds a stock role template from tpldir/roles/<role>_map.v.tmpl\n");
+    log("to an exotic model for inferred yosys ops. integer_mul is\n");
+    log("skipped when classic multiply is present.\n");
     log("\n");
     log("mode geometry is arch-derived; the libmap costs are flow policy\n");
     log("(-sp-cost / -dp-cost, default 128), as is the hard adder width\n");
@@ -95,8 +130,11 @@ struct VtrArchRulesPass : public Pass {
     int dpCost = 128;
     int hardAdderThreshold = 3;
     bool stubAllHardblocks = false;
+    mosaic::ClassicModelNames classic;
     std::vector<std::string> exoticModels;
     std::vector<std::string> exoticTemplates;
+    std::vector<std::string> exoticRoleModels;
+    std::vector<std::string> exoticRoleNames;
 
     size_t argidx;
     for (argidx = 1; argidx < args.size(); argidx++) {
@@ -132,12 +170,21 @@ struct VtrArchRulesPass : public Pass {
         stubAllHardblocks = true;
         continue;
       }
+      if (args[argidx] == "-alias" && argidx + 1 < args.size()) {
+        applyClassicAlias(classic, args[++argidx]);
+        continue;
+      }
       if (args[argidx] == "-exotic" && argidx + 1 < args.size()) {
         exoticModels.push_back(args[++argidx]);
         continue;
       }
       if (args[argidx] == "-exotic-template" && argidx + 1 < args.size()) {
         exoticTemplates.push_back(args[++argidx]);
+        continue;
+      }
+      if (args[argidx] == "-exotic-role" && argidx + 2 < args.size()) {
+        exoticRoleModels.push_back(args[++argidx]);
+        exoticRoleNames.push_back(args[++argidx]);
         continue;
       }
       break;
@@ -148,6 +195,10 @@ struct VtrArchRulesPass : public Pass {
       log_cmd_error("vtr_arch_rules: each -exotic needs a paired "
                     "-exotic-template (%zu vs %zu)\n",
                     exoticModels.size(), exoticTemplates.size());
+    if (exoticRoleModels.size() != exoticRoleNames.size())
+      log_cmd_error("vtr_arch_rules: each -exotic-role needs <model> <role> "
+                    "(%zu vs %zu)\n",
+                    exoticRoleModels.size(), exoticRoleNames.size());
 
     // enabled blocks: default all built-ins; exotics always run (they were
     // explicitly requested).
@@ -169,7 +220,7 @@ struct VtrArchRulesPass : public Pass {
 
     mosaic::VtrArchInfo info;
     std::string error;
-    if (!mosaic::readArchInfo(xmlPath, info, &error))
+    if (!mosaic::readArchInfo(xmlPath, info, classic, &error))
       log_cmd_error("vtr_arch_rules: %s\n", error.c_str());
 
     const std::string archName = archNameFromPath(xmlPath);
@@ -195,6 +246,7 @@ struct VtrArchRulesPass : public Pass {
     policy.spCost = spCost;
     policy.dpCost = dpCost;
     policy.hardAdderThreshold = hardAdderThreshold;
+    policy.classic = classic;
 
     mosaic::emitArchFacts(info, policy, outDir);
 
@@ -204,6 +256,15 @@ struct VtrArchRulesPass : public Pass {
       request.modelName = exoticModels[i];
       request.templatePath = exoticTemplates[i];
       gens.push_back(mosaic::makeExoticRuleGen(request));
+    }
+
+    std::vector<std::string> roleMapEmittedPaths(exoticRoleModels.size());
+    for (size_t i = 0; i < exoticRoleModels.size(); ++i) {
+      mosaic::ExoticRoleRequest request;
+      request.modelName = exoticRoleModels[i];
+      request.roleName = exoticRoleNames[i];
+      gens.push_back(
+          mosaic::makeRoleRuleGen(request, &roleMapEmittedPaths[i]));
     }
 
     // emit enabled generators in registry order, collecting the combinational-kind
@@ -223,6 +284,26 @@ struct VtrArchRulesPass : public Pass {
       stubProviders.push_back(gen.get());
     }
 
+    {
+      std::ostringstream roleList;
+      bool firstRole = true;
+      for (const std::string &path : roleMapEmittedPaths) {
+        if (path.empty())
+          continue;
+        if (!firstRole)
+          roleList << "\n";
+        firstRole = false;
+        roleList << path;
+      }
+      if (!firstRole) {
+        std::ofstream out(outDir + "/role_map_files.txt", std::ios::binary);
+        if (!out.is_open())
+          log_cmd_error("vtr_arch_rules: cannot write %s/role_map_files.txt\n",
+                        outDir.c_str());
+        out << roleList.str();
+      }
+    }
+
     std::unique_ptr<mosaic::ArchRuleGen> stubAllGen;
     if (stubAllHardblocks) {
       stubAllGen = mosaic::makeStubAllExoticsGen();
@@ -230,9 +311,12 @@ struct VtrArchRulesPass : public Pass {
       stubProviders.push_back(stubAllGen.get());
       size_t exoticCount = 0;
       for (const auto &kv : info.hardblockModels) {
-        if (kv.first != "multiply" && kv.first != "adder" &&
-            kv.first != "single_port_ram" && kv.first != "dual_port_ram")
-          exoticCount++;
+        if (kv.first == policy.classic.multiply ||
+            kv.first == policy.classic.adder ||
+            kv.first == policy.classic.singlePortRam ||
+            kv.first == policy.classic.dualPortRam)
+          continue;
+        exoticCount++;
       }
       log("vtr_arch_rules: stub-all-hardblocks enabled (%zu exotic models)\n",
           exoticCount);

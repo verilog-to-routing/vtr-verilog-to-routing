@@ -178,9 +178,10 @@ std::string finishStub(std::string stub) {
 }
 
 // builtins already get stubs (or whiteboxes) from other generators.
-bool isBuiltinHardblock(const std::string &name) {
-  return name == "multiply" || name == "adder" || name == "single_port_ram" ||
-         name == "dual_port_ram";
+bool isBuiltinHardblock(const std::string &name,
+                        const ClassicModelNames &classic) {
+  return name == classic.multiply || name == classic.adder ||
+         name == classic.singlePortRam || name == classic.dualPortRam;
 }
 
 int maxBramDataWidth(const VtrArchInfo &info) {
@@ -190,21 +191,25 @@ int maxBramDataWidth(const VtrArchInfo &info) {
   return maxWidth;
 }
 
-bool hasExoticHardblocks(const VtrArchInfo &info) {
+bool hasExoticHardblocks(const VtrArchInfo &info,
+                         const ClassicModelNames &classic) {
   for (const auto &kv : info.hardblockModels)
-    if (!isBuiltinHardblock(kv.first))
+    if (!isBuiltinHardblock(kv.first, classic))
       return true;
   return false;
 }
 
-void warnExoticOnlyMultiply(const VtrArchInfo &info) {
-  if (info.multiply.present || !hasExoticHardblocks(info))
+void warnExoticOnlyMultiply(const VtrArchInfo &info,
+                            const ClassicModelNames &classic) {
+  if (info.multiply.present || !hasExoticHardblocks(info, classic))
     return;
   log_warning(
       "vtr_arch_rules: arch has exotic hardblock models but no classic "
-      "'multiply' model; inferred $mul will not map to exotics. set "
-      "primitiveProfile passthrough_exotics (stubAllHardblocks) for "
-      "rtl-instantiated exotic cells or add a -exotic techmap.\n");
+      "'%s' model; inferred $mul will not map to exotics. use "
+      "stubAllHardblocks for rtl-instantiated exotic cells (identity "
+      "passthrough), -exotic-role for role inference, or -exotic "
+      "for a per-model techmap.\n",
+      classic.multiply.c_str());
 }
 
 // ---------------------------------------------------------------------------
@@ -219,8 +224,20 @@ public:
             const std::string &outDir) const override {
     std::vector<BramModeInfo> spModes = splitModes(info, true);
     std::vector<BramModeInfo> dpModes = splitModes(info, false);
-    if (spModes.empty() || dpModes.empty())
-      log_cmd_error("vtr_arch_rules: arch has no sp/dp bram modes\n");
+    if (spModes.empty() || dpModes.empty()) {
+      std::ostringstream msg;
+      msg << "vtr_arch_rules: arch is missing required bram modes";
+      if (spModes.empty())
+        msg << " (no single_port_ram modes for model '"
+            << policy.classic.singlePortRam << "')";
+      if (dpModes.empty())
+        msg << " (no dual_port_ram modes for model '"
+            << policy.classic.dualPortRam << "')";
+      msg << ". if the arch uses different ram model names, pass "
+             "-alias single_port_ram=<model> and/or -alias dual_port_ram=<model> "
+             "from arch_config.tcl; otherwise check the arch xml pb_types.\n";
+      log_cmd_error("%s", msg.str().c_str());
+    }
 
     int maxAbits = 0;
     for (const auto &m : info.bramModes)
@@ -241,6 +258,8 @@ public:
         {"DP_COST", std::to_string(policy.dpCost)},
         {"SP_MAX_WIDTH", std::to_string(spDesc.front().dataBitsA)},
         {"DP_MAX_WIDTH", std::to_string(dpDesc.front().dataBitsA)},
+        {"SP_RAM_MODEL", policy.classic.singlePortRam},
+        {"DP_RAM_MODEL", policy.classic.dualPortRam},
     };
     const std::map<std::string, std::string> bramSnippets = {};
     const std::map<std::string, std::string> techSnippets = {
@@ -254,6 +273,12 @@ public:
     writeFile(outDir + "/tech_bram.v",
               substituteTemplate(loadTemplate(policy, "tech_bram.v.tmpl"),
                                  scalars, techSnippets));
+    writeFile(outDir + "/vtr_ram_whitebox.v",
+              substituteTemplate(loadTemplate(policy, "vtr_ram_whitebox.v.tmpl"),
+                                 scalars, {}));
+    writeFile(outDir + "/vtr_ram_bit_lib.v",
+              substituteTemplate(loadTemplate(policy, "vtr_ram_bit_lib.v.tmpl"),
+                                 scalars, {}));
   }
 };
 
@@ -296,9 +321,18 @@ public:
       writeFile(outDir + "/add_sub_map.v", alwaysFailAddSubMap(policy.archName));
       return;
     }
+    if (!info.adder.carryChain) {
+      log_warning(
+          "vtr_arch_rules: adder model '%s' is present but lacks carry-chain "
+          "ports (cin/cout/sumout); emitting always-fail add_sub_map.v\n",
+          policy.classic.adder.c_str());
+      writeFile(outDir + "/add_sub_map.v", alwaysFailAddSubMap(policy.archName));
+      return;
+    }
     const std::map<std::string, std::string> scalars = {
         {"ARCH_NAME", policy.archName},
         {"HARD_ADDER_THRESHOLD", std::to_string(policy.hardAdderThreshold)},
+        {"ADDER_MODEL", policy.classic.adder},
     };
     writeFile(outDir + "/add_sub_map.v",
               substituteTemplate(loadTemplate(policy, "add_sub_map.v.tmpl"),
@@ -311,6 +345,7 @@ public:
       return {};
     const std::map<std::string, std::string> scalars = {
         {"ADDER_WIDTH", std::to_string(std::max(1, info.adder.aWidth))},
+        {"ADDER_MODEL", policy.classic.adder},
     };
     return finishStub(substituteTemplate(
         loadTemplate(policy, "adder_stub.v.tmpl"), scalars, {}));
@@ -369,7 +404,7 @@ public:
   void emit(const VtrArchInfo &info, const ArchRulePolicy &policy,
             const std::string &outDir) const override {
     if (!info.multiply.present || info.multiplyModes.empty()) {
-      warnExoticOnlyMultiply(info);
+      warnExoticOnlyMultiply(info, policy.classic);
       log_warning("vtr_arch_rules: no multiply model in arch; emitting "
                   "always-fail mult_map.v and mul2dsp_map.v\n");
       writeFile(outDir + "/mult_map.v", alwaysFailMultMap(policy.archName));
@@ -381,6 +416,7 @@ public:
     const std::map<std::string, std::string> scalars = {
         {"ARCH_NAME", policy.archName},
         {"MULT_MAX_WIDTH", std::to_string(maxW)},
+        {"MULT_MODEL", policy.classic.multiply},
     };
     const std::map<std::string, std::string> snippets = {
         {"MULT_TERNARY", multTernary(info.multiplyModes)},
@@ -404,6 +440,7 @@ public:
     const std::map<std::string, std::string> scalars = {
         {"MULT_MAX_WIDTH", std::to_string(maxW)},
         {"MULT_PRODUCT_WIDTH", std::to_string(2 * maxW)},
+        {"MULT_MODEL", policy.classic.multiply},
     };
     return finishStub(substituteTemplate(
         loadTemplate(policy, "multiply_stub.v.tmpl"), scalars, {}));
@@ -451,6 +488,59 @@ std::string genericStub(const std::string &model, const ModelGeometry &geo) {
   return finishStub(out.str());
 }
 
+// identity techmap: yosys cell with the exotic model name maps to the
+// same hardblock with 1:1 port connections.
+std::string identityTechmapModule(const std::string &model,
+                                  const ModelGeometry &geo) {
+  std::ostringstream decl;
+  std::ostringstream conn;
+  bool firstDecl = true;
+  bool firstConn = true;
+  auto port = [&](const char *dir, const std::string &name, int width) {
+    if (!firstDecl)
+      decl << ",\n";
+    firstDecl = false;
+    decl << "    " << dir << " ";
+    if (width > 1)
+      decl << "[" << (width - 1) << ":0] ";
+    decl << name;
+
+    if (!firstConn)
+      conn << ",\n";
+    firstConn = false;
+    conn << "        ." << name << "(" << name << ")";
+  };
+  for (const auto &kv : geo.inputWidths)
+    port("input", kv.first, kv.second);
+  for (const auto &kv : geo.outputWidths)
+    port("output", kv.first, kv.second);
+
+  std::ostringstream out;
+  out << "// identity techmap for " << model << "\n";
+  out << "module " << model << " (\n";
+  out << decl.str() << "\n";
+  out << ");\n\n";
+  out << "    " << model << " _TECHMAP_REPLACE_ (\n";
+  out << conn.str() << "\n";
+  out << "    );\n";
+  out << "endmodule\n\n";
+  return out.str();
+}
+
+bool hasAbOutPorts(const ModelGeometry &geo) {
+  return geo.inputWidths.count("a") && geo.inputWidths.count("b") &&
+         geo.outputWidths.count("out");
+}
+
+std::vector<int> exoticMulModes(const ModelGeometry &geo) {
+  if (!geo.modes.empty())
+    return geo.modes;
+  auto a = geo.inputWidths.find("a");
+  if (a != geo.inputWidths.end() && a->second > 0)
+    return {a->second};
+  return {};
+}
+
 std::string alwaysFailExoticMap(const std::string &archName,
                                 const std::string &model) {
   std::ostringstream out;
@@ -474,27 +564,37 @@ class StubAllExoticsRuleGen : public ArchRuleGen {
 public:
   StubAllExoticsRuleGen() : ArchRuleGen("stub-all-exotics") {}
 
-  void emit(const VtrArchInfo &info, const ArchRulePolicy &,
+  void emit(const VtrArchInfo &info, const ArchRulePolicy &policy,
             const std::string &outDir) const override {
     std::ostringstream keep;
+    std::ostringstream identityMaps;
     bool first = true;
     for (const auto &kv : info.hardblockModels) {
-      if (isBuiltinHardblock(kv.first))
+      if (isBuiltinHardblock(kv.first, policy.classic))
         continue;
       if (!first)
         keep << " ";
       first = false;
       keep << "t:" << kv.first;
+      identityMaps << identityTechmapModule(kv.first, kv.second);
     }
     keep << "\n";
     writeFile(outDir + "/hardblock_keep_types.txt", keep.str());
+    if (!identityMaps.str().empty()) {
+      std::ostringstream header;
+      header << "// exotic_identity_maps.v -- generated by vtr_arch_rules from "
+             << policy.archName << "\n";
+      header << "// identity passthrough for scanned exotic hardblocks\n\n";
+      writeFile(outDir + "/exotic_identity_maps.v",
+                header.str() + identityMaps.str());
+    }
   }
 
   std::string hardblockStub(const VtrArchInfo &info,
-                            const ArchRulePolicy &) const override {
+                            const ArchRulePolicy &policy) const override {
     std::ostringstream stubs;
     for (const auto &kv : info.hardblockModels) {
-      if (isBuiltinHardblock(kv.first))
+      if (isBuiltinHardblock(kv.first, policy.classic))
         continue;
       stubs << genericStub(kv.first, kv.second);
     }
@@ -568,6 +668,109 @@ private:
 };
 
 // ---------------------------------------------------------------------------
+// RoleRuleGen (combinational kind): stock role templates under tpldir/roles/
+// ---------------------------------------------------------------------------
+
+class RoleRuleGen : public ArchRuleGen {
+public:
+  RoleRuleGen(ExoticRoleRequest request, std::string *emittedMapPath)
+      : ArchRuleGen("role:" + request.modelName + ":" + request.roleName),
+        request_(std::move(request)), emittedMapPath_(emittedMapPath) {}
+
+  void emit(const VtrArchInfo &info, const ArchRulePolicy &policy,
+            const std::string &outDir) const override {
+    if (emittedMapPath_)
+      emittedMapPath_->clear();
+
+    if (request_.roleName == "integer_mul" && info.multiply.present &&
+        !info.multiplyModes.empty()) {
+      log("vtr_arch_rules: skipping integer_mul role for '%s' because classic "
+          "multiply model '%s' is present\n",
+          request_.modelName.c_str(), policy.classic.multiply.c_str());
+      return;
+    }
+
+    auto it = info.hardblockModels.find(request_.modelName);
+    if (it == info.hardblockModels.end()) {
+      log_warning("vtr_arch_rules: exotic role model '%s' not in arch; "
+                  "emitting always-fail map\n",
+                  request_.modelName.c_str());
+      const std::string outPath = outDir + "/" + request_.modelName + "_map.v";
+      writeFile(outPath,
+                alwaysFailExoticMap(policy.archName, request_.modelName));
+      if (emittedMapPath_)
+        *emittedMapPath_ = outPath;
+      return;
+    }
+    const ModelGeometry &geo = it->second;
+
+    if ((request_.roleName == "integer_mul" ||
+         request_.roleName == "integer_mac") &&
+        !hasAbOutPorts(geo)) {
+      log_warning(
+          "vtr_arch_rules: model '%s' lacks a/b/out ports required for role "
+          "'%s'; emitting always-fail map\n",
+          request_.modelName.c_str(), request_.roleName.c_str());
+      const std::string outPath = outDir + "/" + request_.modelName + "_map.v";
+      writeFile(outPath,
+                alwaysFailExoticMap(policy.archName, request_.modelName));
+      if (emittedMapPath_)
+        *emittedMapPath_ = outPath;
+      return;
+    }
+
+    if (policy.tplDir.empty())
+      log_cmd_error("vtr_arch_rules: -tpldir <dir> is required for role '%s'\n",
+                    request_.roleName.c_str());
+    const std::string templatePath =
+        policy.tplDir + "/roles/" + request_.roleName + "_map.v.tmpl";
+    std::string text = readTextFile(templatePath);
+
+    const std::vector<int> mulModes = exoticMulModes(geo);
+    const int maxW = mulModes.empty() ? 0 : mulModes.back();
+    std::map<std::string, std::string> scalars = {
+        {"ARCH_NAME", policy.archName},
+        {"MODEL_NAME", request_.modelName},
+        {"MAX_A_WIDTH", std::to_string(maxW)},
+        {"MULT_MAX_WIDTH", std::to_string(maxW)},
+        {"MODES", mulModes.empty() ? "-" : joinInts(mulModes, ",")},
+        {"HAS_ACC_PORT",
+         geo.inputWidths.count("acc") ? "1" : "0"},
+    };
+    for (const auto &kv : geo.inputWidths)
+      scalars["PORT_IN_" + tokenName(kv.first)] = std::to_string(kv.second);
+    for (const auto &kv : geo.outputWidths)
+      scalars["PORT_OUT_" + tokenName(kv.first)] = std::to_string(kv.second);
+
+    std::map<std::string, std::string> snippets;
+    if (!mulModes.empty()) {
+      snippets["MULT_TERNARY"] = multTernary(mulModes);
+      snippets["MULT_NEED_TERNARY"] = multTernarySingle("needW", mulModes);
+    } else {
+      snippets["MULT_TERNARY"] = "0";
+      snippets["MULT_NEED_TERNARY"] = "0";
+    }
+
+    const std::string outPath = outDir + "/" + request_.modelName + "_map.v";
+    writeFile(outPath, substituteTemplate(text, scalars, snippets));
+    if (emittedMapPath_)
+      *emittedMapPath_ = outPath;
+  }
+
+  std::string hardblockStub(const VtrArchInfo &info,
+                            const ArchRulePolicy &) const override {
+    auto it = info.hardblockModels.find(request_.modelName);
+    if (it == info.hardblockModels.end())
+      return {};
+    return genericStub(request_.modelName, it->second);
+  }
+
+private:
+  ExoticRoleRequest request_;
+  std::string *emittedMapPath_;
+};
+
+// ---------------------------------------------------------------------------
 // HardblockLibGen: aggregates combinational-kind stubs into vtr_hardblock_lib.v
 // ---------------------------------------------------------------------------
 
@@ -585,6 +788,8 @@ public:
     const std::map<std::string, std::string> scalars = {
         {"ARCH_NAME", policy.archName},
         {"RAM_STUB_DATA_WIDTH", std::to_string(maxBramDataWidth(info))},
+        {"SP_RAM_MODEL", policy.classic.singlePortRam},
+        {"DP_RAM_MODEL", policy.classic.dualPortRam},
     };
     const std::map<std::string, std::string> snippets = {
         {"HARDBLOCK_STUBS", stubs.str()},
@@ -628,7 +833,14 @@ void emitArchFacts(const VtrArchInfo &info, const ArchRulePolicy &policy,
   facts << "set dspMinWidth " << dspMinWidth << "\n";
   facts << "set multiplyPresent " << (multiplyPresent ? 1 : 0) << "\n";
   facts << "set adderPresent " << (info.adder.present ? 1 : 0) << "\n";
+  facts << "set adderCarryChain " << (info.adder.carryChain ? 1 : 0) << "\n";
+  facts << "set lutK " << info.lutK << "\n";
+  facts << "set lutK1 " << info.lutK1 << "\n";
   facts << "set multiplyModes \"" << modes.str() << "\"\n";
+  facts << "set spRamModel \"" << policy.classic.singlePortRam << "\"\n";
+  facts << "set dpRamModel \"" << policy.classic.dualPortRam << "\"\n";
+  facts << "set multiplyModel \"" << policy.classic.multiply << "\"\n";
+  facts << "set adderModel \"" << policy.classic.adder << "\"\n";
 
   const std::string path = outDir + "/arch_facts.tcl";
   std::ofstream out(path, std::ios::binary);
@@ -649,6 +861,12 @@ std::vector<std::unique_ptr<ArchRuleGen>> makeBuiltinRuleGens() {
 
 std::unique_ptr<ArchRuleGen> makeExoticRuleGen(const ExoticRequest &request) {
   return std::unique_ptr<ArchRuleGen>(new ExoticCombRuleGen(request));
+}
+
+std::unique_ptr<ArchRuleGen>
+makeRoleRuleGen(const ExoticRoleRequest &request, std::string *emittedMapPath) {
+  return std::unique_ptr<ArchRuleGen>(
+      new RoleRuleGen(request, emittedMapPath));
 }
 
 std::unique_ptr<ArchRuleGen> makeStubAllExoticsGen() {
