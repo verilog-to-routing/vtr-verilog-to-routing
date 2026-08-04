@@ -178,6 +178,36 @@ std::string finishStub(std::string stub) {
   return stub + '\n';
 }
 
+// builtins already get stubs (or whiteboxes) from other generators.
+bool isBuiltinHardblock(const std::string &name) {
+  return name == "multiply" || name == "adder" || name == "single_port_ram" ||
+         name == "dual_port_ram";
+}
+
+int maxBramDataWidth(const VtrArchInfo &info) {
+  int maxWidth = 1;
+  for (const auto &mode : info.bramModes)
+    maxWidth = std::max(maxWidth, std::max(mode.dataBitsA, mode.dataBitsB));
+  return maxWidth;
+}
+
+bool hasExoticHardblocks(const VtrArchInfo &info) {
+  for (const auto &kv : info.hardblockModels)
+    if (!isBuiltinHardblock(kv.first))
+      return true;
+  return false;
+}
+
+void warnExoticOnlyMultiply(const VtrArchInfo &info) {
+  if (info.multiply.present || !hasExoticHardblocks(info))
+    return;
+  log_warning(
+      "vtr_arch_rules: arch has exotic hardblock models but no classic "
+      "'multiply' model; inferred $mul will not map to exotics. set "
+      "primitiveProfile passthrough_exotics (stubAllHardblocks) for "
+      "rtl-instantiated exotic cells or add a -exotic techmap.\n");
+}
+
 // ---------------------------------------------------------------------------
 // BramRuleGen (memory kind): bram_memory_map.txt + tech_bram.v
 // ---------------------------------------------------------------------------
@@ -393,6 +423,7 @@ public:
   void emit(const VtrArchInfo &info, const ArchRulePolicy &policy,
             const std::string &outDir) const override {
     if (!info.multiply.present || info.multiplyModes.empty()) {
+      warnExoticOnlyMultiply(info);
       log_warning("vtr_arch_rules: no multiply model in arch; emitting "
                   "always-fail mult_map.v and mul2dsp_map.v\n");
       writeFile(outDir + "/mult_map.v", alwaysFailMultMap(policy.archName));
@@ -493,15 +524,6 @@ std::string alwaysFailExoticMap(const std::string &archName,
 
 // builtins already get stubs (or whiteboxes) from other generators; skip
 // them when stubbing every remaining hardblock model.
-bool isBuiltinHardblock(const std::string &name) {
-  return name == "multiply" || name == "adder" || name == "single_port_ram" ||
-         name == "dual_port_ram";
-}
-
-// ---------------------------------------------------------------------------
-// StubAllExoticsRuleGen: generic stubs + keep list for every exotic model
-// ---------------------------------------------------------------------------
-
 class StubAllExoticsRuleGen : public ArchRuleGen {
 public:
   StubAllExoticsRuleGen() : ArchRuleGen("stub-all-exotics") {}
@@ -616,6 +638,7 @@ public:
 
     const std::map<std::string, std::string> scalars = {
         {"ARCH_NAME", policy.archName},
+        {"RAM_STUB_DATA_WIDTH", std::to_string(maxBramDataWidth(info))},
     };
     const std::map<std::string, std::string> snippets = {
         {"HARDBLOCK_STUBS", stubs.str()},
