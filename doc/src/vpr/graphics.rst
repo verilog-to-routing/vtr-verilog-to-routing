@@ -135,7 +135,7 @@ If the requested number exceeds what are currently available, only the available
 
 Each stage between primitive pins is shown in a different colour.
 
-.. figure:: ../Images/crit_path.png
+.. figure:: ../Images/crit_paths.png
     :align: center 
     :width: 100%
 
