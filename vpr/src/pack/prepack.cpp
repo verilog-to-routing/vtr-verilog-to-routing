@@ -728,8 +728,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             if (destination_pin != nullptr) {
                 VTR_ASSERT(last_added_pattern_block[source_pb_graph_node]->pattern_index == curr_pattern_index);
                 source_block = last_added_pattern_block[source_pb_graph_node];
-                source_block->connections.push_back({source_block, expansion_edge->input_pins[i], destination_block, destination_pin});
-                destination_block->connections.push_back({source_block, expansion_edge->input_pins[i], destination_block, destination_pin});
+                source_block->connections.emplace_back(source_block, expansion_edge->input_pins[i], destination_block, destination_pin);
+                destination_block->connections.emplace_back(source_block, expansion_edge->input_pins[i], destination_block, destination_pin);
 
                 if (source_block == destination_block) {
                     VPR_FATAL_ERROR(VPR_ERROR_PACK,
