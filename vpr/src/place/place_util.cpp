@@ -247,8 +247,18 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
         // Check whether the location could accept block of this type
         // Then check whether the location could still accommodate more blocks
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
+        //
+        // The member must also land on the root of its tile (width/height offset 0),
+        // since blocks are only ever placed at tile roots. Members of a macro whose
+        // tiles have different sizes (e.g. a height-1 CLB anchoring a height-4 DSP)
+        // can land mid-tile even when the head is at a root: is_tile_compatible()
+        // alone accepts such a position (a body cell reports its tile's type) but it
+        // is not a placeable location. This mirrors the root check in
+        // is_legal_swap_to_location().
         t_physical_tile_type_ptr member_tile = device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer});
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
+            && device_ctx.grid.get_width_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
+            && device_ctx.grid.get_height_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
             && is_tile_compatible(member_tile, block_type)
             && member_pos.sub_tile >= 0 && member_pos.sub_tile < member_tile->capacity
             && is_sub_tile_compatible(member_tile, block_type, member_pos.sub_tile)
