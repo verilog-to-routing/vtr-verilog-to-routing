@@ -6,6 +6,7 @@
 #include <cctype>
 #include <fstream>
 #include <map>
+#include <regex>
 #include <sstream>
 #include <utility>
 
@@ -74,6 +75,14 @@ substituteTemplate(std::string text,
   }
   for (const auto &kv : scalars)
     text = replaceAll(text, "@" + kv.first + "@", kv.second);
+
+  // leftover @NAME@ means a template token was not provided by the emitter.
+  const std::regex leftoverToken(R"(@[A-Za-z0-9_]+@)");
+  std::smatch match;
+  if (std::regex_search(text, match, leftoverToken))
+    log_cmd_error("vtr_arch_rules: unsubstituted template token '%s' "
+                  "(rebuild mosaic / check rule emitter scalars)\n",
+                  match.str(0).c_str());
   return text;
 }
 
