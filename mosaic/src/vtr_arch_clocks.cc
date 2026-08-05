@@ -7,7 +7,7 @@ namespace mosaic {
 std::vector<std::string> readClockedModelNames(const std::string &xmlPath,
                                                std::string *errorOut) {
   VtrArchInfo info;
-  if (!readArchInfo(xmlPath, info, errorOut))
+  if (!readArchInfo(xmlPath, info, ClassicModelNames(), errorOut))
     return {};
   return info.clockedModels;
 }
