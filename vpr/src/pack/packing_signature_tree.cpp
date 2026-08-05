@@ -217,16 +217,18 @@ void PackingSignatureTree::add_ecn(e_ecn_legality legality) {
 }
 
 void PackingSignatureTree::populate_ecn(ExternalConnectivityNode* ecn) {
-    for (auto input_net : input_nets_) {
-        if (output_nets_.count(input_net.first) != 0) continue; // net is driven from inside cluster; not an external source
-        std::sort(input_net.second.begin(), input_net.second.end());
-        ecn->cluster_inputs.push_back(input_net.second);
+    for (const auto& [input_net_id, input_net_pins] : input_nets_) {
+        if (output_nets_.count(input_net_id) != 0) continue; // net is driven from inside cluster; not an external source
+        // Copy the pins and sort the copy: the vectors in input_nets_ must keep
+        // their insertion order, which rollback_to_checkpoint relies on.
+        ecn->cluster_inputs.push_back(input_net_pins);
+        std::sort(ecn->cluster_inputs.back().begin(), ecn->cluster_inputs.back().end());
     }
-    std::sort(ecn->cluster_inputs.begin(), ecn->cluster_inputs.end(), [](auto a, auto b) { return a < b; });
+    std::sort(ecn->cluster_inputs.begin(), ecn->cluster_inputs.end());
 
-    for (auto output_net : output_nets_) {
-        if (output_net.second.external_sinks_count == 0) continue; // net only drives pins inside cluster
-        ecn->cluster_outputs.push_back(output_net.second.source_pin);
+    for (const auto& [output_net_id, output_net_record] : output_nets_) {
+        if (output_net_record.external_sinks_count == 0) continue; // net only drives pins inside cluster
+        ecn->cluster_outputs.push_back(output_net_record.source_pin);
     }
     std::sort(ecn->cluster_outputs.begin(), ecn->cluster_outputs.end());
 }
