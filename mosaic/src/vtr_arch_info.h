@@ -9,14 +9,19 @@
 // synthesis time.
 //
 // contract (what readArchInfo guarantees):
-//   - bramModes: at least one single_port_ram and one dual_port_ram mode are
-//     required for synthesis; callers that emit bram maps should fail if either
-//     is missing after parsing.
+//   - bramModes: classic single_port_ram / dual_port_ram geometry when the arch
+//     declares those model names (exact ".subckt <name>" or
+//     ".subckt <name>.opmode{...}"). may be empty for titan-style arches;
+//     callers that emit classic bram maps should fail if either sp/dp is
+//     missing after parsing.
+//   - hardblockModes: every pb_type with blif_model
+//     ".subckt <model>.opmode{...}" is grouped by base model name with one
+//     entry per binding (mode qualifier + port widths).
 //   - multiply / adder: optional. when absent, multiplyModes is empty and
 //     multiply.present / adder.present are false.
 //   - hardblockModels: every pb_type with blif_model ".subckt <name>" is
 //     recorded with max port widths and sorted multiply-style modes from the
-//     'a' input when present.
+//     'a' input when present (full blif name, including opmode suffixes).
 //   - clockedModels: model names that declare an is_clock input port.
 //   - lutK / lutK1: fracturable lut geometry when detected (0 otherwise).
 //
@@ -26,6 +31,7 @@
 //
 // synth-facts checklist (expand scanner + goldens when claiming support):
 //   [x] bram sp/dp modes (addr/data widths; aliased model names)
+//   [x] opmode-qualified hardblockModes (titan / stratix style)
 //   [x] multiply modes from 'a' port; adder presence + carryChain
 //   [x] hardblockModels port widths + clock pins folded into inputs
 //   [x] lutK / lutK1 fracturable lut geometry
@@ -46,7 +52,8 @@ struct ClassicModelNames {
 };
 
 // one concrete bram mode from a pb_type with blif_model
-// ".subckt single_port_ram" / ".subckt dual_port_ram".
+// ".subckt single_port_ram" / ".subckt dual_port_ram" (or those names under
+// an .opmode{...} qualifier).
 struct BramModeInfo {
   std::string name;
   int addrBitsA = 0;
@@ -54,6 +61,19 @@ struct BramModeInfo {
   bool isSp = false;
   int addrBitsB = 0; // dp only; falls back to addrBitsA when absent
   int dataBitsB = 0; // dp only; falls back to dataBitsA when absent
+};
+
+// one pb_type binding for a hardblock whose blif_model carries an opmode
+// qualifier, e.g. ".subckt stratixiv_ram_block.opmode{single_port}....".
+// port widths come from direct <input>/<output>/<clock> children (clocks are
+// folded into inputWidths). classic arches without opmode leave
+// hardblockModes empty; titan-style arches populate it heavily.
+struct GenericHardblockMode {
+  std::string modelName;     ///< base model before .opmode
+  std::string modeQualifier; ///< contents of opmode{...}
+  std::string pbTypeName;    ///< pb_type name attribute
+  std::map<std::string, int> inputWidths;  ///< inputs + clocks
+  std::map<std::string, int> outputWidths;
 };
 
 // generic geometry of one hardblock model, gathered from every pb_type that
@@ -81,8 +101,12 @@ struct VtrArchInfo {
   // <models>: names of models with an is_clock input port
   std::vector<std::string> clockedModels;
 
-  // pb_type bram modes
+  // pb_type bram modes (classic model names only; may be empty for titan)
   std::vector<BramModeInfo> bramModes;
+
+  // opmode-qualified hardblock bindings, keyed by base model name
+  // (e.g. "stratixiv_ram_block" -> [{single_port, ...}, {dual_port, ...}]).
+  std::map<std::string, std::vector<GenericHardblockMode>> hardblockModes;
 
   // lut fracturability from multi-mode pb_types containing .names luts:
   // lutK = size of the single-lut mode, lutK1 = max sub-lut size in the

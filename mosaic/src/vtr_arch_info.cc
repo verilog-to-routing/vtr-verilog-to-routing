@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cstring>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "pugixml.hpp"
@@ -71,12 +73,87 @@ void scanModels(const pugi::xml_node &root, VtrArchInfo &info) {
   }
 }
 
-void scanBramModes(const std::vector<pugi::xml_node> &pbTypes,
-                   const ClassicModelNames &classic, VtrArchInfo &info) {
+// parse ".subckt <model>.opmode{qual}...." into base model + qualifier.
+// returns false when blif_model is not an opmode-qualified .subckt.
+bool parseOpmodeBlif(const std::string &blif, std::string &modelName,
+                     std::string &modeQualifier) {
+  const std::string prefix = ".subckt ";
+  if (blif.compare(0, prefix.size(), prefix) != 0)
+    return false;
+  const std::string rest = blif.substr(prefix.size());
+  const std::string opmodeTag = ".opmode{";
+  const size_t opPos = rest.find(opmodeTag);
+  if (opPos == std::string::npos || opPos == 0)
+    return false;
+  const size_t qualStart = opPos + opmodeTag.size();
+  const size_t qualEnd = rest.find('}', qualStart);
+  if (qualEnd == std::string::npos)
+    return false;
+  modelName = rest.substr(0, opPos);
+  modeQualifier = rest.substr(qualStart, qualEnd - qualStart);
+  return !modelName.empty() && !modeQualifier.empty();
+}
+
+void fillPortWidths(const pugi::xml_node &pb, GenericHardblockMode &mode) {
+  for (const auto &kv : directPins(pb, "input"))
+    mode.inputWidths[kv.first] = kv.second;
+  for (const auto &kv : directPins(pb, "clock"))
+    mode.inputWidths[kv.first] = kv.second;
+  for (const auto &kv : directPins(pb, "output"))
+    mode.outputWidths[kv.first] = kv.second;
+}
+
+// collect opmode-qualified hardblock bindings into hardblockModes.
+void scanGenericModes(const std::vector<pugi::xml_node> &pbTypes,
+                      VtrArchInfo &info) {
   for (const pugi::xml_node pb : pbTypes) {
     const std::string blif = attrStr(pb, "blif_model");
-    const std::string spModel = ".subckt " + classic.singlePortRam;
-    const std::string dpModel = ".subckt " + classic.dualPortRam;
+    std::string modelName;
+    std::string modeQualifier;
+    if (!parseOpmodeBlif(blif, modelName, modeQualifier))
+      continue;
+    GenericHardblockMode mode;
+    mode.modelName = modelName;
+    mode.modeQualifier = modeQualifier;
+    mode.pbTypeName = attrStr(pb, "name");
+    fillPortWidths(pb, mode);
+    info.hardblockModes[modelName].push_back(std::move(mode));
+  }
+}
+
+int mapPinWidth(const std::map<std::string, int> &pins,
+                const std::string &name) {
+  auto it = pins.find(name);
+  return it == pins.end() ? 0 : it->second;
+}
+
+// convert a classic-named generic mode into BramModeInfo using classic pin
+// names (addr/data or addr1/data1). returns false when geometry is incomplete.
+bool classicBramFromGeneric(const GenericHardblockMode &generic, bool isSp,
+                            BramModeInfo &out) {
+  out.name = generic.pbTypeName;
+  out.isSp = isSp;
+  out.addrBitsA =
+      mapPinWidth(generic.inputWidths, isSp ? "addr" : "addr1");
+  out.dataBitsA =
+      mapPinWidth(generic.inputWidths, isSp ? "data" : "data1");
+  out.addrBitsB = mapPinWidth(generic.inputWidths, "addr2");
+  out.dataBitsB = mapPinWidth(generic.inputWidths, "data2");
+  if (out.addrBitsB == 0)
+    out.addrBitsB = out.addrBitsA;
+  if (out.dataBitsB == 0)
+    out.dataBitsB = out.dataBitsA;
+  return out.addrBitsA > 0 && out.dataBitsA > 0;
+}
+
+// fill bramModes from exact classic ".subckt <name>" bindings and from
+// hardblockModes entries whose base model matches classic ram names.
+void scanBramModes(const std::vector<pugi::xml_node> &pbTypes,
+                   const ClassicModelNames &classic, VtrArchInfo &info) {
+  const std::string spModel = ".subckt " + classic.singlePortRam;
+  const std::string dpModel = ".subckt " + classic.dualPortRam;
+  for (const pugi::xml_node pb : pbTypes) {
+    const std::string blif = attrStr(pb, "blif_model");
     const bool isSp = blif == spModel;
     const bool isDp = blif == dpModel;
     if (!isSp && !isDp)
@@ -96,6 +173,21 @@ void scanBramModes(const std::vector<pugi::xml_node> &pbTypes,
     if (mode.addrBitsA > 0 && mode.dataBitsA > 0)
       info.bramModes.push_back(mode);
   }
+
+  // classic model names under .opmode{...} also feed bramModes. titan models
+  // like stratixiv_ram_block do not match and leave bramModes unchanged.
+  auto appendClassicFromGeneric = [&](const std::string &model, bool isSp) {
+    auto it = info.hardblockModes.find(model);
+    if (it == info.hardblockModes.end())
+      return;
+    for (const GenericHardblockMode &generic : it->second) {
+      BramModeInfo mode;
+      if (classicBramFromGeneric(generic, isSp, mode))
+        info.bramModes.push_back(mode);
+    }
+  };
+  appendClassicFromGeneric(classic.singlePortRam, true);
+  appendClassicFromGeneric(classic.dualPortRam, false);
 }
 
 // size of a .names lut pb_type = num_pins of its first direct <input>
@@ -225,6 +317,7 @@ bool readArchInfo(const std::string &xmlPath, VtrArchInfo &info,
 
   std::vector<pugi::xml_node> pbTypes;
   collectAll(root, "pb_type", pbTypes);
+  scanGenericModes(pbTypes, info);
   scanBramModes(pbTypes, classic, info);
   scanLutCost(pbTypes, info);
   scanHardblockModels(pbTypes, info);

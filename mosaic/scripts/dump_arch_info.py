@@ -76,6 +76,78 @@ def scanModels(root, info):
                             info["clockedModels"].append(name)
 
 
+def parseOpmodeBlif(blif):
+    prefix = ".subckt "
+    if not blif.startswith(prefix):
+        return None
+    rest = blif[len(prefix) :]
+    opmodeTag = ".opmode{"
+    opPos = rest.find(opmodeTag)
+    if opPos <= 0:
+        return None
+    qualStart = opPos + len(opmodeTag)
+    qualEnd = rest.find("}", qualStart)
+    if qualEnd < 0:
+        return None
+    modelName = rest[:opPos]
+    modeQualifier = rest[qualStart:qualEnd]
+    if not modelName or not modeQualifier:
+        return None
+    return modelName, modeQualifier
+
+
+def fillPortWidths(pb):
+    inputWidths = {}
+    outputWidths = {}
+    for pinName, width in directPins(pb, "input"):
+        inputWidths[pinName] = width
+    for pinName, width in directPins(pb, "clock"):
+        inputWidths[pinName] = width
+    for pinName, width in directPins(pb, "output"):
+        outputWidths[pinName] = width
+    return inputWidths, outputWidths
+
+
+def scanGenericModes(pbTypes, info):
+    for pb in pbTypes:
+        parsed = parseOpmodeBlif(pb.get("blif_model", ""))
+        if parsed is None:
+            continue
+        modelName, modeQualifier = parsed
+        inputWidths, outputWidths = fillPortWidths(pb)
+        info["hardblockModes"].setdefault(modelName, []).append(
+            {
+                "modelName": modelName,
+                "modeQualifier": modeQualifier,
+                "pbTypeName": pb.get("name", ""),
+                "inputWidths": inputWidths,
+                "outputWidths": outputWidths,
+            }
+        )
+
+
+def mapPinWidth(pins, name):
+    return pins.get(name, 0)
+
+
+def classicBramFromGeneric(generic, isSp):
+    mode = {
+        "name": generic["pbTypeName"],
+        "isSp": isSp,
+        "addrBitsA": mapPinWidth(generic["inputWidths"], "addr" if isSp else "addr1"),
+        "dataBitsA": mapPinWidth(generic["inputWidths"], "data" if isSp else "data1"),
+        "addrBitsB": mapPinWidth(generic["inputWidths"], "addr2"),
+        "dataBitsB": mapPinWidth(generic["inputWidths"], "data2"),
+    }
+    if mode["addrBitsB"] == 0:
+        mode["addrBitsB"] = mode["addrBitsA"]
+    if mode["dataBitsB"] == 0:
+        mode["dataBitsB"] = mode["dataBitsA"]
+    if mode["addrBitsA"] > 0 and mode["dataBitsA"] > 0:
+        return mode
+    return None
+
+
 def scanBramModes(pbTypes, info):
     for pb in pbTypes:
         blif = pb.get("blif_model", "")
@@ -98,6 +170,12 @@ def scanBramModes(pbTypes, info):
             mode["dataBitsB"] = mode["dataBitsA"]
         if mode["addrBitsA"] > 0 and mode["dataBitsA"] > 0:
             info["bramModes"].append(mode)
+
+    for model, isSp in (("single_port_ram", True), ("dual_port_ram", False)):
+        for generic in info["hardblockModes"].get(model, []):
+            mode = classicBramFromGeneric(generic, isSp)
+            if mode is not None:
+                info["bramModes"].append(mode)
 
 
 def lutSize(pb):
@@ -197,6 +275,7 @@ def readArchInfo(xmlPath):
         "archName": xmlPath.stem,
         "clockedModels": [],
         "bramModes": [],
+        "hardblockModes": {},
         "lutK": 0,
         "lutK1": 0,
         "hardblockModels": {},
@@ -207,6 +286,7 @@ def readArchInfo(xmlPath):
     pbTypes = []
     collectAll(root, "pb_type", pbTypes)
     scanModels(root, info)
+    scanGenericModes(pbTypes, info)
     scanBramModes(pbTypes, info)
     scanLutCost(pbTypes, info)
     scanHardblockModels(pbTypes, info)
@@ -235,6 +315,50 @@ def summaryText(info):
       "hardblockModelCount: {}".format(len(info["hardblockModels"])),
   ]
   return "\n".join(lines) + "\n"
+
+
+def listModesText(info):
+    """mirror vtr_arch_rules -list-modes for offline titan checks."""
+    lines = ["classic bramModes ({})".format(len(info["bramModes"]))]
+    for mode in info["bramModes"]:
+        lines.append(
+            "  {} {} addrA={} dataA={} addrB={} dataB={}".format(
+                "sp" if mode["isSp"] else "dp",
+                mode["name"],
+                mode["addrBitsA"],
+                mode["dataBitsA"],
+                mode["addrBitsB"],
+                mode["dataBitsB"],
+            )
+        )
+    lines.append("hardblockModes ({} models)".format(len(info["hardblockModes"])))
+    for modelName in sorted(info["hardblockModes"]):
+        modes = info["hardblockModes"][modelName]
+        lines.append("  model '{}' ({} bindings):".format(modelName, len(modes)))
+        # summarize distinct opmode qualifiers and sample port widths
+        byQual = {}
+        for mode in modes:
+            byQual.setdefault(mode["modeQualifier"], []).append(mode)
+        for qual in sorted(byQual):
+            sample = byQual[qual][0]
+            inPorts = ",".join(
+                "{}:{}".format(k, sample["inputWidths"][k])
+                for k in sorted(sample["inputWidths"])
+            )
+            outPorts = ",".join(
+                "{}:{}".format(k, sample["outputWidths"][k])
+                for k in sorted(sample["outputWidths"])
+            )
+            lines.append(
+                "    opmode{{{}}} count={} sample_pb={} in={{{}}} out={{{}}}".format(
+                    qual,
+                    len(byQual[qual]),
+                    sample["pbTypeName"],
+                    inPorts,
+                    outPorts,
+                )
+            )
+    return "\n".join(lines) + "\n"
 
 
 def goldenPathFor(archPath):
@@ -285,13 +409,21 @@ def main():
         action="store_true",
         help="emit full parsed structure as json instead of summary text",
     )
+    parser.add_argument(
+        "--list-modes",
+        action="store_true",
+        help="print hardblockModes / bramModes (offline -list-modes)",
+    )
     args = parser.parse_args()
     archList = [Path(p) for p in args.arch_xml] if args.arch_xml else DEFAULT_ARCHES
     exitCode = 0
     for archPath in archList:
-        if args.json:
+        if args.json or args.list_modes:
             info = readArchInfo(archPath)
-            print(json.dumps(info, indent=2, sort_keys=True))
+            if args.json:
+                print(json.dumps(info, indent=2, sort_keys=True))
+            if args.list_modes:
+                print(listModesText(info), end="")
             continue
         code = dumpArch(archPath, update=args.update)
         exitCode = max(exitCode, code)
