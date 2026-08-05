@@ -130,16 +130,10 @@ Optional flags:
 
 
 ## 5. Regression testing
-The `vtr_reg_basic_mosaic` suite runs basic timing circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start mosaic`:
+The `vtr_reg_basic_mosaic` suite runs the `k6` task (basic circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start mosaic`) plus the `koios` hardblock passthrough smoke (`test.v` + `hard_block_include.v` on the complex-DSP arch):
 
 ```shell
 ./run_reg_test.py vtr_reg_basic_mosaic -j4
-```
-
-There is also a Koios smoke task under `vtr_flow/tasks/regression_tests/vtr_reg_basic_mosaic/koios`:
-
-```shell
-./vtr_flow/scripts/run_vtr_task.py regression_tests/vtr_reg_basic_mosaic/koios
 ```
 
 To compare Parmys and Mosaic hardblock BLIF model names on one circuit:

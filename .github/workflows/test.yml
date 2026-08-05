@@ -764,7 +764,7 @@ jobs:
       matrix:
         include: [
           {
-            name: 'Basic_mosaic',
+            name: 'Mosaic_k6_koios',
             suite: 'vtr_reg_basic_mosaic',
             extra_pkgs: ''
           }

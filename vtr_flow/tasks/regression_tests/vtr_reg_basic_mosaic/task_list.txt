@@ -1,1 +1,2 @@
-regression_tests/vtr_reg_basic_mosaic/basic_timing
+regression_tests/vtr_reg_basic_mosaic/k6
+regression_tests/vtr_reg_basic_mosaic/koios
