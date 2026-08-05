@@ -209,7 +209,7 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
 
 //Returns true if both nodes are part of the same non-configurable edge set
 inline bool same_non_config_node_set(RRNodeId from_node, RRNodeId to_node) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     auto from_itr = device_ctx.rr_node_to_non_config_node_set.find(from_node);
     auto to_itr = device_ctx.rr_node_to_non_config_node_set.find(to_node);
@@ -277,7 +277,7 @@ float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNo
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     // To node info
-    auto rc_index = rr_graph_->node_rc_index(to->index);
+    int16_t rc_index = rr_graph_->node_rc_index(to->index);
     float node_R = rr_rc_data_[rc_index].R;
 
     // From node info
@@ -503,7 +503,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!inside_bb(rr_node_to_add, net_bounding_box))
                     continue;
 
-                auto rt_node_layer_num = rr_graph_->node_layer_low(rr_node_to_add);
+                short rt_node_layer_num = rr_graph_->node_layer_low(rr_node_to_add);
                 if (rt_node_layer_num == target_layer)
                     found_node_on_same_layer = true;
 
@@ -549,6 +549,6 @@ inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
                                     RRNodeId target_node) {
     VTR_ASSERT_SAFE(rr_graph->node_type(target_node) == e_rr_type::SINK);
-    auto node_to_add_type = rr_graph->node_type(node_to_add);
+    e_rr_type node_to_add_type = rr_graph->node_type(node_to_add);
     return node_to_add_type != e_rr_type::IPIN || node_in_same_physical_tile(node_to_add, target_node);
 }
