@@ -31,11 +31,6 @@ quick_test/*
 temp/
 
 #
-# Mosaic QoR compare output (mosaic/scripts/compare_flow.py)
-#
-/compare_output_*/
-
-#
 # Titan benchmarks
 #
 #   We ignore the Titan netlists because of thier large size, and the
@@ -180,3 +175,8 @@ compile_commands.json
 
 vpr/test/gui/golden/tmp/*
 
+#
+# Mosaic QoR compare output
+#
+/compare_output_*/
+mosaic/scripts/compare_output_*/

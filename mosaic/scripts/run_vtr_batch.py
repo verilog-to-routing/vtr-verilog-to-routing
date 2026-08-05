@@ -8,8 +8,9 @@ details:
     every run is pinned to 1 core (--num_workers 1 + VPR_NUM_WORKERS=1 +
     OMP_NUM_THREADS=1). --jobs N means N of those single-core runs in parallel.
 
-    writes live status + csv under compare_output_<arch_stem>/. with --watch,
-    spawns watch_compare.py in this terminal (or run it yourself in a second one).
+    writes live status + csv under mosaic/scripts/compare_output_<arch_stem>/.
+    with --watch, spawns watch_compare.py in this terminal (or run it yourself
+    in a second one).
 
 usage:
     python3 mosaic/scripts/run_vtr_batch.py \\
@@ -29,7 +30,8 @@ flags:
                             aliases: frank, parmys, vtr
     --jobs <n>             concurrent single-core runs (default 4);
                             each run is pinned to 1 core via --num_workers 1
-    --outdir <dir>         output directory (default compare_output_<arch_stem>)
+    --outdir <dir>         output directory (default
+                            mosaic/scripts/compare_output_<arch_stem>)
     --csv <path>           results csv (default timestamped under outdir)
     --route-chan-width N   passed to vpr (default 300)
     --no-clean             keep existing run dirs
@@ -55,6 +57,8 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
+# default batch output root (keeps compare_output_* out of the repo root)
+compareOutputRoot = scriptDir
 vtrFlow = vtrRoot / "vtr_flow"
 runVtrFlow = vtrFlow / "scripts" / "run_vtr_flow.py"
 yosysBin = vtrRoot / "build" / "bin" / "yosys"
@@ -770,7 +774,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     selectedFlows = normalizeFlows(args.flows)
     jobs = max(1, args.jobs)
     includeFiles = resolveIncludePaths(args.include, benchDir)
-    outDir = resolvePath(args.outdir or f"compare_output_{archFile.stem}", vtrRoot)
+    outDir = resolvePath(
+        args.outdir or f"compare_output_{archFile.stem}", compareOutputRoot
+    )
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     csvPath = (
         resolvePath(args.csv, vtrRoot)

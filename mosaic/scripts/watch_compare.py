@@ -8,12 +8,14 @@ details:
 
 usage:
     python3 mosaic/scripts/watch_compare.py
-    python3 mosaic/scripts/watch_compare.py --dir compare_output_<arch_stem>
+    python3 mosaic/scripts/watch_compare.py \
+        --dir mosaic/scripts/compare_output_<arch_stem>
     python3 mosaic/scripts/watch_compare.py --interval 2
     python3 mosaic/scripts/watch_compare.py --once
 
 flags:
-    --dir <outdir>     compare output directory (default: newest compare_output* by mtime)
+    --dir <outdir>     compare output directory (default: newest compare_output*
+                            under mosaic/scripts then repo root, by mtime)
     --interval <sec>   refresh period (default 1.0)
     --once             print once and exit
 """
@@ -37,6 +39,8 @@ except ImportError:
 
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
+# new batches default here; repo root remains as fallback for older runs
+compareOutputRoot = scriptDir
 
 phasePatterns = [
     (re.compile(r"(?:^|#\s*)Routing took\b", re.I), "route done"),
@@ -389,11 +393,16 @@ def resolveCsvPath(targetDir: Path) -> Path | None:
 
 
 def findOutputDirs() -> List[Path]:
-    dirs = [
-        path
-        for path in vtrRoot.iterdir()
-        if path.is_dir() and path.name.startswith("compare_output")
-    ]
+    roots = [compareOutputRoot]
+    if compareOutputRoot != vtrRoot:
+        roots.append(vtrRoot)
+    dirs = []
+    for root in roots:
+        dirs.extend(
+            path
+            for path in root.iterdir()
+            if path.is_dir() and path.name.startswith("compare_output")
+        )
     dirs.sort(key=lambda path: path.stat().st_mtime)
     return dirs
 
@@ -442,7 +451,8 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--dir",
         default=None,
-        help="compare output directory (default: newest compare_output* by mtime)",
+        help="compare output directory (default: newest compare_output* under "
+        "mosaic/scripts then repo root, by mtime)",
     )
     parser.add_argument("--interval", type=float, default=1.0, help="refresh seconds")
     parser.add_argument("--once", action="store_true", help="print once and exit")
@@ -451,7 +461,8 @@ def main(argv=None) -> int:
     if args.dir:
         targetDir = Path(args.dir)
         if not targetDir.is_absolute():
-            targetDir = vtrRoot / targetDir
+            candidate = compareOutputRoot / targetDir
+            targetDir = candidate if candidate.is_dir() else (vtrRoot / targetDir)
     else:
         candidates = findOutputDirs()
         if not candidates:

@@ -127,8 +127,8 @@ Soft/hard policy knobs:
 ## QoR Compare (vanilla_vtr vs mosaic)
 `run_vtr_batch.py` wraps the default `run_vtr_flow.py` call. Each run is pinned
 to 1 core (`--num_workers 1`); `--jobs N` means N concurrent single-core runs.
-Results land in `compare_output_<arch_stem>/` (`runs/`, `logs/`, `status/`,
-`compare_results_<YYYYMMDD_HHMMSS>.csv`).
+Results land in `mosaic/scripts/compare_output_<arch_stem>/` (`runs/`, `logs/`,
+`status/`, `compare_results_<YYYYMMDD_HHMMSS>.csv`).
 
 ```shell
 python3 mosaic/scripts/run_vtr_batch.py \
@@ -140,10 +140,11 @@ python3 mosaic/scripts/run_vtr_batch.py \
 ```
 
 `--watch` spawns `watch_compare.py` in the same terminal. Or run the watcher
-yourself (defaults to newest `compare_output*` if `--dir` omitted):
+yourself (defaults to newest `compare_output*` under `mosaic/scripts/`, with
+repo-root dirs as fallback for older runs, if `--dir` omitted):
 
 ```shell
-python3 mosaic/scripts/watch_compare.py --dir compare_output_<arch_stem>
+python3 mosaic/scripts/watch_compare.py --dir mosaic/scripts/compare_output_<arch_stem>
 ```
 
 Useful flags: `--flows mosaic`, `--no-rerun`. Omit `--designs` to take
