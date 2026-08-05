@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "d_ary_heap.h"
 #include "rr_graph_fwd.h"
+#include "vpr_context.h"
 
 /** Used to update router statistics for serial connection router */
 inline void update_serial_router_stats(RouterStats* router_stats,
@@ -191,10 +192,10 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
                                                                    const t_bb& bounding_box,
                                                                    RRNodeId target_node,
                                                                    const t_bb& target_bb) {
-    /* Puts all the rr_nodes adjacent to current on the heap. */
+    // Puts all the rr_nodes adjacent to current on the heap.
 
     // For each node associated with the current heap element, expand all of it's neighbors
-    auto edges = this->rr_nodes_.edge_range(current.index);
+    vtr::StrongIdRange<RREdgeId> edges = this->rr_nodes_.edge_range(current.index);
 
     // This is a simple prefetch that prefetches:
     //  - RR node data reachable from this node
@@ -243,7 +244,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                                                                   const t_bb& target_bb) {
     VTR_ASSERT(bounding_box.layer_max < (int)g_vpr_ctx.device().grid.get_num_layers());
 
-    const RRNodeId& from_node = current.index;
+    const RRNodeId from_node = current.index;
 
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
@@ -259,13 +260,13 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                        this->rr_graph_->node_xhigh(to_node), this->rr_graph_->node_yhigh(to_node), this->rr_graph_->node_layer_low(to_node),
                        bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
                        bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
-        return; /* Node is outside (expanded) bounding box. */
+        return; // Node is outside (expanded) bounding box.
     }
 
-    /* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
-     * the issue of how to cost them properly so they don't get expanded before *
-     * more promising routes, but makes route-through (via CLBs) impossible.   *
-     * Change this if you want to investigate route-throughs.                   */
+    // Prune away IPINs that lead to blocks other than the target one. Avoids
+    // the issue of how to cost them properly so they don't get expanded before
+    // more promising routes, but makes route-through (via CLBs) impossible.
+    // Change this if you want to investigate route-throughs.
     if (target_node != RRNodeId::INVALID()) {
         e_rr_type to_type = this->rr_graph_->node_type(to_node);
         if (to_type == e_rr_type::IPIN) {
@@ -322,8 +323,8 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
                                                              RRNodeId to_node,
                                                              const RREdgeId from_edge,
                                                              RRNodeId target_node) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const RRNodeId& from_node = current.index;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRNodeId from_node = current.index;
 
     // Initialize the neighbor RTExploredNode
     RTExploredNode next;

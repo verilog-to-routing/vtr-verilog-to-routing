@@ -6,6 +6,7 @@
 #include "describe_rr_node.h"
 #include "route_common.h"
 #include "rr_graph_fwd.h"
+#include "vpr_context.h"
 #include "vpr_utils.h"
 
 /** Used for the flat router. The node isn't relevant to the target if
@@ -120,8 +121,8 @@ bool ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     RRNodeId sink_node,
     const t_conn_cost_params& cost_params,
     const t_bb& bounding_box) {
-    //Re-add route nodes from the existing route tree to the heap.
-    //They need to be repushed onto the heap since each node's cost is target specific.
+    // Re-add route nodes from the existing route tree to the heap.
+    // They need to be repushed onto the heap since each node's cost is target specific.
 
     add_route_tree_to_heap(rt_root, sink_node, cost_params, bounding_box);
     heap_.build_heap(); // via sifting down everything
@@ -167,7 +168,7 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
                                                                       const t_bb& bounding_box) {
     VTR_ASSERT_SAFE(heap_.is_valid());
 
-    if (heap_.is_empty_heap()) { //No source
+    if (heap_.is_empty_heap()) { // No source
         VTR_LOGV_DEBUG(router_debug_, "  Initial heap empty (no source)\n");
     }
 
@@ -271,63 +272,63 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
      * new_costs.R_upstream: is the upstream resistance at the end of this node
      */
 
-    //Info for the switch connecting from_node to_node (i.e., to->index)
+    // Info for the switch connecting from_node to_node (i.e., to->index)
     int iswitch = rr_nodes_.edge_switch(to->prev_edge);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
     bool reached_configurably = rr_switch_inf_[iswitch].configurable();
     float switch_R = rr_switch_inf_[iswitch].R;
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
-    //To node info
+    // To node info
     auto rc_index = rr_graph_->node_rc_index(to->index);
     float node_R = rr_rc_data_[rc_index].R;
 
-    //From node info
+    // From node info
     float from_node_R = rr_rc_data_[rr_graph_->node_rc_index(from_node)].R;
 
-    //Update R_upstream
+    // Update R_upstream
     if (switch_buffered) {
-        to->R_upstream = 0.; //No upstream resistance
+        to->R_upstream = 0.; // No upstream resistance
     } else {
-        //R_Upstream already initialized
+        // R_Upstream already initialized
     }
 
-    to->R_upstream += switch_R; //Switch resistance
-    to->R_upstream += node_R;   //Node resistance
+    to->R_upstream += switch_R; // Switch resistance
+    to->R_upstream += node_R;   // Node resistance
 
-    //Calculate delay
+    // Calculate delay
     float Tdel = get_rr_node_delay_cost(to->index, to->prev_edge);
 
-    //Depending on the switch used, the Tdel of the upstream node (from_node) may change due to
-    //increased loading from the switch's internal capacitance.
+    // Depending on the switch used, the Tdel of the upstream node (from_node) may change due to
+    // increased loading from the switch's internal capacitance.
     //
-    //Even though this delay physically affects from_node, we make the adjustment (now) on the to_node,
-    //since only once we've reached to to_node do we know the connection used (and the switch enabled).
+    // Even though this delay physically affects from_node, we make the adjustment (now) on the to_node,
+    // since only once we've reached to to_node do we know the connection used (and the switch enabled).
     //
-    //To adjust for the time delay, we compute the product of the Rdel associated with from_node and
-    //the internal capacitance of the switch.
+    // To adjust for the time delay, we compute the product of the Rdel associated with from_node and
+    // the internal capacitance of the switch.
     //
-    //First, we will calculate Rdel_adjust (just like in the computation for Rdel, we consider only
-    //half of from_node's resistance).
+    // First, we will calculate Rdel_adjust (just like in the computation for Rdel, we consider only
+    // half of from_node's resistance).
     float Rdel_adjust = to->R_upstream - 0.5 * from_node_R;
 
-    //Second, we adjust the Tdel to account for the delay caused by the internal capacitance.
+    // Second, we adjust the Tdel to account for the delay caused by the internal capacitance.
     Tdel += Rdel_adjust * switch_Cinternal;
 
     float cong_cost = 0.;
     if (reached_configurably) {
         cong_cost = get_rr_cong_cost(to->index, cost_params.pres_fac);
     } else {
-        //Reached by a non-configurable edge.
-        //Therefore the from_node and to_node are part of the same non-configurable node set.
+        // Reached by a non-configurable edge.
+        // Therefore the from_node and to_node are part of the same non-configurable node set.
 #ifdef VTR_ASSERT_SAFE_ENABLED
         VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to->index),
                             "Non-configurably connected edges should be part of the same node set");
 #endif
 
-        //The congestion cost of all nodes in the set has already been accounted for (when
-        //the current path first expanded a node in the set). Therefore do *not* re-add the congestion
-        //cost.
+        // The congestion cost of all nodes in the set has already been accounted for (when
+        // the current path first expanded a node in the set). Therefore do *not* re-add the congestion
+        // cost.
         cong_cost = 0.;
     }
     if (conn_params_->router_opt_choke_points_ && is_flat_ && rr_graph_->node_type(to->index) == e_rr_type::IPIN) {
@@ -337,15 +338,15 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
         }
     }
 
-    //Update the backward cost (upstream already included)
-    to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
-    to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
+    // Update the backward cost (upstream already included)
+    to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; // Congestion cost
+    to->backward_path_cost += cost_params.criticality * Tdel;             // Delay cost
 
     if (cost_params.bend_cost != 0.) {
         e_rr_type from_type = rr_graph_->node_type(from_node);
         e_rr_type to_type = rr_graph_->node_type(to->index);
         if ((from_type == e_rr_type::CHANX && to_type == e_rr_type::CHANY) || (from_type == e_rr_type::CHANY && to_type == e_rr_type::CHANX)) {
-            to->backward_path_cost += cost_params.bend_cost; //Bend cost
+            to->backward_path_cost += cost_params.bend_cost; // Bend cost
         }
     }
 
@@ -357,8 +358,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
 
         total_cost = compute_node_cost_using_rcv(cost_params, to->index, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
-        const auto& device_ctx = g_vpr_ctx.device();
-        //Update total cost
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
+        // Update total cost
         float expected_cost = router_lookahead_.get_expected_cost(to->index, target_node, cost_params, to->R_upstream);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",

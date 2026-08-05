@@ -17,7 +17,6 @@
  * When the ConnectionRouter is used, it mutates the provided rr_node_route_inf.
  * The routed path can be found by tracing from the sink node (which is returned)
  * through the rr_node_route_inf. See update_traceback as an example of this tracing.
- *
  */
 
 #include "connection_router_interface.h"
