@@ -258,11 +258,15 @@ class ClusterLegalizer {
      *  @param cluster_id               The ID of the cluster.
      *  @param max_external_pin_util    The max external pin utilization for a
      *                                  cluster of this type.
+     *  @param bypass_pin_feasibility_filter
+     *                                  Skip the speculative pin feasibility
+     *                                  filter.
      */
     e_block_pack_status try_pack_molecule(PackMoleculeId molecule_id,
                                           LegalizationCluster& cluster,
                                           LegalizationClusterId cluster_id,
-                                          const t_ext_pin_util& max_external_pin_util);
+                                          const t_ext_pin_util& max_external_pin_util,
+                                          bool bypass_pin_feasibility_filter = false);
 
     /**
      * @brief This function takes a chain molecule, and the pb_graph_node that is
@@ -368,12 +372,16 @@ class ClusterLegalizer {
      *
      *  @param molecule         The molecule to add to the cluster.
      *  @param cluster_id       The ID of the cluster to add the molecule to.
+     *  @param bypass_pin_feasibility_filter
+     *                          Skip the speculative pin feasibility filter for
+     *                          this molecule.
      *
      *  @return     The status of the pack (if the addition was successful and
      *              if not why).
      */
     e_block_pack_status add_mol_to_cluster(PackMoleculeId molecule_id,
-                                           LegalizationClusterId cluster_id);
+                                           LegalizationClusterId cluster_id,
+                                           bool bypass_pin_feasibility_filter = false);
 
     /*
      * @brief Destroy the given cluster.
@@ -587,6 +595,44 @@ class ClusterLegalizer {
         cluster_legalization_strategy_ = strategy;
     }
 
+    /// @brief Gets the current legalization strategy of the cluster legalizer.
+    inline ClusterLegalizationStrategy get_legalization_strategy() const {
+        return cluster_legalization_strategy_;
+    }
+
+    /**
+     * @brief Enable or disable reserving the remaining capacity of clusters
+     *        whose adopted relative placement group is still incomplete.
+     *
+     * While enabled, a cluster hosting a relative placement group that still
+     * has unclustered atoms only accepts molecules containing atoms of that
+     * group; other molecules are rejected until the group is complete, after
+     * which unconstrained molecules may fill the cluster as usual. This
+     * prevents unconstrained molecules from consuming a cluster's capacity
+     * before the group's last molecules are proposed.
+     *
+     * The packer enables this on re-pack iterations triggered by split
+     * relative placement groups. It is never enabled on the first packing
+     * pass, so flows without relative placement constraints are unaffected.
+     */
+    inline void set_reserve_relative_group_capacity(bool reserve) {
+        reserve_relative_group_capacity_ = reserve;
+    }
+
+    /// @brief Returns true if capacity reservation for incomplete relative
+    ///        placement groups is enabled (see set_reserve_relative_group_capacity()).
+    inline bool reserving_relative_group_capacity() const {
+        return reserve_relative_group_capacity_;
+    }
+
+    /// @brief Returns the relative placement group (macro id, group index)
+    ///        hosted by the given cluster, or an invalid pair if the cluster
+    ///        does not host one.
+    inline std::pair<UserRelativeMacroId, int> get_cluster_rel_group(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        return legalization_clusters_[cluster_id].rel_group;
+    }
+
     /*
      * @brief Set how verbose the log messages should be for the cluster legalizer.
      *
@@ -615,6 +661,15 @@ class ClusterLegalizer {
     /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
     ///        Called once by the constructor.
     void init_feedback_pin_sets();
+
+    /**
+     * @brief Returns true if the given relative placement group still has at
+     *        least one atom that has not been packed into any cluster.
+     *
+     * Used by the capacity reservation check (see
+     * set_reserve_relative_group_capacity()).
+     */
+    bool relative_group_has_unclustered_atoms(const std::pair<UserRelativeMacroId, int>& rel_group) const;
 
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
@@ -661,6 +716,13 @@ class ClusterLegalizer {
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
+
+    /// @brief Whether clusters hosting an incomplete relative placement group
+    ///        reserve their remaining capacity for that group's molecules.
+    ///        See set_reserve_relative_group_capacity(). Deliberately not
+    ///        cleared by reset(): once enabled for the re-pack retries, it
+    ///        stays enabled for all remaining packing iterations.
+    bool reserve_relative_group_capacity_ = false;
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the
