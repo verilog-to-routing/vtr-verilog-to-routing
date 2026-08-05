@@ -2,12 +2,9 @@
 # build the mosaic plugin against the yosys that ships inside the vtr build.
 # sources are split between mosaic/wildebeest/src (wildebeest-originated
 # clk_domains / max_level) and mosaic/src (mosaic-only vtr_arch_* / arch_rule_gen).
-#
+
 # prerequisites: vtr is already built so <vtr>/build/bin/yosys-config exists
 # because the plugin only needs yosys headers and does not link any vtr lib.
-#
-# run from anywhere:
-#   bash mosaic/build_mosaic.shset -euo pipefail
 
 scriptDir="$(cd "$(dirname "$0")" && pwd)"
 vtrDir="${VTR_DIR:-$(cd "${scriptDir}/.." && pwd)}"
