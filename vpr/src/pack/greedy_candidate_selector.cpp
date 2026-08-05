@@ -295,6 +295,14 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
     // cluster. Also keeps track of which attraction group the cluster belongs
     // to.
     const t_pack_molecule& successful_mol = prepacker_.get_molecule(successful_mol_id);
+
+    // Reset the list of feasible blocks. This state does not depend on the
+    // molecule's atoms, so it only needs to be reset once per molecule.
+    cluster_gain_stats.has_done_connectivity_and_timing = false;
+    cluster_gain_stats.initial_search_for_feasible_blocks = true;
+    cluster_gain_stats.num_candidates_proposed = 0;
+    cluster_gain_stats.feasible_blocks.clear();
+
     for (AtomBlockId blk_id : successful_mol.atom_block_ids) {
         if (!blk_id) {
             continue;
@@ -303,11 +311,6 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
         //Update attraction group
         AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
 
-        /* reset list of feasible blocks */
-        cluster_gain_stats.has_done_connectivity_and_timing = false;
-        cluster_gain_stats.initial_search_for_feasible_blocks = true;
-        cluster_gain_stats.num_candidates_proposed = 0;
-        cluster_gain_stats.feasible_blocks.clear();
         /* TODO: Allow clusters to have more than one attraction group. */
         if (atom_grp_id.is_valid())
             cluster_gain_stats.attraction_grp_id = atom_grp_id;
@@ -356,9 +359,12 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
 
         // TODO: For flat placement reconstruction, should we mark the molecules
         //       in the same tile as the seed of this cluster?
-
-        update_total_gain(cluster_gain_stats, attraction_groups);
     }
+
+    // Recompute the total gain of all marked blocks. update_total_gain fully
+    // recomputes each marked block's gain from its accumulated stats, so it
+    // only needs to run once, after all of the molecule's atoms are marked.
+    update_total_gain(cluster_gain_stats, attraction_groups);
 
     // if this molecule came from the transitive fanout candidates remove it
     cluster_gain_stats.transitive_fanout_candidates.erase(successful_mol.atom_block_ids[successful_mol.root]);
