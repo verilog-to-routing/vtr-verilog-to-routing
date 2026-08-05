@@ -212,7 +212,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
             // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
             if (to_src_or_sink == e_pin_type::RECEIVER && to_idirect != UNDEFINED
-                && (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !is_net_direct_connection(to_net_id, to_idirect, clb_nlist)))) {
+                && (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !net_direct_connection_sink_(to_net_id, to_idirect, clb_nlist).is_valid()))) {
                 for (int from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
 
@@ -220,11 +220,15 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                     int from_idirect = idirect_from_blk_pin_[physical_tile->index][from_physical_pin];
                     e_pin_type from_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][from_physical_pin];
 
-                    // Confirm whether this is a head macro
-                    //
-                    // The output SOURCE (from_pin) of a true head macro will:
-                    //  * drive another block with the same direct connection
-                    if (from_src_or_sink == e_pin_type::DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID() && is_net_direct_connection(from_net_id, to_idirect, clb_nlist)) {
+                    // Confirm this is a macro head: its output SOURCE (from_pin) must drive
+                    // another block through the same direct connection. The direct sink found
+                    // here seeds the member walk below.
+                    ClusterPinId direct_sink_pin = ClusterPinId::INVALID();
+                    if (from_src_or_sink == e_pin_type::DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
+                        direct_sink_pin = net_direct_connection_sink_(from_net_id, to_idirect, clb_nlist);
+                    }
+
+                    if (direct_sink_pin.is_valid()) {
                         // Mark down that this is the first block in the macro
                         pl_macro_member_blk_num_of_this_blk[0] = blk_id;
                         pl_macro_idirect[num_macro] = to_idirect;
@@ -235,28 +239,20 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                         // Also find out how many members are in the macros,
                         // there are at least 2 members - 1 head and 1 tail.
 
-                        // Initialize the variables
-                        ClusterNetId next_net_id = from_net_id;
-                        ClusterBlockId next_blk_id = blk_id;
+                        // Start finding the other members; each iteration enters with the sink
+                        // pin of the previous member's direct connection
+                        while (direct_sink_pin.is_valid()) {
+                            ClusterBlockId next_blk_id = clb_nlist.pin_block(direct_sink_pin);
 
-                        // Start finding the other members
-                        while (next_net_id != ClusterNetId::INVALID()) {
-                            ClusterNetId curr_net_id = next_net_id;
-
-                            // Check that the next net is driven by a direct with the same idirect and also have the same to_pin direct connection
-                            // If not, this is not a valid macro and we stop here.
-                            if (!is_net_direct_connection(curr_net_id, to_idirect, clb_nlist)) {
-                                break;
-                            }
-
-                            // Assume that carry chains only has 1 sink - direct connection
-                            VTR_ASSERT(clb_nlist.net_sinks(curr_net_id).size() == 1);
-                            next_blk_id = clb_nlist.net_pin_block(curr_net_id, 1);
-
-                            // Assume that the from_iblk_pin index is the same for the next block
-                            VTR_ASSERT(idirect_from_blk_pin_[physical_tile->index][from_physical_pin] == from_idirect
-                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == e_pin_type::DRIVER);
-                            next_net_id = clb_nlist.block_net(next_blk_id, from_iblk_pin);
+                            // from_iblk_pin is a pin index on the head block. Pin indices are only
+                            // meaningful within one logical block type, so reusing it on next_blk_id
+                            // (below) is only correct if next_blk_id has the same type as the head.
+                            // No architecture can violate this (it would need a direct
+                            // between two block types with Fc = 0 pins, which none has), but assert
+                            // it so such an architecture fails here instead of silently
+                            // reading the wrong pin.
+                            VTR_ASSERT(clb_nlist.block_type(next_blk_id) == logical_block);
+                            ClusterNetId next_net_id = clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
                             int imember = pl_macro_num_members[num_macro];
@@ -265,6 +261,12 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                             // Increment the num_member count.
                             pl_macro_num_members[num_macro]++;
 
+                            // Follow the next link of the chain; the walk stops when the next
+                            // net is not a direct connection (this member is the macro tail)
+                            direct_sink_pin = ClusterPinId::INVALID();
+                            if (next_net_id != ClusterNetId::INVALID()) {
+                                direct_sink_pin = net_direct_connection_sink_(next_net_id, to_idirect, clb_nlist);
+                            }
                         } // Found all the members of this macro at this point
 
                         // Allocate the second dimension of the blk_num array since I now know the size
@@ -659,7 +661,7 @@ static bool is_constant_clb_net(ClusterNetId clb_net,
     return atom_nlist.net_is_constant(atom_net);
 }
 
-bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist) {
+ClusterPinId PlaceMacros::net_direct_connection_sink_(ClusterNetId clb_net, int idirect, const ClusteredNetlist& clb_nlist) {
     ClusterBlockId block_id = clb_nlist.net_driver_block(clb_net);
     int pin_index = clb_nlist.net_pin_logical_index(clb_net, 0);
 
@@ -669,37 +671,49 @@ bool PlaceMacros::is_net_direct_connection(ClusterNetId clb_net, int idirect, co
 
     auto driver_direct = idirect_from_blk_pin_[physical_tile->index][physical_pin];
 
-    int receiver_direct = UNDEFINED;
-
-    //if there is more than one sink, it should not be counted as a direct connection
-    if (clb_nlist.net_sinks(clb_net).size() > 1) {
-        return false;
+    // Only pins with Fc = 0 on all segments carry a direct index (see
+    // mark_direct_of_pins), so this rejects any non-dedicated net — including
+    // high-fanout constant/clock nets — without scanning its sinks.
+    if (driver_direct != idirect) {
+        return ClusterPinId::INVALID();
     }
 
-    ClusterPinId net_sink = clb_nlist.net_pin(clb_net, 1);
-    ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
+    // Find the sink pin annotated with this direct. Other sinks are ignored: a chain
+    // link (e.g. cout -> cin) may also fan out to regular pins served through general
+    // routing, which must not break the macro.
+    ClusterPinId direct_sink_pin = ClusterPinId::INVALID();
 
-    if (sink_block_id == block_id) {
-        //net is connected back to the same block, should not be counted as a direct connection
-        VTR_LOG_WARN(
-            "Block '%s'have a direct connection to itself, this connection will not be counted as a direct connection to form a macro.\n",
-            clb_nlist.block_name(block_id).c_str());
-        return false;
+    for (ClusterPinId net_sink : clb_nlist.net_sinks(clb_net)) {
+        ClusterBlockId sink_block_id = clb_nlist.pin_block(net_sink);
+        int sink_pin_index = clb_nlist.pin_logical_index(net_sink);
+
+        t_logical_block_type_ptr sink_logical_block = clb_nlist.block_type(sink_block_id);
+        t_physical_tile_type_ptr sink_physical_tile = pick_physical_type(sink_logical_block);
+        int sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
+
+        int receiver_direct = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
+        if (receiver_direct != idirect) {
+            continue;
+        }
+
+        if (sink_block_id == block_id) {
+            // net is connected back to the same block, should not be counted as a direct connection
+            VTR_LOG_WARN(
+                "Block '%s' has a direct connection to itself, this connection will not be counted as a direct connection to form a macro.\n",
+                clb_nlist.block_name(block_id).c_str());
+            return ClusterPinId::INVALID();
+        }
+
+        if (direct_sink_pin.is_valid()) {
+            // more than one sink receives this direct connection (e.g. a carry tree);
+            // this cannot be represented by a macro, so do not count it as a direct connection
+            return ClusterPinId::INVALID();
+        }
+
+        direct_sink_pin = net_sink;
     }
 
-    int sink_pin_index = clb_nlist.net_pin_logical_index(clb_net, 1);
-
-    auto sink_logical_block = clb_nlist.block_type(sink_block_id);
-    auto sink_physical_tile = pick_physical_type(sink_logical_block);
-    auto sink_physical_pin = get_physical_pin(sink_physical_tile, sink_logical_block, sink_pin_index);
-
-    receiver_direct = idirect_from_blk_pin_[sink_physical_tile->index][sink_physical_pin];
-
-    if (driver_direct == UNDEFINED || receiver_direct == UNDEFINED) {
-        return false;
-    }
-
-    return driver_direct == idirect && receiver_direct == idirect;
+    return direct_sink_pin;
 }
 
 const t_pl_macro& PlaceMacros::operator[](int idx) const {

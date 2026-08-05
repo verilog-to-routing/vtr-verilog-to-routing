@@ -40,6 +40,13 @@ struct t_pack_pattern_block {
  *      from_pin   : specific pin in the from_block driving the connection
  *      to_block   : block driven by this connection
  *      to_pin     : specific pin in the to_block driven by this connection
+ *      is_fc0_chain_link : set on every chain connection (Ex. an adder's cout feeding the next
+ *                          adder's cin) of a pattern that has chain_link_fc_zero set (see
+ *                          t_pack_patterns below). The prepacker normally refuses to grow a
+ *                          molecule across a net that has more than one sink; on these
+ *                          connections it grows the molecule anyway, because the chain hop 
+ *                          has to use the dedicated wire no matter what. Set by
+ *                          mark_fc0_chain_link_connections in prepack.cpp.
  *      next       : next connection in the linked list
  */
 struct t_pack_pattern_connections {
@@ -48,6 +55,9 @@ struct t_pack_pattern_connections {
 
     t_pack_pattern_block* to_block;
     t_pb_graph_pin* to_pin;
+
+    // True if this connection is a chain link of a pattern marked chain_link_fc_zero.
+    bool is_fc0_chain_link = false;
 
     t_pack_pattern_connections* next;
 };
@@ -79,6 +89,17 @@ struct t_pack_pattern_connections {
  *                          when forming a short adder chain.
  *      is_chain          : does this pack pattern go across clusters. For example, carry chains can normally cross
  *                          between logic blocks.
+ *      chain_link_fc_zero : true if the only way this chain can hop from one cluster to the next
+ *                          is the dedicated chain wiring, because the cluster input pins that
+ *                          feed the chain (Ex. a CLB's cin pin) cannot reach general routing at
+ *                          all (Fc = 0). When true, the prepacker keeps chains together even if
+ *                          the chain net has extra fanout, regardless of what that fanout
+ *                          drives: the hop has to use the dedicated wire no matter what, so
+ *                          splitting the chain would not make the net any easier to route.
+ *                          Caveat: only the representative tile (pick_physical_type) of the
+ *                          block type the pattern was found in is checked (see
+ *                          pattern_chain_input_has_zero_fc in prepack.cpp).
+ *                          Always false for non-chain patterns.
  *      chain_root_pins   : this is only non-empty for pack_patterns with is_chain set. It points to a specific
  *                          pin of the root_block primitive (Ex. cin of an adder primitive) that is directly
  *                          connected to a cluster-level block pin that can be drive from the preceding cluster.
@@ -102,6 +123,9 @@ struct t_pack_patterns {
     bool* is_block_optional;
 
     bool is_chain;
+    // True if the chain's cluster-level input pins all have Fc = 0
+    // on the representative physical tile (dedicated inter-cluster link); see struct comment.
+    bool chain_link_fc_zero;
     std::vector<std::vector<t_pb_graph_pin*>> chain_root_pins;
 
     // default constructor initializing to an invalid pack pattern
@@ -113,5 +137,6 @@ struct t_pack_patterns {
         num_blocks = 0;
         is_block_optional = nullptr;
         is_chain = false;
+        chain_link_fc_zero = false;
     }
 };

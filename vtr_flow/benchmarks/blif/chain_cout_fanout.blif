@@ -1,0 +1,87 @@
+# 16-bit ripple-carry adder chain with look-ahead taps on mid-chain carry-out nets,
+# pre-synthesized in the style of a post-ABC netlist (.names / .latch / .subckt adder).
+# Enters the VTR flow at the VPR stage (-starting_stage vpr).
+#
+# Purpose: exercise the prepacker's handling of carry chains that hop between
+# clusters over dedicated routing only (cluster cin/cout pins with Fc = 0, see
+# chain_link_fc_zero in vpr/src/pack/pack_patterns.h). Two mid-chain cout nets
+# have extra (look-ahead) fanout in addition to feeding the next adder's cin:
+#   - c2 (cout of bit 2) also drives a .names LUT   (combinational look-ahead)
+#   - c6 (cout of bit 6) also drives a .latch       (registered look-ahead)
+# The registered tap in particular must not break the chain molecule: the whole
+# 18-adder chain (dummy head + 16 bits + carry-out tail) must prepack as a single
+# molecule. The taps sit on even-numbered bits so they occupy the second adder of
+# a fractured LUT pair, whose cout can reach the fle cout and escape onto the
+# CLB's general outputs (see the carry_exit interconnect in
+# vtr_flow/arch/timing/k6_frac_N10_frac_chain_cout_fanout_mem32K_40nm.xml).
+#
+# Following the standard VTR flow convention, the chain starts with a dummy
+# adder that generates the initial carry from constants, and the final carry-out
+# is extracted through the sumout of an extra tail adder (the cout pins cannot
+# reach general routing).
+
+.model chain_cout_fanout
+.inputs clk a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15
+.outputs q0 q1 q2 q3 q4 q5 q6 q7 q8 q9 q10 q11 q12 q13 q14 q15 la_r la_c cout16
+
+# Dummy head adder: generates the chain's initial carry (cin = 0) from constants
+.subckt adder a=gnd b=gnd cin=gnd sumout=head_sum_unused cout=c_head
+
+.subckt adder a=a0 b=b0 cin=c_head sumout=s0 cout=c0
+.subckt adder a=a1 b=b1 cin=c0 sumout=s1 cout=c1
+.subckt adder a=a2 b=b2 cin=c1 sumout=s2 cout=c2
+.subckt adder a=a3 b=b3 cin=c2 sumout=s3 cout=c3
+.subckt adder a=a4 b=b4 cin=c3 sumout=s4 cout=c4
+.subckt adder a=a5 b=b5 cin=c4 sumout=s5 cout=c5
+.subckt adder a=a6 b=b6 cin=c5 sumout=s6 cout=c6
+.subckt adder a=a7 b=b7 cin=c6 sumout=s7 cout=c7
+.subckt adder a=a8 b=b8 cin=c7 sumout=s8 cout=c8
+.subckt adder a=a9 b=b9 cin=c8 sumout=s9 cout=c9
+.subckt adder a=a10 b=b10 cin=c9 sumout=s10 cout=c10
+.subckt adder a=a11 b=b11 cin=c10 sumout=s11 cout=c11
+.subckt adder a=a12 b=b12 cin=c11 sumout=s12 cout=c12
+.subckt adder a=a13 b=b13 cin=c12 sumout=s13 cout=c13
+.subckt adder a=a14 b=b14 cin=c13 sumout=s14 cout=c14
+.subckt adder a=a15 b=b15 cin=c14 sumout=s15 cout=c15
+
+# Tail adder: extracts the final carry through sumout
+.subckt adder a=gnd b=gnd cin=c15 sumout=cout16 cout=tail_cout_unused
+
+# Registered sum outputs
+.latch s0 q0 re clk 0
+.latch s1 q1 re clk 0
+.latch s2 q2 re clk 0
+.latch s3 q3 re clk 0
+.latch s4 q4 re clk 0
+.latch s5 q5 re clk 0
+.latch s6 q6 re clk 0
+.latch s7 q7 re clk 0
+.latch s8 q8 re clk 0
+.latch s9 q9 re clk 0
+.latch s10 q10 re clk 0
+.latch s11 q11 re clk 0
+.latch s12 q12 re clk 0
+.latch s13 q13 re clk 0
+.latch s14 q14 re clk 0
+.latch s15 q15 re clk 0
+
+# Registered look-ahead: mid-chain carry c6 also drives a latch.
+# This multi-fanout chain-link net (c6 -> bit-7 cin AND a latch D) must not
+# truncate the chain molecule when the chain uses dedicated inter-cluster routing.
+.latch c6 la_r re clk 0
+
+# Combinational look-ahead: mid-chain carry c2 also drives a LUT
+.names c2 a3 la_c
+11 1
+
+# Constant zero
+.names gnd
+
+.end
+
+
+.model adder
+.inputs a b cin
+.outputs sumout cout
+.blackbox
+.end
