@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <set>
+#include <unordered_set>
 
 // f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
@@ -108,8 +109,9 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         // Record down the relative position of the swap
         t_pl_offset swap_offset = to - from;
 
-        // Macros entered while expanding this move; used to abort on displacement cycles
-        std::unordered_set<int> visited_macros;
+        // Macros entered while expanding this move, mapped to the number of block
+        // moves recorded when they were last entered; used to abort on displacement cycles
+        std::unordered_map<int, size_t> visited_macros;
 
         int imember_from = 0;
         outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry, place_macros, visited_macros);
@@ -197,21 +199,27 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        t_pl_offset swap_offset,
                                        const BlkLocRegistry& blk_loc_registry,
                                        const PlaceMacros& place_macros,
-                                       std::unordered_set<int>& visited_macros) {
+                                       std::unordered_map<int, size_t>& visited_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
-    // Detect cycles between user-defined relative-placement macros. A cycle can
-    // occur when moving one macro displaces another, whose counter-move reaches the
-    // first macro again. Since no block move may have been recorded yet, the
-    // recursion would otherwise never terminate.
+    // Detect cycles between user-defined relative-placement macros. A cycle occurs
+    // when macros repeatedly displace each other without recording any block moves,
+    // causing infinite recursion. Re-entry after progress is allowed and may be part
+    // of a valid move.
     //
-    // This check is limited to designs with user-defined macros. Architecture-based
-    // macros, such as carry chains, may legally re-enter a macro and should not be
-    // rejected.
-    if (place_macros.has_user_defined_macros() && !visited_macros.insert(imacro_from).second) {
-        blocks_affected.move_abortion_logger.log_move_abort("macro swap cycle");
-        return e_block_move_result::ABORT;
+    // This check only applies to user-defined macros. Architecture-based macros,
+    // such as carry chains, always record progress before re-entry.
+    if (place_macros.has_user_defined_macros()) {
+        size_t num_recorded_moves = blocks_affected.moved_blocks.size();
+        auto [visited_it, first_visit] = visited_macros.try_emplace(imacro_from, num_recorded_moves);
+        if (!first_visit) {
+            if (visited_it->second == num_recorded_moves) {
+                blocks_affected.move_abortion_logger.log_move_abort("macro swap cycle");
+                return e_block_move_result::ABORT;
+            }
+            visited_it->second = num_recorded_moves;
+        }
     }
 
     e_block_move_result outcome = e_block_move_result::VALID;
@@ -274,7 +282,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              t_pl_offset swap_offset,
                                              const BlkLocRegistry& blk_loc_registry,
                                              const PlaceMacros& pl_macros,
-                                             std::unordered_set<int>& visited_macros) {
+                                             std::unordered_map<int, size_t>& visited_macros) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
