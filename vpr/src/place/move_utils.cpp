@@ -15,6 +15,7 @@
 #include "PlacerCriticalities.h"
 
 #include <algorithm>
+#include <set>
 
 // f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
@@ -402,16 +403,13 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
     return e_block_move_result::VALID;
 }
 
-//Returns the set of macros affected by moving imacro by the specified offset
-//
-//The resulting 'macros' may contain duplicates
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
                                                              const BlkLocRegistry& blk_loc_registry,
                                                              const PlaceMacros& place_macros,
                                                              MoveAbortionLogger& move_abortion_logger) {
-    const auto& block_locs = blk_loc_registry.block_locs();
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
     e_block_move_result outcome = e_block_move_result::VALID;
@@ -447,23 +445,25 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
                                             t_pl_offset swap_offset,
                                             const BlkLocRegistry& blk_loc_registry,
                                             const PlaceMacros& place_macros) {
-    //Reset any partial move
+    // Reset any partial move
     blocks_affected.clear_move_blocks();
 
-    //Collect the macros affected
+    // Collect the macros affected
     std::vector<int> affected_macros;
-    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry, place_macros, blocks_affected.move_abortion_logger);
+    e_block_move_result outcome = identify_macro_self_swap_affected_macros(affected_macros,
+                                                                           imacro,
+                                                                           swap_offset,
+                                                                           blk_loc_registry,
+                                                                           place_macros,
+                                                                           blocks_affected.move_abortion_logger);
 
     if (outcome != e_block_move_result::VALID) {
         return outcome;
     }
 
-    //Remove any duplicate macros
-    affected_macros.resize(std::distance(affected_macros.begin(), std::ranges::unique(affected_macros).begin()));
-
     std::vector<ClusterBlockId> displaced_blocks;
 
-    //Move all the affected macros by the offset
+    // Move all the affected macros by the offset
     for (int imacro_affected : affected_macros) {
         outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset, blk_loc_registry, place_macros);
 
@@ -484,8 +484,8 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     std::vector<ClusterBlockId> non_macro_displaced_blocks;
     std::ranges::copy_if(displaced_blocks, std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
 
-    //Based on the currently queued block moves, find the empty 'holes' left behind
-    auto empty_locs = blocks_affected.determine_locations_emptied_by_move();
+    // Based on the currently queued block moves, find the empty 'holes' left behind
+    std::set<t_pl_loc> empty_locs = blocks_affected.determine_locations_emptied_by_move();
 
     VTR_ASSERT_SAFE(empty_locs.size() >= non_macro_displaced_blocks.size());
 
@@ -1357,35 +1357,6 @@ std::string e_move_result_to_string(e_move_result move_outcome) {
             return "Unsupported Move Outcome!";
             break;
     }
-}
-
-int find_free_layer(t_logical_block_type_ptr logical_block,
-                    const t_pl_loc& loc,
-                    const BlkLocRegistry& blk_loc_registry) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& compressed_grids = g_vpr_ctx.placement().compressed_block_grids;
-    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-
-    // TODO: Compatible layer vector should be shuffled first, and then iterated through
-    int free_layer = loc.layer;
-    VTR_ASSERT(loc.layer != UNDEFINED);
-    if (device_ctx.grid.get_num_layers() > 1) {
-        const auto& compatible_layers = compressed_grids[logical_block->index].get_layer_nums();
-        if (compatible_layers.size() > 1) {
-            if (grid_blocks.block_at_location(loc)) {
-                for (const auto& layer : compatible_layers) {
-                    if (layer != free_layer) {
-                        if (grid_blocks.block_at_location(loc) == ClusterBlockId::INVALID()) {
-                            free_layer = layer;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return free_layer;
 }
 
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng) {

@@ -15,7 +15,7 @@ static constexpr float EMPTY_DELTA = -2;
 static constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity();
 
 static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_profiler,
-                                                    const t_placer_opts& palcer_opts,
+                                                    const t_placer_opts& placer_opts,
                                                     const t_router_opts& router_opts,
                                                     bool measure_directconnect,
                                                     size_t longest_length,

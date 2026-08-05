@@ -148,6 +148,14 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       const BlkLocRegistry& blk_loc_registry,
                                       const PlaceMacros& place_macros);
 
+/**
+ * @brief Returns the set of macros affected by moving imacro by the specified offset.
+ *
+ * A macro is appended to macros only if it is not already present, so the result
+ * contains no duplicates.
+ *
+ * @return ABORT if a macro member would move to an illegal location, VALID otherwise.
+ */
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
@@ -282,7 +290,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
  */
 bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& from_loc,
-                          const t_pl_loc& centeroid,
+                          const t_pl_loc& centroid,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from,
@@ -428,15 +436,6 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                                                       int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
-
-/**
- * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accommodate "logical_block".
- * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
- * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
- */
-int find_free_layer(t_logical_block_type_ptr logical_block,
-                    const t_pl_loc& loc,
-                    const BlkLocRegistry& blk_loc_registry);
 
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
 
