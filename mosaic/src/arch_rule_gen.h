@@ -39,6 +39,9 @@ struct ArchRulePolicy {
   int minHardMulWidth = 0;
   // drop bram modes shallower than this address width from libmap (0 = keep all).
   int minHardMemAbits = 0;
+  // when set, missing classic sp/dp ram modes soft-map memories instead of
+  // erroring (needed for titan-style arches without classic ram models).
+  bool softOnlyMemory = false;
   ClassicModelNames classic;
 };
 

@@ -52,6 +52,8 @@ set hardAdderThreshold 3
 set minHardMulWidth 0
 # memories whose deepest scanned mode has fewer address bits stay soft (0 = off)
 set minHardMemAbits 0
+# when 1, missing classic ram modes soft-map memories (titan-style arches)
+set softOnlyMemory 0
 # long enough to walk an msb-to-lsb carry cascade in one go
 set sweepMaxIters  64
 # empty means skip the two-pass abc and do one plain -luts pass
@@ -103,6 +105,9 @@ if { $archXmlPath eq "" } {
     error "mosaic synthesis requires an arch xml (VVV)"
 }
 set archRulesCmd "vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/rules -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold -min-hard-mul $minHardMulWidth -min-hard-mem-abits $minHardMemAbits"
+if { $softOnlyMemory } {
+    append archRulesCmd " -soft-only-memory"
+}
 if { $archSupportDir ne "" && [file isdirectory "$archSupportDir/rules"] } {
     append archRulesCmd " -overlay-tpldir $archSupportDir/rules"
 }
@@ -280,11 +285,16 @@ if { "TTT" ne "" } {
     hierarchy -check -auto-top -purge_lib
 }
 
-# no -lib here so the generate loops expand at the real DATA_WIDTH. top is
-# already set so a plain hierarchy re-elaborates without -auto-top.
-# whitebox module names follow spRamModel/dpRamModel (classic or aliases).
-read_verilog -overwrite $archRulesDir/vtr_ram_whitebox.v
-hierarchy -check -purge_lib
+# classic bram whitebox (skipped when softOnlyMemory / no classic ram modes)
+set softOnlyMemoryMarker "$archRulesDir/soft_only_memory.txt"
+set softOnlyMemoryActive [file exists $softOnlyMemoryMarker]
+if { !$softOnlyMemoryActive } {
+    # no -lib here so the generate loops expand at the real DATA_WIDTH. top is
+    # already set so a plain hierarchy re-elaborates without -auto-top.
+    # whitebox module names follow spRamModel/dpRamModel (classic or aliases).
+    read_verilog -overwrite $archRulesDir/vtr_ram_whitebox.v
+    hierarchy -check -purge_lib
+}
 opt_expr
 opt_clean
 check
@@ -344,21 +354,26 @@ if { [file exists $exoticIdentityMapFile] } {
 # ----------------------------------------------------------------------------
 # bram
 # ----------------------------------------------------------------------------
-# memory_libmap uses init zero / rdwr old from bram_memory_map.txt.
-# non-zero-initialized memories are left as $mem here then soft-mapped.
-memory_libmap -lib $bramMapFile -logic-cost-rom $bramRomCost
+if { $softOnlyMemoryActive } {
+    log "mosaic: softOnlyMemory active; skipping hard bram libmap"
+    memory_map
+} else {
+    # memory_libmap uses init zero / rdwr old from bram_memory_map.txt.
+    # non-zero-initialized memories are left as $mem here then soft-mapped.
+    memory_libmap -lib $bramMapFile -logic-cost-rom $bramRomCost
 
-# leftovers (incl. non-zero init / unfit sizes) become flip-flop arrays
-memory_map
+    # leftovers (incl. non-zero init / unfit sizes) become flip-flop arrays
+    memory_map
 
-techmap -map $techBramFile
+    techmap -map $techBramFile
 
-# write_blif needs the arch model names not the internal bit-cell names
-delete $spRamModel $dpRamModel
-chtype -map vtr_sp_ram_bit $spRamModel
-chtype -map vtr_dp_ram_bit $dpRamModel
-delete vtr_sp_ram_bit vtr_dp_ram_bit
-read_verilog -lib $archRulesDir/vtr_ram_bit_lib.v
+    # write_blif needs the arch model names not the internal bit-cell names
+    delete $spRamModel $dpRamModel
+    chtype -map vtr_sp_ram_bit $spRamModel
+    chtype -map vtr_dp_ram_bit $dpRamModel
+    delete vtr_sp_ram_bit vtr_dp_ram_bit
+    read_verilog -lib $archRulesDir/vtr_ram_bit_lib.v
+}
 
 # last chance to shrink soft cones before hard mapping freezes the edges
 opt -full

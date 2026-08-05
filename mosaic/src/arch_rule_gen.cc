@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <fstream>
 #include <map>
 #include <regex>
@@ -260,6 +261,14 @@ public:
     std::vector<BramModeInfo> dpModes =
         filterModesByMinAbits(splitModes(info, false), policy.minHardMemAbits);
     if (spModes.empty() || dpModes.empty()) {
+      if (policy.softOnlyMemory) {
+        log_warning(
+            "vtr_arch_rules: no classic bram modes; softOnlyMemory set so "
+            "memories will soft-map (no hard bram libmap)\n");
+        writeFile(outDir + "/soft_only_memory.txt",
+                  "# no classic single_port_ram / dual_port_ram modes\n");
+        return;
+      }
       std::ostringstream msg;
       msg << "vtr_arch_rules: arch is missing required bram modes";
       if (spModes.empty())
@@ -278,9 +287,12 @@ public:
         msg << ")";
       msg << ". if the arch uses different ram model names, pass "
              "-alias single_port_ram=<model> and/or -alias dual_port_ram=<model> "
-             "from arch_config.tcl; otherwise check the arch xml pb_types.\n";
+             "from arch_config.tcl; set softOnlyMemory 1 for soft-only "
+             "memories (e.g. titan); otherwise check the arch xml pb_types.\n";
       log_cmd_error("%s", msg.str().c_str());
     }
+    // classic bram path: clear any leftover soft-only marker from a prior run
+    std::remove((outDir + "/soft_only_memory.txt").c_str());
     if (policy.minHardMemAbits > 0) {
       log("vtr_arch_rules: minHardMemAbits=%d kept %zu sp / %zu dp bram modes\n",
           policy.minHardMemAbits, spModes.size(), dpModes.size());

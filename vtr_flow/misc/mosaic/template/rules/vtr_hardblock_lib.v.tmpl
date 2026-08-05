@@ -14,6 +14,8 @@
 // ram stubs must be at least @RAM_STUB_DATA_WIDTH@ bits (widest arch bram data
 // mode) so rtl instances resolve without truncating buses at read time.
 // the whitebox later bit-slices them. keep the modules bodiless.
+// titan soft-only arches override this file under <stem>/rules/ without
+// the classic ram stubs.
 
 @@HARDBLOCK_STUBS@@
 (* blackbox *)

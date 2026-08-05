@@ -124,7 +124,7 @@ struct VtrArchRulesPass : public Pass {
     log("                    [-sp-cost N] [-dp-cost N] [-blocks a,b,...]\n");
     log("                    [-hard-adder-threshold N]\n");
     log("                    [-min-hard-mul N] [-min-hard-mem-abits N]\n");
-    log("                    [-stub-all-hardblocks]\n");
+    log("                    [-soft-only-memory] [-stub-all-hardblocks]\n");
     log("                    [-alias <role>=<model>]...\n");
     log("                    [-exotic <model> -exotic-template <file>]...\n");
     log("                    [-exotic-role <model> <role>]...\n");
@@ -159,7 +159,8 @@ struct VtrArchRulesPass : public Pass {
     log("\n");
     log("mode geometry comes from the arch xml. the following options are\n");
     log("flow policy, not arch facts: -sp-cost / -dp-cost (libmap costs),\n");
-    log("-hard-adder-threshold, -min-hard-mul, and -min-hard-mem-abits.\n");
+    log("-hard-adder-threshold, -min-hard-mul, -min-hard-mem-abits, and\n");
+    log("-soft-only-memory (soft-map memories when classic ram modes are absent).\n");
     log("\n");
   }
 
@@ -174,6 +175,7 @@ struct VtrArchRulesPass : public Pass {
     int hardAdderThreshold = 3;
     int minHardMulWidth = 0;
     int minHardMemAbits = 0;
+    bool softOnlyMemory = false;
     bool stubAllHardblocks = false;
     bool listModes = false;
     mosaic::ClassicModelNames classic;
@@ -218,6 +220,10 @@ struct VtrArchRulesPass : public Pass {
       }
       if (args[argidx] == "-min-hard-mem-abits" && argidx + 1 < args.size()) {
         minHardMemAbits = std::atoi(args[++argidx].c_str());
+        continue;
+      }
+      if (args[argidx] == "-soft-only-memory") {
+        softOnlyMemory = true;
         continue;
       }
       if (args[argidx] == "-blocks" && argidx + 1 < args.size()) {
@@ -320,6 +326,7 @@ struct VtrArchRulesPass : public Pass {
     policy.hardAdderThreshold = hardAdderThreshold;
     policy.minHardMulWidth = minHardMulWidth;
     policy.minHardMemAbits = minHardMemAbits;
+    policy.softOnlyMemory = softOnlyMemory;
     policy.classic = classic;
 
     mosaic::emitArchFacts(info, policy, outDir);

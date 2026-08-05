@@ -1,0 +1,20 @@
+// vtr_hardblock_lib.v -- titan soft-only overlay for @ARCH_NAME@
+// no classic single_port_ram / dual_port_ram stubs (softOnlyMemory).
+// exotic stubs come from @@HARDBLOCK_STUBS@@ when stubAllHardblocks is on.
+
+@@HARDBLOCK_STUBS@@
+(* blackbox *)
+module mux (
+    input select,
+    input x,
+    input y,
+    output z
+);
+endmodule
+
+(* blackbox *)
+module fpga_interconnect (
+    input datain,
+    output dataout
+);
+endmodule

@@ -117,14 +117,28 @@ When classic `multiply` is present, `integer_mul` roles are skipped so behaviora
 
 The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is `vtr_flow/misc/mosaic/<arch_xml_stem>/` when that dir has `arch_config.tcl`; otherwise the run is facts-only. When `ARCH_SUPPORT_DIR/rules/` exists, `synthesis.tcl` passes it as `-overlay-tpldir` so selected templates can specialize without copying the whole shared rules set.
 
-`vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `minHardMulWidth`, `minHardMemAbits`, `stubAllHardblocks`, aliases, exotic roles). Do not put dsp/ram widths in `arch_config.tcl`. Shared abc scripts live under `template/abc/` (rebuild with `abc/build_delay_scr.py`).
+`vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `minHardMulWidth`, `minHardMemAbits`, `softOnlyMemory`, `stubAllHardblocks`, aliases, exotic roles). Do not put dsp/ram widths in `arch_config.tcl`. Shared abc scripts live under `template/abc/` (rebuild with `abc/build_delay_scr.py`).
 
 Soft/hard policy knobs:
 
 - `minHardMulWidth` — `$mul` stays soft when both operand widths are at or below this (default `0` disables)
 - `minHardMemAbits` — drop shallower bram modes from libmap so those memories soft-map (default `0`)
+- `softOnlyMemory` — when classic sp/dp ram modes are absent, soft-map memories instead of erroring (Titan)
 - `hardAdderThreshold` / `dspMinWidth` — unchanged
 - When `lutCost` / `cmpLutWidth` are left at defaults, synthesis derives them from scanned `lutK` / `lutK1`; empty abc scripts auto-select shared delay scripts only for fracturable K6-like (`lutK==6` and `lutK1` in range)
+
+### Titan (Stratix IV / 10)
+
+Titan arches have no classic ram/multiply/adder models. Policy dirs
+`vtr_flow/misc/mosaic/stratixiv_arch.timing/` and `stratix10_arch.timing/` set
+`softOnlyMemory 1` and `stubAllHardblocks 1`. Smoke with VTR Verilog (not Titan BLIF):
+
+```shell
+./vtr_flow/scripts/run_vtr_flow.py vtr_flow/benchmarks/verilog/diffeq1.v \
+  vtr_flow/arch/titan/stratixiv_arch.timing.xml -start mosaic
+```
+
+Details: `docs-env/docs/doc-mosaic-titan.md`.
 
 ## QoR Compare (vanilla_vtr vs mosaic)
 `run_vtr_batch.py` wraps the default `run_vtr_flow.py` call. Each run is pinned
