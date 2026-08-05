@@ -1574,7 +1574,7 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     // the chain_input_pins vector
     for (int iports = 0; iports < root_block->num_input_ports; iports++) {
         for (int ipins = 0; ipins < root_block->num_input_pins[iports]; ipins++) {
-            auto& input_pin = root_block->input_pins[iports][ipins];
+            t_pb_graph_pin& input_pin = root_block->input_pins[iports][ipins];
             for (int iedge = 0; iedge < input_pin.num_output_edges; iedge++) {
                 if (input_pin.output_edges[iedge]->belongs_to_pattern(chain_pattern->index)) {
                     chain_input_pins.push_back(&input_pin);
@@ -1594,8 +1594,8 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     // found before following the edges that are annotated with the given pack_pattern
     std::vector<std::vector<t_pb_graph_pin*>> reachable_pins;
 
-    for (const auto& pin_ptr : chain_input_pins) {
-        auto reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
+    for (t_pb_graph_pin* pin_ptr : chain_input_pins) {
+        std::vector<t_pb_graph_pin*> reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
         // sort the reachable output pins to compare them later using set_intersection
         std::stable_sort(reachable_output_pins.begin(), reachable_output_pins.end());
         reachable_pins.push_back(std::move(reachable_output_pins));
@@ -1640,7 +1640,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
     std::vector<std::vector<t_pb_graph_pin*>> primitive_input_pins;
 
     std::unordered_set<t_pb_type*> pattern_blocks = get_pattern_blocks(*chain_pattern);
-    for (const auto pin_ptr : chain_input_pins) {
+    for (t_pb_graph_pin* pin_ptr : chain_input_pins) {
         std::vector<t_pb_graph_pin*> connected_primitive_pins;
         get_all_connected_primitive_pins(pin_ptr, pattern_blocks, connected_primitive_pins);
 
