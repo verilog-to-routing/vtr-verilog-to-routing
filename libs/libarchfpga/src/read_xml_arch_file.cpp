@@ -363,6 +363,7 @@ static void process_clock_metal_layers(pugi::xml_node parent,
 static void process_clock_networks(pugi::xml_node parent,
                                    std::vector<t_clock_network_arch>& clock_networks,
                                    const std::vector<t_arch_switch_inf>& switches,
+                                   t_arch* arch,
                                    pugiutil::loc_data& loc_data);
 static void process_clock_switch_points(pugi::xml_node parent,
                                         t_clock_network_arch& clock_network,
@@ -372,6 +373,10 @@ static void process_clock_switch_grid_points(pugi::xml_node parent,
                                              t_clock_network_arch& clock_network,
                                              const std::vector<t_arch_switch_inf>& switches,
                                              pugiutil::loc_data& loc_data);
+static void process_clock_switch_grid_patterns(pugi::xml_node parent,
+                                               t_clock_network_arch& clock_network,
+                                               t_arch* arch,
+                                               pugiutil::loc_data& loc_data);
 static void process_clock_routing(pugi::xml_node parent,
                                   std::vector<t_clock_connection_arch>& clock_connections,
                                   const std::vector<t_arch_switch_inf>& switches,
@@ -527,6 +532,7 @@ void xml_read_arch(std::string_view arch_file,
             process_clock_networks(next,
                                    arch->clock_arch.clock_networks_arch,
                                    arch->switches,
+                                   arch,
                                    loc_data);
 
             process_clock_routing(next,
@@ -4703,6 +4709,7 @@ static void process_clock_metal_layers(pugi::xml_node parent,
 static void process_clock_networks(pugi::xml_node parent,
                                    std::vector<t_clock_network_arch>& clock_networks,
                                    const std::vector<t_arch_switch_inf>& switches,
+                                   t_arch* arch,
                                    pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_spine_attributes = {"name", "num_inst", "metal_layer", "starty", "endy", "x", "repeatx", "repeaty", "endx"};
     std::vector<std::string> expected_rib_attributes = {"name", "num_inst", "metal_layer", "startx", "endx", "y", "repeatx", "repeaty", "endy"};
@@ -4880,8 +4887,8 @@ static void process_clock_networks(pugi::xml_node parent,
             } else if (switch_block_type_str == "universal") {
                 clock_network.switch_grid.switch_block_type = e_switch_block_type::UNIVERSAL;
             } else if (switch_block_type_str == "custom") {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
-                               "Custom switch block patterns are not yet supported for clock_switch_grid.\n");
+                clock_network.switch_grid.switch_block_type = e_switch_block_type::CUSTOM;
+                process_clock_switch_grid_patterns(curr_type, clock_network, arch, loc_data);
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
                                vtr::string_fmt("Unknown switch_block_type '%s' for clock_switch_grid. "
@@ -5059,6 +5066,114 @@ static void process_clock_switch_grid_points(pugi::xml_node parent,
         clock_network.switch_grid.switch_points.push_back(point);
 
         curr_switch = curr_switch.next_sibling(curr_switch.name());
+    }
+}
+
+// Parses the <switch_pattern> children of a clock_switch_grid whose
+// switch_block_type is "custom". Independent of general routing's
+// <switchblocklist>/<switch_block type="custom"> -- a separate XML location,
+// struct (t_clock_switch_pattern), and name namespace.
+static void process_clock_switch_grid_patterns(pugi::xml_node parent,
+                                               t_clock_network_arch& clock_network,
+                                               t_arch* arch,
+                                               pugiutil::loc_data& loc_data) {
+    std::vector<std::string> expected_attributes = {"name", "type", "location",
+                                                     "x", "y",
+                                                     "startx", "endx", "repeatx", "incrx",
+                                                     "starty", "endy", "repeaty", "incry"};
+
+    int num_patterns = count_children(parent, "switch_pattern", loc_data);
+    if (num_patterns == 0) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(parent),
+                       vtr::string_fmt("clock_switch_grid '%s' has switch_block_type=\"custom\" but no "
+                                       "<switch_pattern> children were found.\n",
+                                       clock_network.name.c_str())
+                           .c_str());
+    }
+
+    pugi::xml_node curr_pattern = get_first_child(parent, "switch_pattern", loc_data);
+    for (int i = 0; i < num_patterns; i++) {
+        expect_only_attributes(curr_pattern, expected_attributes, loc_data);
+
+        t_clock_switch_pattern pattern;
+        pattern.name = get_attribute(curr_pattern, "name", loc_data, ReqOpt::OPTIONAL).as_string("");
+
+        std::string type_str(get_attribute(curr_pattern, "type", loc_data).value());
+        if (type_str == "full") {
+            expect_only_children(curr_pattern, {}, loc_data);
+            pattern.switch_block_type = e_switch_block_type::FULL;
+        } else if (type_str == "subset") {
+            expect_only_children(curr_pattern, {}, loc_data);
+            pattern.switch_block_type = e_switch_block_type::SUBSET;
+        } else if (type_str == "wilton") {
+            expect_only_children(curr_pattern, {}, loc_data);
+            pattern.switch_block_type = e_switch_block_type::WILTON;
+        } else if (type_str == "universal") {
+            expect_only_children(curr_pattern, {}, loc_data);
+            pattern.switch_block_type = e_switch_block_type::UNIVERSAL;
+        } else if (type_str == "custom") {
+            expect_only_children(curr_pattern, {"switchfuncs"}, loc_data);
+            pattern.switch_block_type = e_switch_block_type::CUSTOM;
+
+            pugi::xml_node switchfuncs_node = get_single_child(curr_pattern, "switchfuncs", loc_data, ReqOpt::OPTIONAL);
+            if (!switchfuncs_node) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
+                               vtr::string_fmt("switch_pattern '%s' for clock_switch_grid '%s' has "
+                                               "type=\"custom\" but no <switchfuncs> child was found.\n",
+                                               pattern.name.c_str(), clock_network.name.c_str())
+                                   .c_str());
+            }
+
+            // Reuse general routing's own <switchblock> permutation-formula
+            // machinery verbatim (parse_switchblocks.h): read_sb_switchfuncs
+            // parses every <func type="lr" formula="..."/> into a
+            // t_permutation_map, and check_switchblock validates it -- for
+            // BI_DIRECTIONAL, rejecting a pattern that specifies both
+            // side1->side2 and side2->side1 (the reverse is implicit, derived
+            // by mirroring the computed edge at RR-graph build time, not by
+            // evaluating a second formula).
+            t_switchblock_inf scratch_sb;
+            scratch_sb.directionality = clock_network.switch_grid.directionality;
+            read_sb_switchfuncs(switchfuncs_node, scratch_sb, loc_data);
+            check_switchblock(scratch_sb, arch);
+            pattern.permutation_map = std::move(scratch_sb.permutation_map);
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
+                           vtr::string_fmt("Unknown switch_pattern type '%s' for clock_switch_grid '%s'. "
+                                           "Expected one of: full, subset, wilton, universal, custom.\n",
+                                           type_str.c_str(), clock_network.name.c_str())
+                               .c_str());
+        }
+
+        std::string location_str = get_attribute(curr_pattern, "location", loc_data, ReqOpt::OPTIONAL).as_string("everywhere");
+        if (location_str == "everywhere") {
+            pattern.location = e_sb_location::E_EVERYWHERE;
+        } else if (location_str == "xy_specified") {
+            pattern.location = e_sb_location::E_XY_SPECIFIED;
+
+            pattern.x = get_attribute(curr_pattern, "x", loc_data, ReqOpt::OPTIONAL).as_string("");
+            pattern.y = get_attribute(curr_pattern, "y", loc_data, ReqOpt::OPTIONAL).as_string("");
+
+            pattern.startx = get_attribute(curr_pattern, "startx", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.endx = get_attribute(curr_pattern, "endx", loc_data, ReqOpt::OPTIONAL).as_string("W-1");
+            pattern.repeatx = get_attribute(curr_pattern, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.incrx = get_attribute(curr_pattern, "incrx", loc_data, ReqOpt::OPTIONAL).as_string("1");
+
+            pattern.starty = get_attribute(curr_pattern, "starty", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.endy = get_attribute(curr_pattern, "endy", loc_data, ReqOpt::OPTIONAL).as_string("H-1");
+            pattern.repeaty = get_attribute(curr_pattern, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("0");
+            pattern.incry = get_attribute(curr_pattern, "incry", loc_data, ReqOpt::OPTIONAL).as_string("1");
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_pattern),
+                           vtr::string_fmt("Unknown switch_pattern location '%s' for clock_switch_grid '%s'. "
+                                           "Expected one of: everywhere, xy_specified.\n",
+                                           location_str.c_str(), clock_network.name.c_str())
+                               .c_str());
+        }
+
+        clock_network.switch_grid.switch_patterns.push_back(pattern);
+
+        curr_pattern = curr_pattern.next_sibling(curr_pattern.name());
     }
 }
 

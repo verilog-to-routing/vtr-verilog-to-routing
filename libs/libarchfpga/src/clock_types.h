@@ -71,6 +71,34 @@ struct t_clock_switch_grid_point {
     int arch_switch_idx = -1; // only set for DRIVE points
 };
 
+// One <switch_pattern> under a custom clock_switch_grid: which built-in
+// permutation type applies, and where. Formula strings resolved later
+// (setup_clocks.cpp) against the same W/H vars as the rest of this grid --
+// same deferred-formula convention as startx/repeatx/chan_w below, so this
+// still works with "auto" device layouts (general routing's own
+// <switchblock_location> XY_SPECIFIED explicitly rejects "auto" layouts;
+// clock networks don't need that restriction). Fully independent of general
+// routing's <switchblocklist>/<switch_block type="custom">: different XML
+// location, different struct, no shared namespace.
+struct t_clock_switch_pattern {
+    std::string name;
+    e_switch_block_type switch_block_type; // WILTON/SUBSET/UNIVERSAL/FULL/CUSTOM
+    e_sb_location location = e_sb_location::E_EVERYWHERE;
+
+    // Only meaningful when location == E_XY_SPECIFIED.
+    std::string x, y; // exact location; empty means "use the region below"
+    std::string startx = "0", endx = "W-1", repeatx = "0", incrx = "1";
+    std::string starty = "0", endy = "H-1", repeaty = "0", incry = "1";
+
+    // Only meaningful when switch_block_type == CUSTOM: turn permutation
+    // formulas parsed from this pattern's <switchfuncs> child, reusing
+    // general routing's own <switchblock> grammar/types verbatim (see
+    // parse_switchblocks.h's read_sb_switchfuncs/t_permutation_map). Formulas
+    // stay as strings here -- t/W are only known per-track at RR-graph build
+    // time, same as general routing.
+    t_permutation_map permutation_map;
+};
+
 struct t_clock_switch_grid_arch {
     std::string metal_layer;
     std::string startx;
@@ -83,9 +111,14 @@ struct t_clock_switch_grid_arch {
 
     // How the wires incident to each switch box connect to one another.
     // Defaults to FULL (every incident wire mutually reachable), matching the
-    // original minimal implementation. CUSTOM is not yet supported for clock
-    // networks.
+    // original minimal implementation. CUSTOM picks a per-location built-in
+    // type from switch_patterns below (see t_clock_switch_pattern) instead of
+    // a single type for the whole grid.
     e_switch_block_type switch_block_type = e_switch_block_type::FULL;
+
+    // Only populated when switch_block_type == CUSTOM. Matched in list order;
+    // first match wins.
+    std::vector<t_clock_switch_pattern> switch_patterns;
 
     // Wire length, in switch-box hops (not tiles), i.e. how many repeatx/repeaty
     // pitches a hop wire spans before terminating at a switch box. Defaults to

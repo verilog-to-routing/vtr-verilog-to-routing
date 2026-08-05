@@ -305,6 +305,16 @@ struct SwitchGridPoint {
     int switch_idx = UNDEFINED; // only meaningful for DRIVE points
 };
 
+// A single <switch_pattern> entry: which built-in switch-block permutation type
+// applies, and where (matched against ClockSwitchGrid::switch_patterns_ in list
+// order, first match wins). Only used when switch_block_type_ == CUSTOM.
+struct ClockSwitchPattern {
+    e_switch_block_type switch_block_type = e_switch_block_type::FULL;
+    e_sb_location location = e_sb_location::E_EVERYWHERE;
+    t_specified_loc specified_loc; // only meaningful when location == E_XY_SPECIFIED
+    t_permutation_map permutation_map; // only meaningful when switch_block_type == CUSTOM
+};
+
 // Models a grid of clock switch boxes: at every (repeat_x, repeat_y) spaced location,
 // clock wires connect to their adjacent switch boxes' wires according to a configurable
 // switch-block pattern (see switch_block_type_). Locations with a drive/tap switch_point
@@ -328,6 +338,8 @@ class ClockSwitchGrid : public ClockNetwork {
     int chan_w_ = UNDEFINED;
     int internal_switch_idx_ = UNDEFINED;
     e_switch_block_type switch_block_type_ = e_switch_block_type::FULL;
+    // Only populated when switch_block_type_ == CUSTOM (see add_switch_pattern).
+    std::vector<ClockSwitchPattern> switch_patterns_;
     int length_hops_ = 1;
     e_directionality directionality_ = BI_DIRECTIONAL;
 
@@ -360,6 +372,7 @@ class ClockSwitchGrid : public ClockNetwork {
     void set_chan_width(int chan_w);
     void set_internal_switch(int switch_idx);
     void set_switch_block_type(e_switch_block_type switch_block_type);
+    void add_switch_pattern(ClockSwitchPattern pattern);
     void set_length(int length_hops);
     void set_directionality(e_directionality directionality);
     void add_switch_point(std::string name, SwitchGridPointType type, int x, int y, int switch_idx = UNDEFINED);

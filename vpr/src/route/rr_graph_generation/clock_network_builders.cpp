@@ -3,8 +3,11 @@
 #include "globals.h"
 
 #include "get_parallel_segs.h"
+#include "parse_switchblocks.h"
 #include "rr_graph_sbox.h"
 #include "rr_rc_data.h"
+#include "switchblock_scatter_gather_common_utils.h"
+#include "vtr_expr_eval.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
@@ -967,6 +970,10 @@ void ClockSwitchGrid::set_switch_block_type(e_switch_block_type switch_block_typ
     switch_block_type_ = switch_block_type;
 }
 
+void ClockSwitchGrid::add_switch_pattern(ClockSwitchPattern pattern) {
+    switch_patterns_.push_back(std::move(pattern));
+}
+
 void ClockSwitchGrid::set_length(int length_hops) {
     VTR_ASSERT(length_hops > 0);
     length_hops_ = length_hops;
@@ -1069,6 +1076,45 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
             return Direction::BIDIR;
         }
         return (track % 2 == 0) ? Direction::INC : Direction::DEC;
+    };
+
+    // Which built-in switch-block permutation type applies at switch box (bx,by).
+    // Fast path: non-custom grids never touch switch_patterns_, so this costs
+    // nothing for the common case. For CUSTOM grids, switch_patterns_ (populated
+    // by setup_clocks.cpp from <switch_pattern> entries) is tried in declaration
+    // order and the first match wins; match_sb_xy is the same XY_SPECIFIED
+    // region-matching logic general routing's own custom switchblocks use (see
+    // switchblock_scatter_gather_common_utils.h). Only EVERYWHERE/XY_SPECIFIED
+    // are supported here (unlike general routing's PERIMETER/CORE/CORNER/FRINGE,
+    // which don't have a clean equivalent for a clock switch grid that already
+    // defines its own extent via startx/starty/repeatx/repeaty).
+    // Used to evaluate CUSTOM switch_pattern <switchfuncs> formulas in Pass 2
+    // (get_sb_formula_raw_result, reused from general routing's own
+    // parse_switchblocks.h). Unused/harmless for non-custom grids.
+    vtr::FormulaParser formula_parser;
+
+    // Returns nullptr for non-custom grids (fast path: switch_patterns_ is
+    // never touched, matching the pre-custom behavior exactly), otherwise the
+    // first matching pattern (declaration order), whose switch_block_type may
+    // itself be a built-in type or CUSTOM (formula-based, see permutation_map).
+    auto pattern_at = [&](int bx, int by) -> const ClockSwitchPattern* {
+        if (switch_block_type_ != e_switch_block_type::CUSTOM) {
+            return nullptr;
+        }
+        t_physical_tile_loc loc{bx, by, layer_num};
+        for (const ClockSwitchPattern& pattern : switch_patterns_) {
+            bool matches = (pattern.location == e_sb_location::E_EVERYWHERE)
+                           || (pattern.location == e_sb_location::E_XY_SPECIFIED
+                               && match_sb_xy(grid, loc, pattern.specified_loc));
+            if (matches) {
+                return &pattern;
+            }
+        }
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock switch grid '%s': switch box at (%d,%d) matches no <switch_pattern> "
+                        "(add a trailing location=\"everywhere\" pattern to cover all remaining boxes).\n",
+                        get_name().c_str(), bx, by);
+        return nullptr; // unreachable, VPR_FATAL_ERROR does not return
     };
 
     // Pass 1: create the hop wires themselves (independent of switch-block pattern).
@@ -1263,7 +1309,9 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
             }
 
             // Wire-to-wire connectivity through this switch box follows the
-            // configured switch-block pattern.
+            // configured switch-block pattern (per-location for CUSTOM grids).
+            const ClockSwitchPattern* pattern = pattern_at(bx, by);
+            e_switch_block_type sb_type = pattern ? pattern->switch_block_type : switch_block_type_;
             for (e_side from_side : TOTAL_2D_SIDES) {
                 for (int from_track = 0; from_track < chan_w_; from_track++) {
                     int from_idx = stub_at(bx, by, from_side, from_track);
@@ -1277,7 +1325,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                     for (e_side to_side : TOTAL_2D_SIDES) {
                         if (to_side == from_side) continue;
 
-                        if (switch_block_type_ == e_switch_block_type::FULL) {
+                        if (sb_type == e_switch_block_type::FULL) {
                             // FULL connects every from_track to every to_track (there is
                             // no meaningful single to_track to permute to).
                             for (int to_track = 0; to_track < chan_w_; to_track++) {
@@ -1290,9 +1338,57 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                                 }
                                 clock_graph.add_edge(rr_edges_to_create, RRNodeId(from_idx), RRNodeId(to_idx), internal_switch_idx_, false);
                             }
+                        } else if (sb_type == e_switch_block_type::CUSTOM) {
+                            // Fully-custom pattern: the turn permutation for this side
+                            // pair comes from the matched pattern's <switchfuncs>
+                            // formulas (general routing's own grammar, reused
+                            // verbatim -- see parse_switchblocks.h). t is the raw
+                            // from_track index (0..chan_w_-1) and W is chan_w_,
+                            // matching general routing's actual semantics (t is never
+                            // a filtered/compacted index there -- direction eligibility
+                            // is a separate skip, not baked into t's domain).
+                            SBSideConnection side_conn(from_side, to_side);
+                            auto iter = pattern->permutation_map.find(side_conn);
+                            if (iter == pattern->permutation_map.end()) continue;
+
+                            for (const std::string& formula : iter->second) {
+                                vtr::t_formula_data formula_data;
+                                formula_data.set_var_value("t", from_track);
+                                formula_data.set_var_value("W", chan_w_);
+                                int raw_to_track = get_sb_formula_raw_result(formula_parser, formula.c_str(), formula_data);
+
+                                // Adjust for negative/out-of-range results, mirroring
+                                // build_switchblocks.cpp's adjust_formula_result() for
+                                // its single-pass case (num_conns == chan_w_ here, so
+                                // connection_ind == from_track and the src_mult term
+                                // there is always 0) -- that function is file-static
+                                // there and not reusable directly.
+                                int to_track = raw_to_track;
+                                if (to_track < 0) {
+                                    to_track += ((-to_track) / chan_w_ + 1) * chan_w_;
+                                }
+                                to_track = (to_track + chan_w_) % chan_w_;
+
+                                if (directionality_ == UNI_DIRECTIONAL && !is_outgoing(to_side, track_direction(to_track))) {
+                                    continue;
+                                }
+
+                                int to_idx = stub_at(bx, by, to_side, to_track);
+                                if (to_idx < 0) continue;
+
+                                clock_graph.add_edge(rr_edges_to_create, RRNodeId(from_idx), RRNodeId(to_idx), internal_switch_idx_, false);
+                                if (directionality_ == BI_DIRECTIONAL) {
+                                    // Mirror the reverse edge directly instead of
+                                    // evaluating a second formula: check_switchblock
+                                    // (at parse time) already rejected specifying both
+                                    // side1->side2 and side2->side1 for the same pair,
+                                    // matching general routing's own convention.
+                                    clock_graph.add_edge(rr_edges_to_create, RRNodeId(to_idx), RRNodeId(from_idx), internal_switch_idx_, false);
+                                }
+                            }
                         } else if (directionality_ == BI_DIRECTIONAL) {
                             int to_track = get_simple_switch_block_track(from_side, to_side, from_track,
-                                                                         switch_block_type_, chan_w_, chan_w_);
+                                                                         sb_type, chan_w_, chan_w_);
                             if (to_track < 0 || to_track >= chan_w_) continue;
 
                             int to_idx = stub_at(bx, by, to_side, to_track);
@@ -1309,7 +1405,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                             // lane that actually flows away from this box on to_side.
                             int from_lane = from_track / 2;
                             int to_lane = get_simple_switch_block_track(from_side, to_side, from_lane,
-                                                                        switch_block_type_, chan_w_ / 2, chan_w_ / 2);
+                                                                        sb_type, chan_w_ / 2, chan_w_ / 2);
                             if (to_lane < 0 || to_lane >= chan_w_ / 2) continue;
 
                             int to_track = -1;

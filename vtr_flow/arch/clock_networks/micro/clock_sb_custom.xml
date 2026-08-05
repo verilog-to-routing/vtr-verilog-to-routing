@@ -1,0 +1,226 @@
+<!--
+  This is a copy of micro/clock_sb_only.xml that switches the clock_switch_grid
+  to switch_block_type="custom", to test per-location switch block patterns via
+  <switch_pattern> entries: the drive column (x=0) uses a "full" pattern (matching
+  clock_sb_only.xml's drive-column behavior); the rest of the top row (y=0, x>=1)
+  uses a fully-custom formula-based pattern (type="custom" with a <switchfuncs>
+  block, reusing general routing's own <switchblock> permutation-formula grammar);
+  and every other switch box falls through to a trailing "wilton"
+  location="everywhere" catch-all. This exercises the XY_SPECIFIED region match,
+  the catch-all fallback, real <switchfuncs> formula evaluation, the
+  BI_DIRECTIONAL auto-mirrored reverse edge, and an unspecified side-pair within a
+  matched custom pattern correctly producing no edges there.
+-->
+<architecture>
+  <models>
+  </models>
+
+  <tiles>
+    <tile name="io" area="0">
+      <sub_tile name="io" capacity="8">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.15"/>
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
+    <tile name="clb" area="18000">
+      <sub_tile name="clb">
+        <equivalent_sites>
+          <site pb_type="clb" pin_mapping="direct"/>
+        </equivalent_sites>
+
+        <input name="I" num_pins="40" equivalent="full"/>
+        <output name="O" num_pins="10" equivalent="instance"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.15">
+          <!-- clock pins do not connect to local routing -->
+          <fc_override fc_type="frac" fc_val="0" port_name="clk"/>
+        </fc>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
+    </tile>
+  </tiles>
+
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+    </auto_layout>
+  </layout>
+
+  <device>
+    <sizing R_minW_nmos="8926" R_minW_pmos="16067"/>
+    <area grid_logic_tile_area="0"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.000000"/>
+      <y distr="uniform" peak="1.000000"/>
+    </chan_width_distr>
+
+    <switch_block type="wilton" fs="3"/>
+
+    <connection_block input_switch_name="ipin_cblock"/>
+  </device>
+  <switchlist>
+    <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+    <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
+    <switch type="mux" name="drive_buff" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+  </switchlist>
+  <segmentlist>
+    <segment freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+      <mux name="0"/>
+      <sb type="pattern">1 1 1 1 1</sb>
+      <cb type="pattern">1 1 1 1</cb>
+    </segment>
+  </segmentlist>
+
+  <complexblocklist>
+    <pb_type name="io">
+      <input name="outpad" num_pins="1"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clock" num_pins="1"/>
+      <mode name="inpad">
+        <pb_type name="inpad" blif_model=".input" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="inpad" input="inpad.inpad" output="io.inpad">
+            <delay_constant max="4.243e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+          </direct>
+        </interconnect>
+      </mode>
+      <mode name="outpad">
+        <pb_type name="outpad" blif_model=".output" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="outpad" input="io.outpad" output="outpad.outpad">
+            <delay_constant max="1.394e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+          </direct>
+        </interconnect>
+      </mode>
+
+      <power method="ignore"/>
+    </pb_type>
+
+    <pb_type name="clb">
+      <input name="I" num_pins="40" equivalent="full"/>
+      <output name="O" num_pins="10" equivalent="instance"/>
+      <clock name="clk" num_pins="1"/>
+      <pb_type name="fle" num_pb="10">
+        <input name="in" num_pins="6"/>
+        <output name="out" num_pins="1"/>
+        <clock name="clk" num_pins="1"/>
+        <mode name="n1_lut6">
+          <pb_type name="ble6" num_pb="1">
+            <input name="in" num_pins="6"/>
+            <output name="out" num_pins="1"/>
+            <clock name="clk" num_pins="1"/>
+            <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+              <input name="in" num_pins="6" port_class="lut_in"/>
+              <output name="out" num_pins="1" port_class="lut_out"/>
+              <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
+                  82e-12
+                  173e-12
+                  261e-12
+                  263e-12
+                  398e-12
+                  397e-12
+              </delay_matrix>
+            </pb_type>
+            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+              <input name="D" num_pins="1" port_class="D"/>
+              <output name="Q" num_pins="1" port_class="Q"/>
+              <clock name="clk" num_pins="1" port_class="clock"/>
+              <T_setup value="66e-12" port="ff.D" clock="clk"/>
+              <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+            </pb_type>
+
+            <interconnect>
+              <direct name="direct1" input="ble6.in" output="lut6[0:0].in"/>
+              <direct name="direct2" input="lut6.out" output="ff.D">
+                <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
+              </direct>
+              <direct name="direct3" input="ble6.clk" output="ff.clk"/>
+              <mux name="mux1" input="ff.Q lut6.out" output="ble6.out">
+                <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out"/>
+                <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out"/>
+              </mux>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct name="direct1" input="fle.in" output="ble6.in"/>
+            <direct name="direct2" input="ble6.out" output="fle.out[0:0]"/>
+            <direct name="direct3" input="fle.clk" output="ble6.clk"/>
+          </interconnect>
+        </mode>
+      </pb_type>
+      <interconnect>
+        <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
+          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in"/>
+          <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in"/>
+        </complete>
+        <complete name="clks" input="clb.clk" output="fle[9:0].clk">
+        </complete>
+        <direct name="clbouts1" input="fle[9:0].out" output="clb.O"/>
+      </interconnect>
+    </pb_type>
+  </complexblocklist>
+  <power>
+    <local_interconnect C_wire="2.5e-10"/>
+    <mux_transistor_size mux_transistor_size="3"/>
+    <FF_size FF_size="4"/>
+    <LUT_transistor_size LUT_transistor_size="4"/>
+  </power>
+  <clocks>
+    <clock buffer_size="auto" C_wire="2.5e-10"/>
+  </clocks>
+  <clocknetworks>
+    <metal_layers>
+      <metal_layer name="global_clk_switch_network" Rmetal="50.42" Cmetal="20.7e-15"/>
+    </metal_layers>
+    <clock_network name="global_clk_switch_network" num_inst="1">
+      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="1" starty="0" repeaty="1" chan_w="4" switch_name="drive_buff" switch_block_type="custom">
+        <!-- For now the drive point is hard-coded to the top-left switch box. -->
+        <switch_point type="drive" name="drive" xoffset="0" yoffset="1" switch_name="drive_buff"/>
+
+        <!-- Put a tap point at every switch box location. xincr/yincr="1" naturally
+             stops at the last interior switch box location and doesn't reach the
+             device's outer ring of tiles, since that perimeter never has a switch
+             box (same as general routing channels not reaching it). -->
+        <switch_point type="tap" name="tap" xoffset="0" yoffset="0" xincr="1" yincr="1"/>
+
+        <!-- Custom switch block patterns: the drive column gets full crossbar
+             connectivity, matched via an XY_SPECIFIED region (x=0, all y); we
+             aslo use a custom switch patter for the top row; every
+             other switch box falls through to the trailing "everywhere" catch-all
+             using a wilton pattern. -->
+        <switch_pattern name="drive_column" type="full" location="xy_specified" startx="0" endx="0"/>
+        <switch_pattern name="top_row_custom" type="custom" location="xy_specified" startx="1" starty="0" endy="0">
+          <switchfuncs>
+            <func type="lr" formula="t"/>
+            <func type="rt" formula="W-1-t"/>
+          </switchfuncs>
+        </switch_pattern>
+        <switch_pattern name="rest" type="wilton" location="everywhere"/>
+      </clock_switch_grid>
+    </clock_network>
+    <clock_routing>
+      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="0" locationy="1" switch="0" fc_val="1.0"/>
+      <tap from="global_clk_switch_network.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
+    </clock_routing>
+  </clocknetworks>
+</architecture>

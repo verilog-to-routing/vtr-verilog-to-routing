@@ -165,6 +165,27 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                 switch_grid->set_chan_width(switch_grid_chan_w);
                 switch_grid->set_internal_switch(clock_network_arch.switch_grid.arch_switch_idx);
                 switch_grid->set_switch_block_type(clock_network_arch.switch_grid.switch_block_type);
+                for (const t_clock_switch_pattern& pattern_arch : clock_network_arch.switch_grid.switch_patterns) {
+                    ClockSwitchPattern pattern;
+                    pattern.switch_block_type = pattern_arch.switch_block_type;
+                    pattern.location = pattern_arch.location;
+                    pattern.permutation_map = pattern_arch.permutation_map;
+                    if (pattern.location == e_sb_location::E_XY_SPECIFIED) {
+                        pattern.specified_loc.x = pattern_arch.x.empty() ? -1 : p.parse_formula(pattern_arch.x, vars);
+                        pattern.specified_loc.y = pattern_arch.y.empty() ? -1 : p.parse_formula(pattern_arch.y, vars);
+
+                        pattern.specified_loc.reg_x.start = p.parse_formula(pattern_arch.startx, vars);
+                        pattern.specified_loc.reg_x.end = p.parse_formula(pattern_arch.endx, vars);
+                        pattern.specified_loc.reg_x.repeat = p.parse_formula(pattern_arch.repeatx, vars);
+                        pattern.specified_loc.reg_x.incr = p.parse_formula(pattern_arch.incrx, vars);
+
+                        pattern.specified_loc.reg_y.start = p.parse_formula(pattern_arch.starty, vars);
+                        pattern.specified_loc.reg_y.end = p.parse_formula(pattern_arch.endy, vars);
+                        pattern.specified_loc.reg_y.repeat = p.parse_formula(pattern_arch.repeaty, vars);
+                        pattern.specified_loc.reg_y.incr = p.parse_formula(pattern_arch.incry, vars);
+                    }
+                    switch_grid->add_switch_pattern(std::move(pattern));
+                }
                 switch_grid->set_length(p.parse_formula(clock_network_arch.switch_grid.length, vars));
                 switch_grid->set_directionality(clock_network_arch.switch_grid.directionality);
 
