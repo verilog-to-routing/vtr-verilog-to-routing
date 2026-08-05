@@ -50,9 +50,20 @@ Options are the following:
 
 The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, and post-processes the blif (prunes unused blackbox model declarations yosys emits but the design never instantiates, instantiated models are always kept, then applies `vtr_flow/misc/mosaic/template/fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify). After that the flow continues through abc and vpr exactly like the odin and parmys legs.
 
+## Primitive profiles
+
+`template/profiles.tcl` defines profiles as data (`requireClassicRams`, `forceStubAll`, `inferClassicMulAdd`):
+
+| Profile | Behavior |
+|---------|----------|
+| `vtr_classic` | Infer `$mul`/`$add`/`$sub` onto classic models when present |
+| `passthrough_exotics` | Forces `stubAllHardblocks`; rtl-instantiated exotics keep via identity maps |
+
+Unknown `primitiveProfile` values error. Missing classic multiply without a role/template warns (inferred `$mul` stays soft).
+
 ## Classic model contract
 
-Required for a normal mosaic run: `single_port_ram` and `dual_port_ram` (or aliases). Optional: `multiply`, `adder`. Carry-chain `add_sub_map` is emitted only when the adder has `cin`/`cout`/`sumout`; otherwise `$add`/`$sub` stay soft.
+Required for a normal mosaic run: `single_port_ram` and `dual_port_ram` (or aliases). Optional: `multiply`, `adder`. Carry-chain `add_sub_map` is emitted only when the adder has `cin`/`cout`/`sumout`; otherwise `$add`/`$sub` stay soft (including when an adder model exists but is not carry-style).
 
 If the arch uses different model names, set in `arch_config.tcl`:
 
@@ -89,7 +100,14 @@ Example template: `rules/examples/mult_fp_16_passthrough.v.tmpl`. Smoke fixture:
 
 The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is `vtr_flow/misc/mosaic/<arch_xml_stem>/` when that dir has `arch_config.tcl`; otherwise the run is facts-only.
 
-`vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `stubAllHardblocks`, aliases, exotic roles). Do not put dsp/ram widths in `arch_config.tcl`. Shared abc scripts live under `template/abc/` (rebuild with `abc/build_delay_scr.py`).
+`vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `minHardMulWidth`, `minHardMemAbits`, `stubAllHardblocks`, aliases, exotic roles). Do not put dsp/ram widths in `arch_config.tcl`. Shared abc scripts live under `template/abc/` (rebuild with `abc/build_delay_scr.py`).
+
+Soft/hard policy knobs (Parmys-adjacent, not a full mixer):
+
+- `minHardMulWidth` — `$mul` with either operand at or below this width stays soft (default `0`; Parmys `min_hard_multiplier`)
+- `minHardMemAbits` — drop shallower bram modes from libmap so those memories soft-map (default `0`)
+- `hardAdderThreshold` / `dspMinWidth` — unchanged
+- When `lutCost` / `cmpLutWidth` are left at defaults, synthesis derives them from scanned `lutK` / `lutK1`; empty abc scripts auto-select shared delay scripts only for fracturable K6-like (`lutK==6` and `lutK1` in range)
 
 ## QoR Compare (vanilla_vtr vs mosaic)
 `run_vtr_batch.py` wraps the default `run_vtr_flow.py` call. Each run is pinned
