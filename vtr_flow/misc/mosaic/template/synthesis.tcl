@@ -38,12 +38,19 @@ set dspMinWidth    2
 set bramRomCost    0.5
 set bramSpCost     128
 set bramDpCost     128
-set cmpLutWidth    6
-set lutCost        "6:1"
+# sentinel defaults: when policy leaves these untouched, facts derive from lutK/lutK1
+set cmpLutWidthDefault 6
+set lutCostDefault     "6:1"
+set cmpLutWidth    $cmpLutWidthDefault
+set lutCost        $lutCostDefault
 # $add/$sub at or below this width stay soft so abc can still optimize
 # across them. substituted into the generated add_sub_map.v because the
 # map file is the only place that sees $add widths at techmap time
 set hardAdderThreshold 3
+# $mul narrower than this on either operand stays soft (parmys min_hard_multiplier)
+set minHardMulWidth 0
+# memories whose deepest scanned mode has fewer address bits stay soft (0 = off)
+set minHardMemAbits 0
 # long enough to walk an msb-to-lsb carry cascade in one go
 set sweepMaxIters  64
 # empty means skip the two-pass abc and do one plain -luts pass
@@ -55,9 +62,7 @@ set adderModel     "adder"
 set spRamModel     "single_port_ram"
 set dpRamModel     "dual_port_ram"
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
-# primitive mapping profile:
-#   vtr_classic         - techmap inferred $mul/$add/$sub to standard models
-#   passthrough_exotics - stubAllHardblocks + keep rtl-instantiated exotics
+# primitive mapping profile (see profiles.tcl for the data table)
 set primitiveProfile vtr_classic
 # when 1, vtr_arch_rules emits generic stubs for every exotic hardblock model
 # and writes hardblock_keep_types.txt so rtl-instantiated cells survive synth
@@ -72,6 +77,8 @@ set exoticTemplatePairs {}
 # {model role} pairs -> -exotic-role (stock tpldir/roles/<role>_map.v.tmpl)
 set exoticRoles {}
 
+source "$templateDir/profiles.tcl"
+
 set archConfigFile ""
 if { $archSupportDir ne "" } {
     set archConfigFile "$archSupportDir/arch_config.tcl"
@@ -79,9 +86,7 @@ if { $archSupportDir ne "" } {
 if { $archConfigFile ne "" && [file exists $archConfigFile] } {
     source $archConfigFile
 }
-if { $primitiveProfile eq "passthrough_exotics" } {
-    set stubAllHardblocks 1
-}
+mosaicApplyPrimitiveProfile
 # remember policy keep list so extras (e.g. role-bound models) survive the
 # post-facts rebuild of classic/aliased builtins
 set keepCellTypesFromConfig $keepCellTypes
@@ -96,7 +101,7 @@ set mul2dspMinWidth $dspMinWidth
 if { $archXmlPath eq "" } {
     error "mosaic synthesis requires an arch xml (VVV)"
 }
-set archRulesCmd "vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/rules -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold"
+set archRulesCmd "vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/rules -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold -min-hard-mul $minHardMulWidth -min-hard-mem-abits $minHardMemAbits"
 if { $aliasMultiply ne "" } {
     append archRulesCmd " -alias multiply=$aliasMultiply"
 }
@@ -141,10 +146,27 @@ if { [file exists $archFactsFile] } {
     source $archFactsFile
     # policy dspMinWidth (from arch_config / defaults) wins over facts min mode
     set dspMinWidth $mul2dspMinWidth
-    # when policy left the generic lutCost default, prefer scanned lutK
-    if { $lutK > 0 && $lutCost eq "6:1" } {
-        set lutCost "$lutK:1"
+    # derive lut / abc knobs from scanned k when policy left the sentinels
+    if { $lutK > 0 && $lutCost eq $lutCostDefault } {
+        if { $lutK1 > 0 && $lutK1 < $lutK } {
+            set lutCost "${lutK1}:1,${lutK}:1"
+        } else {
+            set lutCost "${lutK}:1"
+        }
     }
+    if { $lutK > 0 && $cmpLutWidth == $cmpLutWidthDefault } {
+        set cmpLutWidth $lutK
+    }
+    # fracturable k6-like: auto-pick shared delay scripts when policy left both empty
+    if { $abcOptScript eq "" && $abcMapScript eq "" && $lutK == 6 && $lutK1 > 0 && $lutK1 < $lutK } {
+        set abcOptScript "$templateDir/abc/delay_gia_opt.scr"
+        set abcMapScript "$templateDir/abc/delay_map.scr"
+        log "mosaic: auto-selected delay abc scripts for fracturable lutK=$lutK lutK1=$lutK1"
+    }
+    if { $adderPresent && !$adderCarryChain } {
+        log "mosaic: adder present but not carry-chain (cin/cout/sumout); \$add/\$sub stay soft"
+    }
+    mosaicCheckClassicMulContract
 }
 # keep lists must name the models that appear in the blif (aliases win)
 set keepCellTypes "t:$multiplyModel t:$adderModel t:$spRamModel t:$dpRamModel"
