@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""generate a 3-dut systemverilog testbench: rtl vs synth vs abc."""
+"""generate a 3-dut systemverilog testbench. rtl vs synth vs abc."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from port_parse import PortDecl, isClockPort, isResetPort
 
 @dataclass(frozen=True)
 class DirectedRamPlan:
-    """port names used for directed same-addr ram collision stimulus."""
+    # port names used for directed same-addr ram collision stimulus
     kind: str  # "sp_bits" | "regfile_bits" | "dp_vector"
     note: str
 
@@ -23,8 +23,8 @@ def _portByLower(ports: List[PortDecl], lowerName: str) -> Optional[PortDecl]:
     return None
 
 
+# USE: return a directed-ram plan when top ports look like known ram harnesses.
 def detectDirectedRamPlan(ports: List[PortDecl]) -> Optional[DirectedRamPlan]:
-    """return a directed-ram plan when top ports look like known ram harnesses."""
     inputs = {p.name.lower(): p for p in ports if p.direction == "input"}
     if (
         "we1" in inputs
@@ -64,12 +64,12 @@ def _assignBits(prefix: str, width: int, value: int) -> List[str]:
     return lines
 
 
+# USE: emit directed vectors that hit same-cycle same-address ram collisions.
 def _directedRamStimulusBody(
     ports: List[PortDecl],
     plan: DirectedRamPlan,
     primaryClk: str,
 ) -> str:
-    """emit directed vectors that hit same-cycle same-address ram collisions."""
     compareChecks = []
     outputs = [p for p in ports if p.direction == "output"]
     for p in outputs:
@@ -160,7 +160,7 @@ def _directedRamStimulusBody(
 {body3}
 {tick}
 """
-    # dp_vector: full dual-port with both write enables
+    # dp_vector is a full dual-port with both write enables
     data1 = _portByLower(ports, "data1")
     data2 = _portByLower(ports, "data2")
     assert data1 and data2
@@ -210,13 +210,11 @@ def _isActiveLowReset(name: str) -> bool:
     )
 
 
+# HELPER: pins that must be high for the dut to leave stall / idle during reset.
+# arm_core's i_system_rdy stalls fetch when low. holding it high during the
+# quiet reset/warm-up window avoids comparing while the core is frozen with
+# undriven inputs.
 def _isHoldHighBringupPort(name: str) -> bool:
-    """pins that must be high for the dut to leave stall / idle during reset.
-
-    arm_core's i_system_rdy stalls fetch when low; holding it high during the
-    quiet reset/warm-up window avoids comparing while the core is frozen with
-    undriven inputs.
-    """
     lower = name.lower()
     return lower in {"i_system_rdy", "system_rdy"}
 
@@ -235,6 +233,7 @@ def _portConnect(port: PortDecl, suffix: str) -> str:
     return f"        .{port.name}({port.name})"
 
 
+# USE: emit tb that drives identical random inputs into three duts and compares outputs.
 def generateTripleTestbench(
     ports: List[PortDecl],
     *,
@@ -246,7 +245,6 @@ def generateTripleTestbench(
     maxErrors: int = 20,
     directedRam: bool = False,
 ) -> str:
-    """emit tb that drives identical random inputs into three duts and compares outputs."""
     clocks = [p for p in ports if p.direction == "input" and isClockPort(p.name)]
     resets = [p for p in ports if p.direction == "input" and isResetPort(p.name)]
     dataInputs = [
@@ -278,7 +276,7 @@ def generateTripleTestbench(
 """)
     clockSv = "\n".join(clockBlocks)
 
-    # reset: assert active-high for names without _n; active-low for *_n / n*
+    # reset. assert active-high for names without _n. active-low for *_n / n*
     resetInit = []
     for rst in resets:
         activeLow = _isActiveLowReset(rst.name)
@@ -318,17 +316,17 @@ def generateTripleTestbench(
         elif p.width <= 32:
             randLines.append(f"            {p.name} = $urandom();")
         else:
-            # pack multiple urandom words
+            # pack multiple urandom words for wide buses
             words = (p.width + 31) // 32
             parts = []
             for w in range(words):
                 parts.append("$urandom()")
-            # truncate to width
+            # truncate packed words to the declared width
             joined = " , ".join(parts)
             randLines.append(f"            {p.name} = {{{joined}}};")
     randBody = "\n".join(randLines) if randLines else "            ;"
 
-    # compare outputs
+    # compare outputs across the three duts
     compareChecks = []
     for p in outputs:
         compareChecks.append(

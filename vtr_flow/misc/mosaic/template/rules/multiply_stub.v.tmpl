@@ -1,5 +1,5 @@
-// multiply stub for vtr_classic -lib resolution (widest mode from arch scan).
-// default WIDTH is the widest mode so -lib does not freeze a 1-bit multiply
+// multiply stub for vtr_classic -lib resolution; WIDTH defaults to the widest
+// scanned mode so -lib does not freeze a 1-bit multiply.
 (* blackbox *)
 module @MULT_MODEL@ #(
     parameter WIDTH = @MULT_MAX_WIDTH@

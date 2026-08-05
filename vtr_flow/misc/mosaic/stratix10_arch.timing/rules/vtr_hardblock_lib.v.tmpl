@@ -1,6 +1,7 @@
-// vtr_hardblock_lib.v -- titan soft-only overlay for @ARCH_NAME@
-// no classic single_port_ram / dual_port_ram stubs (softOnlyMemory).
-// exotic stubs come from @@HARDBLOCK_STUBS@@ when stubAllHardblocks is on.
+// vtr_hardblock_lib.v. titan soft-only overlay for @ARCH_NAME@
+// this overlay omits classic single_port_ram and dual_port_ram stubs because
+// softOnlyMemory is set, and exotic stubs come from @@HARDBLOCK_STUBS@@ when
+// stubAllHardblocks is enabled.
 
 @@HARDBLOCK_STUBS@@
 (* blackbox *)

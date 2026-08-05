@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-mosaic verilator random-check: rtl vs post-synth blif vs post-vtr-abc blif.
+"""mosaic verilator random-check. rtl vs post-synth blif vs post-vtr-abc blif.
 
 takes a harness circuit (or explicit paths), converts the two blifs to verilog
 via yosys, builds a 3-dut testbench, verilates, and drives hundreds of thousands
@@ -9,7 +8,7 @@ of identical random vectors. exit 0 only if all three match.
 optional directed coverage:
   --check-mem-init   fail if rtl has memory init that hard rams cannot carry
   --directed-ram     prepend same-addr read/write (and write/write if feasible)
-  --ram-zero-init    force sim ram contents to 0 (hides init bugs; default is x)
+  --ram-zero-init    force sim ram contents to 0 (hides init bugs. default is x)
 
 usage:
   python3 mosaic/verilator_check/run_random_check.py \\
@@ -69,8 +68,8 @@ def resolveVerilator() -> Optional[str]:
     return None
 
 
+# USE: return human-readable evidence that rtl initializes memory.
 def findRtlMemInitEvidence(rtlPath: Path) -> List[str]:
-    """return human-readable evidence that rtl initializes memory."""
     text = rtlPath.read_text(encoding="utf-8", errors="replace")
     findings: List[str] = []
     if _READMEM_RE.search(text):
@@ -97,8 +96,8 @@ def findRtlMemInitEvidence(rtlPath: Path) -> List[str]:
     return ordered
 
 
+# USE: true when post-synth netlist still has hard ram blackboxes.
 def synthUsesHardRam(synthBlif: Path, synthVerilog: Optional[Path] = None) -> bool:
-    """true when post-synth netlist still has hard ram blackboxes."""
     for path in (synthBlif, synthVerilog):
         if path is None or not path.is_file():
             continue
@@ -108,8 +107,8 @@ def synthUsesHardRam(synthBlif: Path, synthVerilog: Optional[Path] = None) -> bo
     return False
 
 
+# USE: exit-style status. 0 ok, 1 init likely dropped, 2 scan error.
 def checkMemInitMismatch(rtlPath: Path, synthBlif: Path, synthVerilog: Optional[Path] = None) -> int:
-    """exit-style status: 0 ok, 1 init likely dropped, 2 scan error."""
     evidence = findRtlMemInitEvidence(rtlPath)
     if not evidence:
         print("mem-init check: no rtl memory init patterns found")
@@ -132,12 +131,10 @@ def checkMemInitMismatch(rtlPath: Path, synthBlif: Path, synthVerilog: Optional[
     return 0
 
 
+# USE: rename one module in src to newName. return the old name used.
+# if oldName is given, rename that module (needed for multi-module rtl where
+# the top is not the first module). otherwise rename the first module.
 def renameModule(src: Path, dest: Path, newName: str, oldName: Optional[str] = None) -> str:
-    """rename one module in src to newName; return the old name used.
-
-    if oldName is given, rename that module (needed for multi-module rtl where
-    the top is not the first module). otherwise rename the first module.
-    """
     text = src.read_text(encoding="utf-8", errors="replace")
     if oldName is None:
         match = re.search(r"^(\s*)module\s+(\w+)\b", text, re.M)
@@ -157,12 +154,12 @@ def renameModule(src: Path, dest: Path, newName: str, oldName: Optional[str] = N
     return oldName
 
 
+# USE: return (rtl, synthBlif, abcBlif) from a compare harness run directory.
 def discoverArtifacts(runDir: Path) -> Tuple[Path, Path, Path]:
-    """return (rtl, synthBlif, abcBlif) from a compare harness run directory."""
     if not runDir.is_dir():
         raise FileNotFoundError(f"run dir missing: {runDir}")
 
-    # rtl: copied .v in run dir (not .blif)
+    # rtl is the copied .v in the run dir (not .blif)
     rtlCandidates = sorted(
         p for p in runDir.glob("*.v")
         if "post_synthesis" not in p.name and not p.name.endswith(".sv")
@@ -171,7 +168,7 @@ def discoverArtifacts(runDir: Path) -> Tuple[Path, Path, Path]:
         raise FileNotFoundError(f"no rtl .v in {runDir}")
     rtlPath = rtlCandidates[0]
 
-    # post-synth blif after fix: prefer *.vtr.blif then *.wb.blif (run dir root only)
+    # post-synth blif after fix. prefer *.vtr.blif then *.wb.blif (run dir root only)
     synthBlif = None
     for pattern in ("*.vtr.blif", "*.wb.blif", "*.parmys.blif"):
         hits = sorted(p for p in runDir.glob(pattern) if p.parent == runDir)
@@ -201,13 +198,13 @@ def discoverArtifacts(runDir: Path) -> Tuple[Path, Path, Path]:
                 abcBlif = preferred[0]
                 break
             if hits:
-                # last resort: highest-numbered non-raw
+                # last resort is the highest-numbered non-raw file
                 nonRaw = [h for h in hits if "raw" not in h.name]
                 if nonRaw:
                     abcBlif = nonRaw[-1]
                     break
         if abcBlif is None:
-            # any *.abc.blif
+            # fall back to any *.abc.blif
             hits = sorted(vprDir.glob("*.abc.blif"))
             nonRaw = [h for h in hits if "raw" not in h.name]
             if nonRaw:
@@ -220,6 +217,7 @@ def discoverArtifacts(runDir: Path) -> Tuple[Path, Path, Path]:
     return rtlPath, synthBlif, abcBlif
 
 
+# USE: prepare renamed duts and tb. return (tbPath, verilatorSourceList, synthDutPath).
 def buildWorkDir(
     workDir: Path,
     rtlPath: Path,
@@ -232,19 +230,18 @@ def buildWorkDir(
     maxErrors: int,
     directedRam: bool = False,
 ) -> Tuple[Path, List[str], Path]:
-    """prepare renamed duts + tb; return (tbPath, verilatorSourceList, synthDutPath)."""
     if workDir.exists():
         shutil.rmtree(workDir)
     workDir.mkdir(parents=True)
 
-    # convert blifs
+    # convert blifs for the three-dut harness
     synthVRaw = workDir / "synth_raw.v"
     abcVRaw = workDir / "abc_raw.v"
     blifToVerilog(synthBlif, synthVRaw, yosysPath=yosysPath, logPath=workDir / "yosys_synth.log")
     blifToVerilog(abcBlif, abcVRaw, yosysPath=yosysPath, logPath=workDir / "yosys_abc.log")
 
     # ports come from the flattened synth netlist (always the real design top).
-    # rtl may be multi-module; prefer the synth top name if present in rtl
+    # rtl may be multi-module. prefer the synth top name if present in rtl
     # (e.g. RLE_BlobMerging in blob_merge.v), else file stem, else best
     # port-name overlap. never fall back to a helper like divider first.
     synthTop = findTopModuleName(synthVRaw)
@@ -287,14 +284,14 @@ def buildWorkDir(
     tbPath = workDir / "tb.sv"
     tbPath.write_text(tbText, encoding="utf-8")
 
-    # use sim_hardblocks only, do not also link vtr_flow/primitives.v
+    # use sim_hardblocks only. do not also link vtr_flow/primitives.v
     # (duplicate adder/dff module definitions).
     sources = [str(tbPath), str(rtlDut), str(synthDut), str(abcDut), str(modelsV)]
     return tbPath, sources, synthDut
 
 
+# USE: count %Warning lines that cite dut_rtl.v (benchmark rtl, not synth/abc).
 def countRtlWarnings(verilatorOut: Path) -> int:
-    """count %Warning lines that cite dut_rtl.v (benchmark rtl, not synth/abc)."""
     if not verilatorOut.is_file():
         return 0
     text = verilatorOut.read_text(encoding="utf-8", errors="replace")
@@ -307,6 +304,7 @@ def countRtlWarnings(verilatorOut: Path) -> int:
     return count
 
 
+# USE: compile and run the 3-dut testbench under verilator.
 def runVerilator(
     workDir: Path,
     sources: List[str],
@@ -359,7 +357,7 @@ def runVerilator(
     print(f"rtl_warns={rtlWarns}")
     if ret != 0:
         print(f"FAIL: verilator compile (see {verilatorOut})", file=sys.stderr)
-        # print last lines for convenience
+        # dump the last log lines so the failure is visible without opening the file
         try:
             tail = verilatorOut.read_text(encoding="utf-8", errors="replace").splitlines()[-40:]
             print("\n".join(tail), file=sys.stderr)
@@ -369,7 +367,7 @@ def runVerilator(
 
     simBin = simBuild / "Vtb"
     if not simBin.is_file():
-        # some verilator versions nest differently
+        # some verilator versions nest the binary differently
         alts = list(simBuild.glob("Vtb*"))
         alts = [p for p in alts if p.is_file() and p.stat().st_mode & 0o111]
         if not alts:
@@ -450,7 +448,7 @@ def main(argv=None) -> int:
         else:
             print("ram init: uninitialized/x (use --ram-zero-init to force zeros)")
 
-        # smoke that yosys exists early
+        # fail early if yosys is missing before building the work dir
         resolveYosys(args.yosys)
 
         _, sources, synthDut = buildWorkDir(

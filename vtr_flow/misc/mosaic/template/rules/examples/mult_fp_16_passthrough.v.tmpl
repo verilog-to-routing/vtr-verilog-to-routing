@@ -1,11 +1,11 @@
 // output-name: mult_fp_16_map.v
-// example identity-style passthrough for koios mult_fp_16.
-// documents @PORT_*@ tokens from scanned arch geometry; customize ports
-// and mode selection for real semantic binding (this example is 1:1).
+// this example shows identity-style passthrough for koios mult_fp_16 and
+// documents @PORT_*@ tokens from scanned arch geometry. customize ports and
+// mode selection for real semantic binding because this example is 1:1.
 //
 // scanned tokens for mult_fp_16 (example):
-//   @MODEL_NAME@           model name
-//   @PORT_IN_A@ @PORT_IN_B@ @PORT_OUT_OUT@  port widths from arch scan
+//   @MODEL_NAME@ is the model name
+//   @PORT_IN_A@ @PORT_IN_B@ @PORT_OUT_OUT@ are port widths from the arch scan
 
 module mult_fp_16 (
     input [@PORT_IN_A@-1:0] a,

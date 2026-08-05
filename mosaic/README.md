@@ -52,7 +52,7 @@ The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, and post-process
 
 ## Primitive profiles
 
-`template/profiles.tcl` defines profiles as data (`requireClassicRams`, `forceStubAll`, `inferClassicMulAdd`):
+`template/profiles.tcl` defines profiles as data with `forceStubAll` (and profile names):
 
 | Profile | Behavior |
 |---------|----------|
@@ -88,7 +88,7 @@ Exotics are every hardblock model that is not classic `multiply` / `adder` / `si
 | Per-model template | `set exoticTemplatePairs {{model path/to.tmpl}}` | Only if the `.tmpl` maps that op | Custom / FP cells |
 | Role inference | `set exoticRoles {{model integer_mul}}` | Yes, for stock roles when ports match | Exotic with `a`/`b`/`out` |
 
-Stock roles: `template/rules/roles/` (`integer_mul` → `$mul`, `integer_mac` → `$macc`). Example templates (not auto-loaded): `template/rules/examples/` (see that folder’s README). Role notes for the complex-DSP arch: `vtr_flow/misc/mosaic/k6FracN10LB_mem20K_complexDSP_customSB_22nm/model_roles.example.tcl`.
+Stock roles: `template/rules/roles/` (`integer_mul` → `$mul`, `integer_mac` → `$macc`). Example templates (not auto-loaded): `template/rules/examples/` (see that folder’s README). Full exotic targeting guide: `docs-env/docs/doc-mosaic-exotic-hardblocks.md`.
 
 Fixtures (arch XML stem → policy dir under `vtr_flow/misc/mosaic/<stem>/`):
 
@@ -101,7 +101,7 @@ When classic `multiply` is present, `integer_mul` roles are skipped so behaviora
 
 ## Layout
 - `mosaic/wildebeest/src/`: wildebeest-originated sources (`clk_domains.cc` / `max_level`, with the `-vtr_arch` patch)
-- `mosaic/src/`: mosaic-only sources (`vtr_arch_*`, `arch_rule_gen`) compiled into the same plugin
+- `mosaic/src/`: mosaic-only sources (`vtr_arch_*`, `arch_rule_gen.h`, and `arch_rule_gen/*.cc`) compiled into the same plugin
 - `mosaic/build_mosaic.sh`: builds and installs the plugin
 - `vtr_flow/misc/mosaic/template/`: shared mosaic support (`synthesis.tcl`, `fix_blif_for_vpr.py`)
 - `vtr_flow/misc/mosaic/template/rules/`: shared `-tpldir` inputs for `vtr_arch_rules` (`.tmpl` maps, roles, examples)

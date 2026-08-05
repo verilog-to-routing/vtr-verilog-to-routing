@@ -1,17 +1,17 @@
 // behavioral whiteboxes for mosaic verilator random-check.
-// used when elaborating yosys-converted post-synth / post-abc blifs that
-// still contain .subckt adder|multiply|*_ram|dff*.  no specify blocks
-// (verilator-safe).
+// these are used when elaborating yosys-converted post-synth / post-abc blifs
+// that still contain .subckt adder|multiply|*_ram|dff*, and they omit specify
+// blocks so verilator stays happy.
 //
 // ram contents default to uninitialized (x) so rtl memory init that synth
 // dropped can still surface as a mismatch when unwritten locations are read.
-// define MOSAIC_SIM_RAM_ZERO_INIT (e.g. verilator -D...) to force zeros
+// define MOSAIC_SIM_RAM_ZERO_INIT (for example verilator -D...) to force zeros
 // for deterministic smoke that does not care about init.
 //
 // dual_port_ram same-address write-write policy (sim model only; silicon/blif
-// undefined): when we1 and we2 both assert and addr1 == addr2, port2 wins
-// (data2 is stored). same-cycle read+write uses read-first / old-data via
-// nonblocking assignments (matches vtr_flow/primitives.v).
+// is undefined): when we1 and we2 both assert and addr1 == addr2, port2 wins
+// because data2 is stored. same-cycle read+write uses read-first / old-data via
+// nonblocking assignments, which matches vtr_flow/primitives.v.
 
 `timescale 1ns/1ps
 
@@ -48,7 +48,7 @@ module single_port_ram #(
     output reg [DATA_WIDTH-1:0] out
 );
     localparam DEPTH = 1 << ADDR_WIDTH;
-    // left uninitialized unless MOSAIC_SIM_RAM_ZERO_INIT is defined
+    // memory stays uninitialized unless MOSAIC_SIM_RAM_ZERO_INIT is defined.
     reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
 `ifdef MOSAIC_SIM_RAM_ZERO_INIT
     integer i;
@@ -58,7 +58,7 @@ module single_port_ram #(
         out = {DATA_WIDTH{1'b0}};
     end
 `endif
-    // read-first / old-data: out samples mem before the nba write updates it
+    // read-first / old-data. out samples mem before the nba write updates it
     always @(posedge clk) begin
         if (we)
             mem[addr] <= data;
@@ -81,7 +81,7 @@ module dual_port_ram #(
     output reg [DATA_WIDTH-1:0] out2
 );
     localparam DEPTH = 1 << ADDR_WIDTH;
-    // left uninitialized unless MOSAIC_SIM_RAM_ZERO_INIT is defined
+    // memory stays uninitialized unless MOSAIC_SIM_RAM_ZERO_INIT is defined.
     reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
 `ifdef MOSAIC_SIM_RAM_ZERO_INIT
     integer i;
@@ -92,7 +92,7 @@ module dual_port_ram #(
         out2 = {DATA_WIDTH{1'b0}};
     end
 `endif
-    // port2-wins on same-address write-write; otherwise independent port writes.
+    // port2-wins on same-address write-write. otherwise independent port writes.
     // reads are always read-first / old-data (nba ordering).
     always @(posedge clk) begin
         if (we1 && we2 && (addr1 == addr2))
@@ -124,8 +124,8 @@ module fpga_interconnect (
     assign dataout = datain;
 endmodule
 
-// vpr / yosys flop aliases commonly seen in mosaic blifs
-// initial Q=0 is intentional for deterministic reset-less smoke; not a claim
+// vpr / yosys flop aliases commonly seen in mosaic blifs.
+// initial Q=0 is intentional for deterministic reset-less smoke. not a claim
 // that rtl async/power-on reset is modeled.
 module dff (
     input clk,
@@ -165,7 +165,7 @@ module dffe (
     end
 endmodule
 
-// yosys latch form sometimes survives as .latch --> converted to latch cell
+// yosys latch form sometimes survives as .latch and is converted to a latch cell
 module latch (
     input D,
     input G,

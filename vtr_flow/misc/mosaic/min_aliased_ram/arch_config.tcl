@@ -1,5 +1,6 @@
-# policy for mosaic/tests/fixtures/min_aliased_ram.xml
-# maps classic ram roles onto non-classic model names.
+# this file is the mosaic policy for mosaic/tests/fixtures/min_aliased_ram.xml.
+# the fixture names its rams my_spram and my_dpram, so the aliases remap the
+# classic ram roles onto those models and the emitted blif keeps matching names.
 
 set aliasSinglePortRam my_spram
 set aliasDualPortRam   my_dpram

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 
-# hardblock ports that are vectors in sim_hardblocks.v. scalar ports stay as-is.
+# hardblock ports that are vectors in sim_hardblocks.v. scalar ports stay as-is
 HARDBLOCK_VECTOR_PORTS: Dict[str, Tuple[str, ...]] = {
     "adder": ("a", "b", "sumout"),
     "multiply": ("a", "b", "out"),
@@ -20,6 +20,7 @@ HARDBLOCK_VECTOR_PORTS: Dict[str, Tuple[str, ...]] = {
 }
 
 
+# USE: locate a yosys binary for blif to verilog conversion.
 def resolveYosys(yosysPath: Path | None = None) -> Path:
     if yosysPath is not None and yosysPath.is_file():
         return yosysPath
@@ -37,8 +38,8 @@ def resolveYosys(yosysPath: Path | None = None) -> Path:
     raise FileNotFoundError("yosys not found (pass --yosys or build vtr)")
 
 
+# USE: remove empty/blackbox module bodies that conflict with sim_hardblocks.v.
 def stripHardblockModuleDefs(verilogText: str) -> str:
-    """remove empty/blackbox module bodies that conflict with sim_hardblocks.v."""
     hardblocks = {
         "adder", "multiply", "single_port_ram", "dual_port_ram",
         "mux", "fpga_interconnect", "dff", "dffl", "dffe", "latch",
@@ -57,8 +58,8 @@ def stripHardblockModuleDefs(verilogText: str) -> str:
     return pattern.sub(keepOrDrop, verilogText)
 
 
+# HELPER: split '.port(net),' list on top-level commas.
 def _splitPortConnections(body: str) -> List[str]:
-    """split '.port(net),' list on top-level commas."""
     parts: List[str] = []
     depth = 0
     start = 0
@@ -78,29 +79,24 @@ def _splitPortConnections(body: str) -> List[str]:
     return parts
 
 
+# HELPER: trim net expr but keep trailing space after escaped identifiers.
+# verilator requires a space after \\escaped ids before ',' ')' or '}'.
+# strip() removes that space and breaks compile.
 def _normalizeNetExpr(net: str) -> str:
-    """trim net expr but keep trailing space after escaped identifiers.
-
-    verilator requires a space after \\escaped ids before ',' ')' or '}'.
-    strip() removes that space and breaks compile.
-    """
     net = net.strip()
     if net.startswith("\\") and not net.endswith(" "):
         net = net + " "
     return net
 
 
+# USE: rewrite .\\a[0](n0), .\\a[1](n1) into .a({n1, n0}) for sim_hardblocks vector ports.
+# yosys write_verilog keeps blif-style bitblasted pin names after read_blif of
+# blackbox .model definitions. verilator then fails with PINNOTFOUND against
+# the vector ports in sim_hardblocks.v. packing here is the fix.
+# instances with no bit-blasted pins are left unchanged so we do not strip the
+# trailing spaces yosys already emitted on escaped net names.
 def packBitBlastedHardblockPorts(verilogText: str) -> str:
-    """rewrite .\\a[0](n0), .\\a[1](n1) --> .a({n1, n0}) for sim_hardblocks vector ports.
-
-    yosys write_verilog keeps blif-style bitblasted pin names after read_blif of
-    blackbox .model definitions. verilator then fails with PINNOTFOUND against
-    the vector ports in sim_hardblocks.v. packing here is the fix.
-
-    instances with no bit-blasted pins are left unchanged so we do not strip the
-    trailing spaces yosys already emitted on escaped net names.
-    """
-    # yosys emits: .\a[0] (net), '.' + escaped-id '\a[0] '
+    # yosys emits .\a[0] (net) as '.' plus escaped-id '\a[0] '
     bitPinRe = re.compile(
         r"^\.\\(?P<port>[A-Za-z_]\w*)\[(?P<idx>\d+)\]\s*\((?P<net>.*)\)$"
     )
@@ -135,7 +131,7 @@ def packBitBlastedHardblockPorts(verilogText: str) -> str:
                 continue
             plain.append((f"_raw_{len(plain)}", conn))
 
-        # leave non-blasted instances alone (preserve yosys spacing / formatting)
+        # leave non-blasted instances alone to preserve yosys spacing / formatting
         if not blasted:
             return match.group(0)
 
@@ -161,12 +157,10 @@ def packBitBlastedHardblockPorts(verilogText: str) -> str:
     return instPattern.sub(rewriteInstance, verilogText)
 
 
+# USE: rewrite module ports like \\a_in[0], \\a_in[1] into vector a_in[1:0].
+# also rewrites body references \\a_in[i] into a_in[i] so the tb can connect
+# .a_in(a_in) against rtl vector ports.
 def packBitBlastedTopPorts(verilogText: str) -> str:
-    """rewrite module ports like \\a_in[0], \\a_in[1] into vector a_in[1:0].
-
-    also rewrites body references \\a_in[i] --> a_in[i] so the tb can connect
-    .a_in(a_in) against rtl vector ports.
-    """
     modMatch = re.search(
         r"(?P<head>^\s*module\s+(?P<name>\w+)\s*\()(?P<ports>.*?)(?P<tail>\)\s*;)",
         verilogText,
@@ -185,19 +179,19 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
         if m:
             vectorBits.setdefault(m.group("base"), []).append(int(m.group("idx")))
         else:
-            # strip escape if present: \clock --> clock? keep as-is name token
+            # strip escape if present. keep as-is name token when unsure
             scalarPorts.append(port)
 
     if not vectorBits:
         return verilogText
 
-    # new port list: scalars first (as written), then packed vectors
+    # new port list. scalars first (as written), then packed vectors
     newPortList: List[str] = []
     seenVectors = set()
     for port in rawPorts:
         m = bitPortRe.match(port)
         if not m:
-            # drop leading backslash+space style escaped simple names? rare
+            # drop leading backslash on rare escaped simple names
             newPortList.append(port.lstrip("\\").strip() if port.startswith("\\") and "[" not in port else port)
             continue
         base = m.group("base")
@@ -210,8 +204,8 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
     )
     text = verilogText[: modMatch.start()] + newHeader + verilogText[modMatch.end() :]
 
-    # replace input/output/inout decls for bit ports with a single vector decl
-    # forms:  input \a_in[0] ; / input wire \a_in[0] ;
+    # replace input/output/inout decls for bit ports with a single vector decl.
+    # forms: input \a_in[0] ; / input wire \a_in[0] ;
     dirRe = re.compile(
         r"^\s*(?P<dir>input|output|inout)(?:\s+wire|\s+reg)?\s+"
         r"\\(?P<base>[A-Za-z_]\w*)\[(?P<idx>\d+)\]\s*;\s*$",
@@ -240,7 +234,7 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
             flags=re.S,
         )
 
-    # rewrite body references \base[i] --> base[i] (keep trailing space if any)
+    # rewrite body references \base[i] into base[i] (keep trailing space if any)
     for base, idxs in vectorBits.items():
         text = re.sub(
             rf"\\{re.escape(base)}\[(\d+)\](\s?)",
@@ -250,8 +244,8 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
     return text
 
 
+# USE: ensure unconn/gnd/vcc wires exist when nets reference them.
 def declareConstNets(verilogText: str) -> str:
-    """ensure unconn/gnd/vcc wires exist when nets reference them."""
     needs = []
     if re.search(r"\bunconn\b", verilogText) and not re.search(
         r"^\s*wire\s+unconn\s*;", verilogText, re.M
@@ -276,6 +270,7 @@ def declareConstNets(verilogText: str) -> str:
     )
 
 
+# USE: read_blif, optional hierarchy -top, then write_verilog -noattr.
 def blifToVerilog(
     blifPath: Path,
     outVerilog: Path,
@@ -284,10 +279,9 @@ def blifToVerilog(
     yosysPath: Path | None = None,
     logPath: Path | None = None,
 ) -> None:
-    """read_blif --> optional hierarchy -top --> write_verilog -noattr."""
     yosys = resolveYosys(yosysPath)
     outVerilog.parent.mkdir(parents=True, exist_ok=True)
-    # -wideports packs top-level a[0],a[1] into buses when possible; hardblock
+    # -wideports packs top-level a[0],a[1] into buses when possible. hardblock
     # blackbox pins often still come out bit-blasted and need python packing.
     scriptLines = [
         f"read_blif -wideports {blifPath.resolve().as_posix()}",

@@ -1,5 +1,3 @@
-"""
-init for the MOSAIC module
-"""
+"""init for the mosaic module."""
 
 from .mosaic import run

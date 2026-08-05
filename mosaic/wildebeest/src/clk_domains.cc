@@ -1,3 +1,7 @@
+// max_level pass from wildebeest, kept under mosaic so VTR can cut timing paths
+// at arch clocked hardblocks. the mosaic-specific piece is -vtr_arch, which
+// registers is_clock models from the arch xml without linking libarchfpga.
+
 #include "kernel/celltypes.h"
 #include "kernel/sigtools.h"
 #include "kernel/yosys.h"
@@ -26,19 +30,15 @@ struct MaxLvlPass : public ScriptPass {
     RTLIL::Module *module;
     SigMap sigmap;
 
-    // Bit info attached to a SigBit:
-    //    - level
-    //    - sigBit
-    //    - driven cell from the sigbit
-    //    - heigth
-    //
+    // longest path search needs level, predecessor, driving cell, and height
+    // for each bit so critical path reconstruction can walk backward later.
     dict<SigBit, tuple<int, SigBit, Cell *, int>> bits;
 
-    // Traversal table : from a sigBit gives the fanout
-    // SigBits
-    //
+    // fanout edges let the level walk expand only to bits that are actually driven.
     dict<SigBit, dict<SigBit, Cell *>> bit2bits;
 
+    // clocked cell crossings become cut points when clk2clk is enabled so path
+    // length does not continue across sequential boundaries.
     dict<SigBit, tuple<SigBit, Cell *>> bit2ff;
 
     pool<SigBit> cps;
@@ -50,14 +50,8 @@ struct MaxLvlPass : public ScriptPass {
 
     pool<SigBit> visited_bits;
 
-    // ---------------------------------------
-    // setup_internals_vtr_arch
-    // ---------------------------------------
-    // mosaic flow: derive the clk2clk cut points straight from the vtr
-    // architecture xml, the same data parmys pulls out of the arch (models that
-    // own an is_clock input port). the parser is self-contained, so wildebeest
-    // links no vtr static library.
-    //
+    // HELPER: register clk2clk cut points from VTR arch xml clocked models.
+    // MOSAIC uses the same is_clock model list as PARMYS without linking VTR libs.
     void setup_internals_vtr_arch(CellTypes &ff_celltypes,
                                   const std::string &xml_file) {
       log("Deriving clk2clk cut points from vtr arch xml: %s\n",
@@ -84,12 +78,8 @@ struct MaxLvlPass : public ScriptPass {
       }
     }
 
-    // ---------------------------------------
-    // setup_internals_zeroasic_clocked_cells
-    // ---------------------------------------
+    // HELPER: register ZeroASIC clocked cell types as clk2clk cut points.
     void setup_internals_zeroasic_clocked_cells(CellTypes &ff_celltypes) {
-      // Simply list the DFF cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(dffehl), {}, {});
       ff_celltypes.setup_type(ID(dffeh), {}, {});
       ff_celltypes.setup_type(ID(dffel), {}, {});
@@ -103,8 +93,6 @@ struct MaxLvlPass : public ScriptPass {
       ff_celltypes.setup_type(ID(dffs), {}, {});
       ff_celltypes.setup_type(ID(dff), {}, {});
 
-      // Clocked DSPs
-      //
       ff_celltypes.setup_type(ID(efpga_adder_regi), {}, {});
       ff_celltypes.setup_type(ID(efpga_adder_rego), {}, {});
       ff_celltypes.setup_type(ID(efpga_adder_regio), {}, {});
@@ -123,12 +111,8 @@ struct MaxLvlPass : public ScriptPass {
       ff_celltypes.setup_type(ID(efpga_mult_addc_rego), {}, {});
     }
 
-    // ------------------------------------
-    // setup_internals_xilinx_ff_xc4v
-    // ------------------------------------
+    // HELPER: register Xilinx XC4V flip-flop types as clk2clk cut points.
     void setup_internals_xilinx_ff_xc4v(CellTypes &ff_celltypes) {
-      // Simply list the DFF cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(FDCE), {}, {});
       ff_celltypes.setup_type(ID(FDPE), {}, {});
       ff_celltypes.setup_type(ID(FDRE), {}, {});
@@ -136,10 +120,12 @@ struct MaxLvlPass : public ScriptPass {
       ff_celltypes.setup_type(ID(FDSE), {}, {});
       ff_celltypes.setup_type(ID(LDCE), {}, {});
     }
+    // HELPER: register Xilinx XC4V IO cells as clk2clk cut points.
     void setup_internals_xilinx_io_xc4v(CellTypes &ff_celltypes) {
       ff_celltypes.setup_type(ID(IBUF), {}, {});
       ff_celltypes.setup_type(ID(OBUF), {}, {});
     }
+    // HELPER: register Xilinx BRAM types as clk2clk cut points.
     void setup_internals_xilinx_bram(CellTypes &ff_celltypes) {
       ff_celltypes.setup_type(ID(RAMB16), {}, {});
       ff_celltypes.setup_type(ID(RAM32M), {}, {});
@@ -147,26 +133,17 @@ struct MaxLvlPass : public ScriptPass {
       ff_celltypes.setup_type(ID(OBUF), {}, {});
     }
 
-    // ------------------------------------
-    // setup_internals_lattice_ff_xo2
-    // ------------------------------------
+    // HELPER: register Lattice XO2 flip-flop types as clk2clk cut points.
     void setup_internals_lattice_ff_xo2(CellTypes &ff_celltypes) {
-      // Simply list the DFF cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(TRELLIS_FF), {}, {});
     }
+    // HELPER: register Lattice XO2 BRAM types as clk2clk cut points.
     void setup_internals_lattice_bram_xo2(CellTypes &ff_celltypes) {
-      // Simply list the BRAM cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(DP8KC), {}, {});
     }
 
-    // ------------------------------------
-    // setup_internals_ice40_ff_hx
-    // ------------------------------------
+    // HELPER: register iCE40 HX flip-flop types as clk2clk cut points.
     void setup_internals_ice40_ff_hx(CellTypes &ff_celltypes) {
-      // Simply list the DFF cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(SB_DFF), {}, {});
       ff_celltypes.setup_type(ID(SB_DFFE), {}, {});
       ff_celltypes.setup_type(ID(SB_DFFER), {}, {});
@@ -182,166 +159,102 @@ struct MaxLvlPass : public ScriptPass {
       ff_celltypes.setup_type(ID(SB_DFFES), {}, {});
     }
 
-    // ------------------------------------
-    // setup_internals_quicklogic_ff_pp3
-    // ------------------------------------
+    // HELPER: register QuickLogic PP3 flip-flop types as clk2clk cut points.
     void setup_internals_quicklogic_ff_pp3(CellTypes &ff_celltypes) {
-      // Simply list the DFF cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(dffepc), {}, {});
     }
 
-    // ---------------------------------------
-    // setup_internals_microchip_ff_polarfire
-    // ---------------------------------------
+    // HELPER: register Microchip PolarFire flip-flop types as clk2clk cut points.
     void setup_internals_microchip_ff_polarfire(CellTypes &ff_celltypes) {
-      // Simply list the DFF cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(SLE), {}, {});
     }
+    // HELPER: register Microchip PolarFire BRAM types as clk2clk cut points.
     void setup_internals_microchip_bram_polarfire(CellTypes &ff_celltypes) {
-      // Simply list the BRAM cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(RAM1K20), {}, {});
     }
+    // HELPER: register other Microchip PolarFire clocked cells as cut points.
     void setup_internals_microchip_cells_polarfire(CellTypes &ff_celltypes) {
-      // Simply list the cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(INBUF), {}, {});
       ff_celltypes.setup_type(ID(OUTBUF), {}, {});
       ff_celltypes.setup_type(ID(SLE), {}, {});
       ff_celltypes.setup_type(ID(CLKINT), {}, {});
     }
 
-    // ------------------------------------
-    // setup_internals_intel_ff_cycloneiv
-    // ------------------------------------
+    // HELPER: register Intel Cyclone IV flip-flop types as clk2clk cut points.
     void setup_internals_intel_ff_cycloneiv(CellTypes &ff_celltypes) {
-      // Simply list the DFF cells names is enough as cut points
-      //
       ff_celltypes.setup_type(ID(dffeas), {}, {});
     }
 
-    // ---------------------
-    // MaxLvlWorker
-    // ---------------------
     MaxLvlWorker(RTLIL::Module *module)
         : design(module->design), module(module), sigmap(module) {
       CellTypes ff_celltypes;
 
-      if (clk2clk) { // define cells that are cutpoints during the traversal.
-
+      if (clk2clk) {
+        // register cut points used during level traversal when measuring clk2clk paths.
         ff_celltypes.setup_internals_mem();
         ff_celltypes.setup_stdcells_mem();
 
         if (!vtr_arch_file.empty()) {
-
-          // mosaic: cut points come from the vtr arch xml
-          // (parmys-style) instead of the hardcoded vendor lists below.
-          //
+          // MOSAIC path: cut points come from the VTR arch xml instead of vendor lists.
           setup_internals_vtr_arch(ff_celltypes, vtr_arch_file);
-
         } else {
+          setup_internals_zeroasic_clocked_cells(ff_celltypes);
 
-        // Specify technology related DFF cutpoints for -clk2clk option
-        //
-        setup_internals_zeroasic_clocked_cells(ff_celltypes);
+          setup_internals_xilinx_ff_xc4v(ff_celltypes);
+          setup_internals_xilinx_bram(ff_celltypes);
+          setup_internals_xilinx_io_xc4v(ff_celltypes);
 
-        // Xilinx
-        //
-        setup_internals_xilinx_ff_xc4v(ff_celltypes);
-        setup_internals_xilinx_bram(ff_celltypes);
-        setup_internals_xilinx_io_xc4v(ff_celltypes);
+          setup_internals_lattice_ff_xo2(ff_celltypes);
+          setup_internals_lattice_bram_xo2(ff_celltypes);
 
-        // Lattice
-        //
-        setup_internals_lattice_ff_xo2(ff_celltypes);
-        setup_internals_lattice_bram_xo2(ff_celltypes);
+          setup_internals_ice40_ff_hx(ff_celltypes);
 
-        // ICE40
-        //
-        setup_internals_ice40_ff_hx(ff_celltypes);
+          setup_internals_quicklogic_ff_pp3(ff_celltypes);
 
-        // QuickLogic
-        //
-        setup_internals_quicklogic_ff_pp3(ff_celltypes);
+          setup_internals_microchip_ff_polarfire(ff_celltypes);
+          setup_internals_microchip_bram_polarfire(ff_celltypes);
+          setup_internals_microchip_cells_polarfire(ff_celltypes);
 
-        // Microchip
-        //
-        setup_internals_microchip_ff_polarfire(ff_celltypes);
-        setup_internals_microchip_bram_polarfire(ff_celltypes);
-        setup_internals_microchip_cells_polarfire(ff_celltypes);
-
-        // Intel (Altera)
-        //
-        setup_internals_intel_ff_cycloneiv(ff_celltypes);
-
-        } // end else (hardcoded vendor cut points)
+          setup_internals_intel_ff_cycloneiv(ff_celltypes);
+        }
       }
 
-      // For all SigBits create their associated 'bitInfo'
-      // to store <level, from bit, Cell>
-      //
+      // initialize per-bit traversal state for every selected wire bit.
       for (auto wire : module->selected_wires()) {
-
         for (auto bit : sigmap(wire)) {
-
           bits[bit] =
               tuple<int, SigBit, Cell *, int>(-1, State::Sx, nullptr, -1);
         }
       }
 
-      // For all the traversable cells (not in 'ff_celltypes')
-      // add the 'src' bits to 'dest_bits( relationship into the
-      // traversable table 'bit2bits'.
-      //
+      // build forward fanout table for traversable cells, treating registered cut
+      // points as barriers that do not propagate src to dst in bit2bits.
       for (auto cell : module->selected_cells()) {
-
         pool<SigBit> src_bits, dst_bits;
 
-        // For the current Cell 'cell' build the 'src_bits'
-        // to the 'dest_bits'.
-        //
         for (auto &conn : cell->connections()) {
-
           for (auto bit : sigmap(conn.second)) {
-
             if (cell->input(conn.first)) {
               src_bits.insert(bit);
             }
-
             if (cell->output(conn.first)) {
               dst_bits.insert(bit);
             }
           }
         }
 
-        // If It is a DFF that we know then we consider it as a
-        // cut point in the traversal and we will not add the
-        // src bit to dst bits in the 'bit2bits' forward
-        // traversal table.
-        //
         if (clk2clk && ff_celltypes.cell_known(cell->type)) {
-
+          // record clk2clk ff mapping but do not add cut-point cells to bit2bits.
           for (auto s : src_bits) {
-
             for (auto d : dst_bits) {
               bit2ff[s] = tuple<SigBit, Cell *>(d, cell);
               break;
             }
           }
-
           continue;
         }
 
-        // Add the 'src_bits' to the 'dst_bits' relationship
-        // into 'bit2bits' table.
-        //
-        // This table will be used for the traversal in 'runner'
-        // to compute all the 'bit' levels..
-        //
         for (auto s : src_bits) {
-
           for (auto d : dst_bits) {
             bit2bits[s][d] = cell;
           }
@@ -352,9 +265,7 @@ struct MaxLvlPass : public ScriptPass {
       maxbit = State::Sx;
     }
 
-    // ---------------------
-    // get_heigth
-    // ---------------------
+    // HELPER: compute combinational height of a bit for critical-path analysis.
     int get_heigth(SigBit bit) {
       auto &bitinfo = bits.at(bit);
 
@@ -364,7 +275,8 @@ struct MaxLvlPass : public ScriptPass {
         return heigth;
       }
 
-      if (!get<2>(bitinfo)) { // if 'bit' has no cell driving it it is a PI
+      if (!get<2>(bitinfo)) {
+        // undriven bits are primary inputs and therefore have height zero.
         get<3>(bitinfo) = 0;
         return 0;
       }
@@ -387,9 +299,7 @@ struct MaxLvlPass : public ScriptPass {
       return heigth;
     }
 
-    // ---------------------
-    // runner
-    // ---------------------
+    // HELPER: depth-first traversal assigning logic levels along fanout edges.
     void runner(SigBit bit, int level, SigBit from, Cell *via) {
       auto &bitinfo = bits.at(bit);
 
@@ -397,10 +307,7 @@ struct MaxLvlPass : public ScriptPass {
         return;
       }
 
-      // If bit already visited ...
-      //
       if (visited_bits.count(bit) > 0) {
-
         log_warning("Detected loop at %s in %s\n", log_signal(bit),
                     log_id(module));
         return;
@@ -418,9 +325,7 @@ struct MaxLvlPass : public ScriptPass {
       }
 
       if (bit2bits.count(bit)) {
-
         for (auto &it : bit2bits.at(bit)) {
-
           runner(it.first, level + 1, bit, it.second);
         }
       }
@@ -428,24 +333,11 @@ struct MaxLvlPass : public ScriptPass {
       visited_bits.erase(bit);
     }
 
-    // ---------------------
-    // printpath
-    // ---------------------
-    // From input to output.
-    //
+    // HELPER: print the critical path from inputs to outputs in level order.
     void printpath(SigBit bit) {
       auto &bitinfo = bits.at(bit);
 
-      // If the SigBit 'bit' has a cell driving it
-      //
       if (get<2>(bitinfo)) {
-
-        // Print recursively the 'from' bit, e.g the SigBit
-        // on the critical path driving the cell
-        //
-        // Since we first print the driving sigBit, we print
-        // the path from Input to Output.
-        //
         printpath(get<1>(bitinfo));
 
         Cell *cell = get<2>(bitinfo);
@@ -454,38 +346,27 @@ struct MaxLvlPass : public ScriptPass {
             log_id(cell->type));
 
       } else {
-
         log("%5d: %s\n", get<0>(bitinfo), log_signal(bit));
       }
     }
 
-    // ---------------------
-    // get_cps_rec
-    // ---------------------
+    // HELPER: recursively collect bits on the critical path at a given height.
     void get_cps_rec(SigBit bit, int heigth) {
       auto &bitinfo = bits.at(bit);
 
-      // Bit already traversed and TFI added in 'cps'
-      //
       if (cps.count(bit)) {
         return;
       }
 
-      // return if a PI
-      //
       if (get<3>(bitinfo) == 0) {
         return;
       }
 
-      // If on the CP then add it
-      //
       if (get<3>(bitinfo) == heigth) {
-        assert(get<2>(bitinfo)); // make sure it is driven
+        assert(get<2>(bitinfo));
         cps.insert(bit);
       }
 
-      // return if not on the CP
-      //
       if (get<3>(bitinfo) < heigth) {
         return;
       }
@@ -494,45 +375,33 @@ struct MaxLvlPass : public ScriptPass {
 
       SigBit from = get<1>(bitinfo);
 
-      // Collect 'from' bit with heigth 'heigth-1'
-      //
       get_cps_rec(from, heigth - 1);
     }
 
-    // ---------------------
-    // get_cps
-    // ---------------------
+    // HELPER: find all bits that lie on the maximum-height critical path.
     void get_cps() {
       for (auto &it : bits) {
-
         if (get<3>(it.second) == max_heigth) {
           get_cps_rec(it.first, max_heigth);
         }
       }
     }
 
-    // ---------------------
-    // get_driven_bits
-    // ---------------------
+    // HELPER: collect every bit that is driven by a cell for CP size reporting.
     void get_driven_bits() {
       for (auto &it : bits) {
-
         if (get<2>(it.second)) {
           driven_bits.insert(it.first);
         }
       }
     }
 
-    // ---------------------
-    // run
-    // ---------------------
+    // USE: run level and height analysis and log summary or full critical path.
     void run() {
       visited_bits.clear();
 
       for (auto &it : bits) {
-
         if (get<0>(it.second) < 0) {
-
           runner(it.first, 0, State::Sx, nullptr);
         }
       }
@@ -546,11 +415,9 @@ struct MaxLvlPass : public ScriptPass {
       max_heigth = -1;
 
       for (auto &it : bits) {
-
         visited_bits.clear();
 
         if (get<3>(it.second) < 0) {
-
           int heigth = get_heigth(it.first);
 
           if (heigth > max_heigth) {
@@ -578,7 +445,6 @@ struct MaxLvlPass : public ScriptPass {
         log("   Total bits      = %ld\n", driven_bits.size());
 
       } else {
-
         log("\n");
         log("Max logic level in %s (length=%d):\n", log_id(module), maxlvl);
 
@@ -587,7 +453,6 @@ struct MaxLvlPass : public ScriptPass {
         }
 
         if (bit2ff.count(maxbit)) {
-
           log("%5s: %s (via %s)\n", "xx", log_signal(get<0>(bit2ff.at(maxbit))),
               log_id(get<1>(bit2ff.at(maxbit))));
         }
@@ -603,12 +468,9 @@ struct MaxLvlPass : public ScriptPass {
 
   MaxLvlPass() : ScriptPass("max_level", "print max logic level") {}
 
-  // -------------------------
-  // load_LUT_models
-  // -------------------------
-  // the lut blackbox lib is arch-independent, so it ships with the flow
-  // templates; the tcl script sets the templateDir global and we resolve the
-  // models relative to it, falling back to the plugin share dir.
+  // HELPER: load arch-independent LUT blackbox models before hierarchy flattening.
+  // resolve LUTs.v from templateDir when the Tcl global is set, otherwise from
+  // the plugin share dir.
   void load_LUT_models() {
     std::string lut_models = "+/plugins/wildebeest/lut_models/LUTs.v";
 #ifdef YOSYS_ENABLE_TCL
@@ -624,9 +486,6 @@ struct MaxLvlPass : public ScriptPass {
     run("hierarchy -auto-top");
   }
 
-  // ---------------------
-  // help
-  // ---------------------
   void help() override {
     //   |---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|
     log("\n");
@@ -651,18 +510,12 @@ struct MaxLvlPass : public ScriptPass {
     log("\n");
   }
 
-  // ---------------------
-  // clear_flags
-  // ---------------------
   void clear_flags() override {
     clk2clk = false;
     summary = false;
     vtr_arch_file = "";
   }
 
-  // ---------------------
-  // execute
-  // ---------------------
   void execute(std::vector<std::string> args, RTLIL::Design *design) override {
     string run_from, run_to;
 
@@ -675,7 +528,6 @@ struct MaxLvlPass : public ScriptPass {
     G_design = design;
 
     for (argidx = 1; argidx < args.size(); argidx++) {
-
       if (args[argidx] == "-vtr_arch" && argidx + 1 < args.size()) {
         vtr_arch_file = args[++argidx];
         continue;
@@ -697,9 +549,6 @@ struct MaxLvlPass : public ScriptPass {
     run_script(design, run_from, run_to);
   }
 
-  // ---------------------
-  // script
-  // ---------------------
   void script() override {
     load_LUT_models();
 

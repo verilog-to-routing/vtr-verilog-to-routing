@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """offline dump of mosaic VtrArchInfo fields for regression goldens.
 
-mirrors mosaic/src/vtr_arch_info.cc semantics using xml.etree so no yosys
-build is required. refresh checked-in goldens with --update.
+this script mirrors mosaic/src/vtr_arch_info.cc with xml.etree so goldens can
+be refreshed without a yosys build. use --update to rewrite the checked in files.
 
 usage:
   python mosaic/scripts/dump_arch_info.py <arch.xml>
@@ -267,6 +267,7 @@ def deriveHardblockAliases(info):
             }
 
 
+# USE: parse an arch xml into the same summary fields VtrArchInfo exposes.
 def readArchInfo(xmlPath):
     tree = ET.parse(str(xmlPath))
     root = tree.getroot()
@@ -317,8 +318,8 @@ def summaryText(info):
   return "\n".join(lines) + "\n"
 
 
+# USE: mirror vtr_arch_rules -list-modes for offline titan checks.
 def listModesText(info):
-    """mirror vtr_arch_rules -list-modes for offline titan checks."""
     lines = ["classic bramModes ({})".format(len(info["bramModes"]))]
     for mode in info["bramModes"]:
         lines.append(
@@ -365,6 +366,7 @@ def goldenPathFor(archPath):
     return GOLDEN_DIR / (Path(archPath).stem + ".summary.txt")
 
 
+# USE: emit or compare a golden summary for one arch xml.
 def dumpArch(archPath, update=False):
     archPath = Path(archPath)
     if not archPath.is_file():

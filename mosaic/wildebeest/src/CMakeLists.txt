@@ -13,10 +13,16 @@ add_library(wildebeest SHARED
     # wildebeest-originated (modified for -vtr_arch)
     clk_domains.cc
     # mosaic-only
-    ${MOSAIC_SRC_DIR}/arch_rule_gen.cc
     ${MOSAIC_SRC_DIR}/vtr_arch_clocks.cc
     ${MOSAIC_SRC_DIR}/vtr_arch_info.cc
     ${MOSAIC_SRC_DIR}/vtr_arch_rules.cc
+    ${MOSAIC_SRC_DIR}/arch_rule_gen/template_io.cc
+    ${MOSAIC_SRC_DIR}/arch_rule_gen/bram_rule_gen.cc
+    ${MOSAIC_SRC_DIR}/arch_rule_gen/adder_rule_gen.cc
+    ${MOSAIC_SRC_DIR}/arch_rule_gen/multiply_rule_gen.cc
+    ${MOSAIC_SRC_DIR}/arch_rule_gen/exotic_rule_gen.cc
+    ${MOSAIC_SRC_DIR}/arch_rule_gen/hardblock_lib_gen.cc
+    ${MOSAIC_SRC_DIR}/arch_rule_gen/registry.cc
     ${PUGIXML_SRC_DIR}/pugixml.cpp
 )
 target_include_directories(wildebeest PRIVATE

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""diff hardblock .subckt model sets between Parmys and Mosaic BLIFs.
+"""diff hardblock .subckt model sets between parmys and mosaic blifs.
 
 compares the set of arch-declared hardblock models that appear as `.subckt`
 instances. soft-gate structure is ignored.
@@ -8,11 +8,11 @@ modes:
   1) compare existing blifs:
        python mosaic/scripts/compare_frontend_blif_models.py \\
          --arch <arch.xml> --parmys-blif a.blif --mosaic-blif b.blif
-  2) run both synths then compare (needs built vtr + mosaic plugin):
+  2) run both synths then compare (needs built vtr plus mosaic plugin):
        python mosaic/scripts/compare_frontend_blif_models.py --run \\
          --circuit <c.v> --arch <arch.xml>
 
-exit 0 when used hardblock model sets match; 1 on mismatch or tool failure.
+exit 0 when used hardblock model sets match. 1 on mismatch or tool failure.
 """
 
 from __future__ import print_function
@@ -38,9 +38,10 @@ RUN_VTR_FLOW = REPO_ROOT / "vtr_flow/scripts/run_vtr_flow.py"
 SUBCKT_RE = re.compile(r"^\.subckt\s+(\S+)", re.MULTILINE)
 
 
+# USE: collect hardblock model names declared in an arch xml.
 def archModelNames(archXmlPath):
     text = Path(archXmlPath).read_text(encoding="utf-8", errors="replace")
-    # prefer <models> declarations; fall back to pb_type blif_model scan
+    # prefer <models> declarations and fall back to pb_type blif_model scan.
     names = set(re.findall(r'<model\s+name="([^"]+)"', text))
     if names:
         return names
@@ -49,12 +50,14 @@ def archModelNames(archXmlPath):
     return names
 
 
+# USE: intersect .subckt names in a blif with arch-declared hardblock models.
 def usedHardblockModels(blifPath, archModels):
     text = Path(blifPath).read_text(encoding="utf-8", errors="replace")
     used = set(SUBCKT_RE.findall(text))
     return sorted(used & set(archModels))
 
 
+# HELPER: return models only on each side of a set comparison.
 def compareSets(parmysModels, mosaicModels):
     left = set(parmysModels)
     right = set(mosaicModels)
@@ -63,6 +66,7 @@ def compareSets(parmysModels, mosaicModels):
     return onlyParmys, onlyMosaic
 
 
+# USE: run one frontend stage (-start/-end) into workDir and return its blif.
 def runFrontend(circuit, arch, startStage, workDir):
     workDir = Path(workDir)
     workDir.mkdir(parents=True, exist_ok=True)

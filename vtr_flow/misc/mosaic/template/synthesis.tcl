@@ -1,32 +1,28 @@
 yosys -import
 plugin -i wildebeest
 
-# ============================================================================
-# mosaic vtr synthesis template
-# ============================================================================
+# this script is the mosaic vtr synthesis template.
 #
-# synth_fpga only works with a zeroasic partname so for vtr archs we drive
-# the individual passes ourselves. the mosaic plugin is loaded as
-# wildebeest and provides max_level plus vtr_arch_rules.
+# synth_fpga only works with a zeroasic partname, so for vtr arches we drive the
+# individual passes ourselves. the mosaic plugin loads as wildebeest and provides
+# max_level plus vtr_arch_rules.
 #
-# put arch_config.tcl in the arch support dir named by ARCH_SUPPORT_DIR; it is the
-# primary per-arch artifact. optional ARCH_SUPPORT_DIR/rules/*.tmpl overlays the
-# shared template rules (merge: only listed files override).
-# shared arch-independent support lives in the template dir TDIR:
-#   abc/delay_*.scr, lut_models/, rules/*.tmpl (-tpldir)
+# arch_config.tcl lives in the arch support dir named by ARCH_SUPPORT_DIR and is
+# the primary per-arch policy artifact. optional ARCH_SUPPORT_DIR/rules/*.tmpl
+# overlays the shared template rules so only listed files override the defaults.
+# shared arch-independent support lives in the template dir TDIR (abc/delay_*.scr,
+# lut_models/, and rules/*.tmpl passed as -tpldir).
 #
-# harness fills these tokens before yosys sees the script
+# the harness fills these tokens before yosys sees the script:
 #   XXX circuit verilog
-#   TTT top module  empty means -auto-top
+#   TTT top module (empty means -auto-top)
 #   ZZZ output blif
 #   ARCH_SUPPORT_DIR arch support dir
-#   TDIR this template dir  rules/ is -tpldir
+#   TDIR this template dir (rules/ is -tpldir)
 #   VVV arch xml
-#   YYY max_level flag  empty when -vtr_arch is omitted
+#   YYY max_level flag (empty when -vtr_arch is omitted)
 
-# ----------------------------------------------------------------------------
-# knobs  generic defaults then per-arch overrides from arch_config.tcl
-# ----------------------------------------------------------------------------
+# these knobs start as generic defaults and arch_config.tcl overrides them per arch.
 set archSupportDir "ARCH_SUPPORT_DIR"
 set archXmlPath    "VVV"
 set archRulesDir   "."
@@ -34,50 +30,60 @@ set templateDir    "TDIR"
 
 set dspMaxWidth    0
 set dspMinWidth    2
-# half cost so zero/undef roms prefer hard bram over soft luts.
-# non-zero init is refused by bram_memory_map (init zero) and soft-maps.
+# bramRomCost is half the default so zero/undef roms prefer hard bram over soft
+# luts, while non-zero init is refused by bram_memory_map (init zero) and so
+# soft-maps instead.
 set bramRomCost    0.5
 set bramSpCost     128
 set bramDpCost     128
-# sentinel defaults: when policy leaves these untouched, facts derive from lutK/lutK1
+# these are sentinel defaults; when policy leaves them untouched, arch_facts
+# derives cmpLutWidth and lutCost from lutK/lutK1 after the xml scan.
 set cmpLutWidthDefault 6
 set lutCostDefault     "6:1"
 set cmpLutWidth    $cmpLutWidthDefault
 set lutCost        $lutCostDefault
-# $add/$sub at or below this width stay soft so abc can still optimize
-# across them. substituted into the generated add_sub_map.v because the
-# map file is the only place that sees $add widths at techmap time
+# $add/$sub at or below hardAdderThreshold stay soft so abc can still optimize
+# across them, and the value is substituted into generated add_sub_map.v because
+# that map is the only place that sees $add widths at techmap time.
 set hardAdderThreshold 3
-# keep $mul soft when both operand widths are at or below this (0 disables)
+# minHardMulWidth keeps $mul soft when both operand widths are at or below this
+# threshold (0 disables the limit).
 set minHardMulWidth 0
-# memories whose deepest scanned mode has fewer address bits stay soft (0 = off)
+# memories whose deepest scanned mode has fewer than minHardMemAbits address bits
+# stay soft (0 disables the filter).
 set minHardMemAbits 0
-# when 1, missing classic ram modes soft-map memories (titan-style arches)
+# when softOnlyMemory is 1, missing classic ram modes soft-map memories as
+# titan-style arches require.
 set softOnlyMemory 0
-# long enough to walk an msb-to-lsb carry cascade in one go
+# sweepMaxIters is long enough to walk an msb-to-lsb carry cascade in one pass.
 set sweepMaxIters  64
-# empty means skip the two-pass abc and do one plain -luts pass
+# empty abcOptScript and abcMapScript skip the two-pass abc flow and use one
+# plain -luts pass instead.
 set abcOptScript   ""
 set abcMapScript   ""
-# overwritten after arch_facts when aliases remap classic model names
+# multiplyModel, adderModel, spRamModel, and dpRamModel are overwritten after
+# arch_facts.tcl when aliases remap classic model names.
 set multiplyModel  "multiply"
 set adderModel     "adder"
 set spRamModel     "single_port_ram"
 set dpRamModel     "dual_port_ram"
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
-# primitive mapping profile (see profiles.tcl for the data table)
+# primitiveProfile selects a named policy pack (see profiles.tcl).
 set primitiveProfile vtr_classic
-# when 1, vtr_arch_rules emits generic stubs for every exotic hardblock model
-# and writes hardblock_keep_types.txt so rtl-instantiated cells survive synth
+# when stubAllHardblocks is 1, vtr_arch_rules emits generic stubs for every
+# exotic hardblock model and writes hardblock_keep_types.txt so rtl-instantiated
+# cells survive synthesis.
 set stubAllHardblocks 0
 # classic model aliases when arch xml uses non-standard model names
 set aliasMultiply ""
 set aliasAdder ""
 set aliasSinglePortRam ""
 set aliasDualPortRam ""
-# {model template_path} pairs -> -exotic/-exotic-template
+# exoticTemplatePairs lists {model template_path} pairs that become -exotic and
+# -exotic-template on vtr_arch_rules.
 set exoticTemplatePairs {}
-# {model role} pairs -> -exotic-role (stock tpldir/roles/<role>_map.v.tmpl)
+# exoticRoles lists {model role} pairs that become -exotic-role using stock
+# tpldir/roles/<role>_map.v.tmpl files.
 set exoticRoles {}
 
 source "$templateDir/profiles.tcl"
@@ -90,17 +96,15 @@ if { $archConfigFile ne "" && [file exists $archConfigFile] } {
     source $archConfigFile
 }
 mosaicApplyPrimitiveProfile
-# remember policy keep list so extras (e.g. role-bound models) survive the
-# post-facts rebuild of classic/aliased builtins
+# remember the policy keep list from arch_config so extras (for example
+# role-bound models) survive the post-facts rebuild of classic builtins.
 set keepCellTypesFromConfig $keepCellTypes
-# mul2dsp minimum operand width is policy; facts may overwrite dspMinWidth
-# with the smallest multiply mode when arch_facts.tcl is sourced later
+# mul2dspMinWidth is policy; arch_facts may overwrite dspMinWidth with the
+# smallest multiply mode when arch_facts.tcl is sourced later.
 set mul2dspMinWidth $dspMinWidth
 
-# ----------------------------------------------------------------------------
-# rule files  all derived from the arch xml by vtr_arch_rules at runtime.
-# the xml is required  there are no static fallback maps
-# ----------------------------------------------------------------------------
+# rule files are all derived from the arch xml by vtr_arch_rules at runtime, and
+# the xml is required because there are no static fallback maps.
 if { $archXmlPath eq "" } {
     error "mosaic synthesis requires an arch xml (VVV)"
 }
@@ -140,8 +144,8 @@ set multMapFile      "$archRulesDir/mult_map.v"
 set mul2dspMapFile   "$archRulesDir/mul2dsp_map.v"
 set addSubMapFile    "$archRulesDir/add_sub_map.v"
 
-# arch-derived facts from the xml (dsp widths, ram abits, hardblock presence).
-# defaults below are overwritten when arch_facts.tcl exists.
+# arch_facts.tcl carries arch-derived facts from the xml (dsp widths, ram abits,
+# hardblock presence), and the defaults below are overwritten when that file exists.
 set archName         ""
 set vtrRamAbits      0
 set multiplyPresent  0
@@ -153,9 +157,9 @@ set multiplyModes    ""
 set archFactsFile "$archRulesDir/arch_facts.tcl"
 if { [file exists $archFactsFile] } {
     source $archFactsFile
-    # policy dspMinWidth (from arch_config / defaults) wins over facts min mode
+    # policy dspMinWidth from arch_config wins over the facts min mode width.
     set dspMinWidth $mul2dspMinWidth
-    # derive lut / abc knobs from scanned k when policy left the sentinels
+    # derive lut and abc knobs from scanned lutK when policy left the sentinels.
     if { $lutK > 0 && $lutCost eq $lutCostDefault } {
         if { $lutK1 > 0 && $lutK1 < $lutK } {
             set lutCost "${lutK1}:1,${lutK}:1"
@@ -166,7 +170,8 @@ if { [file exists $archFactsFile] } {
     if { $lutK > 0 && $cmpLutWidth == $cmpLutWidthDefault } {
         set cmpLutWidth $lutK
     }
-    # fracturable k6-like: auto-pick shared delay scripts when policy left both empty
+    # fracturable k6-like arches auto-pick shared delay scripts when policy left
+    # both abc script knobs empty.
     if { $abcOptScript eq "" && $abcMapScript eq "" && $lutK == 6 && $lutK1 > 0 && $lutK1 < $lutK } {
         set abcOptScript "$templateDir/abc/delay_gia_opt.scr"
         set abcMapScript "$templateDir/abc/delay_map.scr"
@@ -177,7 +182,8 @@ if { [file exists $archFactsFile] } {
     }
     mosaicCheckClassicMulContract
 }
-# keep lists must name the models that appear in the blif (aliases win)
+# keepCellTypes must name the models that appear in the blif, and aliases win
+# over the classic defaults.
 set keepCellTypes "t:$multiplyModel t:$adderModel t:$spRamModel t:$dpRamModel"
 foreach tok $keepCellTypesFromConfig {
     if { $tok ne "" && [string first $tok $keepCellTypes] < 0 } {
@@ -185,8 +191,8 @@ foreach tok $keepCellTypesFromConfig {
     }
 }
 
-# exotic keep types from stub-all (opt-in via arch_config); append so the
-# arch_config keepCellTypes builtins stay first
+# append exotic keep types from stub-all when arch_config enabled it so
+# arch_config builtins stay first in the list.
 set keepTypesFile "$archRulesDir/hardblock_keep_types.txt"
 if { [file exists $keepTypesFile] } {
     set keepTypesFd [open $keepTypesFile r]
@@ -197,36 +203,35 @@ if { [file exists $keepTypesFile] } {
     }
 }
 
-# ----------------------------------------------------------------------------
-# hardblock sweep / keep / densify helpers
-# ----------------------------------------------------------------------------
-# ordering rules:
-#   1. mosaicHardblockSweep only while keep is unset so unused cascade
-#      tips can still die (murray IV-A).
-#   2. never call setundef inside the sweep. setundef -undriven + opt_clean
-#      deletes live multiply/adder/ram outputs that look undriven.
-#   3. mosaicKeepHardblocks must run before any densify setundef/opt_clean
-#      and again after hierarchy -purge_lib which can drop attributes.
-# ----------------------------------------------------------------------------
+# hardblock sweep, keep, and densify helpers run in a fixed order because keep
+# versus densify interact.
+#   1. mosaicHardblockSweep runs only while keep is unset so unused cascade tips
+#      can still die (murray IV-A).
+#   2. never call setundef inside the sweep because setundef -undriven plus
+#      opt_clean deletes live multiply/adder/ram outputs that look undriven.
+#   3. mosaicKeepHardblocks must run before any densify setundef/opt_clean and
+#      again after hierarchy -purge_lib which can drop attributes.
+# USE: walk unused hardblock cascade tips while keep is still unset.
 proc mosaicHardblockSweep {{maxIters 64}} {
-    # keep must stay unset here; only opt_merge/opt_clean so unused tips fall
+    # keep must stay unset here so only opt_merge/opt_clean run and unused tips fall.
     opt_merge
     for {set i 0} {$i < $maxIters} {incr i} {
-        # becomes a no-op once the cascade is gone so overshooting is fine
+        # opt_clean becomes a no-op once the cascade is gone, so overshooting is fine.
         opt_clean
     }
 }
 
+# USE: freeze live hardblocks so later setundef/opt_clean cannot drop them.
 proc mosaicKeepHardblocks {} {
     global keepCellTypes
-    # freeze live hardblocks so later setundef/opt_clean cannot drop them
     setattr -set keep 1 {*}$keepCellTypes
 }
 
+# USE: densify sparse $lut inputs without blanket-zeroing every undriven net
+# because vpr crashes when write_blif emits sparse unconn $lut pins. only zero
+# undriven nets that feed $lut inputs since blanket-zeroing hides rtl bugs and
+# can disturb hardblock edges.
 proc mosaicDensifyLutInputs {{withOptLut 0}} {
-    # vpr crashes when write_blif emits sparse unconn $lut pins. only zero
-    # undriven nets that feed $lut inputs; do not blanket-zero every undriven
-    # net (that hides rtl bugs and can disturb hardblock edges).
     mosaicKeepHardblocks
     select {t:$lut} %ci
     setundef -zero -undriven
@@ -235,12 +240,14 @@ proc mosaicDensifyLutInputs {{withOptLut 0}} {
     if {$withOptLut} {
         opt_lut
     }
-    # keep is still set so opt_clean will not delete live hardblock outputs
+    # keep is still set so opt_clean will not delete live hardblock outputs.
     opt_clean
 }
 
+# USE: warn when async ff cells are present before adff2dff rewrites them
+# because vpr has no async ff primitive and adff2dff is required but changes
+# timing.
 proc mosaicWarnAsyncFf {} {
-    # vpr has no async ff primitive; adff2dff is required but changes timing
     set asyncFfDump "mosaic_async_ff.select"
     tee -q -o $asyncFfDump select -list {t:$adff} {t:$adffe} {t:$aldff} {t:$aldffe}
     set asyncFfPresent 0
@@ -262,36 +269,35 @@ proc mosaicWarnAsyncFf {} {
     }
 }
 
-# ----------------------------------------------------------------------------
-# read
-# ----------------------------------------------------------------------------
-# the max-width stubs not +/parmys/vtr_primitives.v because -lib freezes the
-# parameter defaults and the primitives default to WIDTH=1 which makes
-# write_blif emit 1-bit blackboxes. rams are left out of this file for the
-# same reason  -lib DATA_WIDTH=1 truncates the real rtl instance widths.
+# read the design plus sized hardblock stubs.
+# the max-width stubs replace +/parmys/vtr_primitives.v because -lib freezes
+# parameter defaults and those primitives default to WIDTH=1, which makes
+# write_blif emit 1-bit blackboxes. rams are omitted from this file for the
+# same reason because -lib DATA_WIDTH=1 truncates real rtl instance widths.
 read_verilog -lib $hardblockLibFile
 
-# omit -nolatches so inferred latches stay latches; forcing them away can
-# diverge from rtl that relies on latch inference. write_blif and
-# fix_blif_for_vpr already handle .latch emission for vpr/abc.
+# read_verilog omits -nolatches so inferred latches stay latches because forcing
+# them away can diverge from rtl that relies on latch inference, and
+# fix_blif_for_vpr already handles .latch emission for vpr/abc.
 read_verilog -sv XXX
 
-# lock the top before the whitebox lands. with -auto-top a whitebox module
-# can win and the actual circuit gets purged. the -lib ram stubs above are
-# wide enough that rtl instances resolve without truncating their buses.
+# lock the top before the whitebox lands because with -auto-top a whitebox module
+# can win and purge the actual circuit. the -lib ram stubs above are wide enough
+# that rtl instances resolve without truncating their buses.
 if { "TTT" ne "" } {
     hierarchy -check -top TTT -purge_lib
 } else {
     hierarchy -check -auto-top -purge_lib
 }
 
-# classic bram whitebox (skipped when softOnlyMemory / no classic ram modes)
+# classic bram whitebox is skipped when softOnlyMemory is active or classic ram
+# modes are absent.
 set softOnlyMemoryMarker "$archRulesDir/soft_only_memory.txt"
 set softOnlyMemoryActive [file exists $softOnlyMemoryMarker]
 if { !$softOnlyMemoryActive } {
-    # no -lib here so the generate loops expand at the real DATA_WIDTH. top is
-    # already set so a plain hierarchy re-elaborates without -auto-top.
-    # whitebox module names follow spRamModel/dpRamModel (classic or aliases).
+    # read without -lib so generate loops expand at the real DATA_WIDTH because
+    # top is already set and hierarchy re-elaborates without -auto-top. whitebox
+    # module names follow spRamModel/dpRamModel (classic names or aliases).
     read_verilog -overwrite $archRulesDir/vtr_ram_whitebox.v
     hierarchy -check -purge_lib
 }
@@ -308,13 +314,13 @@ opt_clean
 share
 opt -full
 
-# keep $mem as $mem so memory_libmap can see them
+# keep $mem as $mem so memory_libmap can see inferred memories.
 memory -nomap
 flatten
 
 opt -full
 
-# async assert becomes clocked; required because vpr has no async ff
+# async assert becomes clocked because vpr has no async ff support.
 mosaicWarnAsyncFf
 techmap -map +/parmys/adff2dff.v
 techmap -map +/parmys/adffe2dff.v
@@ -322,9 +328,7 @@ techmap -map +/parmys/aldff2dff.v
 techmap -map +/parmys/aldffe2dff.v
 opt -full
 
-# ----------------------------------------------------------------------------
-# coarse synth while arith is still soft  same order as synth_fpga
-# ----------------------------------------------------------------------------
+# coarse synth while arithmetic is still soft, matching synth_fpga ordering.
 opt_expr
 opt_clean
 wreduce
@@ -341,33 +345,31 @@ share
 wreduce
 opt_clean
 
-# first hierarchy -purge_lib dropped the stubs  rams are already the
-# whitebox bit cells so only multiply and adder need restoring
+# hierarchy -purge_lib dropped the stubs, and rams are already whitebox bit cells
+# so only multiply and adder need restoring here.
 read_verilog -lib $hardblockLibFile
 
-# identity passthrough for rtl-instantiated exotic hardblocks
+# identity passthrough for rtl-instantiated exotic hardblocks when stub-all ran.
 set exoticIdentityMapFile "$archRulesDir/exotic_identity_maps.v"
 if { [file exists $exoticIdentityMapFile] } {
     techmap -map $exoticIdentityMapFile
 }
 
-# ----------------------------------------------------------------------------
 # bram
-# ----------------------------------------------------------------------------
 if { $softOnlyMemoryActive } {
     log "mosaic: softOnlyMemory active; skipping hard bram libmap"
     memory_map
 } else {
-    # memory_libmap uses init zero / rdwr old from bram_memory_map.txt.
-    # non-zero-initialized memories are left as $mem here then soft-mapped.
+    # memory_libmap uses init zero and rdwr old from bram_memory_map.txt, so
+    # non-zero-initialized memories stay as $mem here and soft-map via memory_map.
     memory_libmap -lib $bramMapFile -logic-cost-rom $bramRomCost
 
-    # leftovers (incl. non-zero init / unfit sizes) become flip-flop arrays
+    # leftovers (including non-zero init and unfit sizes) become flip-flop arrays.
     memory_map
 
     techmap -map $techBramFile
 
-    # write_blif needs the arch model names not the internal bit-cell names
+    # write_blif needs arch model names rather than internal bit-cell names.
     delete $spRamModel $dpRamModel
     chtype -map vtr_sp_ram_bit $spRamModel
     chtype -map vtr_dp_ram_bit $dpRamModel
@@ -375,17 +377,15 @@ if { $softOnlyMemoryActive } {
     read_verilog -lib $archRulesDir/vtr_ram_bit_lib.v
 }
 
-# last chance to shrink soft cones before hard mapping freezes the edges
+# last chance to shrink soft cones before hard mapping freezes the edges.
 opt -full
 share
 wreduce
 opt_clean
 
-# ----------------------------------------------------------------------------
-# dsp  before alumacc turns $mul into $macc
-# ----------------------------------------------------------------------------
-# mul2dsp chops wide $mul into chunks that fit one dsp block. mult_map.v
-# then picks up anything left that still fits an arch multiply mode.
+# dsp mapping runs before alumacc turns $mul into $macc.
+# mul2dsp chops wide $mul into chunks that fit one dsp block, and mult_map.v
+# then binds anything left that still fits an arch multiply mode.
 memory_dff
 techmap -map +/mul2dsp.v -map $mul2dspMapFile -D DSP_A_MAXWIDTH=$dspMaxWidth -D DSP_B_MAXWIDTH=$dspMaxWidth -D DSP_A_MINWIDTH=$dspMinWidth -D DSP_B_MINWIDTH=$dspMinWidth -D DSP_NAME=_dsp_block_
 select a:mul2dsp
@@ -397,7 +397,8 @@ select -clear
 chtype -set {$mul} {t:$__soft_mul}
 techmap -map $multMapFile
 
-# role maps that bind $mul (integer_mul) run after classic mult_map.
+# USE: techmap role maps listed by vtr_arch_rules.
+# role maps that bind $mul (integer_mul) run after classic mult_map, and
 # integer_mul is skipped at rule-gen time when classic multiply is present.
 proc mosaicApplyRoleMaps {} {
     global archRulesDir
@@ -415,34 +416,28 @@ proc mosaicApplyRoleMaps {} {
 }
 mosaicApplyRoleMaps
 
-# ----------------------------------------------------------------------------
-# adder / carry chain
-# ----------------------------------------------------------------------------
-# before alumacc or the $add chains get folded into $macc and the carry
-# chain never sees them. compares stay soft on purpose.
+# adder and carry chain mapping runs before alumacc because otherwise $add chains
+# fold into $macc and the carry chain never sees them, while compares stay soft
+# on purpose.
 techmap -map $addSubMapFile
 
 alumacc
 
-# role maps that bind $macc (integer_mac) need alumacc first
+# role maps that bind $macc (integer_mac) need alumacc to run first.
 mosaicApplyRoleMaps
 
-# no $alu to adder map  comparing through a hard adder is a qor loss
-# sweep while keep is unset; do not densify/setundef until after final sweep
+# there is no $alu to adder map because comparing through a hard adder is a qor
+# loss. sweep while keep is unset and do not densify/setundef until after the
+# final sweep.
 mosaicHardblockSweep $sweepMaxIters
 
-# ----------------------------------------------------------------------------
-# clock-domain cut points
-# YYY is -vtr_arch <xml> on the mosaic leg and empty on vanilla
-# ----------------------------------------------------------------------------
+# clock-domain cut points for max_level; YYY is -vtr_arch <xml> on the mosaic leg
+# and empty on the vanilla parmys leg.
 max_level -clk2clk YYY
 
-# ----------------------------------------------------------------------------
-# lower to gates for abc
-# ----------------------------------------------------------------------------
-# -noff on every opt past this point  opt_dff cannot see through the
-# multiply and adder blackboxes and would otherwise leave them alone while
-# still chewing the soft cones around them in weird ways
+# lower to gates for abc with -noff on every opt past this point because opt_dff
+# cannot see through multiply and adder blackboxes and would otherwise leave them
+# alone while still chewing the soft cones around them in odd ways.
 demuxmap
 simplemap
 techmap
@@ -456,21 +451,18 @@ opt -fast -noff
 insbuf
 opt -purge -noff
 
-# snapshot the pre-abc per-type counts (and io pins via -top) for the
-# compare s/a split. the trailing file arg writes stat there instead of
-# needing a tee pass.
+# snapshot pre-abc per-type counts (and io pins via -top) for the compare s/a
+# split. the trailing file arg writes stat there instead of needing a tee pass.
 if { "TTT" ne "" } {
     stat -top TTT mosaic_synth.stat
 } else {
     stat mosaic_synth.stat
 }
 
-# ----------------------------------------------------------------------------
-# abc  runs in-yosys now that vtr's yosys is built with the in-yosys abc pass
-# (ENABLE_ABC=1). dress leaves PI and PO as pi* and po* which yosys then
-# cannot wire up so the gia opt script ends with move_names instead. two
-# passes when the scripts are set otherwise one plain -luts pass.
-# ----------------------------------------------------------------------------
+# abc runs in-yosys now that vtr's yosys is built with ENABLE_ABC=1. dress leaves
+# pi and po as pi*/po* which yosys cannot wire up, so the gia opt script ends with
+# move_names instead. use two passes when both scripts are set, otherwise one plain
+# -luts pass.
 if { $abcOptScript ne "" && $abcMapScript ne "" } {
     abc -script $abcOptScript
     abc -luts $lutCost -script $abcMapScript
@@ -478,22 +470,20 @@ if { $abcOptScript ne "" && $abcMapScript ne "" } {
     abc -luts $lutCost
 }
 
-# abc will not delete blackboxes so sweep anything it left unused.
-# last sweep before keep; densify below must setattr keep first.
+# abc will not delete blackboxes, so sweep anything it left unused. this is the
+# last sweep before keep, and densify below must setattr keep first.
 mosaicHardblockSweep $sweepMaxIters
 
-# snapshot the post-abc per-type counts
+# snapshot post-abc per-type counts for the compare split.
 if { "TTT" ne "" } {
     stat -top TTT mosaic_abc.stat
 } else {
     stat mosaic_abc.stat
 }
 
-# ----------------------------------------------------------------------------
-# densify then write_blif
-# ----------------------------------------------------------------------------
-# scoped densify: keep hardblocks, zero only undriven $lut input nets, then
-# opt_lut_ins so write_blif does not emit sparse unconn lut pins.
+# densify then write_blif using scoped densify: keep hardblocks, zero only
+# undriven $lut input nets, then opt_lut_ins so write_blif does not emit sparse
+# unconn lut pins.
 mosaicDensifyLutInputs 1
 
 stat
@@ -503,9 +493,9 @@ if { "TTT" ne "" } {
     hierarchy -check -auto-top -purge_lib
 }
 
-# hierarchy -purge_lib can drop keep and leave fresh undriven lut inputs
+# hierarchy -purge_lib can drop keep and leave fresh undriven lut inputs behind.
 mosaicDensifyLutInputs 0
 
-# the minus form  with a plus yosys emits a second .names gnd and vpr dies
-# on inconsistent block data sizes
+# use the minus form for const nets because a plus form makes yosys emit a
+# second .names gnd and vpr dies on inconsistent block data sizes.
 write_blif -true + vcc -false + gnd -undef - gnd -blackbox ZZZ

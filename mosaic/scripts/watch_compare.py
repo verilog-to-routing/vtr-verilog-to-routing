@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""
-live status table for mosaic/scripts/run_vtr_batch.py.
+"""live status table for mosaic/scripts/run_vtr_batch.py.
 
-details:
-    scans <outdir>/status/*.txt and live phase hints from run dirs. run in a
-    second terminal while the batch is going.
+scans <outdir>/status/*.txt and live phase hints from run dirs. run in a
+second terminal while the batch is going.
 
 usage:
     python3 mosaic/scripts/watch_compare.py
@@ -39,7 +37,7 @@ except ImportError:
 
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
-# new batches default here; repo root remains as fallback for older runs
+# new batches default under mosaic/scripts, and the repo root remains a fallback for older runs.
 compareOutputRoot = scriptDir
 
 phasePatterns = [
@@ -72,8 +70,8 @@ phaseColors = {
 }
 
 # (header, status key, higher_is_better)
-# frontend = raw front-end stage only (parmys.out / mosaic.out)
-# synthesis = fair compare: mosaic synth; vanilla synth+abc
+# frontend is raw front-end stage only (parmys.out / mosaic.out).
+# synthesis is the fair compare column: mosaic synth alone, vanilla synth+abc.
 geomeanColumns = (
     ("frontend", "s_s", False),
     ("synthesis", "synthesis", False),
@@ -93,8 +91,9 @@ geomeanColumns = (
 )
 
 
+# USE: parse one status line into label, status, and key=value fields.
 def parseStatusLine(text: str) -> Dict[str, str]:
-    # "label: status key=val ...", status may be "FAIL (reason with spaces)"
+    # "label: status key=val ...". status may be "FAIL (reason with spaces)"
     row: Dict[str, str] = {}
     line = text.strip()
     if not line:
@@ -123,8 +122,8 @@ def parseStatusLine(text: str) -> Dict[str, str]:
     return row
 
 
+# HELPER: accept bare numbers or legacy status values like 12.3ns / 100MHz / 4.5s.
 def stripUnit(value: str) -> str:
-    # accept bare numbers or legacy status values like 12.3ns / 100MHz / 4.5s
     text = str(value).strip()
     match = re.match(
         r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*"
@@ -137,6 +136,7 @@ def stripUnit(value: str) -> str:
     return text
 
 
+# USE: infer the current vtr phase from the newest log tails in a run dir.
 def detectPhase(runDir: Path) -> str:
     for name in (
         "vpr.out",
@@ -219,9 +219,9 @@ def flowOf(label: str) -> Optional[str]:
     return None
 
 
+# USE: fill fair synthesis time when older status lines omit it.
+# mosaic uses frontend only, while vanilla_vtr uses frontend plus abc.
 def enrichSynthesis(row: Dict[str, str]) -> Dict[str, str]:
-    # fair synthesis time if missing from older status lines:
-    # mosaic = frontend only; vanilla_vtr = frontend + abc
     if row.get("synthesis"):
         return row
     flow = flowOf(row.get("label", ""))
@@ -234,6 +234,7 @@ def enrichSynthesis(row: Dict[str, str]) -> Dict[str, str]:
     return row
 
 
+# USE: compute per-flow geomeans over designs that completed on every flow.
 def computeGeomeans(rows: Sequence[Dict[str, str]]):
     byDesign: Dict[str, Dict[str, Dict[str, str]]] = {}
     flowsSeen: List[str] = []
@@ -275,6 +276,7 @@ def computeGeomeans(rows: Sequence[Dict[str, str]]):
     return {"flows": flowsSeen, "geo": result}
 
 
+# USE: render the geomean table with percent and ratio diffs vs vanilla_vtr.
 def renderGeomeanTable(rows: Sequence[Dict[str, str]]) -> str:
     data = computeGeomeans(rows)
     if data is None:
@@ -407,6 +409,7 @@ def findOutputDirs() -> List[Path]:
     return dirs
 
 
+# USE: refresh the live status table until interrupted or --once.
 def watchDir(targetDir: Path, interval: float, once: bool) -> None:
     logsDir = targetDir / "logs"
     print(f"watching {targetDir} (interval={interval}s), Ctrl-C to stop")

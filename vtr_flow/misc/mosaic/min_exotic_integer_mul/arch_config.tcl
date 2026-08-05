@@ -1,5 +1,6 @@
-# policy for mosaic/tests/fixtures/min_exotic_integer_mul.xml
-# bind inferred $mul to exotic my_mul (no classic multiply).
+# this file is the mosaic policy for mosaic/tests/fixtures/min_exotic_integer_mul.xml.
+# the fixture has no classic multiply model, so exoticRoles binds inferred $mul
+# onto my_mul through the stock integer_mul role and keepCellTypes retains that cell.
 
 set bramRomCost    0.5
 set bramSpCost     30

@@ -1,7 +1,6 @@
-﻿"""
-Module to run Mosaic as a synthesis frontend for the VTR flow.
+﻿"""module to run mosaic as a synthesis frontend for the vtr flow.
 
-Mosaic is a yosys plugin that combines wildebeest-originated passes
+mosaic is a yosys plugin that combines wildebeest-originated passes
 (max_level / clk_domains) with mosaic-only arch rules (-vtr_arch).
 """
 
@@ -23,13 +22,11 @@ FILE_TYPES = {
 }
 
 
+# USE: resolve the mosaic per-arch policy support dir for an architecture xml.
+# this looks for vtr_flow/misc/mosaic/<arch_stem>/arch_config.tcl only and
+# returns None when missing so synthesis runs facts-only from the arch xml with
+# no silent family fallback or stem alias table.
 def resolve_arch_support_dir(architecture_file_path):
-    """pick the mosaic per-arch policy support dir for an architecture xml.
-
-    looks for vtr_flow/misc/mosaic/<arch_stem>/arch_config.tcl only.
-    when missing, returns None so synthesis runs facts-only from the arch
-    xml (no silent family fallback or stem alias table).
-    """
     archPath = Path(architecture_file_path)
     archStem = archPath.stem
     miscPath = Path(vtr.paths.mosaic_misc_path)
@@ -50,6 +47,7 @@ def resolve_arch_support_dir(architecture_file_path):
 
 
 # pylint: disable=too-many-arguments, too-many-locals
+# USE: fill the template tokens in the copied mosaic yosys script.
 def init_script_file(
     yosys_script_full_path,
     circuit_list,
@@ -57,7 +55,6 @@ def init_script_file(
     raw_netlist_name,
     architecture_file_path,
 ):
-    """fill the template tokens in the copied mosaic yosys script"""
     # yosys tcl wants forward slashes even on windows
     supportDir = resolve_arch_support_dir(architecture_file_path)
     if supportDir is None:
@@ -66,8 +63,8 @@ def init_script_file(
         archSupportDir = str(supportDir.resolve()).replace("\\", "/")
     templateDir = str(vtr.paths.mosaic_template_path.resolve()).replace("\\", "/")
 
-    # YYY is what makes this the mosaic leg: max_level -clk2clk takes
-    # its clock cut points from the arch xml instead of the vendor lists
+    # YYY makes this the mosaic leg because max_level -clk2clk takes clock cut
+    # points from the arch xml instead of vendor cell lists.
     vtrArchFlag = "-vtr_arch {}".format(architecture_file_path)
 
     vtr.file_replace(
@@ -84,22 +81,22 @@ def init_script_file(
     )
 
 
+# USE: collect model names declared in the arch xml.
 def parse_arch_blif_model_names(arch_xml_path):
-    """model names declared in the arch xml"""
     text = Path(arch_xml_path).read_text(encoding="utf-8", errors="replace")
     return set(re.findall(r'<model\s+name="([^"]+)"', text))
 
 
+# USE: drop unused blackbox lib .model blocks (e.g. dffes) the arch never uses.
 def prune_blif_models_not_in_arch(blif_path, arch_xml_path):
-    """drop unused blackbox lib .model blocks (e.g. dffes) the arch never uses"""
     allowed = parse_arch_blif_model_names(arch_xml_path)
     text = blif_path.read_text(encoding="utf-8", errors="replace")
     usedSubckts = set(re.findall(r"^\.subckt\s+(\S+)", text, re.MULTILINE))
 
     blocks = [b for b in re.split(r"(?=^\.model )", text, flags=re.MULTILINE) if b.strip()]
 
-    # yosys prepends the blackbox lib models before the design model, so the
-    # top is the first .model whose block is not a blackbox lib
+    # yosys prepends blackbox lib models before the design model, so the top is
+    # the first .model whose block is not a blackbox lib entry.
     topModel = None
     for block in blocks:
         modelMatch = re.match(r"^\.model\s+(\S+)", block, re.MULTILINE)
@@ -131,6 +128,7 @@ def prune_blif_models_not_in_arch(blif_path, arch_xml_path):
 
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-statements
+# USE: run mosaic on the specified architecture file and circuit.
 def run(
     architecture_file,
     circuit_file,
@@ -144,7 +142,7 @@ def run(
     mosaic_script=None,
 ):
     """
-    Runs Mosaic on the specified architecture file and circuit
+    runs mosaic on the specified architecture file and circuit.
 
     .. note :: Usage: vtr.mosaic.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
 
@@ -192,7 +190,7 @@ def run(
     if mosaic_args is None:
         mosaic_args = OrderedDict()
 
-    # Verify that files are Paths or convert them to Paths and check that they exist
+    # verify that files are Paths or convert them to Paths and check that they exist
     architecture_file = vtr.verify_file(architecture_file, "Architecture")
     circuit_file = vtr.verify_file(circuit_file, "Circuit")
     output_netlist = vtr.verify_file(output_netlist, "Output netlist", False)
@@ -225,7 +223,7 @@ def run(
     else:
         base_script = str(Path(mosaic_script).resolve())
 
-    # Copy the template script into the run directory
+    # copy the template script into the run directory
     yosys_script = "synthesis_mosaic.tcl"
     yosys_script_full_path = str(temp_dir / yosys_script)
     shutil.copyfile(base_script, yosys_script_full_path)
@@ -234,7 +232,7 @@ def run(
 
     top_module = mosaic_args.pop("top_module", "") or ""
 
-    # yosys writes the raw blif; it is pruned and fixed into output_netlist below
+    # yosys writes the raw blif, and it is pruned and fixed into output_netlist below.
     raw_netlist_name = output_netlist.stem + ".raw" + output_netlist.suffix
     architecture_file_path = str(architecture_file.resolve()).replace("\\", "/")
 
@@ -266,13 +264,13 @@ def run(
             "Mosaic did not produce {} (see {})".format(raw_netlist_name, log_filename)
         )
 
-    # prune blackbox models the arch never declares, then apply the vpr blif
-    # hygiene fixes (ram addr pads, hierarchical net dots, latch-Q uniquify)
+    # prune blackbox models the arch never declares, then apply vpr blif hygiene
+    # fixes (ram addr pads, hierarchical net dots, latch-Q uniquify).
     shutil.copyfile(str(raw_netlist), str(output_netlist))
     prune_blif_models_not_in_arch(output_netlist, architecture_file)
 
-    # arch_facts.tcl is written into the run dir by vtr_arch_rules; pass it so
-    # ram addr-pad rewrites recognize aliased sp/dp model names
+    # arch_facts.tcl is written into the run dir by vtr_arch_rules, and we pass
+    # it so ram addr-pad rewrites recognize aliased sp/dp model names.
     fixBlifCmd = [sys.executable, str(fix_blif_script), output_netlist.name]
     archFactsPath = temp_dir / "arch_facts.tcl"
     if archFactsPath.is_file():

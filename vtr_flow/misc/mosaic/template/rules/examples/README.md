@@ -1,6 +1,6 @@
-# Example exotic techmap templates
+# example exotic techmap templates
 
-These `.tmpl` files are not loaded automatically. Point at them from an arch
+these `.tmpl` files are not loaded automatically. point at them from an arch
 `arch_config.tcl` with `exoticTemplatePairs`, for example:
 
 ```tcl
@@ -10,5 +10,5 @@ set exoticTemplatePairs {
 ```
 
 `mult_fp_16_passthrough.v.tmpl` shows scanned `@PORT_*@` / `@MODEL_NAME@`
-tokens and an identity replace. Adapt the body to bind Yosys ops if you need
-inference rather than RTL-instantiated passthrough.
+tokens and an identity replace. adapt the body to bind yosys ops if you need
+inference rather than rtl-instantiated passthrough.

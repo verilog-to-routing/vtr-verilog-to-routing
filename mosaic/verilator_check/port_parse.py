@@ -47,16 +47,16 @@ def _parseWidth(tokenBlock: str) -> int:
     return abs(msb - lsb) + 1
 
 
+# HELPER: remove // and /* */ comments without treating //*** headers as /*.
 def _stripVerilogComments(text: str) -> str:
-    """remove // and /* */ comments without treating //*** headers as /*."""
-    # line comments first, vtr headers like //***** contain the substring /*
+    # line comments first. vtr headers like //***** contain the substring /*
     text = re.sub(r"//.*?$", "", text, flags=re.M)
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
     return text
 
 
+# USE: parse ansi or non-ansi ports from the first or named module.
 def parseVerilogTopPorts(verilogPath: Path, topName: Optional[str] = None) -> List[PortDecl]:
-    """parse ansi or non-ansi ports from the first / named module."""
     text = _stripVerilogComments(
         verilogPath.read_text(encoding="utf-8", errors="replace")
     )
@@ -89,7 +89,7 @@ def parseVerilogTopPorts(verilogPath: Path, topName: Optional[str] = None) -> Li
     body = text[moduleBodyStart: moduleBodyStart + endMatch.start()] if endMatch else text[moduleBodyStart:]
 
     ports: List[PortDecl] = []
-    # ansi-style: input [3:0] a, output wire b
+    # ansi-style. input [3:0] a, output wire b
     ansiItems = [p.strip() for p in portBlock.split(",") if p.strip()]
     looksAnsi = any(re.match(r"^(input|output|inout)\b", item, re.I) for item in ansiItems)
 
@@ -107,14 +107,14 @@ def parseVerilogTopPorts(verilogPath: Path, topName: Optional[str] = None) -> Li
                 currentWidth = _parseWidth(dirMatch.group(2) or "")
                 ports.append(PortDecl(dirMatch.group(3), currentDir, currentWidth))
                 continue
-            # continuation: just a name, maybe with width
+            # continuation is just a name, maybe with width
             nameMatch = re.match(r"(?:(\[[^\]]+\])\s*)?(\w+)\s*$", item)
             if nameMatch:
                 w = _parseWidth(nameMatch.group(1) or "") if nameMatch.group(1) else currentWidth
                 ports.append(PortDecl(nameMatch.group(2), currentDir, w))
         return ports
 
-    # non-ansi: port list is names only; directions in body
+    # non-ansi. port list is names only. directions live in the body
     names = []
     for item in ansiItems:
         # drop attributes / escapes
@@ -146,10 +146,10 @@ def parseVerilogTopPorts(verilogPath: Path, topName: Optional[str] = None) -> Li
     return ports
 
 
+# USE: return (modelName, ports) from the first non-blackbox .model.
 def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
-    """return (modelName, ports) from the first non-blackbox .model."""
     text = blifPath.read_text(encoding="utf-8", errors="replace")
-    # join continuations
+    # join continuations into logical lines
     lines: list[str] = []
     buf = ""
     for raw in text.splitlines():
@@ -193,7 +193,7 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
     if not modelName:
         raise ValueError(f"no .model found in {blifPath}")
 
-    # blif bus bits like a[0] --> collapse to bus a with width
+    # blif bus bits like a[0] can collapse to bus a with width
     def collapse(names: list[str], direction: str) -> List[PortDecl]:
         buses: dict[str, list[int]] = {}
         scalars: list[str] = []
@@ -211,29 +211,28 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
             ports.append(PortDecl(n, direction, 1))
         return ports
 
-    # prefer keeping bit-blasted names as individual 1-bit ports, matches
+    # prefer keeping bit-blasted names as individual 1-bit ports. that matches
     # yosys write_verilog from blif which usually keeps a[0] style as separate
-    # nets OR as buses. for tb driving we use the rtl port list as source of
-    # truth; blif parse is only a fallback.
+    # nets or as buses. for tb driving we use the rtl port list as source of
+    # truth. blif parse is only a fallback.
     ports = [PortDecl(n, "input", 1) for n in inputs] + [
         PortDecl(n, "output", 1) for n in outputs
     ]
     return modelName, ports
 
 
+
+# USE: pick the design top module from a (possibly multi-module) rtl file.
+# preference order:
+#   1. preferredName if that module exists (synth top / known name)
+#   2. module matching the file stem
+#   3. module whose port names best overlap preferredPorts
+#   4. last module in the file
 def findTopModuleName(
     verilogPath: Path,
     preferredName: Optional[str] = None,
     preferredPorts: Optional[List[str]] = None,
 ) -> str:
-    """pick the design top module from a (possibly multi-module) rtl file.
-
-    preference order:
-      1. preferredName if that module exists (synth top / known name)
-      2. module matching the file stem
-      3. module whose port names best overlap preferredPorts
-      4. last module in the file
-    """
     text = _stripVerilogComments(
         verilogPath.read_text(encoding="utf-8", errors="replace")
     )

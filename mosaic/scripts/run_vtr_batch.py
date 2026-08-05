@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""
-batch runner built around the vtr_flow/scripts/run_vtr_flow.py call.
+"""batch runner built around the vtr_flow/scripts/run_vtr_flow.py call.
 
-details:
-    each job is python3 vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start <stage>
+each job is python3 vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start <stage>.
 
-    every run is pinned to 1 core (--num_workers 1 + VPR_NUM_WORKERS=1 +
-    OMP_NUM_THREADS=1). --jobs N means N of those single-core runs in parallel.
+every run is pinned to 1 core (--num_workers 1 + VPR_NUM_WORKERS=1 +
+OMP_NUM_THREADS=1). --jobs N means N of those single-core runs in parallel.
 
-    writes live status + csv under mosaic/scripts/compare_output_<arch_stem>/.
-    with --watch, spawns watch_compare.py in this terminal (or run it yourself
-    in a second one).
+writes live status and csv under mosaic/scripts/compare_output_<arch_stem>/.
+with --watch, spawns watch_compare.py in this terminal (or run it yourself
+in a second one).
 
 usage:
     python3 mosaic/scripts/run_vtr_batch.py \\
@@ -23,12 +21,12 @@ usage:
 flags:
     --arch <xml>           architecture file (required)
     --benchmark-dir <dir>  directory holding <design>.v
-    --designs <names...>   circuit stems; default: every *.v in bench dir
+    --designs <names...>   circuit stems. default: every *.v in bench dir
                             except *_include.v
     --include <files...>   -include paths (relative to --benchmark-dir or abs)
     --flows <names...>     mosaic and/or vanilla_vtr (default: both)
                             aliases: frank, parmys, vtr
-    --jobs <n>             concurrent single-core runs (default 4);
+    --jobs <n>             concurrent single-core runs (default 4).
                             each run is pinned to 1 core via --num_workers 1
     --outdir <dir>         output directory (default
                             mosaic/scripts/compare_output_<arch_stem>)
@@ -57,7 +55,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
-# default batch output root (keeps compare_output_* out of the repo root)
+# default batch output root keeps compare_output_* under mosaic/scripts.
 compareOutputRoot = scriptDir
 vtrFlow = vtrRoot / "vtr_flow"
 runVtrFlow = vtrFlow / "scripts" / "run_vtr_flow.py"
@@ -76,7 +74,7 @@ flowAliases = {
 }
 
 vprBramBlockTypes = ("memory", "bram_multimode")
-# koios uses dsp_top; classic k6 uses mult_36; some arches use mae/dsp
+# koios uses dsp_top, classic k6 uses mult_36, and some arches use mae or dsp.
 vprDspBlockTypes = ("mult_36", "mae", "dsp", "dsp_top")
 
 csvFields = (
@@ -293,9 +291,9 @@ def countBlifLatches(blifPath: Path) -> str:
         return ""
 
 
+# USE: sum $_DFF_*/$_DFFE_* counts from a yosys stat dump.
 def parseYosysFfCount(text: str) -> str:
     match = re.search(r"^\s+Number of cells:\s+\d+\s*$", text, re.MULTILINE)
-    # prefer $_DFF_*/$_DFFE_* counts from yosys stat
     total = 0
     found = False
     for line in text.splitlines():
@@ -318,8 +316,8 @@ def stageLutCounts(tempDir: Path, design: str) -> Dict[str, str]:
             if value:
                 counts[key] = value
                 break
-    # mosaic abc is in-yosys so pre-vpr is the post-abc netlist; when
-    # only mosaic.blif exists, treat that as synth and leave abc blank
+    # mosaic abc is in-yosys, so pre-vpr is the post-abc netlist. when only
+    # mosaic.blif exists, treat that as synth and leave abc blank.
     if counts["synth_luts"] and not counts["abc_luts"]:
         preVpr = tempDir / f"{design}.pre-vpr.blif"
         frank = tempDir / f"{design}.mosaic.blif"
@@ -527,8 +525,8 @@ def extractFailReason(tempDir: Path, flowName: str, returnCode: int) -> str:
     return "missing"
 
 
+# USE: force each child process onto one worker/thread.
 def singleCoreEnv() -> Dict[str, str]:
-    """force each child process onto one worker/thread."""
     env = os.environ.copy()
     env["VPR_NUM_WORKERS"] = "1"
     env["OMP_NUM_THREADS"] = "1"
@@ -584,7 +582,7 @@ def runOne(task: Tuple) -> Dict:
     tempDir.mkdir(parents=True, exist_ok=True)
     logPath.parent.mkdir(parents=True, exist_ok=True)
 
-    # default vtr call; -j/--num_workers 1 keeps vpr on one core per run
+    # default vtr call uses -j/--num_workers 1 so vpr stays on one core per run.
     cmd = [
         sys.executable,
         str(runVtrFlow.resolve()),

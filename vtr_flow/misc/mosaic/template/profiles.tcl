@@ -1,22 +1,19 @@
-# mosaic primitive profiles as data (not comments).
-# sourced by synthesis.tcl before arch_config so policy can override
-# primitiveProfile; mosaicApplyPrimitiveProfile runs after arch_config.
-
+# mosaic primitive profiles are named policy packs.
+# synthesis.tcl sources this file before arch_config so an arch can override
+# primitiveProfile, and mosaicApplyPrimitiveProfile runs after arch_config so
+# the chosen pack can still force stubAllHardblocks when the arch left it unset.
 set mosaicProfileData [dict create \
     vtr_classic [dict create \
-        requireClassicRams 1 \
-        forceStubAll 0 \
-        inferClassicMulAdd 1] \
+        forceStubAll 0] \
     passthrough_exotics [dict create \
-        requireClassicRams 1 \
-        forceStubAll 1 \
-        inferClassicMulAdd 1]]
+        forceStubAll 1]]
 
 proc mosaicKnownProfiles {} {
     global mosaicProfileData
     return [lsort [dict keys $mosaicProfileData]]
 }
 
+# USE: applies the selected primitiveProfile pack onto live synth knobs.
 proc mosaicApplyPrimitiveProfile {} {
     global primitiveProfile stubAllHardblocks mosaicProfileData
     if { ![dict exists $mosaicProfileData $primitiveProfile] } {
@@ -28,8 +25,9 @@ proc mosaicApplyPrimitiveProfile {} {
     }
 }
 
-# after arch_facts: warn when classic inference cannot bind $mul but exotics exist.
-# rule-gen also warns; this surfaces the profile contract in the synth log.
+# USE: warn when inferred $mul cannot bind to a hard multiply.
+# rule gen already warns, and this surfaces the same contract in the synth log
+# so designers see why behavioral multiply stayed soft.
 proc mosaicCheckClassicMulContract {} {
     global multiplyPresent stubAllHardblocks exoticRoles exoticTemplatePairs \
         primitiveProfile
