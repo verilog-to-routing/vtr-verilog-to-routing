@@ -31,6 +31,10 @@ struct ArchRulePolicy {
   // $add/$sub at or below this width stay soft so abc can optimize
   // across them (hard adders are black boxes).
   int hardAdderThreshold = 3;
+  // $mul with either operand at or below this width stays soft (0 = no floor).
+  int minHardMulWidth = 0;
+  // drop bram modes shallower than this address width from libmap (0 = keep all).
+  int minHardMemAbits = 0;
   ClassicModelNames classic;
 };
 

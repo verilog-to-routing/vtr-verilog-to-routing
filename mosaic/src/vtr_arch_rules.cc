@@ -89,6 +89,7 @@ struct VtrArchRulesPass : public Pass {
     log("    vtr_arch_rules -xml <arch.xml> [-outdir <dir>] [-tpldir <dir>]\n");
     log("                    [-sp-cost N] [-dp-cost N] [-blocks a,b,...]\n");
     log("                    [-hard-adder-threshold N]\n");
+    log("                    [-min-hard-mul N] [-min-hard-mem-abits N]\n");
     log("                    [-stub-all-hardblocks]\n");
     log("                    [-alias <role>=<model>]...\n");
     log("                    [-exotic <model> -exotic-template <file>]...\n");
@@ -115,9 +116,9 @@ struct VtrArchRulesPass : public Pass {
     log("to an exotic model for inferred yosys ops. integer_mul is\n");
     log("skipped when classic multiply is present.\n");
     log("\n");
-    log("mode geometry is arch-derived; the libmap costs are flow policy\n");
-    log("(-sp-cost / -dp-cost, default 128), as is the hard adder width\n");
-    log("threshold (-hard-adder-threshold, default 3).\n");
+    log("mode geometry comes from the arch xml. the following options are\n");
+    log("flow policy, not arch facts: -sp-cost / -dp-cost (libmap costs),\n");
+    log("-hard-adder-threshold, -min-hard-mul, and -min-hard-mem-abits.\n");
     log("\n");
   }
 
@@ -129,6 +130,8 @@ struct VtrArchRulesPass : public Pass {
     int spCost = 128;
     int dpCost = 128;
     int hardAdderThreshold = 3;
+    int minHardMulWidth = 0;
+    int minHardMemAbits = 0;
     bool stubAllHardblocks = false;
     mosaic::ClassicModelNames classic;
     std::vector<std::string> exoticModels;
@@ -160,6 +163,14 @@ struct VtrArchRulesPass : public Pass {
       }
       if (args[argidx] == "-hard-adder-threshold" && argidx + 1 < args.size()) {
         hardAdderThreshold = std::atoi(args[++argidx].c_str());
+        continue;
+      }
+      if (args[argidx] == "-min-hard-mul" && argidx + 1 < args.size()) {
+        minHardMulWidth = std::atoi(args[++argidx].c_str());
+        continue;
+      }
+      if (args[argidx] == "-min-hard-mem-abits" && argidx + 1 < args.size()) {
+        minHardMemAbits = std::atoi(args[++argidx].c_str());
         continue;
       }
       if (args[argidx] == "-blocks" && argidx + 1 < args.size()) {
@@ -246,6 +257,8 @@ struct VtrArchRulesPass : public Pass {
     policy.spCost = spCost;
     policy.dpCost = dpCost;
     policy.hardAdderThreshold = hardAdderThreshold;
+    policy.minHardMulWidth = minHardMulWidth;
+    policy.minHardMemAbits = minHardMemAbits;
     policy.classic = classic;
 
     mosaic::emitArchFacts(info, policy, outDir);

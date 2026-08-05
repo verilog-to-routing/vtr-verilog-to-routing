@@ -11,6 +11,8 @@ set cmpLutWidth    6
 set lutCost        "5:13,6:20"
 # 12 under-mapped real datapath adds on this arch at the old higher cutoff
 set hardAdderThreshold 3
+# keep tiny $mul soft (parmys-style min_hard_multiplier); mul2dsp min is separate
+set minHardMulWidth 3
 # minimum operand width for mul2dsp chunking (policy; facts set dspMaxWidth)
 set dspMinWidth    2
 set sweepMaxIters  64
