@@ -325,6 +325,18 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
                                                              RRNodeId target_node) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRNodeId from_node = current.index;
+    const bool rcv_enabled = this->rcv_path_manager.is_enabled();
+
+    float best_total_cost = this->rr_node_route_inf_[to_node].path_cost;
+    float best_back_cost = this->rr_node_route_inf_[to_node].backward_path_cost;
+
+    // Since edge weights are non-negative, the backward cost of reaching to_node
+    // via current can never be less than current's backward cost. If that lower
+    // bound already fails the pre-push backward-cost prune below, skip evaluating
+    // this neighbor entirely.
+    if (!rcv_enabled && best_back_cost <= current.backward_path_cost) {
+        return;
+    }
 
     // Initialize the neighbor RTExploredNode
     RTExploredNode next;
@@ -337,17 +349,16 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     // Initialize RCV data struct if needed, otherwise it's set to nullptr
     this->rcv_path_manager.alloc_path_struct(next.path_data);
     // path_data variables are initialized to current values
-    if (this->rcv_path_manager.is_enabled() && this->rcv_path_data[from_node]) {
+    if (rcv_enabled && this->rcv_path_data[from_node]) {
         next.path_data->backward_cong = this->rcv_path_data[from_node]->backward_cong;
         next.path_data->backward_delay = this->rcv_path_data[from_node]->backward_delay;
     }
 
-    this->evaluate_timing_driven_node_costs(&next, cost_params, from_node, target_node);
+    // Compute the backward path cost (and R_upstream/Tdel) first; the (expensive)
+    // lookahead-based total cost is only computed for edges that survive the
+    // backward-cost prune below.
+    float Tdel = this->evaluate_timing_driven_backward_costs(&next, cost_params, from_node);
 
-    float best_total_cost = this->rr_node_route_inf_[to_node].path_cost;
-    float best_back_cost = this->rr_node_route_inf_[to_node].backward_path_cost;
-
-    float new_total_cost = next.total_cost;
     float new_back_cost = next.backward_path_cost;
 
     // We need to only expand this node if it is a better path. And we need to
@@ -359,9 +370,23 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     // router paper.
     //
     // When RCV is enabled, prune based on the RCV-specific total path cost (see
-    // in `compute_node_cost_using_rcv` in `evaluate_timing_driven_node_costs`)
+    // in `compute_node_cost_using_rcv` in `evaluate_timing_driven_total_cost`)
     // to allow detours to get better QoR.
-    if ((!this->rcv_path_manager.is_enabled() && best_back_cost > new_back_cost) || (this->rcv_path_manager.is_enabled() && best_total_cost > new_total_cost)) {
+    bool add_to_heap;
+    if (!rcv_enabled) {
+        add_to_heap = best_back_cost > new_back_cost;
+        // Only edges surviving the backward-cost prune pay for the lookahead
+        if (add_to_heap) {
+            this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+        }
+    } else {
+        this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+        add_to_heap = best_total_cost > next.total_cost;
+    }
+
+    float new_total_cost = next.total_cost;
+
+    if (add_to_heap) {
         VTR_LOGV_DEBUG(this->router_debug_, "      Expanding to node %d (%s)\n", to_node,
                        describe_rr_node(device_ctx.rr_graph,
                                         device_ctx.grid,
@@ -390,7 +415,7 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
         VTR_LOGV_DEBUG(this->router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
     }
 
-    if (this->rcv_path_manager.is_enabled() && next.path_data != nullptr) {
+    if (rcv_enabled && next.path_data != nullptr) {
         this->rcv_path_manager.free_path_struct(next.path_data);
     }
 }
