@@ -259,15 +259,12 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
 }
 
 template<typename Heap>
-void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* to,
-                                                               const t_conn_cost_params& cost_params,
-                                                               RRNodeId from_node,
-                                                               RRNodeId target_node) {
+float ConnectionRouter<Heap>::evaluate_timing_driven_backward_costs(RTExploredNode* to,
+                                                                    const t_conn_cost_params& cost_params,
+                                                                    RRNodeId from_node) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
-     *
-     * new_costs.total_cost: is this "known" backward cost + an expected cost to get to the target.
      *
      * new_costs.R_upstream: is the upstream resistance at the end of this node
      */
@@ -350,6 +347,16 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
         }
     }
 
+    return Tdel;
+}
+
+template<typename Heap>
+void ConnectionRouter<Heap>::evaluate_timing_driven_total_cost(RTExploredNode* to,
+                                                               const t_conn_cost_params& cost_params,
+                                                               RRNodeId target_node,
+                                                               float Tdel) {
+    // to->total_cost: is the "known" backward cost + an expected cost to get to the target.
+
     float total_cost = 0.;
 
     if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
@@ -371,6 +378,15 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
         total_cost += to->backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
     }
     to->total_cost = total_cost;
+}
+
+template<typename Heap>
+void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* to,
+                                                               const t_conn_cost_params& cost_params,
+                                                               RRNodeId from_node,
+                                                               RRNodeId target_node) {
+    float Tdel = evaluate_timing_driven_backward_costs(to, cost_params, from_node);
+    evaluate_timing_driven_total_cost(to, cost_params, target_node, Tdel);
 }
 
 template<typename Heap>
