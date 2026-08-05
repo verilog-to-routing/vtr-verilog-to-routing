@@ -43,11 +43,9 @@ static void get_pattern_models_recurr(t_pack_pattern_block* pattern_block,
     models.insert(pattern_block->pb_type->model_id);
 
     // Go through this block's connections and get their pattern models.
-    t_pack_pattern_connections* connection = pattern_block->connections;
-    while (connection != nullptr) {
-        get_pattern_models_recurr(connection->from_block, models, block_visited);
-        get_pattern_models_recurr(connection->to_block, models, block_visited);
-        connection = connection->next;
+    for (const t_pack_pattern_connections& connection : pattern_block->connections) {
+        get_pattern_models_recurr(connection.from_block, models, block_visited);
+        get_pattern_models_recurr(connection.to_block, models, block_visited);
     }
 }
 

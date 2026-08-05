@@ -640,7 +640,6 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
     bool found; /* Error checking, ensure only one fan-out for each pattern net */
     t_pack_pattern_block* source_block = nullptr;
     t_pb_graph_node* source_pb_graph_node = nullptr;
-    t_pack_pattern_connections* pack_pattern_connection = nullptr;
     int curr_pattern_index = packing_pattern.index;
 
     found = expansion_edge->infer_pattern;
@@ -729,21 +728,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             if (destination_pin != nullptr) {
                 VTR_ASSERT(last_added_pattern_block[source_pb_graph_node]->pattern_index == curr_pattern_index);
                 source_block = last_added_pattern_block[source_pb_graph_node];
-                pack_pattern_connection = new t_pack_pattern_connections();
-                pack_pattern_connection->from_block = source_block;
-                pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
-                pack_pattern_connection->to_block = destination_block;
-                pack_pattern_connection->to_pin = destination_pin;
-                pack_pattern_connection->next = source_block->connections;
-                source_block->connections = pack_pattern_connection;
-
-                pack_pattern_connection = new t_pack_pattern_connections();
-                pack_pattern_connection->from_block = source_block;
-                pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
-                pack_pattern_connection->to_block = destination_block;
-                pack_pattern_connection->to_pin = destination_pin;
-                pack_pattern_connection->next = destination_block->connections;
-                destination_block->connections = pack_pattern_connection;
+                source_block->connections.push_back({source_block, expansion_edge->input_pins[i], destination_block, destination_pin});
+                destination_block->connections.push_back({source_block, expansion_edge->input_pins[i], destination_block, destination_pin});
 
                 if (source_block == destination_block) {
                     VPR_FATAL_ERROR(VPR_ERROR_PACK,
@@ -947,20 +933,15 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
 }
 
 static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
-    t_pack_pattern_connections *connection, *next;
     if (pattern_block == nullptr || pattern_block->block_id == UNDEFINED) {
         /* already traversed, return */
         return;
     }
     pattern_block_list[pattern_block->block_id] = pattern_block;
     pattern_block->block_id = UNDEFINED;
-    connection = pattern_block->connections;
-    while (connection) {
-        free_pack_pattern_block(connection->from_block, pattern_block_list);
-        free_pack_pattern_block(connection->to_block, pattern_block_list);
-        next = connection->next;
-        delete connection;
-        connection = next;
+    for (const t_pack_pattern_connections& connection : pattern_block->connections) {
+        free_pack_pattern_block(connection.from_block, pattern_block_list);
+        free_pack_pattern_block(connection.to_block, pattern_block_list);
     }
 }
 
@@ -1098,28 +1079,24 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
         // set this node in the molecule as visited
         molecule.atom_block_ids[pattern_block->block_id] = block_id;
 
-        // starting from the first connections, add all the connections of this block to the queue
-        auto block_connection = pattern_block->connections;
-
-        while (block_connection != nullptr) {
+        // add all the connections of this block to the queue
+        for (const t_pack_pattern_connections& block_connection : pattern_block->connections) {
             // this block is the driver of this connection
-            if (block_connection->from_block == pattern_block) {
+            if (block_connection.from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
+                auto sink_blk_id = get_sink_block(block_id, block_connection, atom_nlist);
                 // add this sink block id with its corresponding pattern block to the queue
-                pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
+                pattern_block_queue.push(std::make_pair(block_connection.to_block, sink_blk_id));
                 // this block is being driven by this connection
-            } else if (block_connection->to_block == pattern_block) {
+            } else if (block_connection.to_block == pattern_block) {
                 // find the block that is driving this connection and it to the queue
-                auto driver_blk_id = get_driving_block(block_id, *block_connection, atom_nlist);
+                auto driver_blk_id = get_driving_block(block_id, block_connection, atom_nlist);
                 // add this driver block id with its corresponding pattern block to the queue
-                pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
+                pattern_block_queue.push(std::make_pair(block_connection.from_block, driver_blk_id));
             }
 
             // this block should be either driving or driven by the connection
-            VTR_ASSERT(block_connection->from_block == pattern_block || block_connection->to_block == pattern_block);
-            // go to the next connection of this pattern block
-            block_connection = block_connection->next;
+            VTR_ASSERT(block_connection.from_block == pattern_block || block_connection.to_block == pattern_block);
         }
     }
     // if all non-optional positions in the pack pattern have atoms
@@ -1228,29 +1205,27 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
 static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern) {
     std::unordered_set<t_pb_type*> pattern_blocks;
 
-    t_pack_pattern_connections* connections = pack_pattern.root_block->connections;
-    if (connections == nullptr) {
+    const std::vector<t_pack_pattern_connections>& root_connections = pack_pattern.root_block->connections;
+    if (root_connections.empty()) {
         return pattern_blocks;
     }
     std::unordered_set<t_pb_graph_pin*> visited_from_pins;
     std::unordered_set<t_pb_graph_pin*> visited_to_pins;
     std::queue<t_pack_pattern_block*> pack_pattern_blocks;
-    pack_pattern_blocks.push(connections->from_block);
+    pack_pattern_blocks.push(root_connections.front().from_block);
 
     /** Start from the root block of the pack pattern and add the connected block to the queue */
     while (!pack_pattern_blocks.empty()) {
         t_pack_pattern_block* current_pattern_block = pack_pattern_blocks.front();
         pack_pattern_blocks.pop();
-        t_pack_pattern_connections* current_connenction = current_pattern_block->connections;
         /*
          * Iterate through all the connections of the current pattern block to
          * add the connected block to the queue
          */
-        while (current_connenction != nullptr) {
-            if (visited_from_pins.find(current_connenction->from_pin) != visited_from_pins.end()) {
-                if (visited_to_pins.find(current_connenction->to_pin) != visited_to_pins.end()) {
+        for (const t_pack_pattern_connections& current_connenction : current_pattern_block->connections) {
+            if (visited_from_pins.find(current_connenction.from_pin) != visited_from_pins.end()) {
+                if (visited_to_pins.find(current_connenction.to_pin) != visited_to_pins.end()) {
                     /* We've already seen this connection */
-                    current_connenction = current_connenction->next;
                     continue;
                 }
             }
@@ -1258,13 +1233,12 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
              * To avoid visiting the same connection twice, since it is both stored in from_pin and to_pin,
              * add the from_pin and to_pin to the visited sets
              */
-            visited_from_pins.insert(current_connenction->from_pin);
-            visited_to_pins.insert(current_connenction->to_pin);
+            visited_from_pins.insert(current_connenction.from_pin);
+            visited_to_pins.insert(current_connenction.to_pin);
 
             /* The from_pin block belongs to the pattern block */
-            pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
-            pack_pattern_blocks.push(current_connenction->to_block);
-            current_connenction = current_connenction->next;
+            pattern_blocks.insert(current_connenction.from_pin->port->parent_pb_type);
+            pack_pattern_blocks.push(current_connenction.to_block);
         }
     }
     return pattern_blocks;
