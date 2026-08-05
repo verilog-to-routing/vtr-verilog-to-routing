@@ -1,0 +1,54 @@
+<vpr_constraints tool_name="vpr">
+    <relative_macro_list>
+
+        <!-- 5 LUTs (lb_0..lb_4) placed next to DSP dsp0.
+             lb_0 and lb_1 drive registers (ble5 LUT+FF molecules).
+             Note: .subckt atoms are named after their first output net,
+             so the DSP atom is "dsp0_out_0". -->
+        <relative_macro name="macro_dsp_lut">
+            <reference_group>
+                <add_atom name_pattern="dsp0_out_0"/>
+            </reference_group>
+            <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                <add_atom name_pattern="lb_0"/>
+                <add_atom name_pattern="lb_1"/>
+                <add_atom name_pattern="lb_2"/>
+                <add_atom name_pattern="lb_3"/>
+                <add_atom name_pattern="lb_4"/>
+            </relative_group>
+        </relative_macro>
+
+        <!-- 5 LUTs (lc_0..lc_4) placed next to BRAM bram0.
+             lc_0 and lc_1 drive registers. Anchored regex exercises the
+             regex path (unanchored "lc_[0-4]" would substring-match lc_10,
+             lc_23, ... since matching uses std::regex_search). -->
+        <relative_macro name="macro_bram_lut">
+            <reference_group>
+                <add_atom name_pattern="bram0_out"/>
+            </reference_group>
+            <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                <add_atom name_pattern="^lc_[0-4]$" is_regex="true"/>
+            </relative_group>
+        </relative_macro>
+
+        <!-- Two groups of 5 LUTs next to each other.
+             la_0, la_1 (reference) and la_5, la_6 (relative) drive registers. -->
+        <relative_macro name="macro_lut_lut">
+            <reference_group>
+                <add_atom name_pattern="la_0"/>
+                <add_atom name_pattern="la_1"/>
+                <add_atom name_pattern="la_2"/>
+                <add_atom name_pattern="la_3"/>
+                <add_atom name_pattern="la_4"/>
+            </reference_group>
+            <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                <add_atom name_pattern="la_5"/>
+                <add_atom name_pattern="la_6"/>
+                <add_atom name_pattern="la_7"/>
+                <add_atom name_pattern="la_8"/>
+                <add_atom name_pattern="la_9"/>
+            </relative_group>
+        </relative_macro>
+
+    </relative_macro_list>
+</vpr_constraints>

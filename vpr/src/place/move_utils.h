@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "vpr_types.h"
 #include "move_transactions.h"
 #include "compressed_grid.h"
@@ -126,7 +128,8 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
                                        const BlkLocRegistry& blk_loc_registry,
-                                       const PlaceMacros& place_macros);
+                                       const PlaceMacros& place_macros,
+                                       std::unordered_map<int, size_t>& visited_macros);
 
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                              const int imacro_from,
@@ -135,7 +138,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             const PlaceMacros& pl_macros);
+                                             const PlaceMacros& pl_macros,
+                                             std::unordered_map<int, size_t>& visited_macros);
 
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,

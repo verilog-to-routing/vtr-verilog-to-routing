@@ -7,6 +7,7 @@
 #include "catch2/catch_test_macros.hpp"
 
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "partition.h"
 #include "region.h"
 #include "place_constraints.h"
@@ -571,6 +572,67 @@ TEST_CASE("MacroConstraints", "[vpr]") {
     REQUIRE(mac_first_reg_coord.ymin() == 3);
     REQUIRE(mac_first_reg_coord.xmax() == 11);
     REQUIRE(mac_first_reg_coord.ymax() == 7);
+}
+
+//Test the UserRelativeMacros storage class: macro storage and the
+//atom -> (macro, group) reverse lookup
+TEST_CASE("UserRelativeMacros", "[vpr]") {
+    UserRelativeMacros relative_macros;
+    REQUIRE(relative_macros.get_num_macros() == 0);
+
+    //An atom that belongs to no macro resolves to an invalid group
+    std::pair<UserRelativeMacroId, int> no_group = relative_macros.get_atom_group(AtomBlockId(42));
+    REQUIRE(!no_group.first.is_valid());
+    REQUIRE(no_group.second == -1);
+
+    //Build a macro: reference group (2 atoms), one relative group (1 atom)
+    UserRelativeMacro macro1;
+    macro1.name = "macro1";
+
+    UserRelativeGroup ref_group;
+    ref_group.atoms = {AtomBlockId(0), AtomBlockId(1)};
+    ref_group.offset = t_pl_offset(0, 0, 0, 0);
+    macro1.groups.push_back(ref_group);
+
+    UserRelativeGroup rel_group;
+    rel_group.atoms = {AtomBlockId(2)};
+    rel_group.offset = t_pl_offset(1, -2, 0, 0);
+    macro1.groups.push_back(rel_group);
+
+    UserRelativeMacroId macro1_id = relative_macros.add_macro(macro1);
+    REQUIRE(relative_macros.get_num_macros() == 1);
+
+    //Stored macro matches what was added
+    const UserRelativeMacro& stored_macro = relative_macros.get_macro(macro1_id);
+    REQUIRE(stored_macro.name == "macro1");
+    REQUIRE(stored_macro.groups.size() == 2);
+    REQUIRE(stored_macro.groups[0].offset == t_pl_offset(0, 0, 0, 0));
+    REQUIRE(stored_macro.groups[1].offset == t_pl_offset(1, -2, 0, 0));
+
+    //Reverse lookup: each atom maps to its (macro, group index)
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(0)) == std::make_pair(macro1_id, 0));
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(1)) == std::make_pair(macro1_id, 0));
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == std::make_pair(macro1_id, 1));
+
+    //A second macro gets a distinct id and its atoms resolve to it
+    UserRelativeMacro macro2;
+    macro2.name = "macro2";
+    UserRelativeGroup ref_group2;
+    ref_group2.atoms = {AtomBlockId(3)};
+    macro2.groups.push_back(ref_group2);
+    UserRelativeGroup rel_group2;
+    rel_group2.atoms = {AtomBlockId(4)};
+    rel_group2.offset = t_pl_offset(0, 3, 0, 0);
+    macro2.groups.push_back(rel_group2);
+
+    UserRelativeMacroId macro2_id = relative_macros.add_macro(macro2);
+    REQUIRE(relative_macros.get_num_macros() == 2);
+    REQUIRE(macro2_id != macro1_id);
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(3)) == std::make_pair(macro2_id, 0));
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(4)) == std::make_pair(macro2_id, 1));
+
+    //Atoms of the first macro are unaffected
+    REQUIRE(relative_macros.get_atom_group(AtomBlockId(2)) == std::make_pair(macro1_id, 1));
 }
 
 #if 0

@@ -10,7 +10,9 @@
  */
 
 #include "verify_clustering.h"
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
@@ -19,6 +21,7 @@
 #include "physical_types.h"
 #include "region.h"
 #include "user_place_constraints.h"
+#include "user_relative_macros.h"
 #include "vpr_context.h"
 #include "vtr_log.h"
 #include "vtr_vector.h"
@@ -426,12 +429,89 @@ static unsigned check_clustering_floorplanning_consistency(
     return num_errors;
 }
 
+/**
+ * @brief Checks that the clustering is consistent with the user-defined
+ *        relative placement macros.
+ *
+ * This checks the following invariants:
+ *  - Every atom of a relative placement group is clustered.
+ *  - Every relative placement group's atoms are in exactly one cluster (each
+ *    group becomes a single member of a placement macro).
+ *  - No cluster hosts atoms of two different relative placement groups (two
+ *    groups cannot be placed at two different offsets simultaneously).
+ *
+ *  @param atom_nlist       The atom netlist used to create the clustering.
+ *  @param atom_lookup      The atom lookup between the atoms and their clusters.
+ *  @param relative_macros  The user-defined relative placement macros.
+ *
+ *  @return The number of errors found.
+ */
+static unsigned check_clustering_relative_group_consistency(const AtomNetlist& atom_nlist,
+                                                            const AtomLookup& atom_lookup,
+                                                            const UserRelativeMacros& relative_macros) {
+    unsigned num_errors = 0;
+
+    // Which relative placement group each cluster hosts.
+    std::unordered_map<ClusterBlockId, std::pair<UserRelativeMacroId, int>> cluster_rel_group;
+
+    for (size_t imacro = 0; imacro < relative_macros.get_num_macros(); imacro++) {
+        UserRelativeMacroId macro_id(imacro);
+        const UserRelativeMacro& macro = relative_macros.get_macro(macro_id);
+
+        for (size_t igroup = 0; igroup < macro.groups.size(); igroup++) {
+            ClusterBlockId group_clb_id;
+            bool group_split_reported = false;
+
+            for (AtomBlockId atom_blk_id : macro.groups[igroup].atoms) {
+                ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
+                if (!clb_blk_id.is_valid()) {
+                    VTR_LOG_ERROR(
+                        "Atom block '%s' of relative macro '%s' group %zu is "
+                        "not clustered.\n",
+                        atom_nlist.block_name(atom_blk_id).c_str(),
+                        macro.name.c_str(), igroup);
+                    num_errors++;
+                    continue;
+                }
+
+                // All atoms of the group must be in one cluster.
+                if (!group_clb_id.is_valid()) {
+                    group_clb_id = clb_blk_id;
+                } else if (clb_blk_id != group_clb_id && !group_split_reported) {
+                    VTR_LOG_ERROR(
+                        "The atoms of relative macro '%s' group %zu are split "
+                        "across multiple clusters.\n",
+                        macro.name.c_str(), igroup);
+                    num_errors++;
+                    group_split_reported = true;
+                }
+
+                // A cluster may host atoms of at most one group.
+                std::pair<UserRelativeMacroId, int> group = {macro_id, (int)igroup};
+                auto [seen_itr, first_time] = cluster_rel_group.insert({clb_blk_id, group});
+                if (!first_time && seen_itr->second != group) {
+                    const UserRelativeMacro& other_macro = relative_macros.get_macro(seen_itr->second.first);
+                    VTR_LOG_ERROR(
+                        "Cluster block %zu contains atoms of relative macro '%s' "
+                        "group %zu and of relative macro '%s' group %d.\n",
+                        size_t(clb_blk_id), macro.name.c_str(), igroup,
+                        other_macro.name.c_str(), seen_itr->second.second);
+                    num_errors++;
+                }
+            }
+        }
+    }
+
+    return num_errors;
+}
+
 unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
                            const AtomNetlist& atom_nlist,
                            const AtomLookup& atom_lookup,
                            const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
                            const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints,
-                           const UserPlaceConstraints& constraints) {
+                           const UserPlaceConstraints& constraints,
+                           const UserRelativeMacros& relative_macros) {
     unsigned num_errors = 0;
     // Check that every cluster has an entry in the clb_atoms vector.
     if (clb_atoms.size() != clb_nlist.blocks().size()) {
@@ -462,6 +542,11 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
                                                              clb_atoms,
                                                              cluster_constraints,
                                                              constraints);
+    // Check that each relative placement group is in exactly one cluster and
+    // no cluster hosts two different groups.
+    num_errors += check_clustering_relative_group_consistency(atom_nlist,
+                                                              atom_lookup,
+                                                              relative_macros);
     // TODO: There exists more checks for the clustering in base/check_netlist.cpp
     //       These checks check for duplicate names and that the nets between
     //       cluster blocks make sense. May be a good idea to bring this in here
@@ -476,5 +561,6 @@ unsigned verify_clustering(const VprContext& ctx) {
                              ctx.atom().lookup(),
                              ctx.clustering().atoms_lookup,
                              ctx.floorplanning().cluster_constraints,
-                             ctx.floorplanning().constraints);
+                             ctx.floorplanning().constraints,
+                             ctx.floorplanning().relative_macros);
 }
