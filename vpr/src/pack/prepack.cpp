@@ -66,7 +66,14 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                    t_pb_graph_pin* destination_pin,
                                                    t_pack_pattern_block* destination_block,
                                                    int* L_num_blocks,
-                                                   std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block);
+                                                   std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block,
+                                                   bool path_allow_multi_fanout);
+
+/**
+ * Returns true if this edge's annotation for the given pack pattern is marked
+ * allow_multi_fanout in the architecture file.
+ */
+static bool edge_allows_multi_fanout(const t_pb_graph_edge* edge, int pattern_index);
 
 static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_patterns* pattern_b);
 
@@ -180,7 +187,8 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
             // use the found expansion edge to build the pack pattern
             backward_expand_pack_pattern_from_edge(expansion_edge,
                                                    packing_patterns[i], nullptr, nullptr, &L_num_blocks,
-                                                   last_added_pattern_block);
+                                                   last_added_pattern_block,
+                                                   false);
             packing_patterns[i].num_blocks = L_num_blocks;
 
             /* Default settings: A section of a netlist must match all blocks in a pack
@@ -547,7 +555,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                                                                    packing_pattern,
                                                                    &destination_pb_graph_node->input_pins[iport][ipin],
                                                                    destination_block, L_num_blocks,
-                                                                   last_added_pattern_block);
+                                                                   last_added_pattern_block,
+                                                                   false);
                         }
                     }
                 }
@@ -570,7 +579,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                             backward_expand_pack_pattern_from_edge(destination_pb_graph_node->clock_pins[iport][ipin].input_edges[iedge],
                                                                    packing_pattern,
                                                                    &destination_pb_graph_node->clock_pins[iport][ipin],
-                                                                   destination_block, L_num_blocks, last_added_pattern_block);
+                                                                   destination_block, L_num_blocks, last_added_pattern_block,
+                                                                   false);
                         }
                     }
                 }
@@ -623,6 +633,17 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
     } // End for output pins of expansion edge
 }
 
+static bool edge_allows_multi_fanout(const t_pb_graph_edge* edge, int pattern_index) {
+    VTR_ASSERT((int)edge->pack_pattern_allow_multi_fanout.size() == edge->num_pack_patterns);
+    for (int i = 0; i < edge->num_pack_patterns; i++) {
+        if (edge->pack_pattern_indices[i] == pattern_index
+            && edge->pack_pattern_allow_multi_fanout[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /**
  * Find if driver of edge is in the same pattern, if yes, add to pattern
  *  Convention: Connections are made on backward expansion only (to make future multi-
@@ -634,7 +655,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                    t_pb_graph_pin* destination_pin,
                                                    t_pack_pattern_block* destination_block,
                                                    int* L_num_blocks,
-                                                   std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block) {
+                                                   std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block,
+                                                   bool path_allow_multi_fanout) {
     int i, j, k;
     int iport, ipin, iedge;
     bool found; /* Error checking, ensure only one fan-out for each pattern net */
@@ -657,6 +679,13 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
     if (!found) {
         return;
     }
+
+    // A connection between two primitives may traverse several pb-graph edges, but the
+    // allow_multi_fanout annotation sits only on the explicitly annotated one(s) — inferred
+    // edges carry no annotations. Since the connection record is only created once the walk
+    // reaches the driving primitive, accumulate the flag along the path: the connection
+    // allows multi-fanout if any edge on its path is marked.
+    path_allow_multi_fanout |= edge_allows_multi_fanout(expansion_edge, curr_pattern_index);
 
     found = false;
     // iterate over all the drivers of this edge
@@ -693,7 +722,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                    &source_pb_graph_node->input_pins[iport][ipin],
                                                                    source_block,
                                                                    L_num_blocks,
-                                                                   last_added_pattern_block);
+                                                                   last_added_pattern_block,
+                                                                   false);
                         }
                     }
                 }
@@ -720,7 +750,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                    &source_pb_graph_node->clock_pins[iport][ipin],
                                                                    source_block,
                                                                    L_num_blocks,
-                                                                   last_added_pattern_block);
+                                                                   last_added_pattern_block,
+                                                                   false);
                         }
                     }
                 }
@@ -734,6 +765,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                 pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
                 pack_pattern_connection->to_block = destination_block;
                 pack_pattern_connection->to_pin = destination_pin;
+                pack_pattern_connection->allow_multi_fanout = path_allow_multi_fanout;
                 pack_pattern_connection->next = source_block->connections;
                 source_block->connections = pack_pattern_connection;
 
@@ -742,6 +774,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                 pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
                 pack_pattern_connection->to_block = destination_block;
                 pack_pattern_connection->to_pin = destination_pin;
+                pack_pattern_connection->allow_multi_fanout = path_allow_multi_fanout;
                 pack_pattern_connection->next = destination_block->connections;
                 destination_block->connections = pack_pattern_connection;
 
@@ -779,7 +812,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                destination_pin,
                                                                destination_block,
                                                                L_num_blocks,
-                                                               last_added_pattern_block);
+                                                               last_added_pattern_block,
+                                                               path_allow_multi_fanout);
                         // if pattern shouldn't be inferred
                     } else {
                         // check if this input pin edge is annotated with the current pattern
@@ -793,7 +827,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                        destination_pin,
                                                                        destination_block,
                                                                        L_num_blocks,
-                                                                       last_added_pattern_block);
+                                                                       last_added_pattern_block,
+                                                                       path_allow_multi_fanout);
                             }
                         }
                     }
@@ -1130,8 +1165,8 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
 /**
  * Find the atom block in the netlist driven by this pin of the input atom block
  * If doesn't exist return AtomBlockId::INVALID()
- *      TODO: Limitation — For pack patterns other than chains, 
- *            the block should be driven by only one block
+ *      Limitation: The driven net must have a single sink, unless the pattern
+ *                  connection is marked allow_multi_fanout in the architecture
  *      block_id   : id of the atom block that is driving the net connected to the sink block
  *      connections : pack pattern connections from the given block
  */
@@ -1158,15 +1193,9 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     const auto& net_sinks = atom_nlist.net_sinks(net_id);
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
-    bool connected_to_latch = false;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-        // If the sink block has a clock, it is considered stateful (e.g., a latch or flip-flop).
-        // Mark this so we can later decide whether to drop the block based on the net’s fanout.
-        if (!atom_nlist.block_is_combinational(sink_block_id)) {
-            connected_to_latch = true;
-        }
         if (primitive_type_feasible(sink_block_id, to_pb_type)) {
             auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
             auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
@@ -1175,12 +1204,11 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
             }
         }
     }
-    // If the number of sinks is greater than 1, and one of the connected blocks is a latch,
-    // then we drop the block to avoid a situation where only registers or unregistered output
-    // of the block can use the output pin.
-    // TODO: This is a conservative assumption, and ideally we need to do analysis of the architecture
-    // before to determine which pattern is supported by the architecture.
-    if (connected_to_latch && net_sinks.size() > 1) {
+    // By default a pattern connection is assumed to be point-to-point: if the net fans out
+    // to more than one sink, the sink block is dropped and no molecule is formed over this
+    // connection. Architectures that support fanout on this connection
+    // must explicitly mark the pack_pattern annotation with allow_multi_fanout.
+    if (!connections.allow_multi_fanout && net_sinks.size() > 1) {
         pattern_sink_block_id = AtomBlockId::INVALID();
     }
     return pattern_sink_block_id;
@@ -1205,7 +1233,11 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     }
 
     auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
-    if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+    // The single fanout assumption is lifted for pattern connections whose
+    // architecture annotation is marked allow_multi_fanout (e.g., a register
+    // output sign-extending into several ALU input pins). The caller still
+    // validates the returned driver against the pattern position.
+    if (net_id && (atom_nlist.net_sinks(net_id).size() == 1 || connections.allow_multi_fanout)) { /* Single fanout assumption */
         auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
         if (to_port_model->is_clock) {

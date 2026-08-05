@@ -622,6 +622,10 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
 
 /**
  * Find next primitive pb_graph_pin
+ *
+ * A pattern edge may legally reach several pins of the same destination
+ * primitive; any of those pins identifies the next primitive,
+ * so only fanout to *different* primitives is rejected.
  */
 static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                                                      const t_pb_graph_pin* cur_pin,
@@ -646,7 +650,7 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                     }
                 }
                 if (temp_pin != nullptr) {
-                    VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
+                    VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
                     dest_pin = temp_pin;
                 }
             } else {
@@ -667,7 +671,7 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                             }
                         }
                         if (temp_pin != nullptr) {
-                            VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
+                            VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
                             dest_pin = temp_pin;
                         }
                     }
@@ -689,7 +693,7 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                     }
                 }
                 if (temp_pin != nullptr) {
-                    VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
+                    VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
                     dest_pin = temp_pin;
                 }
             } else {
@@ -709,7 +713,7 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
                             }
                         }
                         if (temp_pin != nullptr) {
-                            VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin);
+                            VTR_ASSERT(dest_pin == nullptr || dest_pin == temp_pin || dest_pin->parent_node == temp_pin->parent_node);
                             dest_pin = temp_pin;
                         }
                     }
