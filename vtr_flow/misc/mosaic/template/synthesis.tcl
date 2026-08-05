@@ -47,7 +47,7 @@ set lutCost        $lutCostDefault
 # across them. substituted into the generated add_sub_map.v because the
 # map file is the only place that sees $add widths at techmap time
 set hardAdderThreshold 3
-# $mul narrower than this on either operand stays soft (parmys min_hard_multiplier)
+# keep $mul soft when both operand widths are at or below this (0 disables)
 set minHardMulWidth 0
 # memories whose deepest scanned mode has fewer address bits stay soft (0 = off)
 set minHardMemAbits 0

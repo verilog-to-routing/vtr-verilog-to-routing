@@ -78,7 +78,7 @@ These become `vtr_arch_rules -alias role=model`. Multiply/adder maps instantiate
 
 ## Exotic hardblocks
 
-Full guide (decision table, fixtures, token list, koios vs classic): [`docs/doc-mosaic-exotic-hardblocks.md`](../docs/doc-mosaic-exotic-hardblocks.md).
+Full guide (decision table, fixtures, token list, koios vs classic): `docs-env/docs/doc-mosaic-exotic-hardblocks.md` (kept in the docs workspace, not this repo).
 
 Exotics are every hardblock model that is not classic `multiply` / `adder` / `single_port_ram` / `dual_port_ram` (after aliases). Mosaic never silently maps `$mul`/`$add` onto them. Pick one targeting mode in the arch support `arch_config.tcl`:
 
@@ -117,9 +117,9 @@ The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_
 
 `vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `minHardMulWidth`, `minHardMemAbits`, `stubAllHardblocks`, aliases, exotic roles). Do not put dsp/ram widths in `arch_config.tcl`. Shared abc scripts live under `template/abc/` (rebuild with `abc/build_delay_scr.py`).
 
-Soft/hard policy knobs (Parmys-adjacent, not a full mixer):
+Soft/hard policy knobs:
 
-- `minHardMulWidth` — `$mul` with either operand at or below this width stays soft (default `0`; Parmys `min_hard_multiplier`)
+- `minHardMulWidth` — `$mul` stays soft when both operand widths are at or below this (default `0` disables)
 - `minHardMemAbits` — drop shallower bram modes from libmap so those memories soft-map (default `0`)
 - `hardAdderThreshold` / `dspMinWidth` — unchanged
 - When `lutCost` / `cmpLutWidth` are left at defaults, synthesis derives them from scanned `lutK` / `lutK1`; empty abc scripts auto-select shared delay scripts only for fracturable K6-like (`lutK==6` and `lutK1` in range)

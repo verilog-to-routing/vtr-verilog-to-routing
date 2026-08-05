@@ -217,10 +217,9 @@ void warnExoticOnlyMultiply(const VtrArchInfo &info,
     return;
   log_warning(
       "vtr_arch_rules: arch has exotic hardblock models but no classic "
-      "'%s' model; inferred $mul will not map to exotics (not a silent "
-      "no-op of exotic dsp). use stubAllHardblocks / "
-      "passthrough_exotics for rtl-instantiated exotic cells (identity "
-      "passthrough), exoticRoles / -exotic-role for role inference, or "
+      "'%s' model; inferred $mul will not map to exotics. use "
+      "stubAllHardblocks / passthrough_exotics for rtl-instantiated "
+      "exotic cells, exoticRoles / -exotic-role for role inference, or "
       "exoticTemplatePairs / -exotic for a per-model techmap.\n",
       classic.multiply.c_str());
 }
@@ -451,8 +450,8 @@ public:
     const int maxW = info.multiplyModes.back();
     const int minHardW = std::max(0, policy.minHardMulWidth);
     if (minHardW > 0) {
-      log("vtr_arch_rules: minHardMulWidth=%d (operand widths <= threshold "
-          "stay soft)\n",
+      log("vtr_arch_rules: minHardMulWidth=%d ($mul stays soft when both "
+          "operand widths <= threshold)\n",
           minHardW);
     }
     const std::map<std::string, std::string> scalars = {
