@@ -78,11 +78,26 @@ These become `vtr_arch_rules -alias role=model`. Multiply/adder maps instantiate
 
 ## Exotic hardblocks
 
-- `stubAllHardblocks` / `passthrough_exotics`: blackbox stubs, keep list, and `exotic_identity_maps.v`. Does not bind `$mul`/`$add`; rtl must instantiate the cell.
-- `exoticTemplatePairs {{model path/to.tmpl}}` or `-exotic` / `-exotic-template`: per-model map templates. Binds inferred ops only if the template does.
-- `exoticRoles {{model role}}`: stock `rules/roles/<role>_map.v.tmpl` (`integer_mul` / `integer_mac` when ports match).
+Full guide (decision table, fixtures, token list, koios vs classic): [`docs/doc-mosaic-exotic-hardblocks.md`](../docs/doc-mosaic-exotic-hardblocks.md).
 
-Example template: `rules/examples/mult_fp_16_passthrough.v.tmpl`. Smoke fixture: `mosaic/tests/fixtures/min_exotic_integer_mul.xml` with support dir `vtr_flow/misc/mosaic/min_exotic_integer_mul/` (`exoticRoles {{my_mul integer_mul}}`). When classic `multiply` is present, `integer_mul` roles are skipped so behavioral mul keeps using the classic map.
+Exotics are every hardblock model that is not classic `multiply` / `adder` / `single_port_ram` / `dual_port_ram` (after aliases). Mosaic never silently maps `$mul`/`$add` onto them. Pick one targeting mode in the arch support `arch_config.tcl`:
+
+| Mode | `arch_config.tcl` | Binds inferred `$mul`/`$add`? | Typical use |
+|------|-------------------|------------------------------|-------------|
+| Identity passthrough | `set stubAllHardblocks 1` or `set primitiveProfile passthrough_exotics` | No — RTL must instantiate the cell | Koios `hard_block_include.v` |
+| Per-model template | `set exoticTemplatePairs {{model path/to.tmpl}}` | Only if the `.tmpl` maps that op | Custom / FP cells |
+| Role inference | `set exoticRoles {{model integer_mul}}` | Yes, for stock roles when ports match | Exotic with `a`/`b`/`out` |
+
+Stock roles: `template/rules/roles/` (`integer_mul` → `$mul`, `integer_mac` → `$macc`). Example templates (not auto-loaded): `template/rules/examples/` (see that folder’s README). Role notes for the complex-DSP arch: `vtr_flow/misc/mosaic/k6FracN10LB_mem20K_complexDSP_customSB_22nm/model_roles.example.tcl`.
+
+Fixtures (arch XML stem → policy dir under `vtr_flow/misc/mosaic/<stem>/`):
+
+| Fixture | What it proves |
+|---------|----------------|
+| `mosaic/tests/fixtures/min_aliased_ram.xml` + `min_aliased_ram/` | Classic ram **aliases** (`my_spram`/`my_dpram`) emit matching BLIF names — not exotic DSP |
+| `mosaic/tests/fixtures/min_exotic_integer_mul.xml` + `min_exotic_integer_mul/` | `exoticRoles {{my_mul integer_mul}}` binds `$mul` when classic `multiply` is absent |
+
+When classic `multiply` is present, `integer_mul` roles are skipped so behavioral mul keeps using the classic map. Koios FP DSP cells usually need passthrough or a custom template, not `integer_mul`.
 
 ## Layout
 - `mosaic/wildebeest/src/`: wildebeest-originated sources (`clk_domains.cc` / `max_level`, with the `-vtr_arch` patch)
