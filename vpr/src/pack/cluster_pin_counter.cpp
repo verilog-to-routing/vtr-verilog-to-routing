@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <utility>
 
 #include "atom_netlist.h"
 #include "atom_pb_bimap.h"
@@ -98,8 +99,11 @@ void ClusterPinCounter::reset_lookahead() {
 
 void ClusterPinCounter::commit_lookahead() {
     for (auto& [pb, state] : per_pb_state_) {
-        state.committed_input_pin_class_nets = state.lookahead_input_pin_class_nets;
-        state.committed_output_pin_class_nets = state.lookahead_output_pin_class_nets;
+        // Swapping instead of copying leaves stale nets in the lookahead state,
+        // which is safe because the lookahead state is fully rebuilt
+        // (reset_lookahead + try_update_lookahead_pins_used) before it is read.
+        std::swap(state.committed_input_pin_class_nets, state.lookahead_input_pin_class_nets);
+        std::swap(state.committed_output_pin_class_nets, state.lookahead_output_pin_class_nets);
     }
 }
 
