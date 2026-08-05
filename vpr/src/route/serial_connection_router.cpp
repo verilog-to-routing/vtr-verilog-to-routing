@@ -16,8 +16,8 @@ void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_
                                                                                      const t_conn_cost_params& cost_params,
                                                                                      const t_bb& bounding_box,
                                                                                      const t_bb& target_bb) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
 
     HeapNode cheapest;
     while (this->heap_.try_pop(cheapest)) {
@@ -71,7 +71,7 @@ vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_drive
     this->add_route_tree_to_heap(rt_root, target_node, cost_params, bounding_box);
     this->heap_.build_heap(); // via sifting down everything
 
-    auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
+    vtr::vector<RRNodeId, RTExploredNode> res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
     this->heap_.empty_heap();
 
     return res;
@@ -426,7 +426,7 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
     const t_bb& net_bb) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRNodeId inode = rt_node.inode;
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
     float R_upstream = rt_node.R_upstream;
@@ -538,7 +538,7 @@ inline void update_serial_router_stats(RouterStats* router_stats,
     }
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-        auto node_type = rr_graph->node_type(rr_node_id);
+        e_rr_type node_type = rr_graph->node_type(rr_node_id);
         VTR_ASSERT(node_type != e_rr_type::NUM_RR_TYPES);
 
         if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
