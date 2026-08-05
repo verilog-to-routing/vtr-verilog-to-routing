@@ -9,8 +9,9 @@ plugin -i wildebeest
 # the individual passes ourselves. the mosaic plugin is loaded as
 # wildebeest and provides max_level plus vtr_arch_rules.
 #
-# put arch_config.tcl in the arch support dir named by ARCH_SUPPORT_DIR; it is the only
-# genuinely per-arch artifact the script needs
+# put arch_config.tcl in the arch support dir named by ARCH_SUPPORT_DIR; it is the
+# primary per-arch artifact. optional ARCH_SUPPORT_DIR/rules/*.tmpl overlays the
+# shared template rules (merge: only listed files override).
 # shared arch-independent support lives in the template dir TDIR:
 #   abc/delay_*.scr, lut_models/, rules/*.tmpl (-tpldir)
 #
@@ -102,6 +103,9 @@ if { $archXmlPath eq "" } {
     error "mosaic synthesis requires an arch xml (VVV)"
 }
 set archRulesCmd "vtr_arch_rules -xml $archXmlPath -outdir $archRulesDir -tpldir $templateDir/rules -sp-cost $bramSpCost -dp-cost $bramDpCost -hard-adder-threshold $hardAdderThreshold -min-hard-mul $minHardMulWidth -min-hard-mem-abits $minHardMemAbits"
+if { $archSupportDir ne "" && [file isdirectory "$archSupportDir/rules"] } {
+    append archRulesCmd " -overlay-tpldir $archSupportDir/rules"
+}
 if { $aliasMultiply ne "" } {
     append archRulesCmd " -alias multiply=$aliasMultiply"
 }

@@ -11,9 +11,10 @@
 //
 // each ArchRuleGen turns one slice of the scanned arch (vtr_arch_info) plus
 // the flow policy knobs into rule files under -outdir, substituting
-// arch-derived values into template files from -tpldir. combinational-kind
-// generators additionally contribute a stub section that the hardblock-lib
-// generator aggregates into the single vtr_hardblock_lib.v.
+// arch-derived values into template files from -tpldir (with optional
+// -overlay-tpldir checked first per file). combinational-kind generators
+// additionally contribute a stub section that the hardblock-lib generator
+// aggregates into the single vtr_hardblock_lib.v.
 //
 // block kinds:
 //   memory         (bram): emits libmap rules + techmap, no lib stub
@@ -26,6 +27,8 @@ namespace mosaic {
 struct ArchRulePolicy {
   std::string archName;
   std::string tplDir;
+  // optional per-arch overlay checked before tplDir for each template file.
+  std::string overlayTplDir;
   int spCost = 128;
   int dpCost = 128;
   // $add/$sub at or below this width stay soft so abc can optimize
@@ -46,7 +49,7 @@ struct ExoticRequest {
 };
 
 // one -exotic-role <model> <role> request (stock template under
-// tpldir/roles/<role>_map.v.tmpl).
+// roles/<role>_map.v.tmpl, resolved via overlay then tplDir).
 struct ExoticRoleRequest {
   std::string modelName;
   std::string roleName;
@@ -85,7 +88,8 @@ std::vector<std::unique_ptr<ArchRuleGen>> makeBuiltinRuleGens();
 // always-_TECHMAP_FAIL_ map and contributes no stub.
 std::unique_ptr<ArchRuleGen> makeExoticRuleGen(const ExoticRequest &request);
 
-// role-based exotic techmap (-exotic-role); uses tpldir/roles/<role>_map.v.tmpl.
+// role-based exotic techmap (-exotic-role); uses roles/<role>_map.v.tmpl
+// via loadTemplate (overlayTplDir then tplDir).
 // sets *emittedMapPath to the written map path (empty when integer_mul is
 // skipped because classic multiply is present).
 std::unique_ptr<ArchRuleGen>

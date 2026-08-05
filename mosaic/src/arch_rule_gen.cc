@@ -43,11 +43,23 @@ std::string readTextFile(const std::string &path) {
   return buf.str();
 }
 
+bool templateFileExists(const std::string &path) {
+  std::ifstream in(path, std::ios::binary);
+  return in.is_open();
+}
+
 std::string loadTemplate(const ArchRulePolicy &policy,
                          const std::string &fileName) {
   if (policy.tplDir.empty())
     log_cmd_error("vtr_arch_rules: -tpldir <dir> is required (template %s)\n",
                   fileName.c_str());
+  // per-arch overlay wins for individual files; missing names fall through
+  // to the shared tplDir so rules/ is a merge, not a full replacement.
+  if (!policy.overlayTplDir.empty()) {
+    const std::string overlayPath = policy.overlayTplDir + "/" + fileName;
+    if (templateFileExists(overlayPath))
+      return readTextFile(overlayPath);
+  }
   return readTextFile(policy.tplDir + "/" + fileName);
 }
 
@@ -773,9 +785,8 @@ public:
     if (policy.tplDir.empty())
       log_cmd_error("vtr_arch_rules: -tpldir <dir> is required for role '%s'\n",
                     request_.roleName.c_str());
-    const std::string templatePath =
-        policy.tplDir + "/roles/" + request_.roleName + "_map.v.tmpl";
-    std::string text = readTextFile(templatePath);
+    std::string text = loadTemplate(
+        policy, "roles/" + request_.roleName + "_map.v.tmpl");
 
     const std::vector<int> mulModes = exoticMulModes(geo);
     const int maxW = mulModes.empty() ? 0 : mulModes.back();

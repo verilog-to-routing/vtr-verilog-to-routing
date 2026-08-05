@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -55,6 +56,38 @@ std::string joinInts(const std::vector<int> &vals, const char *sep) {
   return out.str();
 }
 
+std::string joinPortWidths(const std::map<std::string, int> &widths) {
+  std::ostringstream out;
+  bool first = true;
+  for (const auto &kv : widths) {
+    if (!first)
+      out << ",";
+    first = false;
+    out << kv.first << ":" << kv.second;
+  }
+  return out.str();
+}
+
+void listScannedModes(const mosaic::VtrArchInfo &info) {
+  log("vtr_arch_rules: classic bramModes (%zu):\n", info.bramModes.size());
+  for (const auto &m : info.bramModes) {
+    log("  %s %s addrA=%d dataA=%d addrB=%d dataB=%d\n",
+        m.isSp ? "sp" : "dp", m.name.c_str(), m.addrBitsA, m.dataBitsA,
+        m.addrBitsB, m.dataBitsB);
+  }
+  log("vtr_arch_rules: hardblockModes (%zu models):\n",
+      info.hardblockModes.size());
+  for (const auto &kv : info.hardblockModes) {
+    log("  model '%s' (%zu bindings):\n", kv.first.c_str(), kv.second.size());
+    for (const auto &mode : kv.second) {
+      log("    opmode{%s} pb=%s in={%s} out={%s}\n",
+          mode.modeQualifier.c_str(), mode.pbTypeName.c_str(),
+          joinPortWidths(mode.inputWidths).c_str(),
+          joinPortWidths(mode.outputWidths).c_str());
+    }
+  }
+}
+
 void applyClassicAlias(mosaic::ClassicModelNames &classic,
                        const std::string &arg) {
   const size_t eq = arg.find('=');
@@ -87,6 +120,7 @@ struct VtrArchRulesPass : public Pass {
   void help() override {
     log("\n");
     log("    vtr_arch_rules -xml <arch.xml> [-outdir <dir>] [-tpldir <dir>]\n");
+    log("                    [-overlay-tpldir <dir>]\n");
     log("                    [-sp-cost N] [-dp-cost N] [-blocks a,b,...]\n");
     log("                    [-hard-adder-threshold N]\n");
     log("                    [-min-hard-mul N] [-min-hard-mem-abits N]\n");
@@ -94,16 +128,20 @@ struct VtrArchRulesPass : public Pass {
     log("                    [-alias <role>=<model>]...\n");
     log("                    [-exotic <model> -exotic-template <file>]...\n");
     log("                    [-exotic-role <model> <role>]...\n");
+    log("                    [-list-modes]\n");
     log("\n");
     log("generate mosaic arch-specific mapping rules from a vtr architecture\n");
     log("xml. emits bram_memory_map.txt, tech_bram.v, vtr_hardblock_lib.v and\n");
     log("mult_map.v into <dir> (default: current directory).\n");
     log("\n");
-    log("rule files are template-backed: -tpldir points at the template dir\n");
-    log("(default: vtr_flow/misc/mosaic/template/rules). -blocks selects a\n");
-    log("subset of bram,adder,multiply,hardblock-lib (default: all). -exotic\n");
-    log("adds a generic combinational-block generator for <model> using <file> as its\n");
-    log("techmap template; it may be repeated and pairs by order.\n");
+    log("rule files are template-backed: -tpldir points at the shared template\n");
+    log("dir (default: vtr_flow/misc/mosaic/template/rules). optional\n");
+    log("-overlay-tpldir is checked first per file so a per-arch rules/ dir\n");
+    log("can override selected .tmpl files without replacing the whole set.\n");
+    log("-blocks selects a subset of bram,adder,multiply,hardblock-lib\n");
+    log("(default: all). -exotic adds a generic combinational-block generator\n");
+    log("for <model> using <file> as its techmap template; it may be repeated\n");
+    log("and pairs by order.\n");
     log("\n");
     log("-stub-all-hardblocks emits generic blackbox stubs for every hardblock\n");
     log("model except multiply/adder/rams, writes hardblock_keep_types.txt,\n");
@@ -112,9 +150,12 @@ struct VtrArchRulesPass : public Pass {
     log("-alias maps classic roles (multiply, adder, single_port_ram,\n");
     log("dual_port_ram) to arch model names when they differ from the defaults.\n");
     log("\n");
-    log("-exotic-role binds a stock role template from tpldir/roles/<role>_map.v.tmpl\n");
-    log("to an exotic model for inferred yosys ops. integer_mul is\n");
-    log("skipped when classic multiply is present.\n");
+    log("-exotic-role binds a stock role template from roles/<role>_map.v.tmpl\n");
+    log("(overlay then tpldir) to an exotic model for inferred yosys ops.\n");
+    log("integer_mul is skipped when classic multiply is present.\n");
+    log("\n");
+    log("-list-modes prints opmode-qualified hardblockModes and classic bramModes\n");
+    log("then exits without emitting rule files (debug aid for titan arches).\n");
     log("\n");
     log("mode geometry comes from the arch xml. the following options are\n");
     log("flow policy, not arch facts: -sp-cost / -dp-cost (libmap costs),\n");
@@ -126,6 +167,7 @@ struct VtrArchRulesPass : public Pass {
     std::string xmlPath;
     std::string outDir = ".";
     std::string tplDir;
+    std::string overlayTplDir;
     std::string blocksArg;
     int spCost = 128;
     int dpCost = 128;
@@ -133,6 +175,7 @@ struct VtrArchRulesPass : public Pass {
     int minHardMulWidth = 0;
     int minHardMemAbits = 0;
     bool stubAllHardblocks = false;
+    bool listModes = false;
     mosaic::ClassicModelNames classic;
     std::vector<std::string> exoticModels;
     std::vector<std::string> exoticTemplates;
@@ -151,6 +194,10 @@ struct VtrArchRulesPass : public Pass {
       }
       if (args[argidx] == "-tpldir" && argidx + 1 < args.size()) {
         tplDir = args[++argidx];
+        continue;
+      }
+      if (args[argidx] == "-overlay-tpldir" && argidx + 1 < args.size()) {
+        overlayTplDir = args[++argidx];
         continue;
       }
       if (args[argidx] == "-sp-cost" && argidx + 1 < args.size()) {
@@ -179,6 +226,10 @@ struct VtrArchRulesPass : public Pass {
       }
       if (args[argidx] == "-stub-all-hardblocks") {
         stubAllHardblocks = true;
+        continue;
+      }
+      if (args[argidx] == "-list-modes") {
+        listModes = true;
         continue;
       }
       if (args[argidx] == "-alias" && argidx + 1 < args.size()) {
@@ -234,15 +285,24 @@ struct VtrArchRulesPass : public Pass {
     if (!mosaic::readArchInfo(xmlPath, info, classic, &error))
       log_cmd_error("vtr_arch_rules: %s\n", error.c_str());
 
+    if (listModes) {
+      listScannedModes(info);
+      return;
+    }
+
     const std::string archName = archNameFromPath(xmlPath);
     const bool multiplyPresent =
         info.multiply.present && !info.multiplyModes.empty();
     int maxRamAbits = 0;
     for (const auto &m : info.bramModes)
       maxRamAbits = std::max(maxRamAbits, m.addrBitsA);
-    log("vtr_arch_rules: %s: %zu bram modes, multiply modes [%s], adder %s, "
-        "lut K=%d K-1=%d\n",
-        archName.c_str(), info.bramModes.size(),
+    size_t hardblockModeCount = 0;
+    for (const auto &kv : info.hardblockModes)
+      hardblockModeCount += kv.second.size();
+    log("vtr_arch_rules: %s: %zu bram modes, %zu hardblockModes (%zu models), "
+        "multiply modes [%s], adder %s, lut K=%d K-1=%d\n",
+        archName.c_str(), info.bramModes.size(), hardblockModeCount,
+        info.hardblockModes.size(),
         info.multiplyModes.empty() ? "-"
                                    : joinInts(info.multiplyModes, ",").c_str(),
         info.adder.present ? "present" : "absent", info.lutK, info.lutK1);
@@ -254,6 +314,7 @@ struct VtrArchRulesPass : public Pass {
     mosaic::ArchRulePolicy policy;
     policy.archName = archName;
     policy.tplDir = tplDir;
+    policy.overlayTplDir = overlayTplDir;
     policy.spCost = spCost;
     policy.dpCost = dpCost;
     policy.hardAdderThreshold = hardAdderThreshold;

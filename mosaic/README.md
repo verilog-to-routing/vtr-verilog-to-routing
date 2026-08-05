@@ -104,16 +104,18 @@ When classic `multiply` is present, `integer_mul` roles are skipped so behaviora
 - `mosaic/src/`: mosaic-only sources (`vtr_arch_*`, `arch_rule_gen`) compiled into the same plugin
 - `mosaic/build_mosaic.sh`: builds and installs the plugin
 - `vtr_flow/misc/mosaic/template/`: shared mosaic support (`synthesis.tcl`, `fix_blif_for_vpr.py`)
-- `vtr_flow/misc/mosaic/template/rules/`: `-tpldir` inputs for `vtr_arch_rules` (`.tmpl` maps, roles, examples)
+- `vtr_flow/misc/mosaic/template/rules/`: shared `-tpldir` inputs for `vtr_arch_rules` (`.tmpl` maps, roles, examples)
 - `vtr_flow/misc/mosaic/template/abc/`: shared delay abc scripts (`build_delay_scr.py`)
 - `vtr_flow/misc/mosaic/template/lut_models/`: lut techmap library used by synthesis
 - `vtr_flow/misc/mosaic/<arch_xml_stem>/`: optional per-arch policy (`arch_config.tcl`)
+- `vtr_flow/misc/mosaic/<arch_xml_stem>/rules/`: optional per-arch `.tmpl` overrides (merge onto shared `template/rules/` via `-overlay-tpldir`; only listed files replace)
 - `vtr_flow/scripts/python_libs/vtr/mosaic/`: the vtr flow stage module (stem-named support dir only)
 - `mosaic/scripts/dump_arch_info.py`: dump parsed arch summary (optional; compare against `mosaic/tests/golden/`)
+- `mosaic/scripts/test_tpl_overlay.py`: checks `-overlay-tpldir` merge (needs built mosaic plugin)
 - `mosaic/scripts/run_vtr_batch.py`: batch `run_vtr_flow.py` (1 core per run), live csv/status, optional `--watch`
 - `mosaic/scripts/watch_compare.py`: live status table (used by `--watch`, or run alone in a second terminal)
 
-The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is `vtr_flow/misc/mosaic/<arch_xml_stem>/` when that dir has `arch_config.tcl`; otherwise the run is facts-only.
+The synthesis template tokens (`XXX`, `TTT`, `ZZZ`, `YYY`, `VVV`, `ARCH_SUPPORT_DIR`, `TDIR`) are replaced by the python flow stage before the template is passed to yosys. `ARCH_SUPPORT_DIR` is `vtr_flow/misc/mosaic/<arch_xml_stem>/` when that dir has `arch_config.tcl`; otherwise the run is facts-only. When `ARCH_SUPPORT_DIR/rules/` exists, `synthesis.tcl` passes it as `-overlay-tpldir` so selected templates can specialize without copying the whole shared rules set.
 
 `vtr_arch_rules` writes `arch_facts.tcl` (dsp/ram geometry from the arch xml). Keep `arch_config.tcl` for policy only (costs, abc scripts, `dspMinWidth`, `minHardMulWidth`, `minHardMemAbits`, `stubAllHardblocks`, aliases, exotic roles). Do not put dsp/ram widths in `arch_config.tcl`. Shared abc scripts live under `template/abc/` (rebuild with `abc/build_delay_scr.py`).
 
