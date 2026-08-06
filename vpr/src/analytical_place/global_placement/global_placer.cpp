@@ -7,6 +7,8 @@
  */
 
 #include "global_placer.h"
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <limits>
 #include <memory>
@@ -28,6 +30,7 @@
 #include "partial_placement.h"
 #include "physical_types.h"
 #include "place_delay_model.h"
+#include "primitive_dim_manager.h"
 #include "primitive_vector.h"
 #include "timing_info.h"
 #include "vtr_log.h"
@@ -218,6 +221,57 @@ void print_placement_stats(const PartialPlacement& p_placement,
         }
     }
     VTR_LOG("\tNumber of blocks in an incompatible bin: %zu\n", num_misplaced_blocks);
+
+    // Cluster-fill telemetry (objective-inert). Bins are cluster sites, so how
+    // the placement's mass quantizes into bin-capacity units bounds how much
+    // gathering the packer must do: a bin at fill 0.5 either donates its mass
+    // to neighbors or pulls the other half in, and either way atoms cross bin
+    // boundaries. Per dimension, over occupied capacity-bearing bins:
+    //   meanfill  mass-weighted mean of utilization / capacity
+    //   m<0.5     fraction of the dim's binned mass in bins filled below half
+    //   m0.5-0.9  fraction in bins filled 0.5 to 0.9
+    //   qdebt     fraction of binned mass that must cross a bin boundary for
+    //             every bin to hold an integer number of full-capacity units
+    //             (sum of min(u mod c, c - u mod c) over bins, mass-normalized)
+    // Printed for every global placer so the two AP arms are directly
+    // comparable on the same definition.
+    const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
+    std::vector<PrimitiveVectorDim> used_dims = density_manager.get_used_dims_mask().get_non_zero_dims();
+    VTR_LOG("\tBin cluster-fill telemetry:\n");
+    VTR_LOG("\t\t%-36s %8s %9s %9s %9s %9s\n", "dim", "bins", "meanfill", "m<0.5", "m0.5-0.9", "qdebt");
+    for (PrimitiveVectorDim dim : used_dims) {
+        double total_mass = 0.0;
+        double weighted_fill = 0.0;
+        double mass_below_half = 0.0;
+        double mass_mid = 0.0;
+        double quant_debt = 0.0;
+        size_t occupied_bins = 0;
+        for (FlatPlacementBinId bin_id : density_manager.flat_placement_bins().bins()) {
+            double capacity = density_manager.get_bin_capacity(bin_id).get_dim_val(dim);
+            double utilization = density_manager.get_bin_utilization(bin_id).get_dim_val(dim);
+            if (capacity <= 1e-9 || utilization <= 1e-9)
+                continue;
+            occupied_bins++;
+            double fill = utilization / capacity;
+            total_mass += utilization;
+            weighted_fill += utilization * fill;
+            if (fill < 0.5)
+                mass_below_half += utilization;
+            else if (fill < 0.9)
+                mass_mid += utilization;
+            double remainder = std::fmod(utilization, capacity);
+            quant_debt += std::min(remainder, capacity - remainder);
+        }
+        if (occupied_bins == 0 || total_mass <= 0.0)
+            continue;
+        VTR_LOG("\t\t%-36s %8zu %9.4f %9.4f %9.4f %9.4f\n",
+                dim_manager.get_dim_name(dim).c_str(),
+                occupied_bins,
+                weighted_fill / total_mass,
+                mass_below_half / total_mass,
+                mass_mid / total_mass,
+                quant_debt / total_mass);
+    }
 }
 
 /**

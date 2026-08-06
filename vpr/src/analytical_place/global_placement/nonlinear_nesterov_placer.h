@@ -11,6 +11,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include "electrostatic_density_utils.h"
 #include "flat_placement_density_manager.h"
 #include "global_placer.h"
 #include "partial_legalizer.h"
@@ -103,7 +104,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
         double proximity = 0.;                   ///< Unweighted proximity penalty to a legalized anchor.
         double total_overflow = 0.;              ///< Sum of normalized tile overflows.
         double max_overflow = 0.;                ///< Largest normalized tile overflow.
-        double overflow_ratio = 0.;              ///< Overflow mass / total deposited mass (legality in [0,~1]).
     };
 
     /**
@@ -129,9 +129,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     /**
      * @brief Run one full accelerated optimization (epoch loop) from a fresh
      *        initial placement and return the legalized result.
-     *
-     * Reads @ref precond_active_ / @ref precond_alpha_active_ to size-gate the
-     * preconditioner for the current design.
      */
     PartialPlacement run_global_optimization_(const std::vector<PrimitiveVectorDim>& density_dimensions,
                                               double device_span,
@@ -231,7 +228,6 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                  std::vector<double>& dim_max_overflow,
                                  double& total_overflow,
                                  double& max_overflow,
-                                 double& overflow_ratio,
                                  std::optional<std::reference_wrapper<PlacementGradient>> grad,
                                  const FillerState& fillers,
                                  std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
@@ -240,24 +236,21 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     void initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const;
 
     /**
-     * @brief Directional finite-difference audit of the objective gradient.
+     * @brief Log, per resource dimension, what fraction of the density force
+     *        aims at a tile with no capacity for that resource.
      *
-     * Sweeps the finite-difference step over probes at tile boundaries,
-     * zero-capacity sites, and cell interiors. Also audits fillers through their
-     * separate density-gradient path. Enabled only at diagnostic verbosity.
-     */
-    void audit_gradient_(const PartialPlacement& p_placement,
-                         const std::vector<PrimitiveVectorDim>& dimensions,
-                         const std::vector<double>& density_multipliers,
-                         std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
-                         double proximity_weight,
-                         const FillerState& fillers) const;
-
-    /**
-     * @brief Diagnostic: report how much density force aims at unusable tiles.
-     *
-     * Compares the force-weighted unusable-tile hit rate with the unusable share
-     * of the device. Reads the potential from the latest density evaluation.
+     * Diagnostic only (--ap_verbosity 3); no effect on the optimization.
+     * Rebuilds each moveable block's density force exactly as
+     * add_density_gradient_ does, steps one tile against it, and checks
+     * whether the destination tile can hold the resource at all. Compared
+     * against the device-wide baseline (the fraction of tiles with zero
+     * capacity for that resource), this tells you whether the force is
+     * aiming *toward* legal territory, is directionless (leak == baseline),
+     * or is actively drawn toward incompatible tiles (leak > baseline).
+     * Must be called with the placement whose gradient the last
+     * add_density_gradient_ call (i.e. the last evaluate_objective_ call
+     * with grad set) actually evaluated -- it reads density_potential_workspace_
+     * and cached_field_grids_, which the next gradient evaluation overwrites.
      */
     void report_density_force_leak_(const PartialPlacement& p_placement,
                                     const std::vector<PrimitiveVectorDim>& dimensions,
@@ -330,8 +323,18 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * Fills @ref block_precond_ with a per-block objective-curvature estimate:
      * the sum of incident net weights (wirelength Hessian diagonal) plus the
      * density multiplier times block mass summed over resource dimensions
-     * (density Hessian diagonal). The preconditioned gradient step divides each
-     * block's gradient by this value, giving size-independent step lengths.
+     * (density Hessian diagonal) plus affinity-spring curvature. The
+     * preconditioned gradient step divides each block's gradient by this value,
+     * giving size-independent step lengths.
+     *
+     * Constraint forces (incompatibility penalty, proximity anchor) are
+     * deliberately excluded: their Hessian diagonals are either zero
+     * (piecewise-linear incompatibility) or would dampen the very force they
+     * measure (proximity). Excluding them lets constraint forces act at full
+     * strength while the preconditioner normalizes the smoothness terms.
+     *
+     * The tuning constants and the diagonal assembly live in
+     * preconditioner_math.h, which the unit tests exercise directly.
      */
     void compute_preconditioner_(const std::vector<PrimitiveVectorDim>& dimensions,
                                  const std::vector<double>& density_multipliers);
@@ -407,11 +410,13 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
 
     std::vector<APBlockId> moveable_blocks_;   ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
+    double avg_net_weight_ = 1.0;              ///< Average net weight from the last update_timing_net_weights_ call; used to rebalance the density weight so the WL/density ratio is preserved when timing boosts shift the average above 1.
 
     vtr::vector<APBlockId, double> block_precond_;        ///< Per-block diagonal preconditioner (objective curvature estimate).
     vtr::vector<APBlockId, float> pin_density_inflation_; ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
-    bool precond_active_ = false;                         ///< Whether the preconditioner is applied in the current optimization run.
-    double precond_alpha_active_ = 1.0;                   ///< Preconditioner strength exponent for the current optimization run.
+    bool precond_active_ = false;                         ///< Whether the preconditioner is applied in the current optimization run (size-gated).
+    bool step_unit_ = false;                              ///< Whether the epoch step starts at 1.0 (preconditioned units) rather than span-scaled.
+    bool proximity_full_ = false;                         ///< Whether the legalizer proximity anchor runs at full strength rather than @ref kProximityScale.
     std::vector<bool> boundary_confined_dims_;            ///< [dim index] true if target capacity lies almost entirely on the device boundary.
     vtr::vector<APNetId, bool> boundary_cohesion_nets_;   ///< AP nets that receive I/O-only cohesion weight.
     vtr::vector<APNetId, bool> io_chain_cohesion_nets_;   ///< Direct I/O-chain AP nets that receive targeted cohesion weight.
@@ -425,17 +430,26 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
     // reused across every objective evaluation instead of being rebuilt.
-    mutable std::vector<std::vector<double>> cached_target_capacity_; ///< [dim][site] target capacity spread over each bin's footprint.
-    mutable std::vector<double> cached_target_norm_floor_;            ///< [dim] floor added when dividing by target capacity.
-    mutable std::vector<double> cached_residual_charge_scale_;        ///< [dim] typical site capacity used to scale residual charge.
+    mutable std::vector<std::vector<double>> cached_target_capacity_;      ///< [dim][site] target capacity spread over each bin's footprint.
+    mutable std::vector<double> cached_target_norm_floor_;                 ///< [dim] floor added when dividing by target capacity.
+    /// @brief [dim] electrostatic field domain for each resource (elfPlace's B^s).
+    ///
+    /// The tile grid above stays the domain of overflow/legality accounting. The
+    /// Poisson field for a resource is instead solved on its own grid, resolved
+    /// at the pitch of that resource's capacity, so a scarce resource's field is
+    /// not defined over -- and cannot develop structure inside -- the tiles that
+    /// cannot hold it. Abundant resources select a stride of one and keep the
+    /// tile grid unchanged.
+    mutable std::vector<ResourceFieldGrid> cached_field_grids_;
     // Reused density-evaluation storage. Objective/line-search evaluations are
     // serial, so these mutable buffers safely remove repeated device-grid-sized
     // allocation and zero-construction from the const evaluation routine.
-    mutable std::vector<std::vector<double>> density_utilization_workspace_; ///< [dim][site] deposited block/filler mass.
-    mutable std::vector<std::vector<double>> density_potential_workspace_;   ///< [dim][site] electrostatic potential.
-    mutable std::vector<double> density_charge_workspace_;                   ///< [site] current resource dimension's charge.
-    mutable std::vector<double> density_layer_charge_workspace_;             ///< One layer extracted for the Poisson solve.
-    mutable std::vector<double> density_layer_potential_workspace_;          ///< One layer returned by the Poisson solve.
+    mutable std::vector<std::vector<double>> density_utilization_workspace_;       ///< [dim][tile site] deposited block mass (overflow accounting).
+    mutable std::vector<std::vector<double>> density_field_utilization_workspace_; ///< [dim][field bin] deposited block + filler mass.
+    mutable std::vector<std::vector<double>> density_potential_workspace_;         ///< [dim][field bin] electrostatic potential.
+    mutable std::vector<double> density_charge_workspace_;                         ///< [field bin] current resource dimension's charge.
+    mutable std::vector<double> density_layer_charge_workspace_;                   ///< One layer extracted for the Poisson solve.
+    mutable std::vector<double> density_layer_potential_workspace_;                ///< One layer returned by the Poisson solve.
 
     size_t device_grid_width_ = 0;               ///< Width of the placement region.
     size_t device_grid_height_ = 0;              ///< Height of the placement region.
@@ -443,7 +457,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     float ap_timing_tradeoff_ = 0.f;             ///< User timing tradeoff value.
     float effective_timing_tradeoff_ = 0.f;      ///< Timing tradeoff after design-size adaptation.
     double io_chain_net_cohesion_weight_ = 2.;   ///< Weight multiplier for direct I/O-chain AP nets.
-    double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (env-overridable).
+    double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (zeroed at runtime when no long direct I/O-chain nets are found).
     double io_pair_net_weight_ = 8.;             ///< Extra smooth-WL multiplier for detected output-driver↔outpad nets.
     double io_pair_attraction_weight_ = 8.;      ///< I/O pair spring strength (legacy per-block constant; kernel uses 2x for n=2 pack math).
 
@@ -467,5 +481,37 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        favor of the seed on sparse designs, at up to 11x the baseline
     ///        placer's global-placement runtime).
     bool sparse_seed_ = false;
-    double warmstart_seed_overflow_ = 0.; ///< Physical overflow of the dense warm-start seed used by the QoR gate.
+
+    /// @brief Active incompatibility penalty weight for the current epoch.
+    ///
+    /// Annealed from 0 (no architecture pressure at start, let the optimizer
+    /// spread freely) to a final value comparable to the density weight via a
+    /// quadratic schedule, so the continuous incompatibility constraint
+    /// squeezes tighter as optimization progresses. Set per-epoch in
+    /// optimize_from_seed_.
+
+    /// @brief True if the design has scarce resources with large incompatible
+    ///        regions, justifying the incompatibility cost. False for
+    ///        homogeneous designs where the cost adds overhead without benefit.
+
+    /// @brief B2B wirelength model edges for x and y (experiment-gated).
+
+    /// @brief Per-block wirelength Hessian diagonal under the B2B model: the
+    ///        mean over x/y of the block's incident B2B edge-weight sums.
+
+    /// @brief Scaled-ADMM dual variables for the legalizer anchor
+    ///        (experiment-gated). u accumulates the per-epoch residual
+    ///        x - Leg(x); the proximity term then anchors to z - u instead of
+    ///        z, absorbing the steady-state bias a penalty-only anchor keeps.
+    vtr::vector<APBlockId, double> admm_dual_x_;
+    vtr::vector<APBlockId, double> admm_dual_y_;
+
+    /// @brief Prepacker, kept for packing-aware mass deflation (experiment).
+    const Prepacker* prepacker_ = nullptr;
+
+    /// @brief Per-block smooth-density mass deflation from packing optimism
+    ///        (kExpPackAwareDeflation): the ratio of a packing-optimistic
+    ///        pin-cost blend to the shared calculator's conservative one.
+    ///        Applied to abundant dims in the smooth density path only.
+
 };

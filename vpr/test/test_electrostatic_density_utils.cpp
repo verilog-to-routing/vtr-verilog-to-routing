@@ -413,6 +413,103 @@ TEST_CASE("density charge rebalancing has fixed architectural membership", "[vpr
     }
 }
 
+TEST_CASE("field grid stride follows a resource's own capacity pitch", "[vpr_ap][density_gradient]") {
+    constexpr size_t kMinBins = 4;
+
+    SECTION("an axis that is capacity-bearing everywhere keeps the tile grid") {
+        std::vector<bool> dense(64, true);
+        REQUIRE(select_field_grid_stride(dense, kMinBins) == 1);
+    }
+
+    SECTION("an empty perimeter does not coarsen an otherwise device-wide resource") {
+        std::vector<bool> ringed(80, true);
+        ringed.front() = false;
+        ringed.back() = false;
+        REQUIRE(select_field_grid_stride(ringed, kMinBins) == 1);
+    }
+
+    SECTION("an abundant resource interleaved with hard-block columns keeps the tile grid") {
+        // Three of every four columns hold the resource, as CLB columns do on an
+        // architecture with interleaved memory and multiplier columns.
+        std::vector<bool> interleaved(80, true);
+        for (size_t idx = 0; idx < interleaved.size(); idx += 4)
+            interleaved[idx] = false;
+        REQUIRE(select_field_grid_stride(interleaved, kMinBins) == 1);
+    }
+
+    SECTION("a columnar resource is resolved at its column pitch") {
+        std::vector<bool> columnar(64, false);
+        for (size_t idx = 0; idx < columnar.size(); idx += 8)
+            columnar[idx] = true;
+        REQUIRE(select_field_grid_stride(columnar, kMinBins) == 8);
+    }
+
+    SECTION("a resource confined to one column still keeps a usable domain") {
+        std::vector<bool> single_column(64, false);
+        single_column[13] = true;
+        size_t stride = select_field_grid_stride(single_column, kMinBins);
+        REQUIRE(stride <= 64 / kMinBins);
+        REQUIRE((64 + stride - 1) / stride >= kMinBins);
+    }
+}
+
+TEST_CASE("per-resource field grids conserve capacity and reduce to the tile grid", "[vpr_ap][density_gradient]") {
+    constexpr size_t width = 32;
+    constexpr size_t height = 16;
+    constexpr size_t layers = 2;
+    constexpr double kFloorFraction = 0.01;
+    constexpr size_t kMinBins = 4;
+
+    SECTION("an abundant resource keeps the tile grid site for site") {
+        std::vector<double> capacity(width * height * layers, 0.);
+        for (size_t idx = 0; idx < capacity.size(); idx++)
+            capacity[idx] = 1. + 0.001 * idx;
+
+        ResourceFieldGrid grid = build_resource_field_grid(capacity, width, height, layers,
+                                                           kCapacityEpsilon, kFloorFraction,
+                                                           kMinBins);
+        REQUIRE(grid.width == width);
+        REQUIRE(grid.height == height);
+        REQUIRE(grid.scale_x == Catch::Approx(1.));
+        REQUIRE(grid.scale_y == Catch::Approx(1.));
+        REQUIRE(grid.spacing_x == Catch::Approx(1.));
+        REQUIRE(grid.spacing_y == Catch::Approx(1.));
+        for (size_t idx = 0; idx < capacity.size(); idx++)
+            REQUIRE(grid.target_capacity[idx] == Catch::Approx(capacity[idx]));
+    }
+
+    SECTION("a columnar resource gets a hole-free domain at its own pitch") {
+        // Capacity in every eighth tile column, as an FPGA DSP/BRAM column would be.
+        std::vector<double> capacity(width * height * layers, 0.);
+        for (size_t layer = 0; layer < layers; layer++) {
+            for (size_t y = 0; y < height; y++) {
+                for (size_t x = 0; x < width; x += 8)
+                    capacity[site_index(layer, x, y, width, height)] = 4.;
+            }
+        }
+
+        ResourceFieldGrid grid = build_resource_field_grid(capacity, width, height, layers,
+                                                           kCapacityEpsilon, kFloorFraction,
+                                                           kMinBins);
+
+        // x is resolved at the column pitch; y is capacity-bearing everywhere and
+        // is left alone.
+        REQUIRE(grid.width == 4);
+        REQUIRE(grid.height == height);
+        REQUIRE(grid.spacing_x > 1.);
+        REQUIRE(grid.spacing_y == Catch::Approx(1.));
+
+        // Aggregation is a redistribution of the same capacity, not a rescaling.
+        double tile_total = std::accumulate(capacity.begin(), capacity.end(), 0.);
+        double field_total = std::accumulate(grid.target_capacity.begin(), grid.target_capacity.end(), 0.);
+        REQUIRE(field_total == Catch::Approx(tile_total));
+
+        // The point of the domain: no bin of it is incapable of holding the resource.
+        for (double bin_capacity : grid.target_capacity)
+            REQUIRE(bin_capacity > kCapacityEpsilon);
+    }
+}
+
 TEST_CASE("Poisson DC projection is independent for every device layer", "[vpr_ap][density_gradient]") {
     constexpr size_t width = 4;
     constexpr size_t height = 3;

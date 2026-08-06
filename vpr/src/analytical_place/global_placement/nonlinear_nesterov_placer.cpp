@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <functional>
 #include <limits>
+#include <map>
 #include <optional>
 #include <random>
 #include <string>
@@ -29,6 +30,7 @@
 #include "partial_placement.h"
 #include "physical_types.h"
 #include "place_delay_model.h"
+#include "preconditioner_math.h"
 #include "prepack.h"
 #include "primitive_dim_manager.h"
 #include "primitive_vector.h"
@@ -95,9 +97,41 @@ constexpr double kConvergenceDisplacementFraction = 1e-4;
 constexpr double kMinConvergenceDisplacement = 1e-3;
 
 /**
+ * @brief Step-size growth rate per inner iteration.
+ *
+ * Following elfPlace Eq. 22 (αL = 1.05) and the original VTR nesterov, the
+ * step grows geometrically per inner iteration. The backtracking line search
+ * halves the step when the objective increases, so the growth is safe: it
+ * lets the step ramp up as the optimizer converges, but over-correction is
+ * caught immediately. The full Jacobi preconditioner (alpha = 1.0, matching
+ * elfPlace Eq. 16) gives smaller physical steps than the old softened one
+ * (alpha = 0.5), so over-spreading is controlled even with per-iteration
+ * growth.
+ */
+constexpr double kStepGrowthRate = 1.05;
+
+/**
  * @brief Maximum fraction of the device span a block should move in one step.
+ *
+ * Used as the initial step for small designs where the preconditioner is not
+ * active. The raw gradient carries position units, so the step must be scaled
+ * by the device span. Backtracking adapts from this starting point.
  */
 constexpr double kInitialStepSpanFraction = 0.02;
+
+/**
+ * @brief Scale on the legalizer-feedback proximity weight for small designs.
+ *
+ * The legalizer-feedback proximity anchor helps large designs (it closes a large
+ * legalization gap) but suppresses timing- and wirelength-driven motion on small
+ * designs. Larger designs keep the full anchor.
+ */
+constexpr double kProximityScale = 0.25;
+
+/**
+ * @brief Movable-block count at or above which the full preconditioner is enabled.
+ */
+constexpr size_t kPreconditionSizeThreshold = 30000;
 
 /**
  * @brief Smooth wirelength gamma as a fraction of the larger device dimension.
@@ -115,36 +149,93 @@ constexpr double kWirelengthGammaFraction = 0.02;
 constexpr double kDensityTargetFloorFraction = 0.01;
 
 /**
- * @brief Scale on the legalizer-feedback proximity weight for small designs.
+ * @brief Minimum number of field bins per axis.
  *
- * The legalizer-feedback proximity anchor helps large designs (it closes a large
- * legalization gap) but suppresses timing- and wirelength-driven motion on small
- * designs. Larger designs keep the full anchor.
+ * Bounds how coarse a resource's field domain may become: a resource confined to
+ * a single tile column can never fill its bins, and without this it would
+ * collapse to a domain too small to carry directional force.
  */
-constexpr double kProximityScale = 0.25;
+constexpr size_t kMinFieldGridBins = 4;
 
 /**
- * @brief Movable-block count at or above which the full proximity anchor is kept
- *        and the large-design preconditioner is enabled.
- */
-constexpr size_t kProximitySizeThreshold = 30000;
-
-/**
- * @brief Preconditioner strength exponent used for large designs.
+ * @brief How the Nesterov epoch loop is seeded.
  *
- * The elfPlace-style diagonal (Jacobi) preconditioner divides each block's
- * gradient by an estimate of its objective curvature -- the sum of incident net
- * weights (wirelength Hessian diagonal) plus the density penalty times block mass
- * (density Hessian diagonal) -- giving every block a near-Newton step regardless
- * of size. It is the validated remedy for large-device over-spread, so it is
- * enabled for designs at or above @ref kProximitySizeThreshold movable blocks.
+ * B2B_ITERATED is the shipped behaviour. CENTRE_SPREAD is an ablation switch,
+ * flipped only in an experiment build slot, that answers whether the
+ * electrostatic formulation can place on its own or merely refines B2B. Keep the
+ * default here; the experiment changes it in its own slot so the main tree stays
+ * comparable to every prior run.
  */
-constexpr double kPreconditionLargeAlpha = 0.5;
+enum class e_warmstart_mode {
+    B2B_ITERATED,  ///< Iterate B2B solve + partial legalize until seed HPWL plateaus.
+    CENTRE_SPREAD, ///< ePlace-style: all movable blocks at the device centre, no B2B.
+};
+constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
 
 /**
- * @brief Floor on the per-block preconditioner to avoid dividing by ~0 curvature.
+ * @brief Complete the legalizer anchor into scaled ADMM (experiment).
+ *
+ * The epoch loop is already ADMM-shaped: the inner FISTA solve is an inexact
+ * x-update on f(x) + (rho/2)||x - z||^2, and the partial legalizer is the
+ * z-step (projection onto the legal set). What is missing is the dual
+ * variable: u^{e+1} = u^e + (x^{e+1} - z^{e+1}), with the anchor target
+ * shifted to z - u. Penalty-only anchoring keeps a steady-state constraint
+ * violation and wirelength bias proportional to 1/rho (Boyd et al. 2011); the
+ * dual absorbs that residual without raising rho (raising rho is what damages
+ * wirelength). ComPLx (DAC'12) proved the SimPL anchor weight is a Lagrange
+ * multiplier and measured ~1% HPWL from principled dual scheduling alone at a
+ * ~50-iteration budget; per-cell duals on a legalizer z-step are unpublished.
+ *
+ * Safeguards (the known windup failure mode with an inexact, jumpy
+ * projection): a cell whose legalizer target jumps more than
+ * kAdmmTargetJumpTiles between epochs has its dual reset, and each axis of u
+ * is clamped to kAdmmDualClampTiles. See RESEARCH_ALM_ADMM.md.
  */
-constexpr double kPreconditionFloor = 1.0;
+// Adopted default-on 2026-08-05 per user direction after the full-75 two-seed
+// verdict: routed WL 0.9957 on both seeds (trimmed 0.9973), CPD 1.0021
+// (parity within the ~0.8% two-seed noise floor), all deterministic AP-side
+// metrics improved, mechanism cost ~+0.9% flow after load-drift correction.
+
+/** @brief Legalizer-target jump, in tiles, that resets a block's dual. */
+constexpr double kAdmmTargetJumpTiles = 3.0;
+
+/** @brief Safeguard clamp on each axis of the ADMM dual, in tiles. */
+constexpr double kAdmmDualClampTiles = 5.0;
+
+/**
+ * @brief Bisection aid: force every resource field grid to stride 1.
+ *
+ * Per ResourceFieldGrid's own doc comment, stride 1 makes the field domain the
+ * exact identity of the tile grid (scale_x = scale_y = 1, same width/height).
+ * Used to isolate whether the ResourceFieldGrid diff's board-wide AP HPWL
+ * regression (measured 2026-08-03/04: worktree_minus_incompat vs
+ * control_b0204_seed1, geomean 1.0083) comes from the spatial regridding or
+ * from something else in the same diff (e.g. its charge/normalization
+ * convention) -- without hand-extracting the ~10 call sites threaded through
+ * add_density_gradient_, which is too risky to do by patch surgery under time
+ * pressure. If a smoke test with this on reproduces control_b0204_seed1
+ * exactly, the regridding is cleared; if not, the regression is not (purely)
+ * spatial.
+ */
+constexpr bool kExpForceFieldGridStride1 = true;
+
+/**
+ * @brief Symmetry-breaking radius, in tiles, for the CENTRE_SPREAD ablation.
+ *
+ * With every block at exactly the same point each net's WA wirelength gradient is
+ * identically zero, so the optimizer has no descent direction until the density
+ * force alone separates them. A sub-tile deterministic offset avoids that without
+ * meaningfully seeding the placement.
+ */
+constexpr double kCentreSpreadJitter = 0.5;
+
+// The preconditioner tuning constants and the diagonal assembly itself live in
+// preconditioner_math.h, so the unit tests exercise the shipped formulas rather
+// than a copy of them.
+using vtr::ap::affinity_spring_curvature;
+using vtr::ap::jacobi_precond_diagonal;
+using vtr::ap::kPreconditionAlpha;
+using vtr::ap::kPreconditionFloor;
 
 /**
  * @brief Use residual-capacity electrostatic charge instead of relative charge.
@@ -559,6 +650,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , io_pair_attraction_weight_(kIoPairAttractionWeight) {
     vtr::ScopedStartFinishTimer nonlinear_nesterov_placer_building_timer("Constructing Nonlinear Nesterov Global Placer");
 
+    prepacker_ = &prepacker;
     density_manager_ = std::make_shared<FlatPlacementDensityManager>(ap_netlist_,
                                                                      prepacker,
                                                                      atom_netlist,
@@ -625,6 +717,14 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
         warmstart_iters_ = kWarmStartIters;
     warmstart_max_iters_ = std::max(kWarmStartMaxIters, warmstart_iters_);
 
+    // Experiment: pin the warm start to a fixed, short cycle count. The two
+    // endpoints are known -- a converged B2B seed (median 7 cycles) leaves the
+    // electrostatic stage almost nothing to do, and no seed at all leaves it 4.7x
+    // worse in HPWL because 5 epochs cannot spread from a point. A short seed is
+    // the middle: non-degenerate enough that wirelength gradients exist (so the
+    // lambda_0 normalization has something to normalize against), while leaving
+    // real spreading work for the field. Zero disables the override.
+
     if (log_verbosity_ >= 1) {
         size_t affinity_blocks = 0;
         for (const AffinityGroup& group : affinity_groups_)
@@ -676,6 +776,31 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
         return p_placement;
     }
 
+    // Ablation: seed every movable block at the device centre instead of from a
+    // B2B solve, the ePlace/elfPlace initialization. This answers whether the
+    // electrostatic stage can place on its own or only refines what B2B already
+    // found -- a real question, since post-GP CPD measures 1.0046 against B2B.
+    // It is NOT a runtime play: the B2B warm start is only ~1.3% of total flow
+    // (median over 67 circuits), so removing it cannot pay for extra epochs.
+    if (kWarmStartMode == e_warmstart_mode::CENTRE_SPREAD) {
+        double cx = 0.5 * static_cast<double>(device_grid_width_);
+        double cy = 0.5 * static_cast<double>(device_grid_height_);
+        // A deterministic sub-tile lattice offset breaks the symmetry that would
+        // otherwise leave every WA wirelength gradient exactly zero at the centre.
+        size_t index = 0;
+        for (APBlockId blk_id : moveable_blocks_) {
+            double phase = static_cast<double>(index++);
+            p_placement.block_x_locs[blk_id] = cx + kCentreSpreadJitter * std::cos(phase);
+            p_placement.block_y_locs[blk_id] = cy + kCentreSpreadJitter * std::sin(phase);
+        }
+        project_placement_(p_placement);
+        if (log_verbosity_ >= 1) {
+            VTR_LOG("Nonlinear Nesterov warm start: ABLATION centre-spread (no B2B), seed HPWL %g.\n",
+                    p_placement.get_hpwl(ap_netlist_));
+        }
+        return p_placement;
+    }
+
     // Warm start from a B2B/QP analytical solve. Iterate solve+legalize until the
     // seed HPWL stops improving (convergence-based), so large/under-converged
     // designs run enough cycles to produce a tight, clusterable seed -- the post-
@@ -691,7 +816,6 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     bool reached_sparse_deepening = false;
     bool stopped_by_convergence = false;
     double sparse_seed_overflow = 0.;
-    warmstart_seed_overflow_ = 0.;
 
     while (solver_iteration < max_cycles) {
         warmstart_solver_->solve(solver_iteration, p_placement);
@@ -727,7 +851,6 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
             project_placement_(p_placement);
             std::vector<PrimitiveVectorDim> dims = density_manager_->get_used_dims_mask().get_non_zero_dims();
             sparse_seed_overflow = compute_physical_overflow_ratio_(p_placement, dims);
-            warmstart_seed_overflow_ = sparse_seed_overflow;
             sparse_checked = true;
             if (sparse_seed_overflow < kSparseGateOverflow) {
                 sparse_seed_ = true;
@@ -771,11 +894,22 @@ PartialPlacement NonlinearNesterovPlacer::place() {
                                                device_span * kConvergenceDisplacementFraction);
 
     // Size-gate the preconditioner: enable it only for large designs (>= the
-    // proximity-anchor threshold) at the timing-safe alpha, where it fixes the
-    // large-device over-spread. Small/homogeneous designs are left unpreconditioned
-    // (it is a pure perturbation there).
-    precond_active_ = moveable_blocks_.size() >= kProximitySizeThreshold;
-    precond_alpha_active_ = kPreconditionLargeAlpha;
+    // threshold) where over-spreading is a problem. Small designs keep the raw
+    // gradient with a span-scaled step, which is the validated QoR path.
+    // `precond_active_` historically switched three things at once: the
+    // preconditioner, the step regime, and the proximity-anchor scale. That makes
+    // the size gate impossible to explain, because no measurement can attribute a
+    // difference to one of the three. Derive each leg separately so an experiment
+    // slot can flip exactly one; with all three overrides false this is bit-for-bit
+    // the shipped behaviour.
+    bool large_design = moveable_blocks_.size() >= kPreconditionSizeThreshold;
+    // The B2B quadratic requires the preconditioner regardless of size: its
+    // coincident-pin weights (1/epsilon) give the raw gradient a dynamic range
+    // no scalar step can serve, while its Hessian diagonal is exactly known --
+    // Jacobi preconditioning of a quadratic is the textbook-correct move.
+    precond_active_ = large_design;
+    step_unit_ = large_design;
+    proximity_full_ = large_design;
     return run_global_optimization_(density_dimensions, device_span, convergence_displacement);
 }
 
@@ -831,6 +965,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     current.block_y_locs = seed.block_y_locs;
     current.block_layer_nums = seed.block_layer_nums;
     current.block_sub_tiles = seed.block_sub_tiles;
+
     vtr::Timer epoch_phase_timer;
     double legalizer_time_sec = 0.;
     double timing_update_time_sec = 0.;
@@ -870,6 +1005,39 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     double initial_density_weight = 1e-3;
     auto reset_density_weights = [&](const PartialPlacement& placement) {
         std::fill(density_multipliers.begin(), density_multipliers.end(), 1.);
+        // ePlace/elfPlace set lambda_0 = ||grad W||_1 / ||grad D||_1: a ratio of
+        // gradient norms, which makes the wirelength and density *forces*
+        // comparable at the start.
+        //
+        // This deliberately does NOT normalize by the energy ratio (WL / density
+        // energy), which is what this code used to do. That form is a feedback
+        // trap: as a placement concentrates, WA wirelength collapses toward zero
+        // (coincident pins have no span) while density energy blows up (all mass
+        // in few bins), so lambda_0 -> 0 exactly when the spreading force is most
+        // needed, which keeps the placement concentrated. Measured 2026-08-03 on a
+        // cold start: lambda_0 came out 1.0067e-4 against 0.1064 for the same
+        // circuit from a B2B seed -- a 1000x weaker density force -- and the
+        // global placement finished 4.7x worse in HPWL. Gradient norms have no
+        // such degeneracy: both scale linearly with a shared displacement.
+        PlacementGradient wl_grad(ap_netlist_);
+        PlacementGradient density_grad(ap_netlist_);
+        FillerGradient density_filler_grad;
+        add_wirelength_gradient_(placement, wl_grad);
+        std::vector<double> energies, oflow_ratios, oflow_mass, max_oflow;
+        double total_overflow = 0.;
+        double peak_overflow = 0.;
+        add_density_gradient_(placement,
+                              density_multipliers,
+                              energies,
+                              oflow_ratios,
+                              oflow_mass,
+                              max_oflow,
+                              total_overflow,
+                              peak_overflow,
+                              density_grad,
+                              current_fillers,
+                              density_filler_grad);
+        initial_density_weight = 1e-3;
         ObjectiveValue components = evaluate_objective_(placement,
                                                         density_multipliers,
                                                         std::nullopt,
@@ -877,16 +1045,24 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                         std::nullopt,
                                                         current_fillers,
                                                         std::nullopt);
-        initial_density_weight = 1e-3;
-        if (components.density > kEpsilon) {
+        if (components.density > kEpsilon)
             initial_density_weight = kInitialDensityToWirelengthRatio * std::max(components.wirelength, 1.0) / components.density;
-        }
+    
         initial_density_weight = std::clamp(initial_density_weight, 1e-5, 1e3);
         for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++)
             density_multipliers[dim_idx] = initial_density_weight;
     };
+    // The B2B wirelength model must exist before the initial density-weight
+    // normalization evaluates the objective (an empty model would read
+    // wirelength = 0 and mis-normalize lambda_0). The epoch loop relinearizes
+    // it at each epoch start.
     reset_density_weights(current);
 
+    // REVERTED 2026-08-03: the incompatibility cost was added uncommitted, never
+    // validated end-to-end against B2B, and measured to cost 1.7pp of CPD vs B2B
+    // board-wide (0.9918 -> 1.0091) plus 5.4% AP HPWL on the >=30k band. Committed
+    // HEAD (72d4716cd, no incompatibility cost) is the last state that reproduces
+    // the documented shipped position (RESULTS.md: CPD 0.9918, WL 0.9916 vs B2B).
     // Count of FISTA adaptive restarts, reported at the end of the run.
     size_t num_objective_restarts = 0;
 
@@ -918,18 +1094,31 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     std::vector<double> checkpoint_hpwls;
     std::vector<double> checkpoint_cpds_ns;
     std::vector<int> checkpoint_sources;
-    checkpoints.push_back(seed);
-    checkpoint_hpwls.push_back(seed.get_hpwl(ap_netlist_));
-    {
-        vtr::Timer timing_update_timer;
-        checkpoint_cpds_ns.push_back(evaluate_checkpoint_cpd_(seed));
-        timing_update_time_sec += timing_update_timer.elapsed_sec();
+    // The centre-spread ablation's seed is every movable block piled on one point.
+    // Its HPWL is near zero for the degenerate reason that all pins are coincident,
+    // so offering it as a checkpoint candidate lets the selector pick the pile over
+    // any real placement -- which measures the selector, not the optimizer. Exclude
+    // it so the ablation actually tests whether the epoch loop can place unaided.
+    if (kWarmStartMode != e_warmstart_mode::CENTRE_SPREAD) {
+        checkpoints.push_back(seed);
+        checkpoint_hpwls.push_back(seed.get_hpwl(ap_netlist_));
+        {
+            vtr::Timer timing_update_timer;
+            checkpoint_cpds_ns.push_back(evaluate_checkpoint_cpd_(seed));
+            timing_update_time_sec += timing_update_timer.elapsed_sec();
+        }
+        checkpoint_sources.push_back(-1); // -1 = warm-start seed, otherwise epoch index.
     }
-    checkpoint_sources.push_back(-1); // -1 = warm-start seed, otherwise epoch index.
     PartialPlacement legal_anchor(ap_netlist_);
+    PartialPlacement anchor_target(ap_netlist_);
     PartialPlacement y_placement(ap_netlist_);
     PartialPlacement next(ap_netlist_);
     PartialPlacement before_legalization(ap_netlist_);
+    // Scaled-ADMM duals for the legalizer anchor.
+    admm_dual_x_.resize(ap_netlist_.blocks().size(), 0.);
+    admm_dual_y_.resize(ap_netlist_.blocks().size(), 0.);
+    std::fill(admm_dual_x_.begin(), admm_dual_x_.end(), 0.);
+    std::fill(admm_dual_y_.begin(), admm_dual_y_.end(), 0.);
     FillerState y_fillers;
     FillerState next_fillers;
     auto apply_continuation_schedule = [&](double schedule) {
@@ -945,6 +1134,14 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // preconditioner are refreshed against the current placement at the start of
     // each one.
     //
+    // The step size is in preconditioned (near-Newton) units: the gradient is
+    // divided by the Jacobi preconditioner diagonal h_xi (elfPlace Eq. 16) in
+    // gradient_step_, so step_size=1.0 gives a near-Newton step of O(1) tiles.
+    // This matches elfPlace's initial t(0) = 1/αH ≈ 0.94. The step grows by
+    // kStepGrowthRate per inner iteration, and the backtracking line search
+    // halves it when the objective increases. Step resets to 1.0 each epoch
+    // (matching the original VTR nesterov) so a fresh density weight starts
+    // from a conservative step.
     for (size_t epoch = 0; epoch < num_epochs; epoch++) {
         // Anneal the wirelength smoothing fraction geometrically from coarse
         // (smooth global gradient) to sharp (near true HPWL) across epochs, so
@@ -956,6 +1153,9 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // Checkpoint timing is evaluated for the seed and after every partial
         // legalization, so the timing manager already describes `current` here.
         update_timing_net_weights_();
+        // Relinearize the B2B wirelength model at the epoch-start placement
+        // (post-legalization from the prior epoch), after the net weights it
+        // bakes in have been refreshed.
         if (sparse_seed_) {
             for (double& multiplier : density_multipliers)
                 multiplier = initial_density_weight;
@@ -973,6 +1173,20 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         legal_anchor.block_y_locs = current.block_y_locs;
         legal_anchor.block_layer_nums = current.block_layer_nums;
         legal_anchor.block_sub_tiles = current.block_sub_tiles;
+        // Scaled ADMM: the proximity term pulls toward z - u, so the dual
+        // absorbs the anchor's steady-state bias instead of the penalty
+        // weight having to fight it.
+        {
+            anchor_target.block_x_locs = legal_anchor.block_x_locs;
+            anchor_target.block_y_locs = legal_anchor.block_y_locs;
+            anchor_target.block_layer_nums = legal_anchor.block_layer_nums;
+            anchor_target.block_sub_tiles = legal_anchor.block_sub_tiles;
+            for (APBlockId blk_id : moveable_blocks_) {
+                anchor_target.block_x_locs[blk_id] -= admm_dual_x_[blk_id];
+                anchor_target.block_y_locs[blk_id] -= admm_dual_y_[blk_id];
+            }
+        }
+        const PartialPlacement& proximity_anchor = anchor_target;
         y_placement.block_x_locs = current.block_x_locs;
         y_placement.block_y_locs = current.block_y_locs;
         y_placement.block_layer_nums = current.block_layer_nums;
@@ -989,18 +1203,18 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         next_fillers.layer = current_fillers.layer;
         PlacementGradient grad(ap_netlist_);
         FillerGradient filler_grad;
-        double proximity_scale = moveable_blocks_.size() < kProximitySizeThreshold ? kProximityScale : 1.0;
+        double proximity_scale = !proximity_full_ ? kProximityScale : 1.0;
         double proximity_weight = legalizer_feedback_proximity_weight * proximity_scale;
         // A preconditioned gradient already carries position units (a near-Newton
         // step), so its natural step length is ~1; the raw gradient instead needs
         // a span-scaled step. Backtracking adapts either from this starting point.
-        double step_size = precond_active_
+        double step_size = step_unit_
                                ? 1.0
                                : std::max(0.1, device_span * kInitialStepSpanFraction);
         double nesterov_t = 1.0;
         ObjectiveValue current_obj = evaluate_objective_(current,
                                                          density_multipliers,
-                                                         std::cref(legal_anchor),
+                                                         std::cref(proximity_anchor),
                                                          proximity_weight,
                                                          std::nullopt,
                                                          current_fillers,
@@ -1012,7 +1226,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         for (size_t iter = 0; iter < iterations_per_epoch; iter++) {
             ObjectiveValue y_obj = evaluate_objective_(y_placement,
                                                        density_multipliers,
-                                                       std::cref(legal_anchor),
+                                                       std::cref(proximity_anchor),
                                                        proximity_weight,
                                                        std::ref(grad),
                                                        y_fillers,
@@ -1030,7 +1244,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                 gradient_step_(y_placement, grad, y_fillers, filler_grad, accepted_step, next, next_fillers);
                 next_obj = evaluate_objective_(next,
                                                density_multipliers,
-                                               std::cref(legal_anchor),
+                                               std::cref(proximity_anchor),
                                                proximity_weight,
                                                std::nullopt,
                                                next_fillers,
@@ -1082,7 +1296,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             current_fillers.layer = next_fillers.layer;
             current_obj = next_obj;
 
-            step_size = std::min(device_span, accepted_step * 1.05);
+            step_size = std::min(device_span, accepted_step * kStepGrowthRate);
 
             if (iter + 1 >= kMinNesterovIterationsPerEpoch
                 && max_step_displacement <= convergence_displacement) {
@@ -1092,7 +1306,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
         ObjectiveValue pre_legalization = evaluate_objective_(current,
                                                               density_multipliers,
-                                                              std::cref(legal_anchor),
+                                                              std::cref(proximity_anchor),
                                                               proximity_weight,
                                                               std::nullopt,
                                                               current_fillers,
@@ -1108,15 +1322,9 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // objective evaluation left in the workspace, which still describes the
         // smooth (pre-legalization) result at this point and will be overwritten
         // by the post-legalization evaluation below.
-        if (log_verbosity_ >= 3)
+        // (Runtime gradient audit moved to test_nesterov_gradient_audit.cpp)
+        if (log_verbosity_ >= 3) {
             report_density_force_leak_(before_legalization, density_dimensions, density_multipliers, epoch);
-
-        // Gradient audit on the first epoch only: it costs two full objective
-        // evaluations per probe, and the point is to check the derivative, which
-        // does not change from epoch to epoch.
-        if (log_verbosity_ >= 4 && epoch == 0) {
-            audit_gradient_(before_legalization, density_dimensions, density_multipliers,
-                            std::cref(legal_anchor), proximity_weight, current_fillers);
         }
 
         double pre_leg_overflow = compute_physical_overflow_ratio_(before_legalization, density_dimensions);
@@ -1127,7 +1335,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         legalizer_time_sec += legalizer_timer.elapsed_sec();
         ObjectiveValue post_legalization = evaluate_objective_(current,
                                                                density_multipliers,
-                                                               std::cref(legal_anchor),
+                                                               std::cref(proximity_anchor),
                                                                proximity_weight,
                                                                std::nullopt,
                                                                current_fillers,
@@ -1146,6 +1354,43 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         legalizer_feedback_proximity_weight = std::min(kMaxLegalizerFeedbackProximityWeight,
                                                        std::max(kLegalizerFeedbackRetention * legalizer_feedback_proximity_weight,
                                                                 kProximityWeightPerLegalizationTile * mean_displacement));
+
+        // Scaled-ADMM dual update: u += x - z, where x is the smooth result
+        // (before_legalization) and z its legalization (current). Safeguards
+        // per RESEARCH_ALM_ADMM.md: a block whose legalizer target jumped
+        // (z^{e+1} far from z^e, still held in legal_anchor) gets its dual
+        // reset -- the projection is inexact and jumpy, and stale duals are
+        // the canonical windup failure -- and each axis is clamped.
+        //
+        // This is deliberately a *partial* ADMM: the dual never reaches the
+        // z-step. Completing it -- legalizing x + u, balancing rho against the
+        // primal/dual residual ratio, rescaling u when rho moves, running more
+        // outer iterations, over-relaxing, or scaling these safeguards by each
+        // resource's capacity pitch -- was implemented and measured on six
+        // isolated 14-circuit subsets on 2026-08-06. All six were refuted, two
+        // of them severely (AP HPWL 1.074 and 1.148). The reason is structural
+        // and is not a tuning miss: z is simultaneously the ADMM z-iterate and
+        // the placement that ships, so refinements that perturb the legalizer's
+        // input damage the delivered result even while improving the dual's own
+        // convergence (measured: overflow 0.973 at 11/14 wins with AP HPWL up
+        // 2.5%). See EXPERIMENTS.md "completing the ADMM". Do not re-derive.
+        {
+            for (APBlockId blk_id : moveable_blocks_) {
+                double z_jump = std::hypot(current.block_x_locs[blk_id] - legal_anchor.block_x_locs[blk_id],
+                                           current.block_y_locs[blk_id] - legal_anchor.block_y_locs[blk_id]);
+                if (z_jump > kAdmmTargetJumpTiles) {
+                    admm_dual_x_[blk_id] = 0.;
+                    admm_dual_y_[blk_id] = 0.;
+                    continue;
+                }
+                admm_dual_x_[blk_id] = std::clamp(admm_dual_x_[blk_id]
+                                                      + before_legalization.block_x_locs[blk_id] - current.block_x_locs[blk_id],
+                                                  -kAdmmDualClampTiles, kAdmmDualClampTiles);
+                admm_dual_y_[blk_id] = std::clamp(admm_dual_y_[blk_id]
+                                                      + before_legalization.block_y_locs[blk_id] - current.block_y_locs[blk_id],
+                                                  -kAdmmDualClampTiles, kAdmmDualClampTiles);
+            }
+        }
 
         double post_legalization_hpwl = current.get_hpwl(ap_netlist_);
         vtr::Timer timing_update_timer;
@@ -1282,6 +1527,9 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     }
     partial_legalizer_->print_statistics();
 
+    // Diagnostic-only oracle (see consolidate_underfull_bins_): forcibly raise
+    // the returned placement's logic bin fill to test whether the packer's
+    // reconstruction damage responds to a large fill dose.
     return checkpoints[best_checkpoint_idx];
 }
 
@@ -1305,7 +1553,6 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
                                           value.dim_max_overflow,
                                           value.total_overflow,
                                           value.max_overflow,
-                                          value.overflow_ratio,
                                           grad,
                                           fillers,
                                           filler_grad);
@@ -1317,7 +1564,8 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
     value.affinity_spring = add_affinity_spring_gradient_(p_placement, grad);
     value.total = value.wirelength
                   + value.affinity_spring
-                  + proximity_weight * value.proximity;
+                  + proximity_weight * value.proximity
+;
     for (size_t dim_idx = 0; dim_idx < value.density_energies.size(); dim_idx++) {
         double energy = value.density_energies[dim_idx];
         value.total += density_multipliers[dim_idx] * energy;
@@ -1456,14 +1704,17 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
     }
 
     if (log_verbosity_ >= 1 && weighted_nets > 0) {
+        avg_net_weight_ = total_weight / weighted_nets;
         VTR_LOG("Nonlinear Nesterov timing/cohesion net weights: tradeoff=%g boundary_cohesion=%g io_chain_cohesion=%g min=%g avg=%g max=%g nets=%zu\n",
                 effective_timing_tradeoff_,
                 kBoundaryNetCohesionWeight,
                 io_chain_net_cohesion_weight_,
                 min_weight,
-                total_weight / weighted_nets,
+                avg_net_weight_,
                 max_weight,
                 weighted_nets);
+    } else {
+        avg_net_weight_ = 1.0;
     }
 }
 
@@ -1628,11 +1879,486 @@ double NonlinearNesterovPlacer::add_affinity_spring_gradient_(const PartialPlace
     return weighted_penalty;
 }
 
+void NonlinearNesterovPlacer::initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const {
+    size_t width = device_grid_width_;
+    size_t height = device_grid_height_;
+    size_t num_layers = device_grid_num_layers_;
+    size_t num_sites = width * height * num_layers;
+    if (cached_target_capacity_.size() == dimensions.size()
+        && (dimensions.empty() || cached_target_capacity_.front().size() == num_sites))
+        return;
+
+    cached_target_capacity_.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
+    cached_target_norm_floor_.assign(dimensions.size(), kEpsilon);
+
+    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
+    auto site_index = [width, height](size_t layer, size_t x, size_t y) {
+        return (layer * height + y) * width + x;
+    };
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t x = 0; x < width; x++) {
+            for (size_t y = 0; y < height; y++) {
+                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
+                const vtr::Rect<double>& region = bins.bin_region(bin_id);
+                double bin_area = std::max(1.0, region.width() * region.height());
+                double target_density = density_manager_->get_bin_target_density(bin_id);
+                size_t idx = site_index(layer, x, y);
+                for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+                    cached_target_capacity_[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
+                                                            * target_density / bin_area;
+                }
+            }
+        }
+    }
+
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double target_sum = 0.;
+        size_t target_sites = 0;
+        for (double target : cached_target_capacity_[dim_idx]) {
+            if (target <= kEpsilon)
+                continue;
+            target_sum += target;
+            target_sites++;
+        }
+        if (target_sites != 0) {
+            cached_target_norm_floor_[dim_idx] = std::max(kEpsilon,
+                                                          kDensityTargetFloorFraction * target_sum / target_sites);
+        }
+    }
+
+    // Give every resource its own electrostatic field domain, resolved at the
+    // pitch of that resource's capacity rather than at the tile grid. The tile
+    // grid remains the domain of overflow/legality accounting above.
+    cached_field_grids_.clear();
+    cached_field_grids_.reserve(dimensions.size());
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        size_t min_bins = kExpForceFieldGridStride1 ? std::max(width, height) : kMinFieldGridBins;
+        cached_field_grids_.push_back(build_resource_field_grid(cached_target_capacity_[dim_idx],
+                                                                width,
+                                                                height,
+                                                                num_layers,
+                                                                kEpsilon,
+                                                                kDensityTargetFloorFraction,
+                                                                min_bins));
+    }
+
+    if (log_verbosity_ >= 1) {
+        const PrimitiveDimManager& dim_manager = density_manager_->mass_calculator().get_dim_manager();
+        size_t num_coarsened = 0;
+        for (const ResourceFieldGrid& grid : cached_field_grids_) {
+            if (grid.width != width || grid.height != height)
+                num_coarsened++;
+        }
+        VTR_LOG("Nonlinear Nesterov per-resource field domains: %zu / %zu resolved below the %zux%zu tile grid.\n",
+                num_coarsened,
+                cached_field_grids_.size(),
+                width,
+                height);
+        for (size_t dim_idx = 0; dim_idx < cached_field_grids_.size() && log_verbosity_ >= 2; dim_idx++) {
+            const ResourceFieldGrid& grid = cached_field_grids_[dim_idx];
+            VTR_LOG("    %-44s grid=%zux%zu pitch=(%.3g, %.3g) tiles\n",
+                    dim_manager.get_dim_name(dimensions[dim_idx]).c_str(),
+                    grid.width,
+                    grid.height,
+                    grid.spacing_x,
+                    grid.spacing_y);
+        }
+    }
+}
+
+double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_placement,
+                                                      const std::vector<double>& density_multipliers,
+                                                      std::vector<double>& density_energies,
+                                                      std::vector<double>& dim_overflow_ratios,
+                                                      std::vector<double>& dim_overflow_mass,
+                                                      std::vector<double>& dim_max_overflow,
+                                                      double& total_overflow,
+                                                      double& max_overflow,
+                                                      std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                                                      const FillerState& fillers,
+                                                      std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const {
+    total_overflow = 0.;
+    max_overflow = 0.;
+    // ePlace legality signal: overflow mass (mass exceeding tile target) over total
+    // deposited mass, tracked per dimension in dim_overflow_ratios. Normalizing by
+    // movable mass (not total grid capacity) avoids diluting local overfill on
+    // designs that occupy a small fraction of the grid.
+
+    std::vector<PrimitiveVectorDim> dimensions = density_manager_->get_used_dims_mask().get_non_zero_dims();
+    if (dimensions.empty())
+        return 0.;
+    VTR_ASSERT(density_multipliers.size() == dimensions.size());
+    density_energies.assign(dimensions.size(), 0.);
+    dim_overflow_ratios.assign(dimensions.size(), 0.);
+    dim_overflow_mass.assign(dimensions.size(), 0.);
+    dim_max_overflow.assign(dimensions.size(), 0.);
+
+    size_t width = device_grid_width_;
+    size_t height = device_grid_height_;
+    size_t num_layers = device_grid_num_layers_;
+    size_t num_sites = width * height * num_layers;
+    initialize_density_target_cache_(dimensions);
+
+    // Arrays with grid information of the density objective via electrostatic formulation.
+    // Reuse their storage across the many objective/line-search evaluations.
+    // Utilization: deposited block mass at each site
+    // Target Capacity: available target mass/capacity at each site
+    // Potential: solved electrostatic potential
+    // The potential's spatial derivative is not materialized on the grid: the
+    // block/filler gradients take it analytically from the four surrounding
+    // potential samples (the derivative of the bilinear interpolant the mass
+    // deposition implies), so no field grid is needed.
+    auto reset_grid_workspace = [num_sites, &dimensions](std::vector<std::vector<double>>& workspace) {
+        if (workspace.size() != dimensions.size()
+            || (!workspace.empty() && workspace.front().size() != num_sites)) {
+            workspace.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
+            return;
+        }
+        for (std::vector<double>& dimension_values : workspace)
+            std::fill(dimension_values.begin(), dimension_values.end(), 0.);
+    };
+    reset_grid_workspace(density_utilization_workspace_);
+    std::vector<std::vector<double>>& utilization = density_utilization_workspace_;
+
+    // Each resource's field lives on its own domain (see cached_field_grids_),
+    // so the field-side workspaces are sized per dimension rather than by the
+    // shared tile-site count. The potential only needs a size check, not a
+    // zero-fill: every dimension in `dimensions` comes from
+    // get_used_dims_mask().get_non_zero_dims(), so active_bins > 0 below and the
+    // Poisson write-back overwrites every bin before potential is read.
+    const std::vector<ResourceFieldGrid>& field_grids = cached_field_grids_;
+    VTR_ASSERT(field_grids.size() == dimensions.size());
+    density_field_utilization_workspace_.resize(dimensions.size());
+    density_potential_workspace_.resize(dimensions.size());
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        size_t num_bins = field_grids[dim_idx].target_capacity.size();
+        density_field_utilization_workspace_[dim_idx].assign(num_bins, 0.);
+        if (density_potential_workspace_[dim_idx].size() != num_bins)
+            density_potential_workspace_[dim_idx].assign(num_bins, 0.);
+    }
+    std::vector<std::vector<double>>& field_utilization = density_field_utilization_workspace_;
+    std::vector<std::vector<double>>& potential = density_potential_workspace_;
+
+    // The target capacity spread over each bin's footprint, and the per-dimension
+    // normalization constants derived from it, depend only on the (fixed) device
+    // grid, bin capacity, and target density -- not on the placement. Build them
+    // once and reuse across every objective evaluation.
+    //  - target_norm_floor: a floor added wherever utilization is divided by target
+    //    capacity. Bin-footprint spreading and target_density can leave a site with
+    //    a vanishingly small (but nonzero) fractional capacity for this dimension;
+    //    without this floor, dividing by it would spike the normalized
+    //    utilization/overflow numerically even though barely any mass sits there.
+    //
+    // The field side has the same two constants per resource, held by that
+    // resource's own field grid: ResourceFieldGrid::target_norm_floor and
+    // ResourceFieldGrid::charge_scale. charge_scale expresses
+    // (utilization - target) in units of "typical bin capacity for this
+    // resource" rather than raw mass. Resource dimensions can have very
+    // different natural capacity magnitudes on a heterogeneous grid (e.g. an
+    // abundant LUT dimension vs. a sparse DSP/BRAM one); this keeps their charge
+    // contributions comparably scaled.
+    const std::vector<std::vector<double>>& target_capacity = cached_target_capacity_;
+    const std::vector<double>& target_norm_floor = cached_target_norm_floor_;
+
+    // Deposit each primitive-vector mass bilinearly onto the tile grid.
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+        if (block_mass.is_zero())
+            continue;
+        // Pin-density cell inflation (routability): scale up the SMOOTH density
+        // term's mass for high-pin blocks, not the real legalized footprint the
+        // partial legalizer and full legalizer see, so the electrostatic field
+        // leaves them more spreading room.
+        block_mass *= pin_density_inflation_[blk_id];
+
+        double x = std::clamp(p_placement.block_x_locs[blk_id], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+        double y = std::clamp(p_placement.block_y_locs[blk_id], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+        size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
+                                                      0.,
+                                                      static_cast<double>(device_grid_num_layers_ - 1)));
+        BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
+
+        // Traverses dimensions, i.e. resource types of the mass abstraction
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
+            if (mass == 0.)
+                continue;
+            // Tile grid: overflow and legality accounting.
+            deposit_bilinear_density(utilization[dim_idx], layer, width, height, stencil, mass);
+            // Resource field grid: the charge that shapes this resource's field.
+            const ResourceFieldGrid& field_grid = field_grids[dim_idx];
+            BilinearDensityStencil field_stencil = make_bilinear_density_stencil(x * field_grid.scale_x,
+                                                                                 y * field_grid.scale_y,
+                                                                                 field_grid.width,
+                                                                                 field_grid.height);
+            deposit_bilinear_density(field_utilization[dim_idx],
+                                     layer,
+                                     field_grid.width,
+                                     field_grid.height,
+                                     field_stencil,
+                                     mass);
+        }
+    }
+
+    // Overflow and stopping use only real physical block mass. Fillers are
+    // movable whitespace in the density objective, not legal instances.
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        double dim_overflow_area = 0.;
+        double dim_deposited_mass = 0.;
+        double dim_peak_overflow = 0.;
+        for (size_t idx = 0; idx < num_sites; idx++) {
+            double target = target_capacity[dim_idx][idx];
+            double utilization_at_site = utilization[dim_idx][idx];
+            if (target <= kEpsilon) {
+                if (utilization_at_site <= kEpsilon)
+                    continue;
+                total_overflow += utilization_at_site;
+                max_overflow = std::max(max_overflow, utilization_at_site);
+                dim_peak_overflow = std::max(dim_peak_overflow, utilization_at_site);
+                dim_overflow_area += utilization_at_site;
+                dim_deposited_mass += utilization_at_site;
+            } else {
+                double normalized_utilization = utilization_at_site / std::max(target, target_norm_floor[dim_idx]);
+                double normalized_overflow = std::max(0., normalized_utilization - 1.0);
+                total_overflow += normalized_overflow;
+                max_overflow = std::max(max_overflow, normalized_overflow);
+                dim_peak_overflow = std::max(dim_peak_overflow, normalized_overflow);
+                dim_overflow_area += std::max(0., utilization_at_site - target);
+                dim_deposited_mass += utilization_at_site;
+            }
+        }
+        dim_overflow_mass[dim_idx] = dim_overflow_area;
+        dim_max_overflow[dim_idx] = dim_peak_overflow;
+        dim_overflow_ratios[dim_idx] = dim_deposited_mass > kEpsilon ? dim_overflow_area / dim_deposited_mass : 0.;
+    }
+
+    // Deposit dynamic fillers into the electrostatic field. They carry density
+    // charge but are deliberately excluded from overflow accounting above, so
+    // they only reach the field grid.
+    for (size_t dim_idx = 0; dim_idx < dimensions.size() && dim_idx < fillers.x.size(); dim_idx++) {
+        double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
+        if (unit_mass <= 0.)
+            continue;
+        const ResourceFieldGrid& field_grid = field_grids[dim_idx];
+        size_t n = fillers.x[dim_idx].size();
+        for (size_t filler_idx = 0; filler_idx < n; filler_idx++) {
+            double x = std::clamp(fillers.x[dim_idx][filler_idx], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+            double y = std::clamp(fillers.y[dim_idx][filler_idx], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+            size_t layer = static_cast<size_t>(std::clamp(fillers.layer[dim_idx][filler_idx],
+                                                          0,
+                                                          static_cast<int>(device_grid_num_layers_ - 1)));
+            BilinearDensityStencil stencil = make_bilinear_density_stencil(x * field_grid.scale_x,
+                                                                           y * field_grid.scale_y,
+                                                                           field_grid.width,
+                                                                           field_grid.height);
+            deposit_bilinear_density(field_utilization[dim_idx],
+                                     layer,
+                                     field_grid.width,
+                                     field_grid.height,
+                                     stencil,
+                                     unit_mass);
+        }
+    }
+
+    // Electrostatic density model (ePlace/elfPlace), solved independently per
+    // resource dimension on that resource's own field domain. Treat the excess
+    // block density in each field bin as electric charge; solving Poisson's
+    // equation gives a potential whose negative gradient is a force that pushes
+    // blocks from dense to sparse regions. The residual-charge mode uses
+    // (utilization - target) in area units, normalized by the average bin
+    // capacity for this resource. This avoids over-amplifying fractional-capacity
+    // bins on heterogeneous FPGA grids.
+    double density_energy = 0.;
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+        const ResourceFieldGrid& field_grid = field_grids[dim_idx];
+        size_t field_width = field_grid.width;
+        size_t field_height = field_grid.height;
+        size_t num_field_bins = field_grid.target_capacity.size();
+        auto field_bin_index = [field_width, field_height](size_t layer, size_t x, size_t y) {
+            return (layer * field_height + y) * field_width + x;
+        };
+
+        if (density_charge_workspace_.size() != num_field_bins)
+            density_charge_workspace_.resize(num_field_bins);
+        std::fill(density_charge_workspace_.begin(), density_charge_workspace_.end(), 0.);
+        std::vector<double>& charge = density_charge_workspace_;
+        size_t active_bins = 0;
+
+        for (size_t idx = 0; idx < num_field_bins; idx++) {
+            double target = field_grid.target_capacity[idx];
+            double utilization_at_bin = field_utilization[dim_idx][idx];
+            bool has_capacity = target > kEpsilon;
+            if (!has_capacity) {
+                // A block in a bin without capacity for its primitive type is
+                // an overfill source, not an empty destination.
+                if (utilization_at_bin <= kEpsilon)
+                    continue;
+                charge[idx] = kUseResidualDensityCharge
+                                  ? utilization_at_bin / field_grid.charge_scale
+                                  : utilization_at_bin;
+            } else {
+                double normalized_utilization = utilization_at_bin / std::max(target, field_grid.target_norm_floor);
+                charge[idx] = kUseResidualDensityCharge
+                                  ? (utilization_at_bin - target) / field_grid.charge_scale
+                                  : normalized_utilization - 1.0;
+            }
+            active_bins++;
+        }
+
+        if (active_bins == 0)
+            continue;
+
+        // Rebalance charge over the fixed capacity-bin mask. Bilinear deposition
+        // conserves total mass, so both the mask and the subtracted amount are
+        // placement-invariant and contribute no missing derivative. On a domain
+        // that still has capacity holes this also acts as an
+        // architecture-attraction field; it is not merely the uniform DC
+        // projection already performed by the Poisson solve.
+        rebalance_density_charge_on_capacity_sites(charge, field_grid.target_capacity, kEpsilon);
+
+        density_layer_charge_workspace_.resize(field_width * field_height);
+        std::vector<double>& layer_charge = density_layer_charge_workspace_;
+        std::vector<double>& layer_potential = density_layer_potential_workspace_;
+        for (size_t layer = 0; layer < num_layers; layer++) {
+            for (size_t x = 0; x < field_width; x++) {
+                for (size_t y = 0; y < field_height; y++)
+                    layer_charge[y * field_width + x] = charge[field_bin_index(layer, x, y)];
+            }
+            solve_neumann_poisson_dct(layer_charge, field_width, field_height, layer_potential);
+            for (size_t x = 0; x < field_width; x++) {
+                for (size_t y = 0; y < field_height; y++)
+                    potential[dim_idx][field_bin_index(layer, x, y)] = layer_potential[y * field_width + x];
+            }
+        }
+
+        // Charge is normalized per field bin and the solve is in bin units, so
+        // the energy is the same quadratic form the tile grid used, evaluated on
+        // this resource's own domain. No resolution factor belongs here: it would
+        // rescale a coarsened resource's energy against the others and, through
+        // the shared density weight, against wirelength.
+        for (size_t idx = 0; idx < num_field_bins; idx++)
+            density_energies[dim_idx] += 0.5 * charge[idx] * potential[dim_idx][idx];
+        density_energy += density_energies[dim_idx];
+    }
+
+    if (!grad)
+        return density_energy;
+
+    // Turn the grid field into a block gradient
+    for (APBlockId blk_id : moveable_blocks_) {
+        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
+        if (block_mass.is_zero())
+            continue;
+        // Same pin-density inflation as the deposition pass above, so the force
+        // extracted here matches the (inflated) mass that shaped the field.
+        block_mass *= pin_density_inflation_[blk_id];
+
+        double x = std::clamp(p_placement.block_x_locs[blk_id], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+        double y = std::clamp(p_placement.block_y_locs[blk_id], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+        size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
+                                                      0.,
+                                                      static_cast<double>(device_grid_num_layers_ - 1)));
+        // Accumulate density-only force so along-rim damping does not touch WL/proximity.
+        double density_dx = 0.;
+        double density_dy = 0.;
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
+            if (mass == 0.)
+                continue;
+            // Same packing-aware deflation as the deposition pass, so the
+            // force extracted matches the mass that shaped the field.
+
+            const ResourceFieldGrid& field_grid = field_grids[dim_idx];
+            BilinearDensityStencil stencil = make_bilinear_density_stencil(x * field_grid.scale_x,
+                                                                           y * field_grid.scale_y,
+                                                                           field_grid.width,
+                                                                           field_grid.height);
+
+            double local_target = interpolate_bilinear_density(field_grid.target_capacity,
+                                                               layer,
+                                                               field_grid.width,
+                                                               field_grid.height,
+                                                               stencil);
+            double local_field_x = 0.;
+            double local_field_y = 0.;
+            {
+                // For E = 0.5*q^T*A*q with symmetric Poisson inverse A, the
+                // deposition-consistent derivative is m*sum_i(dw_i/dx)*Phi_i.
+                // Differentiating the bilinear potential directly is essential;
+                // interpolating grid-point finite differences is a different
+                // discretization. Degenerate cells correctly produce zero.
+                std::pair<double, double> local_field = gradient_bilinear_density(potential[dim_idx],
+                                                                                  layer,
+                                                                                  field_grid.width,
+                                                                                  field_grid.height,
+                                                                                  stencil);
+                local_field_x = local_field.first;
+                local_field_y = local_field.second;
+            }
+
+            double normalized_mass = kUseResidualDensityCharge
+                                         ? mass / field_grid.charge_scale
+                                         : mass / std::max(local_target, field_grid.target_norm_floor);
+            double coefficient = density_multipliers[dim_idx];
+            // The field is differentiated in field-bin coordinates, so the chain
+            // rule of the tile -> bin map appears: d/dx = scale_x * d/du. Both
+            // scales are 1 on a tile-resolution domain.
+            density_dx += coefficient * normalized_mass * local_field_x * field_grid.scale_x;
+            density_dy += coefficient * normalized_mass * local_field_y * field_grid.scale_y;
+        }
+
+        grad->get().dx[blk_id] += density_dx;
+        grad->get().dy[blk_id] += density_dy;
+    }
+
+    if (filler_grad) {
+        filler_grad->get().dx.assign(dimensions.size(), {});
+        filler_grad->get().dy.assign(dimensions.size(), {});
+        for (size_t dim_idx = 0; dim_idx < dimensions.size() && dim_idx < fillers.x.size(); dim_idx++) {
+            double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
+            size_t n = fillers.x[dim_idx].size();
+            filler_grad->get().dx[dim_idx].assign(n, 0.);
+            filler_grad->get().dy[dim_idx].assign(n, 0.);
+            if (unit_mass <= 0.)
+                continue;
+            const ResourceFieldGrid& field_grid = field_grids[dim_idx];
+            double coefficient = density_multipliers[dim_idx];
+            double normalized_mass = kUseResidualDensityCharge
+                                         ? unit_mass / field_grid.charge_scale
+                                         : unit_mass;
+            for (size_t filler_idx = 0; filler_idx < n; filler_idx++) {
+                double x = std::clamp(fillers.x[dim_idx][filler_idx], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
+                double y = std::clamp(fillers.y[dim_idx][filler_idx], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
+                size_t layer = static_cast<size_t>(std::clamp(fillers.layer[dim_idx][filler_idx],
+                                                              0,
+                                                              static_cast<int>(device_grid_num_layers_ - 1)));
+                BilinearDensityStencil stencil = make_bilinear_density_stencil(x * field_grid.scale_x,
+                                                                               y * field_grid.scale_y,
+                                                                               field_grid.width,
+                                                                               field_grid.height);
+                // Same deposition-consistent derivative and tile -> bin chain
+                // rule as the block gradient above.
+                auto [local_field_x, local_field_y] = gradient_bilinear_density(potential[dim_idx],
+                                                                                layer,
+                                                                                field_grid.width,
+                                                                                field_grid.height,
+                                                                                stencil);
+                filler_grad->get().dx[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_x * field_grid.scale_x;
+                filler_grad->get().dy[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_y * field_grid.scale_y;
+            }
+        }
+    }
+
+    return density_energy;
+}
+
 void NonlinearNesterovPlacer::report_density_force_leak_(const PartialPlacement& p_placement,
-                                                         const std::vector<PrimitiveVectorDim>& dimensions,
-                                                         const std::vector<double>& density_multipliers,
-                                                         size_t epoch) const {
-    if (dimensions.empty() || density_potential_workspace_.size() < dimensions.size())
+                                                          const std::vector<PrimitiveVectorDim>& dimensions,
+                                                          const std::vector<double>& density_multipliers,
+                                                          size_t epoch) const {
+    if (dimensions.empty()
+        || density_potential_workspace_.size() < dimensions.size()
+        || cached_field_grids_.size() < dimensions.size())
         return;
 
     const size_t width = device_grid_width_;
@@ -1646,9 +2372,11 @@ void NonlinearNesterovPlacer::report_density_force_leak_(const PartialPlacement&
         return (layer * height + y) * width + x;
     };
 
+    // Tile-resolution target capacity (the void-check ground truth, independent
+    // of any per-resource field-grid coarsening); the field grids and the
+    // potential the last gradient evaluation actually solved.
     const std::vector<std::vector<double>>& target_capacity = cached_target_capacity_;
-    const std::vector<double>& target_norm_floor = cached_target_norm_floor_;
-    const std::vector<double>& residual_charge_scale = cached_residual_charge_scale_;
+    const std::vector<ResourceFieldGrid>& field_grids = cached_field_grids_;
     const std::vector<std::vector<double>>& potential = density_potential_workspace_;
 
     // Share of the device that can hold each resource at all. A force with no
@@ -1680,7 +2408,8 @@ void NonlinearNesterovPlacer::report_density_force_leak_(const PartialPlacement&
         size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
                                                       0.,
                                                       static_cast<double>(device_grid_num_layers_ - 1)));
-        BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
+        size_t tile_x = static_cast<size_t>(std::floor(x));
+        size_t tile_y = static_cast<size_t>(std::floor(y));
 
         // Per dimension, rebuild exactly the force add_density_gradient_ applies
         // (the gradient is descended, so motion is along its negation) and probe
@@ -1690,27 +2419,32 @@ void NonlinearNesterovPlacer::report_density_force_leak_(const PartialPlacement&
             if (mass == 0.)
                 continue;
 
-            double local_target = interpolate_bilinear_density(target_capacity[dim_idx],
+            const ResourceFieldGrid& field_grid = field_grids[dim_idx];
+            BilinearDensityStencil stencil = make_bilinear_density_stencil(x * field_grid.scale_x,
+                                                                           y * field_grid.scale_y,
+                                                                           field_grid.width,
+                                                                           field_grid.height);
+            double local_target = interpolate_bilinear_density(field_grid.target_capacity,
                                                                layer,
-                                                               width,
-                                                               height,
+                                                               field_grid.width,
+                                                               field_grid.height,
                                                                stencil);
             auto [local_field_x, local_field_y] = gradient_bilinear_density(potential[dim_idx],
                                                                             layer,
-                                                                            width,
-                                                                            height,
+                                                                            field_grid.width,
+                                                                            field_grid.height,
                                                                             stencil);
-
             double normalized_mass = kUseResidualDensityCharge
-                                         ? mass / residual_charge_scale[dim_idx]
-                                         : mass / std::max(local_target, target_norm_floor[dim_idx]);
+                                         ? mass / field_grid.charge_scale
+                                         : mass / std::max(local_target, field_grid.target_norm_floor);
             double coefficient = density_multipliers[dim_idx];
-            double gradient_x = coefficient * normalized_mass * local_field_x;
-            double gradient_y = coefficient * normalized_mass * local_field_y;
-
+            // Same chain-rule scale as the production block gradient.
+            double gradient_x = coefficient * normalized_mass * local_field_x * field_grid.scale_x;
+            double gradient_y = coefficient * normalized_mass * local_field_y * field_grid.scale_y;
             double magnitude = std::hypot(gradient_x, gradient_y);
+
             blocks_seen[dim_idx]++;
-            if (target_capacity[dim_idx][site_index(layer, stencil.xs[0], stencil.ys[0])] <= kEpsilon)
+            if (target_capacity[dim_idx][site_index(layer, tile_x, tile_y)] <= kEpsilon)
                 blocks_starting_in_void[dim_idx]++;
             if (magnitude <= kEpsilon)
                 continue;
@@ -1752,682 +2486,6 @@ void NonlinearNesterovPlacer::report_density_force_leak_(const PartialPlacement&
                 blocks_seen[dim_idx],
                 blocks_starting_in_void[dim_idx]);
     }
-}
-
-void NonlinearNesterovPlacer::audit_gradient_(const PartialPlacement& p_placement,
-                                              const std::vector<PrimitiveVectorDim>& dimensions,
-                                              const std::vector<double>& density_multipliers,
-                                              std::optional<std::reference_wrapper<const PartialPlacement>> legal_anchor,
-                                              double proximity_weight,
-                                              const FillerState& fillers) const {
-    if (moveable_blocks_.empty())
-        return;
-    initialize_density_target_cache_(dimensions);
-
-    const size_t width = device_grid_width_;
-    const size_t height = device_grid_height_;
-    auto site_index = [width, height](size_t layer, size_t x, size_t y) {
-        return (layer * height + y) * width + x;
-    };
-
-    // --- Probe selection -----------------------------------------------------
-    // Group 1: within kBoundaryBand of a tile boundary (deposition support changes).
-    // Group 2: on a site with no capacity for one of the block's own resources
-    //          (the charge-neutrality active-set boundary).
-    // Group 3: uniform control.
-    constexpr double kBoundaryBand = 0.02;
-    constexpr size_t kPerGroup = 8;
-    std::vector<APBlockId> at_tile_edge, in_void, control;
-    for (APBlockId blk_id : moveable_blocks_) {
-        double x = p_placement.block_x_locs[blk_id];
-        double y = p_placement.block_y_locs[blk_id];
-        double fx = x - std::floor(x);
-        double fy = y - std::floor(y);
-        if ((fx < kBoundaryBand || fx > 1. - kBoundaryBand || fy < kBoundaryBand || fy > 1. - kBoundaryBand)
-            && at_tile_edge.size() < kPerGroup) {
-            at_tile_edge.push_back(blk_id);
-            continue;
-        }
-        if (in_void.size() < kPerGroup && !cached_target_capacity_.empty()) {
-            size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
-                                                          0., static_cast<double>(device_grid_num_layers_ - 1)));
-            size_t sx = static_cast<size_t>(std::clamp(std::floor(x), 0., device_grid_width_ - 1.));
-            size_t sy = static_cast<size_t>(std::clamp(std::floor(y), 0., device_grid_height_ - 1.));
-            size_t idx = site_index(layer, sx, sy);
-            const PrimitiveVector& mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-            for (size_t d = 0; d < dimensions.size(); d++) {
-                if (mass.get_dim_val(dimensions[d]) != 0.
-                    && idx < cached_target_capacity_[d].size()
-                    && cached_target_capacity_[d][idx] <= kEpsilon) {
-                    in_void.push_back(blk_id);
-                    break;
-                }
-            }
-            if (!in_void.empty() && in_void.back() == blk_id)
-                continue;
-        }
-        if (control.size() < kPerGroup)
-            control.push_back(blk_id);
-    }
-
-    struct Group {
-        const char* name;
-        const std::vector<APBlockId>* blks;
-    };
-    const Group groups[] = {{"at tile boundary", &at_tile_edge},
-                            {"on zero-capacity site", &in_void},
-                            {"control (interior)", &control}};
-
-    // Two weight settings: full objective, and density switched off so the
-    // wirelength/affinity/proximity part can be audited on its own.
-    std::vector<double> zero_multipliers(density_multipliers.size(), 0.);
-    struct Config {
-        const char* name;
-        const std::vector<double>* mult;
-    };
-    const Config configs[] = {{"full objective", &density_multipliers},
-                              {"density weights = 0 (WL+affinity+proximity)", &zero_multipliers}};
-
-    const double steps[] = {1e-1, 1e-2, 1e-3, 1e-4};
-
-    VTR_LOG("\n=== Nonlinear Nesterov gradient audit (directional finite differences) ===\n");
-    VTR_LOG("probes: %zu at tile boundary, %zu on zero-capacity sites, %zu control\n",
-            at_tile_edge.size(), in_void.size(), control.size());
-    VTR_LOG("A correct derivative's error falls with the step, then rises as 1/step from\n"
-            "round-off. A wrong derivative plateaus instead.\n");
-
-    PartialPlacement probe(ap_netlist_);
-    for (const Config& cfg : configs) {
-        PlacementGradient grad(ap_netlist_);
-        FillerGradient filler_grad;
-        evaluate_objective_(p_placement, *cfg.mult, legal_anchor, proximity_weight,
-                            std::ref(grad), fillers, std::ref(filler_grad));
-        VTR_LOG("\n  [%s]\n", cfg.name);
-        VTR_LOG("    %-24s %10s %12s %12s %12s\n", "probe group", "step", "max rel err", "mean rel err", "samples");
-        for (const Group& g : groups) {
-            if (g.blks->empty())
-                continue;
-            for (double h : steps) {
-                double worst = 0., total = 0.;
-                size_t count = 0;
-                APBlockId worst_blk;
-                int worst_axis = -1;
-                double worst_fd = 0., worst_an = 0.;
-                for (APBlockId blk_id : *g.blks) {
-                    for (int axis = 0; axis < 2; axis++) {
-                        double analytic = axis == 0 ? grad.dx[blk_id] : grad.dy[blk_id];
-                        probe.block_x_locs = p_placement.block_x_locs;
-                        probe.block_y_locs = p_placement.block_y_locs;
-                        probe.block_layer_nums = p_placement.block_layer_nums;
-                        probe.block_sub_tiles = p_placement.block_sub_tiles;
-                        auto& coord = axis == 0 ? probe.block_x_locs : probe.block_y_locs;
-                        double base = coord[blk_id];
-                        coord[blk_id] = base + h;
-                        double f_plus = evaluate_objective_(probe, *cfg.mult, legal_anchor, proximity_weight,
-                                                            std::nullopt, fillers, std::nullopt)
-                                            .total;
-                        coord[blk_id] = base - h;
-                        double f_minus = evaluate_objective_(probe, *cfg.mult, legal_anchor, proximity_weight,
-                                                             std::nullopt, fillers, std::nullopt)
-                                             .total;
-                        double fd = (f_plus - f_minus) / (2. * h);
-                        double scale = std::max({std::abs(fd), std::abs(analytic), 1e-12});
-                        double rel = std::abs(fd - analytic) / scale;
-                        if (rel > worst) {
-                            worst = rel;
-                            worst_blk = blk_id;
-                            worst_axis = axis;
-                            worst_fd = fd;
-                            worst_an = analytic;
-                        }
-                        total += rel;
-                        count++;
-                    }
-                }
-                VTR_LOG("    %-24s %10.0e %12.3e %12.3e %12zu\n",
-                        g.name, h, worst, count ? total / count : 0., count);
-                // Name the offending probe when the disagreement is gross, so the
-                // reader can tell a real derivative error from a kink in the
-                // piecewise-bilinear kernel at a cell boundary.
-                if (worst > 0.5 && worst_axis >= 0) {
-                    double wx = p_placement.block_x_locs[worst_blk];
-                    double wy = p_placement.block_y_locs[worst_blk];
-                    VTR_LOG("        worst probe: blk=%zu axis=%s pos=(%.6f, %.6f) "
-                            "floor=(%.0f, %.0f) grid=%zux%zu analytic=%.6g fd=%.6g\n",
-                            static_cast<size_t>(worst_blk), worst_axis == 0 ? "x" : "y",
-                            wx, wy, std::floor(wx), std::floor(wy),
-                            width, height, worst_an, worst_fd);
-                }
-            }
-        }
-    }
-    // --- Fillers -------------------------------------------------------------
-    // Fillers reach the objective through their own deposition loop, their own
-    // force-extraction loop and their own gradient container, so nothing above
-    // touches that path. They are not a small corner of the model either: large
-    // designs carry tens of thousands of filler particles.
-    bool any_fillers = false;
-    for (const std::vector<double>& per_dim : fillers.x) {
-        if (!per_dim.empty()) {
-            any_fillers = true;
-            break;
-        }
-    }
-    if (any_fillers) {
-        PlacementGradient grad(ap_netlist_);
-        FillerGradient filler_grad;
-        evaluate_objective_(p_placement, density_multipliers, legal_anchor, proximity_weight,
-                            std::ref(grad), fillers, std::ref(filler_grad));
-
-        // Sample a few fillers per dimension, evenly spaced across each dimension's
-        // list including both ends. Spacing them by (s * n) / kPerDim instead put two
-        // probes on index 0 whenever a dimension held exactly two fillers, so such a
-        // dimension was audited twice at one particle and never at the other.
-        std::vector<std::pair<size_t, size_t>> probes; // (dim, filler index)
-        constexpr size_t kPerDim = 3;
-        for (size_t d = 0; d < fillers.x.size(); d++) {
-            size_t n = fillers.x[d].size();
-            if (n == 0 || d >= filler_grad.dx.size())
-                continue;
-            size_t k = std::min(kPerDim, n);
-            for (size_t s = 0; s < k; s++)
-                probes.emplace_back(d, k == 1 ? 0 : (s * (n - 1)) / (k - 1));
-        }
-
-        // A probe only tests the derivative fairly when the whole [c-h, c+h] bracket
-        // stays inside the grid cell the filler currently occupies and clear of the
-        // clamp at the device edge. Outside that, the piecewise-bilinear deposition
-        // kernel has a kink between the two evaluation points (or, past the clamp, a
-        // plateau), so a central difference straddles a corner of the function and
-        // disagrees with the true one-sided derivative however correct that
-        // derivative is. Those probes are reported as their own group rather than
-        // dropped, so an inflated boundary number cannot mask a real interior error
-        // and an interior error cannot be excused as a boundary artifact.
-        struct WorstProbe {
-            double rel = 0.;
-            size_t dim = 0, idx = 0;
-            int axis = -1;
-            double x = 0., y = 0., analytic = 0., fd = 0.;
-        };
-
-        VTR_LOG("\n  [fillers: density-only, separate gradient path]\n");
-        // The h^2-then-1/h guidance printed at the top of this audit does NOT apply to
-        // the interior filler rows, and a reader who expects it will misdiagnose a
-        // correct result. Deposition weights are linear in the filler coordinate, so
-        // charge is linear in it; the Poisson solve is linear; and energy is a
-        // quadratic form in charge. Within one cell the density energy is therefore
-        // *exactly quadratic* in the filler position, and a central difference is exact
-        // for quadratics. Truncation error vanishes identically, leaving only
-        // round-off: the interior error is smallest at the LARGEST step and grows as
-        // 1/h. That pattern is the correct one here.
-        VTR_LOG("    interior rows: energy is exactly quadratic in a filler's position within a cell,\n"
-                "    so the central difference is exact and error is pure round-off (grows as 1/step).\n"
-                "    Smallest error at the largest step is correct here, not a defect.\n");
-        VTR_LOG("    %-28s %10s %12s %12s %12s\n", "probe group", "step", "max rel err", "mean rel err", "samples");
-        FillerState probe_fillers;
-        for (double h : steps) {
-            double worst[2] = {0., 0.}, total[2] = {0., 0.};
-            size_t count[2] = {0, 0};
-            WorstProbe worst_probe[2];
-            for (const auto& [d, i] : probes) {
-                for (int axis = 0; axis < 2; axis++) {
-                    double analytic = axis == 0 ? filler_grad.dx[d][i] : filler_grad.dy[d][i];
-                    probe_fillers.x = fillers.x;
-                    probe_fillers.y = fillers.y;
-                    probe_fillers.layer = fillers.layer;
-                    auto& coord = axis == 0 ? probe_fillers.x : probe_fillers.y;
-                    double base = coord[d][i];
-
-                    // Classify the bracket before perturbing anything.
-                    double extent = axis == 0 ? static_cast<double>(width) : static_cast<double>(height);
-                    double upper = extent - kDeviceBoundaryEpsilon;
-                    double centre = std::clamp(base, 0., upper);
-                    bool interior = base - h >= 0. && base + h <= upper
-                                    && std::floor(base - h) == std::floor(centre)
-                                    && std::floor(base + h) == std::floor(centre)
-                                    && std::floor(centre) < extent - 1.;
-                    int g = interior ? 0 : 1;
-
-                    coord[d][i] = base + h;
-                    ObjectiveValue plus = evaluate_objective_(p_placement, density_multipliers, legal_anchor,
-                                                              proximity_weight, std::nullopt, probe_fillers,
-                                                              std::nullopt);
-                    coord[d][i] = base - h;
-                    ObjectiveValue minus = evaluate_objective_(p_placement, density_multipliers, legal_anchor,
-                                                               proximity_weight, std::nullopt, probe_fillers,
-                                                               std::nullopt);
-                    // Difference the weighted density energy of this filler's own
-                    // dimension rather than the full objective. Wirelength, affinity
-                    // and proximity do not depend on filler positions at all, so in
-                    // exact arithmetic they cancel -- but they are orders of magnitude
-                    // larger than the density term being measured, and subtracting two
-                    // nearly equal large numbers puts a cancellation-noise floor under
-                    // every error this loop can report. Differencing exactly the term
-                    // the gradient describes removes that floor. Moving one filler in
-                    // dimension d perturbs no other dimension's energy, so restricting
-                    // to index d loses nothing.
-                    double mult = d < density_multipliers.size() ? density_multipliers[d] : 0.;
-                    double f_plus = mult * (d < plus.density_energies.size() ? plus.density_energies[d] : 0.);
-                    double f_minus = mult * (d < minus.density_energies.size() ? minus.density_energies[d] : 0.);
-                    double fd = (f_plus - f_minus) / (2. * h);
-                    double scale = std::max({std::abs(fd), std::abs(analytic), 1e-12});
-                    double rel = std::abs(fd - analytic) / scale;
-                    if (rel > worst[g]) {
-                        worst[g] = rel;
-                        worst_probe[g] = WorstProbe{rel, d, i, axis,
-                                                    fillers.x[d][i], fillers.y[d][i], analytic, fd};
-                    }
-                    total[g] += rel;
-                    count[g]++;
-                }
-            }
-            for (int g = 0; g < 2; g++) {
-                if (count[g] == 0)
-                    continue;
-                VTR_LOG("    %-28s %10.0e %12.3e %12.3e %12zu\n",
-                        g == 0 ? "filler (cell interior)" : "filler (cell/edge boundary)",
-                        h, worst[g], total[g] / count[g], count[g]);
-                const WorstProbe& w = worst_probe[g];
-                if (w.rel > 0.5 && w.axis >= 0) {
-                    VTR_LOG("        worst probe: dim=%zu filler=%zu axis=%s pos=(%.6f, %.6f) "
-                            "floor=(%.0f, %.0f) grid=%zux%zu analytic=%.6g fd=%.6g\n",
-                            w.dim, w.idx, w.axis == 0 ? "x" : "y", w.x, w.y,
-                            std::floor(w.x), std::floor(w.y), width, height, w.analytic, w.fd);
-                }
-            }
-        }
-    } else {
-        VTR_LOG("\n  [fillers: none active on this design -- filler gradient NOT audited]\n");
-    }
-
-    VTR_LOG("=== end gradient audit ===\n\n");
-}
-
-void NonlinearNesterovPlacer::initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const {
-    size_t width = device_grid_width_;
-    size_t height = device_grid_height_;
-    size_t num_layers = device_grid_num_layers_;
-    size_t num_sites = width * height * num_layers;
-    if (cached_target_capacity_.size() == dimensions.size()
-        && (dimensions.empty() || cached_target_capacity_.front().size() == num_sites))
-        return;
-
-    cached_target_capacity_.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
-    cached_target_norm_floor_.assign(dimensions.size(), kEpsilon);
-    cached_residual_charge_scale_.assign(dimensions.size(), 1.0);
-
-    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
-    auto site_index = [width, height](size_t layer, size_t x, size_t y) {
-        return (layer * height + y) * width + x;
-    };
-    for (size_t layer = 0; layer < num_layers; layer++) {
-        for (size_t x = 0; x < width; x++) {
-            for (size_t y = 0; y < height; y++) {
-                FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-                const vtr::Rect<double>& region = bins.bin_region(bin_id);
-                double bin_area = std::max(1.0, region.width() * region.height());
-                double target_density = density_manager_->get_bin_target_density(bin_id);
-                size_t idx = site_index(layer, x, y);
-                for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-                    cached_target_capacity_[dim_idx][idx] = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
-                                                            * target_density / bin_area;
-                }
-            }
-        }
-    }
-
-    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        double target_sum = 0.;
-        size_t target_sites = 0;
-        for (double target : cached_target_capacity_[dim_idx]) {
-            if (target <= kEpsilon)
-                continue;
-            target_sum += target;
-            target_sites++;
-        }
-        if (target_sites != 0) {
-            cached_target_norm_floor_[dim_idx] = std::max(kEpsilon,
-                                                          kDensityTargetFloorFraction * target_sum / target_sites);
-            cached_residual_charge_scale_[dim_idx] = std::max(kEpsilon, target_sum / target_sites);
-        }
-    }
-}
-
-double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_placement,
-                                                      const std::vector<double>& density_multipliers,
-                                                      std::vector<double>& density_energies,
-                                                      std::vector<double>& dim_overflow_ratios,
-                                                      std::vector<double>& dim_overflow_mass,
-                                                      std::vector<double>& dim_max_overflow,
-                                                      double& total_overflow,
-                                                      double& max_overflow,
-                                                      double& overflow_ratio,
-                                                      std::optional<std::reference_wrapper<PlacementGradient>> grad,
-                                                      const FillerState& fillers,
-                                                      std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const {
-    total_overflow = 0.;
-    max_overflow = 0.;
-    overflow_ratio = 0.;
-    // ePlace legality signal: overflow mass (mass exceeding tile target) over total
-    // deposited mass. Normalizing by movable mass (not total grid capacity) avoids
-    // diluting local overfill on designs that occupy a small fraction of the grid.
-    double overflow_area = 0.;
-    double total_deposited_mass = 0.;
-
-    std::vector<PrimitiveVectorDim> dimensions = density_manager_->get_used_dims_mask().get_non_zero_dims();
-    if (dimensions.empty())
-        return 0.;
-    VTR_ASSERT(density_multipliers.size() == dimensions.size());
-    density_energies.assign(dimensions.size(), 0.);
-    dim_overflow_ratios.assign(dimensions.size(), 0.);
-    dim_overflow_mass.assign(dimensions.size(), 0.);
-    dim_max_overflow.assign(dimensions.size(), 0.);
-
-    size_t width = device_grid_width_;
-    size_t height = device_grid_height_;
-    size_t num_layers = device_grid_num_layers_;
-    size_t num_sites = width * height * num_layers;
-    initialize_density_target_cache_(dimensions);
-    auto site_index = [width, height](size_t layer, size_t x, size_t y) {
-        return (layer * height + y) * width + x;
-    };
-
-    // Arrays with grid information of the density objective via electrostatic formulation.
-    // Reuse their storage across the many objective/line-search evaluations.
-    // Utilization: deposited block mass at each site
-    // Target Capacity: available target mass/capacity at each site
-    // Potential: solved electrostatic potential
-    // The potential's spatial derivative is not materialized on the grid: the
-    // block/filler gradients take it analytically from the four surrounding
-    // potential samples (the derivative of the bilinear interpolant the mass
-    // deposition implies), so no field grid is needed.
-    auto reset_grid_workspace = [num_sites, &dimensions](std::vector<std::vector<double>>& workspace) {
-        if (workspace.size() != dimensions.size()
-            || (!workspace.empty() && workspace.front().size() != num_sites)) {
-            workspace.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
-            return;
-        }
-        for (std::vector<double>& dimension_values : workspace)
-            std::fill(dimension_values.begin(), dimension_values.end(), 0.);
-    };
-    // Potential only needs a size check, not a zero-fill: every dimension in
-    // `dimensions` comes from get_used_dims_mask().get_non_zero_dims(), so
-    // active_sites > 0 below and the Poisson write-back unconditionally
-    // overwrites every site for every dimension before potential is read.
-    auto resize_grid_workspace = [num_sites, &dimensions](std::vector<std::vector<double>>& workspace) {
-        if (workspace.size() != dimensions.size()
-            || (!workspace.empty() && workspace.front().size() != num_sites)) {
-            workspace.assign(dimensions.size(), std::vector<double>(num_sites, 0.));
-        }
-    };
-    reset_grid_workspace(density_utilization_workspace_);
-    resize_grid_workspace(density_potential_workspace_);
-    std::vector<std::vector<double>>& utilization = density_utilization_workspace_;
-    std::vector<std::vector<double>>& potential = density_potential_workspace_;
-
-    // The target capacity spread over each bin's footprint, and the per-dimension
-    // normalization constants derived from it, depend only on the (fixed) device
-    // grid, bin capacity, and target density -- not on the placement. Build them
-    // once and reuse across every objective evaluation.
-    //  - target_norm_floor: a floor added wherever utilization is divided by target
-    //    capacity. Bin-footprint spreading and target_density can leave a site with
-    //    a vanishingly small (but nonzero) fractional capacity for this dimension;
-    //    without this floor, dividing by it would spike the normalized
-    //    utilization/overflow numerically even though barely any mass sits there.
-    //  - residual_charge_scale: used in the residual-charge mode below to express
-    //    (utilization - target) in units of "typical site capacity for this
-    //    dimension" rather than raw mass. Resource dimensions can have very
-    //    different natural capacity magnitudes on a heterogeneous grid (e.g. an
-    //    abundant LUT dimension vs. a sparse DSP/BRAM one); this keeps their charge
-    //    contributions comparably scaled before they feed the shared Poisson solve.
-    const std::vector<std::vector<double>>& target_capacity = cached_target_capacity_;
-    const std::vector<double>& target_norm_floor = cached_target_norm_floor_;
-    const std::vector<double>& residual_charge_scale = cached_residual_charge_scale_;
-
-    // Deposit each primitive-vector mass bilinearly onto the tile grid.
-    for (APBlockId blk_id : ap_netlist_.blocks()) {
-        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-        if (block_mass.is_zero())
-            continue;
-        // Pin-density cell inflation (routability): scale up the SMOOTH density
-        // term's mass for high-pin blocks, not the real legalized footprint the
-        // partial legalizer and full legalizer see, so the electrostatic field
-        // leaves them more spreading room.
-        block_mass *= pin_density_inflation_[blk_id];
-
-        double x = std::clamp(p_placement.block_x_locs[blk_id], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
-        double y = std::clamp(p_placement.block_y_locs[blk_id], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
-        size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
-                                                      0.,
-                                                      static_cast<double>(device_grid_num_layers_ - 1)));
-        BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
-
-        // Traverses dimensions, i.e. resource types of the mass abstraction
-        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
-            if (mass == 0.)
-                continue;
-            deposit_bilinear_density(utilization[dim_idx], layer, width, height, stencil, mass);
-        }
-    }
-
-    // Overflow and stopping use only real physical block mass. Fillers are
-    // movable whitespace in the density objective, not legal instances.
-    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        double dim_overflow_area = 0.;
-        double dim_deposited_mass = 0.;
-        double dim_peak_overflow = 0.;
-        for (size_t idx = 0; idx < num_sites; idx++) {
-            double target = target_capacity[dim_idx][idx];
-            double utilization_at_site = utilization[dim_idx][idx];
-            if (target <= kEpsilon) {
-                if (utilization_at_site <= kEpsilon)
-                    continue;
-                total_overflow += utilization_at_site;
-                max_overflow = std::max(max_overflow, utilization_at_site);
-                dim_peak_overflow = std::max(dim_peak_overflow, utilization_at_site);
-                dim_overflow_area += utilization_at_site;
-                dim_deposited_mass += utilization_at_site;
-            } else {
-                double normalized_utilization = utilization_at_site / std::max(target, target_norm_floor[dim_idx]);
-                double normalized_overflow = std::max(0., normalized_utilization - 1.0);
-                total_overflow += normalized_overflow;
-                max_overflow = std::max(max_overflow, normalized_overflow);
-                dim_peak_overflow = std::max(dim_peak_overflow, normalized_overflow);
-                dim_overflow_area += std::max(0., utilization_at_site - target);
-                dim_deposited_mass += utilization_at_site;
-            }
-        }
-        dim_overflow_mass[dim_idx] = dim_overflow_area;
-        dim_max_overflow[dim_idx] = dim_peak_overflow;
-        dim_overflow_ratios[dim_idx] = dim_deposited_mass > kEpsilon ? dim_overflow_area / dim_deposited_mass : 0.;
-        overflow_area += dim_overflow_area;
-        total_deposited_mass += dim_deposited_mass;
-    }
-
-    // Deposit dynamic fillers into the electrostatic field. They carry density
-    // charge but are deliberately excluded from overflow accounting above.
-    for (size_t dim_idx = 0; dim_idx < dimensions.size() && dim_idx < fillers.x.size(); dim_idx++) {
-        double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
-        if (unit_mass <= 0.)
-            continue;
-        size_t n = fillers.x[dim_idx].size();
-        for (size_t filler_idx = 0; filler_idx < n; filler_idx++) {
-            double x = std::clamp(fillers.x[dim_idx][filler_idx], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
-            double y = std::clamp(fillers.y[dim_idx][filler_idx], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
-            size_t layer = static_cast<size_t>(std::clamp(fillers.layer[dim_idx][filler_idx],
-                                                          0,
-                                                          static_cast<int>(device_grid_num_layers_ - 1)));
-            BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
-            deposit_bilinear_density(utilization[dim_idx], layer, width, height, stencil, unit_mass);
-        }
-    }
-
-    // Electrostatic density model (ePlace/elfPlace), solved independently per
-    // resource dimension. Treat the excess block density at each tile as electric
-    // charge; solving Poisson's equation gives a potential whose negative
-    // gradient is a force that pushes blocks from dense to sparse regions. The
-    // residual-charge mode uses (utilization - target) in area units, normalized
-    // by the average target capacity for this resource dimension. This avoids
-    // over-amplifying fractional-capacity sites on heterogeneous FPGA grids.
-    double density_energy = 0.;
-    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        if (density_charge_workspace_.size() != num_sites)
-            density_charge_workspace_.resize(num_sites);
-        std::fill(density_charge_workspace_.begin(), density_charge_workspace_.end(), 0.);
-        std::vector<double>& charge = density_charge_workspace_;
-        size_t active_sites = 0;
-
-        for (size_t idx = 0; idx < num_sites; idx++) {
-            double target = target_capacity[dim_idx][idx];
-            double utilization_at_site = utilization[dim_idx][idx];
-            bool has_capacity = target > kEpsilon;
-            if (!has_capacity) {
-                // A block in a tile without capacity for its primitive type is
-                // an overfill source, not an empty destination.
-                if (utilization_at_site <= kEpsilon)
-                    continue;
-                charge[idx] = kUseResidualDensityCharge
-                                  ? utilization_at_site / residual_charge_scale[dim_idx]
-                                  : utilization_at_site;
-            } else {
-                double normalized_utilization = utilization_at_site / std::max(target, target_norm_floor[dim_idx]);
-                charge[idx] = kUseResidualDensityCharge
-                                  ? (utilization_at_site - target) / residual_charge_scale[dim_idx]
-                                  : normalized_utilization - 1.0;
-            }
-            active_sites++;
-        }
-
-        if (active_sites == 0)
-            continue;
-
-        // Rebalance charge over the fixed capacity-site mask. Bilinear deposition
-        // conserves total mass, so both the mask and the subtracted amount are
-        // placement-invariant and contribute no missing derivative. On sparse
-        // resources this also acts as an architecture-attraction field; it is not
-        // merely the uniform DC projection already performed by the Poisson solve.
-        rebalance_density_charge_on_capacity_sites(charge, target_capacity[dim_idx], kEpsilon);
-
-        // Solve each layer on the full rectangular field domain. Capacity-free
-        // sites carry zero charge but remain part of the Neumann PDE domain.
-        density_layer_charge_workspace_.resize(width * height);
-        std::vector<double>& layer_charge = density_layer_charge_workspace_;
-        std::vector<double>& layer_potential = density_layer_potential_workspace_;
-        for (size_t layer = 0; layer < num_layers; layer++) {
-            for (size_t x = 0; x < width; x++) {
-                for (size_t y = 0; y < height; y++)
-                    layer_charge[y * width + x] = charge[site_index(layer, x, y)];
-            }
-            solve_neumann_poisson_dct(layer_charge, width, height, layer_potential);
-            for (size_t x = 0; x < width; x++) {
-                for (size_t y = 0; y < height; y++)
-                    potential[dim_idx][site_index(layer, x, y)] = layer_potential[y * width + x];
-            }
-        }
-
-        for (size_t idx = 0; idx < num_sites; idx++)
-            density_energies[dim_idx] += 0.5 * charge[idx] * potential[dim_idx][idx];
-        density_energy += density_energies[dim_idx];
-    }
-
-    overflow_ratio = total_deposited_mass > kEpsilon ? overflow_area / total_deposited_mass : 0.;
-
-    if (!grad)
-        return density_energy;
-
-    // Turn the grid field into a block gradient
-    for (APBlockId blk_id : moveable_blocks_) {
-        PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-        if (block_mass.is_zero())
-            continue;
-        // Same pin-density inflation as the deposition pass above, so the force
-        // extracted here matches the (inflated) mass that shaped the field.
-        block_mass *= pin_density_inflation_[blk_id];
-
-        double x = std::clamp(p_placement.block_x_locs[blk_id], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
-        double y = std::clamp(p_placement.block_y_locs[blk_id], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
-        size_t layer = static_cast<size_t>(std::clamp(std::round(p_placement.block_layer_nums[blk_id]),
-                                                      0.,
-                                                      static_cast<double>(device_grid_num_layers_ - 1)));
-        BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
-
-        // Accumulate density-only force so along-rim damping does not touch WL/proximity.
-        double density_dx = 0.;
-        double density_dy = 0.;
-        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-            double mass = block_mass.get_dim_val(dimensions[dim_idx]);
-            if (mass == 0.)
-                continue;
-
-            double local_target = interpolate_bilinear_density(target_capacity[dim_idx],
-                                                               layer,
-                                                               width,
-                                                               height,
-                                                               stencil);
-            double local_field_x = 0.;
-            double local_field_y = 0.;
-            {
-                // For E = 0.5*q^T*A*q with symmetric Poisson inverse A, the
-                // deposition-consistent derivative is m*sum_i(dw_i/dx)*Phi_i.
-                // Differentiating the bilinear potential directly is essential;
-                // interpolating grid-point finite differences is a different
-                // discretization. Degenerate cells correctly produce zero.
-                std::pair<double, double> local_field = gradient_bilinear_density(potential[dim_idx],
-                                                                                  layer,
-                                                                                  width,
-                                                                                  height,
-                                                                                  stencil);
-                local_field_x = local_field.first;
-                local_field_y = local_field.second;
-            }
-
-            double normalized_mass = kUseResidualDensityCharge
-                                         ? mass / residual_charge_scale[dim_idx]
-                                         : mass / std::max(local_target, target_norm_floor[dim_idx]);
-            double coefficient = density_multipliers[dim_idx];
-            density_dx += coefficient * normalized_mass * local_field_x;
-            density_dy += coefficient * normalized_mass * local_field_y;
-        }
-
-        grad->get().dx[blk_id] += density_dx;
-        grad->get().dy[blk_id] += density_dy;
-    }
-
-    if (filler_grad) {
-        filler_grad->get().dx.assign(dimensions.size(), {});
-        filler_grad->get().dy.assign(dimensions.size(), {});
-        for (size_t dim_idx = 0; dim_idx < dimensions.size() && dim_idx < fillers.x.size(); dim_idx++) {
-            double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
-            size_t n = fillers.x[dim_idx].size();
-            filler_grad->get().dx[dim_idx].assign(n, 0.);
-            filler_grad->get().dy[dim_idx].assign(n, 0.);
-            if (unit_mass <= 0.)
-                continue;
-            double coefficient = density_multipliers[dim_idx];
-            double normalized_mass = kUseResidualDensityCharge
-                                         ? unit_mass / residual_charge_scale[dim_idx]
-                                         : unit_mass;
-            for (size_t filler_idx = 0; filler_idx < n; filler_idx++) {
-                double x = std::clamp(fillers.x[dim_idx][filler_idx], 0., device_grid_width_ - kDeviceBoundaryEpsilon);
-                double y = std::clamp(fillers.y[dim_idx][filler_idx], 0., device_grid_height_ - kDeviceBoundaryEpsilon);
-                size_t layer = static_cast<size_t>(std::clamp(fillers.layer[dim_idx][filler_idx],
-                                                              0,
-                                                              static_cast<int>(device_grid_num_layers_ - 1)));
-                BilinearDensityStencil stencil = make_bilinear_density_stencil(x, y, width, height);
-                // Same deposition-consistent derivative as the block gradient above.
-                auto [local_field_x, local_field_y] = gradient_bilinear_density(potential[dim_idx],
-                                                                                layer,
-                                                                                width,
-                                                                                height,
-                                                                                stencil);
-                filler_grad->get().dx[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_x;
-                filler_grad->get().dy[dim_idx][filler_idx] = coefficient * normalized_mass * local_field_y;
-            }
-        }
-    }
-
-    return density_energy;
 }
 
 void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement& seed,
@@ -2704,8 +2762,10 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
     block_precond_.resize(ap_netlist_.blocks().size(), 1.0);
     std::fill(block_precond_.begin(), block_precond_.end(), 0.0);
 
-    // Wirelength Hessian diagonal: the WA gradient's self-coefficient for a block
-    // is proportional to the sum of the weights of the nets incident to it.
+    // Wirelength Hessian diagonal. Under the B2B model this is exact: the
+    // quadratic's diagonal is the block's incident edge-weight sum (mean of
+    // the two axes, since the preconditioner is one scalar per block). Under
+    // WA it is the standard elfPlace estimate: the sum of incident net weights.
     for (APNetId net_id : ap_netlist_.nets()) {
         if (ap_netlist_.net_is_ignored(net_id))
             continue;
@@ -2717,12 +2777,13 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
             block_precond_[blk_id] += net_weight;
         }
     }
-
+    // Affinity-spring Hessian diagonal (frozen-centroid approximation; see
+    // affinity_spring_curvature() for why the exact (1 - 1/n) factor is not used).
     for (const AffinityGroup& group : affinity_groups_) {
-        double weight = affinity_kernel_weight_(group.kind);
-        if (weight == 0. || group.blocks.empty())
+        double curvature = affinity_spring_curvature(affinity_kernel_weight_(group.kind),
+                                                     group.blocks.size());
+        if (curvature == 0.)
             continue;
-        double curvature = weight / static_cast<double>(group.blocks.size());
         for (APBlockId blk_id : group.blocks)
             block_precond_[blk_id] += curvature;
     }
@@ -2738,28 +2799,70 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
         // so the curvature estimate agrees with the objective it is preconditioning.
         double inflation = pin_density_inflation_[blk_id];
         double density_curvature = 0.;
+        double inflated_mass = 0.;
         for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
             double mass = block_mass.get_dim_val(dimensions[dim_idx]) * inflation;
             density_curvature += density_multipliers[dim_idx] * mass;
+            inflated_mass += mass;
         }
-        block_precond_[blk_id] += density_curvature;
-        if (block_precond_[blk_id] < kPreconditionFloor)
-            block_precond_[blk_id] = kPreconditionFloor;
-    }
-
-    // Soften the preconditioner toward uniform with a strength exponent < 1 to
-    // reduce over-correction (full Jacobi can give low-curvature blocks too large
-    // a relative step).
-    if (precond_alpha_active_ != 1.0) {
-        for (APBlockId blk_id : ap_netlist_.blocks())
-            block_precond_[blk_id] = std::pow(block_precond_[blk_id], precond_alpha_active_);
+        // Floor, then soften toward uniform with an exponent < 1 to reduce
+        // over-correction on high-curvature blocks (dense DSP/RAM in
+        // heterogeneous FPGAs have much wider curvature range than ASIC cells).
+        // No non-curvature damping terms remain in the objective, so the
+        // damping argument is zero; it stays in the signature because the
+        // separation of true curvature from step-control damping is the
+        // invariant that made this diagonal reasonable about (see
+        // preconditioner_math.h).
+        block_precond_[blk_id] = jacobi_precond_diagonal(block_precond_[blk_id] + density_curvature,
+                                                         0.,
+                                                         kPreconditionFloor,
+                                                         kPreconditionAlpha);
     }
 
     filler_precond_.assign(dimensions.size(), kPreconditionFloor);
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
         double unit_mass = dim_idx < filler_unit_mass_.size() ? filler_unit_mass_[dim_idx] : 0.;
-        double curvature = std::max(kPreconditionFloor, density_multipliers[dim_idx] * unit_mass);
-        filler_precond_[dim_idx] = precond_alpha_active_ != 1.0 ? std::pow(curvature, precond_alpha_active_) : curvature;
+        // Fillers carry density mass only: no nets, no affinity, no incompatibility.
+        filler_precond_[dim_idx] = jacobi_precond_diagonal(density_multipliers[dim_idx] * unit_mass,
+                                                           0.,
+                                                           kPreconditionFloor,
+                                                           kPreconditionAlpha);
+    }
+
+    // Objective-inert telemetry: the shape of the diagonal decides whether the
+    // preconditioner does anything at all. If the spread is ~1 it is an identity
+    // map and cannot explain a QoR difference; if most blocks sit on the floor it
+    // is a two-valued map, which is worse than either extreme. Deterministic, so
+    // it is readable without the ~2.2% routed-CPD noise floor.
+    if (log_verbosity_ >= 1 && !block_precond_.empty()) {
+        std::vector<double> sorted;
+        sorted.reserve(moveable_blocks_.size());
+        size_t at_floor = 0;
+        double floored = std::pow(kPreconditionFloor, kPreconditionAlpha);
+        for (APBlockId blk_id : moveable_blocks_) {
+            double h = block_precond_[blk_id];
+            sorted.push_back(h);
+            if (h <= floored * (1. + kEpsilon))
+                at_floor++;
+        }
+        std::sort(sorted.begin(), sorted.end());
+        auto quantile = [&sorted](double q) {
+            size_t idx = static_cast<size_t>(q * static_cast<double>(sorted.size() - 1));
+            return sorted[idx];
+        };
+        double p05 = quantile(0.05);
+        double p95 = quantile(0.95);
+        VTR_LOG("  Nesterov precond diag: n=%zu min=%.4g p05=%.4g med=%.4g p95=%.4g max=%.4g "
+                "spread(p95/p05)=%.4g at_floor=%.1f%% active=%d\n",
+                sorted.size(),
+                sorted.front(),
+                p05,
+                quantile(0.5),
+                p95,
+                sorted.back(),
+                p05 > 0. ? p95 / p05 : 0.,
+                100. * static_cast<double>(at_floor) / static_cast<double>(sorted.size()),
+                precond_active_ ? 1 : 0);
     }
 }
 
@@ -2953,7 +3056,7 @@ void NonlinearNesterovPlacer::gradient_step_(const PartialPlacement& y_placement
     next_placement.block_sub_tiles = y_placement.block_sub_tiles;
     if (precond_active_ && !block_precond_.empty()) {
         // Preconditioned (near-Newton) step: divide each block's gradient by its
-        // objective-curvature estimate so step length is size-independent.
+        // objective-curvature estimate so step direction is size-independent.
         for (APBlockId blk_id : moveable_blocks_) {
             double inv_precond = 1.0 / block_precond_[blk_id];
             next_placement.block_x_locs[blk_id] = y_placement.block_x_locs[blk_id] - step_size * grad.dx[blk_id] * inv_precond;

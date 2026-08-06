@@ -204,6 +204,106 @@ std::pair<double, double> gradient_bilinear_density(const std::vector<double>& g
     return {dx, dy};
 }
 
+size_t select_field_grid_stride(const std::vector<bool>& axis_has_capacity,
+                                size_t min_bins) {
+    size_t extent = axis_has_capacity.size();
+    if (extent == 0)
+        return 1;
+
+    size_t capacity_count = 0;
+    for (bool has_capacity : axis_has_capacity) {
+        if (has_capacity)
+            capacity_count++;
+    }
+    if (capacity_count == 0)
+        return 1;
+
+    double pitch = static_cast<double>(extent) / static_cast<double>(capacity_count);
+    size_t stride = static_cast<size_t>(std::max<long long>(1, std::llround(pitch)));
+    // Never coarsen past min_bins bins, so a resource confined to one or two
+    // tile columns still keeps a field with directional information.
+    size_t max_stride = std::max<size_t>(1, extent / std::max<size_t>(1, min_bins));
+    return std::min(stride, max_stride);
+}
+
+ResourceFieldGrid build_resource_field_grid(const std::vector<double>& fine_target_capacity,
+                                            size_t width,
+                                            size_t height,
+                                            size_t num_layers,
+                                            double capacity_epsilon,
+                                            double target_floor_fraction,
+                                            size_t min_bins) {
+    VTR_ASSERT(width > 0);
+    VTR_ASSERT(height > 0);
+    VTR_ASSERT(num_layers > 0);
+    VTR_ASSERT(fine_target_capacity.size() == width * height * num_layers);
+
+    std::vector<bool> column_has_capacity(width, false);
+    std::vector<bool> row_has_capacity(height, false);
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t y = 0; y < height; y++) {
+            for (size_t x = 0; x < width; x++) {
+                if (fine_target_capacity[density_site_index(layer, x, y, width, height)] <= capacity_epsilon)
+                    continue;
+                column_has_capacity[x] = true;
+                row_has_capacity[y] = true;
+            }
+        }
+    }
+
+    size_t stride_x = select_field_grid_stride(column_has_capacity, min_bins);
+    size_t stride_y = select_field_grid_stride(row_has_capacity, min_bins);
+
+    ResourceFieldGrid grid;
+    grid.num_layers = num_layers;
+    grid.width = std::max<size_t>(1, (width + stride_x - 1) / stride_x);
+    grid.height = std::max<size_t>(1, (height + stride_y - 1) / stride_y);
+    // Map the tile grid affinely onto the field grid so both cover the same
+    // device extent. A stride of one gives scale 1 and reproduces the tile grid
+    // site for site.
+    grid.scale_x = width > 1 ? static_cast<double>(grid.width - 1) / static_cast<double>(width - 1) : 0.;
+    grid.scale_y = height > 1 ? static_cast<double>(grid.height - 1) / static_cast<double>(height - 1) : 0.;
+    grid.spacing_x = grid.scale_x > 0. ? 1. / grid.scale_x : 1.;
+    grid.spacing_y = grid.scale_y > 0. ? 1. / grid.scale_y : 1.;
+
+    // Aggregate tile capacity onto the field bins through the same bilinear map
+    // block mass will use, so utilization and capacity stay in one representation
+    // and total capacity is conserved.
+    grid.target_capacity.assign(grid.width * grid.height * num_layers, 0.);
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        for (size_t y = 0; y < height; y++) {
+            for (size_t x = 0; x < width; x++) {
+                double capacity = fine_target_capacity[density_site_index(layer, x, y, width, height)];
+                if (capacity <= 0.)
+                    continue;
+                BilinearDensityStencil stencil = make_bilinear_density_stencil(static_cast<double>(x) * grid.scale_x,
+                                                                               static_cast<double>(y) * grid.scale_y,
+                                                                               grid.width,
+                                                                               grid.height);
+                deposit_bilinear_density(grid.target_capacity, layer, grid.width, grid.height, stencil, capacity);
+            }
+        }
+    }
+
+    double capacity_sum = 0.;
+    size_t capacity_bins = 0;
+    for (double capacity : grid.target_capacity) {
+        if (capacity <= capacity_epsilon)
+            continue;
+        capacity_sum += capacity;
+        capacity_bins++;
+    }
+    if (capacity_bins != 0) {
+        grid.charge_scale = std::max(capacity_epsilon, capacity_sum / static_cast<double>(capacity_bins));
+        grid.target_norm_floor = std::max(capacity_epsilon,
+                                          target_floor_fraction * capacity_sum / static_cast<double>(capacity_bins));
+    } else {
+        grid.charge_scale = std::max(capacity_epsilon, 1.);
+        grid.target_norm_floor = capacity_epsilon;
+    }
+    return grid;
+}
+
 size_t rebalance_density_charge_on_capacity_sites(std::vector<double>& charge,
                                                   const std::vector<double>& target_capacity,
                                                   double capacity_epsilon) {
