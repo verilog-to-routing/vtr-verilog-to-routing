@@ -432,19 +432,19 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 }
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node) {
-    std::list<t_pb_graph_node*> pb_graph_node_list;
+    std::queue<t_pb_graph_node*> pb_graph_node_q;
 
-    pb_graph_node_list.push_back(pb_graph_node);
+    pb_graph_node_q.push(pb_graph_node);
 
-    while (!pb_graph_node_list.empty()) {
-        auto curr_pb_graph_node = pb_graph_node_list.front();
-        pb_graph_node_list.pop_front();
+    while (!pb_graph_node_q.empty()) {
+        auto curr_pb_graph_node = pb_graph_node_q.front();
+        pb_graph_node_q.pop();
         store_pin_sinks_edge_id(curr_pb_graph_node);
 
         for (int mode_num = 0; mode_num < curr_pb_graph_node->pb_type->num_modes; mode_num++) {
             for (int child_pb_type_num = 0; child_pb_type_num < curr_pb_graph_node->pb_type->modes[mode_num].num_pb_type_children; child_pb_type_num++) {
                 for (int child_pb_num = 0; child_pb_num < curr_pb_graph_node->pb_type->modes[mode_num].pb_type_children[child_pb_type_num].num_pb; child_pb_num++) {
-                    pb_graph_node_list.push_back(&curr_pb_graph_node->child_pb_graph_nodes[mode_num][child_pb_type_num][child_pb_num]);
+                    pb_graph_node_q.push(&curr_pb_graph_node->child_pb_graph_nodes[mode_num][child_pb_type_num][child_pb_num]);
                 }
             }
         }
@@ -521,12 +521,12 @@ static void set_pins_logical_num(t_logical_block_type* logical_block) {
 static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logical_block_type_ptr logical_block) {
     std::vector<const t_pb_graph_node*> pb_graph_nodes;
 
-    std::list<const t_pb_graph_node*> pb_graph_node_q;
-    pb_graph_node_q.push_back(logical_block->pb_graph_head);
+    std::queue<const t_pb_graph_node*> pb_graph_node_q;
+    pb_graph_node_q.push(logical_block->pb_graph_head);
 
     while (!pb_graph_node_q.empty()) {
         auto pb_graph_node = pb_graph_node_q.front();
-        pb_graph_node_q.pop_front();
+        pb_graph_node_q.pop();
         if (pb_graph_node->is_primitive()) {
             pb_graph_nodes.push_back(pb_graph_node);
         }
@@ -541,7 +541,7 @@ static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logica
                 for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
                     const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
                     /* Add the child pb_pb_graph_node to the queue, so that this block and its children get added pb_graph_nodes later */
-                    pb_graph_node_q.push_back(child_pb_graph_node);
+                    pb_graph_node_q.push(child_pb_graph_node);
                 }
             }
         }
