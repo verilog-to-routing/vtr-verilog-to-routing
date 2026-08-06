@@ -19,7 +19,7 @@ struct t_pack_pattern_connections;
  * Data members:
  *      pattern_index : the id of the pattern this block is part of (matches "index" in t_pack_patterns)
  *      pb_type       : the pb_type (primitive) that this block represents (Ex. LUT, Adder, FF, etc.)
- *      connections   : linked list of connections between this t_pack_pattern_block and other
+ *      connections   : the connections between this t_pack_pattern_block and other
  *                      t_pack_pattern_blocks in this pack pattern as defined in the architecture
  *      block_id      : the id of this t_pack_pattern_block within its pack pattern, used to access
  *                      is_block_optional array in t_pack_patterns and also to access the atom_block_ids
@@ -28,19 +28,18 @@ struct t_pack_pattern_connections;
 struct t_pack_pattern_block {
     int pattern_index;
     const t_pb_type* pb_type;
-    t_pack_pattern_connections* connections;
+    std::vector<t_pack_pattern_connections> connections;
     int block_id;
 };
 
 /**
- * Describes a linked list of connections of a t_pack_pattern_block
+ * Describes a connection of a t_pack_pattern_block
  *
  * Data members:
  *      from_block : block driving this connection
  *      from_pin   : specific pin in the from_block driving the connection
  *      to_block   : block driven by this connection
  *      to_pin     : specific pin in the to_block driven by this connection
- *      next       : next connection in the linked list
  */
 struct t_pack_pattern_connections {
     t_pack_pattern_block* from_block;
@@ -48,8 +47,6 @@ struct t_pack_pattern_connections {
 
     t_pack_pattern_block* to_block;
     t_pb_graph_pin* to_pin;
-
-    t_pack_pattern_connections* next;
 };
 
 /**
