@@ -108,7 +108,7 @@ void t_intra_cluster_placement_stats::insert_primitive_in_valid_primitives(std::
 }
 
 void t_intra_cluster_placement_stats::flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue) {
-    for (auto& it : queue) {
+    for (std::pair<const int, t_cluster_placement_primitive*>& it : queue) {
         insert_primitive_in_valid_primitives(it);
     }
     queue.clear();
@@ -132,17 +132,17 @@ t_pb_type* t_intra_cluster_placement_stats::in_flight_type() {
 }
 
 void t_intra_cluster_placement_stats::free_primitives() {
-    for (auto& primitive : tried)
+    for (std::pair<const int, t_cluster_placement_primitive*>& primitive : tried)
         delete primitive.second;
 
-    for (auto& primitive : in_flight)
+    for (std::pair<const int, t_cluster_placement_primitive*>& primitive : in_flight)
         delete primitive.second;
 
-    for (auto& primitive : invalid)
+    for (std::pair<const int, t_cluster_placement_primitive*>& primitive : invalid)
         delete primitive.second;
 
     for (int j = 0; j < num_pb_types; j++) {
-        for (auto& primitive : valid_primitives[j]) {
+        for (std::pair<const int, t_cluster_placement_primitive*>& primitive : valid_primitives[j]) {
             delete primitive.second;
         }
     }
@@ -319,7 +319,7 @@ LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_
 bool move_root_node_to_inflight(t_intra_cluster_placement_stats* cluster_placement_stats,
                                 t_pb_graph_node* target_root) {
     for (int pb_type_idx = 0; pb_type_idx < cluster_placement_stats->num_pb_types; ++pb_type_idx) {
-        auto& valid_primitives = cluster_placement_stats->valid_primitives[pb_type_idx];
+        std::unordered_map<int, t_cluster_placement_primitive*>& valid_primitives = cluster_placement_stats->valid_primitives[pb_type_idx];
         for (auto it = valid_primitives.begin(); it != valid_primitives.end(); /* increment handled inside */) {
             t_cluster_placement_primitive* placement_primitive = it->second;
 
@@ -388,7 +388,7 @@ static void reset_cluster_placement_stats(t_intra_cluster_placement_stats* clust
 
     /* reset flags and cost */
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-        for (auto& primitive : cluster_placement_stats->valid_primitives[i]) {
+        for (std::pair<const int, t_cluster_placement_primitive*>& primitive : cluster_placement_stats->valid_primitives[i]) {
             primitive.second->incremental_cost = 0;
             primitive.second->valid = true;
         }
@@ -423,7 +423,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_intra_cluster_place
          *  - Check the pb_type of this element with the pb_type of pb_graph_node
          *      - if matched --> insert the primitive
          */
-        for (auto& type_primitives : cluster_placement_stats->valid_primitives) {
+        for (std::unordered_map<int, t_cluster_placement_primitive*>& type_primitives : cluster_placement_stats->valid_primitives) {
             auto first_elem = type_primitives.find(0);
             if (first_elem != type_primitives.end() && first_elem->second->pb_graph_node->pb_type == pb_graph_node->pb_type) {
                 type_primitives.insert({type_primitives.size(), placement_primitive});
