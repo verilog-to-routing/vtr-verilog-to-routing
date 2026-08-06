@@ -915,11 +915,10 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
     primitives_list_.assign(max_molecule_size_, nullptr);
-    std::vector<t_pb_graph_node*>& primitives_list = primitives_list_;
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
                                                                                                                                  molecule_id,
-                                                                                                                                 primitives_list,
+                                                                                                                                 primitives_list_,
                                                                                                                                  prepacker_);
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
@@ -932,13 +931,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         std::pair<t_pb_graph_node*, std::tuple<float, int, int>> primitive = primitives_alive.pop();
         t_pb_graph_node* root = primitive.first;
 
-        if (!try_start_root_placement(cluster.placement_stats, molecule_id, root, primitives_list, prepacker_))
+        if (!try_start_root_placement(cluster.placement_stats, molecule_id, root, primitives_list_, prepacker_))
             continue;
 
         block_pack_status = e_block_pack_status::BLK_PASSED;
         size_t failed_location = 0;
         for (size_t i_mol = 0; i_mol < molecule.atom_block_ids.size() && block_pack_status == e_block_pack_status::BLK_PASSED; i_mol++) {
-            VTR_ASSERT((primitives_list[i_mol] == nullptr) == (!molecule.atom_block_ids[i_mol]));
+            VTR_ASSERT((primitives_list_[i_mol] == nullptr) == (!molecule.atom_block_ids[i_mol]));
             failed_location = i_mol + 1;
             AtomBlockId atom_blk_id = molecule.atom_block_ids[i_mol];
             if (!atom_blk_id.is_valid())
@@ -946,7 +945,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             // NOTE: This parent variable is only used in the recursion of this
             //       function.
             t_pb* parent = nullptr;
-            block_pack_status = try_place_atom_block_rec(primitives_list[i_mol],
+            block_pack_status = try_place_atom_block_rec(primitives_list_[i_mol],
                                                          atom_blk_id,
                                                          cluster.pb,
                                                          &parent,
@@ -1035,7 +1034,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_block_id = molecule.atom_block_ids[i];
                     if (atom_block_id) {
-                        packing_signature_tree_->add_lcn(primitives_list[i], atom_block_id);
+                        packing_signature_tree_->add_lcn(primitives_list_[i], atom_block_id);
                     }
                 }
             }
@@ -1101,7 +1100,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                         cluster.placement_stats->has_long_chain = true;
                         const t_clustering_chain_info& clustering_chain_info = clustering_chain_info_[molecule.chain_id];
                         if (clustering_chain_info.chain_id == -1) {
-                            update_clustering_chain_info(molecule_id, primitives_list[molecule.root]);
+                            update_clustering_chain_info(molecule_id, primitives_list_[molecule.root]);
                         }
                     }
                 }
@@ -1121,7 +1120,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     if (!atom_blk_id.is_valid())
                         continue;
 
-                    commit_primitive(cluster.placement_stats, primitives_list[i]);
+                    commit_primitive(cluster.placement_stats, primitives_list_[i]);
 
                     atom_cluster_[atom_blk_id] = cluster_id;
 
