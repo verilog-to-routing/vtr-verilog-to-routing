@@ -2,8 +2,8 @@
 #include "globals.h"
 
 AttractionInfo::AttractionInfo(bool attraction_groups_on) {
-    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
     //Initialize every atom to have no attraction group id
@@ -34,8 +34,8 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
 }
 
 void AttractionInfo::create_att_groups_for_overfull_regions(const std::vector<PartitionRegion>& overfull_partition_regions) {
-    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
     //clear the data structures before continuing
@@ -76,8 +76,8 @@ void AttractionInfo::create_att_groups_for_overfull_regions(const std::vector<Pa
 }
 
 void AttractionInfo::create_att_groups_for_all_regions() {
-    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
     //clear the data structures before continuing
