@@ -9,7 +9,7 @@ circuits_dir=benchmarks/verilog
 archs_dir=arch/timing
 
 # Add circuits to list to sweep
-circuit_list_add=ch_intrinsics.v
+circuit_list_add=ch_intrinsics_nolatches.v
 circuit_list_add=diffeq1.v
 circuit_list_add=multiclock_reader_writer.v
 
