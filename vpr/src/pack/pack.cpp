@@ -2,6 +2,7 @@
 #include "pack.h"
 
 #include <limits>
+#include <map>
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
 #include "device_grid.h"
@@ -268,14 +269,16 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
 }
 
 /**
- * @brief Verify that no prepacked molecule spans two different relative
- *        placement groups.
+ * @brief Verify that no prepacked molecule or chain spans two different
+ *        relative placement groups.
  *
  * The prepacker already refuses to put atoms of different groups into the same
- * non-chain molecule, so only chain molecules (e.g. carry chains) can fail this
- * check: their atoms are connected through dedicated routing and must be
- * prepacked together, so a chain crossing a group boundary is a genuine
- * constraint contradiction the user must resolve.
+ * non-chain molecule, so only chains (e.g. carry chains) can fail this check.
+ *
+ * A chain whose remaining atoms are unconstrained is fine: they either ride
+ * along into the group's cluster, or (for long chains) fill neighboring
+ * clusters whose placement macro is merged with the group's macro (see
+ * PlaceMacros).
  */
 static void validate_relative_group_molecules(const Prepacker& prepacker,
                                               const AtomNetlist& atom_netlist,
@@ -283,11 +286,30 @@ static void validate_relative_group_molecules(const Prepacker& prepacker,
     if (relative_macros.get_num_macros() == 0)
         return;
 
+    // The relative placement group each chain's atoms belong to so far, with a
+    // representative atom for the error message. Molecules of one long chain
+    // share a chain id.
+    std::map<MoleculeChainId, std::pair<std::pair<UserRelativeMacroId, int>, AtomBlockId>> chain_groups;
+
     for (PackMoleculeId mol_id : prepacker.molecules()) {
+        const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
+
         std::pair<UserRelativeMacroId, int> mol_group = {UserRelativeMacroId::INVALID(), -1};
         AtomBlockId mol_group_atom;
+        // Whether mol_group was inherited from another molecule of the same
+        // chain rather than from an atom of this molecule.
+        bool mol_group_from_chain = false;
 
-        for (AtomBlockId blk_id : prepacker.get_molecule(mol_id).atom_block_ids) {
+        if (molecule.chain_id.is_valid()) {
+            auto chain_it = chain_groups.find(molecule.chain_id);
+            if (chain_it != chain_groups.end()) {
+                mol_group = chain_it->second.first;
+                mol_group_atom = chain_it->second.second;
+                mol_group_from_chain = true;
+            }
+        }
+
+        for (AtomBlockId blk_id : molecule.atom_block_ids) {
             if (!blk_id.is_valid())
                 continue;
 
@@ -304,17 +326,23 @@ static void validate_relative_group_molecules(const Prepacker& prepacker,
             if (mol_group != atom_group) {
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
                                 "Atoms '%s' (relative macro '%s', group %d) and '%s' (relative macro '%s', group %d) "
-                                "belong to the same prepacked molecule (typically a chain, e.g. a carry chain, whose "
-                                "atoms are connected through dedicated routing), so they must be packed into the same "
-                                "cluster; however, atoms of different relative placement groups must be packed into "
-                                "different clusters. Adjust the constraints so the molecule's atoms are in one group.\n",
+                                "belong to the same prepacked %s (typically a carry chain, whose atoms are connected "
+                                "through dedicated routing and cannot be separated); however, atoms of different "
+                                "relative placement groups must be packed into different clusters. Adjust the "
+                                "constraints so the chain's atoms are in at most one group (the rest of the chain "
+                                "may be left unconstrained).\n",
                                 atom_netlist.block_name(mol_group_atom).c_str(),
                                 relative_macros.get_macro(mol_group.first).name.c_str(),
                                 mol_group.second,
                                 atom_netlist.block_name(blk_id).c_str(),
                                 relative_macros.get_macro(atom_group.first).name.c_str(),
-                                atom_group.second);
+                                atom_group.second,
+                                mol_group_from_chain ? "chain" : "molecule");
             }
+        }
+
+        if (molecule.chain_id.is_valid() && mol_group.first.is_valid()) {
+            chain_groups.emplace(molecule.chain_id, std::make_pair(mol_group, mol_group_atom));
         }
     }
 }
