@@ -4,6 +4,7 @@ mosaic is a yosys plugin that combines wildebeest-originated passes
 (max_level / clk_domains) with mosaic-only arch rules (-vtr_arch).
 """
 
+import os
 import re
 import shutil
 import sys
@@ -11,7 +12,6 @@ import warnings
 from collections import OrderedDict
 from pathlib import Path
 import vtr
-from ..parmys.parmys import create_circuits_list
 
 # supported input file types by the mosaic yosys template
 FILE_TYPES = {
@@ -20,6 +20,23 @@ FILE_TYPES = {
     ".sv": "SystemVerilog",
     ".svh": "SystemVerilog",
 }
+
+
+# USE: build the circuit + include list for the mosaic yosys script.
+# copied locally so mosaic does not depend on or modify the parmys helper.
+def create_circuits_list(main_circuit, include_files):
+    circuit_list = []
+    if include_files:
+        for include in include_files:
+            file_extension = os.path.splitext(include)[-1]
+            # drop includes outside mosaic's hdl allowlist; the file is already
+            # copied into the temp folder by the flow harness.
+            if file_extension not in FILE_TYPES:
+                continue
+            include_file = vtr.verify_file(include, "Circuit")
+            circuit_list.append(include_file.name)
+    circuit_list.append(main_circuit.name)
+    return circuit_list
 
 
 # USE: resolve the mosaic per-arch policy support dir for an architecture xml.
@@ -228,7 +245,7 @@ def run(
     yosys_script_full_path = str(temp_dir / yosys_script)
     shutil.copyfile(base_script, yosys_script_full_path)
 
-    circuit_list = create_circuits_list(circuit_file, include_files, FILE_TYPES)
+    circuit_list = create_circuits_list(circuit_file, include_files)
 
     top_module = mosaic_args.pop("top_module", "") or ""
 

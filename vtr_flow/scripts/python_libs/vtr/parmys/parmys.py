@@ -25,11 +25,9 @@ FILE_TYPES = {
 YOSYS_PARSERS = ["default", "slang"]
 
 
-def create_circuits_list(main_circuit, include_files, file_types=None):
+def create_circuits_list(main_circuit, include_files):
     """Create a list of supported HDL files"""
     circuit_list = []
-    if file_types is None:
-        file_types = FILE_TYPES
     # Check include files exist
     if include_files:
         # Verify that files are Paths or convert them to Paths + check that they exist
@@ -37,7 +35,7 @@ def create_circuits_list(main_circuit, include_files, file_types=None):
             file_extension = os.path.splitext(include)[-1]
             # if the include file is not in the supported HDLs, we drop it
             # NOTE: the include file is already copied to the temp folder
-            if file_extension not in file_types:
+            if file_extension not in FILE_TYPES:
                 continue
 
             include_file = vtr.verify_file(include, "Circuit")
