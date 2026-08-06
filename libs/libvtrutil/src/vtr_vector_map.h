@@ -148,18 +148,23 @@ class vector_map {
     }
 
     ///@brief Extends the container by inserting new elements, effectively increasing the container size by the number of elements inserted.
-    void insert(const K key, const V value) {
+    //
+    // V is intentionally taken by (non-const) value: passing lvalues costs one
+    // copy (into the parameter) and rvalues cost one move; the inner assignment
+    // then moves value into the slot. A const V parameter would force the inner
+    // assignment to be a copy even for rvalue callers.
+    void insert(const K key, V value) {
         if (size_t(key) >= vec_.size()) {
             //Resize so key is in range
             vec_.resize(size_t(key) + 1, Sentinel::INVALID());
         }
 
         //Insert the value
-        operator[](key) = value;
+        operator[](key) = std::move(value);
     }
 
     ///@brief Inserts the new key value pair in the container
-    void update(const K key, const V value) { insert(key, value); }
+    void update(const K key, V value) { insert(key, std::move(value)); }
 
     ///@brief Swap (this enables std::swap via ADL)
     friend void swap(vector_map<K, V>& x, vector_map<K, V>& y) {
