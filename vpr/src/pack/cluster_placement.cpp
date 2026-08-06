@@ -557,38 +557,36 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
                                                   float* cost) {
     t_pb_graph_node* pb_graph_node = primitives_list[pack_pattern_block->block_id];
     t_pb_graph_node* next_primitive;
-    t_pack_pattern_connections* cur;
     t_pb_graph_pin *cur_pin, *next_pin;
     t_pack_pattern_block* next_block;
 
     const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
 
-    cur = pack_pattern_block->connections;
-    while (cur) {
-        if (cur->from_block == pack_pattern_block) {
-            next_block = cur->to_block;
+    for (const t_pack_pattern_connections& cur : pack_pattern_block->connections) {
+        if (cur.from_block == pack_pattern_block) {
+            next_block = cur.to_block;
         } else {
-            next_block = cur->from_block;
+            next_block = cur.from_block;
         }
         if (primitives_list[next_block->block_id] == nullptr && molecule.atom_block_ids[next_block->block_id]) {
             /* first time visiting location */
 
             /* find next primitive based on pattern connections, expand next primitive if not visited */
-            if (cur->from_block == pack_pattern_block) {
+            if (cur.from_block == pack_pattern_block) {
                 /* forward expand to find next block */
                 int from_pin, from_port;
-                from_pin = cur->from_pin->pin_number;
-                from_port = cur->from_pin->port->port_index_by_type;
+                from_pin = cur.from_pin->pin_number;
+                from_port = cur.from_pin->port->port_index_by_type;
                 cur_pin = &pb_graph_node->output_pins[from_port][from_pin];
                 next_pin = expand_pack_molecule_pin_edge(pack_pattern_block->pattern_index, cur_pin, true);
             } else {
                 /* backward expand to find next block */
-                VTR_ASSERT(cur->to_block == pack_pattern_block);
+                VTR_ASSERT(cur.to_block == pack_pattern_block);
                 int to_pin, to_port;
-                to_pin = cur->to_pin->pin_number;
-                to_port = cur->to_pin->port->port_index_by_type;
+                to_pin = cur.to_pin->pin_number;
+                to_port = cur.to_pin->port->port_index_by_type;
 
-                if (cur->from_pin->port->is_clock) {
+                if (cur.from_pin->port->is_clock) {
                     cur_pin = &pb_graph_node->clock_pins[to_port][to_pin];
                 } else {
                     cur_pin = &pb_graph_node->input_pins[to_port][to_pin];
@@ -615,7 +613,6 @@ static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stat
                 return false;
             }
         }
-        cur = cur->next;
     }
 
     return true;

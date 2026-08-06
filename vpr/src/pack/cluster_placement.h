@@ -15,7 +15,6 @@ class AtomBlockId;
 
 /**
  * Keeps track of locations that a primitive can go to during packing
- * Linked list for easy insertion/deletion
  */
 struct t_cluster_placement_primitive {
     t_cluster_placement_primitive() {
