@@ -429,19 +429,19 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
     if (!pb_type->is_primitive()) {
         block_node.append_attribute("mode") = mode->name;
     } else {
-        const auto& atom_ctx = g_vpr_ctx.atom();
+        const AtomContext& atom_ctx = g_vpr_ctx.atom();
         AtomBlockId atom_blk = atom_ctx.netlist().find_block(pb->name);
         VTR_ASSERT(atom_blk);
 
         pugi::xml_node attrs_node = block_node.append_child("attributes");
-        for (const auto& attr : atom_ctx.netlist().block_attrs(atom_blk)) {
+        for (const std::pair<const std::string, std::string>& attr : atom_ctx.netlist().block_attrs(atom_blk)) {
             pugi::xml_node attr_node = attrs_node.append_child("attribute");
             attr_node.append_attribute("name") = attr.first.c_str();
             attr_node.text().set(attr.second.c_str());
         }
 
         pugi::xml_node params_node = block_node.append_child("parameters");
-        for (const auto& param : atom_ctx.netlist().block_params(atom_blk)) {
+        for (const std::pair<const std::string, std::string>& param : atom_ctx.netlist().block_params(atom_blk)) {
             pugi::xml_node param_node = params_node.append_child("parameter");
             param_node.append_attribute("name") = param.first.c_str();
             param_node.text().set(param.second.c_str());
@@ -478,7 +478,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
             if (pb_type->ports[i].equivalent != PortEquivalence::NONE && pb_type->parent_mode != nullptr && pb_type->is_primitive()) {
                 //This is a primitive with equivalent inputs
 
-                auto& atom_ctx = g_vpr_ctx.atom();
+                const AtomContext& atom_ctx = g_vpr_ctx.atom();
                 AtomBlockId atom_blk = atom_ctx.netlist().find_block(pb->name);
                 VTR_ASSERT(atom_blk);
 
@@ -627,7 +627,7 @@ static void clustering_xml_blocks_from_legalizer(pugi::xml_node& block_node,
 static void clustering_xml_blocks_from_netlist(pugi::xml_node& block_node,
                                                const IntraLbPbPinLookup& pb_graph_pin_lookup_from_index_by_type) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    for (auto blk_id : clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
         /* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
         clustering_xml_block(block_node,
                              clb_nlist.block_type(blk_id),
@@ -658,8 +658,8 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, const std::unord
     std::vector<std::string> inputs;
     std::vector<std::string> outputs;
 
-    for (auto blk_id : atom_nlist.blocks()) {
-        auto type = atom_nlist.block_type(blk_id);
+    for (AtomBlockId blk_id : atom_nlist.blocks()) {
+        AtomBlockType type = atom_nlist.block_type(blk_id);
         switch (type) {
             case AtomBlockType::INPAD:
                 if (skip_clustering) {
@@ -691,7 +691,7 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, const std::unord
     block_node.append_child("outputs").text().set(vtr::join(outputs.begin(), outputs.end(), " ").c_str());
 
     std::vector<std::string> clocks;
-    for (auto net_id : atom_nlist.nets()) {
+    for (AtomNetId net_id : atom_nlist.nets()) {
         if (is_clock.count(net_id)) {
             clocks.push_back(atom_nlist.net_name(net_id));
         }
