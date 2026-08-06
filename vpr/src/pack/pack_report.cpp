@@ -43,10 +43,9 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
     for (auto const& logical_type : device_ctx.logical_block_types) {
         auto type = &logical_type;
         if (is_empty_type(type)) continue;
-        auto inputs_used_it = inputs_used.find(type);
-        if (inputs_used_it == inputs_used.end()) continue;
+        if (!inputs_used.contains(type)) continue;
 
-        const std::vector<float>& type_inputs_used = inputs_used_it->second;
+        const std::vector<float>& type_inputs_used = inputs_used[type];
         const std::vector<float>& type_outputs_used = outputs_used[type];
         const size_t num_input_pins = total_input_pins[type];
         const size_t num_output_pins = total_output_pins[type];
