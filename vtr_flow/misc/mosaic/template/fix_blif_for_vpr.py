@@ -23,7 +23,6 @@ import re
 import sys
 from pathlib import Path
 
-
 latchSubcktRe = re.compile(r"^\.subckt\s+latch_")
 addrGndRe = re.compile(r"\b((?:addr|addr1|addr2)\[\d+\]=)gnd\b")
 # hierarchical separator inside identifiers (word.word, not directive dots).
@@ -247,9 +246,7 @@ def main(argv=None) -> int:
     dpRamModel = args.dp_ram
     if spRamModel is None or dpRamModel is None:
         factsSp, factsDp = readRamModelsFromArchFacts(
-            args.arch_facts
-            if args.arch_facts is not None
-            else args.blif.parent / "arch_facts.tcl"
+            args.arch_facts if args.arch_facts is not None else args.blif.parent / "arch_facts.tcl"
         )
         if spRamModel is None:
             spRamModel = factsSp

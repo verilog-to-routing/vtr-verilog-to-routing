@@ -8,6 +8,7 @@ yosys segfaults when reintegrating gia-mapped lut blif from the stock
 delay_lut6.scr even after classic if/mfs2/lutpack. returning gates from
 gia and mapping with abc -luts avoids that path.
 """
+
 from pathlib import Path
 
 here = Path(__file__).resolve().parent

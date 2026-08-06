@@ -387,9 +387,7 @@ def vtr_command_argparser(prog=None):
     #
     # MOSAIC arguments
     #
-    mosaic = parser.add_argument_group(
-        "Mosaic", description="Arguments to be passed to Mosaic"
-    )
+    mosaic = parser.add_argument_group("Mosaic", description="Arguments to be passed to Mosaic")
     mosaic.add_argument(
         "-mosaic_script",
         default=None,

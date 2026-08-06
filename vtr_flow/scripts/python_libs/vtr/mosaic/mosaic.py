@@ -54,8 +54,7 @@ def resolve_arch_support_dir(architecture_file_path):
         warnings.warn(
             "mosaic: no policy support dir for arch '{}'; "
             "running facts-only (arch_facts.tcl from xml, no arch_config.tcl). "
-            "add {} to supply costs/scripts/thresholds."
-            .format(archStem, configFile),
+            "add {} to supply costs/scripts/thresholds.".format(archStem, configFile),
             stacklevel=2,
         )
         return None
@@ -225,9 +224,7 @@ def run(
     plugin_path = Path(vtr.paths.wildebeest_plugin_path)
     if not plugin_path.is_file():
         raise vtr.VtrError(
-            "mosaic plugin not found at {} (installed as wildebeest.so)\n".format(
-                plugin_path
-            )
+            "mosaic plugin not found at {} (installed as wildebeest.so)\n".format(plugin_path)
             + "build it with: bash {}".format(vtr.paths.mosaic_build_script_path)
         )
 
