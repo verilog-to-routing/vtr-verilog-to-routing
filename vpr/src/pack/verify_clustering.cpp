@@ -244,18 +244,23 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
  */
 
 /**
- * @brief Returns true if an atom is constrained to a region on the FPGA chip.
+ * @brief Returns the PartitionRegion an atom is constrained to on the FPGA chip,
+ *        or nullptr if the atom is not constrained to a region.
  *
- * True when the atom's partition has at least one add_region (non-empty PartitionRegion).
- * False when the atom is unconstrained, or has only logical_block_location with no add_region
+ * Non-null when the atom's partition has at least one add_region (non-empty PartitionRegion).
+ * Null when the atom is unconstrained, or has only logical_block_location with no add_region
  * (pack-only constraint: controls packing inside a logic block, not chip placement).
  */
-static bool atom_has_floorplan_constraint(const UserPlaceConstraints& constraints, AtomBlockId atom_blk_id) {
+static const PartitionRegion* get_atom_floorplan_pr(const UserPlaceConstraints& constraints, AtomBlockId atom_blk_id) {
     PartitionId part_id = constraints.get_atom_partition(atom_blk_id);
     if (!part_id.is_valid()) {
-        return false;
+        return nullptr;
     }
-    return !constraints.get_partition_pr(part_id).empty();
+    const PartitionRegion& part_pr = constraints.get_partition_pr(part_id);
+    if (part_pr.empty()) {
+        return nullptr;
+    }
+    return &part_pr;
 }
 
 static unsigned check_clustering_floorplanning_consistency(
@@ -281,7 +286,7 @@ static unsigned check_clustering_floorplanning_consistency(
             // If the cluster is unconstrained, make sure all the atoms it
             // contains are unconstrained.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                if (atom_has_floorplan_constraint(constraints, atom_blk_id)) {
+                if (get_atom_floorplan_pr(constraints, atom_blk_id) != nullptr) {
                     VTR_LOG_ERROR(
                         "Cluster block %zu is unconstrained but contains "
                         "constrained atom block %zu.\n",
@@ -294,7 +299,7 @@ static unsigned check_clustering_floorplanning_consistency(
             // At least one of the atoms in the cluster must be constrained.
             bool an_atom_is_constrained = false;
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
-                if (atom_has_floorplan_constraint(constraints, atom_blk_id)) {
+                if (get_atom_floorplan_pr(constraints, atom_blk_id) != nullptr) {
                     an_atom_is_constrained = true;
                     break;
                 }
@@ -311,17 +316,14 @@ static unsigned check_clustering_floorplanning_consistency(
             // exist.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
                 // If the atom has no floorplan constraint, continue.
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
-                if (!atom_part_id.is_valid())
-                    continue;
-                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
-                if (atom_pr.empty())
+                const PartitionRegion* atom_pr = get_atom_floorplan_pr(constraints, atom_blk_id);
+                if (atom_pr == nullptr)
                     continue;
                 // Check if an intersection exists between the atom's PR and the
                 // cluster's PR.
                 bool intersection_exists = false;
                 for (const auto& cluster_region : cluster_pr.get_regions()) {
-                    for (const auto& atom_region : atom_pr.get_regions()) {
+                    for (const auto& atom_region : atom_pr->get_regions()) {
                         Region intersect_region = intersection(cluster_region, atom_region);
                         if (!intersect_region.empty()) {
                             intersection_exists = true;
@@ -343,21 +345,18 @@ static unsigned check_clustering_floorplanning_consistency(
             PartitionRegion calc_cluster_pr;
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
                 // If the atom has no floorplan constraint, continue.
-                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
-                if (!atom_part_id.is_valid())
-                    continue;
-                const PartitionRegion& atom_pr = constraints.get_partition_pr(atom_part_id);
-                if (atom_pr.empty())
+                const PartitionRegion* atom_pr = get_atom_floorplan_pr(constraints, atom_blk_id);
+                if (atom_pr == nullptr)
                     continue;
                 // Get the intersection of the atom's PR and the intersection of
                 // all atom PRs that came before.
                 if (calc_cluster_pr.empty()) {
-                    calc_cluster_pr = atom_pr;
+                    calc_cluster_pr = *atom_pr;
                     continue;
                 }
                 std::vector<Region> int_regions;
                 for (const auto& cluster_region : calc_cluster_pr.get_regions()) {
-                    for (const auto& atom_region : atom_pr.get_regions()) {
+                    for (const auto& atom_region : atom_pr->get_regions()) {
                         Region intersection_region = intersection(cluster_region, atom_region);
                         if (!intersection_region.empty()) {
                             int_regions.push_back(intersection_region);
