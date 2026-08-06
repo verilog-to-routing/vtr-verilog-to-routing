@@ -277,9 +277,7 @@ Detailed Command-line Options
 
 .. note::
 
-    Mosaic is an alternative synthesis frontend. It vendors `Wildebeest <https://github.com/zeroasiccorp/wildebeest.git>`_ Yosys sources under ``mosaic/wildebeest/`` and adds mosaic-only arch passes under ``mosaic/src/``.
-    It derives clock cut points and hard-block mapping rules from the architecture XML at runtime (``max_level -clk2clk -vtr_arch`` and the ``vtr_arch_rules`` pass).
-    Select it with ``-start mosaic``; build it first with ``bash mosaic/build_mosaic.sh`` after building VTR (installed as ``wildebeest.so``).
+    Mosaic is an alternative synthesis frontend. Build it first with ``bash mosaic/build_mosaic.sh`` after building VTR and select it with ``-start mosaic`` in the VTR flow.
 
 .. Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
 ..     UHDM is used as a compiled interchange format in between SystemVerilog tools. Typical inputs to the UHDM flow are files with ``.v`` or ``.sv`` extensions.
