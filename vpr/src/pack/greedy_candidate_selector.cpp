@@ -189,7 +189,7 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
             int ext_inps = molecule_stats.num_used_ext_inputs;
 
             //Insert the molecule into the unclustered lists by number of external inputs
-            auto& tile_uc_data = appack_unrelated_clustering_data_[mol_pos.layer][mol_pos.x][mol_pos.y];
+            std::vector<std::vector<PackMoleculeId>>& tile_uc_data = appack_unrelated_clustering_data_[mol_pos.layer][mol_pos.x][mol_pos.y];
             tile_uc_data[ext_inps].push_back(mol_id);
         }
     } else {
@@ -256,9 +256,9 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     // class type of the seed primitive pb is a memory class.
     // This is used by APPack to turn off certain optimizations which interfere
     // with RAM packing.
-    const auto& seed_mol = prepacker_.get_molecule(cluster_seed_mol_id);
+    const t_pack_molecule& seed_mol = prepacker_.get_molecule(cluster_seed_mol_id);
     AtomBlockId seed_atom = seed_mol.atom_block_ids[seed_mol.root];
-    const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
+    const t_pb* seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
 
     if (has_ram_groups_ && cluster_gain_stats.is_memory) {
@@ -426,7 +426,7 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
     if (gain_flag == e_gain_update::GAIN) {
         /* Check if this net is connected to it's driver block multiple times (i.e. as both an output and input)
          * If so, avoid double counting by skipping the first (driving) pin. */
-        auto pins = atom_netlist_.net_pins(net_id);
+        AtomNetlist::pin_range pins = atom_netlist_.net_pins(net_id);
         if (net_output_feeds_driving_block_input_.count(net_id) != 0)
             //We implicitly assume here that net_output_feeds_driver_block_input[net_id] is 2
             //(i.e. the net loops back to the block only once)
@@ -558,7 +558,7 @@ void GreedyCandidateSelector::update_timing_gain_values(
 
     /* Check if this atom net lists its driving atom block twice.  If so, avoid  *
      * double counting this atom block by skipping the first (driving) pin. */
-    auto pins = atom_netlist_.net_pins(net_id);
+    AtomNetlist::pin_range pins = atom_netlist_.net_pins(net_id);
     if (net_output_feeds_driving_block_input_.count(net_id) != 0)
         pins = atom_netlist_.net_sinks(net_id);
 
@@ -887,7 +887,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
                                       cluster_legalizer);
 
     /* Only consider candidates that pass a very simple legality check */
-    for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
+    for (const std::pair<const AtomBlockId, PackMoleculeId>& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
         PackMoleculeId molecule_id = transitive_candidate.second;
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
@@ -940,7 +940,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
     LegalizationClusterId legalization_cluster_id,
     const ClusterLegalizer& cluster_legalizer,
     AttractionInfo& attraction_groups) {
-    auto cluster_type = cluster_legalizer.get_cluster_type(legalization_cluster_id);
+    t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(legalization_cluster_id);
 
     /*
      * For each cluster, we want to explore the attraction group molecules as potential
@@ -963,7 +963,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         LogicalModelId atom_model = atom_netlist_.block_model(atom_id);
         VTR_ASSERT(atom_model.is_valid());
         VTR_ASSERT(!primitive_candidate_block_types_[atom_model].empty());
-        const auto& candidate_types = primitive_candidate_block_types_[atom_model];
+        const std::vector<t_logical_block_type_ptr>& candidate_types = primitive_candidate_block_types_[atom_model];
 
         //Only consider molecules that are unpacked and of the correct type
         if (!cluster_legalizer.is_atom_clustered(atom_id)
@@ -1124,14 +1124,14 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         } else {
             /* This block has no connection with current cluster, penalize molecule for having this block
              */
-            for (auto pin_id : atom_netlist.block_input_pins(blk_id)) {
-                auto net_id = atom_netlist.pin_net(pin_id);
+            for (AtomPinId pin_id : atom_netlist.block_input_pins(blk_id)) {
+                AtomNetId net_id = atom_netlist.pin_net(pin_id);
                 VTR_ASSERT(net_id);
 
-                auto driver_pin_id = atom_netlist.net_driver(net_id);
+                AtomPinId driver_pin_id = atom_netlist.net_driver(net_id);
                 VTR_ASSERT(driver_pin_id);
 
-                auto driver_blk_id = atom_netlist.pin_block(driver_pin_id);
+                AtomBlockId driver_blk_id = atom_netlist.pin_block(driver_pin_id);
 
                 num_introduced_inputs_of_indirectly_related_block++;
                 for (AtomBlockId blk_id_2 : molecule.atom_block_ids) {
@@ -1242,7 +1242,7 @@ void GreedyCandidateSelector::load_transitive_fanout_candidates(
                         continue;
 
                     // This transitive atom is not packed, score and add
-                    auto& transitive_fanout_candidates = cluster_gain_stats.transitive_fanout_candidates;
+                    std::map<AtomBlockId, PackMoleculeId>& transitive_fanout_candidates = cluster_gain_stats.transitive_fanout_candidates;
 
                     // operator[] value-initializes the gain to 0 if blk_id is not in the map.
                     cluster_gain_stats.gain[blk_id] += 0.001;
@@ -1406,7 +1406,7 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         // break ties based on whoever has more external inputs.
         PackMoleculeId best_candidate = PackMoleculeId::INVALID();
         float best_candidate_distance = std::numeric_limits<float>::max();
-        const auto& uc_data = appack_unrelated_clustering_data_[node_loc.layer_num][node_loc.x][node_loc.y];
+        const std::vector<std::vector<PackMoleculeId>>& uc_data = appack_unrelated_clustering_data_[node_loc.layer_num][node_loc.x][node_loc.y];
         VTR_ASSERT_SAFE(inputs_avail < uc_data.size());
         for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
             // Get the molecule by the number of external inputs.
