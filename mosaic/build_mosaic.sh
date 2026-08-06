@@ -43,7 +43,8 @@ if [[ ! -f "${mosaicSrc}/vtr_arch_rules.cc" ]]; then
 fi
 
 echo ""
-echo "step 1: configure and build mosaic (wildebeest.so)"cmake -S "${wildebeestSrc}" -B "${wildebeestSrc}/build" -DYOSYS_CONFIG="${yosysConfig}"
+echo "step 1: configure and build mosaic (wildebeest.so)"
+cmake -S "${wildebeestSrc}" -B "${wildebeestSrc}/build" -DYOSYS_CONFIG="${yosysConfig}"
 cmake --build "${wildebeestSrc}/build" -j"${jobCount}"
 
 plugin="${wildebeestSrc}/build/wildebeest.so"
@@ -53,7 +54,8 @@ if [[ ! -f "${plugin}" ]]; then
 fi
 
 echo ""
-echo "step 2: install mosaic plugin and share files into the vtr yosys tree"cmake --install "${wildebeestSrc}/build"
+echo "step 2: install mosaic plugin and share files into the vtr yosys tree"
+cmake --install "${wildebeestSrc}/build"
 
 echo ""
 echo "mosaic build ok."
