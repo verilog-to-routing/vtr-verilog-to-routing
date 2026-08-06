@@ -16,6 +16,8 @@
  * @class SimpleDelayModel
  * @brief A simple delay model based on the information stored in router lookahead
  * This is in contrast to other placement delay models that get the cost of getting from one location to another by running the router
+ * Since this class depends on the lookahead, its lifetime should not exceed the cached lookahead
+ * and must be rebuilt in case of an RR Graph rebuild.
  *
  * The model is templated on the concrete lookahead type so that the per-query lookahead
  * call binds statically and can be inlined into delay(). This lookup is in the placer's
