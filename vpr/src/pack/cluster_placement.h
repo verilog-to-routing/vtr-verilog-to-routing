@@ -112,7 +112,9 @@ class t_intra_cluster_placement_stats {
      */
     inline t_cluster_placement_primitive* get_pb_graph_node_placement_primitive(const t_pb_graph_node* pb_graph_node) {
         VTR_ASSERT_SAFE(pb_graph_node != nullptr);
-        return pb_graph_node_placement_primitive.at(pb_graph_node);
+        auto it = pb_graph_node_placement_primitive.find(pb_graph_node);
+        VTR_ASSERT(it != pb_graph_node_placement_primitive.end());
+        return it->second;
     }
 
     /**
