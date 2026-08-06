@@ -1902,7 +1902,7 @@ private:
     // Registers itself with the tee as a sink on construction, detaches from the tee on
     // fulfillment, rejection, or destruction.
     //
-    // A bit of a Mosaic, avert your eyes. For one thing, it's more of a mixin than a base...
+    // A bit of a Frankenstein, avert your eyes. For one thing, it's more of a mixin than a base...
 
   public:
     explicit SinkBase(PromiseFulfiller<T>& fulfiller, Maybe<Sink&>& sinkLink)
