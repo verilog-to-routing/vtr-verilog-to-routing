@@ -322,8 +322,8 @@ static unsigned check_clustering_floorplanning_consistency(
                 // Check if an intersection exists between the atom's PR and the
                 // cluster's PR.
                 bool intersection_exists = false;
-                for (const auto& cluster_region : cluster_pr.get_regions()) {
-                    for (const auto& atom_region : atom_pr->get_regions()) {
+                for (const Region& cluster_region : cluster_pr.get_regions()) {
+                    for (const Region& atom_region : atom_pr->get_regions()) {
                         Region intersect_region = intersection(cluster_region, atom_region);
                         if (!intersect_region.empty()) {
                             intersection_exists = true;
@@ -355,8 +355,8 @@ static unsigned check_clustering_floorplanning_consistency(
                     continue;
                 }
                 std::vector<Region> int_regions;
-                for (const auto& cluster_region : calc_cluster_pr.get_regions()) {
-                    for (const auto& atom_region : atom_pr->get_regions()) {
+                for (const Region& cluster_region : calc_cluster_pr.get_regions()) {
+                    for (const Region& atom_region : atom_pr->get_regions()) {
                         Region intersection_region = intersection(cluster_region, atom_region);
                         if (!intersection_region.empty()) {
                             int_regions.push_back(intersection_region);
@@ -383,9 +383,9 @@ static unsigned check_clustering_floorplanning_consistency(
             // constrains all the atoms within the cluster, if cluster_region
             // is a subset of that, it should be equal to or smaller (which
             // are both legal).
-            for (const auto& cluster_region : cluster_pr.get_regions()) {
+            for (const Region& cluster_region : cluster_pr.get_regions()) {
                 bool found_region = false;
-                for (const auto& calc_cluster_region : calc_cluster_pr.get_regions()) {
+                for (const Region& calc_cluster_region : calc_cluster_pr.get_regions()) {
                     // This equality is a deep check. it checks that the actual
                     // rectangles of the regions are equal.
                     if (calc_cluster_region == cluster_region) {
@@ -410,7 +410,7 @@ static unsigned check_clustering_floorplanning_consistency(
                     // If the atom partition exists and is constrained to some lb types,
                     // check that the cluster's logical block type is one of the types
                     // that this atom can implement.
-                    const auto& atom_lb_type_constraints = constraints.get_part_lb_type_constraints(atom_part_id);
+                    const std::unordered_set<t_logical_block_type_ptr>& atom_lb_type_constraints = constraints.get_part_lb_type_constraints(atom_part_id);
                     t_logical_block_type_ptr clb_block_type = clb_nlist.block_type(clb_blk_id);
                     if (!atom_lb_type_constraints.contains(clb_block_type)) {
                         VTR_LOG_ERROR(
