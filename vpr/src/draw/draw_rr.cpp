@@ -55,7 +55,7 @@ void draw_rr(ezgl::renderer* g) {
     }
 
     // The ratio between pixels and world units spanning the screen width. Used to determine when decluttering should occur.
-    double pixels_per_world_unit = get_pixels_per_world_unit(g);
+    double pixels_per_world_unit = 1 / g->world_units_per_pixel();
     if (draw_state->enable_decluttering) {
         // If pixels_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
         draw_state->declutter_rr = pixels_per_world_unit < min_pixels_per_chan_node;

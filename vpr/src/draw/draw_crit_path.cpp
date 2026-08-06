@@ -615,7 +615,7 @@ static void draw_connections_from_cluster_netlist(AtomPinId atom_src_pin, AtomPi
 static void calculate_and_draw_delay(const tatum::TimingPath& path, ezgl::renderer* g) {
     // The ratio between pixels and world units spanning the screen width.
     // Used to perform screen-to-world conversions for label bounding boxes that primarily use pixels.
-    double pixels_per_world_unit = get_pixels_per_world_unit(g);
+    double pixels_per_world_unit = 1 / g->world_units_per_pixel();
 
     // Calculate basic information needed for resolving overlap and drawing.
     std::vector<t_label_drawing_info> basic_label_drawing_info =
