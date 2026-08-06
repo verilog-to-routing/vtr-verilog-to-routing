@@ -358,10 +358,10 @@ struct LocationAndConnectivityNode {
         : primitive_num(-1) {}
 
     ~LocationAndConnectivityNode() {
-        for (auto lcn : child_lcn) {
+        for (LocationAndConnectivityNode* lcn : child_lcn) {
             delete lcn;
         }
-        for (auto ecn : child_ecn) {
+        for (ExternalConnectivityNode* ecn : child_ecn) {
             delete ecn;
         }
     }
@@ -386,7 +386,7 @@ class PackingSignatureTree {
         , checkpoint_cursor_(nullptr) {}
 
     ~PackingSignatureTree() {
-        for (auto lcn : branches_) {
+        for (LocationAndConnectivityNode* lcn : branches_) {
             delete lcn;
         }
     }

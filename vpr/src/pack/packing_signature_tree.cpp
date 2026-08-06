@@ -60,10 +60,10 @@ void PackingSignatureTree::rollback_to_checkpoint() {
     for (auto it = checkpoint_decremented_output_nets_.begin(); it != checkpoint_decremented_output_nets_.end(); it++) {
         output_nets_[it->first].external_sinks_count += it->second;
     }
-    for (auto net : checkpoint_new_output_nets_) {
+    for (AtomNetId net : checkpoint_new_output_nets_) {
         output_nets_.erase(net);
     }
-    for (auto atom : checkpoint_new_atoms_) {
+    for (AtomBlockId atom : checkpoint_new_atoms_) {
         packed_atoms_.erase(atom);
     }
 }
@@ -163,7 +163,7 @@ LocationAndConnectivityNode* PackingSignatureTree::create_lcn(const t_pb_graph_n
     // Rather than check all the sinks of this block to see if they are already in the cluster,
     // the upper bound of the search space is reduced if we instead check to see if the source
     // of any of the blocks already packed in this cluster is this block.
-    for (auto maybe_sink_atom : packed_atoms_) {
+    for (std::pair<const AtomBlockId, t_primitive_num> maybe_sink_atom : packed_atoms_) {
         AtomBlockId maybe_sink_atom_block_id = maybe_sink_atom.first;
         AtomNetlist::pin_range potential_sink_input_pins = atom_netlist.block_input_pins(maybe_sink_atom_block_id);
         int maybe_sink_primitive_num = maybe_sink_atom.second;
