@@ -1,5 +1,5 @@
 ##############################################
-# mosaic koios smoke (hardblock passthrough)
+# Configuration file for running experiments
 ##############################################
 
 # Path to directory of circuits to use
