@@ -3,7 +3,6 @@ This tree holds a small slice of [Wildebeest](https://github.com/zeroasiccorp/wi
 
 ## What is used
 Mosaic does not take the full upstream tree. Only these pieces are in the build today:
-
 - `src/clk_domains.cc` provides `max_level`, with Mosaic's `-vtr_arch` patch
 - `src/abc_scripts/LUT6/BEST/delay_lut6.scr` is a ABC script used from the mosaic synthesis templates
 

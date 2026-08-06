@@ -3,17 +3,15 @@
 
 Mosaic is the third synthesis flow for VTR, it is currently under developlment. The name Mosaic refers to the use of templates for techmapping.
 
-
-
 ## 1. Building Mosaic
-You need a built VTR tree first so `build/bin/yosys-config` exists. The mosaic plugin only needs Yosys headers and does not link any VTR library. It compiles wildebeest-originated sources under `mosaic/wildebeest/` together with mosaic-only sources under `mosaic/src/`.
+You need a built VTR tree first such that `build/bin/yosys-config` exists. The mosaic plugin only needs Yosys headers and does not link any VTR library. It compiles wildebeest-only sources under `mosaic/wildebeest/` together with mosaic-only sources under `mosaic/src/`.
 
 ```shell
 make -j$(nproc)
 bash mosaic/build_mosaic.sh
 ```
 
-The script builds the plugin against the VTR Yosys and installs it as `wildebeest.so` under `build/share/yosys/plugins/`. Yosys loads it with `plugin -i wildebeest`.
+The install script builds the plugin against the VTR Yosys and installs it as `wildebeest.so` under `build/share/yosys/plugins/`. Yosys loads it with `plugin -i wildebeest`.
 
 
 
@@ -29,19 +27,13 @@ Optional flags:
 - `-top_module <name>` sets the top. Leave it empty for Yosys `-auto-top`.
 - `-include <file>` adds extra Verilog, which Koios-style hardblock includes need.
 
-The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, prunes unused blackbox model declarations, then runs `fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify. After that the flow continues through ABC and VPR like the other synthesis frontends.
+The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, prunes unused blackbox model declarations, then runs `fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify. LUT mapping already happened inside Yosys (`abc` with `ENABLE_ABC=1`), so the flow skips the external VTR ABC stage and continues into VPR.
 
 Examples:
 
 ```shell
 ./vtr_flow/scripts/run_vtr_flow.py vtr_flow/benchmarks/verilog/diffeq1.v vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml -start mosaic
 ./vtr_flow/scripts/run_vtr_flow.py vtr_flow/benchmarks/verilog/koios/lenet.v vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml -start mosaic -include vtr_flow/benchmarks/verilog/koios/hard_block_include.v
-```
-
-Titan arches use the same entry point. Policy dirs under `vtr_flow/misc/mosaic/stratixiv_arch.timing/` and `stratix10_arch.timing/` soft-map memories and stub exotic hardblocks. Smoke with VTR Verilog, not Titan BLIF:
-
-```shell
-./vtr_flow/scripts/run_vtr_flow.py vtr_flow/benchmarks/verilog/diffeq1.v vtr_flow/arch/titan/stratixiv_arch.timing.xml -start mosaic
 ```
 
 ### 2b. Running with the batch command
@@ -62,21 +54,73 @@ Useful flags include `--flows mosaic` to skip vanilla VTR, and `--no-rerun` to s
 
 
 ## 3. Technical details
-### 3a. Layout
-- `mosaic/wildebeest/` holds wildebeest-originated sources, mainly `max_level` in `clk_domains.cc`, including the `-vtr_arch` patch.
-- `mosaic/src/` holds mosaic-only sources. Arch scanning lives in `vtr_arch_info.*` and `vtr_arch_clocks.*`. The Yosys pass is `vtr_arch_rules.cc`. Rule generators live under `arch_rule_gen/` with the public API in `arch_rule_gen.h`.
-- `mosaic/build_mosaic.sh` configures, builds, and installs the plugin.
-- `vtr_flow/misc/mosaic/template/` is the shared synthesis support tree (`synthesis.tcl`, `profiles.tcl`, `fix_blif_for_vpr.py`, `rules/`, `abc/`, `lut_models/`).
-- `vtr_flow/misc/mosaic/<arch_xml_stem>/` is optional per-arch policy. It needs an `arch_config.tcl`. An optional `rules/` dir overlays selected `.tmpl` files onto the shared template set.
-- `vtr_flow/scripts/python_libs/vtr/mosaic/` is the VTR flow stage that copies the template, fills tokens, and runs Yosys.
-- `mosaic/scripts/` has maintainer tools such as `dump_arch_info.py`, `test_tpl_overlay.py`, `run_vtr_batch.py`, and `watch_compare.py`.
+### 3a. How synthesis runs
+`-start mosaic` selects the Mosaic Synthesis flow, the following then happens:
+1. `-start mosaic` selects the mosaic stage instead of Parmys or ODIN II.
+2. Python looks for `vtr_flow/misc/mosaic/<arch_xml_stem>/arch_config.tcl`.
+   - If that file is missing, the run is facts-only:
+     1. Geometry still comes from the architecture xml.
+     2. Knobs stay at the `synthesis.tcl` defaults (no aliases, no `stubAllHardblocks`, default costs).
+     3. Only the shared `template/rules/` templates are used. No arch overlay.
+     4. A warning is logged so the missing policy dir is visible in the log.
+3. Python copies `template/synthesis.tcl` into the run dir, fills path/circuit tokens, and launches Yosys with `wildebeest.so`.
+   - The same shared script runs for every architecture.
+   - Arch-specific behavior enters later through `arch_config.tcl` and `rules/` overlays, not by swapping the script.
+   - Only `-mosaic_script <path>` replaces the whole driver script.
+4. `synthesis.tcl` starts running in Yosys.
+5. Knobs are layered in order:
+   1. `synthesis.tcl` sets shared defaults (`lutCost`, empty aliases, `stubAllHardblocks 0`, etc.).
+   2. `arch_config.tcl` is sourced when present. It overlays the defaults (aliases for hardblocks, exotic targeting, thresholds, ABC scripts, `stubAllHardblocks`, etc.).
+6. `synthesis.tcl` calls `vtr_arch_rules` on the architecture xml.
+7. Rule generators in `mosaic/src/arch_rule_gen/` scan the xml and emit files into the run dir (`mult_map.v`, `tech_bram.v`, stubs, `arch_facts.tcl`, etc.). For each output they:
+   1. Resolve which `.tmpl` to use, per file:
+      1. base layer: `template/rules/` (`-tpldir`)
+      2. overlay layer: `<arch_xml_stem>/rules/<same_filename>` when it exists (`-overlay-tpldir`)
+      3. files missing from the arch `rules/` dir fall back to the shared template
+      - Example: Titan ships only `rules/vtr_hardblock_lib.v.tmpl`; that file comes from the arch dir, every other map still comes from `template/rules/`.
+   2. Fill the chosen template with scanned arch values.
+   3. Write the filled file into the run dir.
+8. With the generated files on disk, `synthesis.tcl` starts synthesis on the design:
+   1. `read_verilog -lib` loads the generated hardblock stubs (`vtr_hardblock_lib.v`).
+   2. `read_verilog -sv` reads the circuit Verilog (plus any `-include` files).
+   3. `hierarchy -check` locks the top (`-top` or `-auto-top`) and purges unused lib modules.
+   4. The classic bram whitebox is elaborated when memories are not soft-only.
+   5. Techmap passes use the generated rule files: `memory_libmap` with `bram_memory_map.txt` / `tech_bram.v`, `mul2dsp_map.v`, `mult_map.v`, `add_sub_map.v`, and any exotic maps.
+   6. In-Yosys ABC runs for LUT mapping (`abc -luts, etc.`), using the shared or policy-selected scripts.
+   7. Sweep / opt / keep handling cleans up unused hardblock cascade tips.
+   8. `write_blif` emits `<circuit>.mosaic.blif`.
+9. Python prunes unused blackbox model declarations and runs `fix_blif_for_vpr.py` (ram addr pads, hierarchical net dots, latch-q uniquify).
+10. External VTR ABC is skipped because LUT mapping already happened inside Yosys. The flow continues into VPR.
 
-### 3b. Arch policy and hardblocks
-Per-arch knobs live in `arch_config.tcl`. Geometry facts such as dsp widths and ram abits come from `arch_facts.tcl`, which `vtr_arch_rules` generates from the arch xml. Do not put those widths in `arch_config.tcl`.
+### 3b. Options and wiring
+CLI flags that reach the mosaic stage:
+- `-mosaic_script <path>` replaces the shared Yosys template.
+- `-top_module <name>` sets `TTT`. Empty means Yosys `-auto-top`.
+- `-include <file>` adds Verilog alongside the circuit (Koios hardblock includes use this).
 
+Tokens filled into the template before Yosys runs:
+
+| Token | Meaning |
+|-------|---------|
+| `XXX` | circuit Verilog |
+| `TTT` | top module |
+| `ZZZ` | output BLIF |
+| `VVV` | architecture XML |
+| `TDIR` | shared template dir |
+| `ARCH_SUPPORT_DIR` | per-arch policy dir (empty when absent) |
+| `YYY` | optional `max_level` `-vtr_arch` flag |
+
+`vtr_arch_rules` always takes `-tpldir template/rules`. When `ARCH_SUPPORT_DIR/rules/` exists, it also gets `-overlay-tpldir` so only listed files override the shared set.
+
+### 3c. Policy vs facts
+There is also a split in how we provide context to Mosaic for Synthesis.
+- `arch_config.tcl` holds choices for a specific architecture (i.e. aliases, soft/hard thresholds, costs, exotic targeting, `stubAllHardblocks`). When adding new architectures to VTR it could be useful to sweep the knobs in this file to further tune synthesis to a specific architecture if additional QoR is needed.
+- `arch_facts.tcl` holds what `vtr_arch_rules` scanned from the architecture xml (i.e. dsp widths, ram abits, lutK, whether multiply / adder exist). It is generated fresh every run.
+
+### 3d. Classic hardblocks
 A normal classic run expects `single_port_ram` and `dual_port_ram`, or aliases of those roles. `multiply` and `adder` are optional. Carry-chain `add_sub_map` is emitted only when the adder has `cin`, `cout`, and `sumout`. Otherwise `$add` and `$sub` stay soft.
 
-If the arch uses different model names, set aliases in `arch_config.tcl`:
+If the architecture uses different model names, set aliases in `arch_config.tcl`:
 
 ```tcl
 set aliasMultiply my_dsp_mult
@@ -85,52 +129,55 @@ set aliasSinglePortRam my_spram
 set aliasDualPortRam my_dpram
 ```
 
-`template/profiles.tcl` defines named packs. `vtr_classic` is the default. `passthrough_exotics` forces `stubAllHardblocks` so rtl-instantiated exotic cells keep through identity maps.
+### 3e. Exotic hardblocks
+Exotics are every hardblock that is not classic multiply, adder, or the classic rams after aliases. Mosaic never silently maps `$mul` or `$add` onto them. Choose one targeting mode in `arch_config.tcl`:
+- Identity passthrough: `set stubAllHardblocks 1`. Rtl must instantiate the cell by name.
+- Per-model template: `set exoticTemplatePairs {{model path/to.tmpl}}`.
+- Role inference: `set exoticRoles {{model integer_mul}}` when ports match a stock role under `template/rules/roles/`.
 
-Exotics are every hardblock that is not classic multiply, adder, or the classic rams after aliases. Mosaic never silently maps `$mul` or `$add` onto them. You choose one targeting mode in `arch_config.tcl`:
+Longer notes live in `docs-env/docs/doc-mosaic-exotic-hardblocks.md`. Small fixtures are under `mosaic/tests/fixtures/` with matching policy dirs under `vtr_flow/misc/mosaic/`.
 
-- Identity passthrough with `set stubAllHardblocks 1` or `set primitiveProfile passthrough_exotics`. Rtl must instantiate the cell.
-- Per-model template with `set exoticTemplatePairs {{model path/to.tmpl}}`.
-- Role inference with `set exoticRoles {{model integer_mul}}` when ports match a stock role under `template/rules/roles/`.
-
-There is a longer exotic hardblocks guide in `docs-env/docs/doc-mosaic-exotic-hardblocks.md`. Small fixtures live under `mosaic/tests/fixtures/` with matching policy dirs under `vtr_flow/misc/mosaic/`.
-
-Soft and hard knobs that show up often:
-
+### 3f. Soft / hard knobs and ABC scripts
+Common knobs in `arch_config.tcl`:
 - `minHardMulWidth` keeps `$mul` soft when both operand widths are at or below the threshold. `0` disables the limit.
 - `minHardMemAbits` drops shallower bram modes from libmap so those memories soft-map.
 - `softOnlyMemory` soft-maps memories when classic sp or dp modes are absent. Titan policy uses this.
 - `hardAdderThreshold` and `dspMinWidth` control adder hardness and mul2dsp chunking.
-- When `lutCost` and `cmpLutWidth` stay at defaults, synthesis can derive them from scanned `lutK` and `lutK1`. Empty abc scripts auto-select shared delay scripts only for fracturable K6-like arches.
+- When `lutCost` and `cmpLutWidth` stay at defaults, synthesis can derive them from scanned `lutK` and `lutK1`. Empty ABC scripts auto-select shared delay scripts only for fracturable K6-like arches.
 
-Shared abc scripts live under `template/abc/`. Rebuild them with `template/abc/build_delay_scr.py` when the upstream delay script changes.
+Shared ABC scripts live under `template/abc/`. Rebuild them with `template/abc/build_delay_scr.py` when the upstream delay script changes. These run inside Yosys during mosaic synthesis, not as the external VTR ABC stage.
 
-### 3c. How a synthesis run is wired
-The Python stage resolves `vtr_flow/misc/mosaic/<arch_xml_stem>/` when that directory has `arch_config.tcl`. Otherwise the run is facts-only from the arch xml. It copies `synthesis.tcl` and replaces tokens before Yosys sees the script. The important tokens are `XXX` for circuit Verilog, `TTT` for the top module, `ZZZ` for the output blif, `VVV` for the arch xml, `TDIR` for the template dir, `ARCH_SUPPORT_DIR` for the policy dir, and `YYY` for the optional `max_level` `-vtr_arch` flag.
-
-`synthesis.tcl` sources policy, runs `vtr_arch_rules` with `-tpldir` pointed at `template/rules`, and passes `-overlay-tpldir` when the arch support dir has a `rules/` folder. Only listed overlay files replace shared templates. The pass emits maps and stubs into the run dir, then the rest of the script techmaps and writes the blif.
+### 3g. Layout
+- `mosaic/wildebeest/` holds wildebeest-originated sources, mainly `max_level` in `clk_domains.cc`, including the `-vtr_arch` patch.
+- `mosaic/src/` holds mosaic-only sources. Architecture scanning lives in `vtr_arch_info.*` and `vtr_arch_clocks.*`. The Yosys pass is `vtr_arch_rules.cc`. Rule generators live under `arch_rule_gen/` with the public API in `arch_rule_gen.h`.
+- `mosaic/build_mosaic.sh` configures, builds, and installs the plugin.
+- `vtr_flow/misc/mosaic/template/` is the shared synthesis support tree (`synthesis.tcl`, `fix_blif_for_vpr.py`, `rules/`, `abc/`, `lut_models/`).
+- `vtr_flow/misc/mosaic/<arch_xml_stem>/` is optional per-architecture policy (`arch_config.tcl`, optional `rules/` overlay).
+- `vtr_flow/scripts/python_libs/vtr/mosaic/` is the VTR flow stage that copies the template, fills tokens, and runs Yosys.
+- `mosaic/scripts/` has maintainer tools such as `dump_arch_info.py`, `test_tpl_overlay.py`, `run_vtr_batch.py`, and `watch_compare.py`.
 
 
 
 ## 4. Verilator check
-`mosaic/verilator_check/` checks functional equivalence between the original rtl and the post-synthesis and post-abc blifs from a harness run directory.
+`mosaic/verilator_check/` checks functional equivalence between the original rtl, the post-synthesis, and post-ABC blifs from a harness run directory.
 
 ```shell
 python3 mosaic/verilator_check/run_random_check.py --run-dir <harness_run_dir> --vectors 200000 --seed 1
 ```
 
-The checker converts both blifs back to Verilog with Yosys, builds a three-DUT testbench with the rtl, post-synth design, and post-abc design, and drives the same random vectors into all three. Hardblock simulation models live in `verilator_check/models/sim_hardblocks.v`.
+The checker converts both blifs back to Verilog with Yosys, builds a three-DUT testbench with the rtl, post-synth design, and post-ABC design, and drives the same random vectors into all three. Hardblock simulation models live in `verilator_check/models/sim_hardblocks.v`.
 
 Optional flags:
-
 - `--check-mem-init` fails if rtl memory init cannot survive hard ram blackboxes.
 - `--directed-ram` adds same-addr read/write and dual-port write/write cases when ports match.
 - `--ram-zero-init` forces sim rams to zero. The default leaves memory uninitialized so dropped init can surface.
 
+See `mosaic/verilator_check/README.md` for information.
 
 
-## 5. Regression testing
-The `vtr_reg_basic_mosaic` suite runs the `k6` task (basic circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start mosaic`) plus the `koios` hardblock passthrough smoke (`test.v` + `hard_block_include.v` on the complex-DSP arch):
+
+## 5. CI Testing
+The `vtr_reg_basic_mosaic` suite runs the `k6` task (basic circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start mosaic`) plus the `koios` hardblock passthrough smoke (`test.v` + `hard_block_include.v` on the complex-DSP architecture):
 
 ```shell
 ./run_reg_test.py vtr_reg_basic_mosaic -j4
@@ -151,4 +198,4 @@ python3 mosaic/scripts/dump_arch_info.py --update
 python3 mosaic/scripts/test_tpl_overlay.py
 ```
 
-`dump_arch_info.py` refreshes goldens under `mosaic/tests/golden/`. `test_tpl_overlay.py` needs a built mosaic plugin and checks `-overlay-tpldir` merge.
+`dump_arch_info.py` refreshes goldens under `mosaic/tests/golden/`. `test_tpl_overlay.py` needs a built mosaic plugin and checks if `-overlay-tpldir` has been applied.

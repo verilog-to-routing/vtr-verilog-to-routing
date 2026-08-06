@@ -8,7 +8,6 @@
 # until a titan bram emitter exists.
 set softOnlyMemory 1
 set stubAllHardblocks 1
-set primitiveProfile passthrough_exotics
 
 # titan names its rams and mac as stratixiv_ram_block and stratixiv_mac_mult rather
 # than classic multiply or single_port_ram or dual_port_ram, so the aliases below

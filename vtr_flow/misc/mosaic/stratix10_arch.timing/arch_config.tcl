@@ -8,7 +8,6 @@
 # until a titan bram emitter exists.
 set softOnlyMemory 1
 set stubAllHardblocks 1
-set primitiveProfile passthrough_exotics
 
 # titan names its rams and mac as fourteennm_ram_block and fourteennm_mac rather
 # than classic multiply or single_port_ram or dual_port_ram, so the aliases below

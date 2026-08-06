@@ -65,8 +65,8 @@ void warnExoticOnlyMultiply(const VtrArchInfo &info, const ClassicModelNames &cl
         return;
     log_warning("vtr_arch_rules: arch has exotic hardblock models but no classic "
                 "'%s' model; inferred $mul will not map to exotics. use "
-                "stubAllHardblocks / passthrough_exotics for rtl-instantiated "
-                "exotic cells, exoticRoles / -exotic-role for role inference, or "
+                "stubAllHardblocks for rtl-instantiated exotic cells, "
+                "exoticRoles / -exotic-role for role inference, or "
                 "exoticTemplatePairs / -exotic for a per-model techmap.\n",
                 classic.multiply.c_str());
 }

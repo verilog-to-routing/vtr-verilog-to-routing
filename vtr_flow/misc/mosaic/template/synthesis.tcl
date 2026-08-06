@@ -68,8 +68,6 @@ set adderModel     "adder"
 set spRamModel     "single_port_ram"
 set dpRamModel     "dual_port_ram"
 set keepCellTypes  "t:multiply t:adder t:single_port_ram t:dual_port_ram"
-# primitiveProfile selects a named policy pack (see profiles.tcl).
-set primitiveProfile vtr_classic
 # when stubAllHardblocks is 1, vtr_arch_rules emits generic stubs for every
 # exotic hardblock model and writes hardblock_keep_types.txt so rtl-instantiated
 # cells survive synthesis.
@@ -86,7 +84,23 @@ set exoticTemplatePairs {}
 # tpldir/roles/<role>_map.v.tmpl files.
 set exoticRoles {}
 
-source "$templateDir/profiles.tcl"
+# USE: warn when inferred $mul cannot bind to a hard multiply.
+# rule gen already warns, and this surfaces the same contract in the synth log
+# so designers see why behavioral multiply stayed soft.
+proc mosaicCheckClassicMulContract {} {
+    global multiplyPresent stubAllHardblocks exoticRoles exoticTemplatePairs
+    if { $multiplyPresent } {
+        return
+    }
+    if { [llength $exoticRoles] > 0 || [llength $exoticTemplatePairs] > 0 } {
+        return
+    }
+    if { $stubAllHardblocks } {
+        log -warning "mosaic: no classic multiply; inferred \$mul stays soft. rtl-instantiated exotic cells passthrough when stubAllHardblocks is on; bind \$mul with exoticRoles or exoticTemplatePairs."
+        return
+    }
+    log -warning "mosaic: no classic multiply and no exotic mul binding; inferred \$mul stays soft."
+}
 
 set archConfigFile ""
 if { $archSupportDir ne "" } {
@@ -95,7 +109,6 @@ if { $archSupportDir ne "" } {
 if { $archConfigFile ne "" && [file exists $archConfigFile] } {
     source $archConfigFile
 }
-mosaicApplyPrimitiveProfile
 # remember the policy keep list from arch_config so extras (for example
 # role-bound models) survive the post-facts rebuild of classic builtins.
 set keepCellTypesFromConfig $keepCellTypes
