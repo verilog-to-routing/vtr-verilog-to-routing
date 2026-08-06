@@ -100,6 +100,8 @@ static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
 
+static bool decide_full_redraw_needed(ezgl::renderer* g, ezgl::view_operation op);
+
 /**
  * @brief Generalized callback function to setup the UI when the stage changes.
  */
@@ -336,6 +338,38 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
+static bool decide_full_redraw_needed(ezgl::renderer* g, ezgl::view_operation op) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    double pixels_per_world_unit = 1 / g->world_units_per_pixel();
+
+    if(op == ezgl::view_operation::panning) {
+        return false;
+    } else {
+        if(op == ezgl::view_operation::zooming_in){
+            if(draw_state->show_rr && draw_state->enable_decluttering) {
+                if(draw_state->declutter_rr && pixels_per_world_unit >= MIN_PIXELS_PER_CHAN_NODE) {
+                    return true;
+                }
+            }
+        } else {
+            if(draw_state->show_rr && draw_state->enable_decluttering) {
+                if(!(draw_state->declutter_rr) && pixels_per_world_unit < MIN_PIXELS_PER_CHAN_NODE) {
+                    return true;
+                }
+            }
+        }
+
+        if(draw_state->show_crit_path && draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays) {
+            return true;
+        }
+
+        if(draw_state->show_blk_internal) {
+            return true;
+        }
+        return false;
+    }
+}
+
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     // default setup for new window
     if (is_new_window) {
@@ -425,7 +459,7 @@ void update_screen(ScreenUpdatePriority priority,
         }
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
-            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
+            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, decide_full_redraw_needed, initial_world);
             if (canvas != nullptr) {
                 ezgl::renderer_type rt = ezgl::renderer_type::rhi;
                 if (draw_state->renderer_type == "immediate")

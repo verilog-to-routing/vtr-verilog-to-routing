@@ -114,7 +114,7 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app) {
     const std::string id = app->get_main_canvas_id();
     ezgl::canvas* cnv = app->get_canvas(id);
     if (!cnv) {
-        cnv = app->add_canvas(id, /*draw_callback=*/[](ezgl::renderer*) {}, ezgl::rectangle({0, 0}, 100, 100), ezgl::WHITE);
+        cnv = app->add_canvas(id, /*draw_callback=*/[](ezgl::renderer*) {}, nullptr, ezgl::rectangle({0, 0}, 100, 100), ezgl::WHITE);
     }
     return cnv;
 }

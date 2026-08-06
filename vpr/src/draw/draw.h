@@ -109,6 +109,11 @@ const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;
 
 const float WIRE_DRAWING_WIDTH = 0.5;
 
+// This value is used to help determine when decluttering should be on. Every channel node is drawn 1 pixel wide always and
+// placed parallel to each other. If we allocate exactly 1 pixel for each channel node, they will be blended into a solid color.
+// Therefore, 1.5 is a more relaxed bar, where the extra serves as spacing between the channel nodes.
+constexpr double MIN_PIXELS_PER_CHAN_NODE = 1.5;
+
 /**
  * @brief Calculate the ratio between pixels and world units spanning the screen width.
  * 

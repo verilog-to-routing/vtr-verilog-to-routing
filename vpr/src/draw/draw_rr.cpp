@@ -37,11 +37,6 @@
 static constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 static constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 
-// This value is used to help determine when decluttering should be on. Every channel node is drawn 1 pixel wide always and
-// placed parallel to each other. If we allocate exactly 1 pixel for each channel node, they will be blended into a solid color.
-// Therefore, 1.5 is a more relaxed bar, where the extra serves as spacing between the channel nodes.
-static constexpr double min_pixels_per_chan_node = 1.5;
-
 /* Draws the routing resources that exist in the FPGA, if the user wants
  * them drawn.
  */
@@ -58,7 +53,7 @@ void draw_rr(ezgl::renderer* g) {
     double pixels_per_world_unit = 1 / g->world_units_per_pixel();
     if (draw_state->enable_decluttering) {
         // If pixels_per_world_unit is lower than the threshold, need to stop drawing RR nodes.
-        draw_state->declutter_rr = pixels_per_world_unit < min_pixels_per_chan_node;
+        draw_state->declutter_rr = pixels_per_world_unit < MIN_PIXELS_PER_CHAN_NODE;
     } else {
         // Currently this branch will never be called, since enable_decluttering hasn't been wired to a UI button.
         draw_state->declutter_rr = false;
