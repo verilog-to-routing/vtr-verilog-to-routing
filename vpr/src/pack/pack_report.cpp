@@ -5,6 +5,7 @@
 #include "vpr_utils.h"
 #include "histogram.h"
 
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
 
@@ -50,12 +51,12 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
         const size_t num_input_pins = total_input_pins[type];
         const size_t num_output_pins = total_output_pins[type];
 
-        float max_inputs = static_cast<float>(*std::max_element(type_inputs_used.begin(), type_inputs_used.end()));
-        float min_inputs = static_cast<float>(*std::min_element(type_inputs_used.begin(), type_inputs_used.end()));
+        float max_inputs = static_cast<float>(std::ranges::max(type_inputs_used));
+        float min_inputs = static_cast<float>(std::ranges::min(type_inputs_used));
         float avg_inputs = static_cast<float>(std::accumulate(type_inputs_used.begin(), type_inputs_used.end(), 0.f)) / static_cast<float>(type_inputs_used.size());
 
-        float max_outputs = *std::max_element(type_outputs_used.begin(), type_outputs_used.end());
-        float min_outputs = *std::min_element(type_outputs_used.begin(), type_outputs_used.end());
+        float max_outputs = std::ranges::max(type_outputs_used);
+        float min_outputs = std::ranges::min(type_outputs_used);
         float avg_outputs = std::accumulate(type_outputs_used.begin(), type_outputs_used.end(), 0.f) / static_cast<float>(type_outputs_used.size());
 
         os << "Type: " << type->name << "\n";

@@ -224,7 +224,7 @@ void PackingSignatureTree::populate_ecn(ExternalConnectivityNode* ecn) {
         ecn->cluster_inputs.push_back(input_net_pins);
         std::sort(ecn->cluster_inputs.back().begin(), ecn->cluster_inputs.back().end());
     }
-    std::sort(ecn->cluster_inputs.begin(), ecn->cluster_inputs.end());
+    std::ranges::sort(ecn->cluster_inputs);
 
     for (const auto& [output_net_id, output_net_record] : output_nets_) {
         if (output_net_record.external_sinks_count == 0) continue; // net only drives pins inside cluster

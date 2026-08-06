@@ -12,6 +12,7 @@
 
 #include "prepack.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <map>
@@ -1571,7 +1572,7 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     for (t_pb_graph_pin* pin_ptr : chain_input_pins) {
         std::vector<t_pb_graph_pin*> reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
         // sort the reachable output pins to compare them later using set_intersection
-        std::stable_sort(reachable_output_pins.begin(), reachable_output_pins.end());
+        std::ranges::stable_sort(reachable_output_pins);
         reachable_pins.push_back(std::move(reachable_output_pins));
     }
 

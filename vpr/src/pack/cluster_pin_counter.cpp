@@ -74,7 +74,7 @@ void ClusterPinCounter::mark_lookahead_input(const t_pb* pb, size_t class_id, At
     //       a vector of unordered_maps for clusters with many pins, but that's
     //       likely worse for the common case of small pin classes lower in
     //       the hierarchy. Revisit if this shows up as a bottleneck.
-    if (std::find(class_nets.begin(), class_nets.end(), net) == class_nets.end()) {
+    if (std::ranges::find(class_nets, net) == class_nets.end()) {
         class_nets.push_back(net);
     }
 }

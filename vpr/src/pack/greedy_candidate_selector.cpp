@@ -133,14 +133,13 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
     // gain. (Highest gain).
     std::vector<PackMoleculeId> molecules_vector;
     molecules_vector.assign(prepacker_.molecules().begin(), prepacker_.molecules().end());
-    std::stable_sort(molecules_vector.begin(),
-                     molecules_vector.end(),
-                     [&](PackMoleculeId a_id, PackMoleculeId b_id) {
-                         const t_pack_molecule& a = prepacker_.get_molecule(a_id);
-                         const t_pack_molecule& b = prepacker_.get_molecule(b_id);
+    std::ranges::stable_sort(molecules_vector,
+                             [&](PackMoleculeId a_id, PackMoleculeId b_id) {
+                                 const t_pack_molecule& a = prepacker_.get_molecule(a_id);
+                                 const t_pack_molecule& b = prepacker_.get_molecule(b_id);
 
-                         return a.base_gain > b.base_gain;
-                     });
+                                 return a.base_gain > b.base_gain;
+                             });
 
     if (appack_ctx_.appack_options.use_appack) {
         /**
@@ -968,7 +967,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
         //Only consider molecules that are unpacked and of the correct type
         if (!cluster_legalizer.is_atom_clustered(atom_id)
-            && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
+            && std::ranges::find(candidate_types, cluster_type) != candidate_types.end()) {
             available_atoms.push_back(atom_id);
         }
     }

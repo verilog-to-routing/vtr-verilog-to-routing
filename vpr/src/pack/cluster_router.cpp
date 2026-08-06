@@ -12,6 +12,7 @@
  * Date: July 22, 2013
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -227,7 +228,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
 
     /* Insert unpackable mode to the illegal mode list */
     if (mode->disable_packing) {
-        if (std::find(pb_graph_node->illegal_modes.begin(), pb_graph_node->illegal_modes.end(), mode->index) == pb_graph_node->illegal_modes.end()) {
+        if (std::ranges::find(pb_graph_node->illegal_modes, mode->index) == pb_graph_node->illegal_modes.end()) {
             pb_graph_node->illegal_modes.push_back(mode->index);
         }
         return true;
@@ -242,7 +243,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
 
             // The illegal mode is added to the pb_graph_node as it resulted in a conflict during atom-to-atom routing. This mode cannot be used in the consequent cluster
             // generation try.
-            if (std::find(pb_graph_node->illegal_modes.begin(), pb_graph_node->illegal_modes.end(), result.first->second->index) == pb_graph_node->illegal_modes.end()) {
+            if (std::ranges::find(pb_graph_node->illegal_modes, result.first->second->index) == pb_graph_node->illegal_modes.end()) {
                 pb_graph_node->illegal_modes.push_back(result.first->second->index);
             }
 
