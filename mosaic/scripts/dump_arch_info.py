@@ -342,11 +342,11 @@ def listModesText(info):
             byQual.setdefault(mode["modeQualifier"], []).append(mode)
         for qual in sorted(byQual):
             sample = byQual[qual][0]
-            inPorts = ",".join(
+            in_ports = ",".join(
                 "{}:{}".format(k, sample["inputWidths"][k])
                 for k in sorted(sample["inputWidths"])
             )
-            outPorts = ",".join(
+            out_ports = ",".join(
                 "{}:{}".format(k, sample["outputWidths"][k])
                 for k in sorted(sample["outputWidths"])
             )
@@ -355,8 +355,8 @@ def listModesText(info):
                     qual,
                     len(byQual[qual]),
                     sample["pbTypeName"],
-                    inPorts,
-                    outPorts,
+                    in_ports,
+                    out_ports,
                 )
             )
     return "\n".join(lines) + "\n"

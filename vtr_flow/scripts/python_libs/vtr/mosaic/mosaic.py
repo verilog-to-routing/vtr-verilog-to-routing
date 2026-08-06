@@ -22,9 +22,9 @@ FILE_TYPES = {
 }
 
 
-# USE: build the circuit + include list for the mosaic yosys script.
-# copied locally so mosaic does not depend on or modify the parmys helper.
 def create_circuits_list(main_circuit, include_files):
+    """build the circuit + include list for the mosaic yosys script."""
+    # copied locally so mosaic does not depend on or modify the parmys helper.
     circuit_list = []
     if include_files:
         for include in include_files:
@@ -39,31 +39,32 @@ def create_circuits_list(main_circuit, include_files):
     return circuit_list
 
 
-# USE: resolve the mosaic per-arch policy support dir for an architecture xml.
-# this looks for vtr_flow/misc/mosaic/<arch_stem>/arch_config.tcl only and
-# returns None when missing so synthesis runs facts-only from the arch xml with
-# no silent family fallback or stem alias table.
 def resolve_arch_support_dir(architecture_file_path):
-    archPath = Path(architecture_file_path)
-    archStem = archPath.stem
-    miscPath = Path(vtr.paths.mosaic_misc_path)
-    supportDir = miscPath / archStem
-    configFile = supportDir / "arch_config.tcl"
+    """resolve the mosaic per-arch policy support dir for an architecture xml.
 
-    if not configFile.is_file():
+    looks for vtr_flow/misc/mosaic/<arch_stem>/arch_config.tcl only and returns
+    none when missing so synthesis runs facts-only from the arch xml with no
+    silent family fallback or stem alias table.
+    """
+    arch_path = Path(architecture_file_path)
+    arch_stem = arch_path.stem
+    misc_path = Path(vtr.paths.mosaic_misc_path)
+    support_dir = misc_path / arch_stem
+    config_file = support_dir / "arch_config.tcl"
+
+    if not config_file.is_file():
         warnings.warn(
             "mosaic: no policy support dir for arch '{}'; "
             "running facts-only (arch_facts.tcl from xml, no arch_config.tcl). "
-            "add {} to supply costs/scripts/thresholds.".format(archStem, configFile),
+            "add {} to supply costs/scripts/thresholds.".format(arch_stem, config_file),
             stacklevel=2,
         )
         return None
 
-    return supportDir
+    return support_dir
 
 
 # pylint: disable=too-many-arguments, too-many-locals
-# USE: fill the template tokens in the copied mosaic yosys script.
 def init_script_file(
     yosys_script_full_path,
     circuit_list,
@@ -71,80 +72,80 @@ def init_script_file(
     raw_netlist_name,
     architecture_file_path,
 ):
+    """fill the template tokens in the copied mosaic yosys script."""
     # yosys tcl wants forward slashes even on windows
-    supportDir = resolve_arch_support_dir(architecture_file_path)
-    if supportDir is None:
-        archSupportDir = ""
+    support_dir = resolve_arch_support_dir(architecture_file_path)
+    if support_dir is None:
+        arch_support_dir = ""
     else:
-        archSupportDir = str(supportDir.resolve()).replace("\\", "/")
-    templateDir = str(vtr.paths.mosaic_template_path.resolve()).replace("\\", "/")
+        arch_support_dir = str(support_dir.resolve()).replace("\\", "/")
+    template_dir = str(vtr.paths.mosaic_template_path.resolve()).replace("\\", "/")
 
     # YYY makes this the mosaic leg because max_level -clk2clk takes clock cut
     # points from the arch xml instead of vendor cell lists.
-    vtrArchFlag = "-vtr_arch {}".format(architecture_file_path)
+    vtr_arch_flag = "-vtr_arch {}".format(architecture_file_path)
 
     vtr.file_replace(
         yosys_script_full_path,
         {
             "XXX": " ".join(str(s) for s in circuit_list),
-            "TDIR": templateDir,
+            "TDIR": template_dir,
             "TTT": top_module,
             "ZZZ": raw_netlist_name,
-            "ARCH_SUPPORT_DIR": archSupportDir,
+            "ARCH_SUPPORT_DIR": arch_support_dir,
             "VVV": architecture_file_path,
-            "YYY": vtrArchFlag,
+            "YYY": vtr_arch_flag,
         },
     )
 
 
-# USE: collect model names declared in the arch xml.
 def parse_arch_blif_model_names(arch_xml_path):
+    """collect model names declared in the arch xml."""
     text = Path(arch_xml_path).read_text(encoding="utf-8", errors="replace")
     return set(re.findall(r'<model\s+name="([^"]+)"', text))
 
 
-# USE: drop unused blackbox lib .model blocks (e.g. dffes) the arch never uses.
 def prune_blif_models_not_in_arch(blif_path, arch_xml_path):
+    """drop unused blackbox lib .model blocks (e.g. dffes) the arch never uses."""
     allowed = parse_arch_blif_model_names(arch_xml_path)
     text = blif_path.read_text(encoding="utf-8", errors="replace")
-    usedSubckts = set(re.findall(r"^\.subckt\s+(\S+)", text, re.MULTILINE))
+    used_subckts = set(re.findall(r"^\.subckt\s+(\S+)", text, re.MULTILINE))
 
     blocks = [b for b in re.split(r"(?=^\.model )", text, flags=re.MULTILINE) if b.strip()]
 
     # yosys prepends blackbox lib models before the design model, so the top is
     # the first .model whose block is not a blackbox lib entry.
-    topModel = None
+    top_model = None
     for block in blocks:
-        modelMatch = re.match(r"^\.model\s+(\S+)", block, re.MULTILINE)
-        if modelMatch and ".blackbox" not in block:
-            topModel = modelMatch.group(1)
+        model_match = re.match(r"^\.model\s+(\S+)", block, re.MULTILINE)
+        if model_match and ".blackbox" not in block:
+            top_model = model_match.group(1)
             break
 
-    keptBlocks = []
+    kept_blocks = []
     for block in blocks:
-        modelMatch = re.match(r"^\.model\s+(\S+)", block, re.MULTILINE)
-        if not modelMatch:
-            keptBlocks.append(block)
+        model_match = re.match(r"^\.model\s+(\S+)", block, re.MULTILINE)
+        if not model_match:
+            kept_blocks.append(block)
             continue
-        modelName = modelMatch.group(1)
-        isBlackboxLib = ".blackbox" in block
+        model_name = model_match.group(1)
+        is_blackbox_lib = ".blackbox" in block
         if (
-            isBlackboxLib
-            and modelName not in allowed
-            and modelName not in usedSubckts
-            and modelName != topModel
+            is_blackbox_lib
+            and model_name not in allowed
+            and model_name not in used_subckts
+            and model_name != top_model
         ):
             continue
-        keptBlocks.append(block)
+        kept_blocks.append(block)
 
-    outText = "".join(keptBlocks)
-    if outText and not outText.endswith("\n"):
-        outText += "\n"
-    blif_path.write_text(outText, encoding="utf-8")
+    out_text = "".join(kept_blocks)
+    if out_text and not out_text.endswith("\n"):
+        out_text += "\n"
+    blif_path.write_text(out_text, encoding="utf-8")
 
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-statements
-# USE: run mosaic on the specified architecture file and circuit.
 def run(
     architecture_file,
     circuit_file,
@@ -285,13 +286,13 @@ def run(
 
     # arch_facts.tcl is written into the run dir by vtr_arch_rules, and we pass
     # it so ram addr-pad rewrites recognize aliased sp/dp model names.
-    fixBlifCmd = [sys.executable, str(fix_blif_script), output_netlist.name]
-    archFactsPath = temp_dir / "arch_facts.tcl"
-    if archFactsPath.is_file():
-        fixBlifCmd += ["--arch-facts", archFactsPath.name]
+    fix_blif_cmd = [sys.executable, str(fix_blif_script), output_netlist.name]
+    arch_facts_path = temp_dir / "arch_facts.tcl"
+    if arch_facts_path.is_file():
+        fix_blif_cmd += ["--arch-facts", arch_facts_path.name]
 
     command_runner.run_system_command(
-        fixBlifCmd,
+        fix_blif_cmd,
         temp_dir=temp_dir,
         log_filename="mosaic_fix_blif.out",
         indent_depth=1,

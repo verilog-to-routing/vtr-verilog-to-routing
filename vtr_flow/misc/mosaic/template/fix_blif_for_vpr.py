@@ -23,22 +23,22 @@ import re
 import sys
 from pathlib import Path
 
-latchSubcktRe = re.compile(r"^\.subckt\s+latch_")
-addrGndRe = re.compile(r"\b((?:addr|addr1|addr2)\[\d+\]=)gnd\b")
+LATCH_SUBCKT_RE = re.compile(r"^\.subckt\s+latch_")
+ADDR_GND_RE = re.compile(r"\b((?:addr|addr1|addr2)\[\d+\]=)gnd\b")
 # hierarchical separator inside identifiers (word.word, not directive dots).
-hierDotRe = re.compile(r"(?<=[\w\]])(\.)(?=[\w$])")
-latchQSuffix = "$lq"
+HIER_DOT_RE = re.compile(r"(?<=[\w\]])(\.)(?=[\w$])")
+LATCH_Q_SUFFIX = "$lq"
 
 
-# USE: build a .subckt matcher for the (possibly aliased) ram model names.
-def makeRamSubcktRe(spRamModel: str, dpRamModel: str) -> re.Pattern[str]:
-    names = sorted({spRamModel, dpRamModel})
+def make_ram_subckt_re(sp_ram_model: str, dp_ram_model: str) -> re.Pattern[str]:
+    """build a .subckt matcher for the (possibly aliased) ram model names."""
+    names = sorted({sp_ram_model, dp_ram_model})
     escaped = "|".join(re.escape(name) for name in names)
     return re.compile(r"^\.subckt\s+(?:" + escaped + r")\b")
 
 
-# USE: join blif '\\' continuations into logical lines.
-def joinContinuedLines(text: str) -> list[str]:
+def join_continued_lines(text: str) -> list[str]:
+    """join blif '\\' continuations into logical lines."""
     lines: list[str] = []
     buf = ""
     for raw in text.splitlines():
@@ -53,38 +53,38 @@ def joinContinuedLines(text: str) -> list[str]:
     return lines
 
 
-# USE: rewrite ram addr pads from gnd to unconn on matching .subckt lines.
-def fixRamAddrPads(line: str, ramSubcktRe: re.Pattern[str]) -> tuple[str, int]:
-    if not ramSubcktRe.match(line):
+def fix_ram_addr_pads(line: str, ram_subckt_re: re.Pattern[str]) -> tuple[str, int]:
+    """rewrite ram addr pads from gnd to unconn on matching .subckt lines."""
+    if not ram_subckt_re.match(line):
         return line, 0
-    nHits = len(addrGndRe.findall(line))
-    return addrGndRe.sub(r"\1unconn", line), nHits
+    n_hits = len(ADDR_GND_RE.findall(line))
+    return ADDR_GND_RE.sub(r"\1unconn", line), n_hits
 
 
-# USE: replace hierarchical dots inside identifiers with ~.
-def fixHierDots(line: str) -> tuple[str, int]:
-    nHits = len(hierDotRe.findall(line))
-    return hierDotRe.sub("~", line), nHits
+def fix_hier_dots(line: str) -> tuple[str, int]:
+    """replace hierarchical dots inside identifiers with ~."""
+    n_hits = len(HIER_DOT_RE.findall(line))
+    return HIER_DOT_RE.sub("~", line), n_hits
 
 
-# HELPER: collect latch Q net names from .latch and latch_ .subckt lines.
-def collectLatchQs(lines: list[str]) -> set[str]:
-    latchQs: set[str] = set()
+def collect_latch_qs(lines: list[str]) -> set[str]:
+    """collect latch Q net names from .latch and latch_ .subckt lines."""
+    latch_qs: set[str] = set()
     for line in lines:
         s = line.strip()
         if s.startswith(".latch"):
             parts = s.split()
             if len(parts) >= 3:
-                latchQs.add(parts[2])
-        elif latchSubcktRe.match(s):
+                latch_qs.add(parts[2])
+        elif LATCH_SUBCKT_RE.match(s):
             for tok in s.split()[2:]:
                 if tok.startswith("O="):
-                    latchQs.add(tok[2:])
-    return latchQs
+                    latch_qs.add(tok[2:])
+    return latch_qs
 
 
-# HELPER: nets that become abc COs (blackbox input pins plus primary outputs).
-def collectBlackboxInputsAndPos(lines: list[str]) -> set[str]:
+def collect_blackbox_inputs_and_pos(lines: list[str]) -> set[str]:
+    """nets that become abc COs (blackbox input pins plus primary outputs)."""
     nets: set[str] = set()
     for line in lines:
         s = line.strip()
@@ -101,125 +101,129 @@ def collectBlackboxInputsAndPos(lines: list[str]) -> set[str]:
     return nets
 
 
-# USE: rename latch Q nets that collide with blackbox inputs or POs.
-# inserts buffers so consumers keep the original net name.
-def uniquifyLatchQCollisions(lines: list[str]) -> tuple[list[str], int]:
-    latchQs = collectLatchQs(lines)
-    collisionNets = latchQs & collectBlackboxInputsAndPos(lines)
-    if not collisionNets:
+# pylint: disable=too-many-locals
+def uniquify_latch_q_collisions(lines: list[str]) -> tuple[list[str], int]:
+    """rename latch Q nets that collide with blackbox inputs or POs.
+
+    inserts buffers so consumers keep the original net name.
+    """
+    latch_qs = collect_latch_qs(lines)
+    collision_nets = latch_qs & collect_blackbox_inputs_and_pos(lines)
+    if not collision_nets:
         return lines, 0
 
     # avoid clobbering an existing net name when choosing the uniquified latch Q.
-    allNets: set[str] = set()
-    tokenRe = re.compile(r"[^\s=]+")
+    all_nets: set[str] = set()
+    token_re = re.compile(r"[^\s=]+")
     for line in lines:
-        allNets.update(tokenRe.findall(line))
+        all_nets.update(token_re.findall(line))
 
-    renameMap: dict[str, str] = {}
-    for qName in collisionNets:
-        newName = qName + latchQSuffix
+    rename_map: dict[str, str] = {}
+    for q_name in collision_nets:
+        new_name = q_name + LATCH_Q_SUFFIX
         n = 0
-        while newName in allNets or newName in renameMap.values():
+        while new_name in all_nets or new_name in rename_map.values():
             n += 1
-            newName = f"{qName}{latchQSuffix}{n}"
-        renameMap[qName] = newName
-        allNets.add(newName)
+            new_name = f"{q_name}{LATCH_Q_SUFFIX}{n}"
+        rename_map[q_name] = new_name
+        all_nets.add(new_name)
 
-    outLines: list[str] = []
-    nRenamed = 0
+    out_lines: list[str] = []
+    n_renamed = 0
     for line in lines:
         s = line.strip()
         if s.startswith(".latch"):
             parts = s.split()
-            if len(parts) >= 3 and parts[2] in renameMap:
-                oldQ = parts[2]
-                newQ = renameMap[oldQ]
-                parts[2] = newQ
-                outLines.append(" ".join(parts))
+            if len(parts) >= 3 and parts[2] in rename_map:
+                old_q = parts[2]
+                new_q = rename_map[old_q]
+                parts[2] = new_q
+                out_lines.append(" ".join(parts))
                 # buffer the renamed latch Q so consumers keep the original net name.
-                outLines.append(f".names {newQ} {oldQ}")
-                outLines.append("1 1")
-                nRenamed += 1
+                out_lines.append(f".names {new_q} {old_q}")
+                out_lines.append("1 1")
+                n_renamed += 1
                 continue
-        elif latchSubcktRe.match(s):
+        elif LATCH_SUBCKT_RE.match(s):
             toks = s.split()
-            changed = False
+            old_for_buf = None
             for i, tok in enumerate(toks):
                 if tok.startswith("O="):
-                    oldQ = tok[2:]
-                    if oldQ in renameMap:
-                        toks[i] = f"O={renameMap[oldQ]}"
-                        changed = True
-                        oldForBuf = oldQ
-            if changed:
-                outLines.append(" ".join(toks))
-                outLines.append(f".names {renameMap[oldForBuf]} {oldForBuf}")
-                outLines.append("1 1")
-                nRenamed += 1
+                    old_q = tok[2:]
+                    if old_q in rename_map:
+                        toks[i] = f"O={rename_map[old_q]}"
+                        old_for_buf = old_q
+            if old_for_buf is not None:
+                out_lines.append(" ".join(toks))
+                out_lines.append(f".names {rename_map[old_for_buf]} {old_for_buf}")
+                out_lines.append("1 1")
+                n_renamed += 1
                 continue
-        outLines.append(line)
-    return outLines, nRenamed
+        out_lines.append(line)
+    return out_lines, n_renamed
 
 
-# USE: apply all blif hygiene fixes and return rewritten text plus stats.
-def fixBlifText(
+def fix_blif_text(
     text: str,
-    spRamModel: str = "single_port_ram",
-    dpRamModel: str = "dual_port_ram",
+    sp_ram_model: str = "single_port_ram",
+    dp_ram_model: str = "dual_port_ram",
 ) -> tuple[str, dict]:
+    """apply all blif hygiene fixes and return rewritten text plus stats."""
     stats = {
-        "ramAddrGndToUnconn": 0,
-        "hierDots": 0,
-        "latchQUniquified": 0,
+        "ram_addr_gnd_to_unconn": 0,
+        "hier_dots": 0,
+        "latch_q_uniquified": 0,
     }
-    ramSubcktRe = makeRamSubcktRe(spRamModel, dpRamModel)
+    ram_subckt_re = make_ram_subckt_re(sp_ram_model, dp_ram_model)
     # work on logical lines so latch/subckt rewrites see full statements.
-    logical = joinContinuedLines(text)
-    outLogical: list[str] = []
+    logical = join_continued_lines(text)
+    out_logical: list[str] = []
     for line in logical:
-        line, nAddr = fixRamAddrPads(line, ramSubcktRe)
-        stats["ramAddrGndToUnconn"] += nAddr
-        line, nDots = fixHierDots(line)
-        stats["hierDots"] += nDots
-        outLogical.append(line)
+        line, n_addr = fix_ram_addr_pads(line, ram_subckt_re)
+        stats["ram_addr_gnd_to_unconn"] += n_addr
+        line, n_dots = fix_hier_dots(line)
+        stats["hier_dots"] += n_dots
+        out_logical.append(line)
 
-    outLogical, nUniq = uniquifyLatchQCollisions(outLogical)
-    stats["latchQUniquified"] = nUniq
+    out_logical, n_uniq = uniquify_latch_q_collisions(out_logical)
+    stats["latch_q_uniquified"] = n_uniq
 
-    out = "\n".join(outLogical)
+    out = "\n".join(out_logical)
     if text.endswith("\n") or out:
         out += "\n"
     return out, stats
 
 
-# USE: rewrite a blif file in place.
-def fixBlifFile(
-    blifPath: Path,
-    spRamModel: str = "single_port_ram",
-    dpRamModel: str = "dual_port_ram",
+def fix_blif_file(
+    blif_path: Path,
+    sp_ram_model: str = "single_port_ram",
+    dp_ram_model: str = "dual_port_ram",
 ) -> dict:
-    text = blifPath.read_text(encoding="utf-8", errors="replace")
-    out, stats = fixBlifText(text, spRamModel=spRamModel, dpRamModel=dpRamModel)
-    blifPath.write_text(out, encoding="utf-8")
+    """rewrite a blif file in place."""
+    text = blif_path.read_text(encoding="utf-8", errors="replace")
+    out, stats = fix_blif_text(text, sp_ram_model=sp_ram_model, dp_ram_model=dp_ram_model)
+    blif_path.write_text(out, encoding="utf-8")
     return stats
 
 
-# USE: parse spRamModel/dpRamModel from arch_facts.tcl with classic defaults.
-def readRamModelsFromArchFacts(archFactsPath: Path) -> tuple[str, str]:
-    spRamModel = "single_port_ram"
-    dpRamModel = "dual_port_ram"
-    if not archFactsPath.is_file():
-        return spRamModel, dpRamModel
-    for line in archFactsPath.read_text(encoding="utf-8", errors="replace").splitlines():
+def read_ram_models_from_arch_facts(arch_facts_path: Path) -> tuple[str, str]:
+    """parse sp/dp ram model names from arch_facts.tcl with classic defaults."""
+    sp_ram_model = "single_port_ram"
+    dp_ram_model = "dual_port_ram"
+    if not arch_facts_path.is_file():
+        return sp_ram_model, dp_ram_model
+    for line in arch_facts_path.read_text(encoding="utf-8", errors="replace").splitlines():
         stripped = line.strip()
+        # tcl knobs keep camelCase names from the mosaic arch_facts emitter.
         if stripped.startswith("set spRamModel "):
-            spRamModel = stripped.split(None, 2)[2].strip().strip('"')
+            sp_ram_model = stripped.split(None, 2)[2].strip().strip('"')
         elif stripped.startswith("set dpRamModel "):
-            dpRamModel = stripped.split(None, 2)[2].strip().strip('"')
-    return spRamModel, dpRamModel
+            dp_ram_model = stripped.split(None, 2)[2].strip().strip('"')
+    return sp_ram_model, dp_ram_model
 
 
 def main(argv=None) -> int:
+    """cli entry: rewrite a blif in place for vpr/abc hygiene."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("blif", type=Path, help="blif file to rewrite in place")
     parser.add_argument(
@@ -242,23 +246,23 @@ def main(argv=None) -> int:
     if not args.blif.is_file():
         print(f"error: missing blif {args.blif}", file=sys.stderr)
         return 1
-    spRamModel = args.sp_ram
-    dpRamModel = args.dp_ram
-    if spRamModel is None or dpRamModel is None:
-        factsSp, factsDp = readRamModelsFromArchFacts(
+    sp_ram_model = args.sp_ram
+    dp_ram_model = args.dp_ram
+    if sp_ram_model is None or dp_ram_model is None:
+        facts_sp, facts_dp = read_ram_models_from_arch_facts(
             args.arch_facts if args.arch_facts is not None else args.blif.parent / "arch_facts.tcl"
         )
-        if spRamModel is None:
-            spRamModel = factsSp
-        if dpRamModel is None:
-            dpRamModel = factsDp
-    stats = fixBlifFile(args.blif, spRamModel=spRamModel, dpRamModel=dpRamModel)
+        if sp_ram_model is None:
+            sp_ram_model = facts_sp
+        if dp_ram_model is None:
+            dp_ram_model = facts_dp
+    stats = fix_blif_file(args.blif, sp_ram_model=sp_ram_model, dp_ram_model=dp_ram_model)
     print(
         f"fix_blif_for_vpr: {args.blif} "
-        f"sp={spRamModel} dp={dpRamModel} "
-        f"ramAddrGndToUnconn={stats['ramAddrGndToUnconn']} "
-        f"hierDots={stats['hierDots']} "
-        f"latchQUniquified={stats['latchQUniquified']}"
+        f"sp={sp_ram_model} dp={dp_ram_model} "
+        f"ram_addr_gnd_to_unconn={stats['ram_addr_gnd_to_unconn']} "
+        f"hier_dots={stats['hier_dots']} "
+        f"latch_q_uniquified={stats['latch_q_uniquified']}"
     )
     return 0
 

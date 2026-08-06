@@ -45,7 +45,7 @@ struct MaxLvlPass : public ScriptPass {
     pool<SigBit> driven_bits;
 
     int maxlvl;
-    int max_heigth;
+    int max_height;
     SigBit maxbit;
 
     pool<SigBit> visited_bits;
@@ -266,13 +266,13 @@ struct MaxLvlPass : public ScriptPass {
     }
 
     // HELPER: compute combinational height of a bit for critical-path analysis.
-    int get_heigth(SigBit bit) {
+    int get_height(SigBit bit) {
       auto &bitinfo = bits.at(bit);
 
-      int heigth = get<3>(bitinfo);
+      int height = get<3>(bitinfo);
 
-      if (heigth >= 0) {
-        return heigth;
+      if (height >= 0) {
+        return height;
       }
 
       if (!get<2>(bitinfo)) {
@@ -285,18 +285,18 @@ struct MaxLvlPass : public ScriptPass {
         get<3>(bitinfo) = 0;
         log_warning("Detected loop at %s in %s\n", log_signal(bit),
                     log_id(module));
-        return heigth;
+        return height;
       }
 
       visited_bits.insert(bit);
 
-      heigth = get_heigth(get<1>(bitinfo));
+      height = get_height(get<1>(bitinfo));
 
-      heigth += 1;
+      height += 1;
 
-      get<3>(bitinfo) = heigth;
+      get<3>(bitinfo) = height;
 
-      return heigth;
+      return height;
     }
 
     // HELPER: depth-first traversal assigning logic levels along fanout edges.
@@ -351,7 +351,7 @@ struct MaxLvlPass : public ScriptPass {
     }
 
     // HELPER: recursively collect bits on the critical path at a given height.
-    void get_cps_rec(SigBit bit, int heigth) {
+    void get_cps_rec(SigBit bit, int height) {
       auto &bitinfo = bits.at(bit);
 
       if (cps.count(bit)) {
@@ -362,12 +362,12 @@ struct MaxLvlPass : public ScriptPass {
         return;
       }
 
-      if (get<3>(bitinfo) == heigth) {
+      if (get<3>(bitinfo) == height) {
         assert(get<2>(bitinfo));
         cps.insert(bit);
       }
 
-      if (get<3>(bitinfo) < heigth) {
+      if (get<3>(bitinfo) < height) {
         return;
       }
 
@@ -375,14 +375,14 @@ struct MaxLvlPass : public ScriptPass {
 
       SigBit from = get<1>(bitinfo);
 
-      get_cps_rec(from, heigth - 1);
+      get_cps_rec(from, height - 1);
     }
 
     // HELPER: find all bits that lie on the maximum-height critical path.
     void get_cps() {
       for (auto &it : bits) {
-        if (get<3>(it.second) == max_heigth) {
-          get_cps_rec(it.first, max_heigth);
+        if (get<3>(it.second) == max_height) {
+          get_cps_rec(it.first, max_height);
         }
       }
     }
@@ -412,16 +412,16 @@ struct MaxLvlPass : public ScriptPass {
 
       visited_bits.clear();
 
-      max_heigth = -1;
+      max_height = -1;
 
       for (auto &it : bits) {
         visited_bits.clear();
 
         if (get<3>(it.second) < 0) {
-          int heigth = get_heigth(it.first);
+          int height = get_height(it.first);
 
-          if (heigth > max_heigth) {
-            max_heigth = heigth;
+          if (height > max_height) {
+            max_height = height;
           }
         }
       }
@@ -440,7 +440,7 @@ struct MaxLvlPass : public ScriptPass {
       if (summary) {
         log("\n");
         log("   Max logic level = %d\n", maxlvl);
-        log("   Max heigth      = %d\n", max_heigth);
+        log("   Max height      = %d\n", max_height);
         log("   CP size         = %ld\n", cps.size());
         log("   Total bits      = %ld\n", driven_bits.size());
 
@@ -459,7 +459,7 @@ struct MaxLvlPass : public ScriptPass {
 
         log("\n");
         log("   Max logic level = %d\n", maxlvl);
-        log("   Max heigth      = %d\n", max_heigth);
+        log("   Max height      = %d\n", max_height);
         log("   CP size         = %ld\n", cps.size());
         log("   Total bits      = %ld\n", driven_bits.size());
       }

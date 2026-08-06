@@ -28,7 +28,7 @@
 // libs/EXTERNAL/libpugixml so the plugin builds against Yosys alone.
 namespace mosaic {
 
-// classic VTR hardblock model namess. may be overridden via -alias on
+// classic VTR hardblock model names. may be overridden via -alias on
 // vtr_arch_rules or alias* knobs in arch_config.tcl.
 struct ClassicModelNames {
     std::string multiply = "multiply";
