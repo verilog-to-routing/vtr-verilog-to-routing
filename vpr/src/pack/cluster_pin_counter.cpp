@@ -178,14 +178,14 @@ static bool net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin,
 static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
-    const auto driver_pb_type = driver_pb->pb_graph_node->pb_type;
+    const t_pb_type* driver_pb_type = driver_pb->pb_graph_node->pb_type;
     int output_port = 0;
     // Find the port of the pin driving the net as well as the port model.
-    auto driver_port_id = atom_netlist.pin_port(driver_pin_id);
-    auto driver_model_port = atom_netlist.port_model(driver_port_id);
+    AtomPortId driver_port_id = atom_netlist.pin_port(driver_pin_id);
+    const t_model_ports* driver_model_port = atom_netlist.port_model(driver_port_id);
     // Find the port id of the port containing the driving pin in the driver_pb_type.
     for (int i = 0; i < driver_pb_type->num_ports; i++) {
-        auto& prim_port = driver_pb_type->ports[i];
+        t_port& prim_port = driver_pb_type->ports[i];
         if (prim_port.type == OUT_PORT) {
             if (prim_port.model_port == driver_model_port) {
                 // Get the output pb_graph_pin driving this input net.
@@ -208,10 +208,10 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_input_pin(const
     VTR_ASSERT(pb_graph_pin->port->type == IN_PORT);
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
-    const auto driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
-    const auto driver_pin_id = atom_ctx.netlist().net_driver(net_id);
-    const auto prim_blk_id = atom_to_pb.pb_atom(primitive_pb);
-    const auto driver_pb = atom_to_pb.atom_pb(driver_blk_id);
+    const AtomBlockId driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
+    const AtomPinId driver_pin_id = atom_ctx.netlist().net_driver(net_id);
+    const AtomBlockId prim_blk_id = atom_to_pb.pb_atom(primitive_pb);
+    const t_pb* driver_pb = atom_to_pb.atom_pb(driver_blk_id);
 
     // If the driver atom is in the same cluster as primitive_pb, find the
     // pb_graph_pin that drives net_id. Otherwise leave it null; the driver
@@ -225,9 +225,9 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_input_pin(const
     }
 
     // Starting from the parent pb of the input primitive go up in the hierarchy till the root block
-    for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
-        const auto depth = cur_pb->pb_graph_node->pb_type->depth;
-        const auto pin_class = pb_graph_pin->parent_pin_class[depth];
+    for (const t_pb* cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
+        const int depth = cur_pb->pb_graph_node->pb_type->depth;
+        const int pin_class = pb_graph_pin->parent_pin_class[depth];
         VTR_ASSERT(pin_class != UNDEFINED);
 
         bool is_reachable = false;
@@ -264,7 +264,7 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
                                                                             const AtomPBBimap& atom_to_pb) {
     VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT);
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const auto driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
+    const AtomBlockId driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
     int num_net_sinks = static_cast<int>(atom_ctx.netlist().net_sinks(net_id).size());
 
     bool all_sinks_in_cur_cluster = false;
@@ -277,9 +277,9 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
     bool confirmed_absorbed = false;
 
     // Starting from the parent pb of the given primitive, go up in the hierarchy till the root block
-    for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
-        const auto depth = cur_pb->pb_graph_node->pb_type->depth;
-        const auto pin_class = pb_graph_pin->parent_pin_class[depth];
+    for (const t_pb* cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
+        const int depth = cur_pb->pb_graph_node->pb_type->depth;
+        const int pin_class = pb_graph_pin->parent_pin_class[depth];
         VTR_ASSERT(pin_class != UNDEFINED);
 
         if (confirmed_absorbed) {
@@ -314,7 +314,7 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used_for_output_pin(cons
             if (!all_sinks_in_cur_cluster_computed) {
                 const LegalizationClusterId driver_cluster = atom_cluster[driver_blk_id];
                 all_sinks_in_cur_cluster = true;
-                for (auto pin_id : atom_ctx.netlist().net_sinks(net_id)) {
+                for (AtomPinId pin_id : atom_ctx.netlist().net_sinks(net_id)) {
                     if (atom_cluster[atom_ctx.netlist().pin_block(pin_id)] != driver_cluster) {
                         all_sinks_in_cur_cluster = false;
                         break;
@@ -359,8 +359,8 @@ void ClusterPinCounter::compute_and_mark_lookahead_pins_used(
     VTR_ASSERT(cur_pb != nullptr);
 
     // Walk through inputs and outputs marking pins off of the same class.
-    for (auto pin_id : atom_netlist.block_pins(blk_id)) {
-        auto net_id = atom_netlist.pin_net(pin_id);
+    for (AtomPinId pin_id : atom_netlist.block_pins(blk_id)) {
+        AtomNetId net_id = atom_netlist.pin_net(pin_id);
 
         const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
 
