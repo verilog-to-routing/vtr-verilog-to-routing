@@ -12,12 +12,12 @@
 void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
     os << "#Packing pin usage report\n";
 
-    auto& cluster_ctx = ctx.clustering();
-    auto& device_ctx = ctx.device();
+    const ClusteringContext& cluster_ctx = ctx.clustering();
+    const DeviceContext& device_ctx = ctx.device();
 
     std::map<t_logical_block_type_ptr, size_t> total_input_pins;
     std::map<t_logical_block_type_ptr, size_t> total_output_pins;
-    for (auto const& type : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         if (is_empty_type(&type)) continue;
 
         t_pb_type* pb_type = type.pb_type;
@@ -29,7 +29,7 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
     std::map<t_logical_block_type_ptr, std::vector<float>> inputs_used;
     std::map<t_logical_block_type_ptr, std::vector<float>> outputs_used;
 
-    for (auto blk : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk : cluster_ctx.clb_nlist.blocks()) {
         t_logical_block_type_ptr type = cluster_ctx.clb_nlist.block_type(blk);
 
         inputs_used[type].push_back(static_cast<float>(cluster_ctx.clb_nlist.block_input_pins(blk).size() + cluster_ctx.clb_nlist.block_clock_pins(blk).size()));
@@ -40,8 +40,8 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
 
     os << std::fixed << std::setprecision(2);
 
-    for (auto const& logical_type : device_ctx.logical_block_types) {
-        auto type = &logical_type;
+    for (const t_logical_block_type& logical_type : device_ctx.logical_block_types) {
+        t_logical_block_type_ptr type = &logical_type;
         if (is_empty_type(type)) continue;
         if (!inputs_used.contains(type)) continue;
 
@@ -70,7 +70,7 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
 
         if (num_input_pins != 0) {
             os << "\t\tHistogram:\n";
-            auto input_histogram = build_histogram(type_inputs_used, 10, 0, static_cast<float>(num_input_pins));
+            std::vector<HistogramBucket> input_histogram = build_histogram(type_inputs_used, 10, 0, static_cast<float>(num_input_pins));
             for (const std::string& line : format_histogram(input_histogram)) {
                 os << "\t\t" << line << "\n";
             }
@@ -87,8 +87,8 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
         if (num_output_pins != 0) {
             os << "\t\tHistogram:\n";
 
-            auto output_histogram = build_histogram(type_outputs_used, 10, 0, static_cast<float>(num_output_pins));
-            for (auto line : format_histogram(output_histogram)) {
+            std::vector<HistogramBucket> output_histogram = build_histogram(type_outputs_used, 10, 0, static_cast<float>(num_output_pins));
+            for (const std::string& line : format_histogram(output_histogram)) {
                 os << "\t\t" << line << "\n";
             }
         }
