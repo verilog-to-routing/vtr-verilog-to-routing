@@ -1102,6 +1102,12 @@ struct t_placer_opts {
 
     int placement_saves_per_temperature;
 
+    /// Number of workers used to speculatively evaluate placement swaps in parallel
+    /// (1 = sequential annealer). The annealing thread is worker 0, so W workers
+    /// spawn W-1 threads. Always >= 1 here; 0 is resolved to the host concurrency
+    /// during setup.
+    int swap_eval_num_workers;
+
     e_place_effort_scaling effort_scaling;
 
     e_timing_update_type timing_update_type;

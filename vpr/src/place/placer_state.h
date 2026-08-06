@@ -15,6 +15,22 @@
 #include "PlacerTimingCosts.h"
 
 /**
+ * @brief Snapshot of the committed timing values a single evaluated move writes
+ * for one affected connection.
+ *
+ * Captured with PlacerTimingContext::extract_connection_commit_record() on the
+ * state that evaluated a move and replayed on any other state with
+ * apply_connection_commit_record(). Used by the speculative parallel swap
+ * evaluation engine to commit a winning move without re-evaluating it.
+ */
+struct t_connection_commit_entry {
+    ClusterNetId net_id;
+    int ipin;
+    float connection_delay;
+    double connection_timing_cost;
+};
+
+/**
  * @brief State relating to the timing driven data.
  *
  * These structures are used when the placer is using a timing driven
@@ -46,6 +62,22 @@ struct PlacerTimingContext : public Context {
      * based on the move proposed in blocks_affected
      */
     void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    /**
+     * @brief Captures, for every affected connection of the currently evaluated
+     * move, the committed values commit_td_cost() would write. Must be called
+     * before the move is committed or reverted on this state.
+     * Must be kept consistent with commit_td_cost().
+     */
+    void extract_connection_commit_record(const std::vector<ClusterPinId>& affected_pins,
+                                          std::vector<t_connection_commit_entry>& record) const;
+
+    /**
+     * @brief Writes the recorded committed connection delays/timing costs of an
+     * accepted move, without touching the proposed_* arrays.
+     * Must be kept consistent with commit_td_cost().
+     */
+    void apply_connection_commit_record(const std::vector<t_connection_commit_entry>& record);
 
     /**
      * @brief Net connection delays based on the committed block positions.

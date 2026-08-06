@@ -31,6 +31,12 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
     karmed_bandit_agent->process_outcome(reward, reward_fun);
 }
 
+void SimpleRLMoveGenerator::sync_state_from(const MoveGenerator& other) {
+    const auto* other_rl = dynamic_cast<const SimpleRLMoveGenerator*>(&other);
+    VTR_ASSERT_MSG(other_rl != nullptr, "Can only sync agent state from another SimpleRLMoveGenerator.");
+    karmed_bandit_agent->copy_state_from(*other_rl->karmed_bandit_agent);
+}
+
 /*                                        *
  *                                        *
  *  K-Armed bandit agent implementation   *
@@ -162,6 +168,15 @@ void KArmedBanditAgent::write_agent_info(int last_action, double reward) {
     }
     fprintf(agent_info_file_, "\n");
     fflush(agent_info_file_);
+}
+
+void KArmedBanditAgent::copy_state_from(const KArmedBanditAgent& other) {
+    VTR_ASSERT_SAFE(num_available_actions_ == other.num_available_actions_);
+    VTR_ASSERT_SAFE(q_.size() == other.q_.size());
+
+    exp_alpha_ = other.exp_alpha_;
+    q_ = other.q_;
+    num_action_chosen_ = other.num_action_chosen_;
 }
 
 void KArmedBanditAgent::set_step(float gamma, int move_lim) {
