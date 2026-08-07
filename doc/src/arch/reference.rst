@@ -47,7 +47,7 @@ One example is the IDELAYCTRL of the Series7 devices, which takes as input a ref
 Each model tag must contain 2 tags: ``<input_ports>`` and ``<output_ports>``.
 Each of these contains ``<port>`` tags:
 
-.. arch:tag:: <port name="string" is_clock="{0 | 1} clock="string" combinational_sink_ports="string1 string2 ..."/>
+.. arch:tag:: <port name="string" is_clock="{0 | 1}" clock="string" combinational_sink_ports="string1 string2 ..."/>
 
     :req_param name: The port name.
 
@@ -421,7 +421,7 @@ Grid Location Tags
     .. code-block:: xml
 
         <!-- Create IO's around the device perimeter -->
-        <perimeter type="io" priority=10"/>
+        <perimeter type="io" priority="10"/>
 
         <!-- Create a column of RAMs starting at column 2, and
              repeating every 3 columns. Note that a vertical offset
@@ -475,7 +475,7 @@ Grid Location Tags
 
         <row> DSP example
 
-.. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
+.. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr" repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
 
     :req_param type:
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
@@ -586,7 +586,7 @@ Grid Layout Example
         <!-- Specifies an auto-scaling square FPGA floorplan -->
         <auto_layout aspect_ratio="1.0">
             <!-- Create I/Os around the device perimeter -->
-            <perimeter type="io" priority=10"/>
+            <perimeter type="io" priority="10"/>
 
             <!-- Nothing in the corners -->
             <corners type="EMPTY" priority="100"/>
@@ -1394,7 +1394,7 @@ The following tags are common to all ``<tile>`` tags:
                 <sb_loc type="full" xoffset="1" yoffset="0"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="1"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="2"> <!-- Top Right -->
-            <switchblock_locations/>
+            </switchblock_locations>
 
 .. _arch_complex_blocks:
 
@@ -1880,7 +1880,7 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
             4.6e-10 1.9e-10 2.2e-10
             4.5e-10 6.7e-10 3.5e-10
             7.1e-10 2.9e-10 8.7e-10
-        </delay>
+        </delay_matrix>
 
     .. note:: To specify both ``max`` and ``min`` delays two ``<delay_matrix>`` should be used.
 
@@ -2977,7 +2977,7 @@ The full format is documented below.
         <wireconn num_conns_type="to"/>
             <from type="L4" switchpoint="0,1,2,3"/>
             <from type="L16" switchpoint="0,4,8,12"/>
-            <to type="L4" switchpoint="0/>
+            <to type="L4" switchpoint="0"/>
         </wireconn>
 
     This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12.
@@ -3014,30 +3014,30 @@ An example is shown below:
                 <gather>
                     <!-- Gather 30 connections from the 0, 4, 8 or 12 position of L16 wires of all four sides of a switchblock location -->
                     <wireconn num_conns="30" from_type="L16" from_switchpoint="0,12,8,4" side="rltb"/> 
-                <gather/>
+                </gather>
 
                 <scatter>
                     <!-- Scatter 30 connections to the starting position of L16 wires of all four sides of a switchblock location -->
                     <wireconn num_conns="30" to_type="L16" to_switchpoint="0" side="rtlb"/>
-                <scatter/>
+                </scatter>
                 
                 <sg_link_list>
                     <!-- Link going up one layer, using the '3D_SB_MUX' multiplexer to gather connections from the bottom layer and using the 'TSV' node/wire to move up one layer -->
                     <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="3D_SB_MUX" seg_type="TSV"/> 
                     <!-- Same as above but moving one layer down -->
                     <sg_link name="L_DOWN" z_offset="-1" mux="3D_SB_MUX" seg_type="TSV"/>
-                <sg_link_list/>
+                </sg_link_list>
                 
                 <!-- Instantiate 10 'L_UP' sg_links per switchblock location everywhere on the device -->
                 <sg_location type="EVERYWHERE" num="10" sg_link="L_UP"/>
                 <!-- Instantiate 10 'L_DOWN' sg_links per switchblock location everywhere on the device -->
                 <sg_location type="EVERYWHERE" num="10" sg_link="L_DOWN"/>
-            <sg_pattern/>
+            </sg_pattern>
 
             <sg_pattern name="interposer_conn_sg" type="bidir">
                 ... <!-- Another scatter-gather pattern specification -->
-            <sg_pattern/>
-        <scatter_gather_list/>
+            </sg_pattern>
+        </scatter_gather_list>
 
 .. arch:tag:: <sg_pattern name="string" type={unidir|bidir}>
 
@@ -3341,7 +3341,7 @@ In the tileable architecture file, you may define additional attributes for each
 
   <direct_connection>
     <direct name="string" circuit_model_name="string" interconnection_type="string" x_dir="string" y_dir="string"/>
-  </directlist>
+  </direct_connection>
 
 .. note:: these options are optional. However, if ``interconnection_type`` is set to ``inter_column`` or ``inter_row``, then ``x_dir`` and ``y_dir`` are required.
 

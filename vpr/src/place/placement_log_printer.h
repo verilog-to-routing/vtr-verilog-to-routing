@@ -59,7 +59,7 @@ class PlacementLogPrinter {
 
     /**
      * @brief Print placement metrics and elapsed time after each outer loop iteration of the annealer.
-     * If graphics are on, the function will the screen view.
+     * If graphics are on, the function will update the screen view.
      * @param elapsed_sec Time spent in the latest outer loop iteration.
      */
     void print_place_status(float elapsed_sec) const;
