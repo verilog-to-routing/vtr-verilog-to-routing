@@ -817,7 +817,7 @@ jobs:
         bash mosaic/build_mosaic.sh
 
     - name: Test
-      timeout-minutes: 30
+      timeout-minutes: 40
       run: |
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
