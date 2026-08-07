@@ -1052,9 +1052,7 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
         out_count += num_output_ptrs[i_outset];
     }
 
-    edges = new t_pb_graph_edge[in_count * out_count];
-    for (int i = 0; i < (in_count * out_count); i++)
-        edges[i] = t_pb_graph_edge();
+    edges = new t_pb_graph_edge[in_count * out_count]();
     cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
     edges_head = cur;
@@ -1134,9 +1132,7 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
     }
 
     /* Allocate memory for edges */
-    t_pb_graph_edge* edges = new t_pb_graph_edge[pins_per_set * num_output_sets];
-    for (int i = 0; i < (pins_per_set * num_output_sets); i++)
-        edges[i] = t_pb_graph_edge();
+    t_pb_graph_edge* edges = new t_pb_graph_edge[pins_per_set * num_output_sets]();
     vtr::t_linked_vptr* cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
     edges_head = cur;
@@ -1234,9 +1230,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
     const int pins_per_set = num_output_ptrs[0];
     const int total_edges = num_input_sets * pins_per_set;
 
-    t_pb_graph_edge* edges = new t_pb_graph_edge[total_edges];
-    for (int i = 0; i < total_edges; i++)
-        edges[i] = t_pb_graph_edge();
+    t_pb_graph_edge* edges = new t_pb_graph_edge[total_edges]();
     cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
     edges_head = cur;
