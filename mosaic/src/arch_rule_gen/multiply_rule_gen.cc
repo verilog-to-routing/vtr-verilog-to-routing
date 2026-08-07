@@ -43,14 +43,6 @@ bool isBuiltinHardblock(const std::string &name, const ClassicModelNames &classi
            name == classic.dualPortRam;
 }
 
-// HELPER: max data width across all scanned bram modes for ram stub sizing.
-int maxBramDataWidth(const VtrArchInfo &info) {
-    int maxWidth = 1;
-    for (const auto &mode : info.bramModes)
-        maxWidth = std::max(maxWidth, std::max(mode.dataBitsA, mode.dataBitsB));
-    return maxWidth;
-}
-
 // HELPER: detect whether the arch carries any non-builtin exotic hardblocks.
 bool hasExoticHardblocks(const VtrArchInfo &info, const ClassicModelNames &classic) {
     for (const auto &kv : info.hardblockModels)
