@@ -196,8 +196,8 @@ static void sync_pb_routes_to_routing(void) {
         for (auto [source_inode, sink_inode] : conns_to_restore) {
             ClusterBlockId clb = get_cluster_block_from_rr_node(source_inode);
             t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(source_inode),
-                                                                    rr_graph.node_ylow(source_inode),
-                                                                    rr_graph.node_layer_low(source_inode)});
+                                                                                        rr_graph.node_ylow(source_inode),
+                                                                                        rr_graph.node_layer_low(source_inode)});
             int source_pin = rr_graph.node_pin_num(source_inode);
             int sink_pin = rr_graph.node_pin_num(sink_inode);
 
@@ -318,8 +318,8 @@ static void sync_clustered_netlist_to_routing(void) {
                 continue;
 
             t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rt_node.inode),
-                                                                    rr_graph.node_ylow(rt_node.inode),
-                                                                    rr_graph.node_layer_low(rt_node.inode)});
+                                                                                        rr_graph.node_ylow(rt_node.inode),
+                                                                                        rr_graph.node_layer_low(rt_node.inode)});
 
             int pin_index = rr_graph.node_pin_num(rt_node.inode);
 
