@@ -61,11 +61,11 @@ Useful flags include `--flows mosaic` to skip vanilla VTR, and `--no-rerun` to s
    - If that file is missing, the run is facts-only:
      1. Geometry still comes from the architecture xml.
      2. Knobs stay at the `synthesis.tcl` defaults (no aliases, no `stubAllHardblocks`, default costs).
-     3. Only the shared `template/rules/` templates are used. No arch overlay.
+     3. Only the shared `template/rules/` templates are used.
      4. A warning is logged so the missing policy dir is visible in the log.
 3. Python copies `template/synthesis.tcl` into the run dir, fills path/circuit tokens, and launches Yosys with `wildebeest.so`.
    - The same shared script runs for every architecture.
-   - Arch-specific behavior enters later through `arch_config.tcl` and `rules/` overlays, not by swapping the script.
+   - Arch-specific behavior enters later through `arch_config.tcl` and `rules/` overlays.
    - Only `-mosaic_script <path>` replaces the whole driver script.
 4. `synthesis.tcl` starts running in Yosys.
 5. Knobs are layered in order:
@@ -77,7 +77,7 @@ Useful flags include `--flows mosaic` to skip vanilla VTR, and `--no-rerun` to s
       1. base layer: `template/rules/` (`-tpldir`)
       2. overlay layer: `<arch_xml_stem>/rules/<same_filename>` when it exists (`-overlay-tpldir`)
       3. files missing from the arch `rules/` dir fall back to the shared template
-      - Example: Titan ships only `rules/vtr_hardblock_lib.v.tmpl`; that file comes from the arch dir, every other map still comes from `template/rules/`.
+      - Example: Titan comes with a specific `rules/vtr_hardblock_lib.v.tmpl`; that file comes from the architecture dir, whereas every other map still comes from `template/rules/`.
    2. Fill the chosen template with scanned arch values.
    3. Write the filled file into the run dir.
 8. With the generated files on disk, `synthesis.tcl` starts synthesis on the design:
@@ -87,7 +87,7 @@ Useful flags include `--flows mosaic` to skip vanilla VTR, and `--no-rerun` to s
    4. The classic bram whitebox is elaborated when memories are not soft-only.
    5. Techmap passes use the generated rule files: `memory_libmap` with `bram_memory_map.txt` / `tech_bram.v`, `mul2dsp_map.v`, `mult_map.v`, `add_sub_map.v`, and any exotic maps.
    6. In-Yosys ABC runs for LUT mapping (`abc -luts, etc.`), using the shared or policy-selected scripts.
-   7. Sweep / opt / keep handling cleans up unused hardblock cascade tips.
+   7. Sweep / opt / keep handling cleans up unused hardblocks.
    8. `write_blif` emits `<circuit>.mosaic.blif`.
 9. Python prunes unused blackbox model declarations and runs `fix_blif_for_vpr.py` (ram addr pads, hierarchical net dots, latch-q uniquify).
 10. External VTR ABC is skipped because LUT mapping already happened inside Yosys. The flow continues into VPR.
