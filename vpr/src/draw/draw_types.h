@@ -284,6 +284,9 @@ struct t_draw_state {
     ///@brief If 0, no internal drawing is shown. Otherwise, indicates how many levels of sub-pbs to be drawn
     int show_blk_internal = 0;
 
+    bool all_internals_drawn = false;
+    bool only_clbs_drawn = false;
+
     ///@brief Whether graphics are enabled
     bool show_graphics = false;
 

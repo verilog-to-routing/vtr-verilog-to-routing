@@ -211,6 +211,8 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     if (!draw_state->show_blk_internal) {
         return;
     }
+    draw_state->all_internals_drawn = true;
+    draw_state->only_clbs_drawn = true;
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
@@ -437,14 +439,14 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-    // If we've gone too far, don't draw anything.
-    if (pb_type->depth > draw_state->show_blk_internal) {
+    // If the block's area is too small relative to the screen, don't draw anything.
+    if (!large_enough_to_draw(abs_bbox, g)) {
+        draw_state->all_internals_drawn = false;
         return false;
     }
 
-    // If the block's area is too small relative to the screen, don't draw anything.
-    if (!large_enough_to_draw(abs_bbox, g)) {
-        return false;
+    if (pb_type->depth > 0) {
+       draw_state->only_clbs_drawn = false;
     }
 
     // First draw box.

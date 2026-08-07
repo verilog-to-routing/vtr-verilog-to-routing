@@ -734,7 +734,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             // Note: This illustration is for reference only; the tilted rectangle should have square corners.
 
             // This specifies the dimension of the "tilted rectangle" in pixels.
-            ezgl::t_text_dimension delay_label_dimension = g->get_text_dimension(delay_label_str);
+            ezgl::text_dimension_t delay_label_dimension = g->get_text_dimension(delay_label_str);
             // The bbox is defined in world coordinates, and we need to perform a conversion to pixels at the end.
             double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
                                        + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
@@ -987,7 +987,7 @@ static void draw_total_delay(std::vector<t_label_drawing_info>& final_label_draw
     // The rightmost screen x coordinate.
     double screen_right = g->get_visible_screen().right();
     // String dimension in pixels.
-    ezgl::t_text_dimension str_dimension = g->get_text_dimension(total_delay_str);
+    ezgl::text_dimension_t str_dimension = g->get_text_dimension(total_delay_str);
 
     // Use the screen (pixel) coordinates to draw the total delay string at a fixed screen location.
     g->set_coordinate_system(ezgl::SCREEN);
