@@ -214,6 +214,8 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
     //  - directrf_stratixiv_arch_timing.blif
     //  - gsm_switch_stratixiv_arch_timing.blif
     //
+    // TODO: Also prefetch rr_node_route_inf_[to_node]. It is the first thing touched
+    // per neighbor, by the pre-evaluation prune in timing_driven_add_to_heap().
     for (RREdgeId from_edge : edges) {
         RRNodeId to_node = this->rr_nodes_.edge_sink_node(from_edge);
         this->rr_nodes_.prefetch_node(to_node);
