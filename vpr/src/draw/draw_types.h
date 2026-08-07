@@ -180,7 +180,7 @@ struct t_flyline_draw_coords {
 };
 
 /**
- * @brief Structure used to allow the graphics to proceed by a custom number of steps and then freeze for user interaction.
+ * @brief Structure used to allow the graphics to proceed by a custom number of steps and then pause for user interaction.
  * 
  * This structure corresponds to the "Proceed by Step" section under the "Misc." menu in the UI widget.
  * 
@@ -192,10 +192,10 @@ struct t_flyline_draw_coords {
 struct t_proceed_by_step {
     ///@brief If this mode is enabled. Tied to the "Proceed by Step" toggle switch in the Misc. menu.
     bool enabled = false;
-    ///@brief The number of steps the graphics should proceed before freezing for user interaction. Set by the user.
+    ///@brief The number of steps the graphics should proceed before it pauses for user interaction. Set by the user.
     unsigned int steps_to_proceed = 1;
     ///@brief The current count of steps.
-    /// Used for comparison with steps_to_proceed at every update_screen() to determine if the graphics should freeze.
+    /// Used for comparison with steps_to_proceed at every update_screen() to determine if the graphics should pause.
     unsigned int step_counter = 0;
 };
 
@@ -364,7 +364,7 @@ struct t_draw_state {
     std::string renderer_type = "rhi";
 
     ///@brief A mode that controls if the graphics can proceed by a custom number of steps
-    /// (e.g. temperature change, routing iteration) and then freeze for user interaction.
+    /// (e.g. temperature change, routing iteration) and then pause for user interaction.
     t_proceed_by_step proceed_by_step;
 
     int sequence_number = 0;

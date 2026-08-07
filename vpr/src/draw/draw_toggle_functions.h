@@ -154,7 +154,7 @@ void cross_layer_transparency_cbk(QSpinBox* spinbox, int /*response_id*/, void* 
 /**
  * @brief Callback function for the Proceed by Step toggle switch.
  * 
- * Enables the Proceed by Step mode, where the graphics should freeze for user interaction after counting
+ * Enables the Proceed by Step mode, where the graphics is set to pause for user interaction after
  * a custom number of steps (e.g. temperature change, routing iteration) set by the user.
  * 
  * @param state boolean value tied to the UI toggle switch.

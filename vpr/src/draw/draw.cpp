@@ -482,15 +482,15 @@ void update_screen(ScreenUpdatePriority priority,
     }
 
     // When the priority associated with this screen update is higher than the level set in draw_state,
-    // we need to freeze the graphics. This does not necessarily happen only at a state change.
+    // we need to pause at the current graphics view. This does not necessarily happen only at a state change.
     // Check the definition of gr_automode in draw_state for more information.
-    bool freeze_for_priority = int(priority) >= draw_state->gr_automode;
+    bool pause_for_priority = int(priority) >= draw_state->gr_automode;
 
     // If there was a state change, we must call ezgl::application::run() to update the buttons.
-    // However, by default this causes graphics to freeze for user interaction.
-    // If the priority is such that we shouldn't freeze we need to continue automatically, so
+    // However, by default this causes graphics to pause for user interaction.
+    // If the priority is such that we shouldn't pause we need to continue automatically, so
     // the user won't need to click manually.
-    draw_state->auto_proceed = (state_change && !freeze_for_priority);
+    draw_state->auto_proceed = (state_change && !pause_for_priority);
 
     // Headless mode (save_graphics / graphics_commands without --disp): never
     // block for user interaction — there is no user at the keyboard. Always
@@ -499,17 +499,17 @@ void update_screen(ScreenUpdatePriority priority,
         draw_state->auto_proceed = true;
 
     // When Proceed by Step is enabled (an option in the Misc. menu), we need to track if the number of
-    // steps (e.g. temperature change, routing iteration) since the last graphics freeze has reached
-    // the number specified by the user. If true, we need to freeze the graphics at the current frame.
+    // steps (e.g. temperature change, routing iteration) since the last graphics view has reached
+    // the number specified by the user. If true, we need to pause the graphics at the current graphics view.
     t_proceed_by_step& proceed_by_step = draw_state->proceed_by_step;
     bool steps_reached = proceed_by_step.enabled && (proceed_by_step.step_counter == proceed_by_step.steps_to_proceed);
 
     if (state_change           // Must update buttons.
-        || freeze_for_priority // The priority means graphics should freeze for user interaction.
+        || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
         || steps_reached) {    // The number of steps set by the user is reached.
 
         // Reset the step counter if Proceed by Step is on.
-        // Note that, other cases that freeze the graphics (e.g. a state change)
+        // Note that, other causes that pause the graphics (e.g. a state change)
         // when Proceed by Step is on will also trigger this reset.
         if (proceed_by_step.enabled) {
             // Note that, we are modifying the variable stored in draw_state.
@@ -517,7 +517,7 @@ void update_screen(ScreenUpdatePriority priority,
         }
 
         if (steps_reached) {
-            VTR_LOG("Freezing the graphics for interaction ('Steps to Proceed' reached)\n");
+            VTR_LOG("Pausing optimization to view graphics ('Steps to Proceed' reached). Click 'Proceed' to continue.\n");
         }
 
         const bool has_cmds = !draw_state->graphics_commands.empty();
@@ -568,9 +568,8 @@ void update_screen(ScreenUpdatePriority priority,
     }
 
     // Increments the step counter if Proceed by Step is on.
-    if (proceed_by_step.enabled) {
-        // Note that, we are modifying the variable stored in draw_state.
-        (proceed_by_step.step_counter)++;
+    if (draw_state->proceed_by_step.enabled) {
+        (draw_state->proceed_by_step.step_counter)++;
     }
 #else
     (void)setup_timing_info;
