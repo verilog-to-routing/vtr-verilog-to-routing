@@ -189,9 +189,8 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
              * For carry-chains, since carry-chains are typically quite flexible in terms
              * of size, it is optional whether or not an atom in a netlist matches any
              * particular block inside the chain */
-            packing_patterns[i].is_block_optional = new bool[L_num_blocks];
+            packing_patterns[i].is_block_optional.assign(L_num_blocks, false);
             for (int k = 0; k < L_num_blocks; k++) {
-                packing_patterns[i].is_block_optional[k] = false;
                 if (packing_patterns[i].is_chain && packing_patterns[i].root_block->block_id != k) {
                     packing_patterns[i].is_block_optional[k] = true;
                 }
@@ -395,7 +394,6 @@ static void free_pack_pattern(t_pack_patterns* pack_pattern) {
             pattern_block_list[i] = nullptr;
 
         free(pack_pattern->name);
-        delete[] pack_pattern->is_block_optional;
         free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
         for (int j = 0; j < num_pack_pattern_blocks; j++) {
             delete pattern_block_list[j];
@@ -1035,7 +1033,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
     t_pack_pattern_block* const pattern_root_block = molecule.pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
     // be filled with an atom for legality
-    bool* const is_block_optional = molecule.pack_pattern->is_block_optional;
+    const std::vector<bool>& is_block_optional = molecule.pack_pattern->is_block_optional;
 
     // create a queue of pattern block and atom block id suggested for this block
     std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> pattern_block_queue;
