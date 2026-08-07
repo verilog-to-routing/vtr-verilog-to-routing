@@ -282,23 +282,24 @@ The **Misc.** drop-down menu provides several useful control tools to facilitate
 Proceed by Step
 ~~~~~~~~~~~~~~~
 
-The **Proceed by Step** switch allows the user to frreze the graphics after a custom number of steps (see below the definition of step).
-The user can use the **Steps to Proceed** spinbox to set how many steps to proceed before the graphics freezes.
+The **Proceed by Step** switch allows you to interactively visualize the evolving placement and routing
+after a specified number of optimization steps (see below the definition of step).
+You can use the **Steps to Proceed** spinbox to set how many steps to proceed until the graphics pauses.
 
 During global (analytical) placement, step refers to every solver or legalizer iteration.
 During detailed (SA) placement, step refers to every temperature update.
 During routing, step refers to every router iteration.
 
-After freezing, clicking **Proceed** resumes the graphics until the next selected step boundary, unless another
-major program update (e.g. a state change) freezes the graphics early. In the latter case, the number of steps completed
-since the last freeze will not be carried over. A new step count will be performed from the current freeze.
+After you have finished interacting with the graphics, clicking **Proceed** resumes optimization until the next selected step boundary,
+or the next major optimization state (e.g. the transition point from placement to routing) is reached. In the latter case, the number of steps completed
+since the last graphics view will not be carried over. The step count performed will reset to zero.
 
-Turn off **Proceed by Step** to only freeze the graphics at major program updates.
+Turn off **Proceed by Step** to only view the graphics at major optimization states.
 
 Save
 ~~~~
 
-The **Save** button allows the user to output the current graphics into an image file. A popup will ask the user for file name and format.
+The **Save** button allows the user to output the current graphics into an image file. A popup will ask the file name and format.
 
 .. figure:: ../Images/save_popup.png
     :align: center
