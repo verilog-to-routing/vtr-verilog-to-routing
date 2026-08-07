@@ -125,7 +125,7 @@ struct t_label_drawing_info {
     ezgl::color label_color = {0, 0, 0};         ///< Color used when drawing the label.
     int label_transparency = 0;                  ///< Alpha value used when drawing the label.
     double edge_length = 0.0;                    ///< Length of the associated timing-edge flyline in world units.
-    double rotation_angle = 0.0;                 ///< Label rotation angle (the same as the associated flyline) in degrees.
+    double rotation_angle = 0.0;                 ///< Label rotation angle (the same as the associated flyline) from the x-axis, in degrees.
     ezgl::rectangle virtual_centered_label_bbox; ///< A virtual label bounding box centered on the timing edge before offsets are applied.
     ezgl::rectangle label_bbox;                  ///< Final label bounding box after position offsets are applied.
 };
@@ -1030,11 +1030,11 @@ static void draw_total_delay_messages(const std::vector<tatum::TimingPath>& path
     // We will draw the background rectangle first, then the messages. Otherwise the messages will be overdrawn.
     //
     // The rectangle's center x coordinate is determined by subtracting max_msg_width from the right of the screen.
-    double background_rect_center_x = g->get_visible_screen().right() - max_msg_width;
+    double rect_center_x = g->get_visible_screen().right() - max_msg_width;
 
     // The width of the rectangle before padding is max_msg_width. Subtract half of that from the center to reach its left side.
     // Finally, apply padding to create the actual left side of the rectangle.
-    double rect_left = background_rect_center_x - max_msg_width / 2 - DELAY_MSG_RECT_PADDING;
+    double rect_left = rect_center_x - max_msg_width / 2 - DELAY_MSG_RECT_PADDING;
 
     // The first total delay message will be drawn at y = msg_height. To reach the text ceiling (the rough rectangle top),
     // we need to subtract half the height from where it is drawn, and this gives us y = msg_height - msg_height / 2 = msg_height / 2.
@@ -1058,8 +1058,8 @@ static void draw_total_delay_messages(const std::vector<tatum::TimingPath>& path
     for (std::size_t msg_idx = 0; msg_idx < total_delay_messages.size(); msg_idx++) {
         std::string total_delay_msg = total_delay_messages[msg_idx];
         // Align the message with the background rectangle's center x coordinate.
-        // We want the first message to be drawn at y = msg_height, and hence we need the plus 1 added to msg_idx.
-        g->draw_text(ezgl::point2d{background_rect_center_x, msg_height * (msg_idx + 1)}, total_delay_msg);
+        // We want the first message to be drawn at y = msg_height, and hence we need to add 1 to msg_idx.
+        g->draw_text(ezgl::point2d{rect_center_x, msg_height * (msg_idx + 1)}, total_delay_msg);
     }
     g->set_coordinate_system(ezgl::WORLD);
 }

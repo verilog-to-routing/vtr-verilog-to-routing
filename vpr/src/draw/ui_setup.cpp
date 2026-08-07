@@ -331,8 +331,8 @@ void crit_path_button_setup(ezgl::application* app) {
         set_num_crit_paths_value_cbk(num_paths, app);
     });
     num_paths->setSingleStep(1);
-    // We allow the drawing of at most ten critical paths.
-    num_paths->setRange(1, 10);
+    // The number of requested critical paths should not go below 1.
+    num_paths->setMinimum(1);
 
     // Checkboxes for critical path
     setup_checkbox_button("ToggleCritPathFlylines", app, &draw_state->show_crit_path_flylines);
