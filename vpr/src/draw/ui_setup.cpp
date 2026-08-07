@@ -326,6 +326,14 @@ void crit_path_button_setup(ezgl::application* app) {
         toggle_crit_path_cbk(toggle_nets_switch, checked, app);
     });
 
+    QSpinBox* num_paths = app->find_spin_box("NumCritPaths");
+    QObject::connect(num_paths, &QSpinBox::valueChanged, num_paths, [num_paths, app]() {
+        set_num_crit_paths_value_cbk(num_paths, app);
+    });
+    num_paths->setSingleStep(1);
+    // We allow the drawing of at most ten critical paths.
+    num_paths->setRange(1, 10);
+
     // Checkboxes for critical path
     setup_checkbox_button("ToggleCritPathFlylines", app, &draw_state->show_crit_path_flylines);
     setup_checkbox_button("ToggleCritPathRouting", app, &draw_state->show_crit_path_routing);
