@@ -68,13 +68,28 @@ def compareSets(parmysModels, mosaicModels):
 
 # USE: run one frontend stage (-start/-end) into workDir and return its blif.
 def runFrontend(circuit, arch, startStage, workDir):
-    workDir = Path(workDir)
+    # resolve temp_dir to an absolute path. run_vtr_flow.py lives under
+    # vtr_flow/scripts/, and a relative -temp_dir is resolved against that
+    # directory, which breaks when the caller passes a repo-root-relative path.
+    workDir = Path(workDir).expanduser()
+    if not workDir.is_absolute():
+        workDir = (REPO_ROOT / workDir).resolve()
+    else:
+        workDir = workDir.resolve()
     workDir.mkdir(parents=True, exist_ok=True)
+
+    circuitPath = Path(circuit)
+    if not circuitPath.is_absolute():
+        circuitPath = (REPO_ROOT / circuitPath).resolve()
+    archPath = Path(arch)
+    if not archPath.is_absolute():
+        archPath = (REPO_ROOT / archPath).resolve()
+
     cmd = [
         sys.executable,
         str(RUN_VTR_FLOW),
-        str(circuit),
-        str(arch),
+        str(circuitPath),
+        str(archPath),
         "-start",
         startStage,
         "-end",
@@ -84,7 +99,7 @@ def runFrontend(circuit, arch, startStage, workDir):
     ]
     print("running:", " ".join(cmd))
     subprocess.check_call(cmd, cwd=str(REPO_ROOT))
-    stem = Path(circuit).stem
+    stem = circuitPath.stem
     blifName = "{}.{}.blif".format(stem, startStage)
     blifPath = workDir / blifName
     if not blifPath.is_file():
@@ -130,7 +145,14 @@ def main(argv=None):
         if not RUN_VTR_FLOW.is_file():
             print("error: missing {}".format(RUN_VTR_FLOW), file=sys.stderr)
             return 1
-        parent = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="mosaic_blif_cmp_"))
+        if args.work_dir:
+            parent = Path(args.work_dir).expanduser()
+            if not parent.is_absolute():
+                parent = (REPO_ROOT / parent).resolve()
+            else:
+                parent = parent.resolve()
+        else:
+            parent = Path(tempfile.mkdtemp(prefix="mosaic_blif_cmp_"))
         parent.mkdir(parents=True, exist_ok=True)
         parmysDir = parent / "parmys"
         mosaicDir = parent / "mosaic"
