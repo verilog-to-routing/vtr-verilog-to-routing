@@ -83,8 +83,8 @@ std::pair<double, double> wa_wirelength_x(const std::vector<double>& x_pins, dou
 
 TEST_CASE("FD check validates a correct quadratic gradient", "[vpr_ap][gradient_audit]") {
     // f(x,y) = 0.5 * (x^2 + 4*y^2), grad = (x, 4y)
-    auto f = [](double x, double y) { return 0.5 * (x * x + 4. * y * y); };
-    auto grad = [](double x, double y) -> std::pair<double, double> { return {x, 4. * y}; };
+    auto f = [](double x, double y) noexcept { return 0.5 * (x * x + 4. * y * y); };
+    auto grad = [](double x, double y) noexcept -> std::pair<double, double> { return {x, 4. * y}; };
 
     const std::vector<double> steps = {1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6};
     auto results = vtr::ap::finite_difference_check(f, grad, {3.0, 2.0}, steps);
@@ -104,8 +104,8 @@ TEST_CASE("FD check validates a correct quadratic gradient", "[vpr_ap][gradient_
 
 TEST_CASE("FD check detects a wrong gradient", "[vpr_ap][gradient_audit]") {
     // f(x,y) = x^2, correct grad = (2x, 0). Wrong grad = (x, 0).
-    auto f = [](double x, double) { return x * x; };
-    auto wrong_grad = [](double x, double) -> std::pair<double, double> { return {x, 0.}; };
+    auto f = [](double x, double) noexcept { return x * x; };
+    auto wrong_grad = [](double x, double) noexcept -> std::pair<double, double> { return {x, 0.}; };
 
     const std::vector<double> steps = {1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6};
     auto results = vtr::ap::finite_difference_check(f, wrong_grad, {5.0, 0.0}, steps);
@@ -123,12 +123,12 @@ TEST_CASE("WA wirelength gradient is correct at a net's center", "[vpr_ap][gradi
     auto [wl_analytic, grad_analytic] = wa_wirelength_x(x_pins, kGamma, probe_idx);
 
     // FD check the gradient of pin probe_idx
-    auto f = [&](double x, double) -> double {
+    auto f = [&](double x, double) noexcept -> double {
         std::vector<double> pins = x_pins;
         pins[probe_idx] = x;
         return wa_wirelength_x(pins, kGamma, probe_idx).first;
     };
-    auto grad = [&](double, double) -> std::pair<double, double> {
+    auto grad = [&](double, double) noexcept -> std::pair<double, double> {
         return {grad_analytic, 0.};
     };
 
@@ -155,12 +155,12 @@ TEST_CASE("WA wirelength gradient is correct at a tile boundary (kink)", "[vpr_a
 
     auto [wl_analytic, grad_analytic] = wa_wirelength_x(x_pins, kGamma, probe_idx);
 
-    auto f = [&](double x, double) -> double {
+    auto f = [&](double x, double) noexcept -> double {
         std::vector<double> pins = x_pins;
         pins[probe_idx] = x;
         return wa_wirelength_x(pins, kGamma, probe_idx).first;
     };
-    auto grad_fn = [&](double, double) -> std::pair<double, double> {
+    auto grad_fn = [&](double, double) noexcept -> std::pair<double, double> {
         return {grad_analytic, 0.};
     };
 
@@ -202,8 +202,8 @@ TEST_CASE("Poisson energy gradient is exact for quadratic energy", "[vpr_ap][gra
     // If q = alpha * x (charge linear in position), then E = 0.5 * alpha^2 * x^2,
     // dE/dx = alpha^2 * x. A central difference is exact for quadratics.
     constexpr double alpha = 3.0;
-    auto f = [alpha](double x, double) { return 0.5 * alpha * alpha * x * x; };
-    auto grad = [alpha](double x, double) -> std::pair<double, double> { return {alpha * alpha * x, 0.}; };
+    auto f = [alpha](double x, double) noexcept { return 0.5 * alpha * alpha * x * x; };
+    auto grad = [alpha](double x, double) noexcept -> std::pair<double, double> { return {alpha * alpha * x, 0.}; };
 
     const std::vector<double> steps = {1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6};
     auto results = vtr::ap::finite_difference_check(f, grad, {2.0, 0.0}, steps);

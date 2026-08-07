@@ -1019,35 +1019,19 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // circuit from a B2B seed -- a 1000x weaker density force -- and the
         // global placement finished 4.7x worse in HPWL. Gradient norms have no
         // such degeneracy: both scale linearly with a shared displacement.
-        PlacementGradient wl_grad(ap_netlist_);
-        PlacementGradient density_grad(ap_netlist_);
-        FillerGradient density_filler_grad;
-        add_wirelength_gradient_(placement, wl_grad);
-        std::vector<double> energies, oflow_ratios, oflow_mass, max_oflow;
-        double total_overflow = 0.;
-        double peak_overflow = 0.;
-        add_density_gradient_(placement,
-                              density_multipliers,
-                              energies,
-                              oflow_ratios,
-                              oflow_mass,
-                              max_oflow,
-                              total_overflow,
-                              peak_overflow,
-                              density_grad,
-                              current_fillers,
-                              density_filler_grad);
         initial_density_weight = 1e-3;
-        ObjectiveValue components = evaluate_objective_(placement,
-                                                        density_multipliers,
-                                                        std::nullopt,
-                                                        0.,
-                                                        std::nullopt,
-                                                        current_fillers,
-                                                        std::nullopt);
-        if (components.density > kEpsilon)
-            initial_density_weight = kInitialDensityToWirelengthRatio * std::max(components.wirelength, 1.0) / components.density;
-    
+        {
+            ObjectiveValue components = evaluate_objective_(placement,
+                                                            density_multipliers,
+                                                            std::nullopt,
+                                                            0.,
+                                                            std::nullopt,
+                                                            current_fillers,
+                                                            std::nullopt);
+            if (components.density > kEpsilon)
+                initial_density_weight = kInitialDensityToWirelengthRatio * std::max(components.wirelength, 1.0) / components.density;
+        }
+
         initial_density_weight = std::clamp(initial_density_weight, 1e-5, 1e3);
         for (size_t dim_idx = 0; dim_idx < density_dimensions.size(); dim_idx++)
             density_multipliers[dim_idx] = initial_density_weight;
@@ -1249,7 +1233,18 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                std::nullopt,
                                                next_fillers,
                                                std::nullopt);
-                if (next_obj.total <= y_obj.total || accepted_step == kMinStepSize) {
+                if (next_obj.total <= y_obj.total) {
+                    accepted = true;
+                    break;
+                }
+                // Accept the smallest step the loop is willing to try rather
+                // than falling out un-accepted, which would end the epoch. The
+                // original test was `accepted_step == kMinStepSize`, which is
+                // unreachable: halving from 1.0 or span*0.02 never lands exactly
+                // on 1e-6. Measured inert on the six circuits whose epoch loop
+                // regresses (identical QoR, identical epoch counts), so this is a
+                // correctness fix, not a QoR change.
+                if (accepted_step * 0.5 < kMinStepSize) {
                     accepted = true;
                     break;
                 }
@@ -1564,8 +1559,7 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
     value.affinity_spring = add_affinity_spring_gradient_(p_placement, grad);
     value.total = value.wirelength
                   + value.affinity_spring
-                  + proximity_weight * value.proximity
-;
+                  + proximity_weight * value.proximity;
     for (size_t dim_idx = 0; dim_idx < value.density_energies.size(); dim_idx++) {
         double energy = value.density_energies[dim_idx];
         value.total += density_multipliers[dim_idx] * energy;
@@ -1703,8 +1697,8 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
         weighted_nets++;
     }
 
+    avg_net_weight_ = weighted_nets > 0 ? total_weight / weighted_nets : 1.0;
     if (log_verbosity_ >= 1 && weighted_nets > 0) {
-        avg_net_weight_ = total_weight / weighted_nets;
         VTR_LOG("Nonlinear Nesterov timing/cohesion net weights: tradeoff=%g boundary_cohesion=%g io_chain_cohesion=%g min=%g avg=%g max=%g nets=%zu\n",
                 effective_timing_tradeoff_,
                 kBoundaryNetCohesionWeight,
@@ -1713,8 +1707,6 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
                 avg_net_weight_,
                 max_weight,
                 weighted_nets);
-    } else {
-        avg_net_weight_ = 1.0;
     }
 }
 
@@ -2353,9 +2345,9 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
 }
 
 void NonlinearNesterovPlacer::report_density_force_leak_(const PartialPlacement& p_placement,
-                                                          const std::vector<PrimitiveVectorDim>& dimensions,
-                                                          const std::vector<double>& density_multipliers,
-                                                          size_t epoch) const {
+                                                         const std::vector<PrimitiveVectorDim>& dimensions,
+                                                         const std::vector<double>& density_multipliers,
+                                                         size_t epoch) const {
     if (dimensions.empty()
         || density_potential_workspace_.size() < dimensions.size()
         || cached_field_grids_.size() < dimensions.size())

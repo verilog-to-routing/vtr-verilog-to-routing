@@ -410,7 +410,16 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
 
     std::vector<APBlockId> moveable_blocks_;   ///< Movable AP blocks touched by the optimizer.
     vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
-    double avg_net_weight_ = 1.0;              ///< Average net weight from the last update_timing_net_weights_ call; used to rebalance the density weight so the WL/density ratio is preserved when timing boosts shift the average above 1.
+    /// @brief Average net weight from the last update_timing_net_weights_ call.
+    ///
+    /// Telemetry only. It was once documented as rebalancing the density weight
+    /// and was read nowhere; wiring it up was measured at full-75 (as part of the
+    /// combined formulation-fix board, routed WL 1.00107, CI [0.99722, 1.00506])
+    /// and made no difference, so it stays a reported value. Worth knowing that
+    /// lambda_0 is normalized against unit-weight wirelength while the epoch loop
+    /// applies multipliers up to 8x, so the wirelength/density balance does carry
+    /// a design-dependent factor -- it simply does not matter.
+    double avg_net_weight_ = 1.0;
 
     vtr::vector<APBlockId, double> block_precond_;        ///< Per-block diagonal preconditioner (objective curvature estimate).
     vtr::vector<APBlockId, float> pin_density_inflation_; ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
@@ -430,8 +439,8 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
     // reused across every objective evaluation instead of being rebuilt.
-    mutable std::vector<std::vector<double>> cached_target_capacity_;      ///< [dim][site] target capacity spread over each bin's footprint.
-    mutable std::vector<double> cached_target_norm_floor_;                 ///< [dim] floor added when dividing by target capacity.
+    mutable std::vector<std::vector<double>> cached_target_capacity_; ///< [dim][site] target capacity spread over each bin's footprint.
+    mutable std::vector<double> cached_target_norm_floor_;            ///< [dim] floor added when dividing by target capacity.
     /// @brief [dim] electrostatic field domain for each resource (elfPlace's B^s).
     ///
     /// The tile grid above stays the domain of overflow/legality accounting. The
@@ -482,36 +491,13 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        placer's global-placement runtime).
     bool sparse_seed_ = false;
 
-    /// @brief Active incompatibility penalty weight for the current epoch.
-    ///
-    /// Annealed from 0 (no architecture pressure at start, let the optimizer
-    /// spread freely) to a final value comparable to the density weight via a
-    /// quadratic schedule, so the continuous incompatibility constraint
-    /// squeezes tighter as optimization progresses. Set per-epoch in
-    /// optimize_from_seed_.
-
-    /// @brief True if the design has scarce resources with large incompatible
-    ///        regions, justifying the incompatibility cost. False for
-    ///        homogeneous designs where the cost adds overhead without benefit.
-
-    /// @brief B2B wirelength model edges for x and y (experiment-gated).
-
-    /// @brief Per-block wirelength Hessian diagonal under the B2B model: the
-    ///        mean over x/y of the block's incident B2B edge-weight sums.
-
-    /// @brief Scaled-ADMM dual variables for the legalizer anchor
-    ///        (experiment-gated). u accumulates the per-epoch residual
-    ///        x - Leg(x); the proximity term then anchors to z - u instead of
-    ///        z, absorbing the steady-state bias a penalty-only anchor keeps.
+    /// @brief Scaled-ADMM dual variables for the legalizer anchor. u accumulates
+    ///        the per-epoch residual x - Leg(x); the proximity term then anchors
+    ///        to z - u instead of z, absorbing the steady-state bias a
+    ///        penalty-only anchor keeps.
     vtr::vector<APBlockId, double> admm_dual_x_;
     vtr::vector<APBlockId, double> admm_dual_y_;
 
-    /// @brief Prepacker, kept for packing-aware mass deflation (experiment).
+    /// @brief Prepacker, retained for prepacker-derived affinity groups.
     const Prepacker* prepacker_ = nullptr;
-
-    /// @brief Per-block smooth-density mass deflation from packing optimism
-    ///        (kExpPackAwareDeflation): the ratio of a packing-optimistic
-    ///        pin-cost blend to the shared calculator's conservative one.
-    ///        Applied to abundant dims in the smooth density path only.
-
 };
