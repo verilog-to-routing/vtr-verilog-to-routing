@@ -114,6 +114,8 @@ class t_intra_cluster_placement_stats {
         VTR_ASSERT_SAFE(pb_graph_node != nullptr);
         auto it = pb_graph_node_placement_primitive.find(pb_graph_node);
         VTR_ASSERT(it != pb_graph_node_placement_primitive.end());
+        if (it == pb_graph_node_placement_primitive.end())
+            __builtin_unreachable(); // silences spurious GCC -Wnull-dereference
         return it->second;
     }
 
