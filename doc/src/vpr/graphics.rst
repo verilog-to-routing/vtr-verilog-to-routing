@@ -69,7 +69,6 @@ Navigation
 * Click on the **Zoom Fit** button to get an over-encompassing view of the FPGA architecture.
 * Click and drag with the left mouse button to pan the view, or scroll the mouse wheel to zoom in and out.
 * Click on the **Zoom Select** button, then on the diagonally opposite corners of a box, to zoom in on a particular area.
-* Click on **Save** under the **Misc.** tab to save the image on screen to PDF, PNG, or SVG file.
 * **Next Step** tells VPR to continue with the next step in placing and routing the circuit.
 
 
@@ -80,7 +79,7 @@ Placement
 By default VPR's graphics displays the FPGA floorplan (block grid) and current placement during global (analytical) placement
 and detailed (SA) placement.
 
-The FPGA floorplan during global placement does not preserve inter-block spacing and is therefore easy to distinguish.
+The FPGA floorplan during global placement does contain white space in between the clustered blocks and is therefore easy to distinguish.
 
 .. figure:: ../Images/analytical_place.png
     :align: center 
@@ -140,7 +139,7 @@ Critical Paths
 -----------------------------
 During placement and routing you can click on the **Display Critical Paths** switch under the **Net** tab to visualize the critical paths.
 
-The user can choose the number of critical paths to visualize (between 1 to 10) using the **Num Critical Paths** spinbox.
+The user can choose the number of critical paths to visualize using the **Num Critical Paths** spinbox.
 If the requested number exceeds what are currently available, only the available paths are visualized.
 
 Each stage between primitive pins is shown in a different colour.
