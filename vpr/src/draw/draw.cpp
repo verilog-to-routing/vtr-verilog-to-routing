@@ -504,9 +504,9 @@ void update_screen(ScreenUpdatePriority priority,
     t_proceed_by_step& proceed_by_step = draw_state->proceed_by_step;
     bool steps_reached = proceed_by_step.enabled && (proceed_by_step.step_counter == proceed_by_step.steps_to_proceed);
 
-    if (state_change           // Must update buttons.
+    if (state_change          // Must update buttons.
         || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
-        || steps_reached) {    // The number of steps set by the user is reached.
+        || steps_reached) {   // The number of steps set by the user is reached.
 
         // Reset the step counter if Proceed by Step is on.
         // Note that, other causes that pause the graphics (e.g. a state change)
