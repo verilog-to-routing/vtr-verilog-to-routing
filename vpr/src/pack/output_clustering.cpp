@@ -40,8 +40,8 @@ static void count_clb_inputs_and_outputs_from_pb_route(const t_pb* pb,
                                                        int ipin,
                                                        e_pin_type pin_type,
                                                        std::unordered_map<AtomNetId, bool>& nets_absorbed,
-                                                       int num_clb_inputs_used[],
-                                                       int num_clb_outputs_used[]) {
+                                                       std::vector<int>& num_clb_inputs_used,
+                                                       std::vector<int>& num_clb_outputs_used) {
     VTR_ASSERT_DEBUG(!pb->pb_route.empty());
     int pb_graph_pin_id = get_pb_graph_node_pin_from_pb_graph_node(pb->pb_graph_node, ipin)->pin_count_in_cluster;
 
@@ -61,9 +61,9 @@ static void count_clb_inputs_and_outputs_from_pb_route(const t_pb* pb,
 
 static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer,
                                        std::unordered_map<AtomNetId, bool>& nets_absorbed,
-                                       int num_clb_types[],
-                                       int num_clb_inputs_used[],
-                                       int num_clb_outputs_used[]) {
+                                       std::vector<int>& num_clb_types,
+                                       std::vector<int>& num_clb_inputs_used,
+                                       std::vector<int>& num_clb_outputs_used) {
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         t_logical_block_type_ptr logical_block = cluster_legalizer.get_cluster_type(cluster_id);
         t_physical_tile_type_ptr physical_tile = pick_physical_type(logical_block);
@@ -87,9 +87,9 @@ static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer
 }
 
 static void count_stats_from_netlist(std::unordered_map<AtomNetId, bool>& nets_absorbed,
-                                     int num_clb_types[],
-                                     int num_clb_inputs_used[],
-                                     int num_clb_outputs_used[]) {
+                                     std::vector<int>& num_clb_types,
+                                     std::vector<int>& num_clb_inputs_used,
+                                     std::vector<int>& num_clb_outputs_used) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -133,15 +133,9 @@ static void print_stats(const ClusterLegalizer* cluster_legalizer_ptr, bool from
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
-    int* num_clb_types = new int[device_ctx.logical_block_types.size()];
-    int* num_clb_inputs_used = new int[device_ctx.logical_block_types.size()];
-    int* num_clb_outputs_used = new int[device_ctx.logical_block_types.size()];
-
-    for (size_t i = 0; i < device_ctx.logical_block_types.size(); i++) {
-        num_clb_types[i] = 0;
-        num_clb_inputs_used[i] = 0;
-        num_clb_outputs_used[i] = 0;
-    }
+    std::vector<int> num_clb_types(device_ctx.logical_block_types.size(), 0);
+    std::vector<int> num_clb_inputs_used(device_ctx.logical_block_types.size(), 0);
+    std::vector<int> num_clb_outputs_used(device_ctx.logical_block_types.size(), 0);
 
     std::unordered_map<AtomNetId, bool> nets_absorbed;
     for (AtomNetId net_id : atom_nlist.nets()) {
@@ -177,9 +171,6 @@ static void print_stats(const ClusterLegalizer* cluster_legalizer_ptr, bool from
     }
     VTR_LOG("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
             total_nets_absorbed, (int)atom_nlist.nets().size(), (int)atom_nlist.nets().size() - total_nets_absorbed);
-    delete[] num_clb_types;
-    delete[] num_clb_inputs_used;
-    delete[] num_clb_outputs_used;
     /* TODO: print more stats */
 }
 
