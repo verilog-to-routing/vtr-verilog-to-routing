@@ -69,7 +69,6 @@ Navigation
 * Click on the **Zoom Fit** button to get an over-encompassing view of the FPGA architecture.
 * Click and drag with the left mouse button to pan the view, or scroll the mouse wheel to zoom in and out.
 * Click on the **Zoom Select** button, then on the diagonally opposite corners of a box, to zoom in on a particular area.
-* Click on **Save** under the **Misc.** tab to save the image on screen to PDF, PNG, or SVG file.
 * **Next Step** tells VPR to continue with the next step in placing and routing the circuit.
 
 
@@ -77,13 +76,22 @@ Navigation
 
 Placement
 --------------------------------
-By default VPR's graphics displays the FPGA floorplan (block grid) and current placement.
+By default VPR's graphics displays the FPGA floorplan (block grid) and current placement during global (analytical) placement
+and detailed (SA) placement.
 
-.. figure:: ../Images/Overall_view.png
+The FPGA floorplan during global placement does contain white space in between the clustered blocks and is therefore easy to distinguish.
+
+.. figure:: ../Images/analytical_place.png
     :align: center 
-    :width: 50%
+    :width: 75%
 
-    FPGA floorplan (block grid)    
+    FPGA floorplan (block grid) during analytical placement
+
+.. figure:: ../Images/detailed_place.png
+    :align: center 
+    :width: 75%
+
+    FPGA floorplan (block grid) during detailed placement  
 
 If the **Placement Macros** drop down is set, any placement macros (e.g. carry chains, which require specific relative placements between some blocks) will be highlighted.
 
@@ -127,14 +135,18 @@ When the **Highlight Block Fan-in and Fan-out** option is enabled, clicking on a
 
 Clicking on a clb (not the internal physical blocks) will also highlight all the fan-in and fan-out routed nets in blue and red, respectively.
 
-Critical Path
+Critical Paths
 -----------------------------
-During placement and routing you can click on the **Display Critical Path** switch under the **Net** tab to visualize the critical path.
+During placement and routing you can click on the **Display Critical Paths** switch under the **Net** tab to visualize the critical paths.
+
+The user can choose the number of critical paths to visualize using the **Num Critical Paths** spinbox.
+If the requested number exceeds what are currently available, only the available paths are visualized.
+
 Each stage between primitive pins is shown in a different colour.
 
-.. figure:: ../Images/crit_path.png
+.. figure:: ../Images/crit_paths.png
     :align: center 
-    :width: 100%
+    :width: 75%
 
     Critical Path with all options enabled.
 
@@ -255,92 +267,57 @@ Layers are drawn in ascending order for many drawing features (e.g. blocks); tha
 The visibility and transparency of a layer can be changed, which will affect blocks, nets, routing, and critical path.
 Cross-layer connections refer to connections that are in different layers. 
 
-Button Description Table
-------------------------
-+-------------------+-------------------+------------------------------+------------------------------+
-|      Buttons      |      Stages       |        Functionalities       |     Detailed Descriptions    |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Blk Internal      | Placement/Routing | Controls depth of sub-blocks | Click multiple times to show |
-|                   |                   | shown                        | more details; Click to reset |
-|                   |                   |                              | when reached maximum level   |
-|                   |                   |                              | of detail                    |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Toggle Block      | Placement/Routing | Adjusts the level of         | Click multiple times to      |
-| Internal          |                   | visualized block detail      | go deeper into the           |
-|                   |                   |                              | hierarchy within the cluster |
-|                   |                   |                              | level block                  |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Blk Pin Util      | Placement/Routing | Visualizes block pin         | Click multiple times to      |
-|                   |                   | utilization                  | visualize all block pin      |
-|                   |                   |                              | utilization, input block pin |
-|                   |                   |                              | utilization, or output block |
-|                   |                   |                              | pin utilization              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Cong. Cost        | Routing           | Visualizes the congestion    |                              |
-|                   |                   | costs of routing resources   |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Congestion        | Routing           | Visualizes a heat map of     |                              |
-|                   |                   | overused routing resources   |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Crit. Path        | Placement/Routing | Visualizes the critical path |                              |
-|                   |                   | of the circuit               |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Draw Partitions   | Placement/Routing | Visualizes placement         |                              |
-|                   |                   | constraints                  |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Place Macros      | Placement/Routing | Visualizes placement macros  |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Route BB          | Routing           | Visualizes net bounding      | Click multiple times to      |
-|                   |                   | boxes one by one             | sequence through the net     |
-|                   |                   |                              | being shown                  |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Router Cost       | Routing           | Visualizes the router costs  |                              |
-|                   |                   | of different routing         |                              |
-|                   |                   | resources                    |                              |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Routing Util      | Routing           | Visualizes routing channel   |                              |
-|                   |                   | utilization with colors      |                              |
-|                   |                   | indicating the fraction of   |                              |
-|                   |                   | wires used within a channel  |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Toggle Nets       | Placement/Routing | Visualizes the nets in the   | Click multiple times to      |
-|                   |                   | circuit                      | set the nets to be visible / |
-|                   |                   |                              | invisible                    |
-|                   |                   |                              |                              |
-+-------------------+-------------------+------------------------------+------------------------------+
-| Toggle RR         | Placement/Routing | Visualizes different views   | Click multiple times to      |
-|                   |                   | of the routing resources     | switch between routing       |
-|                   |                   |                              | resources available in the   |
-|                   |                   |                              | FPGA                         |
-+-------------------+-------------------+------------------------------+------------------------------+
+Misc. Display Controls
+----------------------
 
-Manual Moves
-------------
+The **Misc.** drop-down menu provides several useful control tools to facilitate user interaction.
 
-The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
-
-.. _fig-misc-tab:
-.. figure:: ../Images/manual_move.png
+.. figure:: ../Images/misc_tab.png
     :align: center
     :width: 25%
 
     Misc. Tab
 
-To enable the feature, activate the **Manual Move** toggle button under the **Misc.** tab and press Done. Alternatively, the user can activate the **Manual Move** toggle button and click on the block to be moved.
+Proceed by Step
+~~~~~~~~~~~~~~~
+
+The **Proceed by Step** switch allows you to interactively visualize the evolving placement and routing
+after a specified number of optimization steps (see below the definition of step).
+You can use the **Steps to Proceed** spinbox to set how many steps to proceed until the graphics pauses.
+
+During global (analytical) placement, step refers to every solver or legalizer iteration.
+During detailed (SA) placement, step refers to every temperature update.
+During routing, step refers to every router iteration.
+
+After you have finished interacting with the graphics, clicking **Proceed** resumes optimization until the next selected step boundary,
+or the next major optimization state (e.g. the transition point from placement to routing) is reached. In the latter case, the number of steps completed
+since the last graphics view will not be carried over. The step count performed will reset to zero.
+
+Turn off **Proceed by Step** to only view the graphics at major optimization states.
+
+Save
+~~~~
+
+The **Save** button allows the user to output the current graphics into an image file. A popup will ask the file name and format.
+
+.. figure:: ../Images/save_popup.png
+    :align: center
+    :width: 50%
+
+    Save Popup
+
+Debug
+~~~~~
+
+The CAD optimization algorithms can be paused at different user-specified points so you can examine the current placement
+and/or routing solution, as detailed `here <https://vtr-verilog-to-routing.readthedocs.io/en/master/vpr/debug_aids/#placer-and-router-debugger>`_.
+
+Manual Moves
+~~~~~~~~~~~~
+
+The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
+
+To enable the feature, activate the **Manual Move** checkbox and press Done. Alternatively, the user can activate the **Manual Move** checkbox and click on the block to be moved.
 
 .. figure:: https://www.verilogtorouting.org/img/draw_manual_moves_window.png
    :align: center
@@ -359,17 +336,4 @@ If the manual move is legal, the cost summary window will display the delta cost
    :align: center
    :width: 50%
 
-The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown. 
-
-Pause Button
-------------
-
-The pause button allows the user to temporarily stop the program during placement or routing.
-When clicked during the placement stage, the program will pause at the next temperature update.
-When clicked during the routing stage, it will pause at the next router iteration.
-
-The button can be pressed at any time while the program is running. To enable the feature, click the **Pause** button under the **Misc.** tab (see :ref:`fig-misc-tab`).
-Once the program reaches the next temperature update or router iteration after the button is pressed, it will automatically pause.
-
-After the program has paused, clicking **Next Step** allows the user to resume execution from the point where the program was paused.
-This can be continuing from the current temperature in placement or from the current router iteration in routing.
+The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown.
