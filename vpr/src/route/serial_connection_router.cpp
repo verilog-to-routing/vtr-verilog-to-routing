@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "d_ary_heap.h"
 #include "rr_graph_fwd.h"
+#include "vpr_context.h"
 
 /** Used to update router statistics for serial connection router */
 inline void update_serial_router_stats(RouterStats* router_stats,
@@ -15,8 +16,8 @@ void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_
                                                                                      const t_conn_cost_params& cost_params,
                                                                                      const t_bb& bounding_box,
                                                                                      const t_bb& target_bb) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
 
     HeapNode cheapest;
     while (this->heap_.try_pop(cheapest)) {
@@ -70,7 +71,7 @@ vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_drive
     this->add_route_tree_to_heap(rt_root, target_node, cost_params, bounding_box);
     this->heap_.build_heap(); // via sifting down everything
 
-    auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
+    vtr::vector<RRNodeId, RTExploredNode> res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
     this->heap_.empty_heap();
 
     return res;
@@ -191,10 +192,10 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
                                                                    const t_bb& bounding_box,
                                                                    RRNodeId target_node,
                                                                    const t_bb& target_bb) {
-    /* Puts all the rr_nodes adjacent to current on the heap. */
+    // Puts all the rr_nodes adjacent to current on the heap.
 
     // For each node associated with the current heap element, expand all of it's neighbors
-    auto edges = this->rr_nodes_.edge_range(current.index);
+    vtr::StrongIdRange<RREdgeId> edges = this->rr_nodes_.edge_range(current.index);
 
     // This is a simple prefetch that prefetches:
     //  - RR node data reachable from this node
@@ -213,6 +214,8 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
     //  - directrf_stratixiv_arch_timing.blif
     //  - gsm_switch_stratixiv_arch_timing.blif
     //
+    // TODO: Also prefetch rr_node_route_inf_[to_node]. It is the first thing touched
+    // per neighbor, by the pre-evaluation prune in timing_driven_add_to_heap().
     for (RREdgeId from_edge : edges) {
         RRNodeId to_node = this->rr_nodes_.edge_sink_node(from_edge);
         this->rr_nodes_.prefetch_node(to_node);
@@ -241,7 +244,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                                                                   const t_bb& bounding_box,
                                                                   RRNodeId target_node,
                                                                   const t_bb& target_bb) {
-    const RRNodeId& from_node = current.index;
+    const RRNodeId from_node = current.index;
 
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
@@ -257,13 +260,13 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                        this->rr_graph_->node_xhigh(to_node), this->rr_graph_->node_yhigh(to_node), this->rr_graph_->node_layer_low(to_node),
                        bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
                        bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
-        return; /* Node is outside (expanded) bounding box. */
+        return; // Node is outside (expanded) bounding box.
     }
 
-    /* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
-     * the issue of how to cost them properly so they don't get expanded before *
-     * more promising routes, but makes route-through (via CLBs) impossible.   *
-     * Change this if you want to investigate route-throughs.                   */
+    // Prune away IPINs that lead to blocks other than the target one. Avoids
+    // the issue of how to cost them properly so they don't get expanded before
+    // more promising routes, but makes route-through (via CLBs) impossible.
+    // Change this if you want to investigate route-throughs.
     if (target_node != RRNodeId::INVALID()) {
         e_rr_type to_type = this->rr_graph_->node_type(to_node);
         if (to_type == e_rr_type::IPIN) {
@@ -320,8 +323,20 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
                                                              RRNodeId to_node,
                                                              const RREdgeId from_edge,
                                                              RRNodeId target_node) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const RRNodeId& from_node = current.index;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRNodeId from_node = current.index;
+    const bool rcv_enabled = this->rcv_path_manager.is_enabled();
+
+    float best_total_cost = this->rr_node_route_inf_[to_node].path_cost;
+    float best_back_cost = this->rr_node_route_inf_[to_node].backward_path_cost;
+
+    // Since edge weights are non-negative, the backward cost of reaching to_node
+    // via current can never be less than current's backward cost. If that lower
+    // bound already fails the pre-push backward-cost prune below, skip evaluating
+    // this neighbor entirely.
+    if (!rcv_enabled && best_back_cost <= current.backward_path_cost) {
+        return;
+    }
 
     // Initialize the neighbor RTExploredNode
     RTExploredNode next;
@@ -334,17 +349,16 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     // Initialize RCV data struct if needed, otherwise it's set to nullptr
     this->rcv_path_manager.alloc_path_struct(next.path_data);
     // path_data variables are initialized to current values
-    if (this->rcv_path_manager.is_enabled() && this->rcv_path_data[from_node]) {
+    if (rcv_enabled && this->rcv_path_data[from_node]) {
         next.path_data->backward_cong = this->rcv_path_data[from_node]->backward_cong;
         next.path_data->backward_delay = this->rcv_path_data[from_node]->backward_delay;
     }
 
-    this->evaluate_timing_driven_node_costs(&next, cost_params, from_node, target_node);
+    // Compute the backward path cost (and R_upstream/Tdel) first; the (expensive)
+    // lookahead-based total cost is only computed for edges that survive the
+    // backward-cost prune below.
+    float Tdel = this->evaluate_timing_driven_backward_costs(&next, cost_params, from_node);
 
-    float best_total_cost = this->rr_node_route_inf_[to_node].path_cost;
-    float best_back_cost = this->rr_node_route_inf_[to_node].backward_path_cost;
-
-    float new_total_cost = next.total_cost;
     float new_back_cost = next.backward_path_cost;
 
     // We need to only expand this node if it is a better path. And we need to
@@ -356,9 +370,23 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     // router paper.
     //
     // When RCV is enabled, prune based on the RCV-specific total path cost (see
-    // in `compute_node_cost_using_rcv` in `evaluate_timing_driven_node_costs`)
+    // in `compute_node_cost_using_rcv` in `evaluate_timing_driven_total_cost`)
     // to allow detours to get better QoR.
-    if ((!this->rcv_path_manager.is_enabled() && best_back_cost > new_back_cost) || (this->rcv_path_manager.is_enabled() && best_total_cost > new_total_cost)) {
+    bool add_to_heap;
+    if (!rcv_enabled) {
+        add_to_heap = best_back_cost > new_back_cost;
+        // Only edges surviving the backward-cost prune pay for the lookahead
+        if (add_to_heap) {
+            this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+        }
+    } else {
+        this->evaluate_timing_driven_total_cost(&next, cost_params, target_node, Tdel);
+        add_to_heap = best_total_cost > next.total_cost;
+    }
+
+    float new_total_cost = next.total_cost;
+
+    if (add_to_heap) {
         VTR_LOGV_DEBUG(this->router_debug_, "      Expanding to node %d (%s)\n", to_node,
                        describe_rr_node(device_ctx.rr_graph,
                                         device_ctx.grid,
@@ -387,7 +415,7 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
         VTR_LOGV_DEBUG(this->router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
     }
 
-    if (this->rcv_path_manager.is_enabled() && next.path_data != nullptr) {
+    if (rcv_enabled && next.path_data != nullptr) {
         this->rcv_path_manager.free_path_struct(next.path_data);
     }
 }
@@ -398,7 +426,7 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
     const t_bb& net_bb) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRNodeId inode = rt_node.inode;
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
     float R_upstream = rt_node.R_upstream;
@@ -510,7 +538,7 @@ inline void update_serial_router_stats(RouterStats* router_stats,
     }
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-        auto node_type = rr_graph->node_type(rr_node_id);
+        e_rr_type node_type = rr_graph->node_type(rr_node_id);
         VTR_ASSERT(node_type != e_rr_type::NUM_RR_TYPES);
 
         if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
