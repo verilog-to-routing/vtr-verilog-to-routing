@@ -363,7 +363,10 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
                                                                const RREdgeId from_edge,
                                                                RRNodeId target_node,
                                                                size_t thread_idx) {
-    const RRNodeId& from_node = current.index;
+    const RRNodeId from_node = current.index;
+
+    // TODO: Port the pre-evaluation prune from SerialConnectionRouter::timing_driven_add_to_heap.
+    // Split evaluate_timing_driven_node_costs() into its backward-costs and total-cost halves.
 
     // Initialize the neighbor RTExploredNode
     RTExploredNode next;
