@@ -30,7 +30,7 @@ class t_placement_checkpoint {
     bool valid_ = false;
     t_placer_costs costs_;
     // 2.5D architectures support a two-stage cost term. Placement checkpoints should
-    // know which stage they were at properly restore the placement context.
+    // know which stage they were at to properly restore the placement context.
     std::optional<e_interposer_cost_stage> interposer_cost_stage_;
 
   public:

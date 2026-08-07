@@ -213,10 +213,10 @@ void EpsilonGreedyAgent::init_q_scores_() {
     num_action_chosen_ = std::vector<size_t>(num_available_actions_, 0);
     cumm_epsilon_action_prob_ = std::vector<float>(num_available_actions_, 1.0 / (num_available_actions_));
 
-    //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
-    //write agent internal q-table and actions into file for debugging purposes
+    // agent_info_file_ = vtr::fopen("agent_info.txt", "w");
+    // write agent internal q-table and actions into file for debugging purposes
     if (agent_info_file_) {
-        //we haven't performed any moves yet, hence last_aciton and reward are 0
+        // we haven't performed any moves yet, hence last_action and reward are 0
         write_agent_info(0, 0);
     }
 
@@ -321,7 +321,7 @@ void SoftmaxAgent::init_q_scores_(const std::vector<int>& num_movable_blocks_per
     //    agent_info_file_ = vtr::fopen("agent_info.txt", "w");
     //write agent internal q-table and actions into file for debugging purposes
     if (agent_info_file_) {
-        //we haven't performed any moves yet, hence last_aciton and reward are 0
+        // we haven't performed any moves yet, hence last_action and reward are 0
         write_agent_info(0, 0);
     }
 
