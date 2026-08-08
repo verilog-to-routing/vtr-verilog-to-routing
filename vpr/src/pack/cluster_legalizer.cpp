@@ -845,7 +845,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 models.model_name(atom_ctx.netlist().block_model(root_atom)).c_str());
         VTR_LOGV(molecule.pack_pattern,
                  " molecule_type %s molecule_size %zu",
-                 molecule.pack_pattern->name,
+                 molecule.pack_pattern->name.c_str(),
                  molecule.atom_block_ids.size());
         VTR_LOG("\n");
     }
