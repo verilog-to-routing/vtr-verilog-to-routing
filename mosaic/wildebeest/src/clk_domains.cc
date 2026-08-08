@@ -472,7 +472,7 @@ struct MaxLvlPass : public ScriptPass {
   // resolve LUTs.v from templateDir when the Tcl global is set, otherwise from
   // the plugin share dir.
   void load_LUT_models() {
-    std::string lut_models = "+/plugins/wildebeest/lut_models/LUTs.v";
+    std::string lut_models = "+/plugins/mosaic/lut_models/LUTs.v";
 #ifdef YOSYS_ENABLE_TCL
     Tcl_Interp *interp = yosys_get_tcl_interp();
     if (interp != NULL) {

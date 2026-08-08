@@ -222,10 +222,10 @@ def run(
     if yosys_exec is None:
         yosys_exec = str(vtr.paths.yosys_exe_path)
 
-    plugin_path = Path(vtr.paths.wildebeest_plugin_path)
+    plugin_path = Path(vtr.paths.mosaic_plugin_path)
     if not plugin_path.is_file():
         raise vtr.VtrError(
-            "mosaic plugin not found at {} (installed as wildebeest.so)\n".format(plugin_path)
+            "mosaic plugin not found at {} (installed as mosaic.so)\n".format(plugin_path)
             + "build it with: bash {}".format(vtr.paths.mosaic_build_script_path)
         )
 

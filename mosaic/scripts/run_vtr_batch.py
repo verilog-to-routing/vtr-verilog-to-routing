@@ -60,7 +60,7 @@ compareOutputRoot = scriptDir
 vtrFlow = vtrRoot / "vtr_flow"
 runVtrFlow = vtrFlow / "scripts" / "run_vtr_flow.py"
 yosysBin = vtrRoot / "build" / "bin" / "yosys"
-pluginPath = vtrRoot / "build" / "share" / "yosys" / "plugins" / "wildebeest.so"
+pluginPath = vtrRoot / "build" / "share" / "yosys" / "plugins" / "mosaic.so"
 
 flows = {
     "vanilla_vtr": {"start": "parmys"},

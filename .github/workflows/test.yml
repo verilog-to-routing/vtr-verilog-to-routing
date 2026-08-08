@@ -808,7 +808,7 @@ jobs:
         tar -xvzf build.tar.gz
 
     # builds the mosaic plugin against the unpacked yosys and installs
-    # it as wildebeest.so into build/share/yosys/plugins
+    # it as mosaic.so into build/share/yosys/plugins
     - name: Build Mosaic Plugin
       shell: bash
       env:

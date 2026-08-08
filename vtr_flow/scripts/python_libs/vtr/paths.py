@@ -44,7 +44,7 @@ mosaic_template_path = mosaic_misc_path / "template"
 mosaic_script_path = mosaic_template_path / "synthesis.tcl"
 mosaic_fix_blif_script_path = mosaic_template_path / "fix_blif_for_vpr.py"
 wildebeest_path = mosaic_path / "wildebeest"
-wildebeest_plugin_path = root_path / "build" / "share" / "yosys" / "plugins" / "wildebeest.so"
+mosaic_plugin_path = root_path / "build" / "share" / "yosys" / "plugins" / "mosaic.so"
 
 # ABC paths
 abc_path = root_path / "abc"

@@ -11,7 +11,7 @@ make -j$(nproc)
 bash mosaic/build_mosaic.sh
 ```
 
-The install script builds the plugin against the VTR Yosys and installs it as `wildebeest.so` under `build/share/yosys/plugins/`. Yosys loads it with `plugin -i wildebeest`.
+The install script builds the plugin against the VTR Yosys and installs it as `mosaic.so` under `build/share/yosys/plugins/`. Yosys loads it with `plugin -i mosaic`.
 
 
 
@@ -63,7 +63,7 @@ Useful flags include `--flows mosaic` to skip vanilla VTR, and `--no-rerun` to s
      2. Knobs stay at the `synthesis.tcl` defaults (no aliases, no `stubAllHardblocks`, default costs).
      3. Only the shared `template/rules/` templates are used. No arch overlay.
      4. A warning is logged so the missing policy dir is visible in the log.
-3. Python copies `template/synthesis.tcl` into the run dir, fills path/circuit tokens, and launches Yosys with `wildebeest.so`.
+3. Python copies `template/synthesis.tcl` into the run dir, fills path/circuit tokens, and launches Yosys with `mosaic.so`.
    - The same shared script runs for every architecture.
    - Arch-specific behavior enters later through `arch_config.tcl` and `rules/` overlays, not by swapping the script.
    - Only `-mosaic_script <path>` replaces the whole driver script.

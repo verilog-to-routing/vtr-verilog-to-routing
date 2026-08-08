@@ -1,5 +1,5 @@
 # Wildebeest
-This tree holds a small slice of [Wildebeest](https://github.com/zeroasiccorp/wildebeest) that Mosaic builds into the Yosys plugin (`wildebeest.so`). Mosaic-only sources live next door in `mosaic/src/`; this folder is the wildebeest-originated half of the same plugin.
+This tree holds a small slice of [Wildebeest](https://github.com/zeroasiccorp/wildebeest) that Mosaic builds into the Yosys plugin (`mosaic.so`). Mosaic-only sources live next door in `mosaic/src/`; this folder is the wildebeest-originated half of the same plugin.
 
 ## What is used
 Mosaic does not take the full upstream tree. Only these pieces are in the build today:

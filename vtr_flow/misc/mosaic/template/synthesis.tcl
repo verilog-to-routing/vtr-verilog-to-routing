@@ -1,5 +1,5 @@
 yosys -import
-plugin -i wildebeest
+plugin -i mosaic
 
 # this script is the mosaic vtr synthesis template.
 #

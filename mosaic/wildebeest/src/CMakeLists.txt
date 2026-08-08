@@ -39,7 +39,7 @@ set_target_properties(wildebeest PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     # Yosys assumes `.so` to be the suffix on all platforms, so the following is required to make
-    # `yosys -m wildebeest` to work after installation on any platform.
+    # `yosys -m mosaic` / `plugin -i mosaic` work after installation on any platform.
     PREFIX ""
     OUTPUT_NAME ${OUTPUT_NAME}
     SUFFIX ".so"

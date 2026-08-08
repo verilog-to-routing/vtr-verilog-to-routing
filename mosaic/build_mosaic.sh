@@ -43,13 +43,13 @@ if [[ ! -f "${mosaicSrc}/vtr_arch_rules.cc" ]]; then
 fi
 
 echo ""
-echo "step 1: configure and build mosaic (wildebeest.so)"
+echo "step 1: configure and build mosaic (mosaic.so)"
 cmake -S "${wildebeestSrc}" -B "${wildebeestSrc}/build" -DYOSYS_CONFIG="${yosysConfig}"
 cmake --build "${wildebeestSrc}/build" -j"${jobCount}"
 
-plugin="${wildebeestSrc}/build/wildebeest.so"
+plugin="${wildebeestSrc}/build/mosaic.so"
 if [[ ! -f "${plugin}" ]]; then
-    echo "error: wildebeest.so not produced at ${plugin}"
+    echo "error: mosaic.so not produced at ${plugin}"
     exit 1
 fi
 
@@ -60,5 +60,5 @@ cmake --install "${wildebeestSrc}/build"
 echo ""
 echo "mosaic build ok."
 echo "  plugin:      ${plugin}"
-echo "  installed:   ${vtrDir}/build/share/yosys/plugins/wildebeest.so"
+echo "  installed:   ${vtrDir}/build/share/yosys/plugins/mosaic.so"
 echo ""

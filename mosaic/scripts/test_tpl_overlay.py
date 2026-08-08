@@ -8,7 +8,7 @@ checks that the overlay marker appears in mult_map.v and that a template
 not present in the overlay (add_sub_map.v.tmpl) still comes from the
 shared tpldir.
 
-requires built yosys plus mosaic plugin (wildebeest.so).
+requires built yosys plus mosaic plugin (mosaic.so).
 
 usage:
   python mosaic/scripts/test_tpl_overlay.py
@@ -26,7 +26,7 @@ MOSAIC_ROOT = SCRIPT_DIR.parent
 REPO_ROOT = MOSAIC_ROOT.parent
 
 YOSYS_BIN = REPO_ROOT / "build" / "bin" / "yosys"
-PLUGIN_PATH = REPO_ROOT / "build" / "share" / "yosys" / "plugins" / "wildebeest.so"
+PLUGIN_PATH = REPO_ROOT / "build" / "share" / "yosys" / "plugins" / "mosaic.so"
 SHARED_TPLDIR = REPO_ROOT / "vtr_flow" / "misc" / "mosaic" / "template" / "rules"
 OVERLAY_TPLDIR = (
     REPO_ROOT / "vtr_flow" / "misc" / "mosaic" / "min_exotic_integer_mul" / "rules"
@@ -44,7 +44,7 @@ def fail(msg):
     return 1
 
 
-# USE: run the overlay merge smoke against built yosys and wildebeest.so.
+# USE: run the overlay merge smoke against built yosys and mosaic.so.
 def main():
     if not YOSYS_BIN.is_file():
         return fail("yosys not found at {}".format(YOSYS_BIN))
@@ -64,7 +64,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="mosaic_tpl_overlay_") as tmp:
         outDir = Path(tmp)
         script = (
-            "plugin -i wildebeest\n"
+            "plugin -i mosaic\n"
             "vtr_arch_rules -xml {xml} -outdir {out} "
             "-tpldir {tpl} -overlay-tpldir {overlay} "
             "-blocks multiply,adder\n"

@@ -17,7 +17,7 @@ if (APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
 endif()
 
-set(OUTPUT_NAME "wildebeest")
+set(OUTPUT_NAME "mosaic")
 
 find_package(Yosys)
 
