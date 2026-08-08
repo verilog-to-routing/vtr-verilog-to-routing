@@ -106,6 +106,7 @@ Detailed Command-line Options
 
       * ``odin``
       * ``parmys``
+      * ``mosaic``
       * ``abc``
       * ``scripts``
       * ``vpr``
@@ -121,6 +122,7 @@ Detailed Command-line Options
 
       * ``odin``
       * ``parmys``
+      * ``mosaic``
       * ``abc``
       * ``scripts``
       * ``vpr``
@@ -256,6 +258,12 @@ Detailed Command-line Options
 
     **Default:** "" (empty string)
 
+.. option:: -mosaic_script <MOSAIC_SCRIPT>
+
+    Supplies Mosaic with a custom yosys template script, including the synthesis steps.
+
+    **Default:** vtr_flow/misc/mosaic/template/synthesis.tcl
+
 .. note::
 
     Yosys-Slang is a Yosys plugin that is built on top of the slang library to provide comprehensive SystemVerilog support.
@@ -266,6 +274,10 @@ Detailed Command-line Options
 .. note::
 
     Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available parameters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.
+
+.. note::
+
+    Mosaic is an alternative synthesis frontend. Build it first with ``bash mosaic/build_mosaic.sh`` after building VTR and select it with ``-start mosaic`` in the VTR flow.
 
 .. Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
 ..     UHDM is used as a compiled interchange format in between SystemVerilog tools. Typical inputs to the UHDM flow are files with ``.v`` or ``.sv`` extensions.

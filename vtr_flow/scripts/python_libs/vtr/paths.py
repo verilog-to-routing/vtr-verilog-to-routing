@@ -36,6 +36,16 @@ parmys_verify_path = parmys_path / "verify_parmys.sh"
 parmys_benchmark_path = parmys_path / "regression_test" / "benchmark"
 parmys_output_on_error_path = parmys_path / "regression_test" / ".library" / "output_on_error.conf"
 
+# MOSAIC paths
+mosaic_path = root_path / "mosaic"
+mosaic_build_script_path = mosaic_path / "build_mosaic.sh"
+mosaic_misc_path = vtr_flow_path / "misc" / "mosaic"
+mosaic_template_path = mosaic_misc_path / "template"
+mosaic_script_path = mosaic_template_path / "synthesis.tcl"
+mosaic_fix_blif_script_path = mosaic_template_path / "fix_blif_for_vpr.py"
+wildebeest_path = mosaic_path / "wildebeest"
+mosaic_plugin_path = root_path / "build" / "share" / "yosys" / "plugins" / "mosaic.so"
+
 # ABC paths
 abc_path = root_path / "abc"
 abc_exe_path = abc_path / "abc"
