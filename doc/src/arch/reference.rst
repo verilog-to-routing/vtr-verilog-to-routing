@@ -2159,6 +2159,8 @@ The same 2x2 topology can be described more concisely using the ``<mesh>`` tag.
         <mesh startx="0" endx="5" starty="0" endy="5" size="2"/>
     </noc>
 
+.. _wire_segments_format:
+
 Wire Segments
 -------------
 
@@ -2420,25 +2422,31 @@ The high-level start tag for a clock network is as follows:
         Many parameters used in the following clock architecture tags take an espression (``expr``) as an argument similar to :ref:`grid_expressions`.
         However, only a subset of special variables are supported: ``W`` (device width) and ``H`` (device height).
 
-    The supported clock distribution types are ``<spine>`` and ``<rib>``.
+    The supported clock distribution types are ``<spine>``, ``<rib>``, and ``<clock_switch_grid>``.
     *Spines* are used to describe vertical clock distribution wires.
-    Whereas, *Ribs* is used to describe a horizontal clock distribution wire.
+    *Ribs* are used to describe a horizontal clock distribution wire.
+    A *clock switch grid* (:ref:`clock_switch_grid_format`) describes a grid of clock switch boxes, rather than a single wire.
     See :ref:`clock_arch_example` and accompanying figures :numref:`spine_visual` and :numref:`rib_visual` for example use of ``<spine>`` and ``<rib>`` parameters.
 
-    .. arch:tag:: <spine metal_layer="string" x="expr" starty="expr" endy="expr" repeatx="expr" repeaty="expr"/>
+    .. arch:tag:: <spine metal_layer="string" x="expr" starty="expr" endy="expr" repeatx="expr" repeaty="expr" endx="expr"/>
 
         :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
-        :req_param starty: 
+        :req_param starty:
             The start y grid location, of the wire which runs parallel to the y-axis from starty and ends at endy, inclusive.
             Value can be relative to the device size.
         :req_param endy: The end of y grid location of the wire. Value can be relative to the device size.
         :req_param x: The location of the spine with respect to the x-axis. Value can be relative to the device size.
-        :opt_param repeatx: The horizontal repeat factor of the spine along the device. Value can be relative to the device size.
-        :opt_param repeaty: The vertical repeat factor of the spine along the device. Value can be relative to the device size.
+        :opt_param repeatx: The horizontal repeat factor of the spine along the device. Value can be relative to the device size. **Default:** ``W`` (device width, i.e. the spine is not repeated).
+        :opt_param repeaty: The vertical repeat factor of the spine along the device. Value can be relative to the device size. **Default:** ``H`` (device height).
+        :opt_param endx:
+            Upper bound, in the spine's own repeat (``repeatx``) direction, on how far the spine is stamped out across the device.
+            Lets a spine repeat within only part of the device (e.g. one clock quadrant) instead of always spanning the full device width.
+            Value can be relative to the device size.
+            **Default:** ``W`` (i.e. repeat all the way to the device edge).
 
     The provided example clock network (:ref:`clock_arch_example`) defines two spines, and neither repeats as each spans the entire height of the device and is locally at the horizontal midpoint of the device.
 
-    .. arch:tag:: <rib metal_layer="string" y="expr" startx="expr" endx="expr" repeatx="expr" repeaty="expr"/>
+    .. arch:tag:: <rib metal_layer="string" y="expr" startx="expr" endx="expr" repeatx="expr" repeaty="expr" endy="expr"/>
 
         :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
         :req_param startx:
@@ -2446,22 +2454,27 @@ The high-level start tag for a clock network is as follows:
             Value can be relative to the device size.
         :req_param endx: The end of x grid location of the wire. Value can be relative to the device size.
         :req_param y: The location of the rib with respect to the y-axis. Value can be relative to the device size.
-        :opt_param repeatx: The horizontal repeat factor of the rib along the device. Value can be relative to the device size.
-        :opt_param repeaty: The vertical repeat factor of the rib along the device. Value can be relative to the device size.
+        :opt_param repeatx: The horizontal repeat factor of the rib along the device. Value can be relative to the device size. **Default:** ``W`` (device width).
+        :opt_param repeaty: The vertical repeat factor of the rib along the device. Value can be relative to the device size. **Default:** ``H`` (device height, i.e. the rib is not repeated).
+        :opt_param endy:
+            Upper bound, in the rib's own repeat (``repeaty``) direction, on how far the rib is stamped out across the device.
+            Lets a rib repeat within only part of the device (e.g. one clock quadrant) instead of always spanning the full device height.
+            Value can be relative to the device size.
+            **Default:** ``H`` (i.e. repeat all the way to the device edge).
 
     Along each spine and rib is a group of switch points.
     Switch points are used to describe drive or tap locations along the clock distribution wire, and are enclosed in the relevant ``<rib>`` or ``<spine>`` tags:
 
-    .. arch:tag:: <switch_point type="{drive | tap}" name="string" yoffset="expr" xoffset="expr" xinc="expr" yinc="expr" buffer="string">
+    .. arch:tag:: <switch_point type="{drive | tap}" name="string" yoffset="expr" xoffset="expr" xincr="expr" yincr="expr" switch_name="string">
 
         :req_param type:
             * ``drive`` -- Drive points are where the clock distribution wire can be driven by a routing switch or buffer.
             * ``tap`` --  Tap points are where it can drive a routing switch or buffer to send a signal to a different ``clock_network`` or logicblock.
         :opt_param xoffset: (Only for ``rib`` network) Offset from the ``startx`` of a rib network.
         :opt_param yoffset: (Only for ``spine`` network) Offset from the ``starty`` of a spine network.
-        :opt_param xinc: (Only for rib ``tap`` points) Describes the repeat factor of a series of evenly spaced tap points.
-        :opt_param yinc: (Only for spine ``tap`` points) Describes the repeat factor of a series of evenly spaced tap points.
-        :req_param buffer:
+        :opt_param xincr: (Only for rib ``tap`` points) Repeats this tap point every ``xincr`` grid columns along the rib, instead of at just one location. **Default:** ``0`` (no repeat, i.e. a single tap).
+        :opt_param yincr: (Only for spine ``tap`` points) Repeats this tap point every ``yincr`` grid rows along the spine, instead of at just one location. **Default:** ``0`` (no repeat, i.e. a single tap).
+        :req_param switch_name:
             (Required only for ``drive`` points) A reference to a pre-defined routing switch; specified by ``<switch>`` tag, see Section :ref:`arch_switches`.
             This switch will be used at the drive point.
             The clock architecture generator uses two of these buffers to drive the two portions of this ``clock_network`` wire when it is split at the drive point, see Figures :numref:`rib_visual` and :numref:`spine_visual`.
@@ -2469,6 +2482,95 @@ The high-level start tag for a clock network is as follows:
         .. note::
 
             A single ``<switch_point>`` specification may define a *set* of tap points (``type="tap"``, with either ``xincr`` or ``yincr``), or a single drive point (``type="drive"``)
+
+    .. _clock_switch_grid_format:
+
+    A ``<clock_switch_grid>`` describes a dedicated grid of clock switch boxes, stamped out every ``repeatx``/``repeaty`` grid locations.
+    Unlike ``<spine>``/``<rib>``, it is not a single wire: every switch box connects to its neighboring switch boxes' wires according to a configurable switch-block pattern, and drive/tap points (its own nested ``<switch_point>`` tag, distinct from the rib/spine ``<switch_point>`` above) are placed at specific ``(x, y)`` switch box locations rather than at an offset along a wire.
+
+    .. note::
+
+        A ``<clock_switch_grid>`` does not use the general routing fabric's ``<segmentlist>`` (:ref:`wire_segments_format`) at all: there is no explicit per-wire ``<segment>`` entry, and consequently no ``length``, ``freq``, ``Rmetal``/``Cmetal``, or ``<sb>``/``<cb>`` depopulation pattern to set for it.
+        Instead, each wire's span between switch boxes is implied by this tag's own ``repeatx``/``repeaty`` (the switch-box spacing, in grid tiles) and ``length`` (in switch-box *hops*, not tiles): a wire spans ``length`` * ``repeatx`` tiles horizontally, or ``length`` * ``repeaty`` tiles vertically.
+        A wire is fully populated along its span (unlike general routing, there is no partial ``<sb>``/``<cb>`` pattern), but wire-to-wire turns are only available at a wire's own endpoints, not at every switch box it merely passes through; see ``length`` below.
+        Likewise, wire resistance/capacitance come from the referenced ``metal_layer`` (scaled by the wire's tile span) rather than a per-segment ``Rmetal``/``Cmetal``.
+
+    The following example instantiates a single (``num_inst="1"``) clock switch grid named ``global_clk_switch_network``:
+
+    .. code-block:: xml
+
+        <clock_network name="global_clk_switch_network" num_inst="1">
+          <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" starty="0" repeatx="1" repeaty="1" chan_w="4" switch_name="drive_buff">
+            <switch_point type="drive" name="drive" xoffset="0" yoffset="H/2" switch_name="drive_buff"/>
+            <switch_point type="tap" name="tap" xoffset="0" yoffset="0" xincr="1" yincr="1"/>
+          </clock_switch_grid>
+        </clock_network>
+
+    ``startx="0" starty="0"`` anchors the grid at the bottom-left of the device, and ``repeatx="1" repeaty="1"`` places a switch box at *every* grid tile, each with ``chan_w="4"`` tracks on its inter-switch-box wires.
+    Since neither ``switch_block_type`` nor ``length`` is given, every switch box uses the default ``full`` pattern (every incident wire connects to every other incident wire) and every wire spans exactly one switch-box pitch (one tile, since ``repeatx``/``repeaty`` are ``1``).
+    The single ``drive`` switch point sits at grid column ``0`` (``xoffset="0"``, relative to ``startx``), row ``H/2`` (the vertical middle of the device), this is the one location this clock network can be driven from, e.g. by a ``<tap from="ROUTING" to="global_clk_switch_network.drive" .../>`` in ``<clock_routing>``.
+    The ``tap`` switch point starts at ``(0, 0)`` and, because both ``xincr="1"`` and ``yincr="1"`` match the grid's own ``repeatx``/``repeaty``, repeats at *every* switch box in the grid, so any switch box can serve as a tap point out to another clock network or to block clock pins.
+
+    .. arch:tag:: <clock_switch_grid metal_layer="string" startx="expr" starty="expr" repeatx="expr" repeaty="expr" chan_w="expr" switch_name="string" switch_block_type="{full | subset | wilton | universal | custom}" length="expr" directionality="{bidir | unidir}">
+
+        :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the wires between switch boxes.
+        :req_param startx: The x grid location of the first (bottom-left-most) switch box. Value can be relative to the device size.
+        :req_param starty: The y grid location of the first switch box. Value can be relative to the device size.
+        :opt_param repeatx: The horizontal spacing, in grid columns, between switch boxes. Value can be relative to the device size. **Default:** ``W`` (device width).
+        :opt_param repeaty: The vertical spacing, in grid rows, between switch boxes. Value can be relative to the device size. **Default:** ``H`` (device height).
+        :req_param chan_w: The number of tracks per inter-switch-box wire. Must be even when ``directionality="unidir"``.
+        :req_param switch_name: A reference to a pre-defined routing switch (see :ref:`arch_switches`) used for wire-to-wire connections within a switch box, and as the default drive/tap switch.
+        :opt_param switch_block_type:
+            How the wires incident to each switch box connect to one another.
+            ``full`` connects every incident wire to every other incident wire.
+            ``subset``, ``wilton``, and ``universal`` use the same built-in switch-block permutations as general routing (see :ref:`custom_switch_blocks`).
+            ``custom`` uses one or more ``<switch_pattern>`` sub-elements (below) to assign a (possibly different) pattern per switch box location.
+            **Default:** ``full``.
+        :opt_param length:
+            Wire length, in switch-box hops (not grid tiles), i.e. how many ``repeatx``/``repeaty`` pitches a wire spans before terminating at a switch box.
+            A value greater than ``1`` lets wires skip over intermediate switch boxes without a wire-to-wire turn being available there (a ``<switch_point>`` may still tap into such a wire mid-span).
+            **Default:** ``1`` (every wire spans exactly one switch-box pitch).
+        :opt_param directionality:
+            ``bidir`` gives one RR node per track, enterable/exitable from either end.
+            ``unidir`` gives each track a single flow direction, alternating by track parity, like general routing's unidirectional segments; requires an even ``chan_w``.
+            **Default:** ``bidir``.
+
+        .. arch:tag:: <switch_point type="{drive | tap}" name="string" xoffset="expr" yoffset="expr" xincr="expr" yincr="expr" switch_name="string">
+
+            :req_param type:
+                * ``drive`` -- A location where the clock switch grid can be driven by a routing switch or buffer.
+                * ``tap`` -- A location where the clock switch grid can drive a routing switch or buffer to send a signal elsewhere.
+            :req_param xoffset: X grid location of the switch point, relative to the switch grid's ``startx``.
+            :req_param yoffset: Y grid location of the switch point, relative to the switch grid's ``starty``.
+            :opt_param xincr: Repeats this tap point every ``xincr`` switch boxes in x, instead of at just one location. Only meaningful for ``tap`` points. **Default:** ``0`` (no repeat).
+            :opt_param yincr: Repeats this tap point every ``yincr`` switch boxes in y, instead of at just one location. Only meaningful for ``tap`` points. **Default:** ``0`` (no repeat).
+            :req_param switch_name: (Required only for ``drive`` points) A reference to a pre-defined routing switch (see :ref:`arch_switches`) used at the drive point.
+
+            .. note::
+
+                Unlike the rib/spine ``<switch_point>``, a location need not land exactly on a switch box: if exactly one of ``xoffset``/``yoffset`` is aligned to the switch-box lattice and the other falls strictly between two switch boxes, the point taps directly into the channel wire running between them instead of into a switch box hub.
+
+        .. arch:tag:: <switch_pattern name="string" type="{full | subset | wilton | universal | custom}" location="{everywhere | xy_specified}" x="expr" y="expr" startx="expr" endx="expr" repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr">
+
+            Only used when the enclosing ``<clock_switch_grid>`` has ``switch_block_type="custom"``.
+            Each switch box is matched against the enclosing ``<clock_switch_grid>``'s ``<switch_pattern>`` children in the order they are listed; the first pattern whose ``location`` covers that switch box is used, so a catch-all ``location="everywhere"`` pattern (if desired) should be listed last.
+
+            :opt_param name: A name used only in error messages. **Default:** none.
+            :req_param type: Same meaning as the enclosing ``<clock_switch_grid>``'s ``switch_block_type``, but scoped to just the switch boxes this pattern matches. When ``custom``, a ``<switchfuncs>`` child (the same grammar used by general routing's ``<switchblock>``, see :ref:`custom_switch_blocks`) supplies the turn permutation.
+            :opt_param location:
+                ``everywhere`` matches every switch box.
+                ``xy_specified`` restricts this pattern to either a single ``(x, y)`` location or a rectangular region, using the same coordinate attributes as general routing's ``<switchblock_location type="XY_SPECIFIED">`` (see :ref:`custom_switch_blocks`).
+                **Default:** ``everywhere``.
+            :opt_param x: (Only meaningful when ``location="xy_specified"``) X coordinate of a single matched switch box. Leave unset (along with ``y``) to match a region instead. **Default:** unset.
+            :opt_param y: (Only meaningful when ``location="xy_specified"``) Y coordinate of a single matched switch box. **Default:** unset.
+            :opt_param startx: (Only meaningful when ``location="xy_specified"`` and ``x``/``y`` are unset) X coordinate of the first column of the matched region. **Default:** ``0``.
+            :opt_param endx: X coordinate of the last column of the matched region. **Default:** ``W-1``.
+            :opt_param repeatx: Horizontal repeat factor at which the region repeats across the grid. **Default:** ``0`` (the region does not repeat).
+            :opt_param incrx: Horizontal stride within the region; only every ``incrx``-th column of the region is matched. **Default:** ``1``.
+            :opt_param starty: Y coordinate of the first row of the matched region. **Default:** ``0``.
+            :opt_param endy: Y coordinate of the last row of the matched region. **Default:** ``H-1``.
+            :opt_param repeaty: Vertical repeat factor at which the region repeats across the grid. **Default:** ``0`` (the region does not repeat).
+            :opt_param incry: Vertical stride within the region; only every ``incry``-th row of the region is matched. **Default:** ``1``.
 
 Lastly the ``<clock_routing>`` element consists of a group of ``tap`` statements which separately describe the connectivity between clock-related routing resources (pin or wire).
 The tap element and its attribute sare as follows:
@@ -2479,7 +2581,8 @@ The tap element and its attribute sare as follows:
         The set of routing resources to make connections *from*.
         This can be either:
             * ``clock_name.tap_points_name``: A set of clock network ``tap``-type switchpoints. The format is clock network name, followed by the tap points name and delineated by a period (e.g. ``spine1.taps``), or
-            * ``ROUTING``: a special literal which references a connection from general inter-block routing (at a location specified by ``locationx`` and ``locationy`` parameters).
+            * ``ROUTING``: a special literal which references a connection from general inter-block routing (at a location specified by ``locationx`` and ``locationy`` parameters), or
+            * ``TILE.tile_name[hi:lo].port_name[hi:lo]``: a connection from a specific tile's port/pin range at the location specified by ``locationx``/``locationy`` (the ``[hi:lo]`` sub-tile/pin ranges are optional; omitting either uses the full range). Useful for driving a clock network from a dedicated block output pin (e.g. an IO pad) that has no general-purpose routing connection.
         Examples can be see in :ref:`clock_arch_example`.
     :req_param to:
         The set of routing resources to make connections *to*.
@@ -2491,11 +2594,11 @@ The tap element and its attribute sare as follows:
     :req_param fc_val:
         A decimal value between 0 and 1 representing the connection block flexibility between the connecting routing resources; a value of 0.5 for example means that only 50% of the switches necessary to connect all the matching tap and drive points would be implemented.
     :opt_param locationx:
-        (Required when using the special literal ``"ROUTING"``)
-        The x grid location of inter-block routing.
+        (Required when ``from`` is ``"ROUTING"`` or a ``TILE.*`` spec)
+        The x grid location of the inter-block routing or tile.
     :opt_param locationy:
-        (Required when using the special literal ``"ROUTING"``)
-        The y grid location of inter-block routing.
+        (Required when ``from`` is ``"ROUTING"`` or a ``TILE.*`` spec)
+        The y grid location of the inter-block routing or tile.
 
     .. note:: 
     
