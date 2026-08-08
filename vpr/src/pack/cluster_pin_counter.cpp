@@ -397,7 +397,7 @@ void ClusterPinCounter::try_update_lookahead_pins_used(
 bool ClusterPinCounter::check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
-    if (!pb_type->is_primitive() && cur_pb->name) {
+    if (!pb_type->is_primitive() && !cur_pb->name.empty()) {
         for (size_t class_id = 0; class_id < cur_pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
             size_t class_size = cur_pb->pb_graph_node->input_pin_class_sizes[class_id];
 

@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <set>
+#include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
 #include "atom_netlist_fwd.h"
@@ -255,7 +256,7 @@ typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
  */
 class t_pb {
   public:
-    char* name = nullptr;                     ///<Name of this physical block
+    std::string name;                         ///<Name of this physical block. Empty if the block is unused.
     t_pb_graph_node* pb_graph_node = nullptr; ///<pointer to pb_graph_node this pb corresponds to
 
     int mode = 0; ///<mode that this pb is set to
