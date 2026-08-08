@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """live status table for mosaic/scripts/run_vtr_batch.py.
 
-scans <outdir>/status/*.txt and live phase hints from run dirs. run in a
-second terminal while the batch is going.
+reads the results .csv file written by run_vtr_batch.py.
 
 usage:
     python3 mosaic/scripts/watch_compare.py
@@ -21,9 +20,8 @@ flags:
 from __future__ import annotations
 
 import argparse
+import csv
 import math
-import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -40,24 +38,8 @@ vtrRoot = scriptDir.parents[1]
 # new batches default under mosaic/scripts, and the repo root remains a fallback for older runs.
 compareOutputRoot = scriptDir
 
-phasePatterns = [
-    (re.compile(r"(?:^|#\s*)Routing took\b", re.I), "route done"),
-    (re.compile(r"(?:^|#\s*)SA Placement took\b|(?:^|#\s*)Placement took\b", re.I), "place done"),
-    (re.compile(r"(?:^|#\s*)Packing took\b", re.I), "pack done"),
-    (re.compile(r"(?:^|#\s*)Routing\s*$", re.I), "routing"),
-    (re.compile(r"(?:^|#\s*)SA Placement\s*$|(?:^|#\s*)Placement\s*$", re.I), "placing"),
-    (re.compile(r"(?:^|#\s*)Packing\s*$|Begin packing\b", re.I), "packing"),
-    (re.compile(r"Executing ABC|abc -luts", re.I), "abc"),
-    (
-        re.compile(
-            r"mosaic|vtr_arch_rules|parmys|Executing PARMYS|Yosys [0-9]",
-            re.I,
-        ),
-        "synth",
-    ),
-]
-
 phaseColors = {
+    "pending": "\033[90m",
     "started": "\033[93m",
     "synth": "\033[94m",
     "abc": "\033[96m",
@@ -66,14 +48,34 @@ phaseColors = {
     "placing": "\033[93m",
     "place done": "\033[93m",
     "routing": "\033[93m",
-    "route done": "\033[93m",
+    "route done": "\033[92m",
 }
 
+spinnerFrames = ("-", "\\", "|", "/")
+
+# csv field -> table/geomean short key
+csvDisplayKeys = (
+    ("wall", "wall_time_sec"),
+    ("synth", "synth_wall_sec"),
+    ("vpr", "vpr_wall_sec"),
+    ("s_luts", "synth_luts"),
+    ("a_luts", "abc_luts"),
+    ("p_luts", "packed_luts"),
+    ("s_ff", "synth_ff"),
+    ("ff", "num_ff"),
+    ("mem", "num_memory"),
+    ("dsp", "num_dsp"),
+    ("adder", "num_adder"),
+    ("io_in", "num_io_in"),
+    ("io_out", "num_io_out"),
+    ("clb", "num_clb"),
+    ("wl", "total_wire_length"),
+    ("cpd", "crit_path_delay_ns"),
+    ("fmax", "fmax_mhz"),
+    ("wns", "worst_slack_ns"),
+)
+
 # (header, status key, higher_is_better)
-# times come from three wall-clock stamps in run_vtr_batch:
-#   wall  = vpr_finish - start
-#   synth = synth_finish - start
-#   vpr   = vpr_finish - synth_finish
 geomeanColumns = (
     ("wall", "wall", False),
     ("synth", "synth", False),
@@ -92,115 +94,59 @@ geomeanColumns = (
 )
 
 
-# USE: parse one status line into label, status, and key=value fields.
-def parseStatusLine(text: str) -> Dict[str, str]:
-    # "label: status key=val ...". status may be "FAIL (reason with spaces)"
-    row: Dict[str, str] = {}
-    line = text.strip()
-    if not line:
-        return row
-    match = re.match(r"^([^:]+):\s*(.*)$", line)
-    if not match:
-        row["label"] = line.split()[0]
-        return row
-    row["label"] = match.group(1).strip()
-    rest = match.group(2).strip()
-    if not rest:
-        return row
-    tokens = rest.split()
-    kvStart = len(tokens)
-    for i in range(len(tokens) - 1, -1, -1):
-        if "=" in tokens[i]:
-            kvStart = i
-        else:
-            break
-    row["status"] = " ".join(tokens[:kvStart]).strip() or "ok"
-    for tok in tokens[kvStart:]:
-        if "=" not in tok:
-            continue
-        key, value = tok.split("=", 1)
-        row[key] = stripUnit(value)
-    return row
-
-
 # HELPER: accept bare numbers or legacy status values like 12.3ns / 100MHz / 4.5s.
 def stripUnit(value: str) -> str:
     text = str(value).strip()
-    match = re.match(
-        r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*"
-        r"(ns|mhz|s|sec|seconds?)?$",
-        text,
-        re.I,
-    )
-    if match:
-        return match.group(1)
+    if not text:
+        return ""
+    # keep plain numbers; strip common unit suffixes if present
+    for suffix in ("ns", "MHz", "mhz", "s", "sec", "seconds", "Seconds"):
+        if text.lower().endswith(suffix.lower()) and len(text) > len(suffix):
+            trimmed = text[: -len(suffix)].strip()
+            try:
+                float(trimmed)
+                return trimmed
+            except ValueError:
+                break
     return text
 
 
-# USE: infer the current vtr phase from the newest log tails in a run dir.
-def detectPhase(runDir: Path) -> str:
-    for name in (
-        "vpr.out",
-        "vpr_stdout.log",
-        "mosaic.out",
-        "parmys.out",
-        "output.txt",
-    ):
-        path = runDir / name
-        if not path.is_file() or path.stat().st_size == 0:
+def resolveCsvPath(targetDir: Path) -> Path | None:
+    marker = targetDir / "status" / "csv_path.txt"
+    if marker.is_file():
+        text = marker.read_text(encoding="utf-8", errors="replace").strip()
+        if text:
+            path = Path(text)
+            if path.is_file() or path.parent.is_dir():
+                return path
+    candidates = sorted(targetDir.glob("compare_results*.csv"))
+    return candidates[-1] if candidates else None
+
+
+# USE: map one results-csv row into the short keys used by the tables.
+def rowFromCsv(raw: Dict[str, str]) -> Dict[str, str]:
+    design = (raw.get("design") or "").strip()
+    flow = (raw.get("flow") or "").strip()
+    row: Dict[str, str] = {
+        "label": f"{design}_{flow}" if design and flow else design or flow,
+        "status": (raw.get("status") or "pending").strip() or "pending",
+    }
+    for shortKey, field in csvDisplayKeys:
+        value = raw.get(field, "")
+        if value == "" or value is None:
             continue
-        try:
-            with open(path, "rb") as handle:
-                handle.seek(0, os.SEEK_END)
-                size = handle.tell()
-                handle.seek(max(0, size - 8192), os.SEEK_SET)
-                text = handle.read().decode("utf-8", errors="replace")
-        except OSError:
-            continue
-        for pattern, label in phasePatterns:
-            if pattern.search(text):
-                return label
-    return "started"
+        row[shortKey] = stripUnit(value)
+    return row
 
 
-def readLabels(outDir: Path) -> List[str]:
-    manifest = outDir / "status" / "manifest.txt"
-    if manifest.is_file():
-        try:
-            text = manifest.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            text = ""
-        labels = [line.strip() for line in text.splitlines() if line.strip()]
-        if labels:
-            return labels
-    statusDir = outDir / "status"
-    if statusDir.is_dir():
-        return sorted(path.stem for path in statusDir.glob("*.txt") if path.stem != "csv_path")
-    runsDir = outDir / "runs"
-    if runsDir.is_dir():
-        return sorted(path.name for path in runsDir.iterdir() if path.is_dir())
-    return []
-
-
-def scanStatus(outDir: Path, labels: Sequence[str]) -> List[Dict[str, str]]:
-    rows = []
-    for label in labels:
-        statusPath = outDir / "status" / f"{label}.txt"
-        runDir = outDir / "runs" / label
-        if statusPath.is_file():
-            try:
-                text = statusPath.read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                text = ""
-            row = parseStatusLine(text.splitlines()[0] if text else "")
-            if not row.get("label"):
-                row["label"] = label
-            rows.append(row)
-        elif runDir.is_dir():
-            rows.append({"label": label, "status": f"running:{detectPhase(runDir)}"})
-        else:
-            rows.append({"label": label, "status": "pending"})
-    return rows
+def loadRows(csvPath: Path) -> List[Dict[str, str]]:
+    if not csvPath.is_file():
+        return []
+    try:
+        with open(csvPath, newline="", encoding="utf-8") as handle:
+            return [rowFromCsv(dict(raw)) for raw in csv.DictReader(handle)]
+    except OSError:
+        return []
 
 
 def numeric(value) -> Optional[float]:
@@ -218,7 +164,6 @@ def flowOf(label: str) -> Optional[str]:
         if label.endswith("_" + flow):
             return flow
     return None
-
 
 
 # USE: compute per-flow geomeans over designs that completed on every flow.
@@ -241,7 +186,7 @@ def computeGeomeans(rows: Sequence[Dict[str, str]]):
         design: flowRows
         for design, flowRows in byDesign.items()
         if len(flowRows) == len(flowsSeen)
-        and all(flowRows[f].get("status") in ("ok", "cached") for f in flowsSeen)
+        and all(isGeomeanReady(flowRows[f]) for f in flowsSeen)
     }
     if not paired:
         return None
@@ -303,19 +248,14 @@ def renderGeomeanTable(rows: Sequence[Dict[str, str]]) -> str:
 
 
 def coloredStatus(status: str) -> str:
-    if status == "ok":
-        return "\033[92mok\033[0m"
     if status.startswith("FAIL") or status == "fail":
         return f"\033[91m{status}\033[0m"
     if status == "pending":
         return "\033[90mpending\033[0m"
     if status == "cached":
         return "\033[96mcached\033[0m"
-    if status.startswith("running:"):
-        phase = status.split(":", 1)[1] or "started"
-        color = phaseColors.get(phase, "\033[93m")
-        return f"{color}{phase}\033[0m"
-    return f"\033[93m{status or 'started'}\033[0m"
+    color = phaseColors.get(status, "\033[93m")
+    return f"{color}{status or 'started'}\033[0m"
 
 
 def sap(row: Dict[str, str], *keys: str) -> str:
@@ -369,24 +309,14 @@ def renderTable(rows: List[Dict[str, str]], title: str) -> str:
     return f"{title}\n{table}"
 
 
-def resolveCsvPath(targetDir: Path) -> Path | None:
-    marker = targetDir / "status" / "csv_path.txt"
-    if marker.is_file():
-        text = marker.read_text(encoding="utf-8", errors="replace").strip()
-        if text:
-            path = Path(text)
-            if path.is_file() or path.parent.is_dir():
-                return path
-    candidates = sorted(targetDir.glob("compare_results*.csv"))
-    return candidates[-1] if candidates else None
-
-
 def findOutputDirs() -> List[Path]:
     roots = [compareOutputRoot]
     if compareOutputRoot != vtrRoot:
         roots.append(vtrRoot)
     dirs = []
     for root in roots:
+        if not root.is_dir():
+            continue
         dirs.extend(
             path
             for path in root.iterdir()
@@ -396,42 +326,62 @@ def findOutputDirs() -> List[Path]:
     return dirs
 
 
+def isDoneStatus(status: str) -> bool:
+    return status in ("route done", "ok", "cached") or status.startswith("FAIL")
+
+
+# USE: true when a row can enter the live geomean.
+def isGeomeanReady(row: Dict[str, str]) -> bool:
+    status = row.get("status", "")
+    if status.startswith("FAIL"):
+        return False
+    if status not in ("route done", "ok", "cached"):
+        return False
+    return status == "cached" or numeric(row.get("wall")) is not None
+
+
 # USE: refresh the live status table until interrupted or --once.
 def watchDir(targetDir: Path, interval: float, once: bool) -> None:
     logsDir = targetDir / "logs"
+    spinnerPeriod = 0.25
     print(f"watching {targetDir} (interval={interval}s), Ctrl-C to stop")
+    frame = 0
+    lastCsvLoad = 0.0
+    csvPath: Path | None = None
+    rows: List[Dict[str, str]] = []
     try:
         while True:
-            labels = readLabels(targetDir)
-            rows = scanStatus(targetDir, labels)
+            now = time.monotonic()
+            if once or csvPath is None or (now - lastCsvLoad) >= interval:
+                csvPath = resolveCsvPath(targetDir)
+                rows = loadRows(csvPath) if csvPath is not None else []
+                lastCsvLoad = now
             total = len(rows)
-            done = sum(
-                1
-                for row in rows
-                if row.get("status")
-                and not str(row["status"]).startswith("running")
-                and row["status"] != "pending"
-            )
-            running = sum(
-                1 for row in rows if str(row.get("status", "")).startswith("running")
-            )
+            done = sum(1 for row in rows if isDoneStatus(row.get("status", "")))
             pending = sum(1 for row in rows if row.get("status") == "pending")
+            running = total - done - pending
+            spinner = spinnerFrames[frame % len(spinnerFrames)] if running else ""
             title = (
                 f"{targetDir.name}: {done}/{total} done, "
                 f"{running} running, {pending} pending"
             )
+            if spinner:
+                title = f"{title} {spinner}"
             if not once:
                 print("\033[H\033[J", end="")
-            print(renderTable(rows, title))
-            print()
-            print(renderGeomeanTable(rows))
+            if csvPath is None:
+                print(f"{title}\n(no results csv yet)")
+            else:
+                print(renderTable(rows, title))
+                print()
+                print(renderGeomeanTable(rows))
             print(f"\nlogs: {logsDir}")
-            csvPath = resolveCsvPath(targetDir)
             if csvPath is not None:
                 print(f"csv:  {csvPath}")
             if once:
                 break
-            time.sleep(interval)
+            frame += 1
+            time.sleep(spinnerPeriod)
     except KeyboardInterrupt:
         print("\nstopped.")
 

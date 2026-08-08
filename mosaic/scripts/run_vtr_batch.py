@@ -6,9 +6,8 @@ each job is python3 vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -sta
 every run is pinned to 1 core (--num_workers 1 + VPR_NUM_WORKERS=1 +
 OMP_NUM_THREADS=1). --jobs N means N of those single-core runs in parallel.
 
-writes live status and csv under mosaic/scripts/compare_output_<arch_stem>/.
-with --watch, spawns watch_compare.py in this terminal (or run it yourself
-in a second one).
+writes a live results csv under mosaic/scripts/compare_output_<arch_stem>/.
+watch_compare.py reads from this file. with --watch, the watcher is also ran
 
 timing uses three wall-clock timestamps per run (also stored in the results csv):
   start, synth_finish (frontend blif appears), vpr_finish (flow process exits)
@@ -61,6 +60,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
+try:
+    import fcntl
+except ImportError:  # windows
+    fcntl = None
+
 scriptDir = Path(__file__).resolve().parent
 vtrRoot = scriptDir.parents[1]
 # default batch output root keeps compare_output_* under mosaic/scripts.
@@ -88,6 +92,7 @@ vprDspBlockTypes = ("mult_36", "mae", "dsp", "dsp_top")
 csvFields = (
     "design",
     "flow",
+    "status",
     "success",
     "vpr_status",
     "start_unix",
@@ -115,6 +120,39 @@ csvFields = (
     "worst_slack_ns",
     "return_code",
 )
+
+# live status is monotonic so log-tail flicker cannot move a run backwards.
+statusRank = {
+    "pending": 0,
+    "started": 1,
+    "synth": 2,
+    "abc": 3,
+    "packing": 4,
+    "pack done": 5,
+    "placing": 6,
+    "place done": 7,
+    "routing": 8,
+    "route done": 9,
+    "ok": 100,
+    "cached": 100,
+}
+
+phasePatterns = [
+    (re.compile(r"(?:^|#\s*)Routing took\b", re.I), "route done"),
+    (re.compile(r"(?:^|#\s*)SA Placement took\b|(?:^|#\s*)Placement took\b", re.I), "place done"),
+    (re.compile(r"(?:^|#\s*)Packing took\b", re.I), "pack done"),
+    (re.compile(r"(?:^|#\s*)Routing\s*$", re.I), "routing"),
+    (re.compile(r"(?:^|#\s*)SA Placement\s*$|(?:^|#\s*)Placement\s*$", re.I), "placing"),
+    (re.compile(r"(?:^|#\s*)Packing\s*$|Begin packing\b", re.I), "packing"),
+    (re.compile(r"Executing ABC|abc -luts", re.I), "abc"),
+    (
+        re.compile(
+            r"mosaic|vtr_arch_rules|parmys|Executing PARMYS|Yosys [0-9]",
+            re.I,
+        ),
+        "synth",
+    ),
+]
 
 statusKeys = (
     ("wall", "wall_time_sec"),
@@ -215,27 +253,137 @@ def checkPrerequisites(needMosaic: bool, archFile: Path, benchDir: Path) -> None
         raise SystemExit(1)
 
 
-def writeStatus(outDir: Path, runLabel: str, summaryLine: str) -> None:
-    statusDir = outDir / "status"
-    statusDir.mkdir(parents=True, exist_ok=True)
-    try:
-        (statusDir / f"{runLabel}.txt").write_text(summaryLine + "\n", encoding="utf-8")
-    except OSError:
-        pass
+def statusSortKey(status: str) -> int:
+    if status in statusRank:
+        return statusRank[status]
+    if str(status).startswith("FAIL"):
+        return 100
+    return statusRank.get("started", 1)
 
 
-def writeCsv(csvPath: Path, rows: List[Dict]) -> None:
+# USE: keep the furthest progress status (never regress from place done to synth).
+def preferStatus(current: str, proposed: str) -> str:
+    if not proposed:
+        return current or "pending"
+    if not current:
+        return proposed
+    if statusSortKey(proposed) >= statusSortKey(current):
+        return proposed
+    return current
+
+
+# USE: infer current phase from the newest log tails in a run dir.
+def detectPhase(runDir: Path) -> str:
+    for name in (
+        "vpr.out",
+        "vpr_stdout.log",
+        "mosaic.out",
+        "parmys.out",
+        "output.txt",
+    ):
+        path = runDir / name
+        if not path.is_file() or path.stat().st_size == 0:
+            continue
+        try:
+            with open(path, "rb") as handle:
+                handle.seek(0, os.SEEK_END)
+                size = handle.tell()
+                handle.seek(max(0, size - 8192), os.SEEK_SET)
+                text = handle.read().decode("utf-8", errors="replace")
+        except OSError:
+            continue
+        for pattern, label in phasePatterns:
+            if pattern.search(text):
+                return label
+    return "started"
+
+
+def withCsvLock(csvPath: Path, callback):
     csvPath.parent.mkdir(parents=True, exist_ok=True)
+    lockPath = csvPath.with_suffix(csvPath.suffix + ".lock")
+    with open(lockPath, "a+", encoding="utf-8") as lockFile:
+        if fcntl is not None:
+            fcntl.flock(lockFile.fileno(), fcntl.LOCK_EX)
+        try:
+            return callback()
+        finally:
+            if fcntl is not None:
+                fcntl.flock(lockFile.fileno(), fcntl.LOCK_UN)
+
+
+def loadCsvRows(csvPath: Path) -> List[Dict]:
+    if not csvPath.is_file():
+        return []
+    try:
+        with open(csvPath, newline="", encoding="utf-8") as handle:
+            return [dict(row) for row in csv.DictReader(handle)]
+    except OSError:
+        return []
+
+
+def writeCsv(
+    csvPath: Path,
+    rows: List[Dict],
+    order: Optional[Dict[Tuple[str, str], int]] = None,
+) -> None:
+    csvPath.parent.mkdir(parents=True, exist_ok=True)
+
+    def sortKey(row: Dict):
+        key = (row.get("design", ""), row.get("flow", ""))
+        if order is not None:
+            return (order.get(key, 10**9), key)
+        return key
+
     with open(csvPath, "w", newline="", encoding="utf-8") as outFile:
         writer = csv.DictWriter(outFile, fieldnames=csvFields, extrasaction="ignore")
         writer.writeheader()
-        for row in sorted(rows, key=lambda r: (r.get("design", ""), r.get("flow", ""))):
+        for row in sorted(rows, key=sortKey):
             writer.writerow({field: row.get(field, "") for field in csvFields})
+
+
+# USE: merge one row into the live results csv under an exclusive lock.
+def upsertCsvRow(
+    csvPath: Path,
+    row: Dict,
+    order: Optional[Dict[Tuple[str, str], int]] = None,
+) -> None:
+    design = row.get("design", "")
+    flow = row.get("flow", "")
+    if not design or not flow:
+        return
+
+    def merge() -> None:
+        index: Dict[Tuple[str, str], Dict] = {}
+        for existing in loadCsvRows(csvPath):
+            key = (existing.get("design", ""), existing.get("flow", ""))
+            if key[0] and key[1]:
+                index[key] = existing
+        key = (design, flow)
+        previous = index.get(key, {})
+        merged = dict(previous)
+        for field, value in row.items():
+            if value == "" or value is None:
+                continue
+            merged[field] = value
+        if "status" in row and row["status"]:
+            merged["status"] = preferStatus(
+                str(previous.get("status", "")), str(row["status"])
+            )
+        elif "status" not in merged:
+            merged["status"] = "pending"
+        merged["design"] = design
+        merged["flow"] = flow
+        index[key] = merged
+        writeCsv(csvPath, list(index.values()), order=order)
+
+    withCsvLock(csvPath, merge)
 
 
 def formatSummary(runLabel: str, row: Dict, status: Optional[str] = None) -> str:
     if status is None:
-        status = "ok" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
+        status = row.get("status") or (
+            "route done" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
+        )
     parts = [f"{runLabel}: {status}"]
     for shortKey, field in statusKeys:
         value = row.get(field, "")
@@ -426,6 +574,7 @@ def rowFromPriorCsv(priorRow: Dict) -> Dict:
     except (TypeError, ValueError):
         row["return_code"] = 0
     row["vpr_status"] = "cached"
+    row["status"] = "cached"
     return row
 
 
@@ -451,6 +600,7 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
         not in (
             "design",
             "flow",
+            "status",
             "success",
             "wall_time_sec",
             "return_code",
@@ -592,12 +742,17 @@ def runOne(task: Tuple) -> Dict:
         includeFiles,
         routeChanWidth,
         priorRow,
+        csvPath,
+        order,
     ) = task
     runLabel = f"{design}_{flowName}"
     tempDir = (outDir / "runs" / runLabel).resolve()
     logPath = (outDir / "logs" / f"{runLabel}.log").resolve()
     successMarker = tempDir / ".success"
     circuitPath = benchDir / f"{design}.v"
+
+    def publish(row: Dict) -> None:
+        upsertCsvRow(csvPath, row, order=order)
 
     if noRerun and successMarker.is_file():
         if priorRow:
@@ -606,23 +761,25 @@ def runOne(task: Tuple) -> Dict:
             row = {
                 "design": design,
                 "flow": flowName,
+                "status": "cached",
                 "success": True,
                 "vpr_status": "cached",
                 "return_code": 0,
             }
-        writeStatus(outDir, runLabel, formatSummary(runLabel, row, status="cached"))
+        publish(row)
         return row
 
     if not circuitPath.is_file():
         row = {
             "design": design,
             "flow": flowName,
+            "status": "FAIL (missing_verilog)",
             "success": False,
             "vpr_status": "missing_verilog",
             "wall_time_sec": "",
             "return_code": 1,
         }
-        writeStatus(outDir, runLabel, formatSummary(runLabel, row))
+        publish(row)
         return row
 
     if tempDir.exists() and not noClean:
@@ -663,6 +820,8 @@ def runOne(task: Tuple) -> Dict:
     #   vpr   = vpr_finish - synth_finish
     startUnix = time.time()
     synthFinishUnix = None
+    liveStatus = "started"
+    publish({"design": design, "flow": flowName, "status": liveStatus})
     with open(logPath, "w", encoding="utf-8", errors="replace") as logFile:
         logFile.write("CMD: " + " ".join(cmd) + "\n\n")
         logFile.flush()
@@ -678,6 +837,11 @@ def runOne(task: Tuple) -> Dict:
             returnCode = proc.poll()
             if synthFinishUnix is None and frontendReady(tempDir, design, flowName):
                 synthFinishUnix = time.time()
+            phase = detectPhase(tempDir)
+            nextStatus = preferStatus(liveStatus, phase)
+            if nextStatus != liveStatus:
+                liveStatus = nextStatus
+                publish({"design": design, "flow": flowName, "status": liveStatus})
             if returnCode is not None:
                 break
             time.sleep(0.25)
@@ -696,12 +860,14 @@ def runOne(task: Tuple) -> Dict:
     if qor.get("vpr_status") == "missing":
         qor["vpr_status"] = extractFailReason(tempDir, flowName, returnCode)
     success = returnCode == 0 and qor["vpr_status"] == "ok"
+    # qor must not overwrite status/design/flow (parseVprQor used to emit status="")
     row = {
+        **qor,
         "design": design,
         "flow": flowName,
+        "status": "route done" if success else f"FAIL ({qor.get('vpr_status', '')})",
         "success": success,
         "return_code": returnCode,
-        **qor,
     }
     if success:
         try:
@@ -709,8 +875,7 @@ def runOne(task: Tuple) -> Dict:
         except OSError:
             pass
 
-    summary = formatSummary(runLabel, row)
-    writeStatus(outDir, runLabel, summary)
+    publish(row)
     return row
 
 
@@ -723,19 +888,12 @@ def runPool(
 ) -> List[Dict]:
     liveResults: List[Dict] = []
 
-    def flush() -> None:
-        merged = list(liveResults)
-        merged.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
-        writeCsv(csvPath, merged)
-
     if not tasks:
-        writeCsv(csvPath, [])
         return []
 
     if jobs <= 1 or len(tasks) <= 1:
         for task in tasks:
             liveResults.append(runOne(task))
-            flush()
             if not quiet:
                 print(formatSummary(f"{task[0]}_{task[1]}", liveResults[-1]))
         return liveResults
@@ -745,7 +903,6 @@ def runPool(
         for future in as_completed(futures):
             row = future.result()
             liveResults.append(row)
-            flush()
             if not quiet:
                 print(formatSummary(f"{row['design']}_{row['flow']}", row))
     liveResults.sort(key=lambda row: order.get((row["design"], row["flow"]), 0))
@@ -855,7 +1012,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     labels = [f"{design}_{flow}" for design in designs for flow in selectedFlows]
     (statusDir / "manifest.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
-    writeCsv(csvPath, [])
     (statusDir / "csv_path.txt").write_text(str(csvPath.resolve()) + "\n", encoding="utf-8")
 
     # --no-rerun reloads timing/qor for cached runs from the newest prior csv.
@@ -865,6 +1021,27 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if priorCsv is not None:
             priorIndex = loadCsvIndex(priorCsv)
             print(f"prior:   {priorCsv} ({len(priorIndex)} rows)")
+
+    order = {
+        (design, flowName): i
+        for i, (design, flowName) in enumerate(
+            (design, flowName)
+            for design in designs
+            for flowName in selectedFlows
+        )
+    }
+    # seed the csv with every run so watch_compare can read status-only rows.
+    seedRows = [
+        {
+            "design": design,
+            "flow": flowName,
+            "status": "pending",
+            "success": "",
+        }
+        for design in designs
+        for flowName in selectedFlows
+    ]
+    writeCsv(csvPath, seedRows, order=order)
 
     tasks = [
         (
@@ -878,11 +1055,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             includeFiles,
             args.route_chan_width,
             priorIndex.get((design, flowName)),
+            csvPath,
+            order,
         )
         for design in designs
         for flowName in selectedFlows
     ]
-    order = {(task[0], task[1]): i for i, task in enumerate(tasks)}
 
     print(f"arch:    {archFile}")
     print(f"bench:   {benchDir}")
@@ -916,7 +1094,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     finally:
         stopWatch(watchProc)
 
-    writeCsv(csvPath, rows)
+    # live upserts already wrote each row; rewrite once in stable launch order.
+    for row in rows:
+        upsertCsvRow(csvPath, row, order=order)
+    writeCsv(csvPath, loadCsvRows(csvPath), order=order)
     ok = sum(1 for row in rows if row.get("success"))
     fail = len(rows) - ok
     print()
