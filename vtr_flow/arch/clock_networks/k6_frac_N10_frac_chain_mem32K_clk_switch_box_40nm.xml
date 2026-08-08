@@ -1513,7 +1513,7 @@
   </clocks>
   <clocknetworks>
     <!-- ============================================================================
-         Clock network TODOs
+         Clock network future work
 
          This file is used as the reference architecture for clock-network
          development, so outstanding work is tracked here inline rather than
@@ -1521,43 +1521,25 @@
          a comment when something about that specific site is non-obvious;
          everything else is listed here.
 
-         Planned next (in no particular order):
-         1. Tile port/pin taps: allow a clock_routing <tap> to originate from a
-            port/pin on a tile block, not only from a general-routing segment
-            at an (x,y) switch location. E.g. an IO pad may have an output pin
-            dedicated to driving the clock network with no general-routing
-            connection at all. Likely means extending the "from" side of
-            <tap> to accept a tile/port/pin spec alongside the existing
-            "ROUTING" + locationx/locationy form.
-         2. Multiple entry points: allow several such taps (general-routing or
-            tile-port, per #1) at different locations/tiles to drive different
-            switches of the same clock network, e.g. multiple "clock IO"
-            pads each driving a different switch box of
-            global_clk_switch_network. Related to the "number of drives"
-            question below.
-         3. Custom switch blocks: allow a clock_switch_grid to reference a
-            <switchblock> custom pattern (as general-routing switch blocks
-            do), instead of only the built-in SUBSET/WILTON/UNIVERSAL/FULL
-            switch_block_type patterns.
+         None of the below block merging clock switch boxes they're either
+         internal refactors, open design questions, or already-supported
+         behavior that just hasn't been exercised by a test yet.
 
-         Also tracked, not yet scheduled:
-         - Multi-tap support for clock_switch_grid: allow multiple tap points
-           off a single clock_switch_grid, including at locations that don't
-           land on a switch box (e.g. with repeatx=10, tapping halfway between
-           two switch boxes), effectively a MUX driving another clock
-           network (a spine/rib) from partway along a hop wire.
          - Unify clock network segments with the general <segment_list>
            model, so a clock network could eventually mix multiple segment
            lengths/frequencies the way general-routing channels partition
            channel width across segment types by freq.
          - Index a clock_switch_grid switch box by (row, col) instead of by
            (x, y) location.
-         - Decide what should happen at an empty tile: should a switch still
-           be placed there?
-         - clock_routing: support muxing multiple "from"s into one "to" tap
-           (currently only a single from -> single to tap is supported; for
-           now the architecture always has a single spine/rib driving a
-           single spine/rib).
+         - Decide what should happen at an empty tile: ClockSwitchGrid
+           currently places a switch box at every repeatx/repeaty lattice
+           location unconditionally, with no check for whether a block is
+           placed there.
+         - clock_routing: verify muxing multiple "from"s into one "to" tap
+           works as expected. Each <tap> independently adds edges into the
+           "to" switch point's rr nodes, so multiple <tap> entries sharing a
+           "to" should already create a mux but no test exercises more
+           than one "from" per "to" yet.
          - clock_routing: replace the "CLOCK" special to-address with an
            explicit port name, since the clock port name varies by block
            (clk for CLB clock pins, clock for IO clock pins).
