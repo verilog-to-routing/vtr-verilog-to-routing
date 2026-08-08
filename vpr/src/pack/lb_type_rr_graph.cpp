@@ -69,28 +69,21 @@ std::vector<std::vector<t_lb_type_rr_node>> alloc_and_load_all_lb_type_rr_graph(
 
 /* Free routing resource graph for all logic block types */
 void free_all_lb_type_rr_graph(std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs) {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-
-    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
-        int itype = type.index;
-        if (!is_empty_type(&type)) {
-            int graph_size = lb_type_rr_graphs[itype].size();
-            for (int inode = 0; inode < graph_size; inode++) {
-                t_lb_type_rr_node* node = &lb_type_rr_graphs[itype][inode];
-                if (node->outedges != nullptr) {
-                    for (int imode = 0; imode < node->num_modes; imode++) {
-                        if (node->outedges[imode] != nullptr) {
-                            delete[] node->outedges[imode];
-                        }
-                    }
-                    delete[] node->outedges;
+    for (std::vector<t_lb_type_rr_node>& lb_type_rr_graph : lb_type_rr_graphs) {
+        for (t_lb_type_rr_node& node : lb_type_rr_graph) {
+            if (node.outedges != nullptr) {
+                for (int imode = 0; imode < node.num_modes; imode++) {
+                    delete[] node.outedges[imode];
                 }
-                if (node->num_fanout != nullptr) {
-                    delete[] node->num_fanout;
-                }
+                delete[] node.outedges;
+                node.outedges = nullptr;
             }
+            delete[] node.num_fanout;
+            node.num_fanout = nullptr;
         }
     }
+
+    lb_type_rr_graphs.clear();
 }
 
 /*****************************************************************************************
