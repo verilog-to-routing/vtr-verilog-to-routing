@@ -40,8 +40,8 @@ static void count_clb_inputs_and_outputs_from_pb_route(const t_pb* pb,
                                                        int ipin,
                                                        e_pin_type pin_type,
                                                        std::unordered_map<AtomNetId, bool>& nets_absorbed,
-                                                       int num_clb_inputs_used[],
-                                                       int num_clb_outputs_used[]) {
+                                                       std::vector<int>& num_clb_inputs_used,
+                                                       std::vector<int>& num_clb_outputs_used) {
     VTR_ASSERT_DEBUG(!pb->pb_route.empty());
     int pb_graph_pin_id = get_pb_graph_node_pin_from_pb_graph_node(pb->pb_graph_node, ipin)->pin_count_in_cluster;
 
@@ -61,17 +61,17 @@ static void count_clb_inputs_and_outputs_from_pb_route(const t_pb* pb,
 
 static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer,
                                        std::unordered_map<AtomNetId, bool>& nets_absorbed,
-                                       int num_clb_types[],
-                                       int num_clb_inputs_used[],
-                                       int num_clb_outputs_used[]) {
+                                       std::vector<int>& num_clb_types,
+                                       std::vector<int>& num_clb_inputs_used,
+                                       std::vector<int>& num_clb_outputs_used) {
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         t_logical_block_type_ptr logical_block = cluster_legalizer.get_cluster_type(cluster_id);
         t_physical_tile_type_ptr physical_tile = pick_physical_type(logical_block);
+        const t_pb* pb = cluster_legalizer.get_cluster_pb(cluster_id);
         for (int ipin = 0; ipin < logical_block->pb_type->num_pins; ipin++) {
             int physical_pin = get_physical_pin(physical_tile, logical_block, ipin);
             e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
-            const t_pb* pb = cluster_legalizer.get_cluster_pb(cluster_id);
             if (pb->pb_route.empty())
                 continue;
             count_clb_inputs_and_outputs_from_pb_route(pb,
@@ -87,9 +87,9 @@ static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer
 }
 
 static void count_stats_from_netlist(std::unordered_map<AtomNetId, bool>& nets_absorbed,
-                                     int num_clb_types[],
-                                     int num_clb_inputs_used[],
-                                     int num_clb_outputs_used[]) {
+                                     std::vector<int>& num_clb_types,
+                                     std::vector<int>& num_clb_inputs_used,
+                                     std::vector<int>& num_clb_outputs_used) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -133,15 +133,9 @@ static void print_stats(const ClusterLegalizer* cluster_legalizer_ptr, bool from
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
-    int* num_clb_types = new int[device_ctx.logical_block_types.size()];
-    int* num_clb_inputs_used = new int[device_ctx.logical_block_types.size()];
-    int* num_clb_outputs_used = new int[device_ctx.logical_block_types.size()];
-
-    for (size_t i = 0; i < device_ctx.logical_block_types.size(); i++) {
-        num_clb_types[i] = 0;
-        num_clb_inputs_used[i] = 0;
-        num_clb_outputs_used[i] = 0;
-    }
+    std::vector<int> num_clb_types(device_ctx.logical_block_types.size(), 0);
+    std::vector<int> num_clb_inputs_used(device_ctx.logical_block_types.size(), 0);
+    std::vector<int> num_clb_outputs_used(device_ctx.logical_block_types.size(), 0);
 
     std::unordered_map<AtomNetId, bool> nets_absorbed;
     for (AtomNetId net_id : atom_nlist.nets()) {
@@ -177,9 +171,6 @@ static void print_stats(const ClusterLegalizer* cluster_legalizer_ptr, bool from
     }
     VTR_LOG("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
             total_nets_absorbed, (int)atom_nlist.nets().size(), (int)atom_nlist.nets().size() - total_nets_absorbed);
-    delete[] num_clb_types;
-    delete[] num_clb_inputs_used;
-    delete[] num_clb_outputs_used;
     /* TODO: print more stats */
 }
 
@@ -429,19 +420,19 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
     if (!pb_type->is_primitive()) {
         block_node.append_attribute("mode") = mode->name;
     } else {
-        const auto& atom_ctx = g_vpr_ctx.atom();
+        const AtomContext& atom_ctx = g_vpr_ctx.atom();
         AtomBlockId atom_blk = atom_ctx.netlist().find_block(pb->name);
         VTR_ASSERT(atom_blk);
 
         pugi::xml_node attrs_node = block_node.append_child("attributes");
-        for (const auto& attr : atom_ctx.netlist().block_attrs(atom_blk)) {
+        for (const std::pair<const std::string, std::string>& attr : atom_ctx.netlist().block_attrs(atom_blk)) {
             pugi::xml_node attr_node = attrs_node.append_child("attribute");
             attr_node.append_attribute("name") = attr.first.c_str();
             attr_node.text().set(attr.second.c_str());
         }
 
         pugi::xml_node params_node = block_node.append_child("parameters");
-        for (const auto& param : atom_ctx.netlist().block_params(atom_blk)) {
+        for (const std::pair<const std::string, std::string>& param : atom_ctx.netlist().block_params(atom_blk)) {
             pugi::xml_node param_node = params_node.append_child("parameter");
             param_node.append_attribute("name") = param.first.c_str();
             param_node.text().set(param.second.c_str());
@@ -478,7 +469,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
             if (pb_type->ports[i].equivalent != PortEquivalence::NONE && pb_type->parent_mode != nullptr && pb_type->is_primitive()) {
                 //This is a primitive with equivalent inputs
 
-                auto& atom_ctx = g_vpr_ctx.atom();
+                const AtomContext& atom_ctx = g_vpr_ctx.atom();
                 AtomBlockId atom_blk = atom_ctx.netlist().find_block(pb->name);
                 VTR_ASSERT(atom_blk);
 
@@ -614,19 +605,20 @@ static void clustering_xml_blocks_from_legalizer(pugi::xml_node& block_node,
     // its pb_route calculated.
     cluster_legalizer.finalize();
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+        t_pb* pb = cluster_legalizer.get_cluster_pb(cluster_id);
         clustering_xml_block(block_node,
                              cluster_legalizer.get_cluster_type(cluster_id),
                              pb_graph_pin_lookup_from_index_by_type,
-                             cluster_legalizer.get_cluster_pb(cluster_id),
+                             pb,
                              size_t(cluster_id),
-                             cluster_legalizer.get_cluster_pb(cluster_id)->pb_route);
+                             pb->pb_route);
     }
 }
 
 static void clustering_xml_blocks_from_netlist(pugi::xml_node& block_node,
                                                const IntraLbPbPinLookup& pb_graph_pin_lookup_from_index_by_type) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    for (auto blk_id : clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
         /* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
         clustering_xml_block(block_node,
                              clb_nlist.block_type(blk_id),
@@ -657,8 +649,8 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, const std::unord
     std::vector<std::string> inputs;
     std::vector<std::string> outputs;
 
-    for (auto blk_id : atom_nlist.blocks()) {
-        auto type = atom_nlist.block_type(blk_id);
+    for (AtomBlockId blk_id : atom_nlist.blocks()) {
+        AtomBlockType type = atom_nlist.block_type(blk_id);
         switch (type) {
             case AtomBlockType::INPAD:
                 if (skip_clustering) {
@@ -690,7 +682,7 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, const std::unord
     block_node.append_child("outputs").text().set(vtr::join(outputs.begin(), outputs.end(), " ").c_str());
 
     std::vector<std::string> clocks;
-    for (auto net_id : atom_nlist.nets()) {
+    for (AtomNetId net_id : atom_nlist.nets()) {
         if (is_clock.count(net_id)) {
             clocks.push_back(atom_nlist.net_name(net_id));
         }

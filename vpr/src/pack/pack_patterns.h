@@ -96,7 +96,7 @@ struct t_pack_patterns {
     t_pack_pattern_block* root_block;
 
     int num_blocks;
-    bool* is_block_optional;
+    std::vector<bool> is_block_optional;
 
     bool is_chain;
     std::vector<std::vector<t_pb_graph_pin*>> chain_root_pins;
@@ -108,7 +108,6 @@ struct t_pack_patterns {
         root_block = nullptr;
         base_cost = 0;
         num_blocks = 0;
-        is_block_optional = nullptr;
         is_chain = false;
     }
 };
