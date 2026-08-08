@@ -115,13 +115,15 @@ class t_intra_cluster_placement_stats {
         auto it = pb_graph_node_placement_primitive.find(pb_graph_node);
         VTR_ASSERT(it != pb_graph_node_placement_primitive.end());
 #ifdef __GNUC__
-        // Silences a spurious GCC -Wnull-dereference. __builtin_unreachable() is
-        // not available on MSVC, so it is guarded.
-        if (it == pb_graph_node_placement_primitive.end()) {
-            __builtin_unreachable();
-        }
+// GCC cannot see that the assert above rules out end(), so it reports a
+// spurious -Wnull-dereference here when asserts are compiled out.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #endif
         return it->second;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
     }
 
     /**
