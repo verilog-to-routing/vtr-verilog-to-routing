@@ -1,10 +1,10 @@
 #pragma once
 /**
  * @file
- * @brief Node types of the intra-logic-block routing resource graph.
+ * @brief Types of the intra-logic-block routing resource graph.
  */
 
-#include <vector>
+#include <array>
 
 class t_pb_graph_pin;
 
@@ -15,7 +15,8 @@ enum e_lb_rr_type {
     LB_INTERMEDIATE,
     NUM_LB_RR_TYPES
 };
-const std::vector<const char*> lb_rr_type_str{
+/// @brief Names of each e_lb_rr_type, plus "INVALID" for NUM_LB_RR_TYPES.
+inline constexpr std::array<const char*, NUM_LB_RR_TYPES + 1> lb_rr_type_str{
     "LB_SOURCE", "LB_SINK", "LB_INTERMEDIATE", "INVALID"};
 
 /* Output edges of a t_lb_type_rr_node */
