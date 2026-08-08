@@ -7,6 +7,8 @@
  */
 
 #include "global_placer.h"
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <limits>
 #include <memory>
@@ -23,16 +25,19 @@
 #include "flat_placement_density_manager.h"
 #include "globals.h"
 #include "logic_types.h"
+#include "nonlinear_nesterov_placer.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
 #include "physical_types.h"
 #include "place_delay_model.h"
+#include "primitive_dim_manager.h"
 #include "primitive_vector.h"
 #include "timing_info.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
 
-std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
+std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_placer_type,
+                                                 e_ap_analytical_solver analytical_solver_type,
                                                  e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
@@ -48,22 +53,44 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
                                                  int log_verbosity) {
-    return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
-                                               partial_legalizer_type,
-                                               ap_netlist,
-                                               prepacker,
-                                               atom_netlist,
-                                               device_grid,
-                                               logical_block_types,
-                                               physical_tile_types,
-                                               models,
-                                               pre_cluster_timing_manager,
-                                               place_delay_model,
-                                               ap_timing_tradeoff,
-                                               generate_mass_report,
-                                               target_density_arg_strs,
-                                               num_threads,
-                                               log_verbosity);
+    switch (global_placer_type) {
+        case e_ap_global_placer::SimPL:
+            return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
+                                                       partial_legalizer_type,
+                                                       ap_netlist,
+                                                       prepacker,
+                                                       atom_netlist,
+                                                       device_grid,
+                                                       logical_block_types,
+                                                       physical_tile_types,
+                                                       models,
+                                                       pre_cluster_timing_manager,
+                                                       place_delay_model,
+                                                       ap_timing_tradeoff,
+                                                       generate_mass_report,
+                                                       target_density_arg_strs,
+                                                       num_threads,
+                                                       log_verbosity);
+        case e_ap_global_placer::NonlinearNesterov:
+            (void)num_threads;
+            return std::make_unique<NonlinearNesterovPlacer>(ap_netlist,
+                                                             prepacker,
+                                                             atom_netlist,
+                                                             device_grid,
+                                                             logical_block_types,
+                                                             physical_tile_types,
+                                                             models,
+                                                             pre_cluster_timing_manager,
+                                                             place_delay_model,
+                                                             ap_timing_tradeoff,
+                                                             generate_mass_report,
+                                                             target_density_arg_strs,
+                                                             partial_legalizer_type,
+                                                             log_verbosity);
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized global placer type");
+            return nullptr;
+    }
 }
 
 SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_type,
@@ -127,13 +154,10 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                 log_verbosity_);
 }
 
-/**
- * @brief Helper method to print the statistics on the given partial placement.
- */
-static void print_placement_stats(const PartialPlacement& p_placement,
-                                  const APNetlist& ap_netlist,
-                                  FlatPlacementDensityManager& density_manager,
-                                  const PreClusterTimingManager& pre_cluster_timing_manager) {
+void print_placement_stats(const PartialPlacement& p_placement,
+                           const APNetlist& ap_netlist,
+                           FlatPlacementDensityManager& density_manager,
+                           const PreClusterTimingManager& pre_cluster_timing_manager) {
     // Print the placement HPWL
     VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
     VTR_LOG("\tPlacement estimated wirelength: %g\n", p_placement.estimate_post_placement_wirelength(ap_netlist));
@@ -199,6 +223,57 @@ static void print_placement_stats(const PartialPlacement& p_placement,
         }
     }
     VTR_LOG("\tNumber of blocks in an incompatible bin: %zu\n", num_misplaced_blocks);
+
+    // Cluster-fill telemetry (objective-inert). Bins are cluster sites, so how
+    // the placement's mass quantizes into bin-capacity units bounds how much
+    // gathering the packer must do: a bin at fill 0.5 either donates its mass
+    // to neighbors or pulls the other half in, and either way atoms cross bin
+    // boundaries. Per dimension, over occupied capacity-bearing bins:
+    //   meanfill  mass-weighted mean of utilization / capacity
+    //   m<0.5     fraction of the dim's binned mass in bins filled below half
+    //   m0.5-0.9  fraction in bins filled 0.5 to 0.9
+    //   qdebt     fraction of binned mass that must cross a bin boundary for
+    //             every bin to hold an integer number of full-capacity units
+    //             (sum of min(u mod c, c - u mod c) over bins, mass-normalized)
+    // Printed for every global placer so the two AP arms are directly
+    // comparable on the same definition.
+    const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
+    std::vector<PrimitiveVectorDim> used_dims = density_manager.get_used_dims_mask().get_non_zero_dims();
+    VTR_LOG("\tBin cluster-fill telemetry:\n");
+    VTR_LOG("\t\t%-36s %8s %9s %9s %9s %9s\n", "dim", "bins", "meanfill", "m<0.5", "m0.5-0.9", "qdebt");
+    for (PrimitiveVectorDim dim : used_dims) {
+        double total_mass = 0.0;
+        double weighted_fill = 0.0;
+        double mass_below_half = 0.0;
+        double mass_mid = 0.0;
+        double quant_debt = 0.0;
+        size_t occupied_bins = 0;
+        for (FlatPlacementBinId bin_id : density_manager.flat_placement_bins().bins()) {
+            double capacity = density_manager.get_bin_capacity(bin_id).get_dim_val(dim);
+            double utilization = density_manager.get_bin_utilization(bin_id).get_dim_val(dim);
+            if (capacity <= 1e-9 || utilization <= 1e-9)
+                continue;
+            occupied_bins++;
+            double fill = utilization / capacity;
+            total_mass += utilization;
+            weighted_fill += utilization * fill;
+            if (fill < 0.5)
+                mass_below_half += utilization;
+            else if (fill < 0.9)
+                mass_mid += utilization;
+            double remainder = std::fmod(utilization, capacity);
+            quant_debt += std::min(remainder, capacity - remainder);
+        }
+        if (occupied_bins == 0 || total_mass <= 0.0)
+            continue;
+        VTR_LOG("\t\t%-36s %8zu %9.4f %9.4f %9.4f %9.4f\n",
+                dim_manager.get_dim_name(dim).c_str(),
+                occupied_bins,
+                weighted_fill / total_mass,
+                mass_below_half / total_mass,
+                mass_mid / total_mass,
+                quant_debt / total_mass);
+    }
 }
 
 /**
@@ -293,10 +368,10 @@ static float get_delay_per_tile(const PlaceDelayModel& place_delay_model) {
  *  @param ap_netlist
  *      The AP netlist the p_placement uses.
  */
-static void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cluster_timing_manager,
-                                                 const PlaceDelayModel& place_delay_model,
-                                                 const PartialPlacement& p_placement,
-                                                 const APNetlist& ap_netlist) {
+void update_timing_info_with_partial_placement(PreClusterTimingManager& pre_cluster_timing_manager,
+                                               const PlaceDelayModel& place_delay_model,
+                                               const PartialPlacement& p_placement,
+                                               const APNetlist& ap_netlist) {
     // If the timing manager is invalid (i.e. timing analysis is off), do not
     // update.
     if (!pre_cluster_timing_manager.is_valid())
@@ -427,10 +502,10 @@ PartialPlacement SimPLGlobalPlacer::place() {
 
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();
-        update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
-                                             *place_delay_model_.get(),
-                                             p_placement,
-                                             ap_netlist_);
+        update_timing_info_with_partial_placement(pre_cluster_timing_manager_,
+                                                  *place_delay_model_.get(),
+                                                  p_placement,
+                                                  ap_netlist_);
         solver_->update_net_weights(pre_cluster_timing_manager_);
         float timing_update_end_time = runtime_timer.elapsed_sec();
 
@@ -487,10 +562,10 @@ PartialPlacement SimPLGlobalPlacer::place() {
     // Update the setup slacks. This is performed down here (as well as being
     // inside the GP loop) since the best_p_placement may not be the p_placement
     // from the last iteration of GP.
-    update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
-                                         *place_delay_model_.get(),
-                                         best_p_placement,
-                                         ap_netlist_);
+    update_timing_info_with_partial_placement(pre_cluster_timing_manager_,
+                                              *place_delay_model_.get(),
+                                              best_p_placement,
+                                              ap_netlist_);
 
     // Print statistics on the solver used.
     solver_->print_statistics();

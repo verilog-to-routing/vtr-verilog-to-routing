@@ -1387,9 +1387,24 @@ When using a pre-computed flat placement file with the ``flat-recon`` full legal
     ``--analysis`` must be specified explicitly to run post-route timing analysis.
     It is not implied by ``--route``.
 
+.. option:: --ap_global_placer {simpl | nonlinear-nesterov}
+
+    Controls which Global Placer the AP Flow will use.
+
+    * ``simpl`` Alternates the selected analytical solver with partial
+      legalization. This is the default global placer.
+
+    * ``nonlinear-nesterov`` Runs an experimental nonlinear global placer that
+      applies accelerated first-order updates to a smooth wirelength and density
+      objective before invoking the selected partial legalizer.
+
+    **Default:** ``simpl``
+
 .. option:: --ap_analytical_solver {identity | qp-hybrid | lp-b2b}
 
-    Controls which Analytical Solver the Global Placer will use in the AP Flow.
+    Controls which Analytical Solver the SimPL Global Placer will use in the AP
+    Flow. This option has no effect when the nonlinear Nesterov global placer is
+    selected.
     The Analytical Solver solves for a placement which optimizes some objective
     function, ignorant of the FPGA legality constraints. This provides a "lower-
     bound" solution. The Global Placer will legalize this solution and feed it
