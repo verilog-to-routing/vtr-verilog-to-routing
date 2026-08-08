@@ -1,5 +1,12 @@
-<!-- 
-  
+<!--
+  This architecture is VTR's flagship architecture (k6_frac_N10_frac_chain_mem32K_40nm.xml)
+  with a 1x1 grid of clock sectors added, similar in spirit to Intel Stratix-10's
+  sectored clock network. With only a single sector, the whole device is one region:
+  one spine/rib pair, driven from a single sparse clock_switch_grid, feeds every CLOCK pin.
+
+  This is the degenerate low end of the sector-size sweep, alongside the 2x2 base case
+  and the generated 4x4/8x8/16x16/32x32 variants, useful as a baseline to compare
+  against once sectoring is introduced.
 -->
 <architecture>
   <!-- 
@@ -1435,84 +1442,32 @@
     </metal_layers>
     <!-- Create a global clk switch network of sparse switches. -->
     <clock_network name="global_clk_switch_network" num_inst="1">
-      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W/4" starty="0" repeaty="H/4" chan_w="4" switch_name="drive_buff" switch_block_type="subset">
+      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W/2" starty="0" repeaty="H/2" chan_w="4" switch_name="drive_buff" switch_block_type="subset">
         <!-- Put a drive in the middle of the device -->
-        <switch_point type="drive" name="drive" xoffset="2*(W/4)" yoffset="2*(H/4)" switch_name="drive_buff"/>
+        <switch_point type="drive" name="drive" xoffset="W/2" yoffset="H/2" switch_name="drive_buff"/>
 
-        <!-- Tap into each quadrant's spine. -->
-        <switch_point type="tap" name="tap_q11" xoffset="W/4" yoffset="H/4"/>
-        <switch_point type="tap" name="tap_q21" xoffset="3*(W/4)" yoffset="H/4"/>
-        <switch_point type="tap" name="tap_q12" xoffset="W/4" yoffset="3*(H/4)"/>
-        <switch_point type="tap" name="tap_q22" xoffset="3*(W/4)" yoffset="3*(H/4)"/>
+        <switch_point type="tap" name="tap" xoffset="W/2" yoffset="H/2"/>
       </clock_switch_grid>
     </clock_network>
-    <clock_network name="spine_q11" num_inst="2">
-      <spine metal_layer="global_spine" x="W/4" starty="0" endy="2*(H/4) - 1">
-        <switch_point type="drive" name="drive" yoffset="H/4" switch_name="drive_buff"/>
+    <clock_network name="spine" num_inst="2">
+      <spine metal_layer="global_spine" x="W/2" starty="0" endy="H">
+        <switch_point type="drive" name="drive" yoffset="H/2" switch_name="drive_buff"/>
         <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
       </spine>
     </clock_network>
-    <clock_network name="spine_q12" num_inst="2">
-      <spine metal_layer="global_spine" x="W/4" starty="2*(H/4)" endy="H">
-        <switch_point type="drive" name="drive" yoffset="H/4" switch_name="drive_buff"/>
-        <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
-      </spine>
-    </clock_network>
-    <clock_network name="spine_q21" num_inst="2">
-      <spine metal_layer="global_spine" x="3*(W/4)" starty="0" endy="2*(H/4) - 1">
-        <switch_point type="drive" name="drive" yoffset="H/4" switch_name="drive_buff"/>
-        <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
-      </spine>
-    </clock_network>
-    <clock_network name="spine_q22" num_inst="2">
-      <spine metal_layer="global_spine" x="3*(W/4)" starty="2*(H/4)" endy="H">
-        <switch_point type="drive" name="drive" yoffset="H/4" switch_name="drive_buff"/>
-        <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
-      </spine>
-    </clock_network>
-    <!-- Create the ribs for each quadrant, driven from their centers. -->
-    <clock_network name="ribs_q11" num_inst="2">
-      <rib metal_layer="global_rib" y="0" endy="2*(H/4)" startx="0" endx="2*(W/4) - 1" repeaty="1">
-        <switch_point type="drive" name="drive" xoffset="W/4" switch_name="drive_buff"/>
-        <switch_point type="tap" name="tap" xoffset="0" xincr="1"/>
-      </rib>
-    </clock_network>
-    <clock_network name="ribs_q12" num_inst="2">
-      <rib metal_layer="global_rib" y="2*(H/4)" endy="H" startx="0" endx="2*(W/4) - 1" repeaty="1">
-        <switch_point type="drive" name="drive" xoffset="W/4" switch_name="drive_buff"/>
-        <switch_point type="tap" name="tap" xoffset="0" xincr="1"/>
-      </rib>
-    </clock_network>
-    <clock_network name="ribs_q21" num_inst="2">
-      <rib metal_layer="global_rib" y="0" endy="2*(H/4)" startx="2*(W/4)" endx="W" repeaty="1">
-        <switch_point type="drive" name="drive" xoffset="W/4" switch_name="drive_buff"/>
-        <switch_point type="tap" name="tap" xoffset="0" xincr="1"/>
-      </rib>
-    </clock_network>
-    <clock_network name="ribs_q22" num_inst="2">
-      <rib metal_layer="global_rib" y="2*(H/4)" endy="H" startx="2*(W/4)" endx="W" repeaty="1">
-        <switch_point type="drive" name="drive" xoffset="W/4" switch_name="drive_buff"/>
+    <clock_network name="ribs" num_inst="2">
+      <rib metal_layer="global_rib" y="0" endy="H" startx="0" endx="W" repeaty="1">
+        <switch_point type="drive" name="drive" xoffset="W/2" switch_name="drive_buff"/>
         <switch_point type="tap" name="tap" xoffset="0" xincr="1"/>
       </rib>
     </clock_network>
     <clock_routing>
       <!-- Connect the driver to the center of the grid. -->
-      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="2*(W/4)" locationy="2*(H/4)" switch="0" fc_val="1.0"/>
-      <!-- Connect the clock switch grid to the quadrant spines. -->
-      <tap from="global_clk_switch_network.tap_q11" to="spine_q11.drive" switch="0" fc_val="1.0"/>
-      <tap from="global_clk_switch_network.tap_q12" to="spine_q12.drive" switch="0" fc_val="1.0"/>
-      <tap from="global_clk_switch_network.tap_q21" to="spine_q21.drive" switch="0" fc_val="1.0"/>
-      <tap from="global_clk_switch_network.tap_q22" to="spine_q22.drive" switch="0" fc_val="1.0"/>
-      <!-- Connect each spine to its own quadrant's rib. -->
-      <tap from="spine_q11.tap" to="ribs_q11.drive" switch="0" fc_val="1.0"/>
-      <tap from="spine_q12.tap" to="ribs_q12.drive" switch="0" fc_val="1.0"/>
-      <tap from="spine_q21.tap" to="ribs_q21.drive" switch="0" fc_val="1.0"/>
-      <tap from="spine_q22.tap" to="ribs_q22.drive" switch="0" fc_val="1.0"/>
+      <tap from="ROUTING" to="global_clk_switch_network.drive" locationx="W/2" locationy="H/2" switch="0" fc_val="1.0"/>
+      <tap from="global_clk_switch_network.tap" to="spine.drive" switch="0" fc_val="1.0"/>
+      <tap from="spine.tap" to="ribs.drive" switch="0" fc_val="1.0"/>
       <!-- Connect the ribs to the clock pins. -->
-      <tap from="ribs_q11.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
-      <tap from="ribs_q12.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
-      <tap from="ribs_q21.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
-      <tap from="ribs_q22.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
+      <tap from="ribs.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
     </clock_routing>
   </clocknetworks>
 </architecture>
