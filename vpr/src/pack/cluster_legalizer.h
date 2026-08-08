@@ -498,7 +498,7 @@ class ClusterLegalizer {
     }
 
     /// @brief Gets the name of the given cluster.
-    inline std::string get_cluster_name(LegalizationClusterId cluster_id) const {
+    inline const std::string& get_cluster_name(LegalizationClusterId cluster_id) const {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
         const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
         return cluster.pb->name;
