@@ -19,7 +19,6 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types_x,
     create_clock_networks_switches(clock_routing, rr_edges_to_create);
 }
 
-// Clock network information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
                                                       int num_segments_x,
                                                       t_rr_edge_info_set* rr_edges_to_create) {
@@ -32,7 +31,6 @@ void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::uni
     rr_nodes_->shrink_to_fit();
 }
 
-// Clock switch information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
                                                          t_rr_edge_info_set* rr_edges_to_create) {
     for (auto& clock_connection : clock_connections) {
@@ -81,11 +79,11 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std
             return {};
         }
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                         "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
-                         "This usually means every instance of clock network '%s' failed to build -- check for "
-                         "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
-                         "the drive switch_point's offset places it outside every instance's valid span.\n",
-                         clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
+                        "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
+                        "This usually means every instance of clock network '%s' failed to build -- check for "
+                        "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
+                        "the drive switch_point's offset places it outside every instance's valid span.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
     }
 
     auto& switch_points = itter->second;
@@ -98,14 +96,14 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std
         }
 
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                         "Clock network '%s' has no switch point named '%s' registered at location (%d,%d).\n"
-                         "This is usually caused by a mismatch between a <tap> element's locationx/locationy "
-                         "and the xoffset/yoffset of the switch_point it refers to -- these must specify the "
-                         "exact same (x,y) location in the clock network architecture description.\n"
-                         "Switch point '%s' is only registered at:%s\n",
-                         clock_name.c_str(), switch_point_name.c_str(), x, y,
-                         switch_point_name.c_str(),
-                         valid_locations.empty() ? " <none>" : valid_locations.c_str());
+                        "Clock network '%s' has no switch point named '%s' registered at location (%d,%d).\n"
+                        "This is usually caused by a mismatch between a <tap> element's locationx/locationy "
+                        "and the xoffset/yoffset of the switch_point it refers to -- these must specify the "
+                        "exact same (x,y) location in the clock network architecture description.\n"
+                        "Switch point '%s' is only registered at:%s\n",
+                        clock_name.c_str(), switch_point_name.c_str(), x, y,
+                        switch_point_name.c_str(),
+                        valid_locations.empty() ? " <none>" : valid_locations.c_str());
     }
 
     return rr_node_indices;
@@ -119,11 +117,11 @@ std::vector<int> SwitchPoints::get_rr_node_indices_at_location(const std::string
 
     if (itter == switch_point_name_to_switch_location.end()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                         "Clock network '%s' has no switch point named '%s'.\n"
-                         "This is usually caused by a <clock_routing> tap referencing a switch point whose "
-                         "xoffset/yoffset never landed on any instance of the network -- check for an earlier "
-                         "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
-                         clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
+                        "Clock network '%s' has no switch point named '%s'.\n"
+                        "This is usually caused by a <clock_routing> tap referencing a switch point whose "
+                        "xoffset/yoffset never landed on any instance of the network -- check for an earlier "
+                        "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
     }
 
     auto& switch_point = itter->second;
@@ -149,11 +147,11 @@ std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(std::str
 
     if (itter == clock_name_to_switch_points.end()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                         "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
-                         "This usually means every instance of clock network '%s' failed to build -- check for "
-                         "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
-                         "the drive switch_point's offset places it outside every instance's valid span.\n",
-                         clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
+                        "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
+                        "This usually means every instance of clock network '%s' failed to build -- check for "
+                        "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
+                        "the drive switch_point's offset places it outside every instance's valid span.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
     }
 
     auto& switch_points = itter->second;
@@ -165,11 +163,11 @@ std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(const std::stri
 
     if (itter == switch_point_name_to_switch_location.end()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                         "Clock network '%s' has no switch point named '%s'.\n"
-                         "This is usually caused by a <clock_routing> tap referencing a switch point whose "
-                         "xoffset/yoffset never landed on any instance of the network -- check for an earlier "
-                         "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
-                         clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
+                        "Clock network '%s' has no switch point named '%s'.\n"
+                        "This is usually caused by a <clock_routing> tap referencing a switch point whose "
+                        "xoffset/yoffset never landed on any instance of the network -- check for an earlier "
+                        "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
     }
 
     auto& switch_point = itter->second;

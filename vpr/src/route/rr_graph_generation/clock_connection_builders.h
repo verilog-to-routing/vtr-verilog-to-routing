@@ -7,6 +7,7 @@
 
 class ClockRRGraphBuilder;
 
+/// @brief Which two kinds of RR node a ClockConnection joins.
 enum class ClockConnectionType {
     ROUTING_TO_CLOCK,
     CLOCK_TO_CLOCK,
@@ -14,20 +15,19 @@ enum class ClockConnectionType {
     ROUTING_TO_PINS
 };
 
+/// @brief Base class for a single <clock_routing> <tap>: an edge (or set of edges,
+/// fc-limited) between a clock network's switch point and some other part of the RR
+/// graph. One concrete subclass exists per ClockConnectionType.
 class ClockConnection {
   public:
-    /*
-     * Destructor
-     */
     virtual ~ClockConnection() {}
 
-    /*
-     * Member functions
-     */
     virtual void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) = 0;
     virtual size_t estimate_additional_nodes() = 0;
 };
 
+/// @brief Connects the inter-block routing (CHANX/CHANY wires) to a clock network's
+/// drive point at the specified coordinates.
 class RoutingToClockConnection : public ClockConnection {
   private:
     std::string clock_to_connect_to;
@@ -44,9 +44,7 @@ class RoutingToClockConnection : public ClockConnection {
     int seed = 101;
 
   public:
-    /*
-     * Setters
-     */
+    // Setters
     void set_clock_name_to_connect_to(std::string clock_name);
     void set_clock_switch_point_name(std::string clock_switch_point_name);
     void set_switch_location(int x, int y, int layer = 0);
@@ -54,15 +52,14 @@ class RoutingToClockConnection : public ClockConnection {
     void set_switch(int arch_switch_index);
     void set_fc_val(float fc_val);
 
-    /*
-     * Member functions
-     */
-    /* Connects the inter-block routing to the clock source at the specified coordinates */
+    // Member functions
     void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
     size_t estimate_additional_nodes() override;
 };
 
-class ClockToClockConneciton : public ClockConnection {
+/// @brief Connects one clock network's switch point (the "from" side) to another clock
+/// network's switch point (the "to" side), e.g. a rib driving a spine.
+class ClockToClockConnection : public ClockConnection {
   private:
     std::string from_clock;
     std::string from_switch;
@@ -72,9 +69,7 @@ class ClockToClockConneciton : public ClockConnection {
     float fc = 0.;
 
   public:
-    /*
-     * Setters
-     */
+    // Setters
     void set_from_clock_name(std::string clock_name);
     void set_from_clock_switch_point_name(std::string switch_point_name);
     void set_to_clock_name(std::string clock_name);
@@ -82,18 +77,15 @@ class ClockToClockConneciton : public ClockConnection {
     void set_switch(int arch_switch_index);
     void set_fc_val(float fc_val);
 
-    /*
-     * Member functions
-     */
-    /* Connects a clock tap to a clock source */
+    // Member functions
     void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
     size_t estimate_additional_nodes() override;
 };
 
-/* Connects a specific tile port/pin range at a single grid location to a clock
- * network drive point, forming a mux from all of the specified pins. Used for
- * the "TILE.<tile_name>[hi:lo].<port_name>[hi:lo]" tap syntax, as an alternative
- * to driving a clock network from general-purpose routing (see RoutingToClockConnection). */
+/// @brief Connects a specific tile port/pin range at a single grid location to a clock
+/// network drive point, forming a mux from all of the specified pins. Used for the
+/// "TILE.<tile_name>[hi:lo].<port_name>[hi:lo]" tap syntax, as an alternative to driving
+/// a clock network from general-purpose routing (see RoutingToClockConnection).
 class TileToClockConnection : public ClockConnection {
   private:
     std::string clock_to_connect_to;
@@ -116,9 +108,7 @@ class TileToClockConnection : public ClockConnection {
     int seed = 101;
 
   public:
-    /*
-     * Setters
-     */
+    // Setters
     void set_clock_name_to_connect_to(std::string clock_name);
     void set_clock_switch_point_name(std::string clock_switch_point_name);
     void set_location(int x, int y, int layer = 0);
@@ -130,16 +120,14 @@ class TileToClockConnection : public ClockConnection {
     void set_switch(int arch_switch_index);
     void set_fc_val(float fc_val);
 
-    /*
-     * Member functions
-     */
-    /* Connects the specified tile port/pin range to the clock source at the specified location */
+    // Member functions
     void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
     size_t estimate_additional_nodes() override;
 };
 
-/* This class currently only supports Clock Network to clock pin connection.
- * It cannot yet connect the clock network to any arbitrary pin. */
+/// @brief Connects a clock network's switch point to block clock pins.
+/// @note Currently only supports connecting to dedicated clock pins, not to arbitrary
+/// block pins.
 class ClockToPinsConnection : public ClockConnection {
   private:
     std::string clock_to_connect_from;
@@ -148,18 +136,13 @@ class ClockToPinsConnection : public ClockConnection {
     float fc = 0.;
 
   public:
-    /*
-     * Setters
-     */
+    // Setters
     void set_clock_name_to_connect_from(std::string clock_name);
     void set_clock_switch_point_name(std::string connection_switch_point_name);
     void set_switch(int arch_switch_index);
     void set_fc_val(float fc_val);
 
-    /*
-     * Member functions
-     */
-    /* Connects the clock tap to block pins */
+    // Member functions
     void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
     size_t estimate_additional_nodes() override;
 };

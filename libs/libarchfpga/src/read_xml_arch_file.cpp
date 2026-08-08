@@ -4672,6 +4672,7 @@ static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
     return directs;
 }
 
+/// @brief Parses the <clocknetworks>'s <metal_layers> section into a name -> t_metal_layer map.
 static void process_clock_metal_layers(pugi::xml_node parent,
                                        std::unordered_map<std::string, t_metal_layer>& metal_layers,
                                        const pugiutil::loc_data& loc_data) {
@@ -4706,6 +4707,8 @@ static void process_clock_metal_layers(pugi::xml_node parent,
     }
 }
 
+/// @brief Parses every <clock_network> child (rib, spine, or clock_switch_grid) into
+/// clock_networks.
 static void process_clock_networks(pugi::xml_node parent,
                                    std::vector<t_clock_network_arch>& clock_networks,
                                    const std::vector<t_arch_switch_inf>& switches,
@@ -4742,33 +4745,15 @@ static void process_clock_networks(pugi::xml_node parent,
             std::string endy(get_attribute(curr_type, "endy", loc_data).value());
             std::string x(get_attribute(curr_type, "x", loc_data).value());
 
-            std::string repeatx;
-            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeatx_attr) {
-                repeatx = repeatx_attr.value();
-            } else {
-                repeatx = "W";
-            }
-            std::string repeaty;
-            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeaty_attr) {
-                repeaty = repeaty_attr.value();
-            } else {
-                repeaty = "H";
-            }
+            std::string repeatx = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("W");
+            std::string repeaty = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("H");
 
             // Upper bound on how far this spine repeats/tiles across x (its own
             // tiling direction, via repeatx). Defaults to the full device width,
             // i.e. tile all the way to the device edge as before; a smaller bound
             // lets a spine repeat within only part of the device (e.g. one clock
             // quadrant).
-            std::string end_x;
-            auto end_x_attr = get_attribute(curr_type, "endx", loc_data, ReqOpt::OPTIONAL);
-            if (end_x_attr) {
-                end_x = end_x_attr.value();
-            } else {
-                end_x = "W";
-            }
+            std::string end_x = get_attribute(curr_type, "endx", loc_data, ReqOpt::OPTIONAL).as_string("W");
 
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = starty;
@@ -4794,33 +4779,15 @@ static void process_clock_networks(pugi::xml_node parent,
             std::string endx(get_attribute(curr_type, "endx", loc_data).value());
             std::string y(get_attribute(curr_type, "y", loc_data).value());
 
-            std::string repeatx;
-            auto repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeatx_attr) {
-                repeatx = repeatx_attr.value();
-            } else {
-                repeatx = "W";
-            }
-            std::string repeaty;
-            auto repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeaty_attr) {
-                repeaty = repeaty_attr.value();
-            } else {
-                repeaty = "H";
-            }
+            std::string repeatx = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("W");
+            std::string repeaty = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("H");
 
             // Upper bound on how far this rib repeats/tiles across y (its own
             // tiling direction, via repeaty). Defaults to the full device height,
             // i.e. tile all the way to the device edge as before; a smaller bound
             // lets a rib repeat within only part of the device (e.g. one clock
             // quadrant).
-            std::string end_y;
-            auto end_y_attr = get_attribute(curr_type, "endy", loc_data, ReqOpt::OPTIONAL);
-            if (end_y_attr) {
-                end_y = end_y_attr.value();
-            } else {
-                end_y = "H";
-            }
+            std::string end_y = get_attribute(curr_type, "endy", loc_data, ReqOpt::OPTIONAL).as_string("H");
 
             clock_network.metal_layer = metal_layer;
             clock_network.wire.start = startx;
@@ -4853,20 +4820,8 @@ static void process_clock_networks(pugi::xml_node parent,
                                vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str());
             }
 
-            std::string repeatx;
-            auto grid_repeatx_attr = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (grid_repeatx_attr) {
-                repeatx = grid_repeatx_attr.value();
-            } else {
-                repeatx = "W";
-            }
-            std::string repeaty;
-            auto grid_repeaty_attr = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (grid_repeaty_attr) {
-                repeaty = grid_repeaty_attr.value();
-            } else {
-                repeaty = "H";
-            }
+            std::string repeatx = get_attribute(curr_type, "repeatx", loc_data, ReqOpt::OPTIONAL).as_string("W");
+            std::string repeaty = get_attribute(curr_type, "repeaty", loc_data, ReqOpt::OPTIONAL).as_string("H");
 
             clock_network.switch_grid.metal_layer = metal_layer;
             clock_network.switch_grid.startx = startx;
@@ -4929,6 +4884,8 @@ static void process_clock_networks(pugi::xml_node parent,
     }
 }
 
+/// @brief Parses the <switch_point> children of a rib/spine <clock_network> (its drive
+/// and tap points) into clock_network.drive/clock_network.tap.
 static void process_clock_switch_points(pugi::xml_node parent,
                                         t_clock_network_arch& clock_network,
                                         const std::vector<t_arch_switch_inf>& switches,
@@ -4942,11 +4899,10 @@ static void process_clock_switch_points(pugi::xml_node parent,
     int num_clock_switches = count_children(parent, "switch_point", loc_data);
     pugi::xml_node curr_switch = get_first_child(parent, "switch_point", loc_data);
 
-    //TODO: currently only supporting one drive and one tap. Should change to support
-    //      multiple taps
-    VTR_ASSERT(switches.size() != 2);
+    // TODO: currently only supporting one drive and one tap per rib/spine. Should change
+    // to support multiple taps.
 
-    //TODO: ensure switch name is unique for every switch of this clock network
+    // TODO: ensure switch name is unique for every switch of this clock network
     for (int i = 0; i < num_clock_switches; i++) {
         expect_only_children(curr_switch, expected_children, loc_data);
 
@@ -5012,6 +4968,8 @@ static void process_clock_switch_points(pugi::xml_node parent,
     }
 }
 
+/// @brief Parses the <switch_point> children of a <clock_switch_grid> (its drive and tap
+/// points) into clock_network.switch_grid.switch_points.
 static void process_clock_switch_grid_points(pugi::xml_node parent,
                                              t_clock_network_arch& clock_network,
                                              const std::vector<t_arch_switch_inf>& switches,
@@ -5078,9 +5036,9 @@ static void process_clock_switch_grid_patterns(pugi::xml_node parent,
                                                t_arch* arch,
                                                pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "type", "location",
-                                                     "x", "y",
-                                                     "startx", "endx", "repeatx", "incrx",
-                                                     "starty", "endy", "repeaty", "incry"};
+                                                    "x", "y",
+                                                    "startx", "endx", "repeatx", "incrx",
+                                                    "starty", "endy", "repeaty", "incry"};
 
     int num_patterns = count_children(parent, "switch_pattern", loc_data);
     if (num_patterns == 0) {
@@ -5177,6 +5135,7 @@ static void process_clock_switch_grid_patterns(pugi::xml_node parent,
     }
 }
 
+/// @brief Parses the <clock_routing>'s <tap> children into clock_connections.
 static void process_clock_routing(pugi::xml_node parent,
                                   std::vector<t_clock_connection_arch>& clock_connections,
                                   const std::vector<t_arch_switch_inf>& switches,

@@ -17,46 +17,37 @@ class ClockNetwork;
 class ClockConnection;
 class t_rr_graph_storage;
 
+/// @brief All the RR node indices at every device grid location for one uniquely-named
+/// clock switch point (e.g. "rib-to-spine", "driver-to-spine"). One SwitchPoint groups
+/// every RR node created for that switch point across every instance of its clock network.
 class SwitchPoint {
-    /* A switch point object: keeps information on the location and rr_node indices
-     * for a certain clock switch. clock connections are grouped with their own unique
-     * name; this object holds information for only one such grouping.
-     * Examples of SwitchPoint(s) are rib-to-spine, driver-to-spine. */
   public:
-    // [grid_width][grid_height][0..nodes_at_this_location-1]
-    std::vector<std::vector<std::vector<int>>> rr_node_indices;
-    // Set of all the locations for this switch point. Used to quickly find
-    // if the switch point exists at a certain location.
-    std::set<std::pair<int, int>> locations; // x,y
-  public:
-    /** Accessors **/
-    std::vector<int> get_rr_node_indices_at_location(int x, int y) const;
+    std::vector<std::vector<std::vector<int>>> rr_node_indices; ///< [grid_width][grid_height][0..nodes_at_this_location-1]
+    std::set<std::pair<int, int>> locations;                    ///< Every (x,y) this switch point exists at, for fast membership checks.
 
+  public:
+    std::vector<int> get_rr_node_indices_at_location(int x, int y) const;
     std::set<std::pair<int, int>> get_switch_locations() const;
 
-    /** Mutators **/
     void insert_node_idx(int x, int y, int node_idx);
 };
 
+/// @brief Maps every uniquely-named switch point of one clock network to its SwitchPoint
+/// (locations + rr_node_indices).
 class SwitchPoints {
-    /* This Class holds a map from a uniquely named switch to all of its locations on
-     * the device and its rr_node_indices. The location and rr_node_indices are stored
-     * in the SwitchPoint object*/
   public:
     std::unordered_map<std::string, SwitchPoint> switch_point_name_to_switch_location;
 
   public:
-    /** Accessors **/
-
-    /* Example: x,y = middle of the chip, switch_point_name == name of main drive
-     * of global clock spine, returns the rr_nodes of all the clock spines that
-     * start the network there.
-     *
-     * clock_name is only used to produce a helpful message if switch_point_name was
-     * never registered for this clock network (a malformed arch file, e.g. a
-     * <clock_routing> tap referencing a switch point whose offset never landed on any
-     * instance of the network -- see the "does not correspond to any switch box
-     * location" warning emitted when that happens). */
+    /// @brief Returns the rr_node indices of switch_point_name at (x,y) -- e.g. x,y =
+    /// middle of the chip, switch_point_name == a global clock spine's main drive point,
+    /// returns the rr_nodes of every clock spine that starts the network there.
+    ///
+    /// clock_name is only used to produce a helpful message if switch_point_name was
+    /// never registered for this clock network (a malformed arch file, e.g. a
+    /// <clock_routing> tap referencing a switch point whose offset never landed on any
+    /// instance of the network -- see the "does not correspond to any switch box
+    /// location" warning emitted when that happens).
     std::vector<int> get_rr_node_indices_at_location(const std::string& clock_name,
                                                      std::string switch_point_name,
                                                      int x,
@@ -65,20 +56,24 @@ class SwitchPoints {
     std::set<std::pair<int, int>> get_switch_locations(const std::string& clock_name,
                                                        std::string switch_point_name) const;
 
-    /** Mutators **/
     void insert_switch_node_idx(std::string switch_point_name, int x, int y, int node_idx);
 };
 
+/// @brief Builds the RR graph for every dedicated clock network declared in the
+/// architecture and appends it to the RR graph built by build_rr_graph for inter-block
+/// and intra-block routing. Also owns the reverse lookup (clock_name_to_switch_points)
+/// from a clock network's switch points to the RR nodes at each of their locations,
+/// which ClockConnection/ClockNetwork subclasses use to wire up taps/drives.
 class ClockRRGraphBuilder {
   public:
-    /* Returns the current ptc num where the wire should be drawn and updates the
-     * channel width. Note: The ptc_num is determined by the channel width. The channel
-     * width global state gets incremented every time there is a request for a new ptc_num*/
+    /// @brief Returns the current ptc num where the wire should be drawn and updates the
+    /// channel width. The ptc_num is determined by the channel width; the channel width
+    /// global state gets incremented every time there is a request for a new ptc_num.
     int get_and_increment_chanx_ptc_num();
     int get_and_increment_chany_ptc_num();
 
-    /* Reverse lookup for to find the clock source and tap locations for each clock_network
-     * The map key is the clock network name and value are all the switch points*/
+    /// @brief Reverse lookup to find the clock source and tap locations for each clock
+    /// network. The map key is the clock network name; the value holds all its switch points.
     std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
 
   public:
@@ -99,30 +94,30 @@ class ClockRRGraphBuilder {
         return grid_;
     }
 
-    /* Saves a map from switch rr_node idx -> {x, y} location */
+    /// @brief Saves a map from switch rr_node idx -> {x, y} location.
     void add_switch_location(std::string clock_name,
                              std::string switch_point_name,
                              int x,
                              int y,
                              int node_index);
 
-    /* Returns the rr_node idx of the switch at location {x, y}.
-     *
-     * If `required` is true (the default), a clock network/switch point that doesn't
-     * reach (x,y) is treated as an arch mistake and raises a fatal error -- appropriate
-     * for callers connecting to one specific, arch-declared coordinate (e.g. a <tap>'s
-     * locationx/locationy). Pass `required=false` for callers that probe many candidate
-     * locations and expect most of them to legitimately not be reached (e.g.
-     * ClockToPinsConnection scanning every tile in the device, where a quadrant-scoped
-     * clock network is only expected to reach tiles within its own quadrant) -- in that
-     * case a miss just means "not reachable from here" and an empty vector is returned. */
+    /// @brief Returns the rr_node idx of the switch at location {x, y}.
+    ///
+    /// If `required` is true (the default), a clock network/switch point that doesn't
+    /// reach (x,y) is treated as an arch mistake and raises a fatal error -- appropriate
+    /// for callers connecting to one specific, arch-declared coordinate (e.g. a <tap>'s
+    /// locationx/locationy). Pass `required=false` for callers that probe many candidate
+    /// locations and expect most of them to legitimately not be reached (e.g.
+    /// ClockToPinsConnection scanning every tile in the device, where a quadrant-scoped
+    /// clock network is only expected to reach tiles within its own quadrant) -- in that
+    /// case a miss just means "not reachable from here" and an empty vector is returned.
     std::vector<int> get_rr_node_indices_at_switch_location(std::string clock_name,
                                                             std::string switch_point_name,
                                                             int x,
                                                             int y,
                                                             bool required = true) const;
 
-    /* Returns all the switch locations for the a certain clock network switch */
+    /// @brief Returns all the switch locations for a certain clock network switch.
     std::set<std::pair<int, int>> get_switch_locations(std::string clock_name,
                                                        std::string switch_point_name) const;
 
@@ -130,12 +125,12 @@ class ClockRRGraphBuilder {
 
     static size_t estimate_additional_nodes(const DeviceGrid& grid);
 
-    /* AA: map the segment indices in all networks to corresponding indices in axis based segment vectors as defined in build_rr_graph
-     * Refer to clock_network_builders.h: map_relative_seg_indices*/
-
+    /// @brief Maps every clock network's segment indices to their equivalent indices in
+    /// the axis-specific segment vectors defined in build_rr_graph. See
+    /// ClockNetwork::map_relative_seg_indices for the full rationale.
     static void map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map);
 
-    /***
+    /**
      * @brief Add an edge to the rr graph
      * @param rr_edges_to_create The interface to rr-graph builder
      * @param src_node End point of the edge
@@ -149,19 +144,19 @@ class ClockRRGraphBuilder {
                   int arch_switch_idx,
                   bool edge_remapped) const;
 
-  public:
-    /* Creates the routing resource (rr) graph of the clock network and appends it to the
-     * existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
+    /// @brief Creates the routing resource (rr) graph of the clock network and appends it
+    /// to the existing rr graph created in build_rr_graph for inter-block and intra-block
+    /// routing.
     void create_and_append_clock_rr_graph(int num_segments_x,
                                           t_rr_edge_info_set* rr_edges_to_create);
 
   private:
-    /* loop over all of the clock networks and create their wires */
+    /// @brief Loops over all of the clock networks and creates their wires.
     void create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
                                      int num_segments_x,
                                      t_rr_edge_info_set* rr_edges_to_create);
 
-    /* loop over all clock routing connections and create the switches and connections */
+    /// @brief Loops over all clock routing connections and creates their switches/edges.
     void create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
                                         t_rr_edge_info_set* rr_edges_to_create);
 

@@ -11,9 +11,7 @@
 #include <cmath>
 #include <utility>
 
-/*
- * RoutingToClockConnection (setters)
- */
+// RoutingToClockConnection (setters)
 
 void RoutingToClockConnection::set_clock_name_to_connect_to(std::string clock_name) {
     clock_to_connect_to = std::move(clock_name);
@@ -43,9 +41,7 @@ void RoutingToClockConnection::set_fc_val(float fc_val) {
     fc = fc_val;
 }
 
-/*
- * RoutingToClockConnection (member functions)
- */
+// RoutingToClockConnection (member functions)
 
 size_t RoutingToClockConnection::estimate_additional_nodes() {
     // Up to 1 rr node is added as the virtual clock sink (shared across all drive
@@ -171,9 +167,7 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     }
 }
 
-/*
- * TileToClockConnection (setters)
- */
+// TileToClockConnection (setters)
 
 void TileToClockConnection::set_clock_name_to_connect_to(std::string clock_name) {
     clock_to_connect_to = std::move(clock_name);
@@ -219,9 +213,7 @@ void TileToClockConnection::set_fc_val(float fc_val) {
     fc = fc_val;
 }
 
-/*
- * TileToClockConnection (member functions)
- */
+// TileToClockConnection (member functions)
 
 size_t TileToClockConnection::estimate_additional_nodes() {
     // Up to 1 rr node is added as the virtual clock sink (shared across all drive
@@ -339,43 +331,39 @@ void TileToClockConnection::create_switches(const ClockRRGraphBuilder& clock_gra
     }
 }
 
-/*
- * ClockToClockConneciton (setters)
- */
+// ClockToClockConnection (setters)
 
-void ClockToClockConneciton::set_from_clock_name(std::string clock_name) {
+void ClockToClockConnection::set_from_clock_name(std::string clock_name) {
     from_clock = clock_name;
 }
 
-void ClockToClockConneciton::set_from_clock_switch_point_name(std::string switch_point_name) {
+void ClockToClockConnection::set_from_clock_switch_point_name(std::string switch_point_name) {
     from_switch = switch_point_name;
 }
 
-void ClockToClockConneciton::set_to_clock_name(std::string clock_name) {
+void ClockToClockConnection::set_to_clock_name(std::string clock_name) {
     to_clock = clock_name;
 }
 
-void ClockToClockConneciton::set_to_clock_switch_point_name(std::string switch_point_name) {
+void ClockToClockConnection::set_to_clock_switch_point_name(std::string switch_point_name) {
     to_switch = switch_point_name;
 }
 
-void ClockToClockConneciton::set_switch(int arch_switch_index) {
+void ClockToClockConnection::set_switch(int arch_switch_index) {
     arch_switch_idx = arch_switch_index;
 }
 
-void ClockToClockConneciton::set_fc_val(float fc_val) {
+void ClockToClockConnection::set_fc_val(float fc_val) {
     fc = fc_val;
 }
 
-/*
- * ClockToClockConneciton (member functions)
- */
+// ClockToClockConnection (member functions)
 
-size_t ClockToClockConneciton::estimate_additional_nodes() {
+size_t ClockToClockConnection::estimate_additional_nodes() {
     return 0;
 }
 
-void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) {
+void ClockToClockConnection::create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) {
     auto& grid = clock_graph.grid();
 
     std::set<std::pair<int, int>> to_locations = clock_graph.get_switch_locations(to_clock, to_switch);
@@ -463,9 +451,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
     }
 }
 
-/*
- * ClockToPinsConnection (setters)
- */
+// ClockToPinsConnection (setters)
 
 void ClockToPinsConnection::set_clock_name_to_connect_from(std::string clock_name) {
     clock_to_connect_from = clock_name;
@@ -484,9 +470,7 @@ void ClockToPinsConnection::set_fc_val(float fc_val) {
     fc = fc_val;
 }
 
-/*
- * ClockToPinsConnection (member functions)
- */
+// ClockToPinsConnection (member functions)
 
 size_t ClockToPinsConnection::estimate_additional_nodes() {
     return 0;

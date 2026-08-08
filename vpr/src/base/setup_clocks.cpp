@@ -35,10 +35,22 @@ static MetalLayer get_metal_layer_from_name(
     std::string metal_layer_name,
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
     std::string clock_network_name);
+static t_formula_data grid_size_formula_vars(const DeviceGrid& grid);
 static void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector<t_segment_inf>& segment_inf);
 static void setup_clock_connections(const t_arch& Arch, FormulaParser& p);
 static bool is_tile_tap_spec(const std::string& from);
 static t_tile_tap_spec parse_tile_tap_spec(const std::string& spec);
+
+/// @brief The W/H variables clock arch formulas (wire start/end, repeat, drive/tap
+/// offsets, etc.) are evaluated against.
+/// @note Mirrors SetupGrid's own W/H formula variables; kept in sync manually since the
+/// two live in different translation units.
+static t_formula_data grid_size_formula_vars(const DeviceGrid& grid) {
+    t_formula_data vars;
+    vars.set_var_value("W", grid.width());
+    vars.set_var_value("H", grid.height());
+    return vars;
+}
 
 void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
     // This function may be called more than once if the device grid is
@@ -70,10 +82,7 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
     const std::vector<t_clock_network_arch>& clock_networks_arch = Arch.clock_arch.clock_networks_arch;
     const std::unordered_map<std::string, t_metal_layer>& clock_metal_layers = Arch.clock_arch.clock_metal_layers;
 
-    // TODO: copied over from SetupGrid. Ensure consistency by only assigning in one place
-    t_formula_data vars;
-    vars.set_var_value("W", grid.width());
-    vars.set_var_value("H", grid.height());
+    t_formula_data vars = grid_size_formula_vars(grid);
 
     for (const t_clock_network_arch& clock_network_arch : clock_networks_arch) {
         switch (clock_network_arch.type) {
@@ -191,8 +200,8 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
 
                 for (const t_clock_switch_grid_point& point : clock_network_arch.switch_grid.switch_points) {
                     SwitchGridPointType type = (point.type == e_clock_switch_grid_point_type::DRIVE)
-                                                    ? SwitchGridPointType::DRIVE
-                                                    : SwitchGridPointType::TAP;
+                                                   ? SwitchGridPointType::DRIVE
+                                                   : SwitchGridPointType::TAP;
 
                     // xoffset/yoffset are relative to the switch grid's own startx/starty,
                     // matching the rib/spine convention where drive/tap offsets are relative
@@ -332,6 +341,7 @@ t_tile_tap_spec parse_tile_tap_spec(const std::string& spec) {
     return result;
 }
 
+/// @brief Parses the architecture's <clock_routing> taps into device_ctx.clock_connections.
 void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_connections_device = device_ctx.clock_connections;
@@ -339,10 +349,7 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
 
     const std::vector<t_clock_connection_arch>& clock_connections_arch = Arch.clock_arch.clock_connections_arch;
 
-    // TODO: copied over from SetupGrid. Ensure consistency by only assigning in one place
-    t_formula_data vars;
-    vars.set_var_value("W", grid.width());
-    vars.set_var_value("H", grid.height());
+    t_formula_data vars = grid_size_formula_vars(grid);
 
     // A clock network's drive points -- whether from general routing (ROUTING) or a tile
     // port/pin (TILE.*) -- all share one virtual sink node in the RR graph (see
@@ -365,8 +372,6 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
         if (clock_connection_arch.from == "ROUTING") {
             clock_connections_device.emplace_back(new RoutingToClockConnection);
             if (RoutingToClockConnection* routing_to_clock = dynamic_cast<RoutingToClockConnection*>(clock_connections_device.back().get())) {
-                //TODO: Add error check to check that clock name and tap name exist and that only
-                //      two names are returned by the below function
                 std::vector<std::string> names = vtr::StringToken(clock_connection_arch.to).split(".");
                 VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
                 routing_to_clock->set_clock_name_to_connect_to(names[0]);
@@ -413,8 +418,6 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
         } else if (clock_connection_arch.to == "CLOCK") {
             clock_connections_device.emplace_back(new ClockToPinsConnection);
             if (ClockToPinsConnection* clock_to_pins = dynamic_cast<ClockToPinsConnection*>(clock_connections_device.back().get())) {
-                //TODO: Add error check to check that clock name and tap name exist and that only
-                //      two names are returned by the below function
                 std::vector<std::string> names = vtr::StringToken(clock_connection_arch.from).split(".");
                 VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
                 clock_to_pins->set_clock_name_to_connect_from(names[0]);
@@ -424,10 +427,8 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
                 clock_to_pins->set_fc_val(clock_connection_arch.fc);
             }
         } else {
-            clock_connections_device.emplace_back(new ClockToClockConneciton);
-            if (ClockToClockConneciton* clock_to_clock = dynamic_cast<ClockToClockConneciton*>(clock_connections_device.back().get())) {
-                //TODO: Add error check to check that clock name and tap name exist and that only
-                //      two names are returned by the below function
+            clock_connections_device.emplace_back(new ClockToClockConnection);
+            if (ClockToClockConnection* clock_to_clock = dynamic_cast<ClockToClockConnection*>(clock_connections_device.back().get())) {
                 std::vector<std::string> to_names = vtr::StringToken(clock_connection_arch.to).split(".");
                 std::vector<std::string> from_names = vtr::StringToken(clock_connection_arch.from).split(".");
                 VTR_ASSERT_MSG(to_names.size() == 2, "Invalid clock name.\n");
