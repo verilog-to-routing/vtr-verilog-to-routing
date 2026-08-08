@@ -70,13 +70,14 @@ phaseColors = {
 }
 
 # (header, status key, higher_is_better)
-# frontend is raw front-end stage only (parmys.out / mosaic.out).
-# synthesis is the fair compare column: mosaic synth alone, vanilla synth+abc.
+# times come from three wall-clock stamps in run_vtr_batch:
+#   wall  = vpr_finish - start
+#   synth = synth_finish - start
+#   vpr   = vpr_finish - synth_finish
 geomeanColumns = (
-    ("frontend", "s_s", False),
-    ("synthesis", "synthesis", False),
-    ("vpr", "v_s", False),
     ("wall", "wall", False),
+    ("synth", "synth", False),
+    ("vpr", "vpr", False),
     ("LUTs", "p_luts", False),
     ("FFs", "ff", False),
     ("BRAMs", "mem", False),
@@ -194,7 +195,7 @@ def scanStatus(outDir: Path, labels: Sequence[str]) -> List[Dict[str, str]]:
             row = parseStatusLine(text.splitlines()[0] if text else "")
             if not row.get("label"):
                 row["label"] = label
-            rows.append(enrichSynthesis(row))
+            rows.append(row)
         elif runDir.is_dir():
             rows.append({"label": label, "status": f"running:{detectPhase(runDir)}"})
         else:
@@ -218,20 +219,6 @@ def flowOf(label: str) -> Optional[str]:
             return flow
     return None
 
-
-# USE: fill fair synthesis time when older status lines omit it.
-# mosaic uses frontend only, while vanilla_vtr uses frontend plus abc.
-def enrichSynthesis(row: Dict[str, str]) -> Dict[str, str]:
-    if row.get("synthesis"):
-        return row
-    flow = flowOf(row.get("label", ""))
-    synthSec = numeric(row.get("s_s"))
-    abcSec = numeric(row.get("a_s"))
-    if flow == "mosaic" and synthSec is not None:
-        row["synthesis"] = f"{synthSec:.2f}"
-    elif flow == "vanilla_vtr" and (synthSec is not None or abcSec is not None):
-        row["synthesis"] = f"{(synthSec or 0.0) + (abcSec or 0.0):.2f}"
-    return row
 
 
 # USE: compute per-flow geomeans over designs that completed on every flow.
@@ -341,8 +328,8 @@ def renderTable(rows: List[Dict[str, str]], title: str) -> str:
         "run",
         "status",
         "wall",
-        "synthesis",
-        "time s/a/v",
+        "synth",
+        "vpr",
         "LUTs s/a/p",
         "FFs s/p",
         "BRAMs",
@@ -363,8 +350,8 @@ def renderTable(rows: List[Dict[str, str]], title: str) -> str:
                 row.get("label", ""),
                 coloredStatus(row.get("status", "")),
                 row.get("wall", "-"),
-                row.get("synthesis", "-"),
-                sap(row, "s_s", "a_s", "v_s"),
+                row.get("synth", "-"),
+                row.get("vpr", "-"),
                 sap(row, "s_luts", "a_luts", "p_luts"),
                 sap(row, "s_ff", "ff"),
                 row.get("mem", "-"),

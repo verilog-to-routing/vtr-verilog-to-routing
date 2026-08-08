@@ -10,6 +10,14 @@ writes live status and csv under mosaic/scripts/compare_output_<arch_stem>/.
 with --watch, spawns watch_compare.py in this terminal (or run it yourself
 in a second one).
 
+timing uses three wall-clock timestamps per run (also stored in the results csv):
+  start, synth_finish (frontend blif appears), vpr_finish (flow process exits)
+  wall  = vpr_finish - start
+  synth = synth_finish - start
+  vpr   = vpr_finish - synth_finish
+--no-rerun reloads cached rows (including those timestamps) from the newest
+prior compare_results_*.csv in the output dir.
+
 usage:
     python3 mosaic/scripts/run_vtr_batch.py \\
         --arch vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \\
@@ -82,6 +90,9 @@ csvFields = (
     "flow",
     "success",
     "vpr_status",
+    "start_unix",
+    "synth_finish_unix",
+    "vpr_finish_unix",
     "wall_time_sec",
     "synth_wall_sec",
     "abc_wall_sec",
@@ -107,10 +118,8 @@ csvFields = (
 
 statusKeys = (
     ("wall", "wall_time_sec"),
-    ("s_s", "synth_wall_sec"),
-    ("a_s", "abc_wall_sec"),
-    ("v_s", "vpr_wall_sec"),
-    ("synthesis", "synthesis_sec"),
+    ("synth", "synth_wall_sec"),
+    ("vpr", "vpr_wall_sec"),
     ("s_luts", "synth_luts"),
     ("a_luts", "abc_luts"),
     ("p_luts", "packed_luts"),
@@ -236,33 +245,6 @@ def formatSummary(runLabel: str, row: Dict, status: Optional[str] = None) -> str
     return " ".join(parts)
 
 
-def parseTimeSeconds(text: str) -> Optional[float]:
-    wallMatch = None
-    userMatch = None
-    for line in text.splitlines():
-        found = re.search(r"Elapsed \(wall clock\) time.*?:\s*(\S+)", line)
-        if found:
-            wallMatch = found.group(1)
-        found = re.search(r"User time \(seconds\):\s*([0-9.]+)", line)
-        if found:
-            userMatch = found.group(1)
-    if wallMatch is not None:
-        parts = wallMatch.split(":")
-        try:
-            seconds = float(parts[-1])
-            for multiplier, part in zip((60, 3600), reversed(parts[:-1])):
-                seconds += float(part) * multiplier
-            return seconds
-        except ValueError:
-            pass
-    if userMatch is not None:
-        try:
-            return float(userMatch)
-        except ValueError:
-            return None
-    return None
-
-
 def countBlifNames(blifPath: Path) -> str:
     if not blifPath.is_file():
         return ""
@@ -344,47 +326,107 @@ def stageLutCounts(tempDir: Path, design: str) -> Dict[str, str]:
     return counts
 
 
-def stageWallTimes(tempDir: Path, vprRuntimeSec: str = "") -> Dict[str, str]:
-    times = {"synth_wall_sec": "", "abc_wall_sec": "", "vpr_wall_sec": ""}
-    for key, names in (
-        ("synth_wall_sec", ("mosaic.out", "parmys.out", "odin.out")),
-        ("abc_wall_sec", ("abc0.out", "abc.out")),
-        ("vpr_wall_sec", ("vpr.out",)),
-    ):
-        for name in names:
-            path = tempDir / name
-            if not path.is_file():
-                continue
-            try:
-                value = parseTimeSeconds(
-                    path.read_text(encoding="utf-8", errors="replace")
-                )
-            except OSError:
-                value = None
-            if value is not None:
-                times[key] = f"{value:.2f}"
-                break
-    if not times["vpr_wall_sec"] and vprRuntimeSec:
-        times["vpr_wall_sec"] = vprRuntimeSec
-    return times
-
-
-def fairSynthesisSec(flowName: str, synthWall: str, abcWall: str) -> str:
-    try:
-        synth = float(synthWall) if synthWall else None
-    except ValueError:
-        synth = None
-    try:
-        abc = float(abcWall) if abcWall else None
-    except ValueError:
-        abc = None
+# USE: true when the frontend has written a blif that vpr can consume.
+def frontendReady(tempDir: Path, design: str, flowName: str) -> bool:
     if flowName == "mosaic":
-        return f"{synth:.2f}" if synth is not None else ""
-    if flowName == "vanilla_vtr":
-        if synth is None and abc is None:
-            return ""
-        return f"{(synth or 0.0) + (abc or 0.0):.2f}"
-    return f"{synth:.2f}" if synth is not None else ""
+        return (tempDir / f"{design}.mosaic.blif").is_file() or (
+            tempDir / f"{design}.pre-vpr.blif"
+        ).is_file()
+    return (tempDir / f"{design}.pre-vpr.blif").is_file()
+
+
+# USE: optional abc gap from parmys.blif mtime to pre-vpr.blif mtime.
+def abcWallFromMtimes(tempDir: Path, design: str) -> str:
+    parmysBlif = tempDir / f"{design}.parmys.blif"
+    preVpr = tempDir / f"{design}.pre-vpr.blif"
+    if not parmysBlif.is_file() or not preVpr.is_file():
+        return ""
+    try:
+        abcSec = max(0.0, preVpr.stat().st_mtime - parmysBlif.stat().st_mtime)
+    except OSError:
+        return ""
+    return f"{abcSec:.2f}"
+
+
+# USE: derive wall/synth/vpr from the three wall-clock timestamps.
+# wall = vpr_finish - start
+# synth = synth_finish - start
+# vpr = vpr_finish - synth_finish
+def timesFromTimestamps(
+    startUnix: float,
+    synthFinishUnix: Optional[float],
+    vprFinishUnix: float,
+    tempDir: Path,
+    design: str,
+) -> Dict[str, str]:
+    if synthFinishUnix is None:
+        synthFinishUnix = vprFinishUnix
+    synthFinishUnix = min(max(synthFinishUnix, startUnix), vprFinishUnix)
+    wallSec = max(0.0, vprFinishUnix - startUnix)
+    synthSec = max(0.0, synthFinishUnix - startUnix)
+    vprSec = max(0.0, vprFinishUnix - synthFinishUnix)
+    return {
+        "start_unix": f"{startUnix:.3f}",
+        "synth_finish_unix": f"{synthFinishUnix:.3f}",
+        "vpr_finish_unix": f"{vprFinishUnix:.3f}",
+        "wall_time_sec": f"{wallSec:.2f}",
+        "synth_wall_sec": f"{synthSec:.2f}",
+        "vpr_wall_sec": f"{vprSec:.2f}",
+        "synthesis_sec": f"{synthSec:.2f}",
+        "abc_wall_sec": abcWallFromMtimes(tempDir, design),
+    }
+
+
+# USE: newest prior compare_results_*.csv in outdir (for --no-rerun reuse).
+def latestResultsCsv(outDir: Path, exclude: Optional[Path] = None) -> Optional[Path]:
+    excludeResolved = exclude.resolve() if exclude is not None else None
+    candidates = sorted(outDir.glob("compare_results*.csv"))
+    for path in reversed(candidates):
+        if excludeResolved is not None and path.resolve() == excludeResolved:
+            continue
+        try:
+            if path.stat().st_size <= 0:
+                continue
+            with open(path, newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                if reader.fieldnames and any(reader):
+                    return path
+        except OSError:
+            continue
+    return None
+
+
+# USE: index prior csv rows by (design, flow) for --no-rerun cache hits.
+def loadCsvIndex(csvPath: Path) -> Dict[Tuple[str, str], Dict]:
+    index: Dict[Tuple[str, str], Dict] = {}
+    if not csvPath.is_file():
+        return index
+    try:
+        with open(csvPath, newline="", encoding="utf-8") as handle:
+            for row in csv.DictReader(handle):
+                design = (row.get("design") or "").strip()
+                flow = (row.get("flow") or "").strip()
+                if design and flow:
+                    index[(design, flow)] = dict(row)
+    except OSError:
+        return {}
+    return index
+
+
+# USE: normalize a csv row reloaded for a cached --no-rerun hit.
+def rowFromPriorCsv(priorRow: Dict) -> Dict:
+    row = {field: priorRow.get(field, "") for field in csvFields}
+    success = row.get("success", "")
+    if isinstance(success, str):
+        row["success"] = success.strip().lower() in ("1", "true", "yes")
+    else:
+        row["success"] = bool(success)
+    try:
+        row["return_code"] = int(row.get("return_code") or 0)
+    except (TypeError, ValueError):
+        row["return_code"] = 0
+    row["vpr_status"] = "cached"
+    return row
 
 
 def parsePackedLuts(vprText: str) -> str:
@@ -412,6 +454,9 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
             "success",
             "wall_time_sec",
             "return_code",
+            "start_unix",
+            "synth_finish_unix",
+            "vpr_finish_unix",
             "synth_wall_sec",
             "abc_wall_sec",
             "vpr_wall_sec",
@@ -546,6 +591,7 @@ def runOne(task: Tuple) -> Dict:
         noRerun,
         includeFiles,
         routeChanWidth,
+        priorRow,
     ) = task
     runLabel = f"{design}_{flowName}"
     tempDir = (outDir / "runs" / runLabel).resolve()
@@ -554,16 +600,18 @@ def runOne(task: Tuple) -> Dict:
     circuitPath = benchDir / f"{design}.v"
 
     if noRerun and successMarker.is_file():
-        summary = f"{runLabel}: cached"
-        writeStatus(outDir, runLabel, summary)
-        return {
-            "design": design,
-            "flow": flowName,
-            "success": True,
-            "vpr_status": "cached",
-            "wall_time_sec": "",
-            "return_code": 0,
-        }
+        if priorRow:
+            row = rowFromPriorCsv(priorRow)
+        else:
+            row = {
+                "design": design,
+                "flow": flowName,
+                "success": True,
+                "vpr_status": "cached",
+                "return_code": 0,
+            }
+        writeStatus(outDir, runLabel, formatSummary(runLabel, row, status="cached"))
+        return row
 
     if not circuitPath.is_file():
         row = {
@@ -609,37 +657,50 @@ def runOne(task: Tuple) -> Dict:
     if includeFiles:
         cmd += ["-include", *[str(path) for path in includeFiles]]
 
-    startTime = time.perf_counter()
+    # three wall-clock timestamps drive all reported stage times:
+    #   wall  = vpr_finish - start
+    #   synth = synth_finish - start
+    #   vpr   = vpr_finish - synth_finish
+    startUnix = time.time()
+    synthFinishUnix = None
     with open(logPath, "w", encoding="utf-8", errors="replace") as logFile:
         logFile.write("CMD: " + " ".join(cmd) + "\n\n")
         logFile.flush()
-        result = subprocess.run(
+        proc = subprocess.Popen(
             cmd,
             cwd=str(vtrRoot),
             stdout=logFile,
             stderr=subprocess.STDOUT,
             text=True,
-            check=False,
             env=singleCoreEnv(),
         )
-    wallSec = f"{time.perf_counter() - startTime:.2f}"
+        while True:
+            returnCode = proc.poll()
+            if synthFinishUnix is None and frontendReady(tempDir, design, flowName):
+                synthFinishUnix = time.time()
+            if returnCode is not None:
+                break
+            time.sleep(0.25)
+    vprFinishUnix = time.time()
+    if synthFinishUnix is None and frontendReady(tempDir, design, flowName):
+        synthFinishUnix = vprFinishUnix
+
+    stageTimes = timesFromTimestamps(
+        startUnix, synthFinishUnix, vprFinishUnix, tempDir, design
+    )
 
     qor = parseVprQor(tempDir)
-    vprRuntime = qor.pop("_vpr_runtime_sec", "")
+    qor.pop("_vpr_runtime_sec", "")
     qor.update(stageLutCounts(tempDir, design))
-    qor.update(stageWallTimes(tempDir, vprRuntime))
-    qor["synthesis_sec"] = fairSynthesisSec(
-        flowName, qor.get("synth_wall_sec", ""), qor.get("abc_wall_sec", "")
-    )
+    qor.update(stageTimes)
     if qor.get("vpr_status") == "missing":
-        qor["vpr_status"] = extractFailReason(tempDir, flowName, result.returncode)
-    success = result.returncode == 0 and qor["vpr_status"] == "ok"
+        qor["vpr_status"] = extractFailReason(tempDir, flowName, returnCode)
+    success = returnCode == 0 and qor["vpr_status"] == "ok"
     row = {
         "design": design,
         "flow": flowName,
         "success": success,
-        "wall_time_sec": wallSec,
-        "return_code": result.returncode,
+        "return_code": returnCode,
         **qor,
     }
     if success:
@@ -797,6 +858,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     writeCsv(csvPath, [])
     (statusDir / "csv_path.txt").write_text(str(csvPath.resolve()) + "\n", encoding="utf-8")
 
+    # --no-rerun reloads timing/qor for cached runs from the newest prior csv.
+    priorIndex: Dict[Tuple[str, str], Dict] = {}
+    if args.no_rerun:
+        priorCsv = latestResultsCsv(outDir, exclude=csvPath)
+        if priorCsv is not None:
+            priorIndex = loadCsvIndex(priorCsv)
+            print(f"prior:   {priorCsv} ({len(priorIndex)} rows)")
+
     tasks = [
         (
             design,
@@ -808,6 +877,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.no_rerun,
             includeFiles,
             args.route_chan_width,
+            priorIndex.get((design, flowName)),
         )
         for design in designs
         for flowName in selectedFlows
