@@ -115,7 +115,7 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    bool device_model_warnings,
                                                    float interposer_base_cut_multiplier);
 
-class ClassicLookahead : public RouterLookahead {
+class ClassicLookahead final : public RouterLookahead {
   public:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
@@ -144,14 +144,14 @@ class ClassicLookahead : public RouterLookahead {
     }
 
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::get_opin_distance_min_delay unimplemented");
     }
 
   private:
     float classic_wire_lookahead_cost(RRNodeId node, RRNodeId target_node, float criticality, float R_upstream) const;
 };
 
-class NoOpLookahead : public RouterLookahead {
+class NoOpLookahead final : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
@@ -179,7 +179,10 @@ class NoOpLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "write_intra_cluster not supported for NoOpLookahead");
     }
 
+  public:
+    // Public so SimpleDelayModel can call it through the
+    // concrete type statically, without using dynamic dispatch.
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-        return -1.;
+        VPR_THROW(VPR_ERROR_ROUTE, "get_opin_distance_min_delay not supported for NoOpLookahead");
     }
 };
