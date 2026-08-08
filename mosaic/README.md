@@ -4,14 +4,14 @@
 Mosaic is the third synthesis flow for VTR, it is currently under developlment. The name Mosaic refers to the use of templates for techmapping.
 
 ## 1. Building Mosaic
-You need a built VTR tree first such that `build/bin/yosys-config` exists. The mosaic plugin only needs Yosys headers and does not link any VTR library. It compiles wildebeest-only sources under `mosaic/wildebeest/` together with mosaic-only sources under `mosaic/src/`.
+You need a built VTR tree first such that `build/bin/yosys-config` exists. The mosaic plugin only needs Yosys headers and does not link any VTR library. CMake root is `mosaic/` (build tree `mosaic/build/`). Mosaic sources live in `mosaic/src/`; `mosaic/wildebeest/` is a small object library pulled into that build.
 
 ```shell
 make -j$(nproc)
 bash mosaic/build_mosaic.sh
 ```
 
-The install script builds the plugin against the VTR Yosys and installs it as `mosaic.so` under `build/share/yosys/plugins/`. Yosys loads it with `plugin -i mosaic`.
+The install script builds `mosaic.so` under `mosaic/build/` and installs it into the VTR Yosys tree at `build/share/yosys/plugins/mosaic.so`. Yosys loads it with `plugin -i mosaic`.
 
 
 
@@ -148,7 +148,7 @@ Common knobs in `arch_config.tcl`:
 Shared ABC scripts live under `template/abc/`. Rebuild them with `template/abc/build_delay_scr.py` when the upstream delay script changes. These run inside Yosys during mosaic synthesis, not as the external VTR ABC stage.
 
 ### 3g. Layout
-- `mosaic/wildebeest/` holds wildebeest-originated sources, mainly `max_level` in `clk_domains.cc`, including the `-vtr_arch` patch.
+- `mosaic/wildebeest/` is a small wildebeest-originated object library (mainly `max_level` in `clk_domains.cc`, including the `-vtr_arch` patch), not the plugin CMake root.
 - `mosaic/src/` holds mosaic-only sources. Architecture scanning lives in `vtr_arch_info.*` and `vtr_arch_clocks.*`. The Yosys pass is `vtr_arch_rules.cc`. Rule generators live under `arch_rule_gen/` with the public API in `arch_rule_gen.h`.
 - `mosaic/build_mosaic.sh` configures, builds, and installs the plugin.
 - `vtr_flow/misc/mosaic/template/` is the shared synthesis support tree (`synthesis.tcl`, `fix_blif_for_vpr.py`, `rules/`, `abc/`, `lut_models/`).
