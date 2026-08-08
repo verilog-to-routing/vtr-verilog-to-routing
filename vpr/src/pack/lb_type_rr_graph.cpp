@@ -50,34 +50,28 @@ static void print_lb_type_rr_graph(FILE* fp, const std::vector<t_lb_type_rr_node
 
 /* Populate each logic block type (type_descriptor) with a directed graph that represents the interconnect within it.
  */
-std::vector<t_lb_type_rr_node>* alloc_and_load_all_lb_type_rr_graph() {
-    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
-    auto& device_ctx = g_vpr_ctx.device();
+std::vector<std::vector<t_lb_type_rr_node>> alloc_and_load_all_lb_type_rr_graph() {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    lb_type_rr_graphs = new std::vector<t_lb_type_rr_node>[device_ctx.logical_block_types.size()];
+    std::vector<std::vector<t_lb_type_rr_node>> lb_type_rr_graphs(device_ctx.logical_block_types.size());
 
-    for (const auto& type : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         int itype = type.index;
         if (&type != device_ctx.EMPTY_LOGICAL_BLOCK_TYPE) {
             alloc_and_load_lb_type_rr_graph_for_type(&type, lb_type_rr_graphs[itype]);
 
-            /* Now that the data is loaded, reallocate to the precise amount of memory needed to prevent insidious bugs */
-            /* I should be using shrinktofit() but as of 2013, C++ 11 is yet not well supported so I can't call this function in gcc */
-            std::vector<t_lb_type_rr_node>(lb_type_rr_graphs[itype]).swap(lb_type_rr_graphs[itype]);
+            // Now that the data is loaded, release the excess capacity to prevent insidious bugs
+            lb_type_rr_graphs[itype].shrink_to_fit();
         }
     }
     return lb_type_rr_graphs;
 }
 
 /* Free routing resource graph for all logic block types */
-void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
-    if (lb_type_rr_graphs == nullptr) {
-        return;
-    }
+void free_all_lb_type_rr_graph(std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (const auto& type : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         int itype = type.index;
         if (!is_empty_type(&type)) {
             int graph_size = lb_type_rr_graphs[itype].size();
@@ -97,7 +91,6 @@ void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs
             }
         }
     }
-    delete[] lb_type_rr_graphs;
 }
 
 /*****************************************************************************************
@@ -131,7 +124,7 @@ int get_lb_type_rr_graph_edge_mode(const std::vector<t_lb_type_rr_node>& lb_type
  ******************************************************************************************/
 
 /* Output all logic block type pb graphs */
-void echo_lb_type_rr_graphs(char* filename, std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+void echo_lb_type_rr_graphs(char* filename, const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs) {
     FILE* fp;
     fp = vtr::fopen(filename, "w");
 
