@@ -4,7 +4,7 @@
 #include <sstream>
 #include <limits>
 #include <array>
-#include <unordered_map>
+#include <unordered_set>
 #include <iomanip>
 
 #include "draw_crit_path.h"
