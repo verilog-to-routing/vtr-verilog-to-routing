@@ -18,7 +18,6 @@ from .util import (
     get_active_run_dir,
     get_next_run_dir,
     verify_file,
-    pretty_print_table,
     find_task_dir,
     RunDir,
 )

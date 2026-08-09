@@ -33,7 +33,6 @@ Placer::Placer(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
-               const IntraLbPbPinLookup& pb_gpin_lookup,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
@@ -44,7 +43,6 @@ Placer::Placer(const Netlist<>& net_list,
     : placer_opts_(placer_opts)
     , analysis_opts_(analysis_opts)
     , noc_opts_(noc_opts)
-    , pb_gpin_lookup_(pb_gpin_lookup)
     , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
     , placer_state_(placer_opts.place_algorithm.is_timing_driven())
@@ -456,13 +454,13 @@ void Placer::place() {
 }
 
 void Placer::update_global_state() {
-    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+    PlacementContext& mutable_place_ctx = g_vpr_ctx.mutable_placement();
 
     // the placement location variables should be unlocked before being accessed
-    mutable_palce_ctx.unlock_loc_vars();
+    mutable_place_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
+    BlkLocRegistry& global_blk_loc_registry = mutable_place_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
 #ifndef NO_GRAPHICS

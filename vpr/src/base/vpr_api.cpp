@@ -485,13 +485,16 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
                                        block_locs);
 
             // Due to flow divergence, vpr_create_device is never called.
-            // We handle creating the device grid and the nocs within the AP
-            // flow, we leave creating the clock networks to here since they are
-            // not used in AP right now and they modify the global state, so its
-            // best to keep this as high in the flow as possible.
+            // We handle creating the device grid within run_analytical_placement_flow()
+            // (once the device size is known) and the RR graph within the AP
+            // flow itself (in FullLegalizer::recreate_device_if_needed) or,
+            // if timing analysis is enabled, even earlier while computing the
+            // placement delay model. The clock networks are set up inside
+            // run_analytical_placement_flow(), right after the device grid is
+            // created, since the RR graph (built later in that same function)
+            // depends on the clock networks already being set up.
             // TODO: This flow-divergence needs to be cleaned up such that AP
             //       and No-AP hit the same setup code to prevent issues.
-            vpr_setup_clock_networks(vpr_setup, arch);
         }
     }
 

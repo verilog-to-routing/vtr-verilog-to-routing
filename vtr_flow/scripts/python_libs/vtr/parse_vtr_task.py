@@ -26,7 +26,6 @@ from vtr import (
     load_pass_requirements,
     load_parse_results,
     parse_vtr_flow,
-    pretty_print_table,
     find_task_dir,
     CommandError,
     InspectError,
@@ -285,7 +284,6 @@ def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
                         header = False
                     # Second line is the data
                     print(lines[1], file=out_f, end="")
-                pretty_print_table(job_parse_results_filepath)
             else:
                 print(
                     "Warning: Flow result file not found (task QoR will be incomplete): {} ".format(
@@ -352,7 +350,6 @@ def check_golden_results_for_task(config, alt_tasks_dir=None):
                 second_results_filepath,
                 second_name="second parse file",
             )
-            pretty_print_table(second_results_filepath)
 
         else:
             golden_results_filepath = str(
@@ -363,7 +360,6 @@ def check_golden_results_for_task(config, alt_tasks_dir=None):
                 task_results_filepath,
                 golden_results_filepath,
             )
-        pretty_print_table(task_results_filepath)
 
     if num_qor_failures == 0:
         print("{}...[Pass]".format("/".join(str((Path(config.config_dir).parent)).split("/")[-3:])))
@@ -521,9 +517,6 @@ def summarize_qor(configs, alt_tasks_dir=None):
                     first = False
                 for line in in_file:
                     print("{}\t{}".format(config.task_name, line), file=out, end="")
-            pretty_print_table(
-                str(Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE)
-            )
 
 
 def calc_geomean(args, configs):

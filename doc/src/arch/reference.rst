@@ -47,7 +47,7 @@ One example is the IDELAYCTRL of the Series7 devices, which takes as input a ref
 Each model tag must contain 2 tags: ``<input_ports>`` and ``<output_ports>``.
 Each of these contains ``<port>`` tags:
 
-.. arch:tag:: <port name="string" is_clock="{0 | 1} clock="string" combinational_sink_ports="string1 string2 ..."/>
+.. arch:tag:: <port name="string" is_clock="{0 | 1}" clock="string" combinational_sink_ports="string1 string2 ..."/>
 
     :req_param name: The port name.
 
@@ -421,7 +421,7 @@ Grid Location Tags
     .. code-block:: xml
 
         <!-- Create IO's around the device perimeter -->
-        <perimeter type="io" priority=10"/>
+        <perimeter type="io" priority="10"/>
 
         <!-- Create a column of RAMs starting at column 2, and
              repeating every 3 columns. Note that a vertical offset
@@ -475,7 +475,7 @@ Grid Location Tags
 
         <row> DSP example
 
-.. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
+.. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr" repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
 
     :req_param type:
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
@@ -586,7 +586,7 @@ Grid Layout Example
         <!-- Specifies an auto-scaling square FPGA floorplan -->
         <auto_layout aspect_ratio="1.0">
             <!-- Create I/Os around the device perimeter -->
-            <perimeter type="io" priority=10"/>
+            <perimeter type="io" priority="10"/>
 
             <!-- Nothing in the corners -->
             <corners type="EMPTY" priority="100"/>
@@ -1394,7 +1394,7 @@ The following tags are common to all ``<tile>`` tags:
                 <sb_loc type="full" xoffset="1" yoffset="0"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="1"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="2"> <!-- Top Right -->
-            <switchblock_locations/>
+            </switchblock_locations>
 
 .. _arch_complex_blocks:
 
@@ -1880,7 +1880,7 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
             4.6e-10 1.9e-10 2.2e-10
             4.5e-10 6.7e-10 3.5e-10
             7.1e-10 2.9e-10 8.7e-10
-        </delay>
+        </delay_matrix>
 
     .. note:: To specify both ``max`` and ``min`` delays two ``<delay_matrix>`` should be used.
 
@@ -2717,8 +2717,70 @@ The full format is documented below.
         * ``CORNER`` – only at the corner switch blocks (both x and y-directed channels terminate here)
         * ``FRINGE`` – same as PERIMETER but excludes corners
         * ``CORE`` – everywhere but the perimeter
+        * ``XY_SPECIFIED`` – only at one or more explicitly specified grid locations, rows/columns, or regions
 
     Sets the location on the FPGA where the connections described by this switch block will be instantiated.
+
+    **Explicitly specified locations** (``type="XY_SPECIFIED"``)
+
+    When the type is ``XY_SPECIFIED``, the switch block is instantiated only at the grid locations selected by the additional
+    coordinate attributes. All coordinate attributes are evaluated as formulas which may reference the variables ``W`` and ``H``,
+    denoting the device grid width and height respectively (e.g. ``endx="W-1"``).
+
+    .. note:: ``XY_SPECIFIED`` requires a fixed device layout (a named ``<fixed_layout>``); it is not supported with an ``auto`` layout, since the grid dimensions must be known when the architecture is parsed.
+
+    There are three ways to select locations:
+
+    #. **A single switch block** – specify both ``x`` and ``y``. The switch block is created only at grid location ``(x, y)``.
+
+    #. **An entire row or column** – specify one coordinate and set the other to ``-1`` for the entire row or column.
+
+        * ``x="C" y="-1"`` applies the switch block to the entire column at ``x = C`` (all rows).
+        * ``x="-1" y="R"`` applies the switch block to the entire row at ``y = R`` (all columns).
+
+    #. **A region** – specify one rectangular region (optionally repeating) with the attributes below.
+
+    :opt_param startx:
+        X coordinate of the first column of the region. Default: ``0``.
+
+    :opt_param endx:
+        X coordinate of the last column of the region. Default: ``W-1``.
+
+    :opt_param starty:
+        Y coordinate of the first row of the region. Default: ``0``.
+
+    :opt_param endy:
+        Y coordinate of the last row of the region. Default: ``H-1``.
+
+    :opt_param repeatx:
+        Horizontal repeat factor at which the region repeats across the grid. Default: ``0`` (the region does not repeat).
+
+    :opt_param repeaty:
+        Vertical repeat factor at which the region repeats across the grid. Default: ``0`` (the region does not repeat).
+
+    :opt_param incrx:
+        Horizontal stride within the region; only every ``incrx``-th column of the region receives the switch block. Default: ``1``.
+
+    :opt_param incry:
+        Vertical stride within the region; only every ``incry``-th row of the region receives the switch block. Default: ``1``.
+
+    .. note:: If either ``x`` or ``y`` is specified (i.e. not ``-1``), the region attributes are ignored.
+
+    The following examples all use ``type="XY_SPECIFIED"``:
+
+    .. code-block:: xml
+
+        <!-- A single switch block at grid location (4, 7) -->
+        <switchblock_location type="XY_SPECIFIED" x="4" y="7"/>
+
+        <!-- The entire column at x = 1 (all rows) -->
+        <switchblock_location type="XY_SPECIFIED" x="1" y="-1"/>
+
+        <!-- The entire row at y = 1 (all columns) -->
+        <switchblock_location type="XY_SPECIFIED" x="-1" y="1"/>
+
+        <!-- Columns 2, 5, 8, ... (a one-column-wide region repeating every 3 columns), for all rows -->
+        <switchblock_location type="XY_SPECIFIED" startx="2" endx="2" repeatx="3"/>
 
 .. arch:tag:: <switchfuncs>
 
@@ -2915,7 +2977,7 @@ The full format is documented below.
         <wireconn num_conns_type="to"/>
             <from type="L4" switchpoint="0,1,2,3"/>
             <from type="L16" switchpoint="0,4,8,12"/>
-            <to type="L4" switchpoint="0/>
+            <to type="L4" switchpoint="0"/>
         </wireconn>
 
     This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12.
@@ -2952,30 +3014,30 @@ An example is shown below:
                 <gather>
                     <!-- Gather 30 connections from the 0, 4, 8 or 12 position of L16 wires of all four sides of a switchblock location -->
                     <wireconn num_conns="30" from_type="L16" from_switchpoint="0,12,8,4" side="rltb"/> 
-                <gather/>
+                </gather>
 
                 <scatter>
                     <!-- Scatter 30 connections to the starting position of L16 wires of all four sides of a switchblock location -->
                     <wireconn num_conns="30" to_type="L16" to_switchpoint="0" side="rtlb"/>
-                <scatter/>
+                </scatter>
                 
                 <sg_link_list>
                     <!-- Link going up one layer, using the '3D_SB_MUX' multiplexer to gather connections from the bottom layer and using the 'TSV' node/wire to move up one layer -->
                     <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="3D_SB_MUX" seg_type="TSV"/> 
                     <!-- Same as above but moving one layer down -->
                     <sg_link name="L_DOWN" z_offset="-1" mux="3D_SB_MUX" seg_type="TSV"/>
-                <sg_link_list/>
+                </sg_link_list>
                 
                 <!-- Instantiate 10 'L_UP' sg_links per switchblock location everywhere on the device -->
                 <sg_location type="EVERYWHERE" num="10" sg_link="L_UP"/>
                 <!-- Instantiate 10 'L_DOWN' sg_links per switchblock location everywhere on the device -->
                 <sg_location type="EVERYWHERE" num="10" sg_link="L_DOWN"/>
-            <sg_pattern/>
+            </sg_pattern>
 
             <sg_pattern name="interposer_conn_sg" type="bidir">
                 ... <!-- Another scatter-gather pattern specification -->
-            <sg_pattern/>
-        <scatter_gather_list/>
+            </sg_pattern>
+        </scatter_gather_list>
 
 .. arch:tag:: <sg_pattern name="string" type={unidir|bidir}>
 
@@ -3279,7 +3341,7 @@ In the tileable architecture file, you may define additional attributes for each
 
   <direct_connection>
     <direct name="string" circuit_model_name="string" interconnection_type="string" x_dir="string" y_dir="string"/>
-  </directlist>
+  </direct_connection>
 
 .. note:: these options are optional. However, if ``interconnection_type`` is set to ``inter_column`` or ``inter_row``, then ``x_dir`` and ``y_dir`` are required.
 

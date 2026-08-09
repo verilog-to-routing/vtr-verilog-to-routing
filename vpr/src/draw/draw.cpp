@@ -307,6 +307,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
         }
     } else {
         draw_analytical_place(g);
+        draw_crit_path(g);
     }
 
     // Zoom-Select preview: while the user is in window mode and has clicked
@@ -1651,13 +1652,6 @@ static void run_graphics_commands(const std::string& commands) {
     ++draw_state->sequence_number;
 }
 
-ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
-    AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
-    return atom_pin_draw_coord(pin);
-}
-
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
  * It also highlights the moved block input and output terminals       *
@@ -1764,6 +1758,7 @@ bool rgb_is_same(ezgl::color color1, ezgl::color color2) {
     color2.alpha = 255;
     return (color1 == color2);
 }
+
 t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer) {
     t_draw_layer_display element_visibility;
     t_draw_state* draw_state = get_draw_state_vars();
@@ -1771,16 +1766,17 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
     element_visibility.visible = true;
     bool cross_layer_enabled = draw_state->cross_layer_display.visible;
 
-    //To only show elements (net flylines,noc links,etc...) that are connected to currently active layers on the screen
-    if (!draw_state->draw_layer_display[sink_layer].visible || !draw_state->draw_layer_display[src_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
-        element_visibility.visible = false; /* Don't Draw */
-    }
-
     if (src_layer != sink_layer) {
-        //assign transparency from cross layer option if connection is between different layers
+        if (!cross_layer_enabled) {
+            element_visibility.visible = false; /* Don't Draw */
+        }
+        // Assign transparency from cross layer option if connection is between different layers.
         element_visibility.alpha = draw_state->cross_layer_display.alpha;
     } else {
-        //otherwise assign transparency of current layer
+        if (!draw_state->draw_layer_display[src_layer].visible) {
+            element_visibility.visible = false; /* Don't Draw */
+        }
+        // Assign transparency of current layer.
         element_visibility.alpha = draw_state->draw_layer_display[src_layer].alpha;
     }
 

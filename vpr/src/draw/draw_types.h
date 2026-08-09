@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <memory>
+#include <optional>
 #include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "vpr_types.h"
@@ -166,7 +167,20 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
+/**
+ * @brief The drawing coordinates of the beginning and end of a flyline segment.
+ * 
+ * Includes a special boolean to tell if the two points are mapped to the same drawing coordinates.
+ */
+struct t_flyline_draw_coords {
+    /// True when start and end are mapped to the same drawing coordinates.
+    bool collapse_to_point = false;
+    ezgl::point2d start;
+    ezgl::point2d end;
+};
+
 struct PartialPlacement;
+class AtomBlockAPBlockLookup;
 
 /**
  * @brief Structure used to store variables related to highlighting/drawing
@@ -441,15 +455,27 @@ struct t_draw_state {
     /**
      * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
      * @details This is set by the AP global placer just before drawing and cleared immediately after.
-     *          Only a reference is stored to avoid copying and lifetime issues.
+     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
+     *          and avoid copying and modification of the partial placement.
      */
-    std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
+    const PartialPlacement* ap_partial_placement_ptr_;
+
+    /**
+     * @brief Stores a temporary reference to the atom block to AP block lookup.
+     * @details This is also set by the AP global placer and has the same lifetime as the partial placement reference.
+     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
+     *          and avoid copying and modification of the lookup.
+     */
+    const AtomBlockAPBlockLookup* atom_block_ap_block_lookup_ptr_;
 
   public:
-    // Set/clear/get the AP partial placement reference used during AP drawing
-    void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
-    void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
-    const PartialPlacement* get_ap_partial_placement_ref() const { return ap_partial_placement_ref_ ? &ap_partial_placement_ref_->get() : nullptr; }
+    // Set/clear/get the analytical placement variable references used during AP drawing.
+    void set_ap_partial_placement_ptr(const PartialPlacement* p) { ap_partial_placement_ptr_ = p; }
+    void clear_ap_partial_placement_ptr() { ap_partial_placement_ptr_ = nullptr; }
+    const PartialPlacement* get_ap_partial_placement_ptr() const { return ap_partial_placement_ptr_; }
+    void set_atom_block_ap_block_lookup_ptr(const AtomBlockAPBlockLookup* lookup) { atom_block_ap_block_lookup_ptr_ = lookup; }
+    void clear_atom_block_ap_block_lookup_ptr() { atom_block_ap_block_lookup_ptr_ = nullptr; }
+    const AtomBlockAPBlockLookup* get_atom_block_ap_block_lookup_ptr() const { return atom_block_ap_block_lookup_ptr_; }
 };
 
 /* For each cluster type, this structure stores drawing
