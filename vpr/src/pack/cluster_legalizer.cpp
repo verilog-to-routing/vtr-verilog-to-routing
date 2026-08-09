@@ -759,11 +759,8 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
  * non-primitive pbs.
  *
  * The cleaning itself includes deleting all child pbs, resetting mode of the
- * pb and also freeing its name. This prepares the pb for another round of
- * molecule packing tryout.
- *
- * pin_counter is threaded through so we can drop per pb state for the pbs
- * we free. Otherwise per_pb_state_ retains dangling pointers as keys.
+ * pb, freeing its name, and dropping the pin counter's state for the pbs being
+ * freed. This prepares the pb for another round of molecule packing tryout.
  */
 static bool cleanup_pb(t_pb* pb, ClusterPinCounter& pin_counter) {
     bool can_free = true;
@@ -802,8 +799,8 @@ static bool cleanup_pb(t_pb* pb, ClusterPinCounter& pin_counter) {
         if (can_free) {
             for (int i = 0; i < mode->num_pb_type_children; ++i) {
                 if (pb->child_pbs[i] != nullptr) {
-                    // Drop counter state for each pb we're about to free so
-                    // per_pb_state_ does not retain dangling pointer keys.
+                    // Drop counter state for each pb that is going to be freed
+                    // so per_pb_state_ does not retain dangling pointer keys.
                     for (int j = 0; j < mode->pb_type_children[i].num_pb; ++j) {
                         pin_counter.deallocate_pin_count_state_recursive(&pb->child_pbs[i][j]);
                     }
@@ -1198,7 +1195,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
             /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
              * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
-             * their modes reset. This task is performed by the cleanup_pb() function below. */
+             * their modes reset. cleanup_pb also deallocates pin counter state for the pbs it frees;
+             * otherwise per_pb_state_ would keep dangling pointers as keys. */
             cleanup_pb(cluster.pb, cluster.pin_counter);
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
