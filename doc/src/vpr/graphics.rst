@@ -79,7 +79,8 @@ Placement
 By default VPR's graphics displays the FPGA floorplan (block grid) and current placement during global (analytical) placement
 and detailed (SA) placement.
 
-The FPGA floorplan during global placement does contain white space in between the clustered blocks and is therefore easy to distinguish.
+The FPGA floorplan during global placement does not preserve space for routing resources (the white space between the clustered blocks)
+and is therefore easy to distinguish.
 
 .. figure:: ../Images/analytical_place.png
     :align: center 
