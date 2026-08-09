@@ -102,6 +102,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
         std::vector<double> dim_max_overflow;    ///< Per-dimension peak normalized tile overflow.
         double affinity_spring = 0.;             ///< Weighted quadratic affinity-spring penalty (all kinds).
         double proximity = 0.;                   ///< Unweighted proximity penalty to a legalized anchor.
+        double timing = 0.;                      ///< Per-connection delay-derivative spring energy.
         double total_overflow = 0.;              ///< Sum of normalized tile overflows.
         double max_overflow = 0.;                ///< Largest normalized tile overflow.
     };
@@ -168,9 +169,18 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
                                     std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
+     * @brief Maximum sink delay-sensitivity of a net, in wirelength units.
+     *
+     * `(1 + crit) * d(delay)/d(pos) / norm`, maximized over the net's sinks --
+     * b2b's per-connection timing signal, reduced to one scalar per net so it can
+     * drive the existing weight without adding an energy term.
+     */
+    double net_delay_sensitivity_(APNetId net_id, const PartialPlacement& p_placement) const;
+
+    /**
      * @brief Update differentiable wirelength net weights from pre-cluster timing criticalities.
      */
-    void update_timing_net_weights_();
+    void update_timing_net_weights_(const PartialPlacement& p_placement);
 
     /**
      * @brief Affinity-spring detector kind (logging / per-kind weights).
@@ -316,6 +326,37 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      */
     std::vector<double> compute_physical_overflow_ratios_per_dim_(const PartialPlacement& p_placement,
                                                                   const std::vector<PrimitiveVectorDim>& dimensions) const;
+
+    /**
+     * @brief One driver->sink timing connection with its delay-derivative weight.
+     */
+    struct TimingConnection {
+        APBlockId driver;     ///< Driver block.
+        APBlockId sink;       ///< Sink block.
+        APPinId sink_pin;     ///< Sink pin, for per-connection criticality.
+        double weight_x = 0.; ///< Spring weight in x for the current epoch.
+        double weight_y = 0.; ///< Spring weight in y.
+    };
+
+    /**
+     * @brief Build the driver->sink connection list once per run.
+     */
+    void initialize_timing_connections_();
+
+    /**
+     * @brief Refresh per-connection delay-derivative weights for this epoch.
+     *
+     * Uses the legalized placement for the delay-model queries, matching b2b:
+     * a mid-solve smooth position can land on a tile that implements no wires,
+     * where the delay model returns its no-path sentinel.
+     */
+    void update_timing_connection_weights_(const PartialPlacement& legal_anchor);
+
+    /**
+     * @brief Add the per-connection timing term and its gradient.
+     */
+    double add_timing_gradient_(const PartialPlacement& p_placement,
+                                std::optional<std::reference_wrapper<PlacementGradient>> grad) const;
 
     /**
      * @brief Recompute the diagonal preconditioner for the current epoch.
@@ -497,6 +538,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///        penalty-only anchor keeps.
     vtr::vector<APBlockId, double> admm_dual_x_;
     vtr::vector<APBlockId, double> admm_dual_y_;
+
+    /// @brief Driver->sink timing connections with delay-derivative weights.
+    std::vector<TimingConnection> timing_connections_;
 
     /// @brief Prepacker, retained for prepacker-derived affinity groups.
     const Prepacker* prepacker_ = nullptr;
