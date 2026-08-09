@@ -6,13 +6,6 @@
     Note that only the delay numbers were verified and explicitly changed from Aman's 22nm
     architecutre / COFFE. Area numbers have not been verified and are not guaranteed.
 
-    This is the Hecate 2.5D template architecture: the 2D fabric above, on dies connected
-    through an interposer. The inter-die routing architecture is routing-based and similar
-    to the Xilinx 7-Series, with 10um microbump and 5um hybrid-bonding pitches. This file
-    is also the template used by generate_hecate_interposer_archs.py to generate a family
-    of 2.5D architectures with different inter-die connectivity. Interposer delay models
-    were extracted using SPICE simulations (45nm interposer, ITRS 2005 interconnect report).
-
     ##############################
     Parameters
     ##############################
@@ -589,13 +582,6 @@
         <col type="dsp_top" startx="18" starty="1" repeatx="41" priority="20"/>
         <col type="dsp_top" startx="31" starty="1" repeatx="41" priority="20"/>
 
-        <!-- One horizontal interposer cut in the middle of the die. Each cut instantiates [INT_WIRE_LENGTH - 1]*[num] interposer
-             segments using the scatter-gather syntax. [num] depends on the die stacking technology pitch. 10um pitch means num = 3 while
-             5um pitch mean num = 12 -->
-        <interposer_cut y="H / 2 - 1">
-          <interdie_wire sg_name="interposer_sg_upward" sg_link="sg_UP" offset_start="-16" offset_end="-1" offset_increment="1" num="3"/>
-          <interdie_wire sg_name="interposer_sg_downward" sg_link="sg_DOWN" offset_start="1" offset_end="16" offset_increment="1" num="3"/>
-        </interposer_cut>
     </auto_layout>
   </layout>
   <device>
@@ -606,151 +592,15 @@
       <y distr="uniform" peak="1.000000"/>
     </chan_width_distr>
     <switch_block type="custom"/>
-    <connection_block input_switch_name="ipin_cblock" input_inter_die_switch_name="ipin_inter_layer_cblock"/>
+    <connection_block input_switch_name="ipin_cblock"/>
   </device>
   <switchlist>
     <!-- The switch delays for the L4_driver (98.77 ps), L16_driver (201.6 ps), and the ipin_cblock (56.36 ps) were found using COFFE. -->
     <switch type="mux" name="L4_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="9.877e-11" mux_trans_size="2.6482996805637553" buf_size="18.744014602932605"/>
     <switch type="mux" name="L16_driver" R="0.0" Cin="0.0" Cout="0.0" Tdel="2.016e-10" mux_trans_size="3.1851297470059468" buf_size="39.327334265524485"/>
     <switch type="mux" name="ipin_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="5.636e-11" mux_trans_size="2.008" buf_size="9.624436045683868"/>
-    <switch type="mux" name="ipin_inter_layer_cblock" R="0.0" Cout="0.0" Cin="0.0" Tdel="130e-12" mux_trans_size="1.508" buf_size="11.71"/>
-
-    <!-- Interposer wire segment drivers. Delay values are extracted from SPICE simulations -->
-    <switch type="mux" name="L5_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="132.52e-12"/>
-      <Tdel num_inputs="24" delay="111.03e-12"/>
-      <Tdel num_inputs="12" delay="104.61e-12"/>
-      <Tdel num_inputs="6" delay="99.164e-12"/>
-      <Tdel num_inputs="3" delay="97.653e-12"/>
-    </switch>
-    <switch type="mux" name="L9_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="149.16e-12"/>
-      <Tdel num_inputs="24" delay="130.46e-12"/>
-      <Tdel num_inputs="12" delay="121.6e-12"/>
-      <Tdel num_inputs="6" delay="118.57e-12"/>
-      <Tdel num_inputs="3" delay="110.54e-12"/>
-    </switch>
-    <switch type="mux" name="L13_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="173.38e-12"/>
-      <Tdel num_inputs="24" delay="147.9e-12"/>
-      <Tdel num_inputs="12" delay="140.18e-12"/>
-      <Tdel num_inputs="6" delay="137.78e-12"/>
-      <Tdel num_inputs="3" delay="130e-12"/>
-    </switch>
-    <switch type="mux" name="L17_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="194.19e-12"/>
-      <Tdel num_inputs="24" delay="178.83e-12"/>
-      <Tdel num_inputs="12" delay="161.57e-12"/>
-      <Tdel num_inputs="6" delay="154.63e-12"/>
-      <Tdel num_inputs="3" delay="151.41e-12"/>
-    </switch>
-    <switch type="mux" name="L21_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="215.82e-12"/>
-      <Tdel num_inputs="24" delay="203.22e-12"/>
-      <Tdel num_inputs="12" delay="196.28e-12"/>
-      <Tdel num_inputs="6" delay="182.5e-12"/>
-      <Tdel num_inputs="3" delay="182.85e-12"/>
-    </switch>
-    <switch type="mux" name="L25_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="242.32e-12"/>
-      <Tdel num_inputs="24" delay="226.26e-12"/>
-      <Tdel num_inputs="12" delay="219.66e-12"/>
-      <Tdel num_inputs="6" delay="207.28e-12"/>
-      <Tdel num_inputs="3" delay="205.51e-12"/>
-    </switch>
-    <switch type="mux" name="L29_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="267.98e-12"/>
-      <Tdel num_inputs="24" delay="250.5e-12"/>
-      <Tdel num_inputs="12" delay="241.47e-12"/>
-      <Tdel num_inputs="6" delay="237.65e-12"/>
-      <Tdel num_inputs="3" delay="234.65e-12"/>
-    </switch>
-    <switch type="mux" name="L33_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="314.96e-12"/>
-      <Tdel num_inputs="24" delay="272.4e-12"/>
-      <Tdel num_inputs="12" delay="262.23e-12"/>
-      <Tdel num_inputs="6" delay="273.81e-12"/>
-      <Tdel num_inputs="3" delay="266.74e-12"/>
-    </switch>
-    <switch type="mux" name="L37_int_driver_10um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="337.75e-12"/>
-      <Tdel num_inputs="24" delay="317.26e-12"/>
-      <Tdel num_inputs="12" delay="281.28e-12"/>
-      <Tdel num_inputs="6" delay="307.3e-12"/>
-      <Tdel num_inputs="3" delay="300.49e-12"/>
-    </switch>
-    <switch type="mux" name="L5_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="109.48e-12"/>
-      <Tdel num_inputs="24" delay="98.575e-12"/>
-      <Tdel num_inputs="12" delay="92.242e-12"/>
-      <Tdel num_inputs="6" delay="87.002e-12"/>
-      <Tdel num_inputs="3" delay="84.789e-12"/>
-    </switch>
-    <switch type="mux" name="L9_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="130.38e-12"/>
-      <Tdel num_inputs="24" delay="112.92e-12"/>
-      <Tdel num_inputs="12" delay="103.28e-12"/>
-      <Tdel num_inputs="6" delay="100.98e-12"/>
-      <Tdel num_inputs="3" delay="95.482e-12"/>
-    </switch>
-    <switch type="mux" name="L13_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="148.94e-12"/>
-      <Tdel num_inputs="24" delay="130.38e-12"/>
-      <Tdel num_inputs="12" delay="121.19e-12"/>
-      <Tdel num_inputs="6" delay="113.61e-12"/>
-      <Tdel num_inputs="3" delay="112.75e-12"/>
-    </switch>
-    <switch type="mux" name="L17_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="167.82e-12"/>
-      <Tdel num_inputs="24" delay="149.06e-12"/>
-      <Tdel num_inputs="12" delay="138.15e-12"/>
-      <Tdel num_inputs="6" delay="133.84e-12"/>
-      <Tdel num_inputs="3" delay="132.62e-12"/>
-    </switch>
-    <switch type="mux" name="L21_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="189.94e-12"/>
-      <Tdel num_inputs="24" delay="174.41e-12"/>
-      <Tdel num_inputs="12" delay="161.01e-12"/>
-      <Tdel num_inputs="6" delay="155.28e-12"/>
-      <Tdel num_inputs="3" delay="153.27e-12"/>
-    </switch>
-    <switch type="mux" name="L25_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="213.81e-12"/>
-      <Tdel num_inputs="24" delay="197.4e-12"/>
-      <Tdel num_inputs="12" delay="190.9e-12"/>
-      <Tdel num_inputs="6" delay="176.69e-12"/>
-      <Tdel num_inputs="3" delay="175.21e-12"/>
-    </switch>
-    <switch type="mux" name="L29_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="237.89e-12"/>
-      <Tdel num_inputs="24" delay="220.39e-12"/>
-      <Tdel num_inputs="12" delay="211.48e-12"/>
-      <Tdel num_inputs="6" delay="207.15e-12"/>
-      <Tdel num_inputs="3" delay="197.08e-12"/>
-    </switch>
-    <switch type="mux" name="L33_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="260.54e-12"/>
-      <Tdel num_inputs="24" delay="242.51e-12"/>
-      <Tdel num_inputs="12" delay="233.67e-12"/>
-      <Tdel num_inputs="6" delay="242.19e-12"/>
-      <Tdel num_inputs="3" delay="235.79e-12"/>
-    </switch>
-    <switch type="mux" name="L37_int_driver_5um_bump" R="0.0" Cout="0.0" Cin="0.0" mux_trans_size="0" buf_size="0">
-      <Tdel num_inputs="48" delay="305.25e-12"/>
-      <Tdel num_inputs="24" delay="262.49e-12"/>
-      <Tdel num_inputs="12" delay="252.88e-12"/>
-      <Tdel num_inputs="6" delay="272.86e-12"/>
-      <Tdel num_inputs="3" delay="267.45e-12"/>
-    </switch>
   </switchlist>
-  <segmentlist>
-  <!-- Interposer wire segment definition. Interposer segment length and die stacking technology must match the driver. -->
-    <segment name="int_wire" freq="0" length="17" type="unidir" Rmetal="0.0" Cmetal="0.0">
-      <mux name="L17_int_driver_10um_bump"/>
-      <sb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</sb>
-      <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb>
-    </segment>
-  
+  <segmentlist>  
     <segment name="L4" freq="280" length="4" type="unidir" Rmetal="0.0" Cmetal="0.0">
       <mux name="L4_driver"/>
       <sb type="pattern">1 1 1 1 1</sb>
@@ -3235,46 +3085,4 @@
   <clocks>
     <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
-
-  <!-- Scatter-gather patterns used for inter-die connections. Two patterns are defined:
-       one for downward inter-die connections and one for upward inter-die connections. 
-       Each pattern gathers [num_conns] connections from L4 wires in 3 sides
-       (right, left, and top for downward, and right, left, and bottom for upward).
-       Then, it scatters these connections to [num_conns] L4 wires on all sides after travelling
-       the length of the interposer wire.
-  -->
-  <scatter_gather_list>
-      <sg_pattern name="interposer_sg_downward" type="unidir">
-        <gather>
-          <wireconn num_conns="12" side="rlt">
-            <from type="L4" switchpoint="0, 1, 2, 3"/>
-          </wireconn>
-        </gather>
-
-        <scatter>
-          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/>
-        </scatter>
-
-        <sg_link_list>
-          <sg_link name="sg_DOWN" y_offset="-17" seg_type="int_wire"/>
-        </sg_link_list>
-      </sg_pattern>
-
-      <sg_pattern name="interposer_sg_upward" type="unidir">
-        <gather>
-          <wireconn num_conns="12" side="rlb">
-            <from type="L4" switchpoint="0, 1, 2, 3"/>
-          </wireconn>
-        </gather>
-
-        <scatter>
-          <wireconn num_conns="16" to_type="L4" to_switchpoint="0" side="rltb"/>
-        </scatter>
-
-        <sg_link_list>
-          <sg_link name="sg_UP" y_offset="17" seg_type="int_wire"/>
-        </sg_link_list>
-
-      </sg_pattern>
-  </scatter_gather_list>
 </architecture>
