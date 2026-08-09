@@ -4,6 +4,7 @@
 #include <sstream>
 #include <limits>
 #include <array>
+#include <unordered_map>
 #include <iomanip>
 
 #include "draw_crit_path.h"
@@ -139,6 +140,19 @@ struct t_timing_edge_id {
 
     bool operator==(const t_timing_edge_id& other) const {
         return src == other.src && sink == other.sink;
+    }
+};
+
+/**
+ * @brief Hasher for a timing edge id (a pair of timing node ids).
+ */
+struct t_timing_edge_id_hash {
+    std::size_t operator()(t_timing_edge_id const& key) const {
+        // Start building the hash using the src timing node id.
+        std::size_t hash = std::hash<tatum::NodeId>{}(key.src);
+        // Complete the hash using the sink timing node id.
+        vtr::hash_combine(hash, key.sink);
+        return hash;
     }
 };
 
@@ -666,9 +680,7 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
     basic_label_drawing_info.reserve(total_num_edges);
 
     // A record of visited timing edges. Used to check for repeated labels.
-    // Since the number of timing edges is usually small (even when there are multiple critical paths),
-    // std::vector has good enough performance.
-    std::vector<t_timing_edge_id> visited_edges;
+    std::unordered_set<t_timing_edge_id, t_timing_edge_id_hash> visited_edges;
     visited_edges.reserve(total_num_edges);
 
     for (const tatum::TimingPath& path : paths) {
@@ -682,13 +694,12 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
             // Skip the first iteration because prev_node is not yet assigned to an actual node.
             if (prev_node) {
                 t_timing_edge_id edge_id = {prev_node, node};
-                // A label is skipped if its corresponding timing edge has been visited before.
-                if (std::find(visited_edges.begin(), visited_edges.end(), edge_id) != visited_edges.end()) {
+                // The member "second" indicates if the insertion actually happened. If not, this timing edge
+                // has been visited and inserted before, and therefore its corresponding label is skipped.
+                if (!visited_edges.insert(edge_id).second) {
                     prev_node = node;
                     prev_arr_time = arr_time;
                     continue;
-                } else {
-                    visited_edges.push_back(edge_id);
                 }
 
                 // Check visibility of layers where source and sink reside.
