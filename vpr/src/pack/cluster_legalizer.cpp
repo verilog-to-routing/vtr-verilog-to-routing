@@ -972,16 +972,19 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             candidate_molecule_added_to_cluster = true;
 
             if (enable_pin_feasibility_filter_) {
-                // Snapshot the root class sizes first: they capture the pre-check
-                // (accepted-only) sizes and are read by check_pins_used to
-                // implement the root clamp. apply_molecule_delta then mutates the
-                // state to reflect adding this candidate; the change is journaled
-                // so rollback_check can restore the pre-check state on failure.
+                // Speculatively add this candidate to the pin counter and check feasibility.
+                // Every mutation is recorded. On accept we commit and discard the record.
+                // On reject we rollback and replay the record in reverse. The root class
+                // sizes are snapshotted first so check_pins_used can raise the root's
+                // effective class supplies to at least those snapshotted sizes. Otherwise
+                // a seed molecule packed with FULL_EXTERNAL_PIN_UTIL could push a class
+                // above the smaller scaled supply and every subsequent check would fail.
                 cluster.pin_counter.snapshot_root_class_sizes(cluster.pb);
                 cluster.pin_counter.apply_molecule_delta(molecule_id, prepacker_, atom_cluster_, atom_pb_lookup());
 #ifdef VTR_ASSERT_SAFE_ENABLED
-                cluster.pin_counter.verify_against_full_recompute(
-                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                // Verify apply_molecule_delta against a full recompute over cluster.molecules.
+                // Note: Expensive verification, do not keep in release.
+                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
                 if (!cluster.pin_counter.check_pins_used(cluster.pb, max_external_pin_util)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
@@ -1145,13 +1148,15 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     }
                 }
 
-                // Accept the pin state produced during this check: the journal
-                // is discarded and the current state becomes the new accepted
+                // Accept the pin state produced during this check. The record
+                // is discarded and the current state becomes the accepted
                 // baseline for the next candidate.
                 cluster.pin_counter.commit_check();
 #ifdef VTR_ASSERT_SAFE_ENABLED
-                cluster.pin_counter.verify_against_full_recompute(
-                    cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                // Recompute the pin state from scratch over the accepted
+                // molecules and assert it matches the committed state.
+                // Note: This is expensive verification, do not keep in release.
+                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
             }
         }
@@ -1163,15 +1168,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 cluster.molecules.pop_back();
             }
 
-            // Undo the pin state mutations recorded during this check BEFORE
-            // revert_place_atom_block or cleanup_pb free any pbs: the journal
-            // stores raw pb pointers and rollback needs the pbs to still be
-            // in per_pb_state_. Rollback is tolerant of erased pbs as defence
-            // in depth, but ordering it first keeps reasoning local.
-            //
-            // Safe on paths that never reached full_recompute (e.g. failure
-            // during try_place_atom_block_rec): the journal is empty and the
-            // call is a no-op.
+            // Rollback the pin state mutations recorded during this check. Must
+            // run before revert_place_atom_block and cleanup_pb free any pbs,
+            // because the record stores raw pb pointers that rollback needs to
+            // look up in per_pb_state_. If apply_molecule_delta never ran on
+            // this path (e.g. failure during try_place_atom_block_rec), the
+            // record is empty and this is a no-op.
             cluster.pin_counter.rollback_check();
 
             for (size_t i = 0; i < failed_location; i++) {
@@ -1200,13 +1202,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             cleanup_pb(cluster.pb, cluster.pin_counter);
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
-            // Post rollback: every key in the pin counter must still point to
-            // a live pb reachable from cluster.pb, and the current state must
-            // match a recompute over the accepted-only molecule list (candidate
-            // was popped from cluster.molecules above).
+            // Verify pin counter after rollback and cleanup. Every per_pb_state_
+            // key must point to a pb reachable from cluster.pb. The state must
+            // match a recompute over cluster.molecules (candidate popped above).
+            // Note: Expensive verification, do not keep in release.
             cluster.pin_counter.assert_all_pbs_reachable_from(cluster.pb);
-            cluster.pin_counter.verify_against_full_recompute(
-                cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+            cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
 
             // Move failed primitive that is inflight to the tried map.
