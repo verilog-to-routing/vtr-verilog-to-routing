@@ -50,5 +50,22 @@
             </relative_group>
         </relative_macro>
 
+        <!-- A 10-bit adder carry chain packed into one CLB, placed next to
+             DSP dsp10. Only the first three adders (atoms are named after
+             their cout nets: cco0..cco2) are constrained; the remaining 7
+             bits ride along, since the whole chain is one prepacked molecule
+             and must land in the group's cluster. Exercises the prepacker's
+             chain exemption and chain molecules inside a constrained group. -->
+        <relative_macro name="macro_chain_dsp">
+            <reference_group>
+                <add_atom name_pattern="dsp10_out_0"/>
+            </reference_group>
+            <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                <add_atom name_pattern="cco0"/>
+                <add_atom name_pattern="cco1"/>
+                <add_atom name_pattern="cco2"/>
+            </relative_group>
+        </relative_macro>
+
     </relative_macro_list>
 </vpr_constraints>
