@@ -253,6 +253,15 @@ class PlaceMacros {
     /**
      * @brief Appends user-defined relative placement macros (read from the
      *        constraints file) to the architecture-derived macros in pl_macros_.
+     *
+     * If a user-defined macro shares a cluster with an architecture-derived macro,
+     * such as a carry chain, they are merged into one rigid macro. The remaining
+     * chain clusters are added at their implied offsets, and the original
+     * architecture-derived macro is removed from pl_macros_.
+     *
+     * The packer guarantees a chain only shares clusters with the one user macro
+     * that names its atoms; a packed netlist
+     * violating this (e.g. a stale .net file) is a fatal error.
      */
     void append_user_defined_macros_(const ClusteredNetlist& clb_nlist,
                                      const AtomNetlist& atom_nlist,
