@@ -270,7 +270,7 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
 
 /**
  * @brief Verify that no prepacked molecule or chain spans two different
- *        relative placement groups.
+ *        relative placement groups, and return each chain's owning group.
  *
  * The prepacker already refuses to put atoms of different groups into the same
  * non-chain molecule, so only chains (e.g. carry chains) can fail this check.
@@ -279,18 +279,22 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
  * along into the group's cluster, or (for long chains) fill neighboring
  * clusters whose placement macro is merged with the group's macro (see
  * PlaceMacros).
+ *
+ * @return A map from each chain with constrained atoms to the relative
+ *         placement group that owns it (the single group its atoms are in).
  */
-static void validate_relative_group_molecules(const Prepacker& prepacker,
-                                              const AtomNetlist& atom_netlist,
-                                              const UserRelativeMacros& relative_macros) {
+static std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> validate_relative_group_molecules(const Prepacker& prepacker,
+                                                                                                        const AtomNetlist& atom_netlist,
+                                                                                                        const UserRelativeMacros& relative_macros) {
     if (relative_macros.get_num_macros() == 0)
-        return;
+        return {};
 
-    // The relative placement group each chain's atoms belong to so far, with a
-    // representative atom for the error message. Molecules of one long chain
-    // share a chain id.
-    std::map<MoleculeChainId, std::pair<std::pair<UserRelativeMacroId, int>, AtomBlockId>> chain_groups;
+    // The relative placement group each chain's atoms belong to so far.
+    std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> chain_groups;
 
+    // Determine the relative placement group of every molecule.
+    // Erroring out if a molecule or a chain has atoms in two
+    // different groups.
     for (PackMoleculeId mol_id : prepacker.molecules()) {
         const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
 
@@ -303,8 +307,7 @@ static void validate_relative_group_molecules(const Prepacker& prepacker,
         if (molecule.chain_id.is_valid()) {
             auto chain_it = chain_groups.find(molecule.chain_id);
             if (chain_it != chain_groups.end()) {
-                mol_group = chain_it->second.first;
-                mol_group_atom = chain_it->second.second;
+                mol_group = chain_it->second;
                 mol_group_from_chain = true;
             }
         }
@@ -324,6 +327,18 @@ static void validate_relative_group_molecules(const Prepacker& prepacker,
             }
 
             if (mol_group != atom_group) {
+                // mol_group came from an earlier molecule of the chain, so
+                // find one of its atoms on this chain to name in the error.
+                if (mol_group_from_chain) {
+                    for (AtomBlockId group_blk_id : relative_macros.get_macro(mol_group.first).groups[mol_group.second].atoms) {
+                        PackMoleculeId group_mol_id = prepacker.get_atom_molecule(group_blk_id);
+                        if (prepacker.get_molecule(group_mol_id).chain_id == molecule.chain_id) {
+                            mol_group_atom = group_blk_id;
+                            break;
+                        }
+                    }
+                    VTR_ASSERT(mol_group_atom.is_valid());
+                }
                 VPR_FATAL_ERROR(VPR_ERROR_PACK,
                                 "Atoms '%s' (relative macro '%s', group %d) and '%s' (relative macro '%s', group %d) "
                                 "belong to the same prepacked %s (typically a carry chain, whose atoms are connected "
@@ -342,9 +357,11 @@ static void validate_relative_group_molecules(const Prepacker& prepacker,
         }
 
         if (molecule.chain_id.is_valid() && mol_group.first.is_valid()) {
-            chain_groups.emplace(molecule.chain_id, std::make_pair(mol_group, mol_group_atom));
+            chain_groups.emplace(molecule.chain_id, mol_group);
         }
     }
+
+    return chain_groups;
 }
 
 /**
@@ -430,12 +447,11 @@ bool try_pack(const t_packer_opts& packer_opts,
     // alone would not bring them together.
     attraction_groups.create_att_groups_for_relative_groups();
 
-    // A prepacked molecule spanning two relative placement groups can never be
-    // packed legally. The prepacker avoids forming such non-chain molecules, so
-    // this only catches chain molecules; report them before clustering starts.
-    validate_relative_group_molecules(prepacker,
-                                      atom_ctx.netlist(),
-                                      g_vpr_ctx.floorplanning().relative_macros);
+    // Error out on molecules/chains spanning two relative placement groups
+    // and collect which group owns each chain.
+    std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> relative_chain_owners = validate_relative_group_molecules(prepacker,
+                                                                                                                             atom_ctx.netlist(),
+                                                                                                                             g_vpr_ctx.floorplanning().relative_macros);
 
     // We keep track of the overfilled partition regions from all pack iterations in
     // this vector. This is so that if the first iteration fails due to overfilled
@@ -494,6 +510,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        packer_opts.cluster_router_hot_start,
                                        arch.models,
                                        packer_opts.pack_verbosity);
+    cluster_legalizer.set_relative_chain_owners(std::move(relative_chain_owners));
     // Construct the APPack Context.
     APPackContext appack_ctx(flat_placement_info,
                              ap_opts,
