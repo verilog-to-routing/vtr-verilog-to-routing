@@ -133,14 +133,13 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
     // gain. (Highest gain).
     std::vector<PackMoleculeId> molecules_vector;
     molecules_vector.assign(prepacker_.molecules().begin(), prepacker_.molecules().end());
-    std::stable_sort(molecules_vector.begin(),
-                     molecules_vector.end(),
-                     [&](PackMoleculeId a_id, PackMoleculeId b_id) {
-                         const t_pack_molecule& a = prepacker_.get_molecule(a_id);
-                         const t_pack_molecule& b = prepacker_.get_molecule(b_id);
+    std::ranges::stable_sort(molecules_vector,
+                             [&](PackMoleculeId a_id, PackMoleculeId b_id) {
+                                 const t_pack_molecule& a = prepacker_.get_molecule(a_id);
+                                 const t_pack_molecule& b = prepacker_.get_molecule(b_id);
 
-                         return a.base_gain > b.base_gain;
-                     });
+                                 return a.base_gain > b.base_gain;
+                             });
 
     if (appack_ctx_.appack_options.use_appack) {
         /**
@@ -190,7 +189,7 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
             int ext_inps = molecule_stats.num_used_ext_inputs;
 
             //Insert the molecule into the unclustered lists by number of external inputs
-            auto& tile_uc_data = appack_unrelated_clustering_data_[mol_pos.layer][mol_pos.x][mol_pos.y];
+            std::vector<std::vector<PackMoleculeId>>& tile_uc_data = appack_unrelated_clustering_data_[mol_pos.layer][mol_pos.x][mol_pos.y];
             tile_uc_data[ext_inps].push_back(mol_id);
         }
     } else {
@@ -257,9 +256,9 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     // class type of the seed primitive pb is a memory class.
     // This is used by APPack to turn off certain optimizations which interfere
     // with RAM packing.
-    const auto& seed_mol = prepacker_.get_molecule(cluster_seed_mol_id);
+    const t_pack_molecule& seed_mol = prepacker_.get_molecule(cluster_seed_mol_id);
     AtomBlockId seed_atom = seed_mol.atom_block_ids[seed_mol.root];
-    const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
+    const t_pb* seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
 
     if (has_ram_groups_ && cluster_gain_stats.is_memory) {
@@ -295,6 +294,14 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
     // cluster. Also keeps track of which attraction group the cluster belongs
     // to.
     const t_pack_molecule& successful_mol = prepacker_.get_molecule(successful_mol_id);
+
+    // Reset the list of feasible blocks. This state does not depend on the
+    // molecule's atoms, so it only needs to be reset once per molecule.
+    cluster_gain_stats.has_done_connectivity_and_timing = false;
+    cluster_gain_stats.initial_search_for_feasible_blocks = true;
+    cluster_gain_stats.num_candidates_proposed = 0;
+    cluster_gain_stats.feasible_blocks.clear();
+
     for (AtomBlockId blk_id : successful_mol.atom_block_ids) {
         if (!blk_id) {
             continue;
@@ -303,11 +310,6 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
         //Update attraction group
         AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
 
-        /* reset list of feasible blocks */
-        cluster_gain_stats.has_done_connectivity_and_timing = false;
-        cluster_gain_stats.initial_search_for_feasible_blocks = true;
-        cluster_gain_stats.num_candidates_proposed = 0;
-        cluster_gain_stats.feasible_blocks.clear();
         /* TODO: Allow clusters to have more than one attraction group. */
         if (atom_grp_id.is_valid())
             cluster_gain_stats.attraction_grp_id = atom_grp_id;
@@ -356,9 +358,12 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
 
         // TODO: For flat placement reconstruction, should we mark the molecules
         //       in the same tile as the seed of this cluster?
-
-        update_total_gain(cluster_gain_stats, attraction_groups);
     }
+
+    // Recompute the total gain of all marked blocks. update_total_gain fully
+    // recomputes each marked block's gain from its accumulated stats, so it
+    // only needs to run once, after all of the molecule's atoms are marked.
+    update_total_gain(cluster_gain_stats, attraction_groups);
 
     // if this molecule came from the transitive fanout candidates remove it
     cluster_gain_stats.transitive_fanout_candidates.erase(successful_mol.atom_block_ids[successful_mol.root]);
@@ -411,8 +416,9 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
         return;
     }
 
-    /* Mark atom net as being visited, if necessary. */
-    if (cluster_gain_stats.num_pins_of_net_in_pb.count(net_id) == 0) {
+    // Insert the net into the visited set; if new, record it in marked_nets.
+    auto [net_pin_count_it, net_is_new] = cluster_gain_stats.num_pins_of_net_in_pb.emplace(net_id, 0);
+    if (net_is_new) {
         cluster_gain_stats.marked_nets.push_back(net_id);
     }
 
@@ -420,13 +426,13 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
     if (gain_flag == e_gain_update::GAIN) {
         /* Check if this net is connected to it's driver block multiple times (i.e. as both an output and input)
          * If so, avoid double counting by skipping the first (driving) pin. */
-        auto pins = atom_netlist_.net_pins(net_id);
+        AtomNetlist::pin_range pins = atom_netlist_.net_pins(net_id);
         if (net_output_feeds_driving_block_input_.count(net_id) != 0)
             //We implicitly assume here that net_output_feeds_driver_block_input[net_id] is 2
             //(i.e. the net loops back to the block only once)
             pins = atom_netlist_.net_sinks(net_id);
 
-        if (cluster_gain_stats.num_pins_of_net_in_pb.count(net_id) == 0) {
+        if (net_is_new) {
             for (AtomPinId pin_id : pins) {
                 AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
                 if (!cluster_legalizer.is_atom_clustered(blk_id)) {
@@ -455,10 +461,7 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
                                       net_relation_to_clustered_block);
         }
     }
-    if (cluster_gain_stats.num_pins_of_net_in_pb.count(net_id) == 0) {
-        cluster_gain_stats.num_pins_of_net_in_pb[net_id] = 0;
-    }
-    cluster_gain_stats.num_pins_of_net_in_pb[net_id]++;
+    net_pin_count_it->second++;
 }
 
 /**
@@ -489,14 +492,14 @@ void GreedyCandidateSelector::update_connection_gain_values(
     num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
     LegalizationClusterId legalization_cluster_id = cluster_legalizer.get_atom_cluster(clustered_blk_id);
+    // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
+    // in this class is very strange
+    const t_pb* cluster_pb = cluster_legalizer.atom_pb_lookup().atom_pb(clustered_blk_id);
 
     /* may wish to speed things up by ignoring clock nets since they are high fanout */
     for (AtomPinId pin_id : atom_netlist_.net_pins(net_id)) {
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
-        // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
-        // in this class is very strange
         const t_pb* pin_block_pb = cluster_legalizer.atom_pb_lookup().atom_pb(blk_id);
-        const t_pb* cluster_pb = cluster_legalizer.atom_pb_lookup().atom_pb(clustered_blk_id);
 
         if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id && is_pb_in_cluster_pb(pin_block_pb, cluster_pb)) {
             num_internal_connections++;
@@ -516,14 +519,12 @@ void GreedyCandidateSelector::update_connection_gain_values(
                 /* TODO: Gain function accurate only if net has one connection to block,
                  * TODO: Should we handle case where net has multi-connection to block?
                  *       Gain computation is only off by a bit in this case */
-                if (cluster_gain_stats.connection_gain.count(blk_id) == 0) {
-                    cluster_gain_stats.connection_gain[blk_id] = 0;
-                }
-
+                // operator[] value-initializes the connection gain to 0 if blk_id is not in the map.
+                float& blk_connection_gain = cluster_gain_stats.connection_gain[blk_id];
                 if (num_internal_connections > 1) {
-                    cluster_gain_stats.connection_gain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
+                    blk_connection_gain -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
                 }
-                cluster_gain_stats.connection_gain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
+                blk_connection_gain += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
             }
         }
     }
@@ -536,13 +537,12 @@ void GreedyCandidateSelector::update_connection_gain_values(
         AtomBlockId blk_id = atom_netlist_.pin_block(driver_pin_id);
 
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-            if (cluster_gain_stats.connection_gain.count(blk_id) == 0) {
-                cluster_gain_stats.connection_gain[blk_id] = 0;
-            }
+            // operator[] value-initializes the connection gain to 0 if blk_id is not in the map.
+            float& blk_connection_gain = cluster_gain_stats.connection_gain[blk_id];
             if (num_internal_connections > 1) {
-                cluster_gain_stats.connection_gain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
+                blk_connection_gain -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
             }
-            cluster_gain_stats.connection_gain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
+            blk_connection_gain += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
         }
     }
 }
@@ -558,7 +558,7 @@ void GreedyCandidateSelector::update_timing_gain_values(
 
     /* Check if this atom net lists its driving atom block twice.  If so, avoid  *
      * double counting this atom block by skipping the first (driving) pin. */
-    auto pins = atom_netlist_.net_pins(net_id);
+    AtomNetlist::pin_range pins = atom_netlist_.net_pins(net_id);
     if (net_output_feeds_driving_block_input_.count(net_id) != 0)
         pins = atom_netlist_.net_sinks(net_id);
 
@@ -572,11 +572,10 @@ void GreedyCandidateSelector::update_timing_gain_values(
             if (!cluster_legalizer.is_atom_clustered(blk_id)) {
                 double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
-                if (cluster_gain_stats.timing_gain.count(blk_id) == 0) {
-                    cluster_gain_stats.timing_gain[blk_id] = 0;
-                }
-                if (timing_gain > cluster_gain_stats.timing_gain[blk_id])
-                    cluster_gain_stats.timing_gain[blk_id] = timing_gain;
+                // operator[] value-initializes the timing gain to 0 if blk_id is not in the map.
+                float& blk_timing_gain = cluster_gain_stats.timing_gain[blk_id];
+                if (timing_gain > blk_timing_gain)
+                    blk_timing_gain = timing_gain;
             }
         }
     }
@@ -592,11 +591,10 @@ void GreedyCandidateSelector::update_timing_gain_values(
             for (AtomPinId pin_id : atom_netlist_.net_sinks(net_id)) {
                 double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
-                if (cluster_gain_stats.timing_gain.count(new_blk_id) == 0) {
-                    cluster_gain_stats.timing_gain[new_blk_id] = 0;
-                }
-                if (timing_gain > cluster_gain_stats.timing_gain[new_blk_id])
-                    cluster_gain_stats.timing_gain[new_blk_id] = timing_gain;
+                // operator[] value-initializes the timing gain to 0 if new_blk_id is not in the map.
+                float& blk_timing_gain = cluster_gain_stats.timing_gain[new_blk_id];
+                if (timing_gain > blk_timing_gain)
+                    blk_timing_gain = timing_gain;
             }
         }
     }
@@ -889,7 +887,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
                                       cluster_legalizer);
 
     /* Only consider candidates that pass a very simple legality check */
-    for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
+    for (const std::pair<const AtomBlockId, PackMoleculeId>& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
         PackMoleculeId molecule_id = transitive_candidate.second;
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
@@ -942,7 +940,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
     LegalizationClusterId legalization_cluster_id,
     const ClusterLegalizer& cluster_legalizer,
     AttractionInfo& attraction_groups) {
-    auto cluster_type = cluster_legalizer.get_cluster_type(legalization_cluster_id);
+    t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(legalization_cluster_id);
 
     /*
      * For each cluster, we want to explore the attraction group molecules as potential
@@ -965,11 +963,11 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         LogicalModelId atom_model = atom_netlist_.block_model(atom_id);
         VTR_ASSERT(atom_model.is_valid());
         VTR_ASSERT(!primitive_candidate_block_types_[atom_model].empty());
-        const auto& candidate_types = primitive_candidate_block_types_[atom_model];
+        const std::vector<t_logical_block_type_ptr>& candidate_types = primitive_candidate_block_types_[atom_model];
 
         //Only consider molecules that are unpacked and of the correct type
         if (!cluster_legalizer.is_atom_clustered(atom_id)
-            && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
+            && std::ranges::find(candidate_types, cluster_type) != candidate_types.end()) {
             available_atoms.push_back(atom_id);
         }
     }
@@ -1120,19 +1118,20 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         if (!blk_id.is_valid())
             continue;
 
-        if (cluster_gain_stats.gain.count(blk_id) > 0) {
-            gain += cluster_gain_stats.gain[blk_id];
+        auto gain_it = cluster_gain_stats.gain.find(blk_id);
+        if (gain_it != cluster_gain_stats.gain.end()) {
+            gain += gain_it->second;
         } else {
             /* This block has no connection with current cluster, penalize molecule for having this block
              */
-            for (auto pin_id : atom_netlist.block_input_pins(blk_id)) {
-                auto net_id = atom_netlist.pin_net(pin_id);
+            for (AtomPinId pin_id : atom_netlist.block_input_pins(blk_id)) {
+                AtomNetId net_id = atom_netlist.pin_net(pin_id);
                 VTR_ASSERT(net_id);
 
-                auto driver_pin_id = atom_netlist.net_driver(net_id);
+                AtomPinId driver_pin_id = atom_netlist.net_driver(net_id);
                 VTR_ASSERT(driver_pin_id);
 
-                auto driver_blk_id = atom_netlist.pin_block(driver_pin_id);
+                AtomBlockId driver_blk_id = atom_netlist.pin_block(driver_pin_id);
 
                 num_introduced_inputs_of_indirectly_related_block++;
                 for (AtomBlockId blk_id_2 : molecule.atom_block_ids) {
@@ -1243,13 +1242,10 @@ void GreedyCandidateSelector::load_transitive_fanout_candidates(
                         continue;
 
                     // This transitive atom is not packed, score and add
-                    auto& transitive_fanout_candidates = cluster_gain_stats.transitive_fanout_candidates;
+                    std::map<AtomBlockId, PackMoleculeId>& transitive_fanout_candidates = cluster_gain_stats.transitive_fanout_candidates;
 
-                    if (cluster_gain_stats.gain.count(blk_id) == 0) {
-                        cluster_gain_stats.gain[blk_id] = 0.001;
-                    } else {
-                        cluster_gain_stats.gain[blk_id] += 0.001;
-                    }
+                    // operator[] value-initializes the gain to 0 if blk_id is not in the map.
+                    cluster_gain_stats.gain[blk_id] += 0.001;
                     PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
                     VTR_ASSERT(!cluster_legalizer.is_mol_clustered(molecule_id));
                     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
@@ -1410,7 +1406,7 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         // break ties based on whoever has more external inputs.
         PackMoleculeId best_candidate = PackMoleculeId::INVALID();
         float best_candidate_distance = std::numeric_limits<float>::max();
-        const auto& uc_data = appack_unrelated_clustering_data_[node_loc.layer_num][node_loc.x][node_loc.y];
+        const std::vector<std::vector<PackMoleculeId>>& uc_data = appack_unrelated_clustering_data_[node_loc.layer_num][node_loc.x][node_loc.y];
         VTR_ASSERT_SAFE(inputs_avail < uc_data.size());
         for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
             // Get the molecule by the number of external inputs.
