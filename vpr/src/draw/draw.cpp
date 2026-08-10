@@ -342,37 +342,34 @@ static bool decide_full_redraw_needed(ezgl::renderer* g, ezgl::view_operation op
     t_draw_state* draw_state = get_draw_state_vars();
     double pixels_per_world_unit = 1 / g->world_units_per_pixel();
 
-    if(op == ezgl::view_operation::panning) {
+    if(op == ezgl::view_operation::pan) {
         return false;
-    } else {
-        if(op == ezgl::view_operation::zooming_in){
-            if(draw_state->show_rr && draw_state->enable_decluttering) {
-                if(draw_state->declutter_rr && pixels_per_world_unit >= MIN_PIXELS_PER_CHAN_NODE) {
-                    return true;
-                }
-            }
-
-            if(draw_state->show_blk_internal && !(draw_state->all_internals_drawn)) {
+    } else if(op == ezgl::view_operation::zm_in) {
+        if(draw_state->show_rr && draw_state->enable_decluttering) {
+            if(draw_state->declutter_rr && pixels_per_world_unit >= MIN_PIXELS_PER_CHAN_NODE) {
                 return true;
             }
-        } else {
-            if(draw_state->show_rr && draw_state->enable_decluttering) {
-                if(!(draw_state->declutter_rr) && pixels_per_world_unit < MIN_PIXELS_PER_CHAN_NODE) {
-                    return true;
-                }
-            }
+        }
 
-            if(draw_state->show_blk_internal && !(draw_state->only_clbs_drawn)) {
-                return true;
-            }
+        if(draw_state->show_blk_internal && !(draw_state->all_internals_drawn)) {
+            return true;
         }
 
         if(draw_state->show_crit_path && draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays) {
             return true;
         }
+    }
+    // op == ezgl::view_operation::zm_out
+    else {
+        if(draw_state->show_rr && draw_state->enable_decluttering) {
+            if(!(draw_state->declutter_rr) && pixels_per_world_unit < MIN_PIXELS_PER_CHAN_NODE) {
+                return true;
+            }
+        }
 
-        
-        return false;
+        if(draw_state->show_blk_internal && !(draw_state->only_clbs_drawn)) {
+            return true;
+        }
     }
 }
 
