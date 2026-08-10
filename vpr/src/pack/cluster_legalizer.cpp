@@ -991,6 +991,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             }
         }
 
+        if (!check_cluster_long_chain_ownership(molecule, new_cluster_rel_group, cluster)) {
+            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: long_chain_ownership_conflict\n");
+            return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+        }
+
         // Does the molecule contain an atom of the cluster's (possibly just
         // adopted) relative placement group? Molecules of a different group
         // were rejected above, so any constrained atom here belongs to it.
@@ -1255,6 +1260,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
                 // Update the cluster's relative placement group.
                 cluster.rel_group = new_cluster_rel_group;
+
+                // Record that the cluster now holds long-chain molecules and
+                // which relative placement group owns the chain.
+                if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
+                    cluster.has_long_chain_mols = true;
+                    cluster.long_chain_owner = get_relative_chain_owner(molecule.chain_id);
+                }
 
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
@@ -1719,6 +1731,38 @@ bool ClusterLegalizer::relative_group_has_unclustered_atoms(const std::pair<User
     return false;
 }
 
+std::pair<UserRelativeMacroId, int> ClusterLegalizer::get_relative_chain_owner(MoleculeChainId chain_id) const {
+    auto owner_it = rel_chain_owners_.find(chain_id);
+    if (owner_it != rel_chain_owners_.end())
+        return owner_it->second;
+    return {UserRelativeMacroId::INVALID(), -1};
+}
+
+bool ClusterLegalizer::check_cluster_long_chain_ownership(const t_pack_molecule& molecule,
+                                                          const std::pair<UserRelativeMacroId, int>& rel_group,
+                                                          const LegalizationCluster& cluster) const {
+    if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
+        const std::pair<UserRelativeMacroId, int> mol_chain_owner = get_relative_chain_owner(molecule.chain_id);
+        // The molecule may not join a cluster hosting a group other than its
+        // chain's owner.
+        if (rel_group.first.is_valid() && rel_group != mol_chain_owner) {
+            VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: cluster hosts a relative group that does not own the molecule's chain\n");
+            return false;
+        }
+        // Long chains with different owners may not share a cluster.
+        if (cluster.has_long_chain_mols && cluster.long_chain_owner != mol_chain_owner) {
+            VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: cluster holds a long chain with a different owner\n");
+            return false;
+        }
+    }
+    // A group may not move into a cluster whose long chain it does not own.
+    if (cluster.has_long_chain_mols && rel_group.first.is_valid() && rel_group != cluster.long_chain_owner) {
+        VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: relative group does not own the cluster's long chain\n");
+        return false;
+    }
+    return true;
+}
+
 bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
                                               LegalizationClusterId cluster_id) const {
     VTR_ASSERT_SAFE(molecule_id.is_valid());
@@ -1740,8 +1784,10 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     const bool relative_macros_active = relative_macros.get_num_macros() != 0;
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
     bool molecule_in_cluster_group = false;
-    // Whether the molecule contains an atom of some relative placement group.
+    // Whether the molecule contains an atom of some relative placement group,
+    // and that group (a molecule's constrained atoms are all in one group).
     bool molecule_has_rel_group = false;
+    std::pair<UserRelativeMacroId, int> molecule_rel_group = {UserRelativeMacroId::INVALID(), -1};
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
         // FIXME: Why is it possible that molecules contain invalid block IDs?
         //        This should be fixed!
@@ -1758,6 +1804,7 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
             const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
             if (atom_rel_group.first.is_valid()) {
                 molecule_has_rel_group = true;
+                molecule_rel_group = atom_rel_group;
                 if (cluster_has_rel_group) {
                     if (atom_rel_group != cluster.rel_group) {
                         return false;
@@ -1765,6 +1812,16 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
                     molecule_in_cluster_group = true;
                 }
             }
+        }
+    }
+    // Mirror the long-chain veto in try_pack_molecule(). The group the
+    // cluster would host after the addition is the molecule's group if it has
+    // one (equal to the cluster's if both exist, checked above), else the
+    // cluster's.
+    if (relative_macros_active) {
+        const std::pair<UserRelativeMacroId, int>& rel_group = molecule_has_rel_group ? molecule_rel_group : cluster.rel_group;
+        if (!check_cluster_long_chain_ownership(molecule, rel_group, cluster)) {
+            return false;
         }
     }
     // Mirror the seed-time adoption restriction in try_pack_molecule()

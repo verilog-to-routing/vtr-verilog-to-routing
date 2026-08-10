@@ -11,6 +11,7 @@
  * externally to the Packer in VPR.
  */
 
+#include <map>
 #include <optional>
 #include <string>
 #include <utility>
@@ -155,6 +156,14 @@ struct LegalizationCluster {
     ///        groups vector (0 is the reference group). A cluster may contain
     ///        constrained atoms of at most one relative placement group.
     std::pair<UserRelativeMacroId, int> rel_group = {UserRelativeMacroId::INVALID(), -1};
+
+    /// @brief Whether this cluster contains molecules of a long chain (a chain
+    ///        spanning multiple clusters, e.g. a long carry chain).
+    bool has_long_chain_mols = false;
+
+    /// @brief The relative placement group owning the long chain(s) in this
+    ///        cluster.
+    std::pair<UserRelativeMacroId, int> long_chain_owner = {UserRelativeMacroId::INVALID(), -1};
 
     /// @brief The intra lb router used for this cluster.
     ///        Contains information about the atoms in the cluster and how they
@@ -625,6 +634,13 @@ class ClusterLegalizer {
         return reserve_relative_group_capacity_;
     }
 
+    /**
+     * @brief Set the relative placement group owning each prepacked chain
+     */
+    inline void set_relative_chain_owners(std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> owners) {
+        rel_chain_owners_ = std::move(owners);
+    }
+
     /// @brief Returns the relative placement group (macro id, group index)
     ///        hosted by the given cluster, or an invalid pair if the cluster
     ///        does not host one.
@@ -670,6 +686,30 @@ class ClusterLegalizer {
      * set_reserve_relative_group_capacity()).
      */
     bool relative_group_has_unclustered_atoms(const std::pair<UserRelativeMacroId, int>& rel_group) const;
+
+    /**
+     * @brief Returns the relative placement group owning the given chain (the
+     *        group the chain's constrained atoms are in), or (INVALID, -1) if
+     *        the chain has no constrained atoms.
+     */
+    std::pair<UserRelativeMacroId, int> get_relative_chain_owner(MoleculeChainId chain_id) const;
+
+    /**
+     * @brief Returns true if adding the given molecule to the cluster respects
+     *        long-chain ownership: a cluster holding molecules of a long chain
+     *        (one spanning multiple clusters) may only host the relative
+     *        placement group that owns the chain. Otherwise chains and
+     *        relative macros that do not belong together would be welded into
+     *        one placement macro (see PlaceMacros).
+     *
+     *  @param molecule   The molecule to add.
+     *  @param rel_group  The relative placement group the cluster would host
+     *                    after the addition (invalid if none).
+     *  @param cluster    The cluster the molecule is added to.
+     */
+    bool check_cluster_long_chain_ownership(const t_pack_molecule& molecule,
+                                            const std::pair<UserRelativeMacroId, int>& rel_group,
+                                            const LegalizationCluster& cluster) const;
 
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
@@ -723,6 +763,9 @@ class ClusterLegalizer {
     ///        cleared by reset(): once enabled for the re-pack retries, it
     ///        stays enabled for all remaining packing iterations.
     bool reserve_relative_group_capacity_ = false;
+
+    /// @brief The relative placement group owning each prepacked chain.
+    std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> rel_chain_owners_;
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the
