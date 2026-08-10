@@ -1535,11 +1535,6 @@
            currently places a switch box at every repeatx/repeaty lattice
            location unconditionally, with no check for whether a block is
            placed there.
-         - clock_routing: verify muxing multiple "from"s into one "to" tap
-           works as expected. Each <tap> independently adds edges into the
-           "to" switch point's rr nodes, so multiple <tap> entries sharing a
-           "to" should already create a mux but no test exercises more
-           than one "from" per "to" yet.
          - clock_routing: replace the "CLOCK" special to-address with an
            explicit port name, since the clock port name varies by block
            (clk for CLB clock pins, clock for IO clock pins).
