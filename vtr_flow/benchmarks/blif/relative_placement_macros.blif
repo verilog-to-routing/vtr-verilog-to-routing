@@ -1,6 +1,6 @@
 .model rel_place_test
 .inputs clk in0 in1 in2 in3 in4 in5 in6 in7 in8 in9 in10 in11 in12 in13 in14 in15 in16 in17 in18 in19
-.outputs out0 out1 out2 out3 out4 out5 out6 out7 out8 out9 chain_out
+.outputs out0 out1 out2 out3 out4 out5 out6 out7 out8 out9 chain_out chain2_out
 
 # ---- stage A LUTs ----
 .names in0 in3 in6 in9 la_0
@@ -513,6 +513,554 @@
 .names chain_red0 chain_red1 chain_out
 00 1
 
+# ---- long adder carry chain ----
+.names r_la_0 la_3 dha_0
+01 1
+10 1
+.names r_la_0 la_3 dhb_0
+00 1
+11 1
+.subckt adder a=dha_0 b=dhb_0 cin=gnd cout=dco0 sumout=dsum0
+.names la_7 la_10 dha_1
+01 1
+10 1
+11 1
+.names la_7 la_10 dhb_1
+00 1
+01 1
+.subckt adder a=dha_1 b=dhb_1 cin=dco0 cout=dco1 sumout=dsum1
+.names la_14 la_17 dha_2
+00 1
+01 1
+11 1
+.names la_14 la_17 dhb_2
+00 1
+10 1
+11 1
+.subckt adder a=dha_2 b=dhb_2 cin=dco1 cout=dco2 sumout=dsum2
+.names la_21 la_24 dha_3
+00 1
+11 1
+.names la_21 la_24 dhb_3
+01 1
+10 1
+11 1
+.subckt adder a=dha_3 b=dhb_3 cin=dco2 cout=dco3 sumout=dsum3
+.names la_28 la_31 dha_4
+00 1
+01 1
+10 1
+.names la_28 la_31 dhb_4
+01 1
+10 1
+11 1
+.subckt adder a=dha_4 b=dhb_4 cin=dco3 cout=dco4 sumout=dsum4
+.names la_35 la_38 dha_5
+10 1
+11 1
+.names la_35 la_38 dhb_5
+00 1
+01 1
+.subckt adder a=dha_5 b=dhb_5 cin=dco4 cout=dco5 sumout=dsum5
+.names la_2 r_la_5 dha_6
+10 1
+11 1
+.names la_2 r_la_5 dhb_6
+01 1
+10 1
+11 1
+.subckt adder a=dha_6 b=dhb_6 cin=dco5 cout=dco6 sumout=dsum6
+.names la_9 la_12 dha_7
+00 1
+01 1
+.names la_9 la_12 dhb_7
+01 1
+11 1
+.subckt adder a=dha_7 b=dhb_7 cin=dco6 cout=dco7 sumout=dsum7
+.names la_16 la_19 dha_8
+01 1
+10 1
+11 1
+.names la_16 la_19 dhb_8
+01 1
+10 1
+.subckt adder a=dha_8 b=dhb_8 cin=dco7 cout=dco8 sumout=dsum8
+.names la_23 la_26 dha_9
+01 1
+10 1
+.names la_23 la_26 dhb_9
+10 1
+.subckt adder a=dha_9 b=dhb_9 cin=dco8 cout=dco9 sumout=dsum9
+.names la_30 la_33 dha_10
+00 1
+10 1
+11 1
+.names la_30 la_33 dhb_10
+00 1
+10 1
+11 1
+.subckt adder a=dha_10 b=dhb_10 cin=dco9 cout=dco10 sumout=dsum10
+.names la_37 r_la_0 dha_11
+00 1
+.names la_37 r_la_0 dhb_11
+01 1
+.subckt adder a=dha_11 b=dhb_11 cin=dco10 cout=dco11 sumout=dsum11
+.names la_4 la_7 dha_12
+00 1
+01 1
+.names la_4 la_7 dhb_12
+01 1
+10 1
+.subckt adder a=dha_12 b=dhb_12 cin=dco11 cout=dco12 sumout=dsum12
+.names la_11 la_14 dha_13
+01 1
+10 1
+11 1
+.names la_11 la_14 dhb_13
+01 1
+.subckt adder a=dha_13 b=dhb_13 cin=dco12 cout=dco13 sumout=dsum13
+.names la_18 la_21 dha_14
+00 1
+01 1
+11 1
+.names la_18 la_21 dhb_14
+01 1
+.subckt adder a=dha_14 b=dhb_14 cin=dco13 cout=dco14 sumout=dsum14
+.names la_25 la_28 dha_15
+00 1
+10 1
+11 1
+.names la_25 la_28 dhb_15
+11 1
+.subckt adder a=dha_15 b=dhb_15 cin=dco14 cout=dco15 sumout=dsum15
+.names la_32 la_35 dha_16
+11 1
+.names la_32 la_35 dhb_16
+01 1
+10 1
+11 1
+.subckt adder a=dha_16 b=dhb_16 cin=dco15 cout=dco16 sumout=dsum16
+.names la_39 la_2 dha_17
+00 1
+01 1
+11 1
+.names la_39 la_2 dhb_17
+00 1
+10 1
+.subckt adder a=dha_17 b=dhb_17 cin=dco16 cout=dco17 sumout=dsum17
+.names r_la_6 la_9 dha_18
+01 1
+10 1
+11 1
+.names r_la_6 la_9 dhb_18
+01 1
+10 1
+11 1
+.subckt adder a=dha_18 b=dhb_18 cin=dco17 cout=dco18 sumout=dsum18
+.names la_13 la_16 dha_19
+10 1
+.names la_13 la_16 dhb_19
+10 1
+.subckt adder a=dha_19 b=dhb_19 cin=dco18 cout=dco19 sumout=dsum19
+.names la_20 la_23 dha_20
+10 1
+11 1
+.names la_20 la_23 dhb_20
+01 1
+.subckt adder a=dha_20 b=dhb_20 cin=dco19 cout=dco20 sumout=dsum20
+.names la_27 la_30 dha_21
+01 1
+.names la_27 la_30 dhb_21
+01 1
+10 1
+.subckt adder a=dha_21 b=dhb_21 cin=dco20 cout=dco21 sumout=dsum21
+.names la_34 la_37 dha_22
+00 1
+.names la_34 la_37 dhb_22
+01 1
+11 1
+.subckt adder a=dha_22 b=dhb_22 cin=dco21 cout=dco22 sumout=dsum22
+.names r_la_1 la_4 dha_23
+00 1
+01 1
+11 1
+.names r_la_1 la_4 dhb_23
+11 1
+.subckt adder a=dha_23 b=dhb_23 cin=dco22 cout=dco23 sumout=dsum23
+.names la_8 la_11 dha_24
+00 1
+10 1
+.names la_8 la_11 dhb_24
+00 1
+11 1
+.subckt adder a=dha_24 b=dhb_24 cin=dco23 cout=dco24 sumout=dsum24
+.names la_15 la_18 dha_25
+01 1
+10 1
+.names la_15 la_18 dhb_25
+01 1
+11 1
+.subckt adder a=dha_25 b=dhb_25 cin=dco24 cout=dco25 sumout=dsum25
+.names la_22 la_25 dha_26
+10 1
+.names la_22 la_25 dhb_26
+00 1
+11 1
+.subckt adder a=dha_26 b=dhb_26 cin=dco25 cout=dco26 sumout=dsum26
+.names la_29 la_32 dha_27
+10 1
+11 1
+.names la_29 la_32 dhb_27
+00 1
+10 1
+11 1
+.subckt adder a=dha_27 b=dhb_27 cin=dco26 cout=dco27 sumout=dsum27
+.names la_36 la_39 dha_28
+01 1
+10 1
+.names la_36 la_39 dhb_28
+00 1
+01 1
+11 1
+.subckt adder a=dha_28 b=dhb_28 cin=dco27 cout=dco28 sumout=dsum28
+.names la_3 r_la_6 dha_29
+11 1
+.names la_3 r_la_6 dhb_29
+11 1
+.subckt adder a=dha_29 b=dhb_29 cin=dco28 cout=dco29 sumout=dsum29
+.names la_10 la_13 dha_30
+00 1
+.names la_10 la_13 dhb_30
+01 1
+11 1
+.subckt adder a=dha_30 b=dhb_30 cin=dco29 cout=dco30 sumout=dsum30
+.names la_17 la_20 dha_31
+11 1
+.names la_17 la_20 dhb_31
+01 1
+10 1
+.subckt adder a=dha_31 b=dhb_31 cin=dco30 cout=dco31 sumout=dsum31
+.names la_24 la_27 dha_32
+01 1
+11 1
+.names la_24 la_27 dhb_32
+11 1
+.subckt adder a=dha_32 b=dhb_32 cin=dco31 cout=dco32 sumout=dsum32
+.names la_31 la_34 dha_33
+00 1
+.names la_31 la_34 dhb_33
+01 1
+10 1
+.subckt adder a=dha_33 b=dhb_33 cin=dco32 cout=dco33 sumout=dsum33
+.names la_38 r_la_1 dha_34
+00 1
+.names la_38 r_la_1 dhb_34
+01 1
+.subckt adder a=dha_34 b=dhb_34 cin=dco33 cout=dco34 sumout=dsum34
+.names r_la_5 la_8 dha_35
+00 1
+.names r_la_5 la_8 dhb_35
+00 1
+01 1
+10 1
+.subckt adder a=dha_35 b=dhb_35 cin=dco34 cout=dco35 sumout=dsum35
+.names la_12 la_15 dha_36
+00 1
+10 1
+.names la_12 la_15 dhb_36
+11 1
+.subckt adder a=dha_36 b=dhb_36 cin=dco35 cout=dco36 sumout=dsum36
+.names la_19 la_22 dha_37
+00 1
+01 1
+10 1
+.names la_19 la_22 dhb_37
+00 1
+01 1
+11 1
+.subckt adder a=dha_37 b=dhb_37 cin=dco36 cout=dco37 sumout=dsum37
+.names la_26 la_29 dha_38
+00 1
+.names la_26 la_29 dhb_38
+01 1
+11 1
+.subckt adder a=dha_38 b=dhb_38 cin=dco37 cout=dco38 sumout=dsum38
+.names la_33 la_36 dha_39
+00 1
+01 1
+10 1
+.names la_33 la_36 dhb_39
+10 1
+.subckt adder a=dha_39 b=dhb_39 cin=dco38 cout=dco39 sumout=dsum39
+.names r_la_0 la_3 dha_40
+00 1
+10 1
+11 1
+.names r_la_0 la_3 dhb_40
+10 1
+11 1
+.subckt adder a=dha_40 b=dhb_40 cin=dco39 cout=dco40 sumout=dsum40
+.names la_7 la_10 dha_41
+00 1
+10 1
+.names la_7 la_10 dhb_41
+00 1
+01 1
+10 1
+.subckt adder a=dha_41 b=dhb_41 cin=dco40 cout=dco41 sumout=dsum41
+.names la_14 la_17 dha_42
+00 1
+01 1
+.names la_14 la_17 dhb_42
+10 1
+11 1
+.subckt adder a=dha_42 b=dhb_42 cin=dco41 cout=dco42 sumout=dsum42
+.names la_21 la_24 dha_43
+11 1
+.names la_21 la_24 dhb_43
+10 1
+.subckt adder a=dha_43 b=dhb_43 cin=dco42 cout=dco43 sumout=dsum43
+.names la_28 la_31 dha_44
+01 1
+10 1
+11 1
+.names la_28 la_31 dhb_44
+00 1
+01 1
+10 1
+.subckt adder a=dha_44 b=dhb_44 cin=dco43 cout=dco44 sumout=dsum44
+.names la_35 la_38 dha_45
+10 1
+.names la_35 la_38 dhb_45
+01 1
+11 1
+.subckt adder a=dha_45 b=dhb_45 cin=dco44 cout=dco45 sumout=dsum45
+.names la_2 r_la_5 dha_46
+00 1
+01 1
+11 1
+.names la_2 r_la_5 dhb_46
+00 1
+10 1
+.subckt adder a=dha_46 b=dhb_46 cin=dco45 cout=dco46 sumout=dsum46
+.names la_9 la_12 dha_47
+01 1
+11 1
+.names la_9 la_12 dhb_47
+01 1
+10 1
+.subckt adder a=dha_47 b=dhb_47 cin=dco46 cout=dco47 sumout=dsum47
+.names la_16 la_19 dha_48
+00 1
+10 1
+11 1
+.names la_16 la_19 dhb_48
+00 1
+01 1
+10 1
+.subckt adder a=dha_48 b=dhb_48 cin=dco47 cout=dco48 sumout=dsum48
+.names la_23 la_26 dha_49
+00 1
+01 1
+11 1
+.names la_23 la_26 dhb_49
+01 1
+10 1
+11 1
+.subckt adder a=dha_49 b=dhb_49 cin=dco48 cout=chain2_cout_last sumout=dsum49
+.names dsum0 dsum1 dsum2 dsum3 dsum4 chain2_red_0
+00001 1
+00010 1
+00111 1
+01001 1
+01011 1
+01100 1
+01111 1
+10000 1
+10001 1
+10010 1
+10101 1
+10110 1
+10111 1
+11100 1
+11101 1
+.names dsum5 dsum6 dsum7 dsum8 dsum9 chain2_red_1
+00011 1
+00101 1
+00110 1
+00111 1
+01000 1
+01001 1
+01010 1
+01011 1
+01110 1
+10001 1
+10101 1
+10110 1
+10111 1
+11011 1
+.names dsum10 dsum11 dsum12 dsum13 dsum14 chain2_red_2
+01000 1
+01101 1
+01111 1
+10010 1
+10111 1
+11000 1
+11110 1
+.names dsum15 dsum16 dsum17 dsum18 dsum19 chain2_red_3
+00000 1
+00001 1
+00011 1
+00100 1
+00101 1
+00110 1
+00111 1
+01000 1
+01001 1
+01011 1
+10001 1
+10010 1
+10100 1
+10111 1
+11010 1
+11011 1
+11111 1
+.names dsum20 dsum21 dsum22 dsum23 dsum24 chain2_red_4
+00000 1
+00001 1
+00010 1
+00011 1
+00101 1
+00111 1
+01000 1
+01001 1
+01010 1
+01100 1
+01110 1
+01111 1
+10010 1
+10100 1
+10110 1
+11000 1
+11001 1
+11010 1
+11011 1
+11110 1
+11111 1
+.names dsum25 dsum26 dsum27 dsum28 dsum29 chain2_red_5
+00010 1
+00011 1
+00100 1
+00110 1
+00111 1
+01001 1
+01100 1
+01101 1
+01110 1
+01111 1
+10000 1
+10001 1
+10010 1
+10011 1
+10100 1
+11000 1
+11001 1
+11010 1
+11011 1
+11101 1
+11110 1
+11111 1
+.names dsum30 dsum31 dsum32 dsum33 dsum34 chain2_red_6
+00011 1
+00110 1
+01000 1
+10011 1
+10100 1
+10101 1
+10111 1
+11000 1
+11010 1
+11111 1
+.names dsum35 dsum36 dsum37 dsum38 dsum39 chain2_red_7
+01010 1
+01011 1
+01111 1
+.names dsum40 dsum41 dsum42 dsum43 dsum44 chain2_red_8
+00000 1
+00001 1
+00010 1
+00100 1
+00101 1
+00111 1
+01000 1
+01001 1
+01100 1
+01101 1
+01110 1
+01111 1
+10011 1
+10100 1
+10101 1
+10110 1
+10111 1
+11011 1
+.names dsum45 dsum46 dsum47 dsum48 dsum49 chain2_red_9
+00001 1
+00010 1
+00011 1
+00100 1
+00101 1
+00110 1
+00111 1
+01000 1
+01001 1
+01011 1
+01100 1
+01101 1
+01110 1
+01111 1
+10000 1
+10001 1
+10010 1
+10011 1
+10100 1
+10111 1
+11000 1
+11001 1
+11011 1
+11101 1
+11110 1
+11111 1
+.names chain2_red_0 chain2_red_1 chain2_red_2 chain2_red_3 chain2_red_4 chain2_red_a
+00010 1
+10100 1
+11011 1
+.names chain2_red_5 chain2_red_6 chain2_red_7 chain2_red_8 chain2_red_9 chain2_red_b
+00000 1
+00001 1
+00010 1
+00100 1
+00101 1
+00111 1
+01000 1
+01110 1
+01111 1
+10000 1
+10001 1
+10010 1
+10101 1
+11000 1
+11001 1
+11010 1
+11011 1
+11101 1
+11110 1
+11111 1
+.names chain2_red_a chain2_red_b chain2_out
+01 1
+10 1
+11 1
+
 # ---- DSPs (9x9 multiply) ----
 .subckt multiply a[0]=r_la_0 a[1]=la_3 a[2]=r_la_6 a[3]=la_9 a[4]=la_12 a[5]=la_15 a[6]=la_18 a[7]=la_21 a[8]=la_24 b[0]=la_7 b[1]=la_10 b[2]=la_13 b[3]=la_16 b[4]=la_19 b[5]=la_22 b[6]=la_25 b[7]=la_28 b[8]=la_31 out[0]=dsp0_out_0 out[1]=dsp0_out_1 out[2]=dsp0_out_2 out[3]=dsp0_out_3 out[4]=dsp0_out_4 out[5]=dsp0_out_5 out[6]=dsp0_out_6 out[7]=dsp0_out_7 out[8]=dsp0_out_8 out[9]=dsp0_out_9 out[10]=dsp0_out_10 out[11]=dsp0_out_11 out[12]=dsp0_out_12 out[13]=dsp0_out_13 out[14]=dsp0_out_14 out[15]=dsp0_out_15 out[16]=dsp0_out_16 out[17]=dsp0_out_17
 .latch dsp0_out_0 r_dsp0 re clk 0
@@ -557,133 +1105,130 @@
 
 # ---- stage B LUTs ----
 .names r_dsp0 dsp0_out_3 dsp0_out_6 dsp0_out_9 lb_0
+0101 1
+1111 1
+.names dsp0_out_7 dsp0_out_10 dsp0_out_13 dsp0_out_16 lb_1
+0001 1
+0010 1
+0101 1
+0110 1
+1010 1
+1110 1
+1111 1
+.names dsp0_out_14 dsp0_out_17 dsp1_out_2 dsp1_out_5 lb_2
 0000 1
 0001 1
 0010 1
-0011 1
 0100 1
 0101 1
 0110 1
 0111 1
 1000 1
-1001 1
 1010 1
-1011 1
 1100 1
 1101 1
-1110 1
-.names dsp0_out_7 dsp0_out_10 dsp0_out_13 dsp0_out_16 lb_1
+1111 1
+.names dsp1_out_3 dsp1_out_6 dsp1_out_9 dsp1_out_12 lb_3
 0000 1
-0001 1
-0110 1
-1000 1
-1011 1
-.names dsp0_out_14 dsp0_out_17 dsp1_out_2 dsp1_out_5 lb_2
 0001 1
 0010 1
 0011 1
 0100 1
-0101 1
 0110 1
 0111 1
 1000 1
-1001 1
 1010 1
-1011 1
 1100 1
 1101 1
 1110 1
 1111 1
-.names dsp1_out_3 dsp1_out_6 dsp1_out_9 dsp1_out_12 lb_3
-0010 1
-0011 1
-0100 1
-1000 1
-1011 1
-1100 1
 .names dsp1_out_10 dsp1_out_13 dsp1_out_16 dsp2_out_1 lb_4
-0010 1
-0100 1
-1001 1
-1010 1
-1011 1
-1100 1
-1101 1
-.names dsp1_out_17 dsp2_out_2 dsp2_out_5 dsp2_out_8 lb_5
-0000 1
-0011 1
-0100 1
-0110 1
-1001 1
-1010 1
-1110 1
-.names dsp2_out_6 dsp2_out_9 dsp2_out_12 dsp2_out_15 lb_6
 0000 1
 0010 1
 0011 1
+0100 1
 0101 1
 0111 1
 1000 1
-1010 1
+1011 1
 1100 1
-1101 1
+1110 1
+1111 1
+.names dsp1_out_17 dsp2_out_2 dsp2_out_5 dsp2_out_8 lb_5
+0000 1
+1010 1
+.names dsp2_out_6 dsp2_out_9 dsp2_out_12 dsp2_out_15 lb_6
+0000 1
+0001 1
+0010 1
+0100 1
+0110 1
+0111 1
+1000 1
+1011 1
 1110 1
 1111 1
 .names dsp2_out_13 dsp2_out_16 dsp3_out_1 dsp3_out_4 lb_7
 0001 1
-0011 1
-1010 1
-1100 1
-1101 1
-.names dsp3_out_2 dsp3_out_5 dsp3_out_8 dsp3_out_11 lb_8
-0000 1
 0010 1
 0011 1
 0100 1
+0101 1
+0110 1
 0111 1
+1000 1
 1001 1
 1010 1
 1100 1
 1101 1
 1110 1
 1111 1
-.names dsp3_out_9 dsp3_out_12 dsp3_out_15 r_dsp4 lb_9
-0011 1
-0110 1
-0111 1
-1001 1
-1010 1
-1101 1
-1110 1
-1111 1
-.names dsp3_out_16 dsp4_out_1 dsp4_out_4 dsp4_out_7 lb_10
-0000 1
-0100 1
-1010 1
-1011 1
-.names dsp4_out_5 dsp4_out_8 dsp4_out_11 dsp4_out_14 lb_11
-0000 1
+.names dsp3_out_2 dsp3_out_5 dsp3_out_8 dsp3_out_11 lb_8
 0001 1
 0010 1
 0011 1
 0100 1
 0110 1
+1000 1
+1001 1
+1110 1
+1111 1
+.names dsp3_out_9 dsp3_out_12 dsp3_out_15 r_dsp4 lb_9
+0000 1
+0100 1
+1000 1
+1011 1
+1100 1
+1101 1
+.names dsp3_out_16 dsp4_out_1 dsp4_out_4 dsp4_out_7 lb_10
+0001 1
+0010 1
+0011 1
+0100 1
+0101 1
+0110 1
 0111 1
 1000 1
 1001 1
-1010 1
 1011 1
 1100 1
 1101 1
 1110 1
 1111 1
-.names dsp4_out_12 dsp4_out_15 r_dsp5 dsp5_out_3 lb_12
-0010 1
-0011 1
+.names dsp4_out_5 dsp4_out_8 dsp4_out_11 dsp4_out_14 lb_11
+0000 1
 0101 1
 0110 1
 0111 1
-1000 1
+1100 1
+1101 1
+1111 1
+.names dsp4_out_12 dsp4_out_15 r_dsp5 dsp5_out_3 lb_12
+0000 1
+0010 1
+0100 1
+0110 1
+0111 1
 1001 1
 1010 1
 1011 1
@@ -701,166 +1246,161 @@
 0111 1
 1000 1
 1010 1
+1011 1
 1100 1
 1101 1
 1110 1
 1111 1
 .names dsp5_out_8 dsp5_out_11 dsp5_out_14 dsp5_out_17 lb_14
+0000 1
 0001 1
 0010 1
+0011 1
 0101 1
+0110 1
 1000 1
+1001 1
 1010 1
+1011 1
+1100 1
+1110 1
+1111 1
 .names dsp5_out_15 r_dsp6 dsp6_out_3 dsp6_out_6 lb_15
+0001 1
+0010 1
+0011 1
+0100 1
+0110 1
+1000 1
+1001 1
+1010 1
+1101 1
+1110 1
+.names dsp6_out_4 dsp6_out_7 dsp6_out_10 dsp6_out_13 lb_16
+0000 1
+0010 1
+0011 1
+0100 1
+0101 1
 0110 1
 0111 1
+1001 1
+1010 1
 1011 1
-.names dsp6_out_4 dsp6_out_7 dsp6_out_10 dsp6_out_13 lb_16
-0001 1
-0110 1
-1111 1
+1101 1
 .names dsp6_out_11 dsp6_out_14 dsp6_out_17 dsp7_out_2 lb_17
-0000 1
+0010 1
 0011 1
 0110 1
-0111 1
 1000 1
-1010 1
-1100 1
-.names r_dsp7 dsp7_out_3 dsp7_out_6 dsp7_out_9 lb_18
-0000 1
-0110 1
-0111 1
 1001 1
-1100 1
 1101 1
-1111 1
-.names dsp7_out_7 dsp7_out_10 dsp7_out_13 dsp7_out_16 lb_19
+.names r_dsp7 dsp7_out_3 dsp7_out_6 dsp7_out_9 lb_18
+0001 1
+0010 1
+0011 1
+0100 1
+0101 1
 0110 1
-1000 1
+0111 1
 1001 1
 1011 1
 1100 1
-1101 1
+1110 1
+.names dsp7_out_7 dsp7_out_10 dsp7_out_13 dsp7_out_16 lb_19
+0100 1
+0111 1
+1010 1
+1110 1
 .names dsp7_out_14 dsp7_out_17 dsp8_out_2 dsp8_out_5 lb_20
 0000 1
+0100 1
+0111 1
+1100 1
+1110 1
+.names dsp8_out_3 dsp8_out_6 dsp8_out_9 dsp8_out_12 lb_21
 0001 1
-0011 1
+0010 1
 0100 1
 0101 1
 0110 1
 0111 1
-1000 1
-1010 1
-1011 1
-1101 1
-1110 1
-1111 1
-.names dsp8_out_3 dsp8_out_6 dsp8_out_9 dsp8_out_12 lb_21
-0000 1
-0001 1
-0010 1
-0011 1
-0101 1
-0110 1
-0111 1
-1000 1
 1001 1
 1010 1
 1011 1
-1100 1
-1110 1
+1101 1
 1111 1
 .names dsp8_out_10 dsp8_out_13 dsp8_out_16 dsp9_out_1 lb_22
-1000 1
-.names dsp8_out_17 dsp9_out_2 dsp9_out_5 dsp9_out_8 lb_23
-0011 1
-0100 1
-0101 1
-0110 1
+0001 1
 0111 1
-1010 1
 1100 1
+1101 1
+.names dsp8_out_17 dsp9_out_2 dsp9_out_5 dsp9_out_8 lb_23
+0101 1
+1001 1
+1100 1
+1110 1
 .names dsp9_out_6 dsp9_out_9 dsp9_out_12 dsp9_out_15 lb_24
 0000 1
-0001 1
-0100 1
-0101 1
-0111 1
-1000 1
+0110 1
 1001 1
 1010 1
-1011 1
-1100 1
 1101 1
-1110 1
-1111 1
 .names dsp9_out_13 dsp9_out_16 dsp10_out_1 dsp10_out_4 lb_25
 0000 1
-0001 1
-0010 1
-0011 1
-0100 1
-0101 1
-0111 1
 1001 1
 1010 1
-1100 1
-1101 1
-1110 1
-1111 1
-.names dsp10_out_2 dsp10_out_5 dsp10_out_8 dsp10_out_11 lb_26
-0001 1
-0010 1
-0101 1
-1000 1
-1001 1
 1011 1
-1100 1
-1110 1
+1101 1
+.names dsp10_out_2 dsp10_out_5 dsp10_out_8 dsp10_out_11 lb_26
+1111 1
 .names dsp10_out_9 dsp10_out_12 dsp10_out_15 r_dsp11 lb_27
 0000 1
-0011 1
-0100 1
-1001 1
-1110 1
-.names dsp10_out_16 dsp11_out_1 dsp11_out_4 dsp11_out_7 lb_28
 0001 1
+0010 1
 0011 1
 0100 1
 0101 1
 0110 1
 1001 1
+1010 1
 1011 1
 1100 1
 1101 1
 1110 1
 1111 1
-.names dsp11_out_5 dsp11_out_8 dsp11_out_11 dsp11_out_14 lb_29
+.names dsp10_out_16 dsp11_out_1 dsp11_out_4 dsp11_out_7 lb_28
 0000 1
+0001 1
+0010 1
+0100 1
+0101 1
+0110 1
+0111 1
+1000 1
+1001 1
+1100 1
+1111 1
+.names dsp11_out_5 dsp11_out_8 dsp11_out_11 dsp11_out_14 lb_29
+0001 1
+0010 1
 0011 1
+0100 1
 0101 1
 0110 1
 1000 1
 1001 1
-1010 1
 1011 1
 1100 1
+1101 1
 1110 1
 .names dsp11_out_12 dsp11_out_15 r_dsp12 dsp12_out_3 lb_30
 0000 1
 0001 1
-0101 1
-0110 1
-0111 1
-1010 1
-1011 1
-1100 1
-1101 1
-.names dsp12_out_1 dsp12_out_4 dsp12_out_7 dsp12_out_10 lb_31
 0010 1
 0011 1
 0100 1
+0101 1
 0110 1
 0111 1
 1000 1
@@ -870,46 +1410,33 @@
 1100 1
 1110 1
 1111 1
+.names dsp12_out_1 dsp12_out_4 dsp12_out_7 dsp12_out_10 lb_31
+1000 1
 .names dsp12_out_8 dsp12_out_11 dsp12_out_14 dsp12_out_17 lb_32
-0001 1
 0011 1
 0100 1
+0101 1
+0110 1
+0111 1
 1010 1
+1011 1
+1100 1
 1101 1
 .names dsp12_out_15 r_dsp13 dsp13_out_3 dsp13_out_6 lb_33
-0000 1
-0001 1
-0010 1
-0011 1
-0100 1
-0101 1
-0110 1
 0111 1
-1001 1
-1010 1
-1011 1
-1100 1
-1101 1
-1110 1
 1111 1
 .names dsp13_out_4 dsp13_out_7 dsp13_out_10 dsp13_out_13 lb_34
-0000 1
-0001 1
-0011 1
-0100 1
-0101 1
-0111 1
-1000 1
-1001 1
 1010 1
-1011 1
-1100 1
-1101 1
-1111 1
 .names dsp13_out_11 dsp13_out_14 dsp13_out_17 dsp14_out_2 lb_35
 0000 1
 0001 1
+0010 1
+0011 1
+0100 1
+0101 1
+0110 1
 0111 1
+1001 1
 1010 1
 1011 1
 1100 1
@@ -917,34 +1444,40 @@
 1110 1
 1111 1
 .names r_dsp14 dsp14_out_3 dsp14_out_6 dsp14_out_9 lb_36
-0011 1
 0100 1
-0110 1
-0111 1
-1011 1
-.names dsp14_out_7 dsp14_out_10 dsp14_out_13 dsp14_out_16 lb_37
-0011 1
 0101 1
 0110 1
 0111 1
-1000 1
+.names dsp14_out_7 dsp14_out_10 dsp14_out_13 dsp14_out_16 lb_37
+0000 1
+0001 1
+0010 1
+0110 1
+0111 1
 1001 1
+1010 1
 1011 1
 1100 1
 1101 1
-1110 1
 1111 1
 .names dsp14_out_14 dsp14_out_17 dsp15_out_2 dsp15_out_5 lb_38
+0000 1
 0001 1
+0010 1
 0011 1
-0100 1
-1001 1
-1011 1
-.names dsp15_out_3 dsp15_out_6 dsp15_out_9 dsp15_out_12 lb_39
-0001 1
+0101 1
+0111 1
 1000 1
 1010 1
 1011 1
+1101 1
+1110 1
+1111 1
+.names dsp15_out_3 dsp15_out_6 dsp15_out_9 dsp15_out_12 lb_39
+0011 1
+0111 1
+1101 1
+1110 1
 .latch lb_0 r_lb_0 re clk 0
 .latch lb_1 r_lb_1 re clk 0
 
@@ -972,176 +1505,154 @@
 
 # ---- stage C LUTs ----
 .names bram0_out bram3_out bram6_out bram9_out lc_0
-0000 1
-0001 1
-0010 1
-0011 1
-0100 1
-0101 1
-0111 1
-1000 1
-1001 1
+0110 1
 1010 1
-1011 1
-1110 1
-1111 1
 .names bram7_out bram10_out bram13_out bram16_out lc_1
 0000 1
+0001 1
 0010 1
+0011 1
 0100 1
 0101 1
-1000 1
+0110 1
+1001 1
 1011 1
+1100 1
+1111 1
 .names bram14_out bram17_out bram0_out bram3_out lc_2
-0000 1
-0001 1
-0100 1
-1000 1
-1011 1
-.names bram1_out bram4_out bram7_out bram10_out lc_3
-0001 1
+0011 1
+0110 1
 1101 1
+1110 1
+.names bram1_out bram4_out bram7_out bram10_out lc_3
+0000 1
+0010 1
+0100 1
+1001 1
+1100 1
 1111 1
 .names bram8_out bram11_out bram14_out bram17_out lc_4
-1001 1
+0010 1
+1000 1
+1100 1
 .names bram15_out bram18_out bram1_out bram4_out lc_5
 0000 1
-0001 1
 0010 1
+.names bram2_out bram5_out bram8_out bram11_out lc_6
+1011 1
+.names bram9_out bram12_out bram15_out bram18_out lc_7
+0000 1
+0010 1
+0011 1
 0100 1
 0101 1
+0110 1
 0111 1
+1001 1
+1010 1
+1011 1
+1100 1
+1101 1
 1110 1
-1111 1
-.names bram2_out bram5_out bram8_out bram11_out lc_6
+.names bram16_out bram19_out bram2_out bram5_out lc_8
 0000 1
 0001 1
-0010 1
 0011 1
-0100 1
-0110 1
 0111 1
 1000 1
 1001 1
-1010 1
 1011 1
-1101 1
 1110 1
-1111 1
-.names bram9_out bram12_out bram15_out bram18_out lc_7
-1001 1
-1101 1
-.names bram16_out bram19_out bram2_out bram5_out lc_8
-0100 1
-0110 1
-0111 1
-1000 1
-1001 1
-1010 1
-1011 1
-1100 1
-1110 1
-1111 1
 .names bram3_out bram6_out bram9_out bram12_out lc_9
+0000 1
 0001 1
 0011 1
-0100 1
+0101 1
+0110 1
 0111 1
+1000 1
 1001 1
 1010 1
-1011 1
 1100 1
-1101 1
+1110 1
 1111 1
 .names bram10_out bram13_out bram16_out bram19_out lc_10
-0001 1
 0010 1
 0101 1
-1000 1
 .names bram17_out bram0_out bram3_out bram6_out lc_11
-1101 1
-.names bram4_out bram7_out bram10_out bram13_out lc_12
-0000 1
 0001 1
+0010 1
 0011 1
 0100 1
-0111 1
+0101 1
+1000 1
+1001 1
+1010 1
 1011 1
+1111 1
+.names bram4_out bram7_out bram10_out bram13_out lc_12
+0001 1
+0011 1
+0110 1
+0111 1
+1000 1
+1001 1
+1010 1
+1101 1
 1110 1
 1111 1
 .names bram11_out bram14_out bram17_out bram0_out lc_13
 0001 1
-0011 1
-0100 1
-0110 1
-0111 1
-1001 1
-1010 1
-1100 1
-1101 1
-1110 1
-1111 1
-.names bram18_out bram1_out bram4_out bram7_out lc_14
-0000 1
-0001 1
-0010 1
-0011 1
-0100 1
-1000 1
-1010 1
-1100 1
-1101 1
-1110 1
-1111 1
-.names bram5_out bram8_out bram11_out bram14_out lc_15
-0100 1
-0110 1
-0111 1
-1000 1
-1001 1
-1011 1
-1110 1
-1111 1
-.names bram12_out bram15_out bram18_out bram1_out lc_16
-0001 1
-1110 1
-.names bram19_out bram2_out bram5_out bram8_out lc_17
-0000 1
-0001 1
-0011 1
-0100 1
-1001 1
-1010 1
-1110 1
-.names bram6_out bram9_out bram12_out bram15_out lc_18
-0000 1
-0010 1
-0100 1
-0111 1
-1000 1
-1001 1
-1010 1
-1011 1
-1100 1
-1111 1
-.names bram13_out bram16_out bram19_out bram2_out lc_19
-1010 1
-1101 1
-1111 1
-.names bram0_out bram3_out bram6_out bram9_out lc_20
-0001 1
-0010 1
 0101 1
 0110 1
 0111 1
 1011 1
 1101 1
+1110 1
 1111 1
-.names bram7_out bram10_out bram13_out bram16_out lc_21
+.names bram18_out bram1_out bram4_out bram7_out lc_14
+0010 1
 0100 1
-0110 1
+0101 1
 0111 1
 1010 1
+1110 1
+1111 1
+.names bram5_out bram8_out bram11_out bram14_out lc_15
+0010 1
+1101 1
+.names bram12_out bram15_out bram18_out bram1_out lc_16
+0010 1
+0110 1
+.names bram19_out bram2_out bram5_out bram8_out lc_17
+1011 1
+1100 1
+.names bram6_out bram9_out bram12_out bram15_out lc_18
+0001 1
+1000 1
+1001 1
+.names bram13_out bram16_out bram19_out bram2_out lc_19
+0000 1
+0001 1
+0100 1
+0101 1
+0110 1
+1010 1
+1100 1
+1110 1
+1111 1
+.names bram0_out bram3_out bram6_out bram9_out lc_20
+0001 1
+0010 1
+0011 1
+0101 1
+0110 1
+0111 1
+1000 1
+1001 1
+1010 1
+1111 1
+.names bram7_out bram10_out bram13_out bram16_out lc_21
 1011 1
 1101 1
 .names bram14_out bram17_out bram0_out bram3_out lc_22
@@ -1149,48 +1660,24 @@
 0001 1
 0011 1
 0100 1
-0101 1
 0110 1
-0111 1
 1000 1
-1010 1
-1011 1
-1100 1
-1101 1
-1110 1
-1111 1
-.names bram1_out bram4_out bram7_out bram10_out lc_23
-0111 1
 1001 1
 1011 1
 1100 1
+.names bram1_out bram4_out bram7_out bram10_out lc_23
+0000 1
+0001 1
+0010 1
+0100 1
+0101 1
+1000 1
+1001 1
+1011 1
+1100 1
+1110 1
 .names bram8_out bram11_out bram14_out bram17_out lc_24
 0000 1
-0010 1
-0011 1
-0100 1
-0101 1
-0111 1
-1000 1
-1011 1
-1100 1
-1110 1
-1111 1
-.names bram15_out bram18_out bram1_out bram4_out lc_25
-0000 1
-1010 1
-.names bram2_out bram5_out bram8_out bram11_out lc_26
-0000 1
-0001 1
-0010 1
-0100 1
-0110 1
-0111 1
-1000 1
-1011 1
-1110 1
-1111 1
-.names bram9_out bram12_out bram15_out bram18_out lc_27
 0001 1
 0010 1
 0011 1
@@ -1198,28 +1685,39 @@
 0101 1
 0110 1
 0111 1
-1000 1
 1001 1
 1010 1
+1011 1
 1100 1
 1101 1
 1110 1
-1111 1
-.names bram16_out bram19_out bram2_out bram5_out lc_28
-0001 1
-0010 1
-0011 1
-0100 1
-0110 1
-1000 1
+.names bram15_out bram18_out bram1_out bram4_out lc_25
+0101 1
 1001 1
+1011 1
+1100 1
 1110 1
 1111 1
+.names bram2_out bram5_out bram8_out bram11_out lc_26
+0001 1
+0010 1
+.names bram9_out bram12_out bram15_out bram18_out lc_27
+0001 1
+1010 1
+1111 1
+.names bram16_out bram19_out bram2_out bram5_out lc_28
+0110 1
+0111 1
+1001 1
+1010 1
+1110 1
 .names bram3_out bram6_out bram9_out bram12_out lc_29
-0000 1
+0001 1
+0011 1
 0100 1
+0101 1
+0110 1
 1000 1
-1011 1
 1100 1
 1101 1
 .latch lc_0 r_lc_0 re clk 0
@@ -1227,36 +1725,28 @@
 
 # ---- primary outputs ----
 .names r_lc_0 lc_7 out0
-00 1
-01 1
-11 1
+10 1
 .names r_lc_1 lc_8 out1
 01 1
 10 1
 11 1
 .names lc_2 lc_9 out2
 01 1
-10 1
-11 1
 .names lc_3 lc_10 out3
-01 1
-.names lc_4 lc_11 out4
 00 1
-01 1
 11 1
-.names lc_5 lc_12 out5
+.names lc_4 lc_11 out4
 10 1
+.names lc_5 lc_12 out5
+01 1
 .names lc_6 lc_13 out6
 01 1
 10 1
-11 1
 .names lc_7 lc_14 out7
-01 1
-11 1
-.names lc_8 lc_15 out8
-01 1
-.names lc_9 lc_16 out9
 00 1
-01 1
-10 1
+.names lc_8 lc_15 out8
+00 1
+11 1
+.names lc_9 lc_16 out9
+11 1
 .end
