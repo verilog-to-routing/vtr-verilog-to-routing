@@ -67,5 +67,23 @@
             </relative_group>
         </relative_macro>
 
+        <!-- A 50-bit LONG carry chain spanning ~3 CLBs, placed next to DSP
+             dsp15. Only the first three adders (dco0..dco2) are constrained:
+             they pin the chain's first cluster into this macro, and the
+             chain's remaining clusters (an architecture-derived carry-chain
+             placement macro) are merged into the macro at their chain-implied
+             offsets. Exercises the long-chain veto during packing and the
+             user/arch macro merge at placement. -->
+        <relative_macro name="macro_longchain_dsp">
+            <reference_group>
+                <add_atom name_pattern="dsp15_out_0"/>
+            </reference_group>
+            <relative_group x_offset="1" y_offset="0" sub_tile_offset="0">
+                <add_atom name_pattern="dco0"/>
+                <add_atom name_pattern="dco1"/>
+                <add_atom name_pattern="dco2"/>
+            </relative_group>
+        </relative_macro>
+
     </relative_macro_list>
 </vpr_constraints>

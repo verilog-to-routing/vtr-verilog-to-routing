@@ -4,14 +4,19 @@
 
 # This test exercises relative placement macros (see the
 # <relative_macro_list> section of the VPR constraints file documentation).
-# The circuit is a generated design with 143 LUTs, a 10-bit adder carry
-# chain, 20 DSPs (9x9 multiplies), 20 BRAMs and 28 registers. The
-# constraints file defines four macros:
+# The circuit is a generated design with 256 LUTs, a 10-bit and a 50-bit
+# adder carry chain, 20 DSPs (9x9 multiplies), 20 BRAMs and 28 registers.
+# The constraints file defines five macros:
 #   - 5 LUTs packed into one CLB placed at dx=1 from a DSP
 #   - 5 LUTs packed into one CLB placed at dx=1 from a BRAM (regex matching)
 #   - two 5-LUT groups packed into two separate CLBs placed at dx=1
 #   - a carry chain (first 3 adders constrained; the whole 10-bit chain fits
 #     one CLB and rides along as one molecule) placed at dx=1 from a DSP
+#   - a LONG carry chain (50 bits, spans ~3 CLBs; only the first 3 adders
+#     constrained) placed at dx=1 from a DSP: the chain's other clusters form
+#     an architecture-derived placement macro that is merged into the
+#     relative macro, and the packer's long-chain veto keeps the chain's
+#     clusters exclusive to this macro
 
 # Path to directory of circuits to use
 circuits_dir=benchmarks/blif
