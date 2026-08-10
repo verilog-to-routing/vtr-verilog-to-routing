@@ -400,13 +400,19 @@ int ClockRib::create_chanx_wire(int layer,
     rr_graph_builder.set_node_layer(chanx_node, layer, layer);
     rr_graph_builder.set_node_capacity(chanx_node, 1);
     rr_graph_builder.set_node_track_num(chanx_node, ptc_num);
-    // FIXME: Rmetal/Cmetal are per-unit-length (see doc/src/arch/reference.rst), but
-    // here they're used as a flat per-node total with no scaling by (x_end - x_start).
-    // This means wire delay doesn't scale with rib length/repeat spacing. Same bug as
-    // ClockSpine::create_chany_wire below, and the same one already fixed for
-    // ClockSwitchGrid::create_chanx_node/create_chany_node -- see the comment there
-    // for the fix (scale by node tile span before calling find_create_rr_rc_data).
-    const NodeRCIndex rc_index = find_create_rr_rc_data(x_chan_wire_.layer.r_metal, x_chan_wire_.layer.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
+    // Rmetal/Cmetal are per-unit-length (see doc/src/arch/reference.rst), so scale by
+    // the node's actual tile span. Unlike ClockSwitchGrid's hop wires (whose x_start/
+    // x_end are switchbox-lattice edges, so x_end - x_start directly counts tile
+    // pitches traversed), a rib wing's x_start/x_end are inclusive occupied-tile-column
+    // coordinates -- the same convention general routing CHANX/CHANY nodes use (see
+    // rr_graph_chan_chan_edges.cpp's length = end - start + 1) -- because
+    // record_tap_locations below relies on [x_start, x_end] inclusively covering every
+    // tap column the wing is responsible for. So a real wing spans (x_end - x_start + 1)
+    // tiles; the drive point's degenerate zero-length hub (x_start == x_end, BIDIR) is
+    // the one exception, correctly kept at 0 since it represents switch hardware, not a
+    // tile of metal wire.
+    int node_length = (direction == Direction::BIDIR) ? 0 : (x_end - x_start + 1);
+    const NodeRCIndex rc_index = find_create_rr_rc_data(x_chan_wire_.layer.r_metal * node_length, x_chan_wire_.layer.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
     rr_graph_builder.set_node_rc_index(chanx_node, rc_index);
     rr_graph_builder.set_node_direction(chanx_node, direction);
 
@@ -799,9 +805,12 @@ int ClockSpine::create_chany_wire(int layer,
     rr_graph_builder.set_node_layer(chany_node, layer, layer);
     rr_graph_builder.set_node_capacity(chany_node, 1);
     rr_graph_builder.set_node_track_num(chany_node, ptc_num);
-    // FIXME: same unscaled Rmetal/Cmetal bug as ClockRib::create_chanx_wire above --
-    // see the comment there.
-    const NodeRCIndex rc_index = find_create_rr_rc_data(y_chan_wire_.layer.r_metal, y_chan_wire_.layer.c_metal, g_vpr_ctx.mutable_device().rr_rc_data);
+    // See the matching comment in ClockRib::create_chanx_wire above: a spine wing's
+    // y_start/y_end are inclusive occupied-tile-row coordinates, so a real wing spans
+    // (y_end - y_start + 1) tiles; the drive point's degenerate zero-length hub
+    // (y_start == y_end, BIDIR) stays at 0.
+    int node_length = (direction == Direction::BIDIR) ? 0 : (y_end - y_start + 1);
+    const NodeRCIndex rc_index = find_create_rr_rc_data(y_chan_wire_.layer.r_metal * node_length, y_chan_wire_.layer.c_metal * node_length, g_vpr_ctx.mutable_device().rr_rc_data);
     rr_graph_builder.set_node_rc_index(chany_node, rc_index);
     rr_graph_builder.set_node_direction(chany_node, direction);
 
