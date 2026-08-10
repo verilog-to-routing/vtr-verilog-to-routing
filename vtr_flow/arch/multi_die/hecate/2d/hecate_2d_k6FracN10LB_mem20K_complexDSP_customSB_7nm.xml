@@ -939,7 +939,6 @@
                   <pb_type name="lut4" blif_model=".names" num_pb="2" class="lut">
                     <input name="in" num_pins="4" port_class="lut_in"/>
                     <output name="out" num_pins="1" port_class="lut_out"/>
-                    <!-- We define the LUT delays on the LUT pins instead of through the LUT -->
                     <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
                       68.038e-12
                       65.883e-12
@@ -1130,7 +1129,7 @@
           <direct name="clbouts9" input="fle[8:8].out_routing" output="clb.O9"/>
           <direct name="clbouts10" input="fle[9:9].out_routing" output="clb.O10"/>
           <!-- Carry chain links -->
-          <!-- This delay came from COFFE, labeled as carrt_chain_inter = 14.99 ps -->
+          <!-- This delay came from COFFE, labeled as carry_chain_inter = 14.99 ps -->
           <direct name="carry_in" input="clb.cin" output="fle[0:0].cin">
             <!-- Put all inter-block carry chain delay on this one edge -->
             <delay_constant max="14.99e-12" in_port="clb.cin" out_port="fle[0:0].cin"/>
