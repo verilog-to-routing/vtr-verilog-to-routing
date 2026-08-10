@@ -6,14 +6,14 @@
 circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/multi_die/hecate/2d/variations
+archs_dir=arch/multi_die/hecate/2d
 
 # Add circuits to list to sweep
 # diffeq2 was chosen since it has lots of hard adders. It also has a few hard multipliers.
 circuit_list_add=diffeq2.v
 
 # Add architectures to list to sweep
-arch_list_add=hecate_2d_with_adders.xml
+arch_list_add=hecate_2d_k6FracN10LB_mem20K_complexDSP_customSB_7nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_fixed_chan_width.txt
