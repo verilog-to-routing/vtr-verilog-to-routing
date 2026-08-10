@@ -102,7 +102,7 @@ void ClusterPinCounter::add_mark(const t_pb* pb, bool is_input, size_t class_id,
     // each net has a single driver, so at most one mark per (pb, class, net).
     VTR_ASSERT_SAFE(is_input || cnt == 1);
 
-    journal_.push_back({pb, net, static_cast<uint32_t>(class_id), is_input, +1});
+    per_pb_state_journal_.push_back({pb, net, static_cast<uint32_t>(class_id), is_input, +1});
 }
 
 void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net) {
@@ -116,7 +116,7 @@ void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_
         map.erase(it);
     }
 
-    journal_.push_back({pb, net, static_cast<uint32_t>(class_id), is_input, -1});
+    per_pb_state_journal_.push_back({pb, net, static_cast<uint32_t>(class_id), is_input, -1});
 }
 
 void ClusterPinCounter::wipe_all_marks_journaled() {
@@ -147,12 +147,12 @@ void ClusterPinCounter::wipe_all_marks_journaled() {
 
 void ClusterPinCounter::record_input_mark(AtomPinId pin, const t_pb* pb) {
     input_mark_record_[pin].push_back(pb);
-    record_journal_.push_back({pin, pb, /*is_input=*/true, +1});
+    mark_record_journal_.push_back({pin, pb, /*is_input=*/true, +1});
 }
 
 void ClusterPinCounter::record_output_mark(AtomPinId pin, const t_pb* pb) {
     output_mark_record_[pin].push_back(pb);
-    record_journal_.push_back({pin, pb, /*is_input=*/false, +1});
+    mark_record_journal_.push_back({pin, pb, /*is_input=*/false, +1});
 }
 
 void ClusterPinCounter::unmark_input_pin(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
@@ -177,7 +177,7 @@ void ClusterPinCounter::unmark_input_pin(AtomPinId pin_id, AtomNetId /*net_id*/,
         VTR_ASSERT(class_id != UNDEFINED);
 
         remove_mark(pb, /*is_input=*/true, class_id, net_id);
-        record_journal_.push_back({pin_id, pb, /*is_input=*/true, -1});
+        mark_record_journal_.push_back({pin_id, pb, /*is_input=*/true, -1});
     }
     input_mark_record_.erase(it);
 }
@@ -202,14 +202,14 @@ void ClusterPinCounter::unmark_output_pin(AtomPinId pin_id, AtomNetId /*net_id*/
         VTR_ASSERT(class_id != UNDEFINED);
 
         remove_mark(pb, /*is_input=*/false, class_id, net_id);
-        record_journal_.push_back({pin_id, pb, /*is_input=*/false, -1});
+        mark_record_journal_.push_back({pin_id, pb, /*is_input=*/false, -1});
     }
     output_mark_record_.erase(it);
 }
 
 void ClusterPinCounter::commit_check() {
-    journal_.clear();
-    record_journal_.clear();
+    per_pb_state_journal_.clear();
+    mark_record_journal_.clear();
 }
 
 void ClusterPinCounter::rollback_check() {
@@ -217,9 +217,9 @@ void ClusterPinCounter::rollback_check() {
     // reverse. The two journals are independent (records vs. state maps),
     // but undoing records first keeps the pb -> record correspondence
     // consistent while unmark-style state ops are being reversed below.
-    while (!record_journal_.empty()) {
-        const MarkRecordDelta e = record_journal_.back();
-        record_journal_.pop_back();
+    while (!mark_record_journal_.empty()) {
+        const MarkRecordDelta e = mark_record_journal_.back();
+        mark_record_journal_.pop_back();
 
         auto& record_map = e.is_input ? input_mark_record_ : output_mark_record_;
 
@@ -240,9 +240,9 @@ void ClusterPinCounter::rollback_check() {
         }
     }
 
-    while (!journal_.empty()) {
-        const MarkDelta e = journal_.back();
-        journal_.pop_back();
+    while (!per_pb_state_journal_.empty()) {
+        const PerPbStateDelta e = per_pb_state_journal_.back();
+        per_pb_state_journal_.pop_back();
 
         // Defence in depth: tolerate pbs that have been erased between
         // journal record and rollback. Prefer ordering rollback before
@@ -610,8 +610,8 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
     };
 
     std::vector<TouchedKey> touched;
-    touched.reserve(journal_.size());
-    for (const MarkDelta& d : journal_) {
+    touched.reserve(per_pb_state_journal_.size());
+    for (const PerPbStateDelta& d : per_pb_state_journal_) {
         if (d.change != +1) continue;
         touched.push_back({d.pb, d.class_id, d.is_input});
     }

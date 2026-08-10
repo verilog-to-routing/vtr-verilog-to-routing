@@ -35,48 +35,56 @@ class t_pb;
 struct t_pb_graph_pin;
 
 /**
- * @brief Owns pin usage state for one LegalizationCluster.
+ * @brief Tracks pin usage inside one LegalizationCluster during packing,
+ *        supporting incremental candidate feasibility checks.
  *
- * A single "current" state is kept per pin class: a refcount of the atoms
- * routing each net through that class. .size() of the per class map is the
- * distinct-net count, i.e. the demand the pin feasibility filter compares
- * against the class's supply.
+ * The pin feasibility filter answers, for each candidate molecule, whether
+ * adding it keeps every pin class within its supply. This class maintains
+ * the pin state incrementally instead of recomputing it from scratch on
+ * every candidate, which would be expensive. Only atoms affected by the
+ * candidate are touched, and every mutation is journaled so a failed check
+ * can be reverted.
  *
- * Each candidate check mutates the current state and journals every
- * mutation. The caller frames each check with:
- *   snapshot_root_class_sizes(root)
- *   apply_molecule_delta(candidate_id, ...)   // production incremental path
- *   check_pins_used(root, max_ext_pin_util)   // incremental over touched (pb, class)
- * followed by either commit_check() on accept (clears the journal) or
- * rollback_check() on reject (replays the journal in reverse to restore
- * the pre-check state).
+ * State stored per cluster:
+ *   - per_pb_state_: for every non-primitive pb in the cluster, per pin
+ *     class, a map from net to refcount. The refcount is the number of atom
+ *     pins currently marking (pb, class, net); the map's size() is the
+ *     distinct net count the filter compares against the class's supply.
+ *   - input_mark_record_ / output_mark_record_: per atom pin, the list of
+ *     pbs the pin's mark landed on. Needed to undo a pin's marks because
+ *     reachability is depth dependent and cannot be recomputed from current
+ *     pb membership alone.
+ *   - per_pb_state_journal_ / mark_record_journal_: mutations recorded
+ *     during a candidate check (to per_pb_state_ refcounts and to
+ *     input_mark_record_ / output_mark_record_ lists, respectively),
+ *     replayed in reverse on failure.
  *
- * apply_molecule_delta relies on the monotonicity invariant that within a
- * single cluster's construction, atom membership only grows. Adding a
- * molecule M can only *remove* marks from pre-existing atoms (via nets M
- * now drives or sinks that flip a previous is_reachable / net_exits_cluster
- * decision); it never adds marks to them. Only M's own atoms produce new
- * marks. This is why the delta touches only (a) M's own atoms and (b) the
- * pre-existing atoms on nets M touches, and why check_pins_used need only
- * look at classes the delta incremented: pre-delta state was feasible,
- * decrements cannot break feasibility, and the root clamp
- * (max(scaled_size, snapshot_size)) covers the seed-utilization transition.
+ * Usage per cluster: call allocate_pin_count_state(pb) on every pb during
+ * setup. Then for each candidate molecule, run snapshot_root_class_sizes(root),
+ * apply_molecule_delta(candidate), and check_pins_used(root, max_ext_pin_util).
+ * On accept, call commit_check() to discard the journals. On reject, call
+ * rollback_check() to replay the journals in reverse. When the cluster's
+ * pin counter is no longer needed, call deallocate_pin_count_state_recursive(root).
+ * Both destroy_cluster and clean_cluster do this; destroy_cluster additionally
+ * frees the pbs, so the deallocation must happen before that.
  *
- * Processing order inside apply_molecule_delta matters: the re-evaluation
- * of pre-existing atoms (steps 1 and 2) runs before M's own atoms are
- * marked (step 3), and each pre-existing atom pin is first unmarked then
- * re-marked under the new membership. Blind decrement is not sound because
- * reachability is depth-dependent: a pin may mark at some ancestors but
- * not others, so unmarking is driven by a per atom pin record of which pbs
- * the pin actually marked.
+ * How the incremental algorithm works (apply_molecule_delta): adding a
+ * candidate molecule can only change three groups of marks in the pin state.
+ *   1. When the candidate drives a net that has pre-existing sinks in the
+ *      cluster, those sinks may lose their input mark because the driver
+ *      is now in cluster too.
+ *   2. When the candidate sinks a net whose driver is already in the
+ *      cluster, that driver may lose its output mark because a sink is
+ *      now in cluster too.
+ *   3. The candidate's own atoms produce new marks.
+ * apply_molecule_delta handles these three cases and journals every mark
+ * change; all other atoms in the cluster are unaffected.
  *
- * The root class-size snapshot is required because the pin feasibility
- * filter's root clamp compares against pre-check sizes; the collapsed
- * state no longer stores them separately.
- *
- * full_recompute_from_molecules is retained as the reference oracle used
- * by verify_against_full_recompute and by callers that need a from-scratch
- * rebuild. It is no longer on the production hot path.
+ * Debug only consistency checks: verify_against_full_recompute rebuilds the
+ * state from scratch (via full_recompute_from_molecules) and asserts it
+ * matches the incremental result. assert_all_pbs_reachable_from catches
+ * lifetime bugs where a pb was freed without informing the counter. Both are
+ * expensive and are guarded by VTR_ASSERT_SAFE_ENABLED at their call sites.
  */
 class ClusterPinCounter {
   public:
@@ -274,8 +282,14 @@ class ClusterPinCounter {
      *
      * Each add or remove of a mark emits one entry with change == +1 or -1.
      * Rollback replays entries in reverse, applying the negated change.
+     *
+     * TODO: The fixed-width types here (uint32_t class_id, int8_t change),
+     *       in MarkRecordDelta (int8_t change), and in PerPbState (uint16_t
+     *       refcount in the per class maps) could be replaced with plain
+     *       int / size_t for VPR-idiomatic consistency. Struct alignment
+     *       makes the byte savings negligible in practice.
      */
-    struct MarkDelta {
+    struct PerPbStateDelta {
         const t_pb* pb;
         AtomNetId net;
         uint32_t class_id;
@@ -427,14 +441,14 @@ class ClusterPinCounter {
      *        check. Cleared on commit_check; replayed in reverse on
      *        rollback_check.
      */
-    std::vector<MarkDelta> journal_;
+    std::vector<PerPbStateDelta> per_pb_state_journal_;
 
     /**
      * @brief Journal of mutations to the per atom pin mark records during
      *        the current candidate check. Cleared on commit_check;
      *        replayed in reverse on rollback_check.
      */
-    std::vector<MarkRecordDelta> record_journal_;
+    std::vector<MarkRecordDelta> mark_record_journal_;
 
     /**
      * @brief Snapshot of the root pb's per class sizes taken at the start
