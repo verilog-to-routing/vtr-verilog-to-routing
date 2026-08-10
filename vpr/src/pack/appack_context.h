@@ -90,7 +90,7 @@ struct APPackContext : public Context {
      */
     APPackContext(const FlatPlacementInfo& fplace_info,
                   const t_ap_opts& ap_opts,
-                  const std::vector<t_logical_block_type> logical_block_types,
+                  const std::vector<t_logical_block_type>& logical_block_types,
                   const DeviceGrid& device_grid)
         : appack_options(fplace_info, ap_opts)
         , flat_placement_info(fplace_info) {

@@ -640,6 +640,11 @@ class ClusterLegalizer {
     ///        expensive to calculate from the prepacker.
     size_t max_molecule_size_;
 
+    /// @brief Scratch vector used by try_pack_molecule() to hold the primitive
+    ///        chosen for each molecule atom. A member to avoid reallocating it
+    ///        for every candidate molecule.
+    std::vector<t_pb_graph_node*> primitives_list_;
+
     /// @brief A vector of routing resource nodes within each logical block type
     ///        [0 .. num_logical_block_types-1]
     /// TODO: This really should not be a pointer to a vector... I think this is
