@@ -19,7 +19,6 @@ circuit_constraint_list_add=(6/s27.blif, device_width=12)
 circuit_constraint_list_add=(multiclock/multiclock.blif, device_width=12)
 
 # Add architectures to list to sweep
-arch_list_add=k6_frac_N10_frac_chain_mem32K_clk_switch_box_40nm.xml
 arch_list_add=micro/micro_base.xml
 arch_list_add=micro/clock_sb_only.xml
 arch_list_add=micro/clock_sb_unidir.xml
