@@ -148,11 +148,9 @@ class vector_map {
     }
 
     ///@brief Extends the container by inserting new elements, effectively increasing the container size by the number of elements inserted.
-    //
-    // V is intentionally taken by (non-const) value: passing lvalues costs one
-    // copy (into the parameter) and rvalues cost one move; the inner assignment
-    // then moves value into the slot. A const V parameter would force the inner
-    // assignment to be a copy even for rvalue callers.
+    ///
+    /// V is taken by value (not const V) so std::move below actually moves
+    /// (const V would silently degrade to copy for rvalue callers).
     void insert(const K key, V value) {
         if (size_t(key) >= vec_.size()) {
             //Resize so key is in range
