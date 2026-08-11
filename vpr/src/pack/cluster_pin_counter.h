@@ -20,7 +20,6 @@
  *   http://hdl.handle.net/1807/68469
  */
 
-#include <cstdint>
 #include <unordered_map>
 #include <vector>
 
@@ -98,9 +97,9 @@ class ClusterPinCounter {
      */
     struct PerPbState {
         /// @brief Per input pin class: net -> refcount.
-        std::vector<std::unordered_map<AtomNetId, uint16_t>> input_pin_class_net_counts;
+        std::vector<std::unordered_map<AtomNetId, int>> input_pin_class_net_counts;
         /// @brief Per output pin class: net -> refcount.
-        std::vector<std::unordered_map<AtomNetId, uint16_t>> output_pin_class_net_counts;
+        std::vector<std::unordered_map<AtomNetId, int>> output_pin_class_net_counts;
     };
 
     /**
@@ -230,18 +229,13 @@ class ClusterPinCounter {
     /**
      * @brief One journaled mutation to per_pb_state_ refcounts. Rollback
      *        replays entries in reverse.
-     *
-     * TODO: The remaining fixed-width types (uint32_t class_id here, uint16_t
-     *       refcount in PerPbState) could be replaced with plain int / size_t
-     *       for VPR-idiomatic consistency. Kept for now because they affect
-     *       struct/map-entry size and warrant a perf check before changing.
      */
     struct PerPbStateDelta {
-        const t_pb* pb;    ///< Which pb the mutated refcount belongs to.
-        AtomNetId net;     ///< Which net's refcount changed.
-        uint32_t class_id; ///< Which pin class at pb.
-        bool is_input;     ///< True: input pin class. False: output.
-        int change;        ///< +1 on add_mark, -1 on remove_mark.
+        const t_pb* pb; ///< Which pb the mutated refcount belongs to.
+        AtomNetId net;  ///< Which net's refcount changed.
+        int class_id;   ///< Which pin class at pb.
+        bool is_input;  ///< True: input pin class. False: output.
+        int change;     ///< +1 on add_mark, -1 on remove_mark.
     };
 
     /**

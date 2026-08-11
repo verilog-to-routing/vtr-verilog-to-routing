@@ -15,7 +15,6 @@
 #include "cluster_pin_counter.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <string>
 #include <unordered_set>
 
@@ -96,22 +95,21 @@ void ClusterPinCounter::snapshot_root_class_sizes(const t_pb* root) {
 
 void ClusterPinCounter::add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id) {
     PerPbState& state = per_pb_state_.at(pb);
-    std::unordered_map<AtomNetId, uint16_t>& net_counts
+    std::unordered_map<AtomNetId, int>& net_counts
         = is_input ? state.input_pin_class_net_counts.at(class_id)
                    : state.output_pin_class_net_counts.at(class_id);
-    uint16_t& refcount = net_counts[net_id]; // inserts as 0 if missing
-    VTR_ASSERT(refcount < std::numeric_limits<uint16_t>::max());
+    int& refcount = net_counts[net_id];
     refcount += 1;
 
     // Output classes should never exceed a refcount of 1 for a given net:
     // each net has a single driver, so at most one mark per (pb, class, net).
     VTR_ASSERT_SAFE(is_input || refcount == 1);
-    per_pb_state_journal_.push_back({pb, net_id, static_cast<uint32_t>(class_id), is_input, +1});
+    per_pb_state_journal_.push_back({pb, net_id, static_cast<int>(class_id), is_input, +1});
 }
 
 void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id) {
     PerPbState& state = per_pb_state_.at(pb);
-    std::unordered_map<AtomNetId, uint16_t>& net_counts
+    std::unordered_map<AtomNetId, int>& net_counts
         = is_input ? state.input_pin_class_net_counts.at(class_id)
                    : state.output_pin_class_net_counts.at(class_id);
 
@@ -122,7 +120,7 @@ void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_
         net_counts.erase(it);
     }
 
-    per_pb_state_journal_.push_back({pb, net_id, static_cast<uint32_t>(class_id), is_input, -1});
+    per_pb_state_journal_.push_back({pb, net_id, static_cast<int>(class_id), is_input, -1});
 }
 
 void ClusterPinCounter::wipe_all_marks_journaled() {
@@ -130,7 +128,7 @@ void ClusterPinCounter::wipe_all_marks_journaled() {
     // class map, so iterating it in place is unsafe.
     for (auto& [pb, state] : per_pb_state_) {
         for (size_t class_id = 0; class_id < state.input_pin_class_net_counts.size(); ++class_id) {
-            std::vector<std::pair<AtomNetId, uint16_t>> entries(
+            std::vector<std::pair<AtomNetId, int>> entries(
                 state.input_pin_class_net_counts[class_id].begin(),
                 state.input_pin_class_net_counts[class_id].end());
             for (const auto& [net, refcount] : entries) {
@@ -141,7 +139,7 @@ void ClusterPinCounter::wipe_all_marks_journaled() {
         }
 
         for (size_t class_id = 0; class_id < state.output_pin_class_net_counts.size(); ++class_id) {
-            std::vector<std::pair<AtomNetId, uint16_t>> entries(
+            std::vector<std::pair<AtomNetId, int>> entries(
                 state.output_pin_class_net_counts[class_id].begin(),
                 state.output_pin_class_net_counts[class_id].end());
             for (const auto& [net, refcount] : entries) {
@@ -248,7 +246,7 @@ void ClusterPinCounter::rollback_check() {
         VTR_ASSERT_SAFE(per_pb_state_.count(delta.pb) > 0);
         auto pb_it = per_pb_state_.find(delta.pb);
 
-        std::unordered_map<AtomNetId, uint16_t>& net_counts
+        std::unordered_map<AtomNetId, int>& net_counts
             = delta.is_input ? pb_it->second.input_pin_class_net_counts.at(delta.class_id)
                              : pb_it->second.output_pin_class_net_counts.at(delta.class_id);
 
@@ -644,9 +642,9 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
     
     /// Identifies a (pb, class_id, is_input) tuple that got incremented this check.
     struct TouchedKey {
-        const t_pb* pb;    ///< The pb whose class was touched.
-        uint32_t class_id; ///< Which pin class within pb.
-        bool is_input;     ///< True: input pin class. False: output.
+        const t_pb* pb; ///< The pb whose class was touched.
+        int class_id;   ///< Which pin class within pb.
+        bool is_input;  ///< True: input pin class. False: output.
         bool operator<(const TouchedKey& o) const {
             if (pb != o.pb) return pb < o.pb;
             if (is_input != o.is_input) return is_input < o.is_input;
@@ -803,13 +801,13 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
  */
 static void compare_class_maps_or_die(const t_pb* pb,
                                       bool is_input,
-                                      const std::vector<std::unordered_map<AtomNetId, uint16_t>>& actual,
-                                      const std::vector<std::unordered_map<AtomNetId, uint16_t>>& reference) {
+                                      const std::vector<std::unordered_map<AtomNetId, int>>& actual,
+                                      const std::vector<std::unordered_map<AtomNetId, int>>& reference) {
     VTR_ASSERT(actual.size() == reference.size());
 
     for (size_t class_id = 0; class_id < actual.size(); ++class_id) {
-        const std::unordered_map<AtomNetId, uint16_t>& actual_class = actual[class_id];
-        const std::unordered_map<AtomNetId, uint16_t>& reference_class = reference[class_id];
+        const std::unordered_map<AtomNetId, int>& actual_class = actual[class_id];
+        const std::unordered_map<AtomNetId, int>& reference_class = reference[class_id];
 
         if (actual_class == reference_class) {
             continue;
