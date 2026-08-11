@@ -112,11 +112,11 @@ void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_
     std::unordered_map<AtomNetId, int>& net_counts = is_input ? state.input_pin_class_net_counts.at(class_id)
                                                               : state.output_pin_class_net_counts.at(class_id);
 
-    auto it = net_counts.find(net_id);
-    VTR_ASSERT(it != net_counts.end() && it->second > 0);
-    it->second -= 1;
-    if (it->second == 0) {
-        net_counts.erase(it);
+    int& refcount = net_counts.at(net_id);
+    VTR_ASSERT(refcount > 0);
+    refcount -= 1;
+    if (refcount == 0) {
+        net_counts.erase(net_id);
     }
 
     per_pb_state_journal_.push_back({pb, net_id, static_cast<int>(class_id), is_input, -1});
@@ -249,11 +249,11 @@ void ClusterPinCounter::rollback_check() {
 
         if (delta.change == +1) {
             // Undo an add: decrement, erase at zero.
-            auto it = net_counts.find(delta.net);
-            VTR_ASSERT(it != net_counts.end() && it->second > 0);
-            it->second -= 1;
-            if (it->second == 0) {
-                net_counts.erase(it);
+            int& refcount = net_counts.at(delta.net);
+            VTR_ASSERT(refcount > 0);
+            refcount -= 1;
+            if (refcount == 0) {
+                net_counts.erase(delta.net);
             }
         } else {
             VTR_ASSERT(delta.change == -1);
