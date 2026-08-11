@@ -140,7 +140,8 @@ static bool location_can_hold_block(const DeviceGrid& grid,
         return false;
     }
 
-    // Currently: only handle 1x1 physical tiles
+    // TODO: Relax temporary 1x1 restriction after adding support for
+    // multi-tile physical types
     if (physical_type->width != 1 || physical_type->height != 1) {
         return false;
     }
@@ -163,17 +164,7 @@ static bool block_is_in_placement_macro(ClusterBlockId block_id) {
     if (!place_macros_ptr) {
         return false;
     }
-
-    const PlaceMacros& place_macros = *place_macros_ptr;
-    for (const t_pl_macro& pl_macro : place_macros.macros()) {
-        for (const t_pl_macro_member& member : pl_macro.members) {
-            if (member.blk_index == block_id) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return place_macros_ptr->get_imacro_from_iblk(block_id) != UNDEFINED;
 }
 
 WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
