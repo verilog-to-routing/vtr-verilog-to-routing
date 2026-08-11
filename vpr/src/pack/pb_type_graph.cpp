@@ -175,7 +175,9 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 /**
  * @brief BFS through the pb_graph, accumulating delay_max, until either
  *        target is reached (if non-null) or a root-block pin is reached
- *        (if target is nullptr).
+ *        (if target is nullptr). A root-block pin is a pin on a root
+ *        pb_block, i.e. a pin at the top of the pb_graph hierarchy such
+ *        as a pin on a CLB, IO, or DSP block.
  *
  * @param start    Pin to search from.
  * @param forward  If true, traverse output_edges/output_pins (search
@@ -1927,8 +1929,17 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
     return nullptr;
 }
 
-// target == nullptr means "stop at the nearest root-block pin" instead of
-// "stop at a specific pin".
+/**
+ * @brief Checks whether pin is the search target for calc_pb_graph_delay.
+ *
+ * @param pin     Pin currently being visited by the search.
+ * @param target  If non-null, pin is the target only if it is target.
+ *                If nullptr, pin is the target if it is any root-block
+ *                pin (i.e. search stops at the nearest root-block pin
+ *                instead of a specific pin).
+ *
+ * @return true if pin is the search target, false otherwise.
+ */
 static bool is_search_target(const t_pb_graph_pin* pin, const t_pb_graph_pin* target) {
     if (target != nullptr) {
         return pin == target;

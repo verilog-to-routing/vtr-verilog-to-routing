@@ -204,6 +204,17 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         return gpin;
     }
 
+    /**
+     * @brief Calculates the delay between two atom pins that belong to the
+     *        same molecule (and will therefore be packed into the same
+     *        cluster), using the pb_graph path between their pb_graph pins.
+     *
+     * @param src_pin   Source atom pin.
+     * @param sink_pin  Sink atom pin.
+     *
+     * @return The intra-cluster delay between src_pin and sink_pin, or
+     *         approximately 0 if no path was found in the pb_graph.
+     */
     tatum::Time calc_intra_molecule_delay(AtomPinId src_pin, AtomPinId sink_pin) const {
         const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
         const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
@@ -215,6 +226,20 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         return tatum::Time(delay >= 0.0f ? delay : 0.0f);
     }
 
+    /**
+     * @brief Calculates the delay between two atom pins that belong to
+     *        different molecules of the same chain (e.g. a long carry
+     *        chain split across multiple clusters).
+     *
+     * @param src_pin   Source atom pin.
+     * @param sink_pin  Sink atom pin.
+     *
+     * @return The estimated delay between src_pin and sink_pin, made up of
+     *         the intra-cluster routing out to the source cluster's
+     *         boundary plus the intra-cluster routing in from the sink
+     *         cluster's boundary. The dedicated inter-cluster chain wiring
+     *         delay is not included; see the comment below for why.
+     */
     tatum::Time calc_inter_molecule_chain_delay(AtomPinId src_pin, AtomPinId sink_pin) const {
         const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
         const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
