@@ -155,7 +155,7 @@ void ClusterPinCounter::record_output_mark(AtomPinId pin, const t_pb* pb) {
     mark_record_journal_.push_back({pin, pb, /*is_input=*/false, +1});
 }
 
-void ClusterPinCounter::unmark_input_pin(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
+void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
     auto it = input_mark_record_.find(pin_id);
     if (it == input_mark_record_.end()) {
         return; // pin never contributed a mark on the input side
@@ -182,7 +182,7 @@ void ClusterPinCounter::unmark_input_pin(AtomPinId pin_id, AtomNetId /*net_id*/,
     input_mark_record_.erase(it);
 }
 
-void ClusterPinCounter::unmark_output_pin(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
+void ClusterPinCounter::remove_output_pin_marks(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
     auto it = output_mark_record_.find(pin_id);
     if (it == output_mark_record_.end()) {
         return;
@@ -691,7 +691,7 @@ void ClusterPinCounter::apply_molecule_delta(
             const t_pb* sink_prim_pb = atom_to_pb.atom_pb(sink_atom);
             if (sink_prim_pb == nullptr) continue;
 
-            unmark_input_pin(sink_pin, n, atom_to_pb);
+            remove_input_pin_marks(sink_pin, n, atom_to_pb);
             const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(netlist, atom_to_pb, sink_pin);
             compute_and_mark_pins_used_for_input_pin(sink_pin, sink_gpin, sink_prim_pb, n,
                                                      atom_cluster, atom_to_pb);
@@ -717,7 +717,7 @@ void ClusterPinCounter::apply_molecule_delta(
         const t_pb* driver_prim_pb = atom_to_pb.atom_pb(driver_atom);
         if (driver_prim_pb == nullptr) continue;
 
-        unmark_output_pin(driver_pin, n, atom_to_pb);
+        remove_output_pin_marks(driver_pin, n, atom_to_pb);
         const t_pb_graph_pin* driver_gpin = find_pb_graph_pin(netlist, atom_to_pb, driver_pin);
         compute_and_mark_pins_used_for_output_pin(driver_pin, driver_gpin, driver_prim_pb, n,
                                                   atom_cluster, atom_to_pb);

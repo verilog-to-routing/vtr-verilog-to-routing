@@ -228,95 +228,70 @@ class ClusterPinCounter {
 
   private:
     /**
-     * @brief A single journaled mutation to per class refcounts.
+     * @brief One journaled mutation to per_pb_state_ refcounts. Rollback
+     *        replays entries in reverse.
      *
-     * Each add or remove of a mark emits one entry with change == +1 or -1.
-     * Rollback replays entries in reverse, applying the negated change.
-     *
-     * TODO: The fixed-width types here (uint32_t class_id, int8_t change),
-     *       in MarkRecordDelta (int8_t change), and in PerPbState (uint16_t
-     *       refcount in the per class maps) could be replaced with plain
-     *       int / size_t for VPR-idiomatic consistency. Struct alignment
-     *       makes the byte savings negligible in practice.
+     * TODO: The fixed-width types here (uint32_t class_id, int8_t change), in
+     *       MarkRecordDelta (int8_t change), and in PerPbState (uint16_t
+     *       refcount in the per class maps) could be replaced with plain int /
+     *       size_t for VPR-idiomatic consistency. Struct alignment makes the
+     *       byte savings negligible in practice.
      */
     struct PerPbStateDelta {
-        const t_pb* pb;
-        AtomNetId net;
-        uint32_t class_id;
-        bool is_input;
-        int8_t change; // +1 or -1
+        const t_pb* pb;    ///< Which pb the mutated refcount belongs to.
+        AtomNetId net;     ///< Which net's refcount changed.
+        uint32_t class_id; ///< Which pin class at pb.
+        bool is_input;     ///< True: input pin class. False: output.
+        int8_t change;     ///< +1 on add_mark, -1 on remove_mark.
     };
 
     /**
-     * @brief A single journaled mutation to a per atom pin mark record.
-     *
-     * change == +1: pb was appended to mark_record[pin]; undo pops it.
-     * change == -1: pb was removed from mark_record[pin] (via a bulk clear
-     *   during unmark_*_pin); undo pushes it back.
-     * On pop-to-empty during undo, the map entry is erased; on push into a
-     * missing key, the entry is created.
+     * @brief One journaled mutation to input_mark_record_ / output_mark_record_.
+     *        Rollback replays entries in reverse.
      */
     struct MarkRecordDelta {
-        AtomPinId pin;
-        const t_pb* pb;
-        bool is_input;
-        int8_t change; // +1 or -1
+        AtomPinId pin;  ///< Which pin's mark record was mutated.
+        const t_pb* pb; ///< The pb added to or removed from that pin's record.
+        bool is_input;  ///< True: input_mark_record_. False: output_mark_record_.
+        int8_t change;  ///< +1 on append (pb added to the record), -1 on removal.
     };
 
-    /**
-     * @brief Increment the refcount of net in the given (pb, class) map and
-     *        journal the change.
-     */
+    /// @brief Increment the refcount of net in the given (pb, class) map. Journals the change.
     void add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net);
 
-    /**
-     * @brief Decrement the refcount of net in the given (pb, class) map,
-     *        erasing the key if the count reaches zero, and journal the
-     *        change.
-     */
+    /// @brief Decrement the refcount of net in the given (pb, class) map, erasing the key at zero. Journals the change.
     void remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net);
 
-    /**
-     * @brief Iterate every entry in every (pb, class) map and issue a
-     *        remove_mark per unit of refcount, leaving all maps empty and
-     *        the journal populated with the corresponding decrements.
-     *
-     * Called by full_recompute_from_molecules. The production incremental
-     * path apply_molecule_delta does not use this.
-     */
+    /// @brief Append pb to input_mark_record_[pin] (creating the entry if missing). Journals the append.
+    void record_input_mark(AtomPinId pin, const t_pb* pb);
+
+    /// @brief Append pb to output_mark_record_[pin] (creating the entry if missing). Journals the append.
+    void record_output_mark(AtomPinId pin, const t_pb* pb);
+
+    /// @brief Remove every mark this input pin has contributed, and clear its entry in input_mark_record_. Undoable via rollback_check.
+    void remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
+
+    /// @brief Remove every mark this output pin has contributed, and clear its entry in output_mark_record_. Undoable via rollback_check.
+    void remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
+
+    /// @brief Wipe all pin state, journaled so it can be rolled back. Used only by full_recompute_from_molecules.
     void wipe_all_marks_journaled();
 
     /**
-     * @brief Undo every mark this input atom pin previously contributed and
-     *        clear its record entry. Journals both the state decrements and
-     *        the record deletions.
-     */
-    void unmark_input_pin(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
-
-    /**
-     * @brief Undo every mark this output atom pin previously contributed and
-     *        clear its record entry. Journals both the state decrements and
-     *        the record deletions.
-     */
-    void unmark_output_pin(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
-
-    /**
-     * @brief Add the given atom's pin usage contribution to the current
-     *        state (via add_mark, so journaled). Also populates the per
-     *        atom pin mark records for later unmark.
+     * @brief Add the given atom's pin marks: for each pin, mark the classes
+     *        at every pb the pin's net must cross on the walk from
+     *        primitive to root.
      */
     void compute_and_mark_pins_used(AtomBlockId blk_id,
                                     const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                     const AtomPBBimap& atom_to_pb);
 
     /**
-     * @brief Given an input pin and its assigned net, mark all pin classes
-     *        that are affected and record the pbs marked into
-     *        input_mark_record_[pin_id]. Check if connecting this pin to
-     *        its driver pin will require entering a pb block starting from
-     *        the parent pb block of the primitive till the root block. If
-     *        entering a pb block is required, add this net to the input
-     *        pin class.
+     * @brief Walk from primitive_pb up to root. At each pb where the pin's
+     *        net must enter through an input pin (i.e. the driver is not
+     *        reachable inside the pb), mark the input pin class and record
+     *        the pb into input_mark_record_[pin_id] so remove_input_pin_marks
+     *        can undo.
      */
     void compute_and_mark_pins_used_for_input_pin(AtomPinId pin_id,
                                                   const t_pb_graph_pin* pb_graph_pin,
@@ -326,13 +301,10 @@ class ClusterPinCounter {
                                                   const AtomPBBimap& atom_to_pb);
 
     /**
-     * @brief Given an output pin and its assigned net, mark all pin classes
-     *        that are affected and record the pbs marked into
-     *        output_mark_record_[pin_id]. Check if connecting this pin to
-     *        all its sink pins will require leaving a pb block starting
-     *        from the parent pb block of the primitive till the root
-     *        block. If leaving a pb block is required, add this net to
-     *        the output pin class.
+     * @brief Walk from primitive_pb up to root. At each pb where the pin's
+     *        net must exit through an output pin (i.e. some sink is outside
+     *        the pb), mark the output pin class and record the pb into
+     *        output_mark_record_[pin_id] so remove_output_pin_marks can undo.
      */
     void compute_and_mark_pins_used_for_output_pin(AtomPinId pin_id,
                                                    const t_pb_graph_pin* pb_graph_pin,
@@ -342,21 +314,9 @@ class ClusterPinCounter {
                                                    const AtomPBBimap& atom_to_pb);
 
     /**
-     * @brief Append a pb to input_mark_record_[pin] (creating the key if
-     *        necessary) and journal the change.
-     */
-    void record_input_mark(AtomPinId pin, const t_pb* pb);
-
-    /**
-     * @brief Append a pb to output_mark_record_[pin] (creating the key if
-     *        necessary) and journal the change.
-     */
-    void record_output_mark(AtomPinId pin, const t_pb* pb);
-
-    /**
-     * @brief Full-tree reference check, retained as a debug oracle for
-     *        check_pins_used. Walks every non-primitive pb in the subtree
-     *        and tests every pin class against its supply.
+     * @brief Debug reference: walk every non-primitive pb in the subtree and
+     *        test every pin class against its supply. Used to cross check
+     *        check_pins_used under VTR_ASSERT_SAFE_ENABLED.
      */
     bool check_pins_used_full_reference(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const;
 
@@ -364,48 +324,25 @@ class ClusterPinCounter {
      * @brief Pin usage state for every non-primitive pb visited during
      *        clustering, keyed by pb pointer.
      *
-     * TODO: The per_pb_state_.find call on the mark/query hot path may be
-     *       expensive. Can consider dense index storage.
+     * TODO: Consider dense index storage; per_pb_state_.find is on the hot path.
      */
     std::unordered_map<const t_pb*, PerPbState> per_pb_state_;
 
     /**
-     * @brief Per atom pin record of which pbs the pin's mark landed on.
-     *
-     * Required because reachability is depth-dependent: unmark cannot be
-     * implemented by re-walking the marking logic under the new membership
-     * (that would give the NEW marks, not the ones that need removing),
-     * and it cannot be implemented by blind decrement at every ancestor
-     * (that would corrupt classes the pin never marked). The record makes
-     * unmark exactly reverse the pin's original marking walk.
-     *
-     * Class id and net id are recoverable at unmark time from the pin's
-     * pb_graph_pin (parent_pin_class[pb->depth]) and the pin's net, so
-     * the record only needs to store the pbs.
+     * @brief Per atom pin record of which pbs the pin's mark landed on. Read by
+     *        remove_input_pin_marks / remove_output_pin_marks to undo those
+     *        marks exactly.
      */
     std::unordered_map<AtomPinId, std::vector<const t_pb*>> input_mark_record_;
     std::unordered_map<AtomPinId, std::vector<const t_pb*>> output_mark_record_;
 
-    /**
-     * @brief Journal of mutations performed during the current candidate
-     *        check. Cleared on commit_check; replayed in reverse on
-     *        rollback_check.
-     */
+    /// @brief Journal of per_pb_state_ mutations for the current candidate check.
     std::vector<PerPbStateDelta> per_pb_state_journal_;
 
-    /**
-     * @brief Journal of mutations to the per atom pin mark records during
-     *        the current candidate check. Cleared on commit_check;
-     *        replayed in reverse on rollback_check.
-     */
+    /// @brief Journal of input_mark_record_ / output_mark_record_ mutations for the current candidate check.
     std::vector<MarkRecordDelta> mark_record_journal_;
 
-    /**
-     * @brief Snapshot of the root pb's per class sizes taken at the start
-     *        of the current candidate check. Used by check_pins_used to
-     *        implement the root clamp against pre-check (accepted-only)
-     *        sizes.
-     */
+    /// @brief Root pb class sizes captured by snapshot_root_class_sizes at the start of the check. Read by check_pins_used for the root clamp.
     std::vector<size_t> root_input_class_size_snapshot_;
     std::vector<size_t> root_output_class_size_snapshot_;
 };
