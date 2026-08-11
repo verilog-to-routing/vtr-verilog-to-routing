@@ -63,8 +63,7 @@ vtr::vector_map<Id, Id> compress_ids(const vtr::vector_map<Id, Id>& ids) {
  * Otherwise the element is moved to the new ID location.
  *
  * 'values' is non-const so std::move actually moves (const& would silently
- * degrade to copy). Callers overwrite 'values' with the return value, so
- * mutation is safe.
+ * degrade to copy). Callers overwrite 'values' with the return value.
  */
 template<typename Id, typename T>
 vtr::vector_map<Id, T> clean_and_reorder_values(vtr::vector_map<Id, T>& values, const vtr::vector_map<Id, Id>& id_map) {
