@@ -283,7 +283,7 @@ Proceed by Step
 ~~~~~~~~~~~~~~~
 
 The **Proceed by Step** switch allows you to interactively visualize the evolving placement and routing
-after a specified number of optimization steps (see below the definition of step).
+after a specified number of optimization steps (see below for the definition of step).
 You can use the **Steps to Proceed** spinbox to set how many steps to proceed until the graphics pauses.
 
 During global (analytical) placement, step refers to every solver or legalizer iteration.
@@ -292,7 +292,7 @@ During routing, step refers to every router iteration.
 
 After you have finished interacting with the graphics, clicking **Proceed** resumes optimization until the next selected step boundary,
 or the next major optimization state (e.g. the transition point from placement to routing) is reached. In the latter case, the number of steps completed
-since the last graphics view will not be carried over. The step count performed will reset to zero.
+since the last graphics view will not be carried over; the step count performed will reset to zero.
 
 Turn off **Proceed by Step** to only view the graphics at major optimization states.
 
