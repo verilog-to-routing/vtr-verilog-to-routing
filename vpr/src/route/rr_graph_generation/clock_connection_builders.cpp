@@ -2,7 +2,10 @@
 
 #include "globals.h"
 #include "arch_util.h"
+#include "rr_graph_builder.h"
 #include "rr_rc_data.h"
+#include "rr_spatial_lookup.h"
+#include "vpr_context.h"
 #include "vpr_utils.h"
 #include "physical_types_util.h"
 #include "vpr_error.h"
@@ -51,12 +54,12 @@ size_t RoutingToClockConnection::estimate_additional_nodes() {
 }
 
 static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& rr_graph = device_ctx.rr_graph;
-    auto& rr_graph_builder = device_ctx.rr_graph_builder;
-    auto& node_lookup = device_ctx.rr_graph_builder.node_lookup();
-    auto& rr_rc_data = device_ctx.rr_rc_data;
-    auto& arch = device_ctx.arch;
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
+    RRGraphBuilder& rr_graph_builder = device_ctx.rr_graph_builder;
+    RRSpatialLookup& node_lookup = device_ctx.rr_graph_builder.node_lookup();
+    std::vector<t_rr_rc_data>& rr_rc_data = device_ctx.rr_rc_data;
+    const t_arch* arch = device_ctx.arch;
     rr_graph_builder.emplace_back();
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
@@ -114,8 +117,8 @@ static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) 
 // per sink (e.g. the minimum over each drive point's distance), not just picking a
 // better fixed coordinate here.
 static RRNodeId get_or_create_virtual_clock_network_root(int layer, int x, int y) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& rr_graph_builder = device_ctx.rr_graph_builder;
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+    RRGraphBuilder& rr_graph_builder = device_ctx.rr_graph_builder;
 
     RRNodeId virtual_clock_network_root_idx = device_ctx.rr_graph.virtual_clock_network_root_idx(device_ctx.arch->default_clock_network_name.c_str());
     if (virtual_clock_network_root_idx == RRNodeId::INVALID()) {
@@ -223,12 +226,14 @@ size_t TileToClockConnection::estimate_additional_nodes() {
 }
 
 void TileToClockConnection::create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) {
+    // TODO: This should use vtr's random number generator.
+    //       We use this one to match RoutingToClockConnection::create_switches above.
     std::mt19937 rand_generator;
     rand_generator.seed(seed);
 
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    const auto& node_lookup = device_ctx.rr_graph.node_lookup();
-    auto& grid = device_ctx.grid;
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+    const RRSpatialLookup& node_lookup = device_ctx.rr_graph.node_lookup();
+    const DeviceGrid& grid = device_ctx.grid;
 
     t_physical_tile_type_ptr type = grid.get_physical_type({location.x, location.y, location.layer_num});
     if (is_empty_type(type)) {
@@ -364,7 +369,7 @@ size_t ClockToClockConnection::estimate_additional_nodes() {
 }
 
 void ClockToClockConnection::create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) {
-    auto& grid = clock_graph.grid();
+    const DeviceGrid& grid = clock_graph.grid();
 
     std::set<std::pair<int, int>> to_locations = clock_graph.get_switch_locations(to_clock, to_switch);
 

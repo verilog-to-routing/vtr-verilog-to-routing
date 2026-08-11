@@ -5,6 +5,7 @@
 #include "get_parallel_segs.h"
 #include "parse_switchblocks.h"
 #include "rr_graph_sbox.h"
+#include "rr_graph_view.h"
 #include "rr_rc_data.h"
 #include "switchblock_scatter_gather_common_utils.h"
 #include "vtr_expr_eval.h"
@@ -310,21 +311,21 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
             // or x_end): in that case the segment on that side is simply omitted rather
             // than being an inverted/empty range.
             if (drive_x > grid.width() - 2 || drive_x < x_start_adj || drive_x > x_end) {
-                vtr::printf_warning(__FILE__, __LINE__,
-                                    "A rib part of clock network '%s' was not"
-                                    " created because the drive point is not reachable. "
-                                    "This can lead to an unroutable architecture.\n",
-                                    clock_name_.c_str());
+                VTR_LOG_WARN(
+                    "A rib part of clock network '%s' was not"
+                    " created because the drive point is not reachable. "
+                    "This can lead to an unroutable architecture.\n",
+                    clock_name_.c_str());
                 continue;
             }
 
             // Dont create rib if wire segment is too small
             if (x_start_adj >= x_end) {
-                vtr::printf_warning(__FILE__, __LINE__,
-                                    "Rib start '%d' and end '%d' values are "
-                                    "not successive for clock network '%s' due to not meeting boundary conditions."
-                                    " This can lead to an unroutable architecture.\n",
-                                    x_start_adj, x_end, clock_name_.c_str());
+                VTR_LOG_WARN(
+                    "Rib start '%d' and end '%d' values are "
+                    "not successive for clock network '%s' due to not meeting boundary conditions."
+                    " This can lead to an unroutable architecture.\n",
+                    x_start_adj, x_end, clock_name_.c_str());
                 continue;
             }
 
@@ -709,21 +710,21 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             // or y_end): in that case the segment on that side is simply omitted rather
             // than being an inverted/empty range.
             if (drive_y > grid.width() - 2 || drive_y < y_start_adj || drive_y > y_end) {
-                vtr::printf_warning(__FILE__, __LINE__,
-                                    "A spine part of clock network '%s' was not"
-                                    " created because the drive point is not reachable. "
-                                    "This can lead to an unroutable architecture.\n",
-                                    clock_name_.c_str());
+                VTR_LOG_WARN(
+                    "A spine part of clock network '%s' was not"
+                    " created because the drive point is not reachable. "
+                    "This can lead to an unroutable architecture.\n",
+                    clock_name_.c_str());
                 continue;
             }
 
             // Dont create spine if wire segment is too small
             if (y_start_adj >= y_end) {
-                vtr::printf_warning(__FILE__, __LINE__,
-                                    "Spine start '%d' and end '%d' values are "
-                                    "not successive for clock network '%s' due to not meeting boundary conditions."
-                                    " This can lead to an unroutable architecture.\n",
-                                    y_start_adj, y_end, clock_name_.c_str());
+                VTR_LOG_WARN(
+                    "Spine start '%d' and end '%d' values are "
+                    "not successive for clock network '%s' due to not meeting boundary conditions."
+                    " This can lead to an unroutable architecture.\n",
+                    y_start_adj, y_end, clock_name_.c_str());
                 continue;
             }
 
@@ -1463,14 +1464,14 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
 
     for (size_t i = 0; i < switch_points_.size(); i++) {
         if (!switch_point_registered[i]) {
-            vtr::printf_warning(__FILE__, __LINE__,
-                                "Switch point '%s' of clock network '%s' at location (%d,%d) does not"
-                                " correspond to any switch box location produced by startx/starty/repeatx/repeaty,"
-                                " and is not a valid channel tap (exactly one of its x/y coordinates must be on"
-                                " that lattice, with the other coordinate inside the grid)."
-                                " This can lead to an unroutable architecture.\n",
-                                switch_points_[i].name.c_str(), clock_name_.c_str(),
-                                switch_points_[i].x, switch_points_[i].y);
+            VTR_LOG_WARN(
+                "Switch point '%s' of clock network '%s' at location (%d,%d) does not"
+                " correspond to any switch box location produced by startx/starty/repeatx/repeaty,"
+                " and is not a valid channel tap (exactly one of its x/y coordinates must be on"
+                " that lattice, with the other coordinate inside the grid)."
+                " This can lead to an unroutable architecture.\n",
+                switch_points_[i].name.c_str(), clock_name_.c_str(),
+                switch_points_[i].x, switch_points_[i].y);
         }
     }
 }
@@ -1542,7 +1543,7 @@ int ClockSwitchGrid::create_chany_node(int layer,
     rr_graph_builder.set_node_direction(chany_node, direction);
     rr_graph_builder.set_node_cost_index(chany_node, RRIndexedDataId(CHANX_COST_INDEX_START + num_segments_x + y_seg_idx_));
 
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
     for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {
             rr_graph_builder.node_lookup().add_node(chany_node, layer, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
