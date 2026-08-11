@@ -4,11 +4,12 @@
  * @date    July 2026
  * @brief   Implementation of ClusterPinCounter.
  *
- * Contains the per pb state storage and query methods, the marking routines
- * that walk each atom pin from its primitive pb up to the cluster root and
- * mark the pin class the pin's net uses at each level, and the check-frame
- * mechanism (snapshot -> recompute -> check -> commit/rollback) used by the
- * pin feasibility filter to speculatively evaluate candidate molecules.
+ * Contains the per pb state storage and query methods, and the marking
+ * routines that walk each atom pin from its primitive pb up to the cluster
+ * root and mark the pin class the pin's net uses at each level.
+ * Also implements the per candidate check sequence (snapshot -> apply
+ * molecule delta -> check -> commit/rollback) used by the pin feasibility
+ * filter to speculatively evaluate candidate molecules.
  */
 
 #include "cluster_pin_counter.h"
@@ -40,6 +41,7 @@ void ClusterPinCounter::allocate_pin_count_state(const t_pb* pb) {
     const size_t num_output_classes = pb_graph_node->output_pin_class_sizes.size();
 
     PerPbState& state = per_pb_state_[pb];
+    // One empty vector per pin class.
     state.input_pin_class_net_counts.assign(num_input_classes, {});
     state.output_pin_class_net_counts.assign(num_output_classes, {});
 }
@@ -82,98 +84,100 @@ void ClusterPinCounter::snapshot_root_class_sizes(const t_pb* root) {
     const PerPbState& state = per_pb_state_.at(root);
 
     root_input_class_size_snapshot_.resize(state.input_pin_class_net_counts.size());
-    for (size_t c = 0; c < state.input_pin_class_net_counts.size(); ++c) {
-        root_input_class_size_snapshot_[c] = state.input_pin_class_net_counts[c].size();
+    for (size_t class_id = 0; class_id < state.input_pin_class_net_counts.size(); ++class_id) {
+        root_input_class_size_snapshot_[class_id] = state.input_pin_class_net_counts[class_id].size();
     }
+
     root_output_class_size_snapshot_.resize(state.output_pin_class_net_counts.size());
-    for (size_t c = 0; c < state.output_pin_class_net_counts.size(); ++c) {
-        root_output_class_size_snapshot_[c] = state.output_pin_class_net_counts[c].size();
+    for (size_t class_id = 0; class_id < state.output_pin_class_net_counts.size(); ++class_id) {
+        root_output_class_size_snapshot_[class_id] = state.output_pin_class_net_counts[class_id].size();
     }
 }
 
-void ClusterPinCounter::add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net) {
+void ClusterPinCounter::add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id) {
     PerPbState& state = per_pb_state_.at(pb);
-    auto& map = is_input ? state.input_pin_class_net_counts.at(class_id)
-                         : state.output_pin_class_net_counts.at(class_id);
-    uint16_t& cnt = map[net]; // inserts as 0 if missing
-    VTR_ASSERT(cnt < std::numeric_limits<uint16_t>::max());
-    cnt += 1;
+    std::unordered_map<AtomNetId, uint16_t>& net_counts
+        = is_input ? state.input_pin_class_net_counts.at(class_id)
+                   : state.output_pin_class_net_counts.at(class_id);
+    uint16_t& refcount = net_counts[net_id]; // inserts as 0 if missing
+    VTR_ASSERT(refcount < std::numeric_limits<uint16_t>::max());
+    refcount += 1;
+
     // Output classes should never exceed a refcount of 1 for a given net:
     // each net has a single driver, so at most one mark per (pb, class, net).
-    VTR_ASSERT_SAFE(is_input || cnt == 1);
-
-    per_pb_state_journal_.push_back({pb, net, static_cast<uint32_t>(class_id), is_input, +1});
+    VTR_ASSERT_SAFE(is_input || refcount == 1);
+    per_pb_state_journal_.push_back({pb, net_id, static_cast<uint32_t>(class_id), is_input, +1});
 }
 
-void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net) {
+void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id) {
     PerPbState& state = per_pb_state_.at(pb);
-    auto& map = is_input ? state.input_pin_class_net_counts.at(class_id)
-                         : state.output_pin_class_net_counts.at(class_id);
-    auto it = map.find(net);
-    VTR_ASSERT(it != map.end() && it->second > 0);
+    std::unordered_map<AtomNetId, uint16_t>& net_counts
+        = is_input ? state.input_pin_class_net_counts.at(class_id)
+                   : state.output_pin_class_net_counts.at(class_id);
+
+    auto it = net_counts.find(net_id);
+    VTR_ASSERT(it != net_counts.end() && it->second > 0);
     it->second -= 1;
     if (it->second == 0) {
-        map.erase(it);
+        net_counts.erase(it);
     }
 
-    per_pb_state_journal_.push_back({pb, net, static_cast<uint32_t>(class_id), is_input, -1});
+    per_pb_state_journal_.push_back({pb, net_id, static_cast<uint32_t>(class_id), is_input, -1});
 }
 
 void ClusterPinCounter::wipe_all_marks_journaled() {
-    // Snapshot entries per class before mutating: remove_mark modifies the map.
+    // Copy each class map into `entries` first: remove_mark mutates the
+    // class map, so iterating it in place is unsafe.
     for (auto& [pb, state] : per_pb_state_) {
-        for (size_t c = 0; c < state.input_pin_class_net_counts.size(); ++c) {
+        for (size_t class_id = 0; class_id < state.input_pin_class_net_counts.size(); ++class_id) {
             std::vector<std::pair<AtomNetId, uint16_t>> entries(
-                state.input_pin_class_net_counts[c].begin(),
-                state.input_pin_class_net_counts[c].end());
-            for (const auto& [net, cnt] : entries) {
-                for (uint16_t i = 0; i < cnt; ++i) {
-                    remove_mark(pb, /*is_input=*/true, c, net);
+                state.input_pin_class_net_counts[class_id].begin(),
+                state.input_pin_class_net_counts[class_id].end());
+            for (const auto& [net, refcount] : entries) {
+                for (uint16_t i = 0; i < refcount; ++i) {
+                    remove_mark(pb, /*is_input=*/true, class_id, net);
                 }
             }
         }
-        for (size_t c = 0; c < state.output_pin_class_net_counts.size(); ++c) {
+
+        for (size_t class_id = 0; class_id < state.output_pin_class_net_counts.size(); ++class_id) {
             std::vector<std::pair<AtomNetId, uint16_t>> entries(
-                state.output_pin_class_net_counts[c].begin(),
-                state.output_pin_class_net_counts[c].end());
-            for (const auto& [net, cnt] : entries) {
-                for (uint16_t i = 0; i < cnt; ++i) {
-                    remove_mark(pb, /*is_input=*/false, c, net);
+                state.output_pin_class_net_counts[class_id].begin(),
+                state.output_pin_class_net_counts[class_id].end());
+            for (const auto& [net, refcount] : entries) {
+                for (uint16_t i = 0; i < refcount; ++i) {
+                    remove_mark(pb, /*is_input=*/false, class_id, net);
                 }
             }
         }
     }
 }
 
-void ClusterPinCounter::record_input_mark(AtomPinId pin, const t_pb* pb) {
-    input_mark_record_[pin].push_back(pb);
-    mark_record_journal_.push_back({pin, pb, /*is_input=*/true, +1});
+void ClusterPinCounter::record_input_mark(AtomPinId pin_id, const t_pb* pb) {
+    input_mark_record_[pin_id].push_back(pb);
+    mark_record_journal_.push_back({pin_id, pb, /*is_input=*/true, +1});
 }
 
-void ClusterPinCounter::record_output_mark(AtomPinId pin, const t_pb* pb) {
-    output_mark_record_[pin].push_back(pb);
-    mark_record_journal_.push_back({pin, pb, /*is_input=*/false, +1});
+void ClusterPinCounter::record_output_mark(AtomPinId pin_id, const t_pb* pb) {
+    output_mark_record_[pin_id].push_back(pb);
+    mark_record_journal_.push_back({pin_id, pb, /*is_input=*/false, +1});
 }
 
-void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
+void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb) {
     auto it = input_mark_record_.find(pin_id);
     if (it == input_mark_record_.end()) {
-        return; // pin never contributed a mark on the input side
+        // Pin never contributed a mark on the input side.
+        return;
     }
 
     const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
-    const t_pb_graph_pin* gpin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
-    const AtomNetId net_id = netlist.pin_net(pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
 
     for (const t_pb* pb : it->second) {
-        // Defensive: skip stale pointers. See class doc — expected to be
-        // unreachable under the current lifetime invariants.
-        if (per_pb_state_.find(pb) == per_pb_state_.end()) {
-            continue;
-        }
+        VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
 
         const int depth = pb->pb_graph_node->pb_type->depth;
-        const int class_id = gpin->parent_pin_class[depth];
+        const int class_id = pb_graph_pin->parent_pin_class[depth];
         VTR_ASSERT(class_id != UNDEFINED);
 
         remove_mark(pb, /*is_input=*/true, class_id, net_id);
@@ -182,23 +186,21 @@ void ClusterPinCounter::remove_input_pin_marks(AtomPinId pin_id, AtomNetId /*net
     input_mark_record_.erase(it);
 }
 
-void ClusterPinCounter::remove_output_pin_marks(AtomPinId pin_id, AtomNetId /*net_id*/, const AtomPBBimap& atom_to_pb) {
+void ClusterPinCounter::remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb) {
     auto it = output_mark_record_.find(pin_id);
     if (it == output_mark_record_.end()) {
+        // Pin never contributed a mark on the output side.
         return;
     }
 
     const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
-    const t_pb_graph_pin* gpin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
-    const AtomNetId net_id = netlist.pin_net(pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, pin_id);
 
     for (const t_pb* pb : it->second) {
-        if (per_pb_state_.find(pb) == per_pb_state_.end()) {
-            continue;
-        }
+        VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
 
         const int depth = pb->pb_graph_node->pb_type->depth;
-        const int class_id = gpin->parent_pin_class[depth];
+        const int class_id = pb_graph_pin->parent_pin_class[depth];
         VTR_ASSERT(class_id != UNDEFINED);
 
         remove_mark(pb, /*is_input=*/false, class_id, net_id);
@@ -213,61 +215,55 @@ void ClusterPinCounter::commit_check() {
 }
 
 void ClusterPinCounter::rollback_check() {
-    // Replay record mutations in reverse first, then state mutations in
-    // reverse. The two journals are independent (records vs. state maps),
-    // but undoing records first keeps the pb -> record correspondence
-    // consistent while unmark-style state ops are being reversed below.
+    // Replay each journal in reverse. The two journals track independent
+    // state (mark records vs. per-pb refcounts).
     while (!mark_record_journal_.empty()) {
-        const MarkRecordDelta e = mark_record_journal_.back();
+        const MarkRecordDelta delta = mark_record_journal_.back();
         mark_record_journal_.pop_back();
 
-        auto& record_map = e.is_input ? input_mark_record_ : output_mark_record_;
+        std::unordered_map<AtomPinId, std::vector<const t_pb*>>& record_map
+            = delta.is_input ? input_mark_record_ : output_mark_record_;
 
-        if (e.change == +1) {
-            // Undo an append: pop the last entry (which must be pb).
-            auto it = record_map.find(e.pin);
+        if (delta.change == +1) {
+            // Undo an append: pop the last entry.
+            auto it = record_map.find(delta.pin);
             VTR_ASSERT(it != record_map.end() && !it->second.empty());
-            VTR_ASSERT_SAFE(it->second.back() == e.pb);
+            VTR_ASSERT_SAFE(it->second.back() == delta.pb);
             it->second.pop_back();
             if (it->second.empty()) {
                 record_map.erase(it);
             }
         } else {
-            VTR_ASSERT(e.change == -1);
-            // Undo a removal (from unmark_*_pin's bulk clear): push pb back.
-            // Creates the map entry if the key had been erased.
-            record_map[e.pin].push_back(e.pb);
+            VTR_ASSERT(delta.change == -1);
+            // Undo a mark-record removal: push pb back. Creates the pin's
+            // map entry if remove_*_pin_marks had already erased it.
+            record_map[delta.pin].push_back(delta.pb);
         }
     }
 
     while (!per_pb_state_journal_.empty()) {
-        const PerPbStateDelta e = per_pb_state_journal_.back();
+        const PerPbStateDelta delta = per_pb_state_journal_.back();
         per_pb_state_journal_.pop_back();
 
-        // Defence in depth: tolerate pbs that have been erased between
-        // journal record and rollback. Prefer ordering rollback before
-        // deallocation, but do not crash if the caller got the ordering
-        // wrong.
-        auto pb_it = per_pb_state_.find(e.pb);
-        if (pb_it == per_pb_state_.end()) {
-            continue;
-        }
+        VTR_ASSERT_SAFE(per_pb_state_.count(delta.pb) > 0);
+        auto pb_it = per_pb_state_.find(delta.pb);
 
-        auto& map = e.is_input ? pb_it->second.input_pin_class_net_counts.at(e.class_id)
-                               : pb_it->second.output_pin_class_net_counts.at(e.class_id);
+        std::unordered_map<AtomNetId, uint16_t>& net_counts
+            = delta.is_input ? pb_it->second.input_pin_class_net_counts.at(delta.class_id)
+                             : pb_it->second.output_pin_class_net_counts.at(delta.class_id);
 
-        if (e.change == +1) {
+        if (delta.change == +1) {
             // Undo an add: decrement, erase at zero.
-            auto it = map.find(e.net);
-            VTR_ASSERT(it != map.end() && it->second > 0);
+            auto it = net_counts.find(delta.net);
+            VTR_ASSERT(it != net_counts.end() && it->second > 0);
             it->second -= 1;
             if (it->second == 0) {
-                map.erase(it);
+                net_counts.erase(it);
             }
         } else {
-            VTR_ASSERT(e.change == -1);
+            VTR_ASSERT(delta.change == -1);
             // Undo a remove: increment, creating the entry if needed.
-            map[e.net] += 1;
+            net_counts[delta.net] += 1;
         }
     }
 }
@@ -275,20 +271,31 @@ void ClusterPinCounter::rollback_check() {
 /**
  * @brief Check whether every sink of the given net is reachable from the
  *        given driver pb_graph_pin at the given depth.
+ *
+ * @param driver_pb_gpin  The pb_graph_pin driving net_id.
+ * @param depth           The pb depth at which reachability is checked.
+ * @param net_id          The net whose sinks are being checked.
+ * @param atom_to_pb      Maps atoms to their assigned primitive pb.
+ * @return                True if every sink pin of net_id is reachable from
+ *                        driver_pb_gpin at the given depth.
  */
 static bool net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id, const AtomPBBimap& atom_to_pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
+    // Record the sink pb graph pins we are looking for.
     std::unordered_set<const t_pb_graph_pin*> sink_pb_gpins;
     for (const AtomPinId pin_id : atom_ctx.netlist().net_sinks(net_id)) {
         const t_pb_graph_pin* sink_pb_gpin = find_pb_graph_pin(atom_ctx.netlist(), atom_to_pb, pin_id);
         VTR_ASSERT(sink_pb_gpin);
+
         sink_pb_gpins.insert(sink_pb_gpin);
     }
 
+    // Count how many sink pins are reachable.
     size_t num_reachable_sinks = 0;
     for (int i_prim_pin = 0; i_prim_pin < driver_pb_gpin->num_connectable_primitive_input_pins[depth]; ++i_prim_pin) {
         const t_pb_graph_pin* reachable_pb_gpin = driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth][i_prim_pin];
+
         if (sink_pb_gpins.count(reachable_pb_gpin)) {
             ++num_reachable_sinks;
             if (num_reachable_sinks == atom_ctx.netlist().net_sinks(net_id).size()) {
@@ -303,24 +310,33 @@ static bool net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin,
 /**
  * @brief Returns the pb_graph_pin of the atom pin defined by the
  *        driver_pin_id in the driver_pb.
+ *
+ * @param driver_pb       The pb whose primitive drives driver_pin_id.
+ * @param driver_pin_id   The atom pin to look up on driver_pb.
+ * @return                The pb_graph_pin on driver_pb that drives
+ *                        driver_pin_id. Asserts if the pin cannot be located.
  */
 static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
     const auto driver_pb_type = driver_pb->pb_graph_node->pb_type;
     int output_port = 0;
+    // Find the port of the pin driving the net as well as the port model.
     auto driver_port_id = atom_netlist.pin_port(driver_pin_id);
     auto driver_model_port = atom_netlist.port_model(driver_port_id);
+    // Find the port id of the port containing the driving pin in the driver_pb_type.
     for (int i = 0; i < driver_pb_type->num_ports; i++) {
         auto& prim_port = driver_pb_type->ports[i];
         if (prim_port.type == OUT_PORT) {
             if (prim_port.model_port == driver_model_port) {
+                // Get the output pb_graph_pin driving this input net.
                 return &(driver_pb->pb_graph_node->output_pins[output_port][atom_netlist.pin_port_bit(driver_pin_id)]);
             }
             output_port++;
         }
     }
 
+    // The pin should be found.
     VTR_ASSERT(false);
     return nullptr;
 }
@@ -358,7 +374,9 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_input_pin(AtomPinId pin_i
 
         bool is_reachable = false;
 
+        // If the driver pin is within the cluster
         if (output_pb_graph_pin) {
+            // Find if the driver pin can reach the input pin of the primitive or not
             const t_pb* check_pb = driver_pb;
             while (check_pb && check_pb != cur_pb) {
                 check_pb = check_pb->parent_pb;
@@ -373,6 +391,8 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_input_pin(AtomPinId pin_i
             }
         }
 
+        // Must use an input pin to connect the driver to the input pin of the given primitive, either the
+        // driver atom is not contained in the cluster or is contained but cannot reach the primitive pin
         if (!is_reachable) {
             add_mark(cur_pb, /*is_input=*/true, pin_class, net_id);
             record_input_mark(pin_id, cur_pb);
@@ -400,6 +420,7 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
     // shallower ancestors.
     bool confirmed_absorbed = false;
 
+    // Starting from the parent pb of the given primitive, go up in the hierarchy till the root block
     for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
         const auto depth = cur_pb->pb_graph_node->pb_type->depth;
         const auto pin_class = pb_graph_pin->parent_pin_class[depth];
@@ -409,9 +430,15 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
             continue;
         }
 
+        // Determine if this net (which is driven from within this cluster)
+        // leaves this cluster (and hence uses an output pin).
+
         bool net_exits_cluster = true;
 
         if (pb_graph_pin->num_connectable_primitive_input_pins[depth] >= num_net_sinks) {
+            // It is possible the net is completely absorbed in the cluster,
+            // since this pin could (potentially) drive all the net's sinks
+
             /* Important: This runtime penalty looks a lot scarier than it really is.
              * For high fan-out nets, I at most look at the number of pins within the
              * cluster which limits runtime.
@@ -427,6 +454,7 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
              * The real danger to runtime is when the number of sinks of a net gets doubled
              */
 
+            // Check if all the net sinks are, in fact, inside this cluster
             if (!all_sinks_in_cur_cluster_computed) {
                 const LegalizationClusterId driver_cluster = atom_cluster[driver_blk_id];
                 all_sinks_in_cur_cluster = true;
@@ -440,12 +468,18 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
             }
 
             if (all_sinks_in_cur_cluster) {
+                // All the sinks are part of this cluster, so the net may be fully absorbed.
+                //
+                // Verify this, by counting the number of net sinks reachable from the driver pin.
+                // If the count equals the number of net sinks then the net is fully absorbed and
+                // the net does not exit the cluster
                 // TODO: I should cache the absorbed outputs, once net is absorbed,
                 //       net is forever absorbed, no point in rechecking every time
                 //       Caching within one pin evaluation is implemented by
                 //       confirmed_absorbed; leaving this TODO for the incremental case:
                 //       caching absorbed nets across candidate checks within a cluster.
                 if (net_sinks_reachable_in_cluster(pb_graph_pin, depth, net_id, atom_to_pb)) {
+                    // All the sinks are reachable inside the cluster
                     confirmed_absorbed = true;
                     net_exits_cluster = false;
                 }
@@ -453,6 +487,7 @@ void ClusterPinCounter::compute_and_mark_pins_used_for_output_pin(AtomPinId pin_
         }
 
         if (net_exits_cluster) {
+            // This output must exit this cluster at this level.
             add_mark(cur_pb, /*is_input=*/false, pin_class, net_id);
             record_output_mark(pin_id, cur_pb);
         }
@@ -468,8 +503,10 @@ void ClusterPinCounter::compute_and_mark_pins_used(
     const t_pb* cur_pb = atom_to_pb.atom_pb(blk_id);
     VTR_ASSERT(cur_pb != nullptr);
 
+    // Walk through inputs and outputs marking pins off of the same class.
     for (auto pin_id : atom_netlist.block_pins(blk_id)) {
         auto net_id = atom_netlist.pin_net(pin_id);
+
         const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
 
         if (pb_graph_pin->port->type == IN_PORT) {
@@ -497,8 +534,8 @@ void ClusterPinCounter::full_recompute_from_molecules(
             const t_pb* primitive_pb = atom_to_pb.atom_pb(blk_id);
             VTR_ASSERT_SAFE(primitive_pb != nullptr);
             VTR_ASSERT_SAFE(primitive_pb->pb_graph_node->pb_type->is_primitive());
-            VTR_ASSERT(primitive_pb->pb_graph_node->pb_type->blif_model != nullptr);
 
+            VTR_ASSERT(primitive_pb->pb_graph_node->pb_type->blif_model != nullptr);
             compute_and_mark_pins_used(blk_id, atom_cluster, atom_to_pb);
         }
     }
@@ -512,16 +549,15 @@ bool ClusterPinCounter::check_pins_used_full_reference(t_pb* cur_pb, t_ext_pin_u
             size_t class_size = cur_pb->pb_graph_node->input_pin_class_sizes[class_id];
 
             if (cur_pb->is_root()) {
-                // Scale the class size by the maximum external pin utilization factor.
-                // Use ceil to avoid classes of size 1 from being scaled to zero.
+                // Scale the class size by the maximum external pin utilization factor
+                // Use ceil to avoid classes of size 1 from being scaled to zero
                 class_size = std::ceil(max_external_pin_util.input_pin_util * class_size);
-                // The clamp: if the accepted (pre-check) usage already exceeded the
-                // scaled supply, raise the supply to that pre-check level. Needed
-                // because the seed molecule is packed with FULL_EXTERNAL_PIN_UTIL,
-                // so a seed that uses more pins than the target utilization would
-                // permanently fail without this raise. Uses the snapshot taken at
-                // the start of this candidate check; after the committed/lookahead
-                // collapse we no longer track a separate "committed" size.
+                // if the number of pins already used is larger than class size, then the number of
+                // cluster inputs already used should be our constraint. Why is this needed? This is
+                // needed since when packing the seed block the maximum external pin utilization is
+                // used as 1.0 allowing molecules that are using up to all the cluster inputs to be
+                // packed legally. Therefore, if the seed block is already using more inputs than
+                // the allowed maximum utilization, this should become the new maximum pin utilization.
                 VTR_ASSERT(class_id < root_input_class_size_snapshot_.size());
                 class_size = std::max<size_t>(class_size, root_input_class_size_snapshot_[class_id]);
             }
@@ -535,7 +571,15 @@ bool ClusterPinCounter::check_pins_used_full_reference(t_pb* cur_pb, t_ext_pin_u
             size_t class_size = cur_pb->pb_graph_node->output_pin_class_sizes[class_id];
 
             if (cur_pb->is_root()) {
+                // Scale the class size by the maximum external pin utilization factor
+                // Use ceil to avoid classes of size 1 from being scaled to zero
                 class_size = std::ceil(max_external_pin_util.output_pin_util * class_size);
+                // if the number of pins already used is larger than class size, then the number of
+                // cluster outputs already used should be our constraint. Why is this needed? This is
+                // needed since when packing the seed block the maximum external pin utilization is
+                // used as 1.0 allowing molecules that are using up to all the cluster outputs to be
+                // packed legally. Therefore, if the seed block is already using more outputs than
+                // the allowed maximum utilization, this should become the new maximum pin utilization.
                 VTR_ASSERT(class_id < root_output_class_size_snapshot_.size());
                 class_size = std::max<size_t>(class_size, root_output_class_size_snapshot_[class_id]);
             }
@@ -571,17 +615,17 @@ static bool class_is_feasible(const ClusterPinCounter& counter,
                               t_ext_pin_util max_external_pin_util,
                               const std::vector<size_t>& root_input_snapshot,
                               const std::vector<size_t>& root_output_snapshot) {
-    const t_pb_graph_node* gnode = pb->pb_graph_node;
-    size_t class_size = is_input ? gnode->input_pin_class_sizes[class_id]
-                                 : gnode->output_pin_class_sizes[class_id];
+    const t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
+    size_t class_size = is_input ? pb_graph_node->input_pin_class_sizes[class_id]
+                                 : pb_graph_node->output_pin_class_sizes[class_id];
 
     if (pb->is_root()) {
         const float util = is_input ? max_external_pin_util.input_pin_util
                                     : max_external_pin_util.output_pin_util;
         class_size = std::ceil(util * class_size);
-        const auto& snap = is_input ? root_input_snapshot : root_output_snapshot;
-        VTR_ASSERT(class_id < snap.size());
-        class_size = std::max<size_t>(class_size, snap[class_id]);
+        const std::vector<size_t>& snapshot = is_input ? root_input_snapshot : root_output_snapshot;
+        VTR_ASSERT(class_id < snapshot.size());
+        class_size = std::max<size_t>(class_size, snapshot[class_id]);
     }
 
     const size_t current = is_input ? counter.input_size(pb, class_id)
@@ -590,15 +634,19 @@ static bool class_is_feasible(const ClusterPinCounter& counter,
 }
 
 bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const {
-    // Only (pb, is_input, class_id) tuples that were incremented during this
-    // check can have become infeasible: the pre-delta state was feasible,
-    // decrements cannot break feasibility, and the root clamp handles the
-    // one edge case (seed utilization transition, spec §5.3). Iterate the
-    // state journal, dedup via a small vector + sort, and probe each.
+    // Walk the incremented entries in the state journal, collapse duplicate
+    // (pb, class_id, is_input) tuples, and probe each.
+    //
+    // A (pb, is_input, class_id) tuple can only become infeasible if we
+    // incremented it this check. State before this check was feasible,
+    // decrements can only help, and the root clamp is handled by
+    // snapshot_root_class_sizes.
+    
+    /// Identifies a (pb, class_id, is_input) tuple that got incremented this check.
     struct TouchedKey {
-        const t_pb* pb;
-        uint32_t class_id;
-        bool is_input;
+        const t_pb* pb;    ///< The pb whose class was touched.
+        uint32_t class_id; ///< Which pin class within pb.
+        bool is_input;     ///< True: input pin class. False: output.
         bool operator<(const TouchedKey& o) const {
             if (pb != o.pb) return pb < o.pb;
             if (is_input != o.is_input) return is_input < o.is_input;
@@ -609,24 +657,25 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
         }
     };
 
+    // Collect the incremented tuples from the state journal and collapse duplicates.
     std::vector<TouchedKey> touched;
     touched.reserve(per_pb_state_journal_.size());
-    for (const PerPbStateDelta& d : per_pb_state_journal_) {
-        if (d.change != +1) continue;
-        touched.push_back({d.pb, d.class_id, d.is_input});
+    for (const PerPbStateDelta& delta : per_pb_state_journal_) {
+        if (delta.change != +1) continue;
+        touched.push_back({delta.pb, delta.class_id, delta.is_input});
     }
     std::sort(touched.begin(), touched.end());
     touched.erase(std::unique(touched.begin(), touched.end()), touched.end());
 
+    // Probe each touched tuple for feasibility, breaking on the first failure.
     bool incremental_result = true;
-    for (const TouchedKey& k : touched) {
-        // Non-primitive pbs with a name only. Match the guard in the
-        // reference walk: primitive pbs and unnamed containers are not
-        // checked.
-        if (k.pb->pb_graph_node->pb_type->is_primitive()) continue;
-        if (k.pb->name == nullptr) continue;
+    for (const TouchedKey& key : touched) {
+        if (key.pb->pb_graph_node->pb_type->is_primitive())
+            continue;
+        if (key.pb->name == nullptr)
+            continue;
 
-        if (!class_is_feasible(*this, k.pb, k.is_input, k.class_id,
+        if (!class_is_feasible(*this, key.pb, key.is_input, key.class_id,
                                max_external_pin_util,
                                root_input_class_size_snapshot_,
                                root_output_class_size_snapshot_)) {
@@ -636,12 +685,12 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
     }
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
-    // Debug oracle: run the full-tree walk and assert agreement.
+    // Debug check: run the reference full walk and confirm it agrees.
     const bool full_result = check_pins_used_full_reference(cur_pb, max_external_pin_util);
     if (incremental_result != full_result) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK,
                         "Incremental check_pins_used disagrees with the reference "
-                        "full-tree check: incremental=%s reference=%s\n",
+                        "full walk: incremental=%s reference=%s\n",
                         incremental_result ? "pass" : "fail",
                         full_result ? "pass" : "fail");
     }
@@ -652,78 +701,93 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
     return incremental_result;
 }
 
-void ClusterPinCounter::apply_molecule_delta(
-    PackMoleculeId candidate_id,
-    const Prepacker& prepacker,
-    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-    const AtomPBBimap& atom_to_pb) {
+void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
+                                             const Prepacker& prepacker,
+                                             const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                             const AtomPBBimap& atom_to_pb) {
     const t_pack_molecule& molecule = prepacker.get_molecule(candidate_id);
     const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
 
-    // Build the set of atoms in M for O(1) membership tests.
+    // Build the set of atoms in the molecule for membership tests.
     std::unordered_set<AtomBlockId> molecule_atoms;
     for (AtomBlockId blk : molecule.atom_block_ids) {
         if (blk.is_valid()) molecule_atoms.insert(blk);
     }
     VTR_ASSERT(!molecule_atoms.empty());
 
-    // Every atom in M has already been placed and its cluster recorded by
+    // Every atom in the molecule has already been placed and its cluster recorded by
     // try_place_atom_block_rec, so any of them tells us which cluster we're
     // in. Used to filter "atom is in this cluster" checks below.
     const LegalizationClusterId our_cluster = atom_cluster[*molecule_atoms.begin()];
     VTR_ASSERT(our_cluster.is_valid());
 
-    // Step 1: every net M now drives -> re-evaluate every pre-existing sink.
-    // A net has a single driver; no dedup needed on driven-net collection.
+    // Step 1: every net the molecule now drives -> re-evaluate every pre-existing sink.
+    // A net has a single driver, so no duplicate net_ids are collected here.
     std::unordered_set<AtomNetId> driven_nets;
     for (AtomBlockId blk : molecule_atoms) {
-        for (AtomPinId pin : netlist.block_output_pins(blk)) {
-            const AtomNetId n = netlist.pin_net(pin);
-            if (n.is_valid()) driven_nets.insert(n);
+        for (AtomPinId pin_id : netlist.block_output_pins(blk)) {
+            const AtomNetId net_id = netlist.pin_net(pin_id);
+            if (net_id.is_valid())
+                driven_nets.insert(net_id);
         }
     }
-    for (AtomNetId n : driven_nets) {
-        for (AtomPinId sink_pin : netlist.net_sinks(n)) {
+    for (AtomNetId net_id : driven_nets) {
+        for (AtomPinId sink_pin : netlist.net_sinks(net_id)) {
             const AtomBlockId sink_atom = netlist.pin_block(sink_pin);
-            if (molecule_atoms.count(sink_atom)) continue;
-            if (atom_cluster[sink_atom] != our_cluster) continue;
+            // Sink belongs to the molecule; Step 3 marks it.
+            if (molecule_atoms.count(sink_atom))
+                continue;
+            // Sink belongs to another cluster; nothing to update here.
+            if (atom_cluster[sink_atom] != our_cluster)
+                continue;
 
             const t_pb* sink_prim_pb = atom_to_pb.atom_pb(sink_atom);
-            if (sink_prim_pb == nullptr) continue;
+            // Sink has not been placed into a primitive pb yet.
+            if (sink_prim_pb == nullptr)
+                continue;
 
-            remove_input_pin_marks(sink_pin, n, atom_to_pb);
-            const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(netlist, atom_to_pb, sink_pin);
-            compute_and_mark_pins_used_for_input_pin(sink_pin, sink_gpin, sink_prim_pb, n,
+            remove_input_pin_marks(sink_pin, net_id, atom_to_pb);
+            const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, sink_pin);
+            compute_and_mark_pins_used_for_input_pin(sink_pin, sink_pb_graph_pin, sink_prim_pb, net_id,
                                                      atom_cluster, atom_to_pb);
         }
     }
 
-    // Step 2: every net M now sinks -> re-evaluate the driver.
-    // Multiple atoms in M can sink the same net, so a set is required.
+    // Step 2: every net the molecule now sinks -> re-evaluate the driver.
+    // Multiple atoms in the molecule can sink the same net, so a set is required.
     std::unordered_set<AtomNetId> sunk_nets;
     for (AtomBlockId blk : molecule_atoms) {
-        for (AtomPinId pin : netlist.block_input_pins(blk)) {
-            const AtomNetId n = netlist.pin_net(pin);
-            if (n.is_valid()) sunk_nets.insert(n);
+        for (AtomPinId pin_id : netlist.block_input_pins(blk)) {
+            const AtomNetId net_id = netlist.pin_net(pin_id);
+            if (net_id.is_valid())
+                sunk_nets.insert(net_id);
         }
     }
-    for (AtomNetId n : sunk_nets) {
-        const AtomPinId driver_pin = netlist.net_driver(n);
-        if (!driver_pin.is_valid()) continue;
+    for (AtomNetId net_id : sunk_nets) {
+        const AtomPinId driver_pin = netlist.net_driver(net_id);
+        // Net has no driver (dangling or constant).
+        if (!driver_pin.is_valid())
+            continue;
         const AtomBlockId driver_atom = netlist.pin_block(driver_pin);
-        if (molecule_atoms.count(driver_atom)) continue;
-        if (atom_cluster[driver_atom] != our_cluster) continue;
+        // Driver belongs to the molecule; Step 3 marks it.
+        if (molecule_atoms.count(driver_atom))
+            continue;
+        // Driver belongs to another cluster; nothing to update here.
+        if (atom_cluster[driver_atom] != our_cluster)
+            continue;
 
         const t_pb* driver_prim_pb = atom_to_pb.atom_pb(driver_atom);
-        if (driver_prim_pb == nullptr) continue;
+        // Driver has not been placed into a primitive pb yet.
+        if (driver_prim_pb == nullptr)
+            continue;
 
-        remove_output_pin_marks(driver_pin, n, atom_to_pb);
-        const t_pb_graph_pin* driver_gpin = find_pb_graph_pin(netlist, atom_to_pb, driver_pin);
-        compute_and_mark_pins_used_for_output_pin(driver_pin, driver_gpin, driver_prim_pb, n,
+        remove_output_pin_marks(driver_pin, net_id, atom_to_pb);
+        const t_pb_graph_pin* driver_pb_graph_pin = find_pb_graph_pin(netlist, atom_to_pb, driver_pin);
+        compute_and_mark_pins_used_for_output_pin(driver_pin, driver_pb_graph_pin, driver_prim_pb, net_id,
                                                   atom_cluster, atom_to_pb);
     }
 
-    // Step 3: mark every pin of every atom in M.
+    // Step 3: mark every pin of every atom in the molecule.
     for (AtomBlockId blk : molecule_atoms) {
         const t_pb* prim_pb = atom_to_pb.atom_pb(blk);
         VTR_ASSERT_SAFE(prim_pb != nullptr);
@@ -744,25 +808,25 @@ static void compare_class_maps_or_die(const t_pb* pb,
     VTR_ASSERT(actual.size() == reference.size());
 
     for (size_t class_id = 0; class_id < actual.size(); ++class_id) {
-        const auto& a = actual[class_id];
-        const auto& r = reference[class_id];
+        const std::unordered_map<AtomNetId, uint16_t>& actual_class = actual[class_id];
+        const std::unordered_map<AtomNetId, uint16_t>& reference_class = reference[class_id];
 
-        if (a == r) {
+        if (actual_class == reference_class) {
             continue;
         }
 
         std::string diff;
-        for (const auto& [net, cnt] : a) {
-            auto it = r.find(net);
-            if (it == r.end()) {
-                diff += " actual has net " + std::to_string(size_t(net)) + " (count " + std::to_string(cnt) + "), reference does not;";
-            } else if (it->second != cnt) {
-                diff += " net " + std::to_string(size_t(net)) + " count actual=" + std::to_string(cnt) + " reference=" + std::to_string(it->second) + ";";
+        for (const auto& [net, refcount] : actual_class) {
+            auto it = reference_class.find(net);
+            if (it == reference_class.end()) {
+                diff += " actual has net " + std::to_string(static_cast<size_t>(net)) + " (count " + std::to_string(refcount) + "), reference does not;";
+            } else if (it->second != refcount) {
+                diff += " net " + std::to_string(static_cast<size_t>(net)) + " count actual=" + std::to_string(refcount) + " reference=" + std::to_string(it->second) + ";";
             }
         }
-        for (const auto& [net, cnt] : r) {
-            if (a.find(net) == a.end()) {
-                diff += " reference has net " + std::to_string(size_t(net)) + " (count " + std::to_string(cnt) + "), actual does not;";
+        for (const auto& [net, refcount] : reference_class) {
+            if (actual_class.find(net) == actual_class.end()) {
+                diff += " reference has net " + std::to_string(static_cast<size_t>(net)) + " (count " + std::to_string(refcount) + "), actual does not;";
             }
         }
 
@@ -776,11 +840,10 @@ static void compare_class_maps_or_die(const t_pb* pb,
     }
 }
 
-void ClusterPinCounter::verify_against_full_recompute(
-    const std::vector<PackMoleculeId>& molecules,
-    const Prepacker& prepacker,
-    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-    const AtomPBBimap& atom_to_pb) const {
+void ClusterPinCounter::verify_against_full_recompute(const std::vector<PackMoleculeId>& molecules,
+                                                      const Prepacker& prepacker,
+                                                      const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                      const AtomPBBimap& atom_to_pb) const {
     // Build a scratch counter with the same pb topology as this counter and
     // let it fill its state via the full recompute path.
     ClusterPinCounter scratch;
@@ -804,10 +867,10 @@ void ClusterPinCounter::verify_against_full_recompute(
  * @brief Collect every pb reachable from the given root via child_pbs traversal
  *        into the given set.
  */
-static void collect_reachable_pbs(const t_pb* pb, std::unordered_set<const t_pb*>& out) {
+static void collect_reachable_pbs(const t_pb* pb, std::unordered_set<const t_pb*>& reachable_pbs) {
     if (pb == nullptr)
         return;
-    out.insert(pb);
+    reachable_pbs.insert(pb);
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
     if (pb_type->is_primitive())
@@ -816,21 +879,21 @@ static void collect_reachable_pbs(const t_pb* pb, std::unordered_set<const t_pb*
         return;
 
     const int mode = pb->mode;
-    for (int c = 0; c < pb_type->modes[mode].num_pb_type_children; ++c) {
-        if (!pb->child_pbs[c])
+    for (int child_num = 0; child_num < pb_type->modes[mode].num_pb_type_children; ++child_num) {
+        if (!pb->child_pbs[child_num])
             continue;
-        for (int i = 0; i < pb_type->modes[mode].pb_type_children[c].num_pb; ++i) {
-            collect_reachable_pbs(&pb->child_pbs[c][i], out);
+        for (int pb_instance = 0; pb_instance < pb_type->modes[mode].pb_type_children[child_num].num_pb; ++pb_instance) {
+            collect_reachable_pbs(&pb->child_pbs[child_num][pb_instance], reachable_pbs);
         }
     }
 }
 
 void ClusterPinCounter::assert_all_pbs_reachable_from(const t_pb* cluster_root) const {
-    std::unordered_set<const t_pb*> reachable;
-    collect_reachable_pbs(cluster_root, reachable);
+    std::unordered_set<const t_pb*> reachable_pbs;
+    collect_reachable_pbs(cluster_root, reachable_pbs);
 
     for (const auto& [pb, _] : per_pb_state_) {
-        if (reachable.count(pb) == 0) {
+        if (reachable_pbs.count(pb) == 0) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "ClusterPinCounter tracks a pb (raw pointer %p) that is not "
                             "reachable from the cluster root. A free/cleanup site freed "

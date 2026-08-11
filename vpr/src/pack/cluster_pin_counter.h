@@ -256,17 +256,17 @@ class ClusterPinCounter {
         int8_t change;  ///< +1 on append (pb added to the record), -1 on removal.
     };
 
-    /// @brief Increment the refcount of net in the given (pb, class) map. Journals the change.
-    void add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net);
+    /// @brief Increment the refcount of net_id in the given (pb, class) map. Journals the change.
+    void add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id);
 
-    /// @brief Decrement the refcount of net in the given (pb, class) map, erasing the key at zero. Journals the change.
-    void remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net);
+    /// @brief Decrement the refcount of net_id in the given (pb, class) map, erasing the key at zero. Journals the change.
+    void remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id);
 
-    /// @brief Append pb to input_mark_record_[pin] (creating the entry if missing). Journals the append.
-    void record_input_mark(AtomPinId pin, const t_pb* pb);
+    /// @brief Append pb to input_mark_record_[pin_id] (creating the entry if missing). Journals the append.
+    void record_input_mark(AtomPinId pin_id, const t_pb* pb);
 
-    /// @brief Append pb to output_mark_record_[pin] (creating the entry if missing). Journals the append.
-    void record_output_mark(AtomPinId pin, const t_pb* pb);
+    /// @brief Append pb to output_mark_record_[pin_id] (creating the entry if missing). Journals the append.
+    void record_output_mark(AtomPinId pin_id, const t_pb* pb);
 
     /// @brief Remove every mark this input pin has contributed, and clear its entry in input_mark_record_. Undoable via rollback_check.
     void remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
