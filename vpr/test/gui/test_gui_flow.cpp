@@ -296,6 +296,9 @@ TEST_CASE("Flow: Critical path controls loaded from Net popover", "[layer3][vpr_
     auto* critPathToggleSwitch = findWidgetByName<SwitchButton>("ToggleCritPath");
     REQUIRE(critPathToggleSwitch != nullptr);
 
+    auto* critNum = findWidgetByName<QSpinBox>("NumCritPaths");
+    REQUIRE(critNum != nullptr);
+
     auto* critFlylines = findWidgetByName<QCheckBox>("ToggleCritPathFlylines");
     REQUIRE(critFlylines != nullptr);
     CHECK(critFlylines->text() == "Critical Path Flylines");

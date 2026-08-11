@@ -119,25 +119,26 @@ constexpr WidgetSpec kSpecs[] = {
 
     // --- ui_setup.cpp critical_path_button_setup ---
     {"ToggleCritPath", WidgetKind::SwitchButton, "ui_setup.cpp:324"},
-    {"ToggleCritPathFlylines", WidgetKind::CheckBox, "ui_setup.cpp:330"},
-    {"ToggleCritPathRouting", WidgetKind::CheckBox, "ui_setup.cpp:331"},
-    {"ToggleCritPathDelays", WidgetKind::CheckBox, "ui_setup.cpp:332"},
+    {"NumCritPaths", WidgetKind::SpinBox, "ui_setup.cpp:329"},
+    {"ToggleCritPathFlylines", WidgetKind::CheckBox, "ui_setup.cpp:338"},
+    {"ToggleCritPathRouting", WidgetKind::CheckBox, "ui_setup.cpp:339"},
+    {"ToggleCritPathDelays", WidgetKind::CheckBox, "ui_setup.cpp:340"},
 
     // --- ui_setup.cpp proceed_by_step_button_setup ---
-    {"ProceedByStep", WidgetKind::SwitchButton, "ui_setup.cpp:366"},
-    {"StepsToProceed", WidgetKind::SpinBox, "ui_setup.cpp:372"},
+    {"ProceedByStep", WidgetKind::SwitchButton, "ui_setup.cpp:374"},
+    {"StepsToProceed", WidgetKind::SpinBox, "ui_setup.cpp:380"},
 
     // --- ui_setup.cpp autocomplete_setup ---
-    {"TextInput", WidgetKind::LineEdit, "ui_setup.cpp:387"},
+    {"TextInput", WidgetKind::LineEdit, "ui_setup.cpp:395"},
 
     // --- draw.cpp default_setup (callback wiring) ---
-    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1282"},
-    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1288"},
-    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1294"},
-    {"blockText", WidgetKind::CheckBox, "draw.cpp:1300"},
-    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1306"},
-    {"debugButton", WidgetKind::PushButton, "draw.cpp:1312"},
-    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1318"},
+    {"ProceedButton", WidgetKind::PushButton, "draw.cpp:1287"},
+    {"ZoomFitButton", WidgetKind::PushButton, "draw.cpp:1293"},
+    {"blockOutline", WidgetKind::CheckBox, "draw.cpp:1299"},
+    {"blockText", WidgetKind::CheckBox, "draw.cpp:1305"},
+    {"clipRoutingUtil", WidgetKind::CheckBox, "draw.cpp:1311"},
+    {"debugButton", WidgetKind::PushButton, "draw.cpp:1317"},
+    {"drawPartitions", WidgetKind::CheckBox, "draw.cpp:1323"},
 
     // --- search_bar.cpp ---
     // (find_combo_box("SearchType") and find_line_edit("TextInput") already

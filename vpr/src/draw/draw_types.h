@@ -247,7 +247,8 @@ struct t_draw_state {
 
     ///@brief Whether to show crit path
     bool show_crit_path = false;
-
+    ///@brief Number of critical paths to be drawn simultaneously on screen.
+    std::size_t num_crit_paths = 1;
     bool show_crit_path_flylines = false;
     bool show_crit_path_delays = false;
     bool show_crit_path_routing = false;
@@ -366,9 +367,6 @@ struct t_draw_state {
     ///@brief A mode that controls if the graphics can proceed by a custom number of steps
     /// (e.g. temperature change, routing iteration) and then pause for user interaction.
     t_proceed_by_step proceed_by_step;
-
-    ///@brief Number of critical paths to be drawn simultaneously on screen.
-    std::size_t num_crit_paths = 1;
 
     int sequence_number = 0;
 
