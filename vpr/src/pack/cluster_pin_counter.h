@@ -231,18 +231,17 @@ class ClusterPinCounter {
      * @brief One journaled mutation to per_pb_state_ refcounts. Rollback
      *        replays entries in reverse.
      *
-     * TODO: The fixed-width types here (uint32_t class_id, int8_t change), in
-     *       MarkRecordDelta (int8_t change), and in PerPbState (uint16_t
-     *       refcount in the per class maps) could be replaced with plain int /
-     *       size_t for VPR-idiomatic consistency. Struct alignment makes the
-     *       byte savings negligible in practice.
+     * TODO: The remaining fixed-width types (uint32_t class_id here, uint16_t
+     *       refcount in PerPbState) could be replaced with plain int / size_t
+     *       for VPR-idiomatic consistency. Kept for now because they affect
+     *       struct/map-entry size and warrant a perf check before changing.
      */
     struct PerPbStateDelta {
         const t_pb* pb;    ///< Which pb the mutated refcount belongs to.
         AtomNetId net;     ///< Which net's refcount changed.
         uint32_t class_id; ///< Which pin class at pb.
         bool is_input;     ///< True: input pin class. False: output.
-        int8_t change;     ///< +1 on add_mark, -1 on remove_mark.
+        int change;        ///< +1 on add_mark, -1 on remove_mark.
     };
 
     /**
@@ -253,7 +252,7 @@ class ClusterPinCounter {
         AtomPinId pin;  ///< Which pin's mark record was mutated.
         const t_pb* pb; ///< The pb added to or removed from that pin's record.
         bool is_input;  ///< True: input_mark_record_. False: output_mark_record_.
-        int8_t change;  ///< +1 on append (pb added to the record), -1 on removal.
+        int change;     ///< +1 on append (pb added to the record), -1 on removal.
     };
 
     /// @brief Increment the refcount of net_id in the given (pb, class) map. Journals the change.

@@ -134,7 +134,7 @@ void ClusterPinCounter::wipe_all_marks_journaled() {
                 state.input_pin_class_net_counts[class_id].begin(),
                 state.input_pin_class_net_counts[class_id].end());
             for (const auto& [net, refcount] : entries) {
-                for (uint16_t i = 0; i < refcount; ++i) {
+                for (int i = 0; i < refcount; ++i) {
                     remove_mark(pb, /*is_input=*/true, class_id, net);
                 }
             }
@@ -145,7 +145,7 @@ void ClusterPinCounter::wipe_all_marks_journaled() {
                 state.output_pin_class_net_counts[class_id].begin(),
                 state.output_pin_class_net_counts[class_id].end());
             for (const auto& [net, refcount] : entries) {
-                for (uint16_t i = 0; i < refcount; ++i) {
+                for (int i = 0; i < refcount; ++i) {
                     remove_mark(pb, /*is_input=*/false, class_id, net);
                 }
             }
