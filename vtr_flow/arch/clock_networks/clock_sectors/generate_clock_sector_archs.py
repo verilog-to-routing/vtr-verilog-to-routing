@@ -136,8 +136,17 @@ def build_spine(col: int, row: int, n: int, denom: int) -> Any:
     x = frac(2 * col - 1, "W", denom)
 
     network = etree.Element("clock_network", name=f"spine_q{qname(col, row)}", num_inst="2")
-    spine = etree.SubElement(network, "spine", metal_layer="global_spine", x=x, starty=starty, endy=endy)
-    etree.SubElement(spine, "switch_point", type="drive", name="drive", yoffset=frac(1, "H", denom), switch_name="drive_buff")
+    spine = etree.SubElement(
+        network, "spine", metal_layer="global_spine", x=x, starty=starty, endy=endy
+    )
+    etree.SubElement(
+        spine,
+        "switch_point",
+        type="drive",
+        name="drive",
+        yoffset=frac(1, "H", denom),
+        switch_name="drive_buff",
+    )
     etree.SubElement(spine, "switch_point", type="tap", name="tap", yoffset="0", yincr="1")
     return network
 
@@ -155,8 +164,24 @@ def build_rib(col: int, row: int, n: int, denom: int) -> Any:
     endx = "W" if col == n else f"{frac(2 * col, 'W', denom)} - 1"
 
     network = etree.Element("clock_network", name=f"ribs_q{qname(col, row)}", num_inst="2")
-    rib = etree.SubElement(network, "rib", metal_layer="global_rib", y=starty, endy=endy, startx=startx, endx=endx, repeaty="1")
-    etree.SubElement(rib, "switch_point", type="drive", name="drive", xoffset=frac(1, "W", denom), switch_name="drive_buff")
+    rib = etree.SubElement(
+        network,
+        "rib",
+        metal_layer="global_rib",
+        y=starty,
+        endy=endy,
+        startx=startx,
+        endx=endx,
+        repeaty="1",
+    )
+    etree.SubElement(
+        rib,
+        "switch_point",
+        type="drive",
+        name="drive",
+        xoffset=frac(1, "W", denom),
+        switch_name="drive_buff",
+    )
     etree.SubElement(rib, "switch_point", type="tap", name="tap", xoffset="0", xincr="1")
     return network
 
@@ -182,7 +207,10 @@ def build_clock_routing(n: int, denom: int) -> Any:
             etree.SubElement(
                 routing,
                 "tap",
-                **{"from": f"global_clk_switch_network.tap_q{qname(col, row)}", "to": f"spine_q{qname(col, row)}.drive"},
+                **{
+                    "from": f"global_clk_switch_network.tap_q{qname(col, row)}",
+                    "to": f"spine_q{qname(col, row)}.drive",
+                },
                 switch="0",
                 fc_val="1.0",
             )
@@ -287,7 +315,9 @@ def generate_arch(n: int, template_path: str, output_dir: str, parser: Any) -> N
     print(f"Generated: {output_path}")
 
 
-def generate_clock_sector_archs(sizes: "list[int]", template_path: str, output_dir: str = ".") -> None:
+def generate_clock_sector_archs(
+    sizes: "list[int]", template_path: str, output_dir: str = "."
+) -> None:
     """Generate NxN clock sector architecture variants.
 
     Args:
