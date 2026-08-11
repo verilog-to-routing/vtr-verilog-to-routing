@@ -1155,9 +1155,14 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 cluster.pin_counter.commit_check();
 #ifdef VTR_ASSERT_SAFE_ENABLED
                 // Recompute the pin state from scratch over the accepted
-                // molecules and assert it matches the committed state.
+                // molecules and assert it matches the committed state. Only
+                // meaningful when the filter is enabled: with the filter off,
+                // apply_molecule_delta never ran so per_pb_state_ is empty
+                // and the recompute would falsely report divergence.
                 // Note: This is expensive verification, do not keep in release.
-                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                if (enable_pin_feasibility_filter_) {
+                    cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                }
 #endif
             }
         }
@@ -1206,9 +1211,14 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             // Verify pin counter after rollback and cleanup. Every per_pb_state_
             // key must point to a pb reachable from cluster.pb. The state must
             // match a recompute over cluster.molecules (candidate popped above).
+            // Only meaningful when the pin feasibility filter is enabled; with
+            // the filter off, apply_molecule_delta never ran so the incremental
+            // state was never maintained and the recompute would diverge.
             // Note: Expensive verification, do not keep in release.
             cluster.pin_counter.assert_all_pbs_reachable_from(cluster.pb);
-            cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+            if (enable_pin_feasibility_filter_) {
+                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+            }
 #endif
 
             // Move failed primitive that is inflight to the tried map.
