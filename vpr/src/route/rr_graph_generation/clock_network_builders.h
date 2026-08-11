@@ -149,8 +149,8 @@ class ClockRib : public ClockNetwork {
     /// **unified** segment_inf vector instead; map_relative_seg_indices remaps them once
     /// build_rr_graph has split segment_inf into its per-axis vectors. That remap always
     /// reads from *_seg_idx_unified_ (set once, in create_segments, and never modified
-    /// again) rather than from these fields themselves, since build_rr_graph -- and
-    /// therefore map_relative_seg_indices -- can run more than once per VPR invocation
+    /// again) rather than from these fields themselves, since build_rr_graph, and
+    /// therefore map_relative_seg_indices, can run more than once per VPR invocation
     /// (e.g. once for the placement delay model, once for the real routing resource
     /// graph) on this same long-lived object; remapping an already-remapped parallel
     /// index as though it were still a unified one would silently corrupt it.
@@ -187,7 +187,7 @@ class ClockRib : public ClockNetwork {
     void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) override;
 
     /// @brief Creates a single CHANX RR node spanning [x_start, x_end] at row y, tagged
-    /// with the segment matching direction (drive/left/right -- see the seg idx fields
+    /// with the segment matching direction (drive/left/right; see the seg idx fields
     /// above), and adds it to the spatial lookup.
     int create_chanx_wire(int layer,
                           int x_start,
@@ -198,8 +198,8 @@ class ClockRib : public ClockNetwork {
                           t_rr_graph_storage* rr_nodes,
                           RRGraphBuilder& rr_graph_builder);
 
-    /// @brief Registers this rib's tap point(s) -- at tap_.offset, repeating every
-    /// tap_.increment tiles -- in clock_graph's reverse lookup, pointing each tap at
+    /// @brief Registers this rib's tap point(s); at tap_.offset, repeating every
+    /// tap_.increment tiles; in clock_graph's reverse lookup, pointing each tap at
     /// whichever of drive/left/right node it falls on.
     void record_tap_locations(unsigned x_start,
                               unsigned x_end,
@@ -220,7 +220,7 @@ class ClockSpine : public ClockNetwork {
     LinearClockDrive drive_;
     LinearClockTaps tap_;
 
-    // Segment indices -- see the longer comment on ClockRib's equivalent fields.
+    // Segment indices; see the longer comment on ClockRib's equivalent fields.
     int right_seg_idx_ = UNDEFINED;
     int left_seg_idx_ = UNDEFINED;
     int drive_seg_idx_ = UNDEFINED;
@@ -303,7 +303,7 @@ struct ClockSwitchPattern {
     t_permutation_map permutation_map; ///< Only meaningful when switch_block_type == CUSTOM.
 };
 
-/// @brief Models a grid of clock switch boxes (see ClockType::SPINE -- reused as a
+/// @brief Models a grid of clock switch boxes (see ClockType::SPINE; reused as a
 /// placeholder network type, see get_network_type): at every (repeat_x, repeat_y) spaced
 /// location, clock wires connect to their adjacent switch boxes' wires according to a
 /// configurable switch-block pattern (see switch_block_type_). Locations with a
@@ -390,7 +390,7 @@ class ClockSwitchGrid : public ClockNetwork {
 };
 
 /// @brief An H-tree clock network (see ClockType::H_TREE).
-/// @note Not yet implemented -- every member function fatal-errors. Kept as a stub so the
+/// @note Not yet implemented; every member function fatal-errors. Kept as a stub so the
 /// arch parser and ClockType enum already have a place for it once it is implemented.
 class ClockHTree : public ClockNetwork {
   private:

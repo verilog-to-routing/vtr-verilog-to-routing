@@ -5029,7 +5029,7 @@ static void process_clock_switch_grid_points(pugi::xml_node parent,
 
 // Parses the <switch_pattern> children of a clock_switch_grid whose
 // switch_block_type is "custom". Independent of general routing's
-// <switchblocklist>/<switch_block type="custom"> -- a separate XML location,
+// <switchblocklist>/<switch_block type="custom">; a separate XML location,
 // struct (t_clock_switch_pattern), and name namespace.
 static void process_clock_switch_grid_patterns(pugi::xml_node parent,
                                                t_clock_network_arch& clock_network,
@@ -5085,7 +5085,7 @@ static void process_clock_switch_grid_patterns(pugi::xml_node parent,
             // Reuse general routing's own <switchblock> permutation-formula
             // machinery verbatim (parse_switchblocks.h): read_sb_switchfuncs
             // parses every <func type="lr" formula="..."/> into a
-            // t_permutation_map, and check_switchblock validates it -- for
+            // t_permutation_map, and check_switchblock validates it for
             // BI_DIRECTIONAL, rejecting a pattern that specifies both
             // side1->side2 and side2->side1 (the reverse is implicit, derived
             // by mirroring the computed edge at RR-graph build time, not by

@@ -218,7 +218,7 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
                     // point at (base_x, base_y).
                     //
                     // The outermost ring of tiles (x/y == 0 or width/height - 1) is the
-                    // device perimeter and never has a switch box -- general routing
+                    // device perimeter and never has a switch box; general routing
                     // channels don't reach it either (see the "-2 for no perim channels"
                     // convention used throughout rr_graph2.cpp/rr_graph_chan_seg_details.cpp,
                     // and ClockSwitchGrid's own x_max/y_max in clock_network_builders.cpp).
@@ -351,8 +351,8 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
 
     t_formula_data vars = grid_size_formula_vars(grid);
 
-    // A clock network's drive points -- whether from general routing (ROUTING) or a tile
-    // port/pin (TILE.*) -- all share one virtual sink node in the RR graph (see
+    // A clock network's drive points, whether from general routing (ROUTING) or a tile
+    // port/pin (TILE.*), all share one virtual sink node in the RR graph (see
     // get_or_create_virtual_clock_network_root in clock_connection_builders.cpp), so pick
     // a single representative location for that shared node up front: the centroid of all
     // of this network's drive point locations, rather than arbitrarily using whichever

@@ -202,7 +202,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     index = left_seg_idx_;
     name = clock_name_ + "_left";
-    // Clamped to a minimum of 1 -- see the comment on the right segment above.
+    // Clamped to a minimum of 1; see the comment on the right segment above.
     length = std::max(drive_.offset - 1, 1);
 
     populate_segment_values(index, name, length, x_chan_wire_.layer, segment_inf, e_parallel_axis::X_AXIS, UNI_DIRECTIONAL);
@@ -229,8 +229,8 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
             // boundary-shift heuristic in ClockToClockConnection::create_switches in
             // clock_connection_builders.cpp) hardcodes the assumption that I/O lives on
             // the device perimeter, so rib/spine wires must stop 1 tile short of the
-            // edge ("dont go above the LB"). That assumption doesn't generally hold --
-            // nothing guarantees I/O is perimeter-only -- so this logic should be
+            // edge ("dont go above the LB"). That assumption doesn't generally hold,
+            // nothing guarantees I/O is perimeter-only, so this logic should be
             // reworked to derive the valid span from the actual device/block layout
             // instead of a hardcoded "-2" offset. Needs investigation.
             // Adjust for boundary conditions
@@ -404,8 +404,8 @@ int ClockRib::create_chanx_wire(int layer,
     // the node's actual tile span. Unlike ClockSwitchGrid's hop wires (whose x_start/
     // x_end are switchbox-lattice edges, so x_end - x_start directly counts tile
     // pitches traversed), a rib wing's x_start/x_end are inclusive occupied-tile-column
-    // coordinates -- the same convention general routing CHANX/CHANY nodes use (see
-    // rr_graph_chan_chan_edges.cpp's length = end - start + 1) -- because
+    // coordinates, the same convention general routing CHANX/CHANY nodes use (see
+    // rr_graph_chan_chan_edges.cpp's length = end - start + 1), because
     // record_tap_locations below relies on [x_start, x_end] inclusively covering every
     // tap column the wing is responsible for. So a real wing spans (x_end - x_start + 1)
     // tiles; the drive point's degenerate zero-length hub (x_start == x_end, BIDIR) is
@@ -421,7 +421,7 @@ int ClockRib::create_chanx_wire(int layer,
     // for the left wing and Direction::INC for the right wing, each a real wire
     // span flowing away from the drive point. Direction::BIDIR is only ever passed
     // for the drive point itself, a degenerate zero-length (x_start == x_end) hub
-    // node, not a wire -- so it has no "direction" in any physical sense; BIDIR
+    // node, not a wire, so it has no "direction" in any physical sense; BIDIR
     // here just reflects that it's enterable/exitable from either wing.
     short seg_index = 0;
     switch (direction) {
@@ -597,7 +597,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     index = right_seg_idx_;
     name = clock_name_ + "_right";
-    // Clamped to a minimum of 1 -- see the comment on ClockRib's right segment
+    // Clamped to a minimum of 1; see the comment on ClockRib's right segment
     // in ClockRib::create_segments above; the same reasoning applies here.
     length = std::max((y_chan_wire_.length - drive_.offset) - 1, 1);
 
@@ -609,7 +609,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     index = left_seg_idx_;
     name = clock_name_ + "_left";
-    // Clamped to a minimum of 1 -- see the comment above.
+    // Clamped to a minimum of 1; see the comment above.
     length = std::max(drive_.offset - 1, 1);
 
     populate_segment_values(index, name, length, y_chan_wire_.layer, segment_inf, e_parallel_axis::Y_AXIS, UNI_DIRECTIONAL);
@@ -690,7 +690,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             // ClockRib::estimate_additional_nodes above. This is the specific clamp
             // that produces the node-placement quirk ClockToClockConnection::create_switches
             // (in clock_connection_builders.cpp) works around with its boundary-shift
-            // fallback -- that workaround only exists because of this assumption.
+            // fallback; that workaround only exists because of this assumption.
             // Adjust for boundary conditions
             unsigned y_offset = 0;
             if ((y_start == 0) ||               // CHANY wires bottom boundary, start above the LB
@@ -1096,8 +1096,8 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
 
     // Pass 1: create the hop wires themselves (independent of switch-block pattern).
     // A wire spans length_hops_ switch-box pitches, not necessarily just one. Each
-    // track's wires are staggered by (track % length_hops_) pitches -- mirroring how
-    // alloc_and_load_seg_details staggers general routing segments -- so that across
+    // track's wires are staggered by (track % length_hops_) pitches, mirroring how
+    // alloc_and_load_seg_details staggers general routing segments, so that across
     // the whole channel, every switch box is still the true endpoint of some track's
     // wire and can participate in wire-to-wire turns; only 1/length_hops_ of the
     // tracks turn at any single switch box.
@@ -1192,7 +1192,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
     // box (a valid "to"/fan-in source). A box touches a wire on RIGHT/TOP at the
     // wire's low-coordinate end (see east_wire/north_wire above: keyed by the box at
     // that end) and on LEFT/BOTTOM at its high-coordinate end. Only meaningful for
-    // INC/DEC tracks -- never called for BI_DIRECTIONAL grids, where every wire is
+    // INC/DEC tracks; never called for BI_DIRECTIONAL grids, where every wire is
     // both.
     auto is_outgoing = [](e_side side, Direction dir) -> bool {
         bool low_coord_end = (side == RIGHT || side == TOP);
@@ -1319,10 +1319,10 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                             // Fully-custom pattern: the turn permutation for this side
                             // pair comes from the matched pattern's <switchfuncs>
                             // formulas (general routing's own grammar, reused
-                            // verbatim -- see parse_switchblocks.h). t is the raw
+                            // verbatim; see parse_switchblocks.h). t is the raw
                             // from_track index (0..chan_w_-1) and W is chan_w_,
                             // matching general routing's actual semantics (t is never
-                            // a filtered/compacted index there -- direction eligibility
+                            // a filtered/compacted index there; direction eligibility
                             // is a separate skip, not baked into t's domain).
                             SBSideConnection side_conn(from_side, to_side);
                             auto iter = pattern->permutation_map.find(side_conn);
@@ -1338,7 +1338,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                                 // build_switchblocks.cpp's adjust_formula_result() for
                                 // its single-pass case (num_conns == chan_w_ here, so
                                 // connection_ind == from_track and the src_mult term
-                                // there is always 0) -- that function is file-static
+                                // there is always 0); that function is file-static
                                 // there and not reusable directly.
                                 int to_track = raw_to_track;
                                 if (to_track < 0) {
@@ -1376,7 +1376,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                             // SUBSET/WILTON/UNIVERSAL for a unidirectional grid: reuse
                             // get_simple_switch_block_track's existing turn geometry at
                             // the track-*pair* level (each INC/DEC pair sharing one
-                            // physical lane, chan_w_/2 lanes total -- chan_w_ is
+                            // physical lane, chan_w_/2 lanes total; chan_w_ is
                             // guaranteed even, see the setup_clocks.cpp validation),
                             // then resolve to the specific track of the destination
                             // lane that actually flows away from this box on to_side.
@@ -1412,7 +1412,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
     // exactly one of its (x,y) coordinates aligned to the switch-box lattice (the
     // column/row the channel runs along) with the other coordinate falling within
     // the grid but off the lattice (i.e. strictly between two switch boxes on that
-    // channel, or coincident with one -- either way not itself a switch box row/col).
+    // channel, or coincident with one; either way not itself a switch box row/col).
     for (size_t i = 0; i < switch_points_.size(); i++) {
         if (switch_point_registered[i]) continue;
 
@@ -1554,7 +1554,7 @@ int ClockSwitchGrid::create_chany_node(int layer,
 
 void ClockSwitchGrid::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
     // Always remap from the unified-space originals (*_seg_idx_unified_), not from
-    // x_seg_idx_/y_seg_idx_ themselves -- see the longer comment on
+    // x_seg_idx_/y_seg_idx_ themselves; see the longer comment on
     // ClockRib::map_relative_seg_indices.
 
     int seg_idx;

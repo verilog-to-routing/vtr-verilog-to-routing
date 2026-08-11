@@ -82,7 +82,7 @@ struct t_clock_switch_grid_point {
 
 /// @brief One <switch_pattern> under a custom clock_switch_grid: which built-in switch-block
 /// permutation type applies, and where. Formula strings are resolved later (setup_clocks.cpp)
-/// against the same W/H vars as the rest of this grid -- same deferred-formula convention as
+/// against the same W/H vars as the rest of this grid. This is the same deferred-formula convention as
 /// startx/repeatx/chan_w below, so this still works with "auto" device layouts (general
 /// routing's own <switchblock_location> XY_SPECIFIED explicitly rejects "auto" layouts; clock
 /// networks don't need that restriction). Fully independent of general routing's
@@ -100,7 +100,7 @@ struct t_clock_switch_pattern {
 
     /// @brief Turn permutation formulas parsed from this pattern's <switchfuncs> child, reusing
     /// general routing's own <switchblock> grammar/types verbatim (see parse_switchblocks.h's
-    /// read_sb_switchfuncs/t_permutation_map). Formulas stay as strings here -- t/W are only
+    /// read_sb_switchfuncs/t_permutation_map). Formulas stay as strings here; t/W are only
     /// known per-track at RR-graph build time, same as general routing. Only meaningful when
     /// switch_block_type == CUSTOM.
     t_permutation_map permutation_map;
@@ -137,7 +137,7 @@ struct t_clock_switch_grid_arch {
     std::string length = "1";
 
     /// @brief Whether the grid's hop wires are BI_DIRECTIONAL (one node per track, entered and
-    /// exited from either end -- the original/default behavior) or UNI_DIRECTIONAL (each track
+    /// exited from either end; the original/default behavior) or UNI_DIRECTIONAL (each track
     /// flows one way, like general routing's unidirectional segments). Unidirectional requires
     /// an even chan_w (half the tracks INC, half DEC).
     e_directionality directionality = BI_DIRECTIONAL;

@@ -92,7 +92,7 @@ static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) 
 }
 
 // A clock network can have multiple drive points feeding it (e.g. one ROUTING tap per
-// device side, and/or one or more TILE taps -- see TileToClockConnection). They all
+// device side, and/or one or more TILE taps; see TileToClockConnection). They all
 // share a single virtual sink node in the RR graph (see is_virtual_clock_network_root's
 // doc comment), so that stage-1 routing of a global net (pre_route_to_clock_root) can
 // reach the clock network through whichever drive point turns out to be cheapest,
@@ -100,7 +100,7 @@ static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) 
 // regardless of how a given clock network is driven. Looks up whether that shared node
 // already exists before creating a new one; if this is the first drive point processed
 // for the network, creates it now, at the given location (the centroid of all of the
-// network's drive points -- see the drive_location_sum/drive_location_count computation
+// network's drive points; see the drive_location_sum/drive_location_count computation
 // in setup_clock_connections) rather than any single drive point's own location.
 //
 // FIXME: the router lookahead estimates remaining cost using only the shared sink
@@ -108,7 +108,7 @@ static RRNodeId create_virtual_clock_network_sink_node(int layer, int x, int y) 
 // actually closest to a given expansion node. For drive points away from the centroid
 // this makes the heuristic inadmissible (it can overestimate the true remaining cost),
 // biasing stage-1 routing away from the closest drive point instead of toward it.
-// Routing stays correct -- Dijkstra still finds a valid path using exact edge costs --
+// Routing stays correct, Dijkstra still finds a valid path using exact edge costs,
 // but the search may waste effort and/or fail to minimize insertion delay across drive
 // points. Fixing this properly requires teaching the lookahead about multiple targets
 // per sink (e.g. the minimum over each drive point's distance), not just picking a
@@ -376,16 +376,16 @@ void ClockToClockConnection::create_switches(const ClockRRGraphBuilder& clock_gr
             x,
             y);
 
-        // Try the exact (x, y) first. Some "from" networks -- e.g. a clock_switch_grid's
-        // sparse taps -- register nodes at the unclamped grid location. Others -- spine/rib
-        // wires -- clamp their endpoint inward by one tile near the top/bottom device
+        // Try the exact (x, y) first. Some "from" networks, e.g. a clock_switch_grid's
+        // sparse taps, register nodes at the unclamped grid location. Others, spine/rib
+        // wires, clamp their endpoint inward by one tile near the top/bottom device
         // boundary to avoid overlapping the perimeter I/O ring (see the y_offset clamp in
         // ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance), so their node
         // ends up one tile away from where a naive offset calculation would expect. Probe
         // the exact location first (non-fatal) and only fall back to the boundary-shifted
         // position if nothing is registered there.
         //
-        // FIXME: the boundary shift below -- and the spine/rib clamp it works around --
+        // FIXME: the boundary shift below, and the spine/rib clamp it works around,
         // both hardcode the assumption that I/O lives on the device perimeter. That isn't
         // generally true, so this whole boundary-handling scheme needs to be reworked to
         // derive the valid span from the actual device/block layout. See the matching FIXME
@@ -422,7 +422,7 @@ void ClockToClockConnection::create_switches(const ClockRRGraphBuilder& clock_gr
         }
 
         if (from_rr_node_indices.empty()) {
-            // Neither the exact nor the boundary-shifted location has any nodes -- this is
+            // Neither the exact nor the boundary-shifted location has any nodes; this is
             // a genuine arch mismatch. Re-query with required=true to raise the standard
             // fatal error with its usual diagnostic message.
             from_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
@@ -549,7 +549,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
                     // required=false: this loop probes every tile in the device, and a
                     // quadrant/range-scoped clock network is only expected to reach the
-                    // tiles within its own scope -- a miss here just means "not reached
+                    // tiles within its own scope; a miss here just means "not reached
                     // from this network," not an arch mistake.
                     std::vector<int> clock_network_indices = clock_graph.get_rr_node_indices_at_switch_location(
                         clock_to_connect_from,

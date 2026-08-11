@@ -39,14 +39,14 @@ class SwitchPoints {
     std::unordered_map<std::string, SwitchPoint> switch_point_name_to_switch_location;
 
   public:
-    /// @brief Returns the rr_node indices of switch_point_name at (x,y) -- e.g. x,y =
+    /// @brief Returns the rr_node indices of switch_point_name at (x,y); e.g. x,y =
     /// middle of the chip, switch_point_name == a global clock spine's main drive point,
     /// returns the rr_nodes of every clock spine that starts the network there.
     ///
     /// clock_name is only used to produce a helpful message if switch_point_name was
     /// never registered for this clock network (a malformed arch file, e.g. a
     /// <clock_routing> tap referencing a switch point whose offset never landed on any
-    /// instance of the network -- see the "does not correspond to any switch box
+    /// instance of the network; see the "does not correspond to any switch box
     /// location" warning emitted when that happens).
     std::vector<int> get_rr_node_indices_at_location(const std::string& clock_name,
                                                      std::string switch_point_name,
@@ -104,12 +104,12 @@ class ClockRRGraphBuilder {
     /// @brief Returns the rr_node idx of the switch at location {x, y}.
     ///
     /// If `required` is true (the default), a clock network/switch point that doesn't
-    /// reach (x,y) is treated as an arch mistake and raises a fatal error -- appropriate
+    /// reach (x,y) is treated as an arch mistake and raises a fatal error; appropriate
     /// for callers connecting to one specific, arch-declared coordinate (e.g. a <tap>'s
     /// locationx/locationy). Pass `required=false` for callers that probe many candidate
     /// locations and expect most of them to legitimately not be reached (e.g.
     /// ClockToPinsConnection scanning every tile in the device, where a quadrant-scoped
-    /// clock network is only expected to reach tiles within its own quadrant) -- in that
+    /// clock network is only expected to reach tiles within its own quadrant), in that
     /// case a miss just means "not reachable from here" and an empty vector is returned.
     std::vector<int> get_rr_node_indices_at_switch_location(std::string clock_name,
                                                             std::string switch_point_name,
