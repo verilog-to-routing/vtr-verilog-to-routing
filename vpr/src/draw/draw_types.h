@@ -346,6 +346,9 @@ struct t_draw_state {
     ///@brief If we should pause for user interaction (requested by user)
     bool forced_pause = false;
 
+    ///@brief Number of critical paths to be drawn simultaneously on screen.
+    std::size_t num_crit_paths = 1;
+
     int sequence_number = 0;
 
     ///@brief net transparency factor (0 - Transparent, 255 - Opaque)
