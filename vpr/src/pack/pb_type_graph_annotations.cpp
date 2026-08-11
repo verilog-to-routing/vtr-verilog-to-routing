@@ -289,6 +289,7 @@ static void load_delay_annotations(const int line_num,
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
         //Annotate primitive sequential timing information
+        t_pb_graph_pin* clock_pin = find_clock_pin(pb_graph_node, clock, line_num);
         k = 0;
         for (i = 0; i < num_in_sets; i++) {
             for (j = 0; j < num_in_ptrs[i]; j++) {
@@ -302,7 +303,7 @@ static void load_delay_annotations(const int line_num,
                     VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN);
                     in_port[i][j]->tco_min = delay_matrix[k][0];
                 }
-                in_port[i][j]->associated_clock_pin = find_clock_pin(pb_graph_node, clock, line_num);
+                in_port[i][j]->associated_clock_pin = clock_pin;
                 k++;
             }
         }
@@ -360,7 +361,7 @@ static void load_delay_annotations(const int line_num,
                     t_pb_graph_pin* src_pin = in_port[i][j];
                     for (k = 0; k < src_pin->num_pin_timing; ++k) {
                         t_pb_graph_pin* sink_pin = src_pin->pin_timing[k];
-                        auto edge_pair = std::make_pair(src_pin, sink_pin);
+                        std::pair<t_pb_graph_pin*, t_pb_graph_pin*> edge_pair = std::make_pair(src_pin, sink_pin);
                         VTR_ASSERT_MSG(!existing_edges.contains(edge_pair), "No duplicates");
                         existing_edges.emplace(src_pin, sink_pin);
                     }
@@ -375,7 +376,7 @@ static void load_delay_annotations(const int line_num,
                     for (int m = 0; m < num_out_sets; m++) {
                         for (int n = 0; n < num_out_ptrs[m]; n++) {
                             t_pb_graph_pin* sink_pin = out_port[m][n];
-                            auto edge = std::make_pair(src_pin, sink_pin);
+                            std::pair<t_pb_graph_pin*, t_pb_graph_pin*> edge = std::make_pair(src_pin, sink_pin);
                             if (!existing_edges.contains(edge)) {
                                 new_edges.insert(edge);
                             }
