@@ -982,7 +982,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // above the smaller scaled supply and every subsequent check would fail.
                 cluster.pin_counter.snapshot_root_class_sizes(cluster.pb);
                 cluster.pin_counter.apply_molecule_delta(molecule_id, prepacker_, atom_cluster_, atom_pb_lookup());
-#ifdef VTR_ASSERT_SAFE_ENABLED
+#ifdef VTR_ASSERT_DEBUG_ENABLED
                 // Verify apply_molecule_delta against a full recompute over cluster.molecules.
                 // Note: Expensive verification, do not keep in release.
                 cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
@@ -1153,7 +1153,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // is discarded and the current state becomes the accepted
                 // baseline for the next candidate.
                 cluster.pin_counter.commit_check();
-#ifdef VTR_ASSERT_SAFE_ENABLED
+#ifdef VTR_ASSERT_DEBUG_ENABLED
                 // Recompute the pin state from scratch over the accepted
                 // molecules and assert it matches the committed state. Only
                 // meaningful when the filter is enabled: with the filter off,
@@ -1207,7 +1207,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
              * otherwise per_pb_state_ would keep dangling pointers as keys. */
             cleanup_pb(cluster.pb, cluster.pin_counter);
 
-#ifdef VTR_ASSERT_SAFE_ENABLED
+#ifdef VTR_ASSERT_DEBUG_ENABLED
             // Verify pin counter after rollback and cleanup. Every per_pb_state_
             // key must point to a pb reachable from cluster.pb. The state must
             // match a recompute over cluster.molecules (candidate popped above).

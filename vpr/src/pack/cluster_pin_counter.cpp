@@ -679,7 +679,7 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
         }
     }
 
-#ifdef VTR_ASSERT_SAFE_ENABLED
+#ifdef VTR_ASSERT_DEBUG_ENABLED
     // Debug check: run the reference full walk and confirm it agrees.
     const bool full_result = check_pins_used_full_reference(cur_pb, max_external_pin_util);
     if (incremental_result != full_result) {
