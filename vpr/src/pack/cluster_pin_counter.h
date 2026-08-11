@@ -109,6 +109,8 @@ class ClusterPinCounter {
      * The two per class vectors are sized to the number of input/output pin
      * classes at given pb. Do not call on a pb whose state is already
      * allocated.
+     *
+     * @param pb The pb to allocate state for.
      */
     void allocate_pin_count_state(const t_pb* pb);
 
@@ -116,12 +118,9 @@ class ClusterPinCounter {
      * @brief Erase the pin usage state for given pb and every pb in its subtree.
      *
      * Must be called before the pb subtree is freed, otherwise the pb
-     * pointers used for the recursion have been freed. Does not scrub per
-     * atom pin mark records: any freed pb that is still referenced by an
-     * unpurged mark record will be tolerated (skipped) by unmark_input_pin
-     * / unmark_output_pin, and in practice never occurs because the pbs
-     * freed on failure paths are only those newly allocated for the failing
-     * candidate whose records are already rolled back by rollback_check.
+     * pointers used for the recursion have been freed.
+     *
+     * @param pb  Root of the subtree to erase state for.
      */
     void deallocate_pin_count_state_recursive(const t_pb* pb);
 
@@ -134,41 +133,35 @@ class ClusterPinCounter {
      * @brief Snapshot the current per class sizes at the cluster root.
      *
      * Must be called at the start of every candidate check, before any
-     * mutation. The snapshot is read by check_pins_used to implement the
-     * root clamp (which used to compare against the committed sizes; those
-     * are gone after the committed/lookahead collapse).
+     * mutation. check_pins_used reads the snapshot to implement the root
+     * clamp. The clamp raises the effective supply of each root class to at
+     * least the snapshotted size. This is needed because the seed molecule
+     * is packed with FULL_EXTERNAL_PIN_UTIL and can already exceed the
+     * scaled supply. Without the clamp, every subsequent check would fail.
      */
     void snapshot_root_class_sizes(const t_pb* root);
 
     /**
      * @brief Apply the delta introduced by the candidate molecule to the
-     *        current state (production hot path).
+     *        current state.
      *
-     * Implements the three-step delta from the spec:
-     *   1. For every net M drives: re-evaluate every pre-existing sink of
-     *      that net (unmark then re-mark its input pin under the new
-     *      membership; may remove input marks that used to be needed but
-     *      no longer are because the driver is now in this cluster).
-     *   2. For every net M sinks: re-evaluate the driver (unmark then
-     *      re-mark its output pin; may remove output marks that used to
-     *      be needed because a sink outside the cluster made the net
-     *      exit).
-     *   3. Mark every pin of every atom in M itself.
+     * Adding a candidate molecule can only change three groups of marks in
+     * the pin state:
+     *   1. When the candidate drives a net that has pre-existing sinks in
+     *      the cluster, those sinks may lose their input mark because the
+     *      driver is now in cluster too.
+     *   2. When the candidate sinks a net whose driver is already in the
+     *      cluster, that driver may lose its output mark because a sink is
+     *      now in cluster too.
+     *   3. The candidate's own atoms produce new marks.
+     * All mutations are journaled so rollback_check can restore the pre-delta
+     * state exactly.
      *
-     * Steps 1 and 2 skip atoms in M (whose marks are added by step 3) and
-     * cannot collide with each other (step 1 touches input pins, step 2
-     * touches output pins). All mutations, including mutations to the per
-     * atom pin mark records, are journaled so rollback_check can restore
-     * the pre-delta state exactly.
+     * Note: snapshot_root_class_sizes must have been called for this check,
+     * and the candidate's atoms must already be placed in their primitive pbs
+     * and recorded in atom_cluster (i.e. try_place_atom_block_rec has succeeded).
      *
-     * The caller must have snapshotted root sizes before calling this
-     * (they are read by the subsequent check_pins_used).
-     *
-     * @param candidate_id  The molecule id currently under evaluation. Its
-     *                      atoms must already be placed in their primitive
-     *                      pbs (i.e. try_place_atom_block_rec has succeeded)
-     *                      and their cluster membership recorded in
-     *                      atom_cluster before this call.
+     * @param candidate_id  The molecule id currently under evaluation.
      */
     void apply_molecule_delta(PackMoleculeId candidate_id,
                               const Prepacker& prepacker,
@@ -176,15 +169,40 @@ class ClusterPinCounter {
                               const AtomPBBimap& atom_to_pb);
 
     /**
-     * @brief Full recompute of the current state over the given molecule list.
+     * @brief Check whether the current pin usage is feasible.
      *
-     * Wipes every mark in the current state, then re-marks every atom of
-     * every molecule. Every mutation is journaled so the change is undoable
-     * via rollback_check.
+     * Incremental: examines only the (pb, class) pairs incremented during
+     * this candidate check.
      *
-     * Retained as the reference oracle. verify_against_full_recompute uses
-     * it against a scratch counter; production packing uses
-     * apply_molecule_delta instead.
+     * @param cur_pb                 Root of the subtree to check.
+     * @param max_external_pin_util  Scaling factors applied to root class supplies.
+     * @return                       True if every touched pin class is within supply.
+     */
+    bool check_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const;
+
+    /**
+     * @brief Accept the current candidate check: discard the journals,
+     *        leaving the current state as the new baseline.
+     */
+    void commit_check();
+
+    /**
+     * @brief Reject the current candidate check: replay the journals in
+     *        reverse to restore the state before check.
+     *
+     * Must be called on every failure path that could have followed a
+     * mutation (pin feasibility failure, intra-cluster routing failure,
+     * etc.). Safe to call on an empty journal (no-op).
+     */
+    void rollback_check();
+
+    // =========================================================================
+    // Debug only helpers
+    // =========================================================================
+
+    /**
+     * @brief Recompute the current state from scratch over the given
+     *        molecule list.
      */
     void full_recompute_from_molecules(const std::vector<PackMoleculeId>& molecules,
                                        const Prepacker& prepacker,
@@ -192,73 +210,9 @@ class ClusterPinCounter {
                                        const AtomPBBimap& atom_to_pb);
 
     /**
-     * @brief Check whether the current pin usage is feasible.
-     *
-     * Incremental: examines only the (pb, class) pairs that were
-     * incremented during the current candidate check (as recorded by the
-     * journal). This is sound because the pre-delta state was already
-     * feasible and decrements cannot make a class exceed its supply; the
-     * root clamp (max(scaled_size, snapshot_size)) covers the one edge
-     * case where supply itself tightens between the seed molecule and
-     * subsequent molecules.
-     *
-     * Under VTR_ASSERT_SAFE_ENABLED, additionally runs the full-tree
-     * reference check and asserts both agree, catching bugs in the
-     * touched-set collection or in the monotonicity assumption.
-     *
-     * @param cur_pb                 Root of the subtree to check. Also used
-     *                               by the debug-only full-tree check.
-     * @param max_external_pin_util  Scaling factors applied to root level pin
-     *                               class supplies.
-     * @return                       True if every touched pin class has demand
-     *                               within supply, false otherwise.
-     */
-    bool check_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const;
-
-    /**
-     * @brief Accept the current candidate check: discard the journals.
-     *
-     * The mutations recorded since the last commit/rollback become
-     * permanent; the current state stands as the new accepted-only baseline
-     * for the next check.
-     */
-    void commit_check();
-
-    /**
-     * @brief Reject the current candidate check: replay the journals in
-     *        reverse, restoring the pre-check state.
-     *
-     * Must be called on every failure path that could have followed a
-     * mutation (pin feasibility failure, intra-cluster routing failure,
-     * etc.). Safe to call on an empty journal (no-op).
-     *
-     * Tolerant of pbs that have been erased from per_pb_state_ since the
-     * journal entry was recorded: such entries are skipped. This defence
-     * in depth allows the rollback to safely follow revert_place_atom_block
-     * or cleanup_pb, though the caller should still order rollback FIRST
-     * whenever possible to keep reasoning local.
-     */
-    void rollback_check();
-
-    /**
-     * @brief Debug-only equivalence check against a from-scratch recompute.
-     *
-     * Constructs a scratch ClusterPinCounter over the same pb set as this
-     * counter, runs the full recompute path on it over the given molecule
-     * list, and asserts that every (pb, class) has an identical net -> count
-     * map. Comparison is over the full refcount, not just the distinct-net
-     * set: a refcount discrepancy indicates a mark accounting bug that
-     * would eventually break rollback.
-     *
-     * Callers must gate the call under VTR_ASSERT_SAFE_ENABLED (or an
-     * equivalent debug flag): this method is expensive and must never run
-     * in release builds.
-     *
-     * @param molecules     Molecule ids representing the intended cluster
-     *                      state at the call site.
-     * @param prepacker     Used to resolve each PackMoleculeId to its atom list.
-     * @param atom_cluster  Maps atoms to the legalization cluster that owns them.
-     * @param atom_to_pb    Maps atoms to their assigned primitive pb.
+     * @brief Build a scratch counter via full_recompute_from_molecules over
+     *        the given molecule list, and assert every (pb, class) net
+     *        refcount matches this counter.
      */
     void verify_against_full_recompute(const std::vector<PackMoleculeId>& molecules,
                                        const Prepacker& prepacker,
@@ -266,13 +220,9 @@ class ClusterPinCounter {
                                        const AtomPBBimap& atom_to_pb) const;
 
     /**
-     * @brief Debug-only reachability check for the tracked pb set.
-     *
-     * Walks the pb subtree rooted at cluster_root and asserts that every pb
-     * currently tracked in per_pb_state_ appears in that subtree. A tracked
-     * pb that is unreachable indicates a lifetime bug: some code path freed
-     * the pb without asking this counter to deallocate its state first,
-     * leaving a dangling pointer as a live key.
+     * @brief Assert every pb tracked in per_pb_state_ is reachable from
+     *        cluster_root. Catches lifetime bugs where a pb was freed
+     *        without calling deallocate_pin_count_state_recursive.
      */
     void assert_all_pbs_reachable_from(const t_pb* cluster_root) const;
 
