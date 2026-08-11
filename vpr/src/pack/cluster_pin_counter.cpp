@@ -96,9 +96,8 @@ void ClusterPinCounter::snapshot_root_class_sizes(const t_pb* root) {
 
 void ClusterPinCounter::add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id) {
     PerPbState& state = per_pb_state_.at(pb);
-    std::unordered_map<AtomNetId, int>& net_counts
-        = is_input ? state.input_pin_class_net_counts.at(class_id)
-                   : state.output_pin_class_net_counts.at(class_id);
+    std::unordered_map<AtomNetId, int>& net_counts = is_input ? state.input_pin_class_net_counts.at(class_id)
+                                                              : state.output_pin_class_net_counts.at(class_id);
     int& refcount = net_counts[net_id];
     refcount += 1;
 
@@ -110,9 +109,8 @@ void ClusterPinCounter::add_mark(const t_pb* pb, bool is_input, size_t class_id,
 
 void ClusterPinCounter::remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id) {
     PerPbState& state = per_pb_state_.at(pb);
-    std::unordered_map<AtomNetId, int>& net_counts
-        = is_input ? state.input_pin_class_net_counts.at(class_id)
-                   : state.output_pin_class_net_counts.at(class_id);
+    std::unordered_map<AtomNetId, int>& net_counts = is_input ? state.input_pin_class_net_counts.at(class_id)
+                                                              : state.output_pin_class_net_counts.at(class_id);
 
     auto it = net_counts.find(net_id);
     VTR_ASSERT(it != net_counts.end() && it->second > 0);
@@ -220,8 +218,7 @@ void ClusterPinCounter::rollback_check() {
         const MarkRecordDelta delta = mark_record_journal_.back();
         mark_record_journal_.pop_back();
 
-        std::unordered_map<AtomPinId, std::vector<const t_pb*>>& record_map
-            = delta.is_input ? input_mark_record_ : output_mark_record_;
+        std::unordered_map<AtomPinId, std::vector<const t_pb*>>& record_map = delta.is_input ? input_mark_record_ : output_mark_record_;
 
         if (delta.change == +1) {
             // Undo an append: pop the last entry.
@@ -247,9 +244,8 @@ void ClusterPinCounter::rollback_check() {
         VTR_ASSERT_SAFE(per_pb_state_.count(delta.pb) > 0);
         auto pb_it = per_pb_state_.find(delta.pb);
 
-        std::unordered_map<AtomNetId, int>& net_counts
-            = delta.is_input ? pb_it->second.input_pin_class_net_counts.at(delta.class_id)
-                             : pb_it->second.output_pin_class_net_counts.at(delta.class_id);
+        std::unordered_map<AtomNetId, int>& net_counts = delta.is_input ? pb_it->second.input_pin_class_net_counts.at(delta.class_id)
+                                                                        : pb_it->second.output_pin_class_net_counts.at(delta.class_id);
 
         if (delta.change == +1) {
             // Undo an add: decrement, erase at zero.
@@ -640,7 +636,7 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
     // incremented it this check. State before this check was feasible,
     // decrements can only help, and the root clamp is handled by
     // snapshot_root_class_sizes.
-    
+
     /// Identifies a (pb, class_id, is_input) tuple that got incremented this check.
     struct TouchedKey {
         const t_pb* pb; ///< The pb whose class was touched.
