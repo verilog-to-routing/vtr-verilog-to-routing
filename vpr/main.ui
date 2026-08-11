@@ -661,7 +661,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Display Critical Path</property>
+                <property name="label" translatable="yes">Display Critical Paths</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -690,6 +690,32 @@
           </packing>
         </child>
         <child>
+          <object class="GtkLabel" id="NumCritPathsLabel">
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Num Critical Paths</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">11</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinButton" id="NumCritPaths">
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-focus">True</property>
+            <property name="numeric">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">12</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkCheckButton" id="ToggleCritPathFlylines">
             <property name="label" translatable="yes">Critical Path Flylines</property>
             <property name="visible">True</property>
@@ -701,7 +727,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">11</property>
+            <property name="position">13</property>
           </packing>
         </child>
         <child>
@@ -716,7 +742,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">12</property>
+            <property name="position">14</property>
           </packing>
         </child>
         <child>
@@ -731,7 +757,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">13</property>
+            <property name="position">15</property>
           </packing>
         </child>
       </object>

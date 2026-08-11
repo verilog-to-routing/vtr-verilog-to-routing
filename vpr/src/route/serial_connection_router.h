@@ -44,7 +44,7 @@ class SerialConnectionRouter : public ConnectionRouter<HeapImplementation> {
         ::reset_path_costs(this->modified_rr_node_inf_);
         // Reset the node (RCV-related) info stored inside the connection router
         if (this->rcv_path_manager.is_enabled()) {
-            for (const auto& node : this->modified_rr_node_inf_) {
+            for (RRNodeId node : this->modified_rr_node_inf_) {
                 this->rcv_path_data[node] = nullptr;
             }
         }

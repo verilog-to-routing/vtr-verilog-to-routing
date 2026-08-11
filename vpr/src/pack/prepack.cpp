@@ -12,6 +12,7 @@
 
 #include "prepack.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <map>
@@ -188,9 +189,8 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
              * For carry-chains, since carry-chains are typically quite flexible in terms
              * of size, it is optional whether or not an atom in a netlist matches any
              * particular block inside the chain */
-            packing_patterns[i].is_block_optional = new bool[L_num_blocks];
+            packing_patterns[i].is_block_optional.assign(L_num_blocks, false);
             for (int k = 0; k < L_num_blocks; k++) {
-                packing_patterns[i].is_block_optional[k] = false;
                 if (packing_patterns[i].is_chain && packing_patterns[i].root_block->block_id != k) {
                     packing_patterns[i].is_block_optional[k] = true;
                 }
@@ -238,7 +238,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->input_pins[i][j].num_output_edges; k++) {
-                auto output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
+                t_pb_graph_edge* output_edge = pb_graph_node->input_pins[i][j].output_edges[k];
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -271,7 +271,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
         for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->output_pins[i][j].num_output_edges; k++) {
-                auto output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
+                t_pb_graph_edge* output_edge = pb_graph_node->output_pins[i][j].output_edges[k];
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -304,7 +304,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
         for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             bool hasPattern = false;
             for (int k = 0; k < pb_graph_node->clock_pins[i][j].num_output_edges; k++) {
-                auto& output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
+                t_pb_graph_edge* output_edge = pb_graph_node->clock_pins[i][j].output_edges[k];
                 for (int m = 0; m < output_edge->num_pack_patterns; m++) {
                     hasPattern = true;
                     // insert the found pattern name to the hash table. If this pattern is inserted
@@ -369,7 +369,7 @@ static void backward_infer_pattern(t_pb_graph_pin* pb_graph_pin) {
 static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(const std::unordered_map<std::string, int>& pattern_names) {
     std::vector<t_pack_patterns> nlist(pattern_names.size());
 
-    for (const auto& curr_pattern : pattern_names) {
+    for (const std::pair<const std::string, int>& curr_pattern : pattern_names) {
         VTR_ASSERT(nlist[curr_pattern.second].name == nullptr);
         nlist[curr_pattern.second].name = vtr::strdup(curr_pattern.first.c_str());
         nlist[curr_pattern.second].root_block = nullptr;
@@ -394,7 +394,6 @@ static void free_pack_pattern(t_pack_patterns* pack_pattern) {
             pattern_block_list[i] = nullptr;
 
         free(pack_pattern->name);
-        delete[] pack_pattern->is_block_optional;
         free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
         for (int j = 0; j < num_pack_pattern_blocks; j++) {
             delete pattern_block_list[j];
@@ -420,7 +419,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 
     for (i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
-            auto& input_pin = pb_graph_node->input_pins[i][j];
+            t_pb_graph_pin& input_pin = pb_graph_node->input_pins[i][j];
             for (k = 0; k < input_pin.num_output_edges; k++) {
                 for (m = 0; m < input_pin.output_edges[k]->num_pack_patterns; m++) {
                     if (input_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
@@ -433,7 +432,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 
     for (i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-            auto& output_pin = pb_graph_node->output_pins[i][j];
+            t_pb_graph_pin& output_pin = pb_graph_node->output_pins[i][j];
             for (k = 0; k < output_pin.num_output_edges; k++) {
                 for (m = 0; m < output_pin.output_edges[k]->num_pack_patterns; m++) {
                     if (output_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
@@ -446,7 +445,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 
     for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
-            auto& clock_pin = pb_graph_node->clock_pins[i][j];
+            t_pb_graph_pin& clock_pin = pb_graph_node->clock_pins[i][j];
             for (k = 0; k < clock_pin.num_output_edges; k++) {
                 for (m = 0; m < clock_pin.output_edges[k]->num_pack_patterns; m++) {
                     if (clock_pin.output_edges[k]->pack_pattern_indices[m] == pattern_index) {
@@ -458,7 +457,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
     }
 
     for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        auto& pb_mode = pb_graph_node->pb_type->modes[i];
+        t_mode& pb_mode = pb_graph_node->pb_type->modes[i];
         for (j = 0; j < pb_mode.num_pb_type_children; j++) {
             for (k = 0; k < pb_mode.pb_type_children[j].num_pb; k++) {
                 edge = find_expansion_edge_of_pattern(pattern_index, &pb_graph_node->child_pb_graph_nodes[i][j][k]);
@@ -640,7 +639,6 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
     bool found; /* Error checking, ensure only one fan-out for each pattern net */
     t_pack_pattern_block* source_block = nullptr;
     t_pb_graph_node* source_pb_graph_node = nullptr;
-    t_pack_pattern_connections* pack_pattern_connection = nullptr;
     int curr_pattern_index = packing_pattern.index;
 
     found = expansion_edge->infer_pattern;
@@ -729,21 +727,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             if (destination_pin != nullptr) {
                 VTR_ASSERT(last_added_pattern_block[source_pb_graph_node]->pattern_index == curr_pattern_index);
                 source_block = last_added_pattern_block[source_pb_graph_node];
-                pack_pattern_connection = new t_pack_pattern_connections();
-                pack_pattern_connection->from_block = source_block;
-                pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
-                pack_pattern_connection->to_block = destination_block;
-                pack_pattern_connection->to_pin = destination_pin;
-                pack_pattern_connection->next = source_block->connections;
-                source_block->connections = pack_pattern_connection;
-
-                pack_pattern_connection = new t_pack_pattern_connections();
-                pack_pattern_connection->from_block = source_block;
-                pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
-                pack_pattern_connection->to_block = destination_block;
-                pack_pattern_connection->to_pin = destination_pin;
-                pack_pattern_connection->next = destination_block->connections;
-                destination_block->connections = pack_pattern_connection;
+                source_block->connections.emplace_back(source_block, expansion_edge->input_pins[i], destination_block, destination_pin);
+                destination_block->connections.emplace_back(source_block, expansion_edge->input_pins[i], destination_block, destination_pin);
 
                 if (source_block == destination_block) {
                     VPR_FATAL_ERROR(VPR_ERROR_PACK,
@@ -864,9 +849,9 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         VTR_ASSERT(is_used[best_pattern] == false);
         is_used[best_pattern] = true;
 
-        auto blocks = atom_nlist.blocks();
+        AtomNetlist::block_range blocks = atom_nlist.blocks();
         for (auto blk_iter = blocks.begin(); blk_iter != blocks.end(); ++blk_iter) {
-            auto blk_id = *blk_iter;
+            AtomBlockId blk_id = *blk_iter;
 
             PackMoleculeId cur_molecule_id = try_create_molecule(best_pattern,
                                                                  blk_id,
@@ -907,7 +892,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
      * If a block belongs to a molecule, then carrying the single atoms around can make the packing problem
      * more difficult because now it needs to consider splitting molecules.
      */
-    for (auto blk_id : atom_nlist.blocks()) {
+    for (AtomBlockId blk_id : atom_nlist.blocks()) {
         t_pb_graph_node* best = get_expected_lowest_cost_primitive_for_atom_block(blk_id, logical_block_types);
         if (!best) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
@@ -947,20 +932,15 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
 }
 
 static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
-    t_pack_pattern_connections *connection, *next;
     if (pattern_block == nullptr || pattern_block->block_id == UNDEFINED) {
         /* already traversed, return */
         return;
     }
     pattern_block_list[pattern_block->block_id] = pattern_block;
     pattern_block->block_id = UNDEFINED;
-    connection = pattern_block->connections;
-    while (connection) {
-        free_pack_pattern_block(connection->from_block, pattern_block_list);
-        free_pack_pattern_block(connection->to_block, pattern_block_list);
-        next = connection->next;
-        delete connection;
-        connection = next;
+    for (const t_pack_pattern_connections& connection : pattern_block->connections) {
+        free_pack_pattern_block(connection.from_block, pattern_block_list);
+        free_pack_pattern_block(connection.to_block, pattern_block_list);
     }
 }
 
@@ -981,7 +961,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
                                               AtomBlockId blk_id,
                                               std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                               const AtomNetlist& atom_nlist) {
-    auto pack_pattern = &list_of_pack_patterns[pack_pattern_index];
+    t_pack_patterns* pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 
     // Check pack pattern validity
     if (pack_pattern == nullptr || pack_pattern->num_blocks == 0 || pack_pattern->root_block == nullptr) {
@@ -1018,7 +998,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
 
     // update the atom_molcules with the atoms that are mapped to this molecule
     for (int i = 0; i < molecule.pack_pattern->num_blocks; i++) {
-        auto blk_id2 = molecule.atom_block_ids[i];
+        AtomBlockId blk_id2 = molecule.atom_block_ids[i];
         if (!blk_id2) {
             VTR_ASSERT(molecule.pack_pattern->is_block_optional[i]);
             continue;
@@ -1050,10 +1030,10 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
                                 const AtomNetlist& atom_nlist) {
     // root block of the pack pattern, which is the starting point of this pattern
-    const auto pattern_root_block = molecule.pack_pattern->root_block;
+    t_pack_pattern_block* const pattern_root_block = molecule.pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
     // be filled with an atom for legality
-    const auto is_block_optional = molecule.pack_pattern->is_block_optional;
+    const std::vector<bool>& is_block_optional = molecule.pack_pattern->is_block_optional;
 
     // create a queue of pattern block and atom block id suggested for this block
     std::queue<std::pair<t_pack_pattern_block*, AtomBlockId>> pattern_block_queue;
@@ -1064,15 +1044,15 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
     // with the atom netlist structure
     while (!pattern_block_queue.empty()) {
         // get the front pattern block, atom block id pair from the queue
-        const auto pattern_block_atom_pair = pattern_block_queue.front();
-        const auto pattern_block = pattern_block_atom_pair.first;
-        const auto block_id = pattern_block_atom_pair.second;
+        const std::pair<t_pack_pattern_block*, AtomBlockId> pattern_block_atom_pair = pattern_block_queue.front();
+        t_pack_pattern_block* const pattern_block = pattern_block_atom_pair.first;
+        const AtomBlockId block_id = pattern_block_atom_pair.second;
 
         // remove the front of the queue
         pattern_block_queue.pop();
 
         // get the atom block id of the atom occupying this primitive position in this molecule
-        auto molecule_atom_block_id = molecule.atom_block_ids[pattern_block->block_id];
+        AtomBlockId molecule_atom_block_id = molecule.atom_block_ids[pattern_block->block_id];
 
         // if this primitive position in this molecule is already visited and
         // matches block in the atom netlist go to the next node in the queue
@@ -1098,28 +1078,24 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
         // set this node in the molecule as visited
         molecule.atom_block_ids[pattern_block->block_id] = block_id;
 
-        // starting from the first connections, add all the connections of this block to the queue
-        auto block_connection = pattern_block->connections;
-
-        while (block_connection != nullptr) {
+        // add all the connections of this block to the queue
+        for (const t_pack_pattern_connections& block_connection : pattern_block->connections) {
             // this block is the driver of this connection
-            if (block_connection->from_block == pattern_block) {
+            if (block_connection.from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
+                AtomBlockId sink_blk_id = get_sink_block(block_id, block_connection, atom_nlist);
                 // add this sink block id with its corresponding pattern block to the queue
-                pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
+                pattern_block_queue.push(std::make_pair(block_connection.to_block, sink_blk_id));
                 // this block is being driven by this connection
-            } else if (block_connection->to_block == pattern_block) {
+            } else if (block_connection.to_block == pattern_block) {
                 // find the block that is driving this connection and it to the queue
-                auto driver_blk_id = get_driving_block(block_id, *block_connection, atom_nlist);
+                AtomBlockId driver_blk_id = get_driving_block(block_id, block_connection, atom_nlist);
                 // add this driver block id with its corresponding pattern block to the queue
-                pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
+                pattern_block_queue.push(std::make_pair(block_connection.from_block, driver_blk_id));
             }
 
             // this block should be either driving or driven by the connection
-            VTR_ASSERT(block_connection->from_block == pattern_block || block_connection->to_block == pattern_block);
-            // go to the next connection of this pattern block
-            block_connection = block_connection->next;
+            VTR_ASSERT(block_connection.from_block == pattern_block || block_connection.to_block == pattern_block);
         }
     }
     // if all non-optional positions in the pack pattern have atoms
@@ -1140,36 +1116,36 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const AtomNetlist& atom_nlist) {
     const t_model_ports* from_port_model = connections.from_pin->port->model_port;
     const int from_pin_number = connections.from_pin->pin_number;
-    auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
+    AtomPortId from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
 
     const t_model_ports* to_port_model = connections.to_pin->port->model_port;
     const int to_pin_number = connections.to_pin->pin_number;
-    const auto& to_pb_type = connections.to_block->pb_type;
+    const t_pb_type* to_pb_type = connections.to_block->pb_type;
 
     if (!from_port_id.is_valid()) {
         return AtomBlockId::INVALID();
     }
 
-    auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
+    AtomNetId net_id = atom_nlist.port_net(from_port_id, from_pin_number);
     if (!net_id.is_valid()) {
         return AtomBlockId::INVALID();
     }
 
-    const auto& net_sinks = atom_nlist.net_sinks(net_id);
+    const AtomNetlist::pin_range net_sinks = atom_nlist.net_sinks(net_id);
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
     bool connected_to_latch = false;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
-    for (const auto& sink_pin_id : net_sinks) {
-        auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+    for (AtomPinId sink_pin_id : net_sinks) {
+        AtomBlockId sink_block_id = atom_nlist.pin_block(sink_pin_id);
         // If the sink block has a clock, it is considered stateful (e.g., a latch or flip-flop).
         // Mark this so we can later decide whether to drop the block based on the net’s fanout.
         if (!atom_nlist.block_is_combinational(sink_block_id)) {
             connected_to_latch = true;
         }
         if (primitive_type_feasible(sink_block_id, to_pb_type)) {
-            auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
-            auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
+            AtomPortId to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
+            AtomPinId to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
             if (to_pin_id == sink_pin_id) {
                 pattern_sink_block_id = sink_block_id;
             }
@@ -1196,20 +1172,20 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist) {
-    auto to_port_model = connections.to_pin->port->model_port;
-    auto to_pin_number = connections.to_pin->pin_number;
-    auto to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
+    const t_model_ports* to_port_model = connections.to_pin->port->model_port;
+    int to_pin_number = connections.to_pin->pin_number;
+    AtomPortId to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
 
     if (!to_port_id.is_valid()) {
         return AtomBlockId::INVALID();
     }
 
-    auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
+    AtomNetId net_id = atom_nlist.port_net(to_port_id, to_pin_number);
     if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
-        auto driver_blk_id = atom_nlist.net_driver_block(net_id);
+        AtomBlockId driver_blk_id = atom_nlist.net_driver_block(net_id);
 
         if (to_port_model->is_clock) {
-            auto driver_blk_type = atom_nlist.block_type(driver_blk_id);
+            AtomBlockType driver_blk_type = atom_nlist.block_type(driver_blk_id);
 
             // TODO: support multi-clock primitives.
             //       If the driver block is a .input block, this assertion should not
@@ -1228,29 +1204,27 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
 static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern) {
     std::unordered_set<t_pb_type*> pattern_blocks;
 
-    t_pack_pattern_connections* connections = pack_pattern.root_block->connections;
-    if (connections == nullptr) {
+    const std::vector<t_pack_pattern_connections>& root_connections = pack_pattern.root_block->connections;
+    if (root_connections.empty()) {
         return pattern_blocks;
     }
     std::unordered_set<t_pb_graph_pin*> visited_from_pins;
     std::unordered_set<t_pb_graph_pin*> visited_to_pins;
     std::queue<t_pack_pattern_block*> pack_pattern_blocks;
-    pack_pattern_blocks.push(connections->from_block);
+    pack_pattern_blocks.push(root_connections.front().from_block);
 
     /** Start from the root block of the pack pattern and add the connected block to the queue */
     while (!pack_pattern_blocks.empty()) {
         t_pack_pattern_block* current_pattern_block = pack_pattern_blocks.front();
         pack_pattern_blocks.pop();
-        t_pack_pattern_connections* current_connenction = current_pattern_block->connections;
         /*
          * Iterate through all the connections of the current pattern block to
          * add the connected block to the queue
          */
-        while (current_connenction != nullptr) {
-            if (visited_from_pins.find(current_connenction->from_pin) != visited_from_pins.end()) {
-                if (visited_to_pins.find(current_connenction->to_pin) != visited_to_pins.end()) {
+        for (const t_pack_pattern_connections& current_connenction : current_pattern_block->connections) {
+            if (visited_from_pins.find(current_connenction.from_pin) != visited_from_pins.end()) {
+                if (visited_to_pins.find(current_connenction.to_pin) != visited_to_pins.end()) {
                     /* We've already seen this connection */
-                    current_connenction = current_connenction->next;
                     continue;
                 }
             }
@@ -1258,13 +1232,12 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
              * To avoid visiting the same connection twice, since it is both stored in from_pin and to_pin,
              * add the from_pin and to_pin to the visited sets
              */
-            visited_from_pins.insert(current_connenction->from_pin);
-            visited_to_pins.insert(current_connenction->to_pin);
+            visited_from_pins.insert(current_connenction.from_pin);
+            visited_to_pins.insert(current_connenction.to_pin);
 
             /* The from_pin block belongs to the pattern block */
-            pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
-            pack_pattern_blocks.push(current_connenction->to_block);
-            current_connenction = current_connenction->next;
+            pattern_blocks.insert(current_connenction.from_pin->port->parent_pb_type);
+            pack_pattern_blocks.push(current_connenction.to_block);
         }
     }
     return pattern_blocks;
@@ -1472,7 +1445,7 @@ static std::vector<t_pb_graph_pin*> find_end_of_path(t_pb_graph_pin* input_pin, 
     // pins are explored
     while (!pins_queue.empty()) {
         // get the first pin in the queue
-        auto current_pin = pins_queue.front();
+        t_pb_graph_pin* current_pin = pins_queue.front();
 
         // remove pin from queue
         pins_queue.pop();
@@ -1497,7 +1470,7 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
 
     // iterate over all output edges at this pin
     for (int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
-        const auto& pin_edge = input_pin->output_edges[iedge];
+        const t_pb_graph_edge* pin_edge = input_pin->output_edges[iedge];
         // if this edge is not annotated with this pattern and its pattern cannot be inferred, ignore it.
         if (!pin_edge->annotated_with_pattern(pattern_index) && !pin_edge->infer_pattern) {
             continue;
@@ -1518,10 +1491,10 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
     // output edges so the previous for loop won't be entered
     if (input_pin->is_primitive_pin() && input_pin->num_output_edges == 0) {
         // iterate over the output ports of the primitive
-        const auto& pin_pb_graph_node = input_pin->parent_node;
+        const t_pb_graph_node* pin_pb_graph_node = input_pin->parent_node;
         for (int iport = 0; iport < pin_pb_graph_node->num_output_ports; iport++) {
             // iterate over the pins of each port
-            const auto& port_pins = pin_pb_graph_node->num_output_pins[iport];
+            const int port_pins = pin_pb_graph_node->num_output_pins[iport];
             for (int ipin = 0; ipin < port_pins; ipin++) {
                 // add primitive output pins to pins_queue to be explored
                 pins_queue.push(&pin_pb_graph_node->output_pins[iport][ipin]);
@@ -1574,7 +1547,7 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     // the chain_input_pins vector
     for (int iports = 0; iports < root_block->num_input_ports; iports++) {
         for (int ipins = 0; ipins < root_block->num_input_pins[iports]; ipins++) {
-            auto& input_pin = root_block->input_pins[iports][ipins];
+            t_pb_graph_pin& input_pin = root_block->input_pins[iports][ipins];
             for (int iedge = 0; iedge < input_pin.num_output_edges; iedge++) {
                 if (input_pin.output_edges[iedge]->belongs_to_pattern(chain_pattern->index)) {
                     chain_input_pins.push_back(&input_pin);
@@ -1594,11 +1567,11 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
     // found before following the edges that are annotated with the given pack_pattern
     std::vector<std::vector<t_pb_graph_pin*>> reachable_pins;
 
-    for (const auto& pin_ptr : chain_input_pins) {
-        auto reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
+    for (t_pb_graph_pin* pin_ptr : chain_input_pins) {
+        std::vector<t_pb_graph_pin*> reachable_output_pins = find_end_of_path(pin_ptr, chain_pattern->index);
         // sort the reachable output pins to compare them later using set_intersection
-        std::stable_sort(reachable_output_pins.begin(), reachable_output_pins.end());
-        reachable_pins.push_back(reachable_output_pins);
+        std::ranges::stable_sort(reachable_output_pins);
+        reachable_pins.push_back(std::move(reachable_output_pins));
     }
 
     // Search for intersections between reachable pins. Intersection
@@ -1640,7 +1613,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
     std::vector<std::vector<t_pb_graph_pin*>> primitive_input_pins;
 
     std::unordered_set<t_pb_type*> pattern_blocks = get_pattern_blocks(*chain_pattern);
-    for (const auto pin_ptr : chain_input_pins) {
+    for (t_pb_graph_pin* pin_ptr : chain_input_pins) {
         std::vector<t_pb_graph_pin*> connected_primitive_pins;
         get_all_connected_primitive_pins(pin_ptr, pattern_blocks, connected_primitive_pins);
 
@@ -1653,7 +1626,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
          */
         VTR_ASSERT(connected_primitive_pins.size());
 
-        primitive_input_pins.push_back(connected_primitive_pins);
+        primitive_input_pins.push_back(std::move(connected_primitive_pins));
     }
 
     chain_pattern->chain_root_pins = primitive_input_pins;
@@ -1676,7 +1649,7 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
     }
 
     for (int iedge = 0; iedge < cluster_input_pin->num_output_edges; iedge++) {
-        const auto& output_edge = cluster_input_pin->output_edges[iedge];
+        const t_pb_graph_edge* output_edge = cluster_input_pin->output_edges[iedge];
         for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
             if (output_edge->output_pins[ipin]->is_primitive_pin()) {
                 /** Add the output pin to the vector only if it belongs to a pb_type registered in the pattern_blocks set */
@@ -1712,12 +1685,12 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
     // pattern assigned to it and the input block should be valid
     VTR_ASSERT(molecule.pack_pattern && blk_id);
 
-    auto root_ipin = molecule.pack_pattern->chain_root_pins[0][0];
-    auto model_pin = root_ipin->port->model_port;
-    auto pin_bit = root_ipin->pin_number;
+    t_pb_graph_pin* root_ipin = molecule.pack_pattern->chain_root_pins[0][0];
+    const t_model_ports* model_pin = root_ipin->port->model_port;
+    int pin_bit = root_ipin->pin_number;
 
     // find the atom driving the chain input pin of this atom
-    auto driver_atom_id = atom_nlist.find_atom_pin_driver(blk_id, model_pin, pin_bit);
+    AtomBlockId driver_atom_id = atom_nlist.find_atom_pin_driver(blk_id, model_pin, pin_bit);
 
     // find the molecule this driver atom is mapped to
     auto itr = atom_molecules.find(driver_atom_id);
@@ -1751,17 +1724,17 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
  * This function prints all the starting points of the carry chains in the architecture
  */
 static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
-    const auto& chain_root_pins = chain_pattern->chain_root_pins;
+    const std::vector<std::vector<t_pb_graph_pin*>>& chain_root_pins = chain_pattern->chain_root_pins;
 
     VTR_LOGV(chain_root_pins.size() > 1, "\nThere are %zu independent chains for chain pattern \"%s\":\n",
              chain_pattern->chain_root_pins.size(), chain_pattern->name);
     VTR_LOGV(chain_root_pins.size() == 1, "\nThere is one chain in this architecture called \"%s\" with the following starting points:\n", chain_pattern->name);
 
     size_t chainId = 0;
-    for (const auto& chain : chain_root_pins) {
+    for (const std::vector<t_pb_graph_pin*>& chain : chain_root_pins) {
         VTR_LOGV(chain_root_pins.size() > 1 && chain.size() > 1, "\n There are %zu starting points for chain id #%zu:\n", chain.size(), chainId++);
         VTR_LOGV(chain_root_pins.size() > 1 && chain.size() == 1, "\n There is 1 starting point for chain id #%zu:\n", chainId++);
-        for (const auto& pin_ptr : chain) {
+        for (const t_pb_graph_pin* pin_ptr : chain) {
             VTR_LOG("\t%s\n", pin_ptr->to_string().c_str());
         }
     }
@@ -1809,7 +1782,7 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
     const t_pack_molecule& molecule = pack_molecules_[molecule_id];
 
     //Calculate the number of available pins on primitives within the molecule
-    for (auto blk : molecule.atom_block_ids) {
+    for (AtomBlockId blk : molecule.atom_block_ids) {
         if (!blk) continue;
 
         ++molecule_stats.num_blocks; //Record number of valid blocks in molecule
@@ -1829,15 +1802,15 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
 
     //Calculate the number of externally used pins
     std::set<AtomBlockId> molecule_atoms(molecule.atom_block_ids.begin(), molecule.atom_block_ids.end());
-    for (auto blk : molecule.atom_block_ids) {
+    for (AtomBlockId blk : molecule.atom_block_ids) {
         if (!blk) continue;
 
-        for (auto pin : atom_nlist.block_pins(blk)) {
-            auto net = atom_nlist.pin_net(pin);
+        for (AtomPinId pin : atom_nlist.block_pins(blk)) {
+            AtomNetId net = atom_nlist.pin_net(pin);
 
-            auto pin_type = atom_nlist.pin_type(pin);
+            PinType pin_type = atom_nlist.pin_type(pin);
             if (pin_type == PinType::SINK) {
-                auto driver_blk = atom_nlist.net_driver_block(net);
+                AtomBlockId driver_blk = atom_nlist.net_driver_block(net);
 
                 if (molecule_atoms.count(driver_blk)) {
                     //Pin driven by a block within the molecule
@@ -1851,8 +1824,8 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
                 VTR_ASSERT(pin_type == PinType::DRIVER);
 
                 bool net_leaves_molecule = false;
-                for (auto sink_pin : atom_nlist.net_sinks(net)) {
-                    auto sink_blk = atom_nlist.pin_block(sink_pin);
+                for (AtomPinId sink_pin : atom_nlist.net_sinks(net)) {
+                    AtomBlockId sink_blk = atom_nlist.pin_block(sink_pin);
 
                     if (!molecule_atoms.count(sink_blk)) {
                         //There is at least one sink outside of the current molecule

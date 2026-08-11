@@ -302,6 +302,8 @@ void toggle_crit_path_cbk(bool state, ezgl::application* app) {
 
     draw_state->show_crit_path = state;
 
+    app->find_widget("NumCritPathsLabel")->setEnabled(state);
+    app->find_widget("NumCritPaths")->setEnabled(state);
     app->find_widget("ToggleCritPathFlylines")->setEnabled(state);
     app->find_widget("ToggleCritPathDelays")->setEnabled(state);
 
@@ -309,6 +311,12 @@ void toggle_crit_path_cbk(bool state, ezgl::application* app) {
         app->find_widget("ToggleCritPathRouting")->setEnabled(state);
     }
 
+    app->refresh_drawing();
+}
+
+void set_num_crit_paths_value_cbk(QSpinBox* self, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->num_crit_paths = self->value();
     app->refresh_drawing();
 }
 

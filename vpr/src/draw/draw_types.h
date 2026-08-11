@@ -367,6 +367,9 @@ struct t_draw_state {
     /// (e.g. temperature change, routing iteration) and then pause for user interaction.
     t_proceed_by_step proceed_by_step;
 
+    ///@brief Number of critical paths to be drawn simultaneously on screen.
+    std::size_t num_crit_paths = 1;
+
     int sequence_number = 0;
 
     ///@brief net transparency factor (0 - Transparent, 255 - Opaque)

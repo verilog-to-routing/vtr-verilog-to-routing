@@ -100,6 +100,17 @@ void toggle_router_util_cbk(QComboBox* self, ezgl::application* app);
  */
 void toggle_crit_path_cbk(bool state, ezgl::application* app);
 
+/**
+ * @brief Callback function for updating the number of critical paths to draw.
+ *
+ * Reads the current value from the NumCritPaths spin box, stores it in
+ * draw_state->num_crit_paths, and refreshes the drawing.
+ *
+ * @param self Spin box controlling the requested number of critical paths.
+ * @param app ezgl application.
+ */
+void set_num_crit_paths_value_cbk(QSpinBox* self, ezgl::application* app);
+
 /* Callback function for main.ui created toggle_router_expansion_costs in ui_setup.cpp.
  * Draws different router expansion costs based on user input. Changes value of draw_state->show_router_expansion_cost. */
 void toggle_expansion_cost_cbk(QComboBox* self, ezgl::application* app);

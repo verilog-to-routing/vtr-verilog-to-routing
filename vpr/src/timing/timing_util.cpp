@@ -1,4 +1,5 @@
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <utility>
 
@@ -12,6 +13,7 @@
 #include "timing_util.h"
 
 #include "tatum/report/graphviz_dot_writer.hpp"
+#include "tatum/report/TimingPathCollector.hpp"
 
 double sec_to_nanosec(double seconds) {
     return 1e9 * seconds;
@@ -87,6 +89,38 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
         }
     }
     return wns;
+}
+
+std::vector<tatum::SkewPath> find_setup_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    //Collect every setup skew path, sorted worst-first (most negative skew first), so the
+    //first occurrence of each clock domain pair below is that pair's worst skew.
+    auto skew_paths = tatum::TimingPathCollector().collect_worst_setup_skew_paths(*timing_ctx.graph, constraints, setup_analyzer,
+                                                                                  std::numeric_limits<size_t>::max());
+
+    std::vector<tatum::SkewPath> worst_skew_per_domain_pair;
+    std::set<std::pair<tatum::DomainId, tatum::DomainId>> seen_domain_pairs;
+    for (const auto& skew_path : skew_paths) {
+        auto domain_pair = std::make_pair(skew_path.launch_domain, skew_path.capture_domain);
+        if (seen_domain_pairs.insert(domain_pair).second) {
+            worst_skew_per_domain_pair.push_back(skew_path);
+        }
+    }
+
+    return worst_skew_per_domain_pair;
+}
+
+//Returns the skew of the given launch/capture clock domain pair from a worst-skew-per-domain-pair
+//list (as produced by find_setup_worst_skew_per_domain_pair/find_hold_worst_skew_per_domain_pair),
+//or NaN if the pair has no recorded skew path (e.g. no clocked path between the two domains).
+static double find_skew_for_domain_pair(const std::vector<tatum::SkewPath>& worst_skew_per_domain_pair, tatum::DomainId launch_domain, tatum::DomainId capture_domain) {
+    for (const auto& skew_path : worst_skew_per_domain_pair) {
+        if (skew_path.launch_domain == launch_domain && skew_path.capture_domain == capture_domain) {
+            return sec_to_nanosec(skew_path.clock_skew.value());
+        }
+    }
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, tatum::NodeId node, tatum::DomainId launch_domain, tatum::DomainId capture_domain) {
@@ -203,8 +237,11 @@ void TimingStats::writeHuman(std::ostream& output) const {
     output << ", Fmax: " << fmax << " MHz";
     output << "\n";
 
+    output << prefix << "critical path skew: " << critical_path_skew << " ns\n";
+
     output << prefix << "setup Worst Negative Slack (sWNS): " << setup_worst_neg_slack << " ns\n";
     output << prefix << "setup Total Negative Slack (sTNS): " << setup_total_neg_slack << " ns\n";
+    output << prefix << "setup Worst Skew (sWS): " << setup_worst_skew << " ns\n";
     output << "\n";
 }
 void TimingStats::writeJSON(std::ostream& output) const {
@@ -212,9 +249,11 @@ void TimingStats::writeJSON(std::ostream& output) const {
 
     output << "  \"cpd\": " << least_slack_cpd_delay << ",\n";
     output << "  \"fmax\": " << fmax << ",\n";
+    output << "  \"cpd_skew\": " << critical_path_skew << ",\n";
 
     output << "  \"swns\": " << setup_worst_neg_slack << ",\n";
-    output << "  \"stns\": " << setup_total_neg_slack << "\n";
+    output << "  \"stns\": " << setup_total_neg_slack << ",\n";
+    output << "  \"sws\": " << setup_worst_skew << "\n";
     output << "}\n";
 }
 
@@ -224,17 +263,21 @@ void TimingStats::writeXML(std::ostream& output) const {
 
     output << "  <cpd value=\"" << least_slack_cpd_delay << "\" unit=\"ns\" description=\"Final critical path delay\"></nets>\n";
     output << "  <fmax value=\"" << fmax << "\" unit=\"MHz\" description=\"Max circuit frequency\"></fmax>\n";
+    output << "  <cpd_skew value=\"" << critical_path_skew << "\" unit=\"ns\" description=\"Skew on the critical path's clock domain pair\"></cpd_skew>\n";
     output << "  <swns value=\"" << setup_worst_neg_slack << "\" unit=\"ns\" description=\"setup Worst Negative Slack (sWNS)\"></swns>\n";
     output << "  <stns value=\"" << setup_total_neg_slack << "\" unit=\"ns\" description=\"setup Total Negative Slack (sTNS)\"></stns>\n";
+    output << "  <sws value=\"" << setup_worst_skew << "\" unit=\"ns\" description=\"setup Worst Skew (sWS)\"></sws>\n";
 
     output << "</block_usage_report>\n";
 }
 
-TimingStats::TimingStats(std::string pref, double cpd, double f_max, double swns, double stns) {
+TimingStats::TimingStats(std::string pref, double cpd, double f_max, double swns, double stns, double sws, double cpd_skew) {
     least_slack_cpd_delay = cpd;
     fmax = f_max;
     setup_worst_neg_slack = swns;
     setup_total_neg_slack = stns;
+    setup_worst_skew = sws;
+    critical_path_skew = cpd_skew;
     prefix = std::move(pref);
 }
 
@@ -293,8 +336,16 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     double setup_worst_neg_slack = sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer));
     double setup_total_neg_slack = sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer));
 
+    auto setup_worst_skew_paths = find_setup_worst_skew_per_domain_pair(constraints, setup_analyzer);
+    double setup_worst_skew = setup_worst_skew_paths.empty() ? std::numeric_limits<double>::quiet_NaN()
+                                                             : sec_to_nanosec(setup_worst_skew_paths.front().clock_skew.value());
+
+    //Skew between the critical path's own launch/capture clock domains, so users can tell how much
+    //of the critical path's margin is attributable to clock skew rather than data-path delay.
+    double critical_path_skew = find_skew_for_domain_pair(setup_worst_skew_paths, least_slack_cpd.launch_domain(), least_slack_cpd.capture_domain());
+
     const auto stats = TimingStats(prefix.data(), least_slack_cpd_delay, fmax,
-                                   setup_worst_neg_slack, setup_total_neg_slack);
+                                   setup_worst_neg_slack, setup_total_neg_slack, setup_worst_skew, critical_path_skew);
     if (!timing_summary_filename.empty())
         write_setup_timing_summary(timing_summary_filename, stats);
 
@@ -306,8 +357,11 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     }
     VTR_LOG("\n");
 
+    VTR_LOG("%scritical path skew: %g ns\n", prefix.data(), critical_path_skew);
+
     VTR_LOG("%ssetup Worst Negative Slack (sWNS): %g ns\n", prefix.data(), setup_worst_neg_slack);
     VTR_LOG("%ssetup Total Negative Slack (sTNS): %g ns\n", prefix.data(), setup_total_neg_slack);
+    VTR_LOG("%ssetup Worst Skew (sWS): %g ns\n", prefix.data(), setup_worst_skew);
     VTR_LOG("\n");
 
     VTR_LOG("%ssetup slack histogram:\n", prefix.data());
@@ -361,6 +415,29 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
                         constraints.clock_domain_name(path.launch_domain()).c_str(),
                         constraints.clock_domain_name(path.capture_domain()).c_str(),
                         sec_to_nanosec(path.slack()));
+            }
+        }
+        VTR_LOG("\n");
+
+        //Skew per constraint
+        VTR_LOG("%sintra-domain worst setup skews per constraint:\n", prefix.data());
+        for (const auto& skew_path : setup_worst_skew_paths) {
+            if (skew_path.launch_domain == skew_path.capture_domain) {
+                VTR_LOG("  %s to %s worst setup skew: %g ns\n",
+                        constraints.clock_domain_name(skew_path.launch_domain).c_str(),
+                        constraints.clock_domain_name(skew_path.capture_domain).c_str(),
+                        sec_to_nanosec(skew_path.clock_skew.value()));
+            }
+        }
+        VTR_LOG("\n");
+
+        VTR_LOG("%sinter-domain worst setup skews per constraint:\n", prefix.data());
+        for (const auto& skew_path : setup_worst_skew_paths) {
+            if (skew_path.launch_domain != skew_path.capture_domain) {
+                VTR_LOG("  %s to %s worst setup skew: %g ns\n",
+                        constraints.clock_domain_name(skew_path.launch_domain).c_str(),
+                        constraints.clock_domain_name(skew_path.capture_domain).c_str(),
+                        sec_to_nanosec(skew_path.clock_skew.value()));
             }
         }
     }
@@ -551,6 +628,26 @@ float find_hold_worst_slack(const tatum::HoldTimingAnalyzer& hold_analyzer, cons
     return worst_slack;
 }
 
+std::vector<tatum::SkewPath> find_hold_worst_skew_per_domain_pair(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    //Collect every hold skew path, sorted worst-first (most positive skew first), so the
+    //first occurrence of each clock domain pair below is that pair's worst skew.
+    auto skew_paths = tatum::TimingPathCollector().collect_worst_hold_skew_paths(*timing_ctx.graph, constraints, hold_analyzer,
+                                                                                 std::numeric_limits<size_t>::max());
+
+    std::vector<tatum::SkewPath> worst_skew_per_domain_pair;
+    std::set<std::pair<tatum::DomainId, tatum::DomainId>> seen_domain_pairs;
+    for (const auto& skew_path : skew_paths) {
+        auto domain_pair = std::make_pair(skew_path.launch_domain, skew_path.capture_domain);
+        if (seen_domain_pairs.insert(domain_pair).second) {
+            worst_skew_per_domain_pair.push_back(skew_path);
+        }
+    }
+
+    return worst_skew_per_domain_pair;
+}
+
 std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -614,8 +711,13 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints,
     auto hold_worst_neg_slack = sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer));
     auto hold_total_neg_slack = sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer));
 
+    auto hold_worst_skew_paths = find_hold_worst_skew_per_domain_pair(constraints, hold_analyzer);
+    double hold_worst_skew = hold_worst_skew_paths.empty() ? std::numeric_limits<double>::quiet_NaN()
+                                                           : sec_to_nanosec(hold_worst_skew_paths.front().clock_skew.value());
+
     VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.data(), hold_worst_neg_slack);
     VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.data(), hold_total_neg_slack);
+    VTR_LOG("%shold Worst Skew (hWS): %g ns\n", prefix.data(), hold_worst_skew);
 
     /*For testing*/
     //VTR_LOG("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
@@ -655,6 +757,29 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints,
                             constraints.clock_domain_name(capture_domain).c_str(),
                             sec_to_nanosec(worst_slack));
                 }
+            }
+        }
+        VTR_LOG("\n");
+
+        //Skew per constraint
+        VTR_LOG("%sintra-domain worst hold skews per constraint:\n", prefix.data());
+        for (const auto& skew_path : hold_worst_skew_paths) {
+            if (skew_path.launch_domain == skew_path.capture_domain) {
+                VTR_LOG("  %s to %s worst hold skew: %g ns\n",
+                        constraints.clock_domain_name(skew_path.launch_domain).c_str(),
+                        constraints.clock_domain_name(skew_path.capture_domain).c_str(),
+                        sec_to_nanosec(skew_path.clock_skew.value()));
+            }
+        }
+        VTR_LOG("\n");
+
+        VTR_LOG("%sinter-domain worst hold skews per constraint:\n", prefix.data());
+        for (const auto& skew_path : hold_worst_skew_paths) {
+            if (skew_path.launch_domain != skew_path.capture_domain) {
+                VTR_LOG("  %s to %s worst hold skew: %g ns\n",
+                        constraints.clock_domain_name(skew_path.launch_domain).c_str(),
+                        constraints.clock_domain_name(skew_path.capture_domain).c_str(),
+                        sec_to_nanosec(skew_path.clock_skew.value()));
             }
         }
     }
