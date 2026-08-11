@@ -1,0 +1,8 @@
+%include ../vpr_fixed_chan_width.txt
+
+#Multi-layer placement metrics
+init_num_nets_spanning_multiple_layers;vpr.out;Initial number of nets spanning multiple layers: (\d+)
+num_nets_spanning_multiple_layers;vpr.out;Number of nets spanning multiple layers: (\d+)
+
+#Post-route CHANZ channel segment utilization
+chanz_used_wire_segments;vpr.out;Total used wires segments:\s+CHANX\s+\d+,\s*CHANY\s+\d+,\s*CHANZ\s+(\d+),

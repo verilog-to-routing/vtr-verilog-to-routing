@@ -261,8 +261,8 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
     delete[] pb_graph_node->num_output_pins;
     delete[] pb_graph_node->num_clock_pins;
 
-    delete[] pb_graph_node->input_pin_class_size;
-    delete[] pb_graph_node->output_pin_class_size;
+    std::vector<size_t>().swap(pb_graph_node->input_pin_class_sizes);
+    std::vector<size_t>().swap(pb_graph_node->output_pin_class_sizes);
 
     if (pb_graph_node->interconnect_pins) {
         for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {

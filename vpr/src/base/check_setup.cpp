@@ -88,6 +88,17 @@ void check_setup(const t_vpr_setup& vpr_setup, const t_chan_width_dist& chans) {
                         "Cannot have negative annealer auto initial temperature scale.\n");
     }
 
+    if (placer_opts.interposer_cost_params.net_cost_change_threshold < 0.0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Cannot have negative interposer net cost change threshold.\n");
+    }
+
+    if (placer_opts.interposer_cost_params.two_stage_net_cost_first_stage_type == e_interposer_net_cost_type::TWO_STAGE
+        || placer_opts.interposer_cost_params.two_stage_net_cost_second_stage_type == e_interposer_net_cost_type::TWO_STAGE) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Two-stage interposer net cost stage types must be concrete cost models.\n");
+    }
+
     // Rules for doing Analytical Placement
     if (ap_opts.doAP != e_stage_action::SKIP) {
         // Make sure that the --place option was not set.

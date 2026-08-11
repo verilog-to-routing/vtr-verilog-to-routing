@@ -112,7 +112,7 @@ const float WIRE_DRAWING_WIDTH = 0.5;
 /**
  * @brief Calculate the ratio between pixels and world units spanning the screen width.
  * 
- * @return Returns the ratio described above, which will be used to determine when decluttering should occur.
+ * @return Returns the ratio described above, which is usually used to determine when decluttering should occur.
  */
 double get_pixels_per_world_unit(ezgl::renderer* g);
 
@@ -125,9 +125,6 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
 //Returns the drawing coordinates of the specified pin
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin);
 
-//Returns the drawing coordinates of the specified tnode
-ezgl::point2d tnode_draw_coord(tatum::NodeId node);
-
 /* Converts a vtr Color to a ezgl Color. */
 ezgl::color to_ezgl_color(vtr::Color<float> color);
 
@@ -136,7 +133,7 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
  * fan-in/fan-out of a highlighted node. */
 bool draw_if_net_highlighted(ParentNetId inet);
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
+    ParentNetId net_id,
     int driver_pin,
     int sink_pin);
 

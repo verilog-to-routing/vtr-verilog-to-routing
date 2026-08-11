@@ -13,6 +13,7 @@
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_tree.h"
+#include "rr_graph_view.h"
 #include "vpr_context.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
@@ -117,12 +118,13 @@ static void write_csv(const std::string& filepath, const std::vector<std::vector
 }
 
 /**
- * @brief Loads the two arrays passed in with the total occupancy at each of the
+ * @brief Loads the occupancy arrays with the total occupancy at each of the
  *        channel segments in the FPGA.
  */
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
-                                     vtr::NdMatrix<int, 3>& chany_occ);
+                                     vtr::NdMatrix<int, 3>& chany_occ,
+                                     vtr::NdMatrix<int, 3>& chanz_occ);
 
 /**
  * @brief Writes channel occupancy data to a file.
@@ -417,15 +419,25 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
                                            }},
                                            0);
 
-    load_channel_occupancies(net_list, chanx_occ, chany_occ);
+    vtr::NdMatrix<int, 3> chanz_occ;
+    if (num_layers > 1) {
+        chanz_occ = vtr::NdMatrix<int, 3>({{num_layers, width, height}}, 0);
+    }
+
+    load_channel_occupancies(net_list, chanx_occ, chany_occ, chanz_occ);
 
     write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chan_segment_width.x);
     write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chan_segment_width.y);
+    if (num_layers > 1) {
+        write_channel_occupancy_table("chanz_occupancy.txt", chanz_occ, device_ctx.rr_chan_segment_width.z);
+    }
 
     int total_cap_x = 0;
     int total_used_x = 0;
     int total_cap_y = 0;
     int total_used_y = 0;
+    int total_cap_z = 0;
+    int total_used_z = 0;
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels: layer   y   max occ   ave occ   ave cap\n");
@@ -478,16 +490,35 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
         }
     }
 
+    if (num_layers > 1) {
+        for (size_t layer = 0; layer < num_layers; ++layer) {
+            for (size_t x = 0; x < width; ++x) {
+                for (size_t y = 0; y < height; ++y) {
+                    total_cap_z += device_ctx.rr_chan_segment_width.z[layer][x][y];
+                    total_used_z += chanz_occ[layer][x][y];
+                }
+            }
+        }
+    }
+
     VTR_LOG("\n");
 
-    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, ALL %9d\n",
-            total_cap_x, total_cap_y, total_cap_x + total_cap_y);
-    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, ALL %9d\n",
-            total_used_x, total_used_y, total_used_x + total_used_y);
-    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, ALL %8.1f%%\n",
-            100.0 * static_cast<double>(total_used_x) / total_cap_x,
-            100.0 * static_cast<double>(total_used_y) / total_cap_y,
-            100.0 * static_cast<double>(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
+    const int total_cap_all = total_cap_x + total_cap_y + total_cap_z;
+    const int total_used_all = total_used_x + total_used_y + total_used_z;
+
+    auto usage_percent = [](int used, int cap) -> float {
+        return cap > 0 ? 100.0 * used / cap : 0.0;
+    };
+
+    VTR_LOG("Total existing wires segments: CHANX %9d, CHANY %9d, CHANZ %9d, ALL %9d\n",
+            total_cap_x, total_cap_y, total_cap_z, total_cap_all);
+    VTR_LOG("Total used wires segments:     CHANX %9d, CHANY %9d, CHANZ %9d, ALL %9d\n",
+            total_used_x, total_used_y, total_used_z, total_used_all);
+    VTR_LOG("Usage percentage:              CHANX %8.1f%%, CHANY %8.1f%%, CHANZ %8.1f%%, ALL %8.1f%%\n",
+            usage_percent(total_used_x, total_cap_x),
+            usage_percent(total_used_y, total_cap_y),
+            usage_percent(total_used_z, total_cap_z),
+            usage_percent(total_used_all, total_cap_all));
 
     VTR_LOG("\n");
 }
@@ -536,14 +567,18 @@ static void write_channel_occupancy_table(std::string_view filename,
 
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
-                                     vtr::NdMatrix<int, 3>& chany_occ) {
+                                     vtr::NdMatrix<int, 3>& chany_occ,
+                                     vtr::NdMatrix<int, 3>& chanz_occ) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     // First set the occupancy of everything to zero.
     chanx_occ.fill(0);
     chany_occ.fill(0);
+    if (!chanz_occ.empty()) {
+        chanz_occ.fill(0);
+    }
 
     // Now go through each net and count the tracks and pins used everywhere
     for (ParentNetId net_id : net_list.nets()) {
@@ -571,6 +606,12 @@ static void load_channel_occupancies(const Netlist<>& net_list,
                 int layer = rr_graph.node_layer_low(inode);
                 for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
                     chany_occ[layer][i][j]++;
+            } else if (rr_type == e_rr_type::CHANZ) {
+                VTR_ASSERT_SAFE(!chanz_occ.empty());
+                int x = rr_graph.node_xlow(inode);
+                int y = rr_graph.node_ylow(inode);
+                for (int layer = rr_graph.node_layer_low(inode); layer <= rr_graph.node_layer_high(inode); layer++)
+                    chanz_occ[layer][x][y]++;
             }
         }
     }

@@ -42,7 +42,8 @@ std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detail
                                                             vpr_setup,
                                                             arch);
         case e_ap_detailed_placer::WindowedBiMatching:
-            return std::make_unique<WindowedBiMatchingDetailedPlacer>();
+            return std::make_unique<WindowedBiMatchingDetailedPlacer>(curr_clustered_placement,
+                                                                      vpr_setup.PlacerOpts);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized detailed placer type");
@@ -85,7 +86,6 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
                                        vpr_setup.PlacerOpts,
                                        vpr_setup.AnalysisOpts,
                                        vpr_setup.NocOpts,
-                                       pb_gpin_lookup_,
                                        netlist_pin_lookup_,
                                        FlatPlacementInfo(),
                                        place_delay_model,

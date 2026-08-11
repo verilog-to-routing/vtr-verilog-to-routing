@@ -58,6 +58,7 @@
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
+#include "draw_crit_path.h"
 
 #include "ui_setup.h"
 #include "ezgl/qt/render_backend.hpp"
@@ -105,7 +106,6 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause();
 static void set_block_outline(bool checked);
 static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
@@ -306,6 +306,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
         }
     } else {
         draw_analytical_place(g);
+        draw_crit_path(g);
     }
 
     // Zoom-Select preview: while the user is in window mode and has clicked
@@ -344,6 +345,7 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
         routing_button_setup(app);
         view_button_setup(app);
         crit_path_button_setup(app);
+        proceed_by_step_button_setup(app);
     }
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -479,14 +481,16 @@ void update_screen(ScreenUpdatePriority priority,
         initial_stages.insert(pic_on_screen_val);
     }
 
-    bool should_pause = int(priority) >= draw_state->gr_automode;
+    // When the priority associated with this screen update is higher than the level set in draw_state,
+    // we need to pause at the current graphics view. This does not necessarily happen only at a state change.
+    // Check the definition of gr_automode in draw_state for more information.
+    bool pause_for_priority = int(priority) >= draw_state->gr_automode;
 
-    //If there was a state change, we must call ezgl::application::run() to update the buttons.
-    //However, by default this causes graphics to pause for user interaction.
-    //
-    //If the priority is such that we shouldn't pause we need to continue automatically, so
-    //the user won't need to click manually.
-    draw_state->auto_proceed = (state_change && !should_pause);
+    // If there was a state change, we must call ezgl::application::run() to update the buttons.
+    // However, by default this causes graphics to pause for user interaction.
+    // If the priority is such that we shouldn't pause we need to continue automatically, so
+    // the user won't need to click manually.
+    draw_state->auto_proceed = (state_change && !pause_for_priority);
 
     // Headless mode (save_graphics / graphics_commands without --disp): never
     // block for user interaction — there is no user at the keyboard. Always
@@ -494,13 +498,26 @@ void update_screen(ScreenUpdatePriority priority,
     if (!draw_state->show_graphics)
         draw_state->auto_proceed = true;
 
-    if (state_change                   //Must update buttons
-        || should_pause                //The priority means graphics should pause for user interaction
-        || draw_state->forced_pause) { //The user asked to pause
+    // When Proceed by Step is enabled (an option in the Misc. menu), we need to track if the number of
+    // steps (e.g. temperature change, routing iteration) since the last graphics view has reached
+    // the number specified by the user. If true, we need to pause the graphics at the current graphics view.
+    t_proceed_by_step& proceed_by_step = draw_state->proceed_by_step;
+    bool steps_reached = proceed_by_step.enabled && (proceed_by_step.step_counter == proceed_by_step.steps_to_proceed);
 
-        if (draw_state->forced_pause) {
-            VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
-            draw_state->forced_pause = false; //Reset pause flag
+    if (state_change          // Must update buttons.
+        || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
+        || steps_reached) {   // The number of steps set by the user is reached.
+
+        // Reset the step counter if Proceed by Step is on.
+        // Note that, other causes that pause the graphics (e.g. a state change)
+        // when Proceed by Step is on will also trigger this reset.
+        if (proceed_by_step.enabled) {
+            // Note that, we are modifying the variable stored in draw_state.
+            proceed_by_step.step_counter = 0;
+        }
+
+        if (steps_reached) {
+            VTR_LOG("Pausing optimization to view graphics ('Steps to Proceed' reached). Click 'Proceed' to continue.\n");
         }
 
         const bool has_cmds = !draw_state->graphics_commands.empty();
@@ -550,6 +567,10 @@ void update_screen(ScreenUpdatePriority priority,
         exit(pending_graphics_exit_code);
     }
 
+    // Increments the step counter if Proceed by Step is on.
+    if (draw_state->proceed_by_step.enabled) {
+        (draw_state->proceed_by_step.step_counter)++;
+    }
 #else
     (void)setup_timing_info;
     (void)priority;
@@ -788,6 +809,7 @@ void set_initial_world_ap() {
 double get_pixels_per_world_unit(ezgl::renderer* g) {
     double world_width = g->get_visible_world().width();
     double screen_width = g->get_visible_screen().width();
+    // If using this function for decluttering purpose:
     // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
     // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
     // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
@@ -1021,7 +1043,7 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 
 //Returns the set of rr nodes which connect driver to sink
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
+    ParentNetId net_id,
     int driver_pin,
     int sink_pin) {
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
@@ -1273,12 +1295,6 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
         press_zoom_fit(/*unused*/ nullptr, app);
     });
 
-    // Connect Pause button
-    QPushButton* pause_button = app->find_push_button("PauseButton");
-    QObject::connect(pause_button, &QPushButton::clicked, []() {
-        set_force_pause();
-    });
-
     // Connect Block Outline checkbox
     QCheckBox* block_outline = app->find_check_box("blockOutline");
     QObject::connect(block_outline, &QCheckBox::toggled, [](bool checked) {
@@ -1383,12 +1399,6 @@ static void set_draw_partitions(bool checked) {
 
     application->update_message(draw_state->default_message);
     application->refresh_drawing();
-}
-
-static void set_force_pause() {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->forced_pause = true;
 }
 
 // The enums below are the integer argument values accepted by the
@@ -1649,13 +1659,6 @@ static void run_graphics_commands(const std::string& commands) {
     ++draw_state->sequence_number;
 }
 
-ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
-    AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
-    return atom_pin_draw_coord(pin);
-}
-
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
  * It also highlights the moved block input and output terminals       *
@@ -1677,7 +1680,7 @@ void highlight_moved_block_and_its_terminals(
     clear_colored_locations();
     set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc,
                        OLD_BLK_LOC_COLOR);
-    set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc,
+    set_draw_loc_color(blocks_affected.moved_blocks[0].new_loc,
                        NEW_BLK_LOC_COLOR);
 }
 
@@ -1762,6 +1765,7 @@ bool rgb_is_same(ezgl::color color1, ezgl::color color2) {
     color2.alpha = 255;
     return (color1 == color2);
 }
+
 t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int sink_layer) {
     t_draw_layer_display element_visibility;
     t_draw_state* draw_state = get_draw_state_vars();
@@ -1769,16 +1773,17 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
     element_visibility.visible = true;
     bool cross_layer_enabled = draw_state->cross_layer_display.visible;
 
-    //To only show elements (net flylines,noc links,etc...) that are connected to currently active layers on the screen
-    if (!draw_state->draw_layer_display[sink_layer].visible || !draw_state->draw_layer_display[src_layer].visible || (!cross_layer_enabled && src_layer != sink_layer)) {
-        element_visibility.visible = false; /* Don't Draw */
-    }
-
     if (src_layer != sink_layer) {
-        //assign transparency from cross layer option if connection is between different layers
+        if (!cross_layer_enabled) {
+            element_visibility.visible = false; /* Don't Draw */
+        }
+        // Assign transparency from cross layer option if connection is between different layers.
         element_visibility.alpha = draw_state->cross_layer_display.alpha;
     } else {
-        //otherwise assign transparency of current layer
+        if (!draw_state->draw_layer_display[src_layer].visible) {
+            element_visibility.visible = false; /* Don't Draw */
+        }
+        // Assign transparency of current layer.
         element_visibility.alpha = draw_state->draw_layer_display[src_layer].alpha;
     }
 

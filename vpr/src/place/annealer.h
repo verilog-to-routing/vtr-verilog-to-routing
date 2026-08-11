@@ -209,7 +209,7 @@ class PlacementAnnealer {
      * of the annealing/quench. It also updates normalization factors for different
      * placement cost terms.
      */
-    void outer_loop_update_timing_info();
+    void outer_loop_update_timing_info_and_cost_terms();
 
     /**
      * @brief Update the annealing state according to the annealing schedule selected.

@@ -600,6 +600,72 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParseInterposerNetCostType {
+    ConvertedValue<e_interposer_net_cost_type> from_str(const std::string& str) {
+        ConvertedValue<e_interposer_net_cost_type> conv_value;
+        if (str == "minimize_interposer_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB);
+        } else if (str == "interposer_wire_aware_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB);
+        } else if (str == "two_stage") {
+            conv_value.set_value(e_interposer_net_cost_type::TWO_STAGE);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_interposer_net_cost_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_interposer_net_cost_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB) {
+            conv_value.set_value("minimize_interposer_crossing_bb");
+        } else if (val == e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB) {
+            conv_value.set_value("interposer_wire_aware_crossing_bb");
+        } else {
+            VTR_ASSERT(val == e_interposer_net_cost_type::TWO_STAGE);
+            conv_value.set_value("two_stage");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb", "two_stage"};
+    }
+};
+
+struct ParseInterposerStageNetCostType {
+    ConvertedValue<e_interposer_net_cost_type> from_str(const std::string& str) {
+        ConvertedValue<e_interposer_net_cost_type> conv_value;
+        if (str == "minimize_interposer_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB);
+        } else if (str == "interposer_wire_aware_crossing_bb") {
+            conv_value.set_value(e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_interposer_net_cost_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_interposer_net_cost_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_interposer_net_cost_type::MINIMIZE_INTERPOSER_CROSSING_BB) {
+            conv_value.set_value("minimize_interposer_crossing_bb");
+        } else {
+            VTR_ASSERT(val == e_interposer_net_cost_type::INTERPOSER_WIRE_AWARE_CROSSING_BB);
+            conv_value.set_value("interposer_wire_aware_crossing_bb");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb"};
+    }
+};
+
 struct ParsePlaceBoundingBox {
     ConvertedValue<e_place_bounding_box_mode> from_str(const std::string& str) {
         ConvertedValue<e_place_bounding_box_mode> conv_value;
@@ -2775,6 +2841,29 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Penalizes placements whose average interposer congestion exceeds this threshold. "
               "Higher values reduce the likelihood of a penalty; very large values effectively disable threshold-based penalization.")
         .default_value("0.9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerNetCostType>(args.place_interposer_net_cost_type, "--place_interposer_net_cost_type")
+        .help("Controls which interposer net cost model is used during placement. ")
+        .default_value("two_stage")
+        .choices({"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb", "two_stage"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerStageNetCostType>(args.place_two_stage_interposer_net_cost_first_stage_type, "--place_two_stage_interposer_net_cost_first_stage_type")
+        .help("Controls the first-stage interposer net cost model when --place_interposer_net_cost_type is two_stage.")
+        .default_value("minimize_interposer_crossing_bb")
+        .choices({"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_interposer_net_cost_type, ParseInterposerStageNetCostType>(args.place_two_stage_interposer_net_cost_second_stage_type, "--place_two_stage_interposer_net_cost_second_stage_type")
+        .help("Controls the second-stage interposer net cost model when --place_interposer_net_cost_type is two_stage.")
+        .default_value("interposer_wire_aware_crossing_bb")
+        .choices({"minimize_interposer_crossing_bb", "interposer_wire_aware_crossing_bb"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_interposer_net_cost_change_threshold, "--place_interposer_net_cost_change_threshold")
+        .help("Maximum recent interposer net cost deviation threshold used to switch the two-stage interposer net cost model.")
+        .default_value("0.005")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_congestion_factor, "--congestion_factor")

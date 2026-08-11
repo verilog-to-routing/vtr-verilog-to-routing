@@ -22,4 +22,9 @@
 
 class t_pb_graph_node;
 
+/**
+ * @brief Identify all pin class information for complex block
+ *
+ * @param pb_graph_node The pb_graph node of the complex block whose pin class information to be identified.
+ */
 void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node);

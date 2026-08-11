@@ -22,6 +22,9 @@
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
 
+// Forward Declaration
+class APBlockId;
+
 /**
  * @brief Draws all placed blocks on the device grid across visible layers.
  *
@@ -53,6 +56,19 @@ void draw_routing_bb(ezgl::renderer* g);
 /* Draws an X centered at (x,y). The width and height of the X are each 2 * size. */
 void draw_x(float x, float y, float size, ezgl::renderer* g);
 
+/**
+ * @brief Draws a filled star centered at the specified world-coordinate location with a fixed pixel size.
+ *
+ * The star size is in screen (pixel) coordinates, so it appears the same at any zoom level.
+ * The star is four-pointed, with the distance from the center to a star point of size_in_pixels.
+ * The center of the star is filled in with a square of width size_in_pixels / 2.
+ *
+ * @param star_coords 2D star coordinates in world units.
+ * @param size_in_pixels Distance from the center to a star point, in pixels.
+ * @param g Renderer used to perform drawing.
+ */
+void draw_star_fixed_px(ezgl::point2d star_coords, double size_in_pixels, ezgl::renderer* g);
+
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
  * that are not coloured black (useful for drawing over the rr_graph).       */
@@ -63,13 +79,6 @@ void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 //Draws the set of rr_nodes specified, using the colors set in draw_state
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
                         ezgl::renderer* g);
-
-/**
- * @brief Returns the layer number of a timing path node
- * @param node
- * @return layer number the node is situated on.
- */
-int get_timing_path_node_layer_num(tatum::NodeId node);
 
 /**
  * @brief Returns true if both the current_node and prev_node are on the same layer and it is visible,
@@ -84,26 +93,6 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node);
  * channels, while darker colours (e.g. blue) correspond to lower utilization.*/
 void draw_routing_util(ezgl::renderer* g);
 
-/* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
- * pins is shown in a different colour.
- * User can toggle between two different visualizations:
- * a) during placement, critical path only shown as flylines
- * b) during routing, critical path is shown by both flylines and routed net connections.
- */
-void draw_crit_path(ezgl::renderer* g);
-
-/**
- * @brief Draw critical path elements.
- * 
- * This function draws critical path elements based on the provided timing paths
- * and indexes map. It is primarily used in server mode, where items are drawn upon request.
- *
- * @param paths The vector of TimingPath objects representing the critical paths.
- * @param indexes The map of sets, where the map keys are path indices in std::vector<tatum::TimingPath>, and each set contains the indices of the data_arrival_path elements ( @ref tatum::TimingPath ) to draw.
- * @param g Pointer to the ezgl::renderer object on which the elements will be drawn.
- */
-void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g);
-
 /**
  * @brief  Checks whether a flyline should be drawn or not based on the layer control settings in the UI
  * @param src_layer
@@ -114,17 +103,6 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
  *                  Otherwise returns false
  */
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer);
-
-/* Draws critical path shown as flylines. Takes in start and end coordinates, time delay, & renderer.*/
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays = false);
-
-/* Collects all the drawing locations associated with the timing edge between start and end.
- * Only traces interconnect edges in detail, and treats all others as flylines.
- */
-void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
-                                        tatum::NodeId sink_tnode,
-                                        ezgl::color color,
-                                        ezgl::renderer* g);
 
 /* Draws any placement macros (e.g. carry chains, which require specific relative placements
  * between some blocks) if the Placement Macros (in the GUI) is selected.
@@ -142,5 +120,13 @@ void draw_reset_blk_colors();
 
 //Reset a specific block's colour.
 void draw_reset_blk_color(ClusterBlockId blk_id);
+
+/**
+ * @brief Returns the drawing coordinates for an analytical placement block.
+ *
+ * @param ap_block AP block whose current drawing location is requested.
+ * @return 2D coordinates associated with the given AP block.
+ */
+ezgl::point2d get_ap_block_draw_coords(APBlockId ap_block);
 
 #endif /* NO_GRAPHICS */
