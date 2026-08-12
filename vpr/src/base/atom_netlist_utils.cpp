@@ -1168,6 +1168,54 @@ size_t sweep_nets(AtomNetlist& netlist, int verbosity) {
     return nets_to_remove.size();
 }
 
+size_t tie_undriven_nets_to_constant(AtomNetlist& netlist, const LogicalModels& models, int verbosity) {
+    //Find any nets which still have sinks but no driver, and drive them from a
+    //newly created constant-zero generator.
+    //
+    //Undriven nets are removed outright when dangling net sweeping is enabled. When
+    //it is disabled (--sweep_dangling_nets off) they survive, and the rest of VPR
+    //assumes every net has a driver: the timing graph would contain an IPIN with no
+    //fan-in, the packer's gain computation dereferences the driver pin, and the
+    //router treats the first pin of a net as its driver when looking up the SOURCE
+    //rr-node. Rather than leaving those invariants broken, tie the net low, which is
+    //what an unconnected input sees on real hardware anyway.
+
+    //Collect first, since creating blocks/pins below mutates the netlist
+    std::vector<AtomNetId> undriven_nets;
+    for (AtomNetId net_id : netlist.nets()) {
+        if (!net_id) continue;
+        if (netlist.net_driver(net_id)) continue;
+
+        undriven_nets.push_back(net_id);
+    }
+
+    const t_model& names_model = models.get_model(LogicalModels::MODEL_NAMES_ID);
+
+    for (AtomNetId net_id : undriven_nets) {
+        //An empty truth table is BLIF's constant-zero cover (i.e. '.names <net>')
+        AtomNetlist::TruthTable const_zero_truth_table;
+
+        //Block names must be unique, and the net name is not necessarily free
+        std::string blk_name = netlist.net_name(net_id) + "$undriven_const_zero";
+        for (size_t suffix = 2; netlist.find_block(blk_name); ++suffix) {
+            blk_name = netlist.net_name(net_id) + "$undriven_const_zero" + std::to_string(suffix);
+        }
+
+        AtomBlockId blk_id = netlist.create_block(blk_name, LogicalModels::MODEL_NAMES_ID, const_zero_truth_table);
+
+        //Mirror the BLIF reader and create the (empty) input port as well as the output
+        netlist.create_port(blk_id, names_model.inputs);
+
+        AtomPortId output_port_id = netlist.create_port(blk_id, names_model.outputs);
+        netlist.create_pin(output_port_id, 0, net_id, PinType::DRIVER, /*is_const=*/true);
+
+        VTR_LOGV_WARN(verbosity > 0, "Net '%s' has no driver and will be tied to constant zero (by new block '%s')\n",
+                      netlist.net_name(net_id).c_str(), blk_name.c_str());
+    }
+
+    return undriven_nets.size();
+}
+
 std::string make_unconn(size_t& unconn_count, PinType /*pin_type*/) {
 #if 0
     if(pin_type == PinType::DRIVER) {

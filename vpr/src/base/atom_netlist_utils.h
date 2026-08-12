@@ -46,6 +46,17 @@ size_t sweep_blocks(AtomNetlist& netlist, const LogicalModels& models, int verbo
 ///@brief Sweeps nets with no drivers and/or no sinks
 size_t sweep_nets(AtomNetlist& netlist, int verbosity);
 
+/**
+ * @brief Drives any net which has no driver from a new constant-zero generator
+ *
+ * @note  This is a no-op once dangling net sweeping has removed such nets; it
+ *        exists to keep the 'every net has a driver' invariant when sweeping is
+ *        disabled (``--sweep_dangling_nets off``).
+ *
+ * @returns The number of nets tied to a constant
+ */
+size_t tie_undriven_nets_to_constant(AtomNetlist& netlist, const LogicalModels& models, int verbosity);
+
 ///@brief Sweeps primary-inputs with no fanout
 size_t sweep_inputs(AtomNetlist& netlist, const LogicalModels& models, int verbosity);
 

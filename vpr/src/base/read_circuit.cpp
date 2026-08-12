@@ -130,6 +130,13 @@ static void process_circuit(AtomNetlist& netlist,
                         const_gen_inference_method,
                         models,
                         verbosity);
+
+        //Any net left without a driver (only possible when dangling net sweeping is
+        //disabled) breaks invariants relied on by the timing graph, packer and router,
+        //so give it a constant-zero driver
+        size_t num_nets_tied = tie_undriven_nets_to_constant(netlist, models, verbosity);
+        VTR_LOGV(verbosity > 0 && num_nets_tied > 0,
+                 "Undriven net(s) tied to constant zero: %zu\n", num_nets_tied);
     }
 
     {
