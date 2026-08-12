@@ -342,7 +342,7 @@ static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason re
     t_draw_state* draw_state = get_draw_state_vars();
     double pixels_per_world_unit = 1 / g->world_units_per_pixel();
 
-    if(reason == ezgl::view_change_reason::pan || reason == ezgl::view_change_reason::setup) {
+    if(reason == ezgl::view_change_reason::pan) {
         return true;
     } else if(reason == ezgl::view_change_reason::zm_in) {
         if(draw_state->show_rr && draw_state->enable_decluttering) {
@@ -371,6 +371,7 @@ static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason re
             return false;
         }
     }
+    return true;
 }
 
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
@@ -485,6 +486,8 @@ void update_screen(ScreenUpdatePriority priority,
                     rt = ezgl::renderer_type::immediate;
                 }
 
+                // Set the callback that helps rhi_backend::redraw_camera_only() determine if
+                // the full redraw can be replaced by a camera transformation.
                 if (rt == ezgl::renderer_type::rhi) {
                     canvas->set_decide_reuse_geometry_callback(decide_reuse_geometry);
                 }
