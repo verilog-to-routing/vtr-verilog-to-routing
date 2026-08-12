@@ -100,7 +100,7 @@ static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
 
-static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason reason);
+static bool decide_reuse_geometry(ezgl::view_change_ctx& ctx);
 
 /**
  * @brief Generalized callback function to setup the UI when the stage changes.
@@ -337,13 +337,15 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
-static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason reason) {
+static bool decide_reuse_geometry(ezgl::view_change_ctx& ctx) {
     t_draw_state* draw_state = get_draw_state_vars();
-    double pixels_per_world_unit = 1 / g->world_units_per_pixel();
+    double pixels_per_world_unit = 1 / ctx.world_units_per_pixel;
 
-    if(reason == ezgl::view_change_reason::pan) {
+    VTR_ASSERT_SAFE(ctx.reason != ezgl::view_change_reason::setup);
+
+    if(ctx.reason == ezgl::view_change_reason::pan) {
         return true;
-    } else if(reason == ezgl::view_change_reason::zm_in) {
+    } else if(ctx.reason == ezgl::view_change_reason::zoom_in) {
         if(draw_state->show_rr && draw_state->enable_decluttering) {
             if(draw_state->declutter_rr && pixels_per_world_unit >= MIN_PIXELS_PER_CHAN_NODE) {
                 return false;
@@ -358,7 +360,7 @@ static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason re
             return false;
         }
     }
-    // reason == ezgl::view_change_reason::zm_out
+    // ctx.reason == ezgl::view_change_reason::zoom_out
     else {
         if(draw_state->show_rr && draw_state->enable_decluttering) {
             if(!(draw_state->declutter_rr) && pixels_per_world_unit < MIN_PIXELS_PER_CHAN_NODE) {
