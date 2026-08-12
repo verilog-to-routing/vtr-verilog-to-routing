@@ -105,7 +105,6 @@ ezgl::canvas* ensure_main_canvas(ezgl::application* app) {
         cnv = app->add_canvas(
             id,
             /*draw_callback=*/[](ezgl::renderer*) {},
-            nullptr,
             ezgl::rectangle({0, 0}, 256, 256),
             ezgl::WHITE);
     }

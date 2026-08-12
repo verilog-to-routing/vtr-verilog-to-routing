@@ -100,7 +100,7 @@ static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
 
-static bool decide_full_redraw_needed(ezgl::renderer* g, ezgl::view_operation op);
+static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason reason);
 
 /**
  * @brief Generalized callback function to setup the UI when the stage changes.
@@ -338,37 +338,37 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
-static bool decide_full_redraw_needed(ezgl::renderer* g, ezgl::view_operation op) {
+static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason reason) {
     t_draw_state* draw_state = get_draw_state_vars();
     double pixels_per_world_unit = 1 / g->world_units_per_pixel();
 
-    if(op == ezgl::view_operation::pan) {
-        return false;
-    } else if(op == ezgl::view_operation::zm_in) {
+    if(reason == ezgl::view_change_reason::pan || reason == ezgl::view_change_reason::setup) {
+        return true;
+    } else if(reason == ezgl::view_change_reason::zm_in) {
         if(draw_state->show_rr && draw_state->enable_decluttering) {
             if(draw_state->declutter_rr && pixels_per_world_unit >= MIN_PIXELS_PER_CHAN_NODE) {
-                return true;
+                return false;
             }
         }
 
         if(draw_state->show_blk_internal && !(draw_state->all_internals_drawn)) {
-            return true;
+            return false;
         }
 
         if(draw_state->show_crit_path && draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays) {
-            return true;
+            return false;
         }
     }
-    // op == ezgl::view_operation::zm_out
+    // reason == ezgl::view_change_reason::zm_out
     else {
         if(draw_state->show_rr && draw_state->enable_decluttering) {
             if(!(draw_state->declutter_rr) && pixels_per_world_unit < MIN_PIXELS_PER_CHAN_NODE) {
-                return true;
+                return false;
             }
         }
 
         if(draw_state->show_blk_internal && !(draw_state->only_clbs_drawn)) {
-            return true;
+            return false;
         }
     }
 }
@@ -462,7 +462,7 @@ void update_screen(ScreenUpdatePriority priority,
         }
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
-            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, decide_full_redraw_needed, initial_world);
+            auto* canvas = application->add_canvas("MainCanvas", draw_main_canvas, initial_world);
             if (canvas != nullptr) {
                 ezgl::renderer_type rt = ezgl::renderer_type::rhi;
                 if (draw_state->renderer_type == "immediate")
@@ -483,6 +483,10 @@ void update_screen(ScreenUpdatePriority priority,
                         "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
                         "with --disp on; falling back to the immediate renderer.\n");
                     rt = ezgl::renderer_type::immediate;
+                }
+
+                if (rt == ezgl::renderer_type::rhi) {
+                    canvas->set_decide_reuse_geometry_callback(decide_reuse_geometry);
                 }
 
                 canvas->set_renderer_type(rt);
