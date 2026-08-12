@@ -108,7 +108,6 @@ static bool decide_reuse_geometry(ezgl::renderer* g, ezgl::view_change_reason re
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause();
 static void set_block_outline(bool checked);
 static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
@@ -384,6 +383,7 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
         routing_button_setup(app);
         view_button_setup(app);
         crit_path_button_setup(app);
+        proceed_by_step_button_setup(app);
     }
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -525,14 +525,16 @@ void update_screen(ScreenUpdatePriority priority,
         initial_stages.insert(pic_on_screen_val);
     }
 
-    bool should_pause = int(priority) >= draw_state->gr_automode;
+    // When the priority associated with this screen update is higher than the level set in draw_state,
+    // we need to pause at the current graphics view. This does not necessarily happen only at a state change.
+    // Check the definition of gr_automode in draw_state for more information.
+    bool pause_for_priority = int(priority) >= draw_state->gr_automode;
 
-    //If there was a state change, we must call ezgl::application::run() to update the buttons.
-    //However, by default this causes graphics to pause for user interaction.
-    //
-    //If the priority is such that we shouldn't pause we need to continue automatically, so
-    //the user won't need to click manually.
-    draw_state->auto_proceed = (state_change && !should_pause);
+    // If there was a state change, we must call ezgl::application::run() to update the buttons.
+    // However, by default this causes graphics to pause for user interaction.
+    // If the priority is such that we shouldn't pause we need to continue automatically, so
+    // the user won't need to click manually.
+    draw_state->auto_proceed = (state_change && !pause_for_priority);
 
     // Headless mode (save_graphics / graphics_commands without --disp): never
     // block for user interaction — there is no user at the keyboard. Always
@@ -540,13 +542,26 @@ void update_screen(ScreenUpdatePriority priority,
     if (!draw_state->show_graphics)
         draw_state->auto_proceed = true;
 
-    if (state_change                   //Must update buttons
-        || should_pause                //The priority means graphics should pause for user interaction
-        || draw_state->forced_pause) { //The user asked to pause
+    // When Proceed by Step is enabled (an option in the Misc. menu), we need to track if the number of
+    // steps (e.g. temperature change, routing iteration) since the last graphics view has reached
+    // the number specified by the user. If true, we need to pause the graphics at the current graphics view.
+    t_proceed_by_step& proceed_by_step = draw_state->proceed_by_step;
+    bool steps_reached = proceed_by_step.enabled && (proceed_by_step.step_counter == proceed_by_step.steps_to_proceed);
 
-        if (draw_state->forced_pause) {
-            VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
-            draw_state->forced_pause = false; //Reset pause flag
+    if (state_change          // Must update buttons.
+        || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
+        || steps_reached) {   // The number of steps set by the user is reached.
+
+        // Reset the step counter if Proceed by Step is on.
+        // Note that, other causes that pause the graphics (e.g. a state change)
+        // when Proceed by Step is on will also trigger this reset.
+        if (proceed_by_step.enabled) {
+            // Note that, we are modifying the variable stored in draw_state.
+            proceed_by_step.step_counter = 0;
+        }
+
+        if (steps_reached) {
+            VTR_LOG("Pausing optimization to view graphics ('Steps to Proceed' reached). Click 'Proceed' to continue.\n");
         }
 
         const bool has_cmds = !draw_state->graphics_commands.empty();
@@ -596,6 +611,10 @@ void update_screen(ScreenUpdatePriority priority,
         exit(pending_graphics_exit_code);
     }
 
+    // Increments the step counter if Proceed by Step is on.
+    if (draw_state->proceed_by_step.enabled) {
+        (draw_state->proceed_by_step.step_counter)++;
+    }
 #else
     (void)setup_timing_info;
     (void)priority;
@@ -1320,12 +1339,6 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
         press_zoom_fit(/*unused*/ nullptr, app);
     });
 
-    // Connect Pause button
-    QPushButton* pause_button = app->find_push_button("PauseButton");
-    QObject::connect(pause_button, &QPushButton::clicked, []() {
-        set_force_pause();
-    });
-
     // Connect Block Outline checkbox
     QCheckBox* block_outline = app->find_check_box("blockOutline");
     QObject::connect(block_outline, &QCheckBox::toggled, [](bool checked) {
@@ -1430,12 +1443,6 @@ static void set_draw_partitions(bool checked) {
 
     application->update_message(draw_state->default_message);
     application->refresh_drawing();
-}
-
-static void set_force_pause() {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->forced_pause = true;
 }
 
 // The enums below are the integer argument values accepted by the

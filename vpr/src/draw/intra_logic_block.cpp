@@ -92,7 +92,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
  * @param g Main renderer.
  * @return True if the block covers at least the minimum screen-area ratio; otherwise false.
  */
-static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
+static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
 
 /**
  * @brief Helper subroutine to recursively draw sub-blocks.
@@ -410,7 +410,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 }
 
 #ifndef NO_GRAPHICS
-static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
+static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
     // Calculate the block bounding box's area in the world coordinates.
     double pb_bbox_area = pb_bbox.area();
     // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
