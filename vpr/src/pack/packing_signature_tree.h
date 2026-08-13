@@ -380,10 +380,21 @@ struct LocationAndConnectivityNode {
 ///        during detailed packing which can dominate VPR runtime for complex
 ///        logic block architectures.
 class PackingSignatureTree {
+  private:
+    /// @brief Maximum number of ECNs that may be added to the PST as a
+    ///        multiple of the number of molecules in the circuit.
+    const size_t ECN_LIMIT_FACTOR = 25;
+
+    /// @brief Maximum number of LCNs that may be added to the PST as a
+    ///        multiple of the number of molecules in the circuit.
+    const size_t LCN_LIMIT_FACTOR = 40;
+
   public:
-    PackingSignatureTree()
+    PackingSignatureTree(size_t num_molecules) noexcept
         : cursor_(nullptr)
-        , checkpoint_cursor_(nullptr) {}
+        , checkpoint_cursor_(nullptr)
+        , ecn_limit_(ECN_LIMIT_FACTOR * num_molecules)
+        , lcn_limit_(LCN_LIMIT_FACTOR * num_molecules) {}
 
     ~PackingSignatureTree() {
         for (LocationAndConnectivityNode* lcn : branches_) {
@@ -420,6 +431,14 @@ class PackingSignatureTree {
 
     /// @brief Get legality status of current cluster packing pattern, if known.
     e_ecn_legality check_legality();
+
+    /// @brief Query if the maximum threshold for number of ECNs in the PST has
+    ///        been crossed.
+    inline bool ecn_threshold_limit_reached() { return (this->num_ecn_ >= this->ecn_limit_); }
+
+    /// @brief Query if the maximum threshold for number of LCNs in the PST has
+    ///        been crossed.
+    inline bool lcn_threshold_limit_reached() { return (this->num_lcn_ >= this->lcn_limit_); }
 
   private:
     /// @brief Generate an LCN from the current PST state and provided arguments.
@@ -512,4 +531,25 @@ class PackingSignatureTree {
     /// @brief Changes made to external sink counts in output_nets_ since the
     ///        most recent checkpoint.
     std::unordered_map<AtomNetId, size_t> checkpoint_decremented_output_nets_;
+
+    /// @brief Number of ECNs in the PST.
+    size_t num_ecn_ = 0;
+
+    /// @brief Number of LCNs in the PST.
+    size_t num_lcn_ = 0;
+
+    /// @brief Maximum number of ECNs that may be added to the PST.
+    ///
+    /// This is set to be 25x the number of molecules in the circuit netlist
+    /// (decided empirically as a conservative limit) in order to prevent
+    /// unbounded memory growth.
+    size_t ecn_limit_ = 0;
+
+    /// @brief Maximum number of LCNs that may be added to the PST.
+    ///
+    /// This is set to be 40x the number of molecules in the circuit netlist
+    /// (decided empirically as a conservative limit). If this threshold is
+    /// reached, then we conclude that the circuit/architecture combo is highly
+    /// irregular, and not benefiting from memoization, so the PST gets freed.
+    size_t lcn_limit_ = 0;
 };
