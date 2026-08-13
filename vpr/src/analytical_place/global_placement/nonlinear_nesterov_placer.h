@@ -162,7 +162,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     /**
      * @brief Update differentiable wirelength net weights from pre-cluster timing criticalities.
      */
-    void update_timing_net_weights_(const PartialPlacement& p_placement);
+    void update_timing_net_weights_();
 
     /**
      * @brief Build pack-pattern affinity groups from long prepacker chains.
@@ -368,7 +368,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     bool proximity_full_ = false;                         ///< Whether the legalizer proximity anchor runs at full strength rather than @ref kProximityScale.
     vtr::vector<APNetId, bool> io_pair_locality_nets_;    ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
     std::unique_ptr<NetCohesion> cohesion_;               ///< Structural cohesion net classes and their weight multipliers.
-    std::unique_ptr<AffinitySpringTerm> affinity_term_;  ///< Affinity-spring objective term (groups + energy/gradient/curvature).
+    std::unique_ptr<AffinitySpringTerm> affinity_term_;   ///< Affinity-spring objective term (groups + energy/gradient/curvature).
     size_t num_io_pair_affinity_groups_ = 0;              ///< Count of IO_PAIR affinity groups.
     size_t num_pack_pattern_affinity_groups_ = 0;         ///< Count of PACK_PATTERN affinity groups.
     std::vector<double> filler_unit_mass_;                ///< [dim] density mass per dynamic filler.

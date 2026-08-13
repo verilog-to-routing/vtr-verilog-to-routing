@@ -47,7 +47,6 @@ namespace {
 // Iteration and epoch budget
 // --------------------------------------------------------------------------
 
-
 /**
  * @brief Maximum number of accelerated first-order iterations.
  *
@@ -56,7 +55,6 @@ namespace {
  * optimize_from_seed_ so run metadata identifies the tested policy directly.
  */
 constexpr size_t kMaxNesterovIterations = 145;
-
 
 /**
  * @brief Number of optimization/legalization epochs in the nonlinear Nesterov placer.
@@ -73,116 +71,29 @@ constexpr size_t kMaxNesterovIterations = 145;
  */
 constexpr size_t kNesterovEpochs = 5;
 
-
 /**
  * @brief Minimum inner iterations before displacement-based convergence may stop an epoch.
  */
 constexpr size_t kMinNesterovIterationsPerEpoch = 5;
 
-
-/**
- * @brief Spend the iteration budget only on designs that convert it.
- *
- * Raising `kMaxNesterovIterations` 80 -> 320 buys 1.8% routed wirelength at
- * full-75 (CI [0.974, 0.990]) and costs **6.1% flow time** (CI [1.049, 1.073]),
- * which spends the placer's entire runtime advantage over b2b. The cost is paid
- * on every design; the benefit is not evenly earned.
- *
- * Measured predictor: a design's pre-legalization overflow anticipates how much
- * any optimizer change moves it. Over 9 circuits and 8 different levers,
- * `corr(log overflow, log volatility) = -0.792`. Low-overflow designs are
- * under-optimized -- the density term is nearly inert, the objective is a
- * shallow wirelength landscape, and more search genuinely finds better minima
- * (`tpu_like.small.os`, overflow 0.020, gains 15% routed WL at budget 640).
- * High-overflow designs are already tightly constrained and convert extra
- * iterations into little.
- *
- * Overflow is available after the first epoch at zero cost -- the epoch loop
- * already computes it for the early-stop test -- so the budget can be chosen
- * per design at runtime rather than fixed at compile time.
- *
- * Below the threshold the design gets `kHighIterationBudget`; at or above it,
- * the shipped `kMaxNesterovIterations`. Setting the threshold to 0 disables the
- * gate and reproduces shipped behaviour exactly.
- */
-constexpr double kOverflowBudgetGate = 0.0;
-
-
-/** @brief Budget granted to designs below the overflow gate. */
-constexpr size_t kHighIterationBudget = 320;
-
-
-/**
- * @brief Geometric ratio for distributing the iteration budget across epochs.
- *
- * The budget has always been split uniformly: kMaxNesterovIterations /
- * kNesterovEpochs. But epochs are not equally productive. Gamma anneals
- * 0.04 -> 0.008 across the run, so an early iteration optimizes a heavily
- * smoothed surrogate whose gradient is a poor proxy for real HPWL, while a late
- * iteration optimizes something close to true wirelength. Spending the budget
- * where the objective is truthful should buy more routed wirelength per unit of
- * runtime -- the only currency that matters once the budget binds.
- *
- * Epoch e receives a share proportional to ratio^e, normalized to the total
- * budget and floored at kMinNesterovIterationsPerEpoch. 1.0 reproduces the
- * uniform split exactly and is the shipped behaviour.
- */
-constexpr double kIterationRampRatio = 1.0;
-
-
-/**
- * @brief Run the partial legalizer every N accepted inner iterations, not just
- *        once per epoch. 0 disables.
- *
- * Letting the smooth trajectory run uninterrupted -- legalizing into a copy so
- * the iterate is never overwritten -- measured **1.0326** AP HPWL against the
- * shipped placer (2/7
- * circuits better). So the legalizer's overwrite of the iterate is not the
- * structural defect it looked like; it is *guidance*, and the descent is worse
- * without it.
- *
- * What the legalizer supplies that the gradient cannot: long-range,
- * capacity-aware transport. A gradient step moves a block about a tile, while
- * the legalizer's logged `Max Move` is 60-100 tiles in one pass -- more travel
- * than an entire 16-iteration epoch can produce. The density force is also
- * low-pass (elasticity 0.082 to physical overflow, measured over 538
- * circuit/dimension pairs), so it barely registers the tile-scale congestion the
- * legalizer resolves.
- *
- * If that guidance is what helps, the run currently gets far too little of it:
- * five passes over an entire placement. The cost asymmetry says this is nearly
- * free -- measured over 8 circuits on the shipped binary, partial legalization
- * is **4.4%** of the epoch loop against **88.7%** for the optimizer, and
- * @ref kBarzilaiBorweinStep returns 43% of that optimizer time.
- *
- * Deliberately *not* the same as raising the epoch count (refuted at full-75):
- * the continuation schedule, preconditioner and timing weights are untouched, so
- * this adds guidance without re-timing gamma or the density ramp.
- */
-constexpr size_t kIntraEpochLegalizeInterval = 0;
-
 // --------------------------------------------------------------------------
 // Step control and convergence
 // --------------------------------------------------------------------------
-
 
 /**
  * @brief Minimum line-search step size before accepting a non-improving move.
  */
 constexpr double kMinStepSize = 1e-6;
 
-
 /**
  * @brief Convergence threshold as a fraction of the larger device dimension.
  */
 constexpr double kConvergenceDisplacementFraction = 1e-4;
 
-
 /**
  * @brief Absolute lower bound on the displacement convergence threshold.
  */
 constexpr double kMinConvergenceDisplacement = 1e-3;
-
 
 /**
  * @brief Step-size growth rate per inner iteration.
@@ -198,14 +109,13 @@ constexpr double kMinConvergenceDisplacement = 1e-3;
  */
 constexpr double kStepGrowthRate = 1.05;
 
-
 /**
  * @brief Set the step from a Barzilai-Borwein / inverse-Lipschitz estimate
  *        instead of a monotone backtracking line search.
  *
  * The shipped inner loop costs one gradient evaluation plus a mean 1.35
- * objective evaluations per accepted iteration (measured across every probe log
- * 2026-08-08: ~2.35 full evaluations, each of which is one separable-DCT Poisson
+ * objective evaluations per accepted iteration (~2.35 full evaluations, each
+ * of which is one separable-DCT Poisson
  * solve *per resource dimension* -- 5 dimensions on `arm_core`, 17 on
  * `cholesky_mc`). The line search is therefore the single largest multiplier on
  * epoch-loop cost.
@@ -232,7 +142,6 @@ constexpr double kStepGrowthRate = 1.05;
  */
 constexpr bool kBarzilaiBorweinStep = true;
 
-
 /**
  * @brief Maximum per-iteration growth of the Barzilai-Borwein step.
  *
@@ -241,7 +150,6 @@ constexpr bool kBarzilaiBorweinStep = true;
  * without needing a function evaluation to detect it.
  */
 constexpr double kBarzilaiBorweinGrowthCap = 2.0;
-
 
 /**
  * @brief Maximum fraction of the device span a block should move in one step.
@@ -252,7 +160,6 @@ constexpr double kBarzilaiBorweinGrowthCap = 2.0;
  */
 constexpr double kInitialStepSpanFraction = 0.02;
 
-
 /**
  * @brief Movable-block count at or above which the full preconditioner is enabled.
  */
@@ -262,24 +169,20 @@ constexpr size_t kPreconditionSizeThreshold = 30000;
 // Legalizer feedback and proximity anchor
 // --------------------------------------------------------------------------
 
-
 /**
  * @brief Proximity weight added per tile of mean partial-legalization displacement.
  */
 constexpr double kProximityWeightPerLegalizationTile = 0.05;
-
 
 /**
  * @brief Maximum legalizer-feedback proximity weight.
  */
 constexpr double kMaxLegalizerFeedbackProximityWeight = 2.0;
 
-
 /**
  * @brief Fraction of the prior legalizer-feedback penalty retained for the next epoch.
  */
 constexpr double kLegalizerFeedbackRetention = 0.5;
-
 
 /**
  * @brief Scale on the legalizer-feedback proximity weight for small designs.
@@ -312,12 +215,10 @@ constexpr double kAdaptiveTimingTradeoff = 0.75;
 // Wirelength smoothing (gamma)
 // --------------------------------------------------------------------------
 
-
 /**
  * @brief Smooth wirelength gamma as a fraction of the larger device dimension.
  */
 constexpr double kWirelengthGammaFraction = 0.02;
-
 
 /**
  * @brief Coarse (epoch 0) and sharp (final epoch) gamma fractions for continuation.
@@ -332,7 +233,6 @@ constexpr double kGammaStartFraction = 0.04;
 
 constexpr double kGammaEndFraction = 0.008;
 
-
 /**
  * @brief Floor on the weighted-average smoothing width, in tiles.
  *
@@ -345,7 +245,6 @@ constexpr double kMinWirelengthGamma = 1.0;
 // Density, field, and ADMM formulation
 // --------------------------------------------------------------------------
 
-
 /**
  * @brief Minimum target capacity used when normalizing electrostatic charge.
  *
@@ -356,7 +255,6 @@ constexpr double kMinWirelengthGamma = 1.0;
  */
 constexpr double kDensityTargetFloorFraction = 0.01;
 
-
 /**
  * @brief Minimum number of field bins per axis.
  *
@@ -365,7 +263,6 @@ constexpr double kDensityTargetFloorFraction = 0.01;
  * collapse to a domain too small to carry directional force.
  */
 constexpr size_t kMinFieldGridBins = 4;
-
 
 /**
  * @brief Complete the legalizer anchor into scaled ADMM (experiment).
@@ -386,36 +283,25 @@ constexpr size_t kMinFieldGridBins = 4;
  * kAdmmTargetJumpTiles between epochs has its dual reset, and each axis of u
  * is clamped to kAdmmDualClampTiles.
  */
-// Adopted default-on 2026-08-05 per user direction after the full-75 two-seed
-// verdict: routed WL 0.9957 on both seeds (trimmed 0.9973), CPD 1.0021
-// (parity within the ~0.8% two-seed noise floor), all deterministic AP-side
-// metrics improved, mechanism cost ~+0.9% flow after load-drift correction.
+// Default-on: measured on a 75-circuit two-seed board at routed WL 0.9957 on
+// both seeds, CPD at parity within the two-seed noise floor, all deterministic
+// AP-side metrics improved, ~+0.9% flow time.
 
 /** @brief Legalizer-target jump, in tiles, that resets a block's dual. */
 constexpr double kAdmmTargetJumpTiles = 3.0;
 
-
 /** @brief Safeguard clamp on each axis of the ADMM dual, in tiles. */
 constexpr double kAdmmDualClampTiles = 5.0;
 
-
 /**
- * @brief Bisection aid: force every resource field grid to stride 1.
+ * @brief Force every resource field grid to stride 1.
  *
- * Per ResourceFieldGrid's own doc comment, stride 1 makes the field domain the
- * exact identity of the tile grid (scale_x = scale_y = 1, same width/height).
- * Used to isolate whether the ResourceFieldGrid diff's board-wide AP HPWL
- * regression (measured 2026-08-03/04: worktree_minus_incompat vs
- * control_b0204_seed1, geomean 1.0083) comes from the spatial regridding or
- * from something else in the same diff (e.g. its charge/normalization
- * convention) -- without hand-extracting the ~10 call sites threaded through
- * add_density_gradient_, which is too risky to do by patch surgery under time
- * pressure. If a smoke test with this on reproduces control_b0204_seed1
- * exactly, the regridding is cleared; if not, the regression is not (purely)
- * spatial.
+ * Stride 1 makes the field domain the exact identity of the tile grid
+ * (scale_x = scale_y = 1, same width/height). Coarser per-resource strides
+ * measured a board-wide AP HPWL regression (geomean 1.0083), so unit stride
+ * is the shipped setting.
  */
 constexpr bool kFieldGridStride1 = true;
-
 
 // The preconditioner tuning constants and the diagonal assembly itself live in
 // preconditioner_math.h, so the unit tests exercise the shipped formulas rather
@@ -435,7 +321,6 @@ using vtr::ap::kPreconditionFloor;
  */
 constexpr bool kUseResidualDensityCharge = true;
 
-
 /**
  * @brief Initial target ratio of density pressure to wirelength pressure.
  *
@@ -447,7 +332,6 @@ constexpr bool kUseResidualDensityCharge = true;
  */
 constexpr double kInitialDensityToWirelengthRatio = 0.05;
 
-
 /**
  * @brief Final density-weight multiplier for the simple continuation schedule.
  *
@@ -455,7 +339,6 @@ constexpr double kInitialDensityToWirelengthRatio = 0.05;
  * smooth penalty is kept moderate to avoid unnecessary wirelength growth.
  */
 constexpr double kFinalDensityWeightMultiplier = 4.0;
-
 
 /**
  * @brief Target physical-overflow ratio for the WL-favoring penalty stop.
@@ -466,7 +349,6 @@ constexpr double kFinalDensityWeightMultiplier = 4.0;
  */
 constexpr double kTargetOverflow = 0.1;
 
-
 /**
  * @brief Minimum epochs before the overflow stop may trigger.
  *
@@ -475,7 +357,6 @@ constexpr double kTargetOverflow = 0.1;
  */
 constexpr size_t kMinEpochsBeforeOverflowStop = 2;
 
-
 /**
  * @brief Max per-dimension adaptive density boost relative to the schedule weight.
  *
@@ -483,7 +364,6 @@ constexpr size_t kMinEpochsBeforeOverflowStop = 2;
  * strengthened up to this factor without globally inflating all density weights.
  */
 constexpr double kMaxAdaptiveDensityBoost = 4.0;
-
 
 /**
  * @brief True if a density dimension should receive adaptive overflow boosts.
@@ -507,7 +387,6 @@ bool dim_allows_adaptive_density_boost(const std::string& dim_name) {
  */
 constexpr double kPinDensityInflationPinsPerBlockRatio = 1.0;
 
-
 /**
  * @brief Maximum per-block density-term mass inflation factor from pin count.
  */
@@ -516,7 +395,6 @@ constexpr double kMaxPinDensityInflation = 2.0;
 // --------------------------------------------------------------------------
 // Warm start and seeding
 // --------------------------------------------------------------------------
-
 
 /**
  * @brief How the Nesterov epoch loop is seeded.
@@ -533,7 +411,6 @@ enum class e_warmstart_mode {
 };
 constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
 
-
 /**
  * @brief Symmetry-breaking radius, in tiles, for the CENTRE_SPREAD ablation.
  *
@@ -543,7 +420,6 @@ constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
  * meaningfully seeding the placement.
  */
 constexpr double kCentreSpreadJitter = 0.5;
-
 
 /**
  * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
@@ -559,12 +435,10 @@ constexpr double kCentreSpreadJitter = 0.5;
  */
 constexpr size_t kWarmStartIters = 4;
 
-
 /**
  * @brief Maximum B2B warm-start cycles (cap on the convergence loop).
  */
 constexpr size_t kWarmStartMaxIters = 24;
-
 
 /**
  * @brief Relative HPWL-improvement threshold below which the warm start stops.
@@ -576,7 +450,6 @@ constexpr size_t kWarmStartMaxIters = 24;
  */
 constexpr double kWarmStartTol = 0.01;
 
-
 /**
  * @brief Seed-overflow gate below which the warm start is deepened.
  *
@@ -587,12 +460,10 @@ constexpr double kWarmStartTol = 0.01;
  */
 constexpr double kSparseGateOverflow = 0.0007;
 
-
 /**
  * @brief Deep warm-start cycle count used when the sparse-overflow gate trips.
  */
 constexpr size_t kSparseWarmStartIters = 24;
-
 
 /**
  * @brief Epoch cap for the electrostatic phase on sparse seeds.
@@ -601,7 +472,6 @@ constexpr size_t kSparseWarmStartIters = 24;
  * their density field has little remaining work.
  */
 constexpr size_t kSparseSeedMaxEpochs = 1;
-
 
 /**
  * @brief Inner-iteration cap for the sparse-seed probe epoch.
@@ -614,26 +484,22 @@ constexpr size_t kSparseSeedMaxEpochs = 1;
  */
 constexpr size_t kSparseSeedProbeIterations = 12;
 
-
 /**
  * @brief Minimum AP block count for high-pin designs that need one more B2B seed
  *        cycle before electrostatic refinement.
  */
 constexpr size_t kHighPinWarmStartBlockThreshold = 9000;
 
-
 /**
  * @brief Pin-per-block threshold for high-pin seed compaction.
  */
 constexpr double kHighPinWarmStartPinsPerBlock = 8.0;
-
 
 /**
  * @brief AP block count at which convergence-based warm start is forced to keep
  *        at least the high-pin floor even if HPWL plateaus early.
  */
 constexpr size_t kHugeWarmStartBlockThreshold = 200000;
-
 
 /**
  * @brief Adaptive warm-start floor used by the high-pin and huge-design gates.
@@ -643,7 +509,6 @@ constexpr size_t kAdaptiveWarmStartIters = 6;
 // --------------------------------------------------------------------------
 // Dynamic fillers
 // --------------------------------------------------------------------------
-
 
 /**
  * @brief Fraction of per-resource whitespace represented by dynamic fillers.
@@ -655,12 +520,10 @@ constexpr size_t kAdaptiveWarmStartIters = 6;
  */
 constexpr double kDynamicFillerWhitespaceFraction = 0.35;
 
-
 /**
  * @brief Target dynamic filler mass in units of average per-site target capacity.
  */
 constexpr double kDynamicFillerUnitFraction = 1.0;
-
 
 /**
  * @brief Cap dynamic filler particles per resource dimension.
@@ -671,17 +534,12 @@ constexpr size_t kMaxDynamicFillersPerDim = 60000;
 // Net cohesion and affinity springs
 // --------------------------------------------------------------------------
 
-
-
-
 /**
  * @brief Extra wirelength weight for I/O-related AP nets.
  *
  * Kept neutral by default; direct I/O chains use the narrower weights below.
  */
 constexpr double kBoundaryNetCohesionWeight = 1.0;
-
-
 
 /**
  * @brief Extra smooth-WL weight for direct I/O-chain AP nets.
@@ -692,13 +550,11 @@ constexpr double kBoundaryNetCohesionWeight = 1.0;
  * this stronger weight is applied only to two-pin nets whose endpoints are both
  * I/O-chain primitives on boundary-confined resources.
  */
-// 8.0 matches the adopted io-pair spring strength. 2.0 was measured too weak
-// to hold the LU_Network pad periphery together against the density field
-// (2026-08-10: 1359 flagged nets, placement still landed the bad timing basin);
-// at 8.0 all four seeds land the good basin, halving that circuit's routed CPD.
+// 8.0 matches the io-pair spring strength. 2.0 was measured too weak to hold
+// the LU_Network pad periphery together against the density field (1359 nets
+// flagged, placement still landed the bad timing basin); at 8.0 all four seeds
+// land the good basin, halving that circuit's routed CPD.
 constexpr double kIoChainNetCohesionWeight = 8.0;
-
-
 
 /**
  * @brief Long-chain pack-pattern affinity-spring weight for I/O-chain designs.
@@ -708,7 +564,6 @@ constexpr double kIoChainNetCohesionWeight = 8.0;
  * the win on the designs that motivated it.
  */
 constexpr double kPackPatternCohesionWeight = 0.02;
-
 
 /**
  * @brief Smooth-WL multiplier for direct output-driver↔outpad pair nets (always on).
@@ -720,7 +575,6 @@ constexpr double kPackPatternCohesionWeight = 0.02;
  */
 constexpr double kIoPairNetWeight = 8.0;
 
-
 /**
  * @brief Quadratic attraction weight for direct output-driver↔outpad pairs (always on).
  *
@@ -731,7 +585,6 @@ constexpr double kIoPairAttractionWeight = 8.0;
 // --------------------------------------------------------------------------
 // Checkpoint selection
 // --------------------------------------------------------------------------
-
 
 /**
  * @brief Maximum AP-HPWL regression admitted by the CPD tie-break in checkpoint
@@ -745,12 +598,10 @@ constexpr double kCheckpointHpwlGuard = 0.01;
 // Numerics
 // --------------------------------------------------------------------------
 
-
 /**
  * @brief Small value used to avoid division by zero.
  */
 constexpr double kEpsilon = 1e-9;
-
 
 /**
  * @brief Device-bound epsilon to keep floor-based bin lookup inside the grid.
@@ -1201,24 +1052,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     size_t iterations_per_epoch = sparse_seed_
                                       ? kSparseSeedProbeIterations
                                       : (kMaxNesterovIterations + num_epochs - 1) / num_epochs;
-    // Per-epoch budget. Uniform when kIterationRampRatio == 1.0 (shipped).
     std::vector<size_t> epoch_iteration_budget(num_epochs, iterations_per_epoch);
-    if (!sparse_seed_ && kIterationRampRatio != 1.0 && num_epochs > 1) {
-        double total_weight = 0.;
-        for (size_t e = 0; e < num_epochs; e++)
-            total_weight += std::pow(kIterationRampRatio, static_cast<double>(e));
-        for (size_t e = 0; e < num_epochs; e++) {
-            double share = std::pow(kIterationRampRatio, static_cast<double>(e)) / total_weight;
-            epoch_iteration_budget[e] = std::max(kMinNesterovIterationsPerEpoch,
-                                                 static_cast<size_t>(std::llround(share * kMaxNesterovIterations)));
-        }
-        if (log_verbosity_ >= 1) {
-            VTR_LOG("Nonlinear Nesterov iteration ramp (ratio %g):", kIterationRampRatio);
-            for (size_t e = 0; e < num_epochs; e++)
-                VTR_LOG(" %zu", epoch_iteration_budget[e]);
-            VTR_LOG("\n");
-        }
-    }
     // Equivalent to the previous `num_epochs == kNesterovEpochs` test (that was
     // exactly "not sparse-seed capped"), but stated directly so it keeps holding
     // now that a non-sparse run can have an epoch count other than kNesterovEpochs.
@@ -1257,11 +1091,11 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // trap: as a placement concentrates, WA wirelength collapses toward zero
         // (coincident pins have no span) while density energy blows up (all mass
         // in few bins), so lambda_0 -> 0 exactly when the spreading force is most
-        // needed. Measured 2026-08-03 on a cold start, lambda_0 came out 1.0067e-4
+        // needed. Measured on a cold start, lambda_0 came out 1.0067e-4
         // against 0.1064 for the same circuit from a B2B seed -- a 1000x weaker
         // density force -- and global placement finished 4.7x worse in HPWL.
         //
-        // The gradient form was implemented and measured on 2026-08-08 and is NOT
+        // The gradient form was implemented and measured, and is NOT
         // adopted, for a specific reason: switching the units while keeping
         // kInitialDensityToWirelengthRatio at its energy-tuned 0.05 shifted
         // lambda_0 by 0.38x to 8.3x depending on circuit (LU8PEEng 0.676 -> 0.260,
@@ -1297,11 +1131,8 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // it at each epoch start.
     reset_density_weights(current);
 
-    // REVERTED 2026-08-03: the incompatibility cost was added uncommitted, never
-    // validated end-to-end against B2B, and measured to cost 1.7pp of CPD vs B2B
-    // board-wide (0.9918 -> 1.0091) plus 5.4% AP HPWL on the >=30k band. Committed
-    // HEAD (72d4716cd, no incompatibility cost) is the last state that reproduces
-    // the documented shipped position (CPD 0.9918, WL 0.9916 vs B2B).
+    // No resource-incompatibility cost here: adding one was measured to cost
+    // 1.7pp of routed CPD board-wide plus 5.4% AP HPWL on the >=30k-block band.
     // Count of FISTA adaptive restarts, reported at the end of the run.
     size_t num_objective_restarts = 0;
 
@@ -1328,8 +1159,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     }
 
     double legalizer_feedback_proximity_weight = 0.;
-    // Physical overflow measured at the previous epoch's handoff; -1 until known.
-    double gated_overflow = -1.;
     const double checkpoint_hpwl_guard = kCheckpointHpwlGuard;
     std::vector<PartialPlacement> checkpoints;
     std::vector<double> checkpoint_hpwls;
@@ -1401,7 +1230,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             current_gamma_fraction_ = kGammaEndFraction;
         // Checkpoint timing is evaluated for the seed and after every partial
         // legalization, so the timing manager already describes `current` here.
-        update_timing_net_weights_(current);
+        update_timing_net_weights_();
         // Relinearize the B2B wirelength model at the epoch-start placement
         // (post-legalization from the prior epoch), after the net weights it
         // bakes in have been refreshed.
@@ -1470,7 +1299,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         size_t num_grad_evals = 0;
         size_t num_obj_evals = 0;
         size_t num_accepted_iters = 0;
-        size_t num_intra_legalizations = 0;
         size_t num_nonfinite_observations = 0;
         size_t num_bb_secant_updates = 0;
         size_t epoch_restart_count_begin = num_objective_restarts;
@@ -1493,21 +1321,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // Nesterov accelerated-gradient inner solve. The gradient is taken at the
         // extrapolated look-ahead point y_placement; a backtracking line search
         // halves the step until the objective decreases.
-        // Overflow-gated budget: after the first epoch the design's physical
-        // overflow is known, and it predicts whether more search pays. Sparse
-        // designs are under-optimized and convert budget into wirelength; dense
-        // ones do not. Applied from epoch 1 onward so the decision uses measured
-        // overflow rather than an assumption.
         size_t this_epoch_iters = epoch < epoch_iteration_budget.size() ? epoch_iteration_budget[epoch] : iterations_per_epoch;
-        if (kOverflowBudgetGate > 0. && epoch > 0 && gated_overflow >= 0.) {
-            size_t gated_total = gated_overflow < kOverflowBudgetGate ? kHighIterationBudget : kMaxNesterovIterations;
-            this_epoch_iters = std::max(kMinNesterovIterationsPerEpoch,
-                                        (gated_total + num_epochs - 1) / num_epochs);
-            if (epoch == 1 && log_verbosity_ >= 1)
-                VTR_LOG("Nonlinear Nesterov overflow-gated budget: overflow %.4f %s %.4f -> total budget %zu (%zu iters/epoch).\n",
-                        gated_overflow, gated_overflow < kOverflowBudgetGate ? "<" : ">=",
-                        kOverflowBudgetGate, gated_total, this_epoch_iters);
-        }
         // Barzilai-Borwein state. The secant estimate is taken in the
         // preconditioned metric, because that is the space the step is actually
         // applied in (gradient_step_ divides by the Jacobi diagonal), so a raw
@@ -1538,7 +1352,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             }
 
             double accepted_step = step_size;
-            double iter_raw_bb_step = std::numeric_limits<double>::quiet_NaN(); // telemetry scaffold only
             ObjectiveValue next_obj;
             bool accepted = false;
             bool gradient_restart = false;
@@ -1596,7 +1409,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                         num_bb_secant_updates++;
                         min_raw_bb_step = std::min(min_raw_bb_step, bb_step);
                         max_raw_bb_step = std::max(max_raw_bb_step, bb_step);
-                        iter_raw_bb_step = bb_step;
                         // Growth clamp: bounds how fast the secant estimate can
                         // expand between iterations.
                         accepted_step = std::clamp(std::min(bb_step, step_size * kBarzilaiBorweinGrowthCap),
@@ -1736,32 +1548,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                             ? accepted_step
                             : std::min(device_span, accepted_step * kStepGrowthRate);
 
-            // Mid-epoch guidance pass. The legalizer moves mass distances the
-            // local gradient cannot reach in the iterations remaining, and the
-            // continuous-descent ablation showed the descent is worse without
-            // that input. Momentum and the BB secant history are both reset,
-            // because the iterate has just jumped and neither a t-sequence nor a
-            // two-point curvature estimate survives a discontinuity.
-            if (kIntraEpochLegalizeInterval > 0
-                && (iter + 1) % kIntraEpochLegalizeInterval == 0
-                && iter + 1 < this_epoch_iters) {
-                vtr::Timer intra_legalizer_timer;
-                density_manager_->import_placement_into_bins(current);
-                partial_legalizer_->legalize(current);
-                legalizer_time_sec += intra_legalizer_timer.elapsed_sec();
-                num_intra_legalizations++;
-
-                nesterov_t = 1.0;
-                have_prev_bb_state = false;
-                y_placement.block_x_locs = current.block_x_locs;
-                y_placement.block_y_locs = current.block_y_locs;
-                y_placement.block_layer_nums = current.block_layer_nums;
-                y_placement.block_sub_tiles = current.block_sub_tiles;
-                y_fillers.x = current_fillers.x;
-                y_fillers.y = current_fillers.y;
-                y_fillers.layer = current_fillers.layer;
-            }
-
             if (iter + 1 >= kMinNesterovIterationsPerEpoch
                 && max_step_displacement <= convergence_displacement) {
                 convergence_stop_reason = "displacement";
@@ -1815,7 +1601,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                     epoch, num_accepted_iters, num_grad_evals, num_obj_evals,
                     num_accepted_iters ? static_cast<double>(num_obj_evals) / num_accepted_iters : 0.,
                     num_accepted_iters ? static_cast<double>(num_obj_evals + num_grad_evals) / num_accepted_iters : 0.);
-            VTR_LOG("  Nesterov epoch %zu intra-epoch legalizations: %zu\n", epoch, num_intra_legalizations);
             num_grad_evals = num_obj_evals = num_accepted_iters = 0;
         }
         // Objective-inert telemetry: JOINT capacity over-commitment.
@@ -1867,7 +1652,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                         epoch, over, occupied, 100. * over / occupied, ratio_sum / occupied, worst);
         }
         double pre_leg_overflow = compute_physical_overflow_ratio_(before_legalization, density_dimensions);
-        gated_overflow = pre_leg_overflow;
         density_manager_->import_placement_into_bins(before_legalization);
         size_t pre_leg_overfilled_bins = density_manager_->get_overfilled_bins().size();
         vtr::Timer legalizer_timer;
@@ -1907,13 +1691,13 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // primal/dual residual ratio, rescaling u when rho moves, running more
         // outer iterations, over-relaxing, or scaling these safeguards by each
         // resource's capacity pitch -- was implemented and measured on six
-        // isolated 14-circuit subsets on 2026-08-06. All six were refuted, two
-        // of them severely (AP HPWL 1.074 and 1.148). The reason is structural
+        // isolated benchmark subsets. All six regressed, two of them severely
+        // (AP HPWL 1.074 and 1.148). The reason is structural
         // and is not a tuning miss: z is simultaneously the ADMM z-iterate and
         // the placement that ships, so refinements that perturb the legalizer's
         // input damage the delivered result even while improving the dual's own
         // convergence (measured: overflow 0.973 at 11/14 wins with AP HPWL up
-        // 2.5%). Do not re-derive.
+        // 2.5%).
         {
             for (APBlockId blk_id : moveable_blocks_) {
                 double z_jump = std::hypot(current.block_x_locs[blk_id] - legal_anchor.block_x_locs[blk_id],
@@ -2074,7 +1858,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     }
     partial_legalizer_->print_statistics();
 
-
     return checkpoints[best_checkpoint_idx];
 }
 
@@ -2198,7 +1981,7 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
     return smooth_wirelength;
 }
 
-void NonlinearNesterovPlacer::update_timing_net_weights_(const PartialPlacement& p_placement) {
+void NonlinearNesterovPlacer::update_timing_net_weights_() {
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
 
     // --ap_timing_tradeoff defaults to a nonzero value (0.5), so falling back to unit

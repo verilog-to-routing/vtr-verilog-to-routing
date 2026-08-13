@@ -205,8 +205,8 @@ void NetCohesion::update_boundary_net_flags(const std::vector<PrimitiveVectorDim
         // not in the warm-start seed -- so a seed-length gate misses exactly
         // the nets that need cohesion, and extra weight on an already-short
         // net only keeps it short. The seed-length gate below is retained for
-        // the generic boundary-cohesion class. Measured 2026-08-10 (with the
-        // delay_chain matcher and weight 8): LU_Network routed CPD 13.1/13.1/
+        // the generic boundary-cohesion class. Measured with the delay_chain
+        // matcher at weight 8: LU_Network routed CPD 13.1/13.1/
         // 16.9/13.0 -> 7.4/7.7/7.2/7.4 ns across four seeds, stereo_vision
         // CPD/WL also improve, all 73 other circuits bit-identical.
         if (block_has_boundary_mass(first_blk_id, dimensions)
