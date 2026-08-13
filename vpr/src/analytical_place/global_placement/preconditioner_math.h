@@ -94,7 +94,7 @@ inline double affinity_spring_curvature(double weight, std::size_t group_size) {
  *   conflating them silently is what previously broke it. The one historical
  *   occupant was a trust-region bound on the continuous incompatibility
  *   penalty, removed with that penalty on 2026-08-06 (see
- *   `.agents/docs/EXPERIMENTS.md`).
+ *   the experiment ledger).
  *
  * The proximity anchor belongs to neither and is excluded. Its Hessian is
  * genuinely non-zero (it is quadratic, diagonal = proximity_weight), but the

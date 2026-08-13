@@ -72,7 +72,6 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_place
                                                        num_threads,
                                                        log_verbosity);
         case e_ap_global_placer::NonlinearNesterov:
-            (void)num_threads;
             return std::make_unique<NonlinearNesterovPlacer>(ap_netlist,
                                                              prepacker,
                                                              atom_netlist,
@@ -86,6 +85,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer global_place
                                                              generate_mass_report,
                                                              target_density_arg_strs,
                                                              partial_legalizer_type,
+                                                             num_threads,
                                                              log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized global placer type");

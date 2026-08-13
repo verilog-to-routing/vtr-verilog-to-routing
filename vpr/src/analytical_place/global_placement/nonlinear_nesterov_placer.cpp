@@ -9,12 +9,14 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <functional>
 #include <limits>
 #include <map>
 #include <optional>
 #include <random>
+#include <set>
 #include <string>
 #include <vector>
 #include "PreClusterTimingManager.h"
@@ -36,15 +38,25 @@
 #include "primitive_vector.h"
 #include "timing_info.h"
 #include "vtr_assert.h"
+#include "vtr_thread_pool.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
 
 namespace {
+// --------------------------------------------------------------------------
+// Iteration and epoch budget
+// --------------------------------------------------------------------------
+
 
 /**
  * @brief Maximum number of accelerated first-order iterations.
+ *
+ * The measured `bb145` configuration uses 145 iterations split over five
+ * epochs. Keep this value synchronized with the configuration line emitted by
+ * optimize_from_seed_ so run metadata identifies the tested policy directly.
  */
-constexpr size_t kMaxNesterovIterations = 80;
+constexpr size_t kMaxNesterovIterations = 145;
+
 
 /**
  * @brief Number of optimization/legalization epochs in the nonlinear Nesterov placer.
@@ -61,58 +73,12 @@ constexpr size_t kMaxNesterovIterations = 80;
  */
 constexpr size_t kNesterovEpochs = 5;
 
+
 /**
  * @brief Minimum inner iterations before displacement-based convergence may stop an epoch.
  */
 constexpr size_t kMinNesterovIterationsPerEpoch = 5;
 
-/**
- * @brief Per-connection delay-derivative timing term (experiment).
- *
- * The Nesterov objective's entire timing model is one scalar per hypernet:
- * `weight = tradeoff * crit + (1 - tradeoff)`, multiplying the wirelength term.
- * It contains no delay model, no per-connection resolution, and no notion of how
- * much delay a tile of displacement actually costs on this architecture.
- *
- * The b2b solver this placer competes with has all three. For every driver->sink
- * connection it queries `PlaceDelayModel` one tile forward and one tile back,
- * central-differences it to get d(delay)/d(position), and weights the connection
- * by `(1 + crit) * d_delay * norm`. That is a real timing gradient; ours is a
- * criticality multiplier.
- *
- * This adds the same mechanism to the smooth objective as a quadratic
- * driver->sink spring, which is the natural analogue of b2b's linearized edge:
- *
- *     T = sum_c 0.5 * w_c * ((dx)^2 + (dy)^2),  w_c from the delay derivative
- *
- * Measured motivation: raising `ap_timing_tradeoff` (0.5 -> 0.70 -> 0.85) makes
- * routed CPD monotonically *worse* (1.0106 -> 1.0121 -> 1.0148), because it
- * optimizes harder against a signal that anti-correlates with routed CPD. More
- * weight on a bad signal cannot help; a better signal might.
- */
-constexpr bool kExpConnectionTiming = false;
-
-/**
- * @brief Use delay sensitivity, not raw criticality, as the per-net timing weight.
- *
- * The shipped weight is `tradeoff * crit + (1 - tradeoff)`, where `crit` is net
- * setup criticality -- a signal this project measured as anti-correlated with
- * routed CPD (r = 0.09, sign-unstable across 25 perturbed placements), which is
- * why turning the tradeoff up makes routed CPD monotonically worse.
- *
- * b2b uses a strictly richer signal for the same purpose: per-connection
- * `(1 + crit) * d(delay)/d(position) / norm`, i.e. how much delay actually
- * changes per tile of displacement on this architecture. This replaces `crit`
- * with the net's maximum sink delay-sensitivity, mean-normalized so the average
- * net weight is unchanged.
- *
- * The normalization is the point. An *additive* timing term competes with
- * wirelength and, if its gradient is not commensurate, overwhelms it -- measured
- * at 2.6% routed WL for a quadratic-spring formulation. A mean-normalized
- * reweighting adds no energy: it moves emphasis between nets while leaving the
- * wirelength/density balance intact, so it cannot cost wirelength the same way.
- */
-constexpr bool kExpDelaySensitivityWeights = false;
 
 /**
  * @brief Spend the iteration budget only on designs that convert it.
@@ -141,14 +107,10 @@ constexpr bool kExpDelaySensitivityWeights = false;
  */
 constexpr double kOverflowBudgetGate = 0.0;
 
+
 /** @brief Budget granted to designs below the overflow gate. */
 constexpr size_t kHighIterationBudget = 320;
 
-/** @brief Scale on the per-connection timing spring. */
-constexpr double kConnectionTimingWeight = 1.0;
-
-/** @brief Skip nets above this fanout when building timing connections. */
-constexpr size_t kConnectionTimingMaxFanout = 32;
 
 /**
  * @brief Geometric ratio for distributing the iteration budget across epochs.
@@ -167,35 +129,60 @@ constexpr size_t kConnectionTimingMaxFanout = 32;
  */
 constexpr double kIterationRampRatio = 1.0;
 
-/**
- * @brief Proximity weight added per tile of mean partial-legalization displacement.
- */
-constexpr double kProximityWeightPerLegalizationTile = 0.05;
 
 /**
- * @brief Maximum legalizer-feedback proximity weight.
+ * @brief Run the partial legalizer every N accepted inner iterations, not just
+ *        once per epoch. 0 disables.
+ *
+ * Letting the smooth trajectory run uninterrupted -- legalizing into a copy so
+ * the iterate is never overwritten -- measured **1.0326** AP HPWL against the
+ * shipped placer (2/7
+ * circuits better). So the legalizer's overwrite of the iterate is not the
+ * structural defect it looked like; it is *guidance*, and the descent is worse
+ * without it.
+ *
+ * What the legalizer supplies that the gradient cannot: long-range,
+ * capacity-aware transport. A gradient step moves a block about a tile, while
+ * the legalizer's logged `Max Move` is 60-100 tiles in one pass -- more travel
+ * than an entire 16-iteration epoch can produce. The density force is also
+ * low-pass (elasticity 0.082 to physical overflow, measured over 538
+ * circuit/dimension pairs), so it barely registers the tile-scale congestion the
+ * legalizer resolves.
+ *
+ * If that guidance is what helps, the run currently gets far too little of it:
+ * five passes over an entire placement. The cost asymmetry says this is nearly
+ * free -- measured over 8 circuits on the shipped binary, partial legalization
+ * is **4.4%** of the epoch loop against **88.7%** for the optimizer, and
+ * @ref kBarzilaiBorweinStep returns 43% of that optimizer time.
+ *
+ * Deliberately *not* the same as raising the epoch count (refuted at full-75):
+ * the continuation schedule, preconditioner and timing weights are untouched, so
+ * this adds guidance without re-timing gamma or the density ramp.
  */
-constexpr double kMaxLegalizerFeedbackProximityWeight = 2.0;
+constexpr size_t kIntraEpochLegalizeInterval = 0;
 
-/**
- * @brief Fraction of the prior legalizer-feedback penalty retained for the next epoch.
- */
-constexpr double kLegalizerFeedbackRetention = 0.5;
+// --------------------------------------------------------------------------
+// Step control and convergence
+// --------------------------------------------------------------------------
+
 
 /**
  * @brief Minimum line-search step size before accepting a non-improving move.
  */
 constexpr double kMinStepSize = 1e-6;
 
+
 /**
  * @brief Convergence threshold as a fraction of the larger device dimension.
  */
 constexpr double kConvergenceDisplacementFraction = 1e-4;
 
+
 /**
  * @brief Absolute lower bound on the displacement convergence threshold.
  */
 constexpr double kMinConvergenceDisplacement = 1e-3;
+
 
 /**
  * @brief Step-size growth rate per inner iteration.
@@ -210,6 +197,7 @@ constexpr double kMinConvergenceDisplacement = 1e-3;
  * growth.
  */
 constexpr double kStepGrowthRate = 1.05;
+
 
 /**
  * @brief Set the step from a Barzilai-Borwein / inverse-Lipschitz estimate
@@ -242,38 +230,8 @@ constexpr double kStepGrowthRate = 1.05;
  * clamp below is a safeguard, not a tuning knob: it bounds how fast the step can
  * expand without costing an evaluation to check.
  */
-constexpr bool kExpBarzilaiBorweinStep = true;
+constexpr bool kBarzilaiBorweinStep = true;
 
-/**
- * @brief Run the partial legalizer every N accepted inner iterations, not just
- *        once per epoch. 0 disables.
- *
- * Motivated by the refutation of @ref kExpContinuousDescent. Letting the smooth
- * trajectory run uninterrupted -- legalizing into a copy so the iterate is never
- * overwritten -- measured **1.0326** AP HPWL against the shipped placer (2/7
- * circuits better). So the legalizer's overwrite of the iterate is not the
- * structural defect it looked like; it is *guidance*, and the descent is worse
- * without it.
- *
- * What the legalizer supplies that the gradient cannot: long-range,
- * capacity-aware transport. A gradient step moves a block about a tile, while
- * the legalizer's logged `Max Move` is 60-100 tiles in one pass -- more travel
- * than an entire 16-iteration epoch can produce. The density force is also
- * low-pass (elasticity 0.082 to physical overflow, measured over 538
- * circuit/dimension pairs), so it barely registers the tile-scale congestion the
- * legalizer resolves.
- *
- * If that guidance is what helps, the run currently gets far too little of it:
- * five passes over an entire placement. The cost asymmetry says this is nearly
- * free -- measured over 8 circuits on the shipped binary, partial legalization
- * is **4.4%** of the epoch loop against **88.7%** for the optimizer, and
- * @ref kExpBarzilaiBorweinStep returns 43% of that optimizer time.
- *
- * Deliberately *not* the same as raising the epoch count (refuted at full-75):
- * the continuation schedule, preconditioner and timing weights are untouched, so
- * this adds guidance without re-timing gamma or the density ramp.
- */
-constexpr size_t kIntraEpochLegalizeInterval = 0;
 
 /**
  * @brief Maximum per-iteration growth of the Barzilai-Borwein step.
@@ -284,6 +242,7 @@ constexpr size_t kIntraEpochLegalizeInterval = 0;
  */
 constexpr double kBarzilaiBorweinGrowthCap = 2.0;
 
+
 /**
  * @brief Maximum fraction of the device span a block should move in one step.
  *
@@ -292,6 +251,35 @@ constexpr double kBarzilaiBorweinGrowthCap = 2.0;
  * by the device span. Backtracking adapts from this starting point.
  */
 constexpr double kInitialStepSpanFraction = 0.02;
+
+
+/**
+ * @brief Movable-block count at or above which the full preconditioner is enabled.
+ */
+constexpr size_t kPreconditionSizeThreshold = 30000;
+
+// --------------------------------------------------------------------------
+// Legalizer feedback and proximity anchor
+// --------------------------------------------------------------------------
+
+
+/**
+ * @brief Proximity weight added per tile of mean partial-legalization displacement.
+ */
+constexpr double kProximityWeightPerLegalizationTile = 0.05;
+
+
+/**
+ * @brief Maximum legalizer-feedback proximity weight.
+ */
+constexpr double kMaxLegalizerFeedbackProximityWeight = 2.0;
+
+
+/**
+ * @brief Fraction of the prior legalizer-feedback penalty retained for the next epoch.
+ */
+constexpr double kLegalizerFeedbackRetention = 0.5;
+
 
 /**
  * @brief Scale on the legalizer-feedback proximity weight for small designs.
@@ -302,15 +290,61 @@ constexpr double kInitialStepSpanFraction = 0.02;
  */
 constexpr double kProximityScale = 0.25;
 
+// --------------------------------------------------------------------------
+// Timing weighting
+// --------------------------------------------------------------------------
+
 /**
- * @brief Movable-block count at or above which the full preconditioner is enabled.
+ * @brief Medium-large designs receive a stronger timing weight by default.
+ *
+ * This repaired CPD misses on medium-large designs and removed a wirelength loss
+ * on others, while high-pin-count small/medium designs regressed under the same
+ * timing pressure. The block-count window captures that middle regime and leaves
+ * tiny, high-pin, and huge sparse tails on the normal tradeoff.
  */
-constexpr size_t kPreconditionSizeThreshold = 30000;
+constexpr size_t kAdaptiveTimingMinBlocks = 50000;
+
+constexpr size_t kAdaptiveTimingMaxBlocks = 150000;
+
+constexpr double kAdaptiveTimingTradeoff = 0.75;
+
+// --------------------------------------------------------------------------
+// Wirelength smoothing (gamma)
+// --------------------------------------------------------------------------
+
 
 /**
  * @brief Smooth wirelength gamma as a fraction of the larger device dimension.
  */
 constexpr double kWirelengthGammaFraction = 0.02;
+
+
+/**
+ * @brief Coarse (epoch 0) and sharp (final epoch) gamma fractions for continuation.
+ *
+ * The placer anneals the weighted-average gamma from coarse (smooth, easy global
+ * gradient) to sharp (close to true HPWL) across epochs, instead of holding it
+ * fixed, so early epochs spread on an easy landscape and later epochs recover real
+ * wirelength.
+ *
+ */
+constexpr double kGammaStartFraction = 0.04;
+
+constexpr double kGammaEndFraction = 0.008;
+
+
+/**
+ * @brief Floor on the weighted-average smoothing width, in tiles.
+ *
+ * This keeps the exponentials numerically useful and retains smoothing on
+ * short nets and narrow devices.
+ */
+constexpr double kMinWirelengthGamma = 1.0;
+
+// --------------------------------------------------------------------------
+// Density, field, and ADMM formulation
+// --------------------------------------------------------------------------
+
 
 /**
  * @brief Minimum target capacity used when normalizing electrostatic charge.
@@ -322,6 +356,7 @@ constexpr double kWirelengthGammaFraction = 0.02;
  */
 constexpr double kDensityTargetFloorFraction = 0.01;
 
+
 /**
  * @brief Minimum number of field bins per axis.
  *
@@ -331,20 +366,6 @@ constexpr double kDensityTargetFloorFraction = 0.01;
  */
 constexpr size_t kMinFieldGridBins = 4;
 
-/**
- * @brief How the Nesterov epoch loop is seeded.
- *
- * B2B_ITERATED is the shipped behaviour. CENTRE_SPREAD is an ablation switch,
- * flipped only in an experiment build slot, that answers whether the
- * electrostatic formulation can place on its own or merely refines B2B. Keep the
- * default here; the experiment changes it in its own slot so the main tree stays
- * comparable to every prior run.
- */
-enum class e_warmstart_mode {
-    B2B_ITERATED,  ///< Iterate B2B solve + partial legalize until seed HPWL plateaus.
-    CENTRE_SPREAD, ///< ePlace-style: all movable blocks at the device centre, no B2B.
-};
-constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
 
 /**
  * @brief Complete the legalizer anchor into scaled ADMM (experiment).
@@ -363,7 +384,7 @@ constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
  * Safeguards (the known windup failure mode with an inexact, jumpy
  * projection): a cell whose legalizer target jumps more than
  * kAdmmTargetJumpTiles between epochs has its dual reset, and each axis of u
- * is clamped to kAdmmDualClampTiles. See RESEARCH_ALM_ADMM.md.
+ * is clamped to kAdmmDualClampTiles.
  */
 // Adopted default-on 2026-08-05 per user direction after the full-75 two-seed
 // verdict: routed WL 0.9957 on both seeds (trimmed 0.9973), CPD 1.0021
@@ -373,8 +394,10 @@ constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
 /** @brief Legalizer-target jump, in tiles, that resets a block's dual. */
 constexpr double kAdmmTargetJumpTiles = 3.0;
 
+
 /** @brief Safeguard clamp on each axis of the ADMM dual, in tiles. */
 constexpr double kAdmmDualClampTiles = 5.0;
+
 
 /**
  * @brief Bisection aid: force every resource field grid to stride 1.
@@ -391,17 +414,8 @@ constexpr double kAdmmDualClampTiles = 5.0;
  * exactly, the regridding is cleared; if not, the regression is not (purely)
  * spatial.
  */
-constexpr bool kExpForceFieldGridStride1 = true;
+constexpr bool kFieldGridStride1 = true;
 
-/**
- * @brief Symmetry-breaking radius, in tiles, for the CENTRE_SPREAD ablation.
- *
- * With every block at exactly the same point each net's WA wirelength gradient is
- * identically zero, so the optimizer has no descent direction until the density
- * force alone separates them. A sub-tile deterministic offset avoids that without
- * meaningfully seeding the placement.
- */
-constexpr double kCentreSpreadJitter = 0.5;
 
 // The preconditioner tuning constants and the diagonal assembly itself live in
 // preconditioner_math.h, so the unit tests exercise the shipped formulas rather
@@ -421,215 +435,6 @@ using vtr::ap::kPreconditionFloor;
  */
 constexpr bool kUseResidualDensityCharge = true;
 
-/**
- * @brief Fraction of per-resource whitespace represented by dynamic fillers.
- *
- * elfPlace uses movable filler instances to let the density system balance real
- * cells against whitespace. Full whitespace was too aggressive in the VTR flow
- * because APPack/annealing already perform downstream spreading, so this default
- * keeps the filler mechanism active while limiting CPD-damaging over-spread.
- */
-constexpr double kDynamicFillerWhitespaceFraction = 0.35;
-
-/**
- * @brief Target dynamic filler mass in units of average per-site target capacity.
- */
-constexpr double kDynamicFillerUnitFraction = 1.0;
-
-/**
- * @brief Cap dynamic filler particles per resource dimension.
- */
-constexpr size_t kMaxDynamicFillersPerDim = 60000;
-
-/**
- * @brief Device-edge band used to identify resources confined to the boundary.
- *
- * Several architectures leave the true perimeter empty and place I/O-capable
- * tiles one tile in from the edge, so use a two-tile band rather than only x/y
- * equals 0 or max.
- */
-constexpr size_t kBoundaryConfinedBandTiles = 2;
-
-/**
- * @brief Fraction of a resource dimension's capacity that must lie in the edge
- *        band before it is treated as boundary-confined.
- */
-constexpr double kBoundaryConfinedCapacityFraction = 0.95;
-
-/**
- * @brief Extra wirelength weight for I/O-related AP nets.
- *
- * Kept neutral by default; direct I/O chains use the narrower weights below.
- */
-constexpr double kBoundaryNetCohesionWeight = 1.0;
-
-/**
- * @brief Minimum warm-start HPWL, as a fraction of device span, for applying
- *        boundary-net cohesion.
- */
-constexpr double kBoundaryNetCohesionMinSeedHpwlFraction = 0.25;
-
-/**
- * @brief Extra smooth-WL weight for direct I/O-chain AP nets.
- *
- * Some designs' failure mode is not generic boundary spreading; it is specific
- * pad/obuf/OCT/termination chains being split before APPack can form compact
- * I/O clusters. Prior broad boundary-net weighting regressed guard circuits, so
- * this stronger weight is applied only to two-pin nets whose endpoints are both
- * I/O-chain primitives on boundary-confined resources.
- */
-constexpr double kIoChainNetCohesionWeight = 2.0;
-
-/**
- * @brief Long-chain pack-pattern affinity-spring weight for I/O-chain designs.
- *
- * Probing showed that ungated pack springs worsen general QoR, while gating the
- * 0.02 weight to designs with long direct I/O-chain nets is required to recover
- * the win on the designs that motivated it.
- */
-constexpr double kPackPatternCohesionWeight = 0.02;
-
-/**
- * @brief Smooth-WL multiplier for direct output-driver↔outpad pair nets (always on).
- *
- * Generic I/O-chain cohesion only flags nets that are already long in the
- * warm-start seed, so most pad-drive pairs never get that boost. This stronger
- * multiplier applies to every detected 2-pin output-driver↔outpad AP net so GP
- * keeps those endpoints local, eliminating cross-edge pack/place splits.
- */
-constexpr double kIoPairNetWeight = 8.0;
-
-/**
- * @brief Quadratic attraction weight for direct output-driver↔outpad pairs (always on).
- *
- * Soft spring only -- no post-epoch snap.
- */
-constexpr double kIoPairAttractionWeight = 8.0;
-
-/**
- * @brief Maximum AP-HPWL regression admitted by the CPD tie-break in checkpoint
- *        selection (see the checkpoint-selection block in @ref optimize_from_seed_).
- *
- * Kept narrow so estimated CPD only breaks near-ties in HPWL.
- */
-constexpr double kCheckpointHpwlGuard = 0.01;
-
-/**
- * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
- *
- * The nonlinear Nesterov placer seeds itself from a wirelength-aware B2B/QP solve
- * (a short SimPL run) rather than a block-ID grid spread. The warm start runs a
- * *convergence-based* number of cycles (see @ref kWarmStartMaxIters /
- * @ref kWarmStartTol): it iterates until the seed HPWL stops improving, so large /
- * under-converged designs get enough cycles to produce a tight, clusterable
- * placement -- the post-APPack BB inflation that drove the wirelength gap on
- * those designs -- while small designs that converge quickly stop early. This is
- * the floor.
- */
-constexpr size_t kWarmStartIters = 4;
-
-/**
- * @brief Maximum B2B warm-start cycles (cap on the convergence loop).
- */
-constexpr size_t kWarmStartMaxIters = 24;
-
-/**
- * @brief Relative HPWL-improvement threshold below which the warm start stops.
- *
- * Once a B2B cycle improves the seed HPWL by less than this fraction, further
- * cycles are not worth their runtime, so the warm start ends (at or above the
- * @ref kWarmStartIters floor). Larger designs keep improving longer and so run
- * more cycles automatically.
- */
-constexpr double kWarmStartTol = 0.01;
-
-/**
- * @brief Seed-overflow gate below which the warm start is deepened.
- *
- * If the warm-start seed's physical overflow ratio is below this, the design is
- * electrostatic-inert (the field has no overfill to spread), so B2B compaction
- * must carry packability; the warm start is extended to @ref kSparseWarmStartIters
- * cycles. Above the gate the field does real work and the short warm start stands.
- */
-constexpr double kSparseGateOverflow = 0.0007;
-
-/**
- * @brief Deep warm-start cycle count used when the sparse-overflow gate trips.
- */
-constexpr size_t kSparseWarmStartIters = 24;
-
-/**
- * @brief Epoch cap for the electrostatic phase on sparse seeds.
- *
- * Sparse seeds need only a cheap filler-free wirelength-refinement epoch because
- * their density field has little remaining work.
- */
-constexpr size_t kSparseSeedMaxEpochs = 1;
-
-/**
- * @brief Inner-iteration cap for the sparse-seed probe epoch.
- *
- * The probe refines wirelength near an already density-feasible seed, so it does
- * not need the full inner budget; each iteration still pays the per-resource
- * Poisson solves, which dominate sparse-seed epoch cost once fillers are gone.
- *
- * The probe is also a checkpoint-selection candidate.
- */
-constexpr size_t kSparseSeedProbeIterations = 12;
-
-/**
- * @brief Minimum AP block count for high-pin designs that need one more B2B seed
- *        cycle before electrostatic refinement.
- */
-constexpr size_t kHighPinWarmStartBlockThreshold = 9000;
-
-/**
- * @brief Pin-per-block threshold for high-pin seed compaction.
- */
-constexpr double kHighPinWarmStartPinsPerBlock = 8.0;
-
-/**
- * @brief AP block count at which convergence-based warm start is forced to keep
- *        at least the high-pin floor even if HPWL plateaus early.
- */
-constexpr size_t kHugeWarmStartBlockThreshold = 200000;
-
-/**
- * @brief Adaptive warm-start floor used by the high-pin and huge-design gates.
- */
-constexpr size_t kAdaptiveWarmStartIters = 6;
-
-/**
- * @brief Medium-large designs receive a stronger timing weight by default.
- *
- * This repaired CPD misses on medium-large designs and removed a wirelength loss
- * on others, while high-pin-count small/medium designs regressed under the same
- * timing pressure. The block-count window captures that middle regime and leaves
- * tiny, high-pin, and huge sparse tails on the normal tradeoff.
- */
-constexpr size_t kAdaptiveTimingMinBlocks = 50000;
-constexpr size_t kAdaptiveTimingMaxBlocks = 150000;
-constexpr double kAdaptiveTimingTradeoff = 0.75;
-
-/**
- * @brief Coarse (epoch 0) and sharp (final epoch) gamma fractions for continuation.
- *
- * The placer anneals the weighted-average gamma from coarse (smooth, easy global
- * gradient) to sharp (close to true HPWL) across epochs, instead of holding it
- * fixed, so early epochs spread on an easy landscape and later epochs recover real
- * wirelength.
- *
- */
-constexpr double kGammaStartFraction = 0.04;
-constexpr double kGammaEndFraction = 0.008;
-
-/**
- * @brief Floor on the weighted-average smoothing width, in tiles.
- *
- * This keeps the exponentials numerically useful and retains smoothing on
- * short nets and narrow devices.
- */
-constexpr double kMinWirelengthGamma = 1.0;
 
 /**
  * @brief Initial target ratio of density pressure to wirelength pressure.
@@ -637,11 +442,11 @@ constexpr double kMinWirelengthGamma = 1.0;
  * A small fixed linear density weight keeps the first Nesterov pass close to the
  * warm-start seed while still letting the electrostatic field relieve overlap.
  *
- * Under @ref kExpGradNormLambda0 this scales a *force* ratio: lambda_0 =
- * ratio * ||grad W||_1 / ||grad D||_1, so 0.05 means "the density force starts
- * at 5% of the wirelength force". Otherwise it scales an *energy* ratio.
+ * Scales an *energy* ratio: lambda_0 = ratio * W / D, so 0.05 means "the
+ * density energy starts at 5% of the wirelength energy".
  */
 constexpr double kInitialDensityToWirelengthRatio = 0.05;
+
 
 /**
  * @brief Final density-weight multiplier for the simple continuation schedule.
@@ -650,6 +455,7 @@ constexpr double kInitialDensityToWirelengthRatio = 0.05;
  * smooth penalty is kept moderate to avoid unnecessary wirelength growth.
  */
 constexpr double kFinalDensityWeightMultiplier = 4.0;
+
 
 /**
  * @brief Target physical-overflow ratio for the WL-favoring penalty stop.
@@ -660,6 +466,7 @@ constexpr double kFinalDensityWeightMultiplier = 4.0;
  */
 constexpr double kTargetOverflow = 0.1;
 
+
 /**
  * @brief Minimum epochs before the overflow stop may trigger.
  *
@@ -667,6 +474,7 @@ constexpr double kTargetOverflow = 0.1;
  * refinement epochs before the physical-overflow stop can end the loop.
  */
 constexpr size_t kMinEpochsBeforeOverflowStop = 2;
+
 
 /**
  * @brief Max per-dimension adaptive density boost relative to the schedule weight.
@@ -676,17 +484,12 @@ constexpr size_t kMinEpochsBeforeOverflowStop = 2;
  */
 constexpr double kMaxAdaptiveDensityBoost = 4.0;
 
+
 /**
  * @brief True if a density dimension should receive adaptive overflow boosts.
  *
  * Abundant logic dimensions stay on the uniform schedule; scarce hard-block
  * and I/O dimensions are the ones telemetry showed staying overfilled.
- *
- * This gate applies only to the legacy open-loop boost. It is the reason the
- * shipped schedule had no feedback at all on the dimensions carrying the
- * overflow: on `arm_core` the `.names` physical overflow sat at 0.72 with
- * `boost=1` for the entire run. @ref kExpClosedLoopDensity ramps every
- * dimension and does not consult this.
  */
 bool dim_allows_adaptive_density_boost(const std::string& dim_name) {
     return dim_name != ".names" && dim_name != ".latch";
@@ -704,15 +507,250 @@ bool dim_allows_adaptive_density_boost(const std::string& dim_name) {
  */
 constexpr double kPinDensityInflationPinsPerBlockRatio = 1.0;
 
+
 /**
  * @brief Maximum per-block density-term mass inflation factor from pin count.
  */
 constexpr double kMaxPinDensityInflation = 2.0;
 
+// --------------------------------------------------------------------------
+// Warm start and seeding
+// --------------------------------------------------------------------------
+
+
+/**
+ * @brief How the Nesterov epoch loop is seeded.
+ *
+ * B2B_ITERATED is the shipped behaviour. CENTRE_SPREAD is an ablation switch,
+ * flipped only in an experiment build slot, that answers whether the
+ * electrostatic formulation can place on its own or merely refines B2B. Keep the
+ * default here; the experiment changes it in its own slot so the main tree stays
+ * comparable to every prior run.
+ */
+enum class e_warmstart_mode {
+    B2B_ITERATED,  ///< Iterate B2B solve + partial legalize until seed HPWL plateaus.
+    CENTRE_SPREAD, ///< ePlace-style: all movable blocks at the device centre, no B2B.
+};
+constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
+
+
+/**
+ * @brief Symmetry-breaking radius, in tiles, for the CENTRE_SPREAD ablation.
+ *
+ * With every block at exactly the same point each net's WA wirelength gradient is
+ * identically zero, so the optimizer has no descent direction until the density
+ * force alone separates them. A sub-tile deterministic offset avoids that without
+ * meaningfully seeding the placement.
+ */
+constexpr double kCentreSpreadJitter = 0.5;
+
+
+/**
+ * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
+ *
+ * The nonlinear Nesterov placer seeds itself from a wirelength-aware B2B/QP solve
+ * (a short SimPL run) rather than a block-ID grid spread. The warm start runs a
+ * *convergence-based* number of cycles (see @ref kWarmStartMaxIters /
+ * @ref kWarmStartTol): it iterates until the seed HPWL stops improving, so large /
+ * under-converged designs get enough cycles to produce a tight, clusterable
+ * placement -- the post-APPack BB inflation that drove the wirelength gap on
+ * those designs -- while small designs that converge quickly stop early. This is
+ * the floor.
+ */
+constexpr size_t kWarmStartIters = 4;
+
+
+/**
+ * @brief Maximum B2B warm-start cycles (cap on the convergence loop).
+ */
+constexpr size_t kWarmStartMaxIters = 24;
+
+
+/**
+ * @brief Relative HPWL-improvement threshold below which the warm start stops.
+ *
+ * Once a B2B cycle improves the seed HPWL by less than this fraction, further
+ * cycles are not worth their runtime, so the warm start ends (at or above the
+ * @ref kWarmStartIters floor). Larger designs keep improving longer and so run
+ * more cycles automatically.
+ */
+constexpr double kWarmStartTol = 0.01;
+
+
+/**
+ * @brief Seed-overflow gate below which the warm start is deepened.
+ *
+ * If the warm-start seed's physical overflow ratio is below this, the design is
+ * electrostatic-inert (the field has no overfill to spread), so B2B compaction
+ * must carry packability; the warm start is extended to @ref kSparseWarmStartIters
+ * cycles. Above the gate the field does real work and the short warm start stands.
+ */
+constexpr double kSparseGateOverflow = 0.0007;
+
+
+/**
+ * @brief Deep warm-start cycle count used when the sparse-overflow gate trips.
+ */
+constexpr size_t kSparseWarmStartIters = 24;
+
+
+/**
+ * @brief Epoch cap for the electrostatic phase on sparse seeds.
+ *
+ * Sparse seeds need only a cheap filler-free wirelength-refinement epoch because
+ * their density field has little remaining work.
+ */
+constexpr size_t kSparseSeedMaxEpochs = 1;
+
+
+/**
+ * @brief Inner-iteration cap for the sparse-seed probe epoch.
+ *
+ * The probe refines wirelength near an already density-feasible seed, so it does
+ * not need the full inner budget; each iteration still pays the per-resource
+ * Poisson solves, which dominate sparse-seed epoch cost once fillers are gone.
+ *
+ * The probe is also a checkpoint-selection candidate.
+ */
+constexpr size_t kSparseSeedProbeIterations = 12;
+
+
+/**
+ * @brief Minimum AP block count for high-pin designs that need one more B2B seed
+ *        cycle before electrostatic refinement.
+ */
+constexpr size_t kHighPinWarmStartBlockThreshold = 9000;
+
+
+/**
+ * @brief Pin-per-block threshold for high-pin seed compaction.
+ */
+constexpr double kHighPinWarmStartPinsPerBlock = 8.0;
+
+
+/**
+ * @brief AP block count at which convergence-based warm start is forced to keep
+ *        at least the high-pin floor even if HPWL plateaus early.
+ */
+constexpr size_t kHugeWarmStartBlockThreshold = 200000;
+
+
+/**
+ * @brief Adaptive warm-start floor used by the high-pin and huge-design gates.
+ */
+constexpr size_t kAdaptiveWarmStartIters = 6;
+
+// --------------------------------------------------------------------------
+// Dynamic fillers
+// --------------------------------------------------------------------------
+
+
+/**
+ * @brief Fraction of per-resource whitespace represented by dynamic fillers.
+ *
+ * elfPlace uses movable filler instances to let the density system balance real
+ * cells against whitespace. Full whitespace was too aggressive in the VTR flow
+ * because APPack/annealing already perform downstream spreading, so this default
+ * keeps the filler mechanism active while limiting CPD-damaging over-spread.
+ */
+constexpr double kDynamicFillerWhitespaceFraction = 0.35;
+
+
+/**
+ * @brief Target dynamic filler mass in units of average per-site target capacity.
+ */
+constexpr double kDynamicFillerUnitFraction = 1.0;
+
+
+/**
+ * @brief Cap dynamic filler particles per resource dimension.
+ */
+constexpr size_t kMaxDynamicFillersPerDim = 60000;
+
+// --------------------------------------------------------------------------
+// Net cohesion and affinity springs
+// --------------------------------------------------------------------------
+
+
+
+
+/**
+ * @brief Extra wirelength weight for I/O-related AP nets.
+ *
+ * Kept neutral by default; direct I/O chains use the narrower weights below.
+ */
+constexpr double kBoundaryNetCohesionWeight = 1.0;
+
+
+
+/**
+ * @brief Extra smooth-WL weight for direct I/O-chain AP nets.
+ *
+ * Some designs' failure mode is not generic boundary spreading; it is specific
+ * pad/obuf/OCT/termination chains being split before APPack can form compact
+ * I/O clusters. Prior broad boundary-net weighting regressed guard circuits, so
+ * this stronger weight is applied only to two-pin nets whose endpoints are both
+ * I/O-chain primitives on boundary-confined resources.
+ */
+// 8.0 matches the adopted io-pair spring strength. 2.0 was measured too weak
+// to hold the LU_Network pad periphery together against the density field
+// (2026-08-10: 1359 flagged nets, placement still landed the bad timing basin);
+// at 8.0 all four seeds land the good basin, halving that circuit's routed CPD.
+constexpr double kIoChainNetCohesionWeight = 8.0;
+
+
+
+/**
+ * @brief Long-chain pack-pattern affinity-spring weight for I/O-chain designs.
+ *
+ * Probing showed that ungated pack springs worsen general QoR, while gating the
+ * 0.02 weight to designs with long direct I/O-chain nets is required to recover
+ * the win on the designs that motivated it.
+ */
+constexpr double kPackPatternCohesionWeight = 0.02;
+
+
+/**
+ * @brief Smooth-WL multiplier for direct output-driver↔outpad pair nets (always on).
+ *
+ * Generic I/O-chain cohesion only flags nets that are already long in the
+ * warm-start seed, so most pad-drive pairs never get that boost. This stronger
+ * multiplier applies to every detected 2-pin output-driver↔outpad AP net so GP
+ * keeps those endpoints local, eliminating cross-edge pack/place splits.
+ */
+constexpr double kIoPairNetWeight = 8.0;
+
+
+/**
+ * @brief Quadratic attraction weight for direct output-driver↔outpad pairs (always on).
+ *
+ * Soft spring only -- no post-epoch snap.
+ */
+constexpr double kIoPairAttractionWeight = 8.0;
+
+// --------------------------------------------------------------------------
+// Checkpoint selection
+// --------------------------------------------------------------------------
+
+
+/**
+ * @brief Maximum AP-HPWL regression admitted by the CPD tie-break in checkpoint
+ *        selection (see the checkpoint-selection block in @ref optimize_from_seed_).
+ *
+ * Kept narrow so estimated CPD only breaks near-ties in HPWL.
+ */
+constexpr double kCheckpointHpwlGuard = 0.01;
+
+// --------------------------------------------------------------------------
+// Numerics
+// --------------------------------------------------------------------------
+
+
 /**
  * @brief Small value used to avoid division by zero.
  */
 constexpr double kEpsilon = 1e-9;
+
 
 /**
  * @brief Device-bound epsilon to keep floor-based bin lookup inside the grid.
@@ -772,35 +810,7 @@ double weighted_average_coordinate(const std::vector<double>& values,
     return weighted_sum / exp_sum;
 }
 
-std::string lower_copy(const std::string& value) {
-    std::string lowered = value;
-    for (char& c : lowered)
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return lowered;
-}
-
-bool model_name_is_io_chain(const std::string& model_name) {
-    if (model_name == LogicalModels::MODEL_INPUT || model_name == LogicalModels::MODEL_OUTPUT)
-        return true;
-
-    std::string lowered = lower_copy(model_name);
-    return lowered.find("io") != std::string::npos
-           || lowered.find("pad") != std::string::npos
-           || lowered.find("obuf") != std::string::npos
-           || lowered.find("oct") != std::string::npos
-           || lowered.find("termination") != std::string::npos;
-}
-
 } // namespace
-
-NonlinearNesterovPlacer::PlacementGradient::PlacementGradient(const APNetlist& ap_netlist)
-    : dx(ap_netlist.blocks().size(), 0.)
-    , dy(ap_netlist.blocks().size(), 0.) {}
-
-void NonlinearNesterovPlacer::PlacementGradient::clear() {
-    std::fill(dx.begin(), dx.end(), 0.);
-    std::fill(dy.begin(), dy.end(), 0.);
-}
 
 NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
@@ -815,6 +825,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                                  bool generate_mass_report,
                                                  const std::vector<std::string>& target_density_arg_strs,
                                                  e_ap_partial_legalizer partial_legalizer_type,
+                                                 unsigned num_threads,
                                                  int log_verbosity)
     : GlobalPlacer(ap_netlist, log_verbosity)
     , atom_netlist_(atom_netlist)
@@ -822,8 +833,6 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , place_delay_model_(place_delay_model)
     , models_(models)
     , net_weights_(ap_netlist.nets().size(), 1.0)
-    , boundary_cohesion_nets_(ap_netlist.nets().size(), false)
-    , io_chain_cohesion_nets_(ap_netlist.nets().size(), false)
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
@@ -847,7 +856,20 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     if (generate_mass_report)
         density_manager_->generate_mass_report();
 
-    affinity_groups_.clear();
+    cohesion_ = std::make_unique<NetCohesion>(ap_netlist_,
+                                              atom_netlist,
+                                              models,
+                                              *density_manager_,
+                                              device_grid_width_,
+                                              device_grid_height_,
+                                              device_grid_num_layers_,
+                                              kBoundaryNetCohesionWeight,
+                                              io_chain_net_cohesion_weight_,
+                                              log_verbosity_);
+
+    affinity_term_ = std::make_unique<AffinitySpringTerm>(ap_netlist_,
+                                                          io_pair_attraction_weight_,
+                                                          pack_pattern_cohesion_weight_);
     num_io_pair_affinity_groups_ = 0;
     num_pack_pattern_affinity_groups_ = 0;
     initialize_pack_pattern_affinity_groups_(prepacker);
@@ -911,7 +933,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
 
     if (log_verbosity_ >= 1) {
         size_t affinity_blocks = 0;
-        for (const AffinityGroup& group : affinity_groups_)
+        for (const AffinityGroup& group : affinity_term_->groups())
             affinity_blocks += group.blocks.size();
         VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g io_chain_cohesion=%g.\n",
                 moveable_blocks_.size(),
@@ -928,6 +950,16 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
         VTR_LOG("Nonlinear Nesterov pin-density inflation: reference=%.2f pins/block max_inflation=%.3g.\n",
                 pin_density_inflation_reference,
                 max_pin_density_inflation);
+    }
+
+    // Independent per-resource field solves can use the configured AP worker
+    // count. A null pool (the num_threads <= 1 default) keeps the historical
+    // serial loop; per-dimension results are computed identically either way and
+    // reduced in fixed dimension order, so thread count never changes the output.
+    if (num_threads > 1) {
+        field_thread_pool_ = std::make_unique<vtr::thread_pool>(num_threads);
+        if (log_verbosity_ >= 1)
+            VTR_LOG("Nonlinear Nesterov field solves: using %u worker threads.\n", num_threads);
     }
 
     // Build the B2B warm-start solver. Constructed here because the DeviceGrid is
@@ -1071,7 +1103,7 @@ PartialPlacement NonlinearNesterovPlacer::place() {
     vtr::ScopedStartFinishTimer global_placer_time("AP Nonlinear Nesterov Global Placer");
 
     std::vector<PrimitiveVectorDim> density_dimensions = density_manager_->get_used_dims_mask().get_non_zero_dims();
-    boundary_confined_dims_ = identify_boundary_confined_dims_(density_dimensions);
+    cohesion_->identify_boundary_confined_dims(density_dimensions);
 
     double device_span = std::max<double>(device_grid_width_, device_grid_height_);
     double convergence_displacement = std::max(kMinConvergenceDisplacement,
@@ -1094,7 +1126,6 @@ PartialPlacement NonlinearNesterovPlacer::place() {
     precond_active_ = large_design;
     step_unit_ = large_design;
     proximity_full_ = large_design;
-    initialize_timing_connections_();
     return run_global_optimization_(density_dimensions, device_span, convergence_displacement);
 }
 
@@ -1105,13 +1136,14 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     PartialPlacement seed = initialize_placement_();
     if (log_verbosity_ >= 1)
         VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
-    update_boundary_net_flags_(density_dimensions, seed);
+    cohesion_->update_boundary_net_flags(density_dimensions, seed);
     if (pack_pattern_cohesion_weight_ > 0.
-        && num_io_chain_cohesion_nets_ == 0) {
+        && cohesion_->num_io_chain_nets() == 0) {
         if (log_verbosity_ >= 1) {
             VTR_LOG("Nonlinear Nesterov pack-pattern affinity disabled: no long direct I/O-chain nets were found.\n");
         }
         pack_pattern_cohesion_weight_ = 0.;
+        affinity_term_->set_pack_pattern_weight(0.);
     }
 
     PartialPlacement result = optimize_from_seed_(seed, density_dimensions, device_span, convergence_displacement);
@@ -1216,23 +1248,31 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     double initial_density_weight = 1e-3;
     auto reset_density_weights = [&](const PartialPlacement& placement) {
         std::fill(density_multipliers.begin(), density_multipliers.end(), 1.);
-        // ePlace/elfPlace set lambda_0 = ||grad W||_1 / ||grad D||_1: a ratio of
-        // gradient norms, which makes the wirelength and density *forces*
-        // comparable at the start.
+        // WHAT THIS DOES: lambda_0 is set from the *energy* ratio,
+        // `ratio * WA_wirelength_value / density_energy`.
         //
-        // The energy form (WL value / density energy) is a feedback trap: as a
-        // placement concentrates, WA wirelength collapses toward zero (coincident
-        // pins have no span) while density energy blows up (all mass in few bins),
-        // so lambda_0 -> 0 exactly when the spreading force is most needed, which
-        // keeps the placement concentrated. Measured 2026-08-03 on a cold start:
-        // lambda_0 came out 1.0067e-4 against 0.1064 for the same circuit from a
-        // B2B seed -- a 1000x weaker density force -- and the global placement
-        // finished 4.7x worse in HPWL. Gradient norms have no such degeneracy:
-        // both scale linearly with a shared displacement.
+        // ePlace/elfPlace instead set lambda_0 = ||grad W||_1 / ||grad D||_1 -- a
+        // ratio of gradient norms, which makes the wirelength and density *forces*
+        // comparable at the start. The energy form is in principle a feedback
+        // trap: as a placement concentrates, WA wirelength collapses toward zero
+        // (coincident pins have no span) while density energy blows up (all mass
+        // in few bins), so lambda_0 -> 0 exactly when the spreading force is most
+        // needed. Measured 2026-08-03 on a cold start, lambda_0 came out 1.0067e-4
+        // against 0.1064 for the same circuit from a B2B seed -- a 1000x weaker
+        // density force -- and global placement finished 4.7x worse in HPWL.
         //
-        // This comment sat above the energy form until 2026-08-08 claiming the
-        // gradient form was already in use. It now is, gated by
-        // kExpGradNormLambda0 so the two can be ablated against each other.
+        // The gradient form was implemented and measured on 2026-08-08 and is NOT
+        // adopted, for a specific reason: switching the units while keeping
+        // kInitialDensityToWirelengthRatio at its energy-tuned 0.05 shifted
+        // lambda_0 by 0.38x to 8.3x depending on circuit (LU8PEEng 0.676 -> 0.260,
+        // mcml 0.0124 -> 0.103). That is an uncontrolled level change, not a
+        // normalization fix, and it was sufficient on its own to explain the
+        // regressions seen alongside it. Any future attempt must first recalibrate
+        // the ratio so the board-wide geomean lambda_0 is unchanged; only then
+        // does a measurement attribute to the *shape* of the normalization.
+        //
+        // This comment previously asserted the gradient form was in use. It was
+        // not, and is not.
         initial_density_weight = 1e-3;
         {
             ObjectiveValue components = evaluate_objective_(placement,
@@ -1261,7 +1301,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // validated end-to-end against B2B, and measured to cost 1.7pp of CPD vs B2B
     // board-wide (0.9918 -> 1.0091) plus 5.4% AP HPWL on the >=30k band. Committed
     // HEAD (72d4716cd, no incompatibility cost) is the last state that reproduces
-    // the documented shipped position (RESULTS.md: CPD 0.9918, WL 0.9916 vs B2B).
+    // the documented shipped position (CPD 0.9918, WL 0.9916 vs B2B).
     // Count of FISTA adaptive restarts, reported at the end of the run.
     size_t num_objective_restarts = 0;
 
@@ -1309,6 +1349,9 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             timing_update_time_sec += timing_update_timer.elapsed_sec();
         }
         checkpoint_sources.push_back(-1); // -1 = warm-start seed, otherwise epoch index.
+        VTR_ASSERT(checkpoints.size() == checkpoint_hpwls.size());
+        VTR_ASSERT(checkpoints.size() == checkpoint_cpds_ns.size());
+        VTR_ASSERT(checkpoints.size() == checkpoint_sources.size());
     }
     PartialPlacement legal_anchor(ap_netlist_);
     PartialPlacement anchor_target(ap_netlist_);
@@ -1322,6 +1365,11 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     std::fill(admm_dual_y_.begin(), admm_dual_y_.end(), 0.);
     FillerState y_fillers;
     FillerState next_fillers;
+    VTR_LOG("Nonlinear Nesterov configuration: iterations=%zu epochs=%zu BB=%s resource_grid_stride1=%s.\n",
+            kMaxNesterovIterations,
+            num_epochs,
+            kBarzilaiBorweinStep ? "on" : "off",
+            kFieldGridStride1 ? "on" : "off");
     auto apply_continuation_schedule = [&](double schedule) {
         current_gamma_fraction_ = kGammaStartFraction
                                   * std::pow(kGammaEndFraction / kGammaStartFraction, schedule);
@@ -1354,11 +1402,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // Checkpoint timing is evaluated for the seed and after every partial
         // legalization, so the timing manager already describes `current` here.
         update_timing_net_weights_(current);
-        // `current` is the epoch-start placement: the warm-start seed at epoch 0,
-        // the previous epoch's partial legalization afterwards. Both are legal
-        // positions, which is what the delay model needs -- legal_anchor is not
-        // assigned until later in this iteration and is all-zero on epoch 0.
-        update_timing_connection_weights_(current);
         // Relinearize the B2B wirelength model at the epoch-start placement
         // (post-legalization from the prior epoch), after the net weights it
         // bakes in have been refreshed.
@@ -1428,6 +1471,17 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         size_t num_obj_evals = 0;
         size_t num_accepted_iters = 0;
         size_t num_intra_legalizations = 0;
+        size_t num_nonfinite_observations = 0;
+        size_t num_bb_secant_updates = 0;
+        size_t epoch_restart_count_begin = num_objective_restarts;
+        const char* convergence_stop_reason = "iteration-budget";
+        double min_raw_bb_step = std::numeric_limits<double>::infinity();
+        double max_raw_bb_step = 0.;
+        double min_accepted_step = std::numeric_limits<double>::infinity();
+        double max_accepted_step = 0.;
+        double max_lookahead_displacement = 0.;
+        double max_iterate_displacement = 0.;
+        double final_projected_gradient_max = std::numeric_limits<double>::quiet_NaN();
         ObjectiveValue current_obj = evaluate_objective_(current,
                                                          density_multipliers,
                                                          std::cref(proximity_anchor),
@@ -1476,14 +1530,19 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                        y_fillers,
                                                        std::ref(filler_grad));
             double grad_norm_sq = gradient_norm_squared_(grad) + filler_gradient_norm_squared_(filler_grad);
-            if (grad_norm_sq < kEpsilon)
+            if (!std::isfinite(y_obj.total) || !std::isfinite(grad_norm_sq))
+                num_nonfinite_observations++;
+            if (grad_norm_sq < kEpsilon) {
+                convergence_stop_reason = "zero-gradient";
                 break;
+            }
 
             double accepted_step = step_size;
+            double iter_raw_bb_step = std::numeric_limits<double>::quiet_NaN(); // telemetry scaffold only
             ObjectiveValue next_obj;
             bool accepted = false;
             bool gradient_restart = false;
-            if (kExpBarzilaiBorweinStep) {
+            if (kBarzilaiBorweinStep) {
                 // Preconditioned gradient: the space gradient_step_ actually
                 // moves in, and therefore the space the secant estimate must be
                 // taken in.
@@ -1532,8 +1591,14 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                     }
                     if (dy_norm_sq > kEpsilon && dg_norm_sq > kEpsilon) {
                         double bb_step = std::sqrt(dy_norm_sq / dg_norm_sq);
-                        // Growth clamp: the only safeguard against a secant spike
-                        // that does not cost an objective evaluation to detect.
+                        if (!std::isfinite(bb_step))
+                            num_nonfinite_observations++;
+                        num_bb_secant_updates++;
+                        min_raw_bb_step = std::min(min_raw_bb_step, bb_step);
+                        max_raw_bb_step = std::max(max_raw_bb_step, bb_step);
+                        iter_raw_bb_step = bb_step;
+                        // Growth clamp: bounds how fast the secant estimate can
+                        // expand between iterations.
                         accepted_step = std::clamp(std::min(bb_step, step_size * kBarzilaiBorweinGrowthCap),
                                                    kMinStepSize,
                                                    device_span);
@@ -1567,7 +1632,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
             // Monotone backtracking line search: halve the step until the objective
             // does not increase (or the minimum step is reached).
-            while (!kExpBarzilaiBorweinStep && accepted_step >= kMinStepSize) {
+            while (!kBarzilaiBorweinStep && accepted_step >= kMinStepSize) {
                 gradient_step_(y_placement, grad, y_fillers, filler_grad, accepted_step, next, next_fillers);
                 num_obj_evals++;
                 next_obj = evaluate_objective_(next,
@@ -1595,11 +1660,32 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                 accepted_step *= 0.5;
             }
 
-            if (!accepted)
+            if (!accepted) {
+                convergence_stop_reason = "no-accepted-step";
                 break;
+            }
 
             double max_step_displacement = std::max(max_block_displacement_(y_placement, next),
                                                     max_filler_displacement_(y_fillers, next_fillers));
+            max_lookahead_displacement = std::max(max_lookahead_displacement, max_step_displacement);
+            min_accepted_step = std::min(min_accepted_step, accepted_step);
+            max_accepted_step = std::max(max_accepted_step, accepted_step);
+            if (!std::isfinite(accepted_step) || !std::isfinite(max_step_displacement))
+                num_nonfinite_observations++;
+
+            // Diagnostic projected-gradient mapping at the look-ahead point:
+            // max ||y - project(y - step * P^-1 g)|| / step. The numerator is
+            // the displacement already computed for the existing convergence
+            // test, so this adds no objective/gradient evaluation or extra scan.
+            if (accepted_step > 0.)
+                final_projected_gradient_max = max_step_displacement / accepted_step;
+            double max_current_to_next_displacement = std::max(max_block_displacement_(current, next),
+                                                               max_filler_displacement_(current_fillers, next_fillers));
+            max_iterate_displacement = std::max(max_iterate_displacement, max_current_to_next_displacement);
+            if (!std::isfinite(final_projected_gradient_max)
+                || !std::isfinite(max_current_to_next_displacement)) {
+                num_nonfinite_observations++;
+            }
 
             // FISTA momentum: the t-sequence sets the extrapolation weight beta.
             double next_t = 0.5 * (1.0 + std::sqrt(1.0 + 4.0 * nesterov_t * nesterov_t));
@@ -1609,7 +1695,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             // The accepted point is retained so the short epoch keeps progressing.
             // Under BB the test is the gradient one computed above; otherwise it
             // is the objective comparison the line search already paid for.
-            bool objective_restart = kExpBarzilaiBorweinStep
+            bool objective_restart = kBarzilaiBorweinStep
                                          ? gradient_restart
                                          : next_obj.total > current_obj.total;
             if (objective_restart)
@@ -1640,13 +1726,13 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             // Under BB no objective was evaluated at `next`, so next_obj is
             // unset; leaving current_obj alone keeps it meaningful (it is the
             // epoch-start value) rather than silently zeroing it.
-            if (!kExpBarzilaiBorweinStep)
+            if (!kBarzilaiBorweinStep)
                 current_obj = next_obj;
             num_accepted_iters++;
 
             // BB sets the next step from the secant estimate, so the geometric
             // growth that fed the line search would only fight the growth clamp.
-            step_size = kExpBarzilaiBorweinStep
+            step_size = kBarzilaiBorweinStep
                             ? accepted_step
                             : std::min(device_span, accepted_step * kStepGrowthRate);
 
@@ -1678,9 +1764,28 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
             if (iter + 1 >= kMinNesterovIterationsPerEpoch
                 && max_step_displacement <= convergence_displacement) {
+                convergence_stop_reason = "displacement";
                 break;
             }
         }
+
+        VTR_LOG("  Nesterov convergence (epoch %zu): stop=%s accepted=%zu/%zu grad_evals=%zu obj_evals=%zu restarts=%zu bb_updates=%zu raw_bb_step=[%.6g,%.6g] accepted_step=[%.6g,%.6g] max_y_step=%.6g max_x_step=%.6g projected_grad_max=%.6g nonfinite=%zu\n",
+                epoch,
+                convergence_stop_reason,
+                num_accepted_iters,
+                this_epoch_iters,
+                num_grad_evals,
+                num_obj_evals,
+                num_objective_restarts - epoch_restart_count_begin,
+                num_bb_secant_updates,
+                num_bb_secant_updates == 0 ? 0. : min_raw_bb_step,
+                num_bb_secant_updates == 0 ? 0. : max_raw_bb_step,
+                num_accepted_iters == 0 ? 0. : min_accepted_step,
+                num_accepted_iters == 0 ? 0. : max_accepted_step,
+                max_lookahead_displacement,
+                max_iterate_displacement,
+                num_accepted_iters == 0 ? 0. : final_projected_gradient_max,
+                num_nonfinite_observations);
 
         ObjectiveValue pre_legalization = evaluate_objective_(current,
                                                               density_multipliers,
@@ -1700,7 +1805,6 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // objective evaluation left in the workspace, which still describes the
         // smooth (pre-legalization) result at this point and will be overwritten
         // by the post-legalization evaluation below.
-        // (Runtime gradient audit moved to test_nesterov_gradient_audit.cpp)
         if (log_verbosity_ >= 3) {
             report_density_force_leak_(before_legalization, density_dimensions, density_multipliers, epoch);
         }
@@ -1793,7 +1897,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
         // Scaled-ADMM dual update: u += x - z, where x is the smooth result
         // (before_legalization) and z its legalization (current). Safeguards
-        // per RESEARCH_ALM_ADMM.md: a block whose legalizer target jumped
+        // a block whose legalizer target jumped
         // (z^{e+1} far from z^e, still held in legal_anchor) gets its dual
         // reset -- the projection is inexact and jumpy, and stale duals are
         // the canonical windup failure -- and each axis is clamped.
@@ -1809,7 +1913,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         // the placement that ships, so refinements that perturb the legalizer's
         // input damage the delivered result even while improving the dual's own
         // convergence (measured: overflow 0.973 at 11/14 wins with AP HPWL up
-        // 2.5%). See EXPERIMENTS.md "completing the ADMM". Do not re-derive.
+        // 2.5%). Do not re-derive.
         {
             for (APBlockId blk_id : moveable_blocks_) {
                 double z_jump = std::hypot(current.block_x_locs[blk_id] - legal_anchor.block_x_locs[blk_id],
@@ -1836,6 +1940,9 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         checkpoint_hpwls.push_back(post_legalization_hpwl);
         checkpoint_cpds_ns.push_back(post_legalization_cpd_ns);
         checkpoint_sources.push_back(static_cast<int>(epoch));
+        VTR_ASSERT(checkpoints.size() == checkpoint_hpwls.size());
+        VTR_ASSERT(checkpoints.size() == checkpoint_cpds_ns.size());
+        VTR_ASSERT(checkpoints.size() == checkpoint_sources.size());
         VTR_LOG("%5zu  %8.2f  %9.2f  %9.4f  %10.4f  %7.4f  %8.4f  %9.4f  %8.4f  %10.4g  %7.4g\n",
                 epoch,
                 before_legalization.get_hpwl(ap_netlist_),
@@ -1916,6 +2023,10 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     // checkpoints within kCheckpointHpwlGuard of the best HPWL, prefer the one
     // with the lower estimated CPD. The tie-break only applies when timing is
     // enabled; a zero timing tradeoff keeps pure minimum-HPWL selection.
+    VTR_ASSERT(!checkpoints.empty());
+    VTR_ASSERT(checkpoints.size() == checkpoint_hpwls.size());
+    VTR_ASSERT(checkpoints.size() == checkpoint_cpds_ns.size());
+    VTR_ASSERT(checkpoints.size() == checkpoint_sources.size());
     size_t best_checkpoint_idx = std::distance(checkpoint_hpwls.begin(),
                                                std::min_element(checkpoint_hpwls.begin(), checkpoint_hpwls.end()));
     if (effective_timing_tradeoff_ != 0.f) {
@@ -1963,9 +2074,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     }
     partial_legalizer_->print_statistics();
 
-    // Diagnostic-only oracle (see consolidate_underfull_bins_): forcibly raise
-    // the returned placement's logic bin fill to test whether the packer's
-    // reconstruction damage responds to a large fill dose.
+
     return checkpoints[best_checkpoint_idx];
 }
 
@@ -1997,12 +2106,10 @@ NonlinearNesterovPlacer::ObjectiveValue NonlinearNesterovPlacer::evaluate_object
                                                   legal_anchor->get(),
                                                   proximity_weight,
                                                   grad);
-    value.affinity_spring = add_affinity_spring_gradient_(p_placement, grad);
-    value.timing = add_timing_gradient_(p_placement, grad);
+    value.affinity_spring = affinity_term_->evaluate(p_placement, grad);
     value.total = value.wirelength
                   + value.affinity_spring
-                  + proximity_weight * value.proximity
-                  + value.timing;
+                  + proximity_weight * value.proximity;
     for (size_t dim_idx = 0; dim_idx < value.density_energies.size(); dim_idx++) {
         double energy = value.density_energies[dim_idx];
         value.total += density_multipliers[dim_idx] * energy;
@@ -2091,59 +2198,6 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
     return smooth_wirelength;
 }
 
-double NonlinearNesterovPlacer::net_delay_sensitivity_(APNetId net_id,
-                                                       const PartialPlacement& p_placement) const {
-    if (!place_delay_model_ || !pre_cluster_timing_manager_.is_valid())
-        return 0.;
-    APPinId driver_pin = ap_netlist_.net_driver(net_id);
-    if (!driver_pin.is_valid())
-        return 0.;
-    APBlockId driver_blk = ap_netlist_.pin_block(driver_pin);
-    size_t width = device_grid_width_, height = device_grid_height_;
-    auto tile_of = [&](APBlockId b) {
-        int x = static_cast<int>(std::floor(std::clamp(p_placement.block_x_locs[b], 0., width - kDeviceBoundaryEpsilon)));
-        int y = static_cast<int>(std::floor(std::clamp(p_placement.block_y_locs[b], 0., height - kDeviceBoundaryEpsilon)));
-        return t_physical_tile_loc(x, y, 0);
-    };
-    t_physical_tile_loc d = tile_of(driver_blk);
-    auto step_of = [](int v, int maxv) { return v < maxv - 1 ? 1 : (v > 0 ? -1 : 0); };
-    // Cost of leaving the driver tile: strips the time units, exactly as b2b does.
-    t_physical_tile_loc nx(d.x + step_of(d.x, static_cast<int>(width)), d.y, d.layer_num);
-    t_physical_tile_loc ny(d.x, d.y + step_of(d.y, static_cast<int>(height)), d.layer_num);
-    double norm_x = place_delay_model_->delay(d, 0, nx, 0);
-    double norm_y = place_delay_model_->delay(d, 0, ny, 0);
-    if (norm_x >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL || norm_x <= 0.) norm_x = 1.;
-    if (norm_y >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL || norm_y <= 0.) norm_y = 1.;
-
-    const auto& timing_info = pre_cluster_timing_manager_.get_timing_info();
-    double worst = 0.;
-    for (APPinId sink_pin : ap_netlist_.net_sinks(net_id)) {
-        APBlockId sink_blk = ap_netlist_.pin_block(sink_pin);
-        if (sink_blk == driver_blk)
-            continue;
-        t_physical_tile_loc sk = tile_of(sink_blk);
-        double cur = place_delay_model_->delay(d, 0, sk, 0);
-        if (cur >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL)
-            continue;
-        // One-sided differences toward the driver are enough here: we only need
-        // the magnitude of delay sensitivity, not a signed gradient.
-        double dsx = 0., dsy = 0.;
-        int sx = sk.x > d.x ? -1 : 1, sy = sk.y > d.y ? -1 : 1;
-        if (sk.x + sx >= 0 && sk.x + sx < static_cast<int>(width)) {
-            double v = place_delay_model_->delay(d, 0, {sk.x + sx, sk.y, sk.layer_num}, 0);
-            if (v < ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) dsx = std::max(0., cur - v);
-        }
-        if (sk.y + sy >= 0 && sk.y + sy < static_cast<int>(height)) {
-            double v = place_delay_model_->delay(d, 0, {sk.x, sk.y + sy, sk.layer_num}, 0);
-            if (v < ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) dsy = std::max(0., cur - v);
-        }
-        AtomPinId atom_pin = ap_netlist_.pin_atom_pin(sink_pin);
-        double crit = atom_pin.is_valid() ? timing_info.setup_pin_criticality(atom_pin) : 0.;
-        worst = std::max(worst, (1.0 + crit) * (dsx / norm_x + dsy / norm_y));
-    }
-    return worst;
-}
-
 void NonlinearNesterovPlacer::update_timing_net_weights_(const PartialPlacement& p_placement) {
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
 
@@ -2151,35 +2205,6 @@ void NonlinearNesterovPlacer::update_timing_net_weights_(const PartialPlacement&
     // net weights on architectures without timing data is the expected common case,
     // not something worth warning about.
     bool use_timing_weights = effective_timing_tradeoff_ != 0.f && pre_cluster_timing_manager_.is_valid();
-
-    // Mean delay sensitivity over the nets that will use it, computed first so
-    // the per-net values can be normalized to mean 1.
-    // Scale the sensitivity so its mean equals the mean of the criticality it
-    // replaces. Normalizing to 1.0 instead would raise the average net weight
-    // from 0.748 to 1.0 -- a 34% strengthening of wirelength against density --
-    // and the experiment would then confound a new *signal* with a new
-    // *balance*. Matching the mean makes it a pure signal swap.
-    double sensitivity_scale = 0.;
-    if (kExpDelaySensitivityWeights && use_timing_weights) {
-        double acc_sens = 0., acc_crit = 0.;
-        size_t n = 0;
-        for (APNetId net_id : ap_netlist_.nets()) {
-            if (ap_netlist_.net_is_ignored(net_id))
-                continue;
-            AtomNetId anet = ap_netlist_.net_atom_net(net_id);
-            if (!anet.is_valid())
-                continue;
-            acc_sens += net_delay_sensitivity_(net_id, p_placement);
-            acc_crit += pre_cluster_timing_manager_.calc_net_setup_criticality(anet, atom_netlist_);
-            n++;
-        }
-        double mean_sens = n ? acc_sens / n : 0.;
-        double mean_crit = n ? acc_crit / n : 0.;
-        sensitivity_scale = mean_sens > kEpsilon ? mean_crit / mean_sens : 0.;
-        if (log_verbosity_ >= 1)
-            VTR_LOG("Nonlinear Nesterov delay-sensitivity weights: mean_sens %.4g, mean_crit %.4g, scale %.4g (%zu nets).\n",
-                    mean_sens, mean_crit, sensitivity_scale, n);
-    }
 
     double total_weight = 0.;
     double min_weight = std::numeric_limits<double>::infinity();
@@ -2195,30 +2220,18 @@ void NonlinearNesterovPlacer::update_timing_net_weights_(const PartialPlacement&
             AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
             VTR_ASSERT_SAFE(atom_net_id.is_valid());
 
-            // Interpolate between unit weight and net criticality. Connection-
-            // specific timing pressure is handled separately so one critical
-            // sink does not increase the hypernet weight of every sink.
+            // Interpolate between unit weight and net criticality.
             double crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
-            if (kExpDelaySensitivityWeights) {
-                // Mean-normalized delay sensitivity in place of raw criticality.
-                // Normalization is what keeps this a *reweighting* rather than an
-                // added force: mean(crit) == 1 leaves the average net weight at
-                // 1.0, so the wirelength/density balance is untouched and the
-                // term cannot swamp wirelength the way an additive spring did.
-                if (sensitivity_scale > kEpsilon)
-                    crit = std::clamp(net_delay_sensitivity_(net_id, p_placement) * sensitivity_scale, 0., 1.0);
-            }
             weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
         }
 
-        // Nets flagged by update_boundary_net_flags_/block_is_io_chain_block_ get extra
-        // wirelength weight so their pin blocks are pulled tightly together; this counteracts
-        // the differentiable wirelength term's tendency to let long boundary-anchored and I/O-chain nets
-        // spread out, which otherwise fragments those chains across the AP-to-APPack handoff.
-        if (static_cast<size_t>(net_id) < boundary_cohesion_nets_.size() && boundary_cohesion_nets_[net_id])
-            weight *= kBoundaryNetCohesionWeight;
-        if (static_cast<size_t>(net_id) < io_chain_cohesion_nets_.size() && io_chain_cohesion_nets_[net_id])
-            weight *= io_chain_net_cohesion_weight_;
+        // Cohesion-flagged nets (boundary / io-chain / scarcity classes) get
+        // extra wirelength weight so their pin blocks are pulled tightly
+        // together; this counteracts the differentiable wirelength term's
+        // tendency to let long boundary-anchored and I/O-chain nets spread
+        // out, which otherwise fragments those chains across the AP-to-APPack
+        // handoff.
+        weight *= cohesion_->net_multiplier(net_id);
         // Boost all direct output-driver↔outpad nets (not just seed-long I/O-chain ones).
         if (static_cast<size_t>(net_id) < io_pair_locality_nets_.size() && io_pair_locality_nets_[net_id]) {
             weight *= io_pair_net_weight_;
@@ -2273,7 +2286,7 @@ void NonlinearNesterovPlacer::initialize_pack_pattern_affinity_groups_(const Pre
         AffinityGroup affinity;
         affinity.kind = e_affinity_kind::PACK_PATTERN;
         affinity.blocks = std::move(group);
-        affinity_groups_.push_back(std::move(affinity));
+        affinity_term_->add_group(std::move(affinity));
         num_pack_pattern_affinity_groups_++;
     }
 }
@@ -2337,7 +2350,7 @@ void NonlinearNesterovPlacer::initialize_io_pair_affinity_groups_() {
         AffinityGroup affinity;
         affinity.kind = e_affinity_kind::IO_PAIR;
         affinity.blocks = {driver_ap_blk, outpad_ap_blk};
-        affinity_groups_.push_back(std::move(affinity));
+        affinity_term_->add_group(std::move(affinity));
         num_io_pair_affinity_groups_++;
     }
 }
@@ -2351,58 +2364,6 @@ double NonlinearNesterovPlacer::evaluate_checkpoint_cpd_(const PartialPlacement&
                                               placement,
                                               ap_netlist_);
     return pre_cluster_timing_manager_.get_timing_info().least_slack_critical_path().delay() * 1e9;
-}
-
-double NonlinearNesterovPlacer::affinity_kernel_weight_(e_affinity_kind kind) const {
-    switch (kind) {
-        case e_affinity_kind::IO_PAIR:
-            // Legacy I/O pair spring used grad += W * dx (no 1/n). Pack-math kernel
-            // uses W_kernel / n; for n=2 set W_kernel = 2W to preserve strength.
-            return 2. * io_pair_attraction_weight_;
-        case e_affinity_kind::PACK_PATTERN:
-            return pack_pattern_cohesion_weight_;
-        default:
-            VTR_ASSERT_MSG(false, "Unhandled affinity kind");
-            return 0.;
-    }
-}
-
-double NonlinearNesterovPlacer::add_affinity_spring_gradient_(const PartialPlacement& p_placement,
-                                                              std::optional<std::reference_wrapper<PlacementGradient>> grad) const {
-    if (affinity_groups_.empty())
-        return 0.;
-
-    double weighted_penalty = 0.;
-    for (const AffinityGroup& group : affinity_groups_) {
-        VTR_ASSERT_SAFE(group.blocks.size() >= 2);
-        double weight = affinity_kernel_weight_(group.kind);
-        if (weight == 0.)
-            continue;
-
-        double centroid_x = 0.;
-        double centroid_y = 0.;
-        for (APBlockId blk_id : group.blocks) {
-            centroid_x += p_placement.block_x_locs[blk_id];
-            centroid_y += p_placement.block_y_locs[blk_id];
-        }
-
-        double inv_group_size = 1. / static_cast<double>(group.blocks.size());
-        centroid_x *= inv_group_size;
-        centroid_y *= inv_group_size;
-
-        double unweighted = 0.;
-        for (APBlockId blk_id : group.blocks) {
-            double dx = p_placement.block_x_locs[blk_id] - centroid_x;
-            double dy = p_placement.block_y_locs[blk_id] - centroid_y;
-            unweighted += 0.5 * inv_group_size * (dx * dx + dy * dy);
-            if (grad && block_is_moveable_(blk_id)) {
-                grad->get().dx[blk_id] += weight * inv_group_size * dx;
-                grad->get().dy[blk_id] += weight * inv_group_size * dy;
-            }
-        }
-        weighted_penalty += weight * unweighted;
-    }
-    return weighted_penalty;
 }
 
 void NonlinearNesterovPlacer::initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const {
@@ -2458,7 +2419,7 @@ void NonlinearNesterovPlacer::initialize_density_target_cache_(const std::vector
     cached_field_grids_.clear();
     cached_field_grids_.reserve(dimensions.size());
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        size_t min_bins = kExpForceFieldGridStride1 ? std::max(width, height) : kMinFieldGridBins;
+        size_t min_bins = kFieldGridStride1 ? std::max(width, height) : kMinFieldGridBins;
         cached_field_grids_.push_back(build_resource_field_grid(cached_target_capacity_[dim_idx],
                                                                 width,
                                                                 height,
@@ -2695,7 +2656,14 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
     // capacity for this resource. This avoids over-amplifying fractional-capacity
     // bins on heterogeneous FPGA grids.
     double density_energy = 0.;
-    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
+    density_charge_workspace_.resize(dimensions.size());
+    density_layer_charge_workspace_.resize(dimensions.size());
+    density_layer_potential_workspace_.resize(dimensions.size());
+    // One resource dimension's charge -> Poisson solve -> potential/energy. The
+    // body touches only dim_idx-owned state (its own charge/layer workspaces,
+    // potential[dim_idx], density_energies[dim_idx]) plus read-only shared
+    // inputs, so the calls are independent across dimensions.
+    auto solve_dim_field = [&](size_t dim_idx) {
         const ResourceFieldGrid& field_grid = field_grids[dim_idx];
         size_t field_width = field_grid.width;
         size_t field_height = field_grid.height;
@@ -2704,10 +2672,10 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
             return (layer * field_height + y) * field_width + x;
         };
 
-        if (density_charge_workspace_.size() != num_field_bins)
-            density_charge_workspace_.resize(num_field_bins);
-        std::fill(density_charge_workspace_.begin(), density_charge_workspace_.end(), 0.);
-        std::vector<double>& charge = density_charge_workspace_;
+        if (density_charge_workspace_[dim_idx].size() != num_field_bins)
+            density_charge_workspace_[dim_idx].resize(num_field_bins);
+        std::fill(density_charge_workspace_[dim_idx].begin(), density_charge_workspace_[dim_idx].end(), 0.);
+        std::vector<double>& charge = density_charge_workspace_[dim_idx];
         size_t active_bins = 0;
 
         for (size_t idx = 0; idx < num_field_bins; idx++) {
@@ -2732,7 +2700,7 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         }
 
         if (active_bins == 0)
-            continue;
+            return;
 
         // Rebalance charge over the fixed capacity-bin mask. Bilinear deposition
         // conserves total mass, so both the mask and the subtracted amount are
@@ -2742,9 +2710,9 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         // projection already performed by the Poisson solve.
         rebalance_density_charge_on_capacity_sites(charge, field_grid.target_capacity, kEpsilon);
 
-        density_layer_charge_workspace_.resize(field_width * field_height);
-        std::vector<double>& layer_charge = density_layer_charge_workspace_;
-        std::vector<double>& layer_potential = density_layer_potential_workspace_;
+        density_layer_charge_workspace_[dim_idx].resize(field_width * field_height);
+        std::vector<double>& layer_charge = density_layer_charge_workspace_[dim_idx];
+        std::vector<double>& layer_potential = density_layer_potential_workspace_[dim_idx];
         for (size_t layer = 0; layer < num_layers; layer++) {
             for (size_t x = 0; x < field_width; x++) {
                 for (size_t y = 0; y < field_height; y++)
@@ -2764,8 +2732,21 @@ double NonlinearNesterovPlacer::add_density_gradient_(const PartialPlacement& p_
         // the shared density weight, against wirelength.
         for (size_t idx = 0; idx < num_field_bins; idx++)
             density_energies[dim_idx] += 0.5 * charge[idx] * potential[dim_idx][idx];
-        density_energy += density_energies[dim_idx];
+    };
+
+    if (field_thread_pool_ != nullptr && dimensions.size() > 1) {
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++)
+            field_thread_pool_->schedule_work([&solve_dim_field, dim_idx]() { solve_dim_field(dim_idx); });
+        field_thread_pool_->wait_for_all();
+    } else {
+        for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++)
+            solve_dim_field(dim_idx);
     }
+
+    // Final energy reduction in fixed dimension order, outside the parallel
+    // region, so the sum is deterministic and independent of thread count.
+    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++)
+        density_energy += density_energies[dim_idx];
 
     if (!grad)
         return density_energy;
@@ -3124,165 +3105,6 @@ void NonlinearNesterovPlacer::initialize_dynamic_fillers_(const PartialPlacement
     }
 }
 
-std::vector<bool> NonlinearNesterovPlacer::identify_boundary_confined_dims_(const std::vector<PrimitiveVectorDim>& dimensions) const {
-    std::vector<bool> boundary_confined(dimensions.size(), false);
-    if (dimensions.empty())
-        return boundary_confined;
-
-    const FlatPlacementBins& bins = density_manager_->flat_placement_bins();
-    size_t width = device_grid_width_;
-    size_t height = device_grid_height_;
-    size_t num_layers = device_grid_num_layers_;
-
-    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        double target_total = 0.;
-        double boundary_target_total = 0.;
-        for (size_t layer = 0; layer < num_layers; layer++) {
-            for (size_t x = 0; x < width; x++) {
-                for (size_t y = 0; y < height; y++) {
-                    FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, layer);
-                    const vtr::Rect<double>& region = bins.bin_region(bin_id);
-                    double bin_area = std::max(1.0, region.width() * region.height());
-                    double target_density = density_manager_->get_bin_target_density(bin_id);
-                    double target = density_manager_->get_bin_capacity(bin_id).get_dim_val(dimensions[dim_idx])
-                                    * target_density / bin_area;
-                    target_total += target;
-                    bool in_boundary_band = x < kBoundaryConfinedBandTiles
-                                            || y < kBoundaryConfinedBandTiles
-                                            || x + kBoundaryConfinedBandTiles >= width
-                                            || y + kBoundaryConfinedBandTiles >= height;
-                    if (in_boundary_band)
-                        boundary_target_total += target;
-                }
-            }
-        }
-        boundary_confined[dim_idx] = target_total > kEpsilon
-                                     && boundary_target_total >= kBoundaryConfinedCapacityFraction * target_total;
-    }
-
-    if (log_verbosity_ >= 1) {
-        size_t num_boundary_dims = 0;
-        for (bool is_boundary : boundary_confined) {
-            if (is_boundary)
-                num_boundary_dims++;
-        }
-        VTR_LOG("Nonlinear Nesterov boundary-confined resource dims: %zu / %zu (edge band=%zu, threshold=%g).\n",
-                num_boundary_dims,
-                dimensions.size(),
-                kBoundaryConfinedBandTiles,
-                kBoundaryConfinedCapacityFraction);
-    }
-
-    return boundary_confined;
-}
-
-bool NonlinearNesterovPlacer::block_has_boundary_mass_(APBlockId blk_id,
-                                                       const std::vector<PrimitiveVectorDim>& dimensions) const {
-    if (boundary_confined_dims_.size() != dimensions.size())
-        return false;
-
-    PrimitiveVector block_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
-    for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
-        double mass = block_mass.get_dim_val(dimensions[dim_idx]);
-        if (mass != 0. && boundary_confined_dims_[dim_idx])
-            return true;
-    }
-    return false;
-}
-
-void NonlinearNesterovPlacer::update_boundary_net_flags_(const std::vector<PrimitiveVectorDim>& dimensions,
-                                                         const PartialPlacement& seed) {
-    boundary_cohesion_nets_.resize(ap_netlist_.nets().size(), false);
-    std::fill(boundary_cohesion_nets_.begin(), boundary_cohesion_nets_.end(), false);
-    io_chain_cohesion_nets_.resize(ap_netlist_.nets().size(), false);
-    std::fill(io_chain_cohesion_nets_.begin(), io_chain_cohesion_nets_.end(), false);
-    num_io_chain_cohesion_nets_ = 0;
-
-    size_t boundary_blocks = 0;
-    size_t io_chain_blocks = 0;
-    for (APBlockId blk_id : ap_netlist_.blocks()) {
-        bool has_boundary_mass = block_has_boundary_mass_(blk_id, dimensions);
-        if (has_boundary_mass)
-            boundary_blocks++;
-        if (has_boundary_mass && block_is_io_chain_block_(blk_id))
-            io_chain_blocks++;
-    }
-
-    size_t boundary_nets = 0;
-    size_t io_chain_nets = 0;
-    for (APNetId net_id : ap_netlist_.nets()) {
-        if (ap_netlist_.net_is_ignored(net_id))
-            continue;
-        if (ap_netlist_.net_pins(net_id).size() != 2)
-            continue;
-
-        bool has_boundary_endpoint = false;
-        APBlockId first_blk_id = APBlockId::INVALID();
-        APBlockId second_blk_id = APBlockId::INVALID();
-        for (APPinId pin_id : ap_netlist_.net_pins(net_id)) {
-            APBlockId blk_id = ap_netlist_.pin_block(pin_id);
-            if (!first_blk_id.is_valid())
-                first_blk_id = blk_id;
-            else
-                second_blk_id = blk_id;
-            has_boundary_endpoint = has_boundary_endpoint || block_has_boundary_mass_(blk_id, dimensions);
-        }
-        if (!has_boundary_endpoint)
-            continue;
-
-        double seed_hpwl = std::abs(seed.block_x_locs[first_blk_id] - seed.block_x_locs[second_blk_id])
-                           + std::abs(seed.block_y_locs[first_blk_id] - seed.block_y_locs[second_blk_id]);
-        double device_span = std::max<double>(device_grid_width_, device_grid_height_);
-        if (seed_hpwl < kBoundaryNetCohesionMinSeedHpwlFraction * device_span)
-            continue;
-
-        boundary_cohesion_nets_[net_id] = true;
-        boundary_nets++;
-
-        if (block_has_boundary_mass_(first_blk_id, dimensions)
-            && block_has_boundary_mass_(second_blk_id, dimensions)
-            && block_is_io_chain_block_(first_blk_id)
-            && block_is_io_chain_block_(second_blk_id)) {
-            io_chain_cohesion_nets_[net_id] = true;
-            io_chain_nets++;
-        }
-    }
-    num_io_chain_cohesion_nets_ = io_chain_nets;
-
-    if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov boundary-net cohesion: %zu boundary-mass blocks, %zu long two-pin boundary-related nets, weight=%g, min_seed_hpwl_frac=%g.\n",
-                boundary_blocks,
-                boundary_nets,
-                kBoundaryNetCohesionWeight,
-                kBoundaryNetCohesionMinSeedHpwlFraction);
-        VTR_LOG("Nonlinear Nesterov I/O-chain cohesion: %zu boundary I/O-chain blocks, %zu long direct I/O-chain nets, weight=%g.\n",
-                io_chain_blocks,
-                io_chain_nets,
-                io_chain_net_cohesion_weight_);
-    }
-}
-
-bool NonlinearNesterovPlacer::block_is_io_chain_block_(APBlockId blk_id) const {
-    bool saw_atom = false;
-
-    for (APPinId pin_id : ap_netlist_.block_pins(blk_id)) {
-        AtomPinId atom_pin_id = ap_netlist_.pin_atom_pin(pin_id);
-        if (!atom_pin_id.is_valid())
-            continue;
-
-        AtomBlockId atom_blk_id = atom_netlist_.pin_block(atom_pin_id);
-        if (!atom_blk_id.is_valid())
-            continue;
-
-        saw_atom = true;
-        LogicalModelId model_id = atom_netlist_.block_model(atom_blk_id);
-        if (!model_name_is_io_chain(models_.model_name(model_id)))
-            return false;
-    }
-
-    return saw_atom;
-}
-
 void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<PrimitiveVectorDim>& dimensions,
                                                       const std::vector<double>& density_multipliers) {
     block_precond_.resize(ap_netlist_.blocks().size(), 1.0);
@@ -3305,14 +3127,7 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
     }
     // Affinity-spring Hessian diagonal (frozen-centroid approximation; see
     // affinity_spring_curvature() for why the exact (1 - 1/n) factor is not used).
-    for (const AffinityGroup& group : affinity_groups_) {
-        double curvature = affinity_spring_curvature(affinity_kernel_weight_(group.kind),
-                                                     group.blocks.size());
-        if (curvature == 0.)
-            continue;
-        for (APBlockId blk_id : group.blocks)
-            block_precond_[blk_id] += curvature;
-    }
+    affinity_term_->add_curvature(block_precond_);
 
     // Density Hessian diagonal: the per-dimension density weight scales the block
     // mass it deposits into that resource's field. Heavier blocks under a
@@ -3504,155 +3319,6 @@ std::vector<double> NonlinearNesterovPlacer::compute_physical_overflow_ratios_pe
         ratios[dim_idx] = capacity_sum > kEpsilon ? overflow_mass / capacity_sum : 0.;
     }
     return ratios;
-}
-
-void NonlinearNesterovPlacer::initialize_timing_connections_() {
-    timing_connections_.clear();
-    if (!kExpConnectionTiming || !pre_cluster_timing_manager_.is_valid() || !place_delay_model_)
-        return;
-
-    for (APNetId net_id : ap_netlist_.nets()) {
-        if (ap_netlist_.net_is_ignored(net_id))
-            continue;
-        if (ap_netlist_.net_pins(net_id).size() > kConnectionTimingMaxFanout)
-            continue;
-        APPinId driver_pin = ap_netlist_.net_driver(net_id);
-        if (!driver_pin.is_valid())
-            continue;
-        APBlockId driver_blk = ap_netlist_.pin_block(driver_pin);
-        for (APPinId sink_pin : ap_netlist_.net_sinks(net_id)) {
-            APBlockId sink_blk = ap_netlist_.pin_block(sink_pin);
-            if (sink_blk == driver_blk)
-                continue;
-            // At least one end must be movable or the spring can do nothing.
-            if (!block_is_moveable_(driver_blk) && !block_is_moveable_(sink_blk))
-                continue;
-            TimingConnection conn;
-            conn.driver = driver_blk;
-            conn.sink = sink_blk;
-            conn.sink_pin = sink_pin;
-            timing_connections_.push_back(conn);
-        }
-    }
-    if (log_verbosity_ >= 1)
-        VTR_LOG("Nonlinear Nesterov connection timing: %zu driver->sink connections (fanout <= %zu).\n",
-                timing_connections_.size(), kConnectionTimingMaxFanout);
-}
-
-void NonlinearNesterovPlacer::update_timing_connection_weights_(const PartialPlacement& legal_anchor) {
-    if (timing_connections_.empty())
-        return;
-
-    size_t width = device_grid_width_;
-    size_t height = device_grid_height_;
-    auto tile_of = [&](APBlockId blk) {
-        int x = static_cast<int>(std::floor(std::clamp(legal_anchor.block_x_locs[blk], 0., width - kDeviceBoundaryEpsilon)));
-        int y = static_cast<int>(std::floor(std::clamp(legal_anchor.block_y_locs[blk], 0., height - kDeviceBoundaryEpsilon)));
-        return t_physical_tile_loc(x, y, 0);
-    };
-    // Central difference of the delay model in one dimension, mirroring b2b: step
-    // one tile toward and away from the driver, average the two differences, and
-    // fall back to whichever side is valid when the other leaves the device or
-    // hits the router-lookahead no-path sentinel.
-    auto central_difference = [&](const t_physical_tile_loc& d, const t_physical_tile_loc& s, double cur, bool x_dim) {
-        int delta = x_dim ? (s.x - d.x) : (s.y - d.y);
-        int step = delta >= 0 ? 1 : -1;
-        t_physical_tile_loc fwd = s, bwd = s;
-        if (x_dim) {
-            fwd.x += step;
-            bwd.x -= step;
-        } else {
-            fwd.y += step;
-            bwd.y -= step;
-        }
-        int fpos = x_dim ? fwd.x : fwd.y, bpos = x_dim ? bwd.x : bwd.y;
-        int maxv = static_cast<int>(x_dim ? width : height);
-        double fd = 0., bd = 0.;
-        bool fv = false, bv = false;
-        if (fpos >= 0 && fpos < maxv) {
-            double v = place_delay_model_->delay(d, 0, fwd, 0);
-            if (v < ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
-                fd = v - cur;
-                fv = true;
-            }
-        }
-        if (bpos >= 0 && bpos < maxv) {
-            double v = place_delay_model_->delay(d, 0, bwd, 0);
-            if (v < ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
-                bd = cur - v;
-                bv = true;
-            }
-        }
-        if (!fv && !bv) return 0.;
-        if (!fv) return bd;
-        if (!bv) return fd;
-        return 0.5 * (fd + bd);
-    };
-
-    const auto& timing_info = pre_cluster_timing_manager_.get_timing_info();
-    double sum_w = 0.;
-    size_t active = 0;
-    for (TimingConnection& conn : timing_connections_) {
-        t_physical_tile_loc d = tile_of(conn.driver);
-        t_physical_tile_loc s = tile_of(conn.sink);
-        double cur = place_delay_model_->delay(d, 0, s, 0);
-        if (cur >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL) {
-            conn.weight_x = conn.weight_y = 0.;
-            continue;
-        }
-        // Delay can fall with distance (longer wire segments), so the derivative
-        // may be negative. A negative spring weight would be unbounded below;
-        // clamp at zero exactly as b2b does.
-        double dx = std::max(0., central_difference(d, s, cur, true));
-        double dy = std::max(0., central_difference(d, s, cur, false));
-        // Normalize away the time units by the cost of leaving the driver tile.
-        auto step_of = [](int v, int maxv) { return v < maxv - 1 ? 1 : (v > 0 ? -1 : 0); };
-        t_physical_tile_loc nx(d.x + step_of(d.x, static_cast<int>(width)), d.y, d.layer_num);
-        t_physical_tile_loc ny(d.x, d.y + step_of(d.y, static_cast<int>(height)), d.layer_num);
-        double norm_x = place_delay_model_->delay(d, 0, nx, 0);
-        double norm_y = place_delay_model_->delay(d, 0, ny, 0);
-        if (norm_x >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL || norm_x <= 0.) norm_x = 1.;
-        if (norm_y >= ROUTER_LOOKAHEAD_NO_PATH_SENTINEL || norm_y <= 0.) norm_y = 1.;
-        AtomPinId atom_pin = ap_netlist_.pin_atom_pin(conn.sink_pin);
-        double crit = atom_pin.is_valid() ? timing_info.setup_pin_criticality(atom_pin) : 0.;
-        double scale = kConnectionTimingWeight * effective_timing_tradeoff_ * (1.0 + crit);
-        conn.weight_x = scale * dx / norm_x;
-        conn.weight_y = scale * dy / norm_y;
-        if (conn.weight_x > 0. || conn.weight_y > 0.) {
-            active++;
-            sum_w += 0.5 * (conn.weight_x + conn.weight_y);
-        }
-    }
-    if (log_verbosity_ >= 1 && !timing_connections_.empty())
-        VTR_LOG("  Nesterov connection timing: %zu/%zu active, mean weight %.4g\n",
-                active, timing_connections_.size(), active ? sum_w / active : 0.);
-}
-
-double NonlinearNesterovPlacer::add_timing_gradient_(const PartialPlacement& p_placement,
-                                                     std::optional<std::reference_wrapper<PlacementGradient>> grad) const {
-    if (timing_connections_.empty())
-        return 0.;
-    double energy = 0.;
-    for (const TimingConnection& conn : timing_connections_) {
-        if (conn.weight_x <= 0. && conn.weight_y <= 0.)
-            continue;
-        double dx = p_placement.block_x_locs[conn.driver] - p_placement.block_x_locs[conn.sink];
-        double dy = p_placement.block_y_locs[conn.driver] - p_placement.block_y_locs[conn.sink];
-        energy += 0.5 * (conn.weight_x * dx * dx + conn.weight_y * dy * dy);
-        if (grad) {
-            double gx = conn.weight_x * dx;
-            double gy = conn.weight_y * dy;
-            if (block_is_moveable_(conn.driver)) {
-                grad->get().dx[conn.driver] += gx;
-                grad->get().dy[conn.driver] += gy;
-            }
-            if (block_is_moveable_(conn.sink)) {
-                grad->get().dx[conn.sink] -= gx;
-                grad->get().dy[conn.sink] -= gy;
-            }
-        }
-    }
-    return energy;
 }
 
 double NonlinearNesterovPlacer::add_proximity_gradient_(const PartialPlacement& p_placement,
