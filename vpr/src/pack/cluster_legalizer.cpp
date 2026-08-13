@@ -1037,6 +1037,14 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                         packing_signature_tree_->add_lcn(primitives_list_[i], atom_block_id);
                     }
                 }
+
+                // If the PST crosses the LCN threshold limit, then it is apparent
+                // that memory is growing unbounded and the circuit is not
+                // benefiting from memoization, so we free the PST and continue as
+                // if it was never enabled.
+                if (packing_signature_tree_->lcn_threshold_limit_reached()) {
+                    packing_signature_tree_.reset();
+                }
             }
 
             // Determine whether a legal routing exists for this cluster.
@@ -1448,9 +1456,11 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     atom_pb_lookup_ = AtomPBBimap();
     intra_lb_pb_pin_lookup_ = IntraLbPbPinLookup(g_vpr_ctx.device().logical_block_types);
 
-    packing_signature_tree_ = (memoize_cluster_packings)
-                                  ? std::optional<PackingSignatureTree>(PackingSignatureTree())
-                                  : std::nullopt;
+    if (memoize_cluster_packings) {
+        packing_signature_tree_.emplace(prepacker.molecules().size());
+    } else {
+        packing_signature_tree_.reset();
+    }
 
     init_feedback_pin_sets();
 }
