@@ -28,6 +28,7 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
+#include "vtr_memory.h"
 
 void ClusterPinCounter::allocate_pin_count_state(const t_pb* pb) {
     VTR_ASSERT(pb != nullptr);
@@ -69,18 +70,35 @@ void ClusterPinCounter::deallocate_pin_count_state_recursive(const t_pb* pb) {
     }
 }
 
+void ClusterPinCounter::clean_state() {
+    vtr::release_memory(per_pb_state_);
+    vtr::release_memory(input_mark_record_);
+    vtr::release_memory(output_mark_record_);
+    vtr::release_memory(per_pb_state_journal_);
+    vtr::release_memory(mark_record_journal_);
+    vtr::release_memory(root_input_class_size_snapshot_);
+    vtr::release_memory(root_output_class_size_snapshot_);
+}
+
 size_t ClusterPinCounter::input_size(const t_pb* pb, size_t class_id) const {
+    VTR_ASSERT_SAFE(pb != nullptr);
+    VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
     const PerPbState& state = per_pb_state_.at(pb);
     return state.input_pin_class_net_counts.at(class_id).size();
 }
 
 size_t ClusterPinCounter::output_size(const t_pb* pb, size_t class_id) const {
+    VTR_ASSERT_SAFE(pb != nullptr);
+    VTR_ASSERT_SAFE(per_pb_state_.count(pb) > 0);
     const PerPbState& state = per_pb_state_.at(pb);
     return state.output_pin_class_net_counts.at(class_id).size();
 }
 
 void ClusterPinCounter::snapshot_root_class_sizes(const t_pb* root) {
     VTR_ASSERT(root != nullptr && root->is_root());
+    VTR_ASSERT_SAFE_MSG(per_pb_state_journal_.empty() && mark_record_journal_.empty(),
+                        "Both journals must be empty at the start of a candidate check "
+                        "(every previous check must be committed or rolled back before starting a new one).");
     const PerPbState& state = per_pb_state_.at(root);
 
     root_input_class_size_snapshot_.resize(state.input_pin_class_net_counts.size());
@@ -700,6 +718,9 @@ void ClusterPinCounter::apply_molecule_delta(PackMoleculeId candidate_id,
                                              const Prepacker& prepacker,
                                              const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                              const AtomPBBimap& atom_to_pb) {
+    VTR_ASSERT_SAFE_MSG(per_pb_state_journal_.empty() && mark_record_journal_.empty(),
+                        "Both journals must be empty at the start of a candidate check "
+                        "(apply_molecule_delta should run once per candidate check; the previous check must be committed or rolled back first).");
     const t_pack_molecule& molecule = prepacker.get_molecule(candidate_id);
     const AtomNetlist& netlist = g_vpr_ctx.atom().netlist();
 

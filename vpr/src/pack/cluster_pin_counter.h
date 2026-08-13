@@ -63,9 +63,37 @@ struct t_pb_graph_pin;
  * apply_molecule_delta(candidate), and check_pins_used(root, max_ext_pin_util).
  * On accept, call commit_check() to discard the journals. On reject, call
  * rollback_check() to replay the journals in reverse. When the cluster's
- * pin counter is no longer needed, call deallocate_pin_count_state_recursive(root).
+ * pin counter is no longer needed, call deallocate_pin_count_state_recursive(root)
+ * to erase per-pb entries, then clean_state() to release the remaining memory.
  * Both destroy_cluster and clean_cluster do this; destroy_cluster additionally
  * frees the pbs, so the deallocation must happen before that.
+ *
+ * Usage per cluster (pseudo-code):
+ *
+ *   // Setup: allocate state for the root; internal pbs are allocated
+ *   // lazily as atoms first descend into them.
+ *   pin_counter.allocate_pin_count_state(root);
+ *
+ *   // Per candidate molecule.
+ *   for each candidate:
+ *       pin_counter.snapshot_root_class_sizes(root);
+ *       pin_counter.apply_molecule_delta(candidate, ...);
+ *       pin_counter.check_pins_used(root, max_ext_pin_util);
+ *       // Accept the candidate only if the pin feasibility check passed
+ *       // AND all other cluster addition checks (cluster router, etc.)
+ *       // passed. Otherwise reject.
+ *       if candidate_accepted:
+ *           pin_counter.commit_check();
+ *       else:
+ *           pin_counter.rollback_check();
+ *           // (deallocate_pin_count_state_recursive is also called during
+ *           //  rejection cleanup, from revert_place_atom_block and cleanup_pb,
+ *           //  for any pb that a failed candidate speculatively added.)
+ *
+ *   // Teardown: release state before the cluster's pbs are freed.
+ *   // Both are called by ClusterLegalizer::clean_cluster and destroy_cluster.
+ *   pin_counter.deallocate_pin_count_state_recursive(root);
+ *   pin_counter.clean_state();
  *
  * How the incremental algorithm works (apply_molecule_delta): adding a
  * candidate molecule can only change three groups of marks in the pin state.
@@ -122,6 +150,14 @@ class ClusterPinCounter {
      * @param pb  Root of the subtree to erase state for.
      */
     void deallocate_pin_count_state_recursive(const t_pb* pb);
+
+    /**
+     * @brief Release the memory held by the pin counter's internal state
+     *        that is no longer needed after the cluster is finalized
+     *        (ClusterLegalizer::clean_cluster) or destroyed
+     *        (ClusterLegalizer::destroy_cluster).
+     */
+    void clean_state();
 
     /// @brief Number of distinct nets currently marked in the given input pin class of given pb.
     size_t input_size(const t_pb* pb, size_t class_id) const;

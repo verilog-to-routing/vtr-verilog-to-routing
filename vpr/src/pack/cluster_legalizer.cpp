@@ -1289,6 +1289,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     } else {
         // Delete the new_cluster.
         new_cluster.pin_counter.deallocate_pin_count_state_recursive(new_cluster.pb);
+        new_cluster.pin_counter.clean_state();
         free_pb(new_cluster.pb, mutable_atom_pb_lookup());
         delete new_cluster.pb;
         free_cluster_placement_stats(new_cluster.placement_stats);
@@ -1351,6 +1352,7 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     // Free the rest of the cluster data.
     //  Casting things to nullptr for safety just in case someone is trying to use it.
     cluster.pin_counter.deallocate_pin_count_state_recursive(cluster.pb);
+    cluster.pin_counter.clean_state();
     free_pb(cluster.pb, mutable_atom_pb_lookup());
     delete cluster.pb;
     cluster.pb = nullptr;
@@ -1399,6 +1401,7 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
                && "Should not clean an already cleaned cluster!");
     // Free the pb stats.
     cluster.pin_counter.deallocate_pin_count_state_recursive(cluster.pb);
+    cluster.pin_counter.clean_state();
     free_pb_stats_recursive(cluster.pb);
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.
