@@ -62,8 +62,9 @@ vtr::vector_map<Id, Id> compress_ids(const vtr::vector_map<Id, Id>& ids) {
  * If it is an invalid ID, the element in values is dropped.
  * Otherwise the element is moved to the new ID location.
  *
- * 'values' is non-const so std::move actually moves (const& would silently
- * degrade to copy). Callers overwrite 'values' with the return value.
+ * Moves elements out of 'values'. After this returns, entries of 'values'
+ * that were mapped through 'id_map' are in a valid but unspecified state
+ * and must not be read.
  */
 template<typename Id, typename T>
 vtr::vector_map<Id, T> clean_and_reorder_values(vtr::vector_map<Id, T>& values, const vtr::vector_map<Id, Id>& id_map) {
