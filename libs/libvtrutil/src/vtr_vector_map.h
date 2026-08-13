@@ -148,10 +148,18 @@ class vector_map {
     }
 
     ///@brief Extends the container by inserting new elements, effectively increasing the container size by the number of elements inserted.
-    ///
-    /// V is taken by value (not const V) so std::move below actually moves
-    /// (const V would silently degrade to copy for rvalue callers).
-    void insert(const K key, V value) {
+    void insert(const K key, const V& value) {
+        if (size_t(key) >= vec_.size()) {
+            //Resize so key is in range
+            vec_.resize(size_t(key) + 1, Sentinel::INVALID());
+        }
+
+        //Insert the value
+        operator[](key) = value;
+    }
+
+    ///@brief Extends the container by inserting new elements, effectively increasing the container size by the number of elements inserted, but possibly using move semantics.
+    void insert(const K key, V&& value) {
         if (size_t(key) >= vec_.size()) {
             //Resize so key is in range
             vec_.resize(size_t(key) + 1, Sentinel::INVALID());
@@ -162,7 +170,10 @@ class vector_map {
     }
 
     ///@brief Inserts the new key value pair in the container
-    void update(const K key, V value) { insert(key, std::move(value)); }
+    void update(const K key, const V& value) { insert(key, value); }
+
+    ///@brief Inserts the new key value pair in the container, but possibly using move semantics.
+    void update(const K key, V&& value) { insert(key, std::move(value)); }
 
     ///@brief Swap (this enables std::swap via ADL)
     friend void swap(vector_map<K, V>& x, vector_map<K, V>& y) {
