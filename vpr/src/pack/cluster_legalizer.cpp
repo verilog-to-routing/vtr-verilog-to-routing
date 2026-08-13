@@ -759,10 +759,10 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
  * non-primitive pbs.
  *
  * The cleaning itself includes deleting all child pbs, resetting mode of the
- * pb and also freeing its name. This prepares the pb for another round of
- * molecule packing tryout.
+ * pb, freeing its name, and dropping the pin counter's state for the pbs being
+ * freed. This prepares the pb for another round of molecule packing tryout.
  */
-static bool cleanup_pb(t_pb* pb) {
+static bool cleanup_pb(t_pb* pb, ClusterPinCounter& pin_counter) {
     bool can_free = true;
 
     /* Recursively check if there are any children with already assigned atoms */
@@ -787,7 +787,7 @@ static bool cleanup_pb(t_pb* pb) {
 
                     /* Non-primitive, recurse */
                     else {
-                        if (!cleanup_pb(pb_child)) {
+                        if (!cleanup_pb(pb_child, pin_counter)) {
                             can_free = false;
                         }
                     }
@@ -799,6 +799,11 @@ static bool cleanup_pb(t_pb* pb) {
         if (can_free) {
             for (int i = 0; i < mode->num_pb_type_children; ++i) {
                 if (pb->child_pbs[i] != nullptr) {
+                    // Drop counter state for each pb that is going to be freed
+                    // so per_pb_state_ does not retain dangling pointer keys.
+                    for (int j = 0; j < mode->pb_type_children[i].num_pb; ++j) {
+                        pin_counter.deallocate_pin_count_state_recursive(&pb->child_pbs[i][j]);
+                    }
                     delete[] pb->child_pbs[i];
                 }
             }
@@ -968,11 +973,21 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             candidate_molecule_added_to_cluster = true;
 
             if (enable_pin_feasibility_filter_) {
-                // try_update_lookahead_pins_used requires the candidate molecule to
-                // already be in cluster.molecules, which is satisfied by the push above.
-                cluster.pin_counter.reset_lookahead();
-                cluster.pin_counter.try_update_lookahead_pins_used(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
-                if (!cluster.pin_counter.check_lookahead_pins_used(cluster.pb, max_external_pin_util)) {
+                // Speculatively add this candidate to the pin counter and check feasibility.
+                // Every mutation is recorded. On accept we commit and discard the record.
+                // On reject we rollback and replay the record in reverse. The root class
+                // sizes are snapshotted first so check_pins_used can raise the root's
+                // effective class supplies to at least those snapshotted sizes. Otherwise
+                // a seed molecule packed with FULL_EXTERNAL_PIN_UTIL could push a class
+                // above the smaller scaled supply and every subsequent check would fail.
+                cluster.pin_counter.snapshot_root_class_sizes(cluster.pb);
+                cluster.pin_counter.apply_molecule_delta(molecule_id, prepacker_, atom_cluster_, atom_pb_lookup());
+#ifdef VTR_ASSERT_DEBUG_ENABLED
+                // Verify apply_molecule_delta against a full recompute over cluster.molecules.
+                // Note: Expensive verification, do not keep in release.
+                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+#endif
+                if (!cluster.pin_counter.check_pins_used(cluster.pb, max_external_pin_util)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                     block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
                 } else {
@@ -1134,8 +1149,21 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                     }
                 }
 
-                // Update the lookahead pins used.
-                cluster.pin_counter.commit_lookahead();
+                // Accept the pin state produced during this check. The record
+                // is discarded and the current state becomes the accepted
+                // baseline for the next candidate.
+                cluster.pin_counter.commit_check();
+#ifdef VTR_ASSERT_DEBUG_ENABLED
+                // Recompute the pin state from scratch over the accepted
+                // molecules and assert it matches the committed state. Only
+                // meaningful when the filter is enabled: with the filter off,
+                // apply_molecule_delta never ran so per_pb_state_ is empty
+                // and the recompute would falsely report divergence.
+                // Note: This is expensive verification, do not keep in release.
+                if (enable_pin_feasibility_filter_) {
+                    cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+                }
+#endif
             }
         }
 
@@ -1145,6 +1173,14 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 VTR_ASSERT_SAFE(cluster.molecules.back() == molecule_id);
                 cluster.molecules.pop_back();
             }
+
+            // Rollback the pin state mutations recorded during this check. Must
+            // run before revert_place_atom_block and cleanup_pb free any pbs,
+            // because the record stores raw pb pointers that rollback needs to
+            // look up in per_pb_state_. If apply_molecule_delta never ran on
+            // this path (e.g. failure during try_place_atom_block_rec), the
+            // record is empty and this is a no-op.
+            cluster.pin_counter.rollback_check();
 
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
@@ -1167,8 +1203,23 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
             /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
              * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
-             * their modes reset. This task is performed by the cleanup_pb() function below. */
-            cleanup_pb(cluster.pb);
+             * their modes reset. cleanup_pb also deallocates pin counter state for the pbs it frees;
+             * otherwise per_pb_state_ would keep dangling pointers as keys. */
+            cleanup_pb(cluster.pb, cluster.pin_counter);
+
+#ifdef VTR_ASSERT_DEBUG_ENABLED
+            // Verify pin counter after rollback and cleanup. Every per_pb_state_
+            // key must point to a pb reachable from cluster.pb. The state must
+            // match a recompute over cluster.molecules (candidate popped above).
+            // Only meaningful when the pin feasibility filter is enabled; with
+            // the filter off, apply_molecule_delta never ran so the incremental
+            // state was never maintained and the recompute would diverge.
+            // Note: Expensive verification, do not keep in release.
+            cluster.pin_counter.assert_all_pbs_reachable_from(cluster.pb);
+            if (enable_pin_feasibility_filter_) {
+                cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
+            }
+#endif
 
             // Move failed primitive that is inflight to the tried map.
             cluster.placement_stats->move_inflight_to_tried();
@@ -1238,6 +1289,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     } else {
         // Delete the new_cluster.
         new_cluster.pin_counter.deallocate_pin_count_state_recursive(new_cluster.pb);
+        new_cluster.pin_counter.clean_state();
         free_pb(new_cluster.pb, mutable_atom_pb_lookup());
         delete new_cluster.pb;
         free_cluster_placement_stats(new_cluster.placement_stats);
@@ -1300,6 +1352,7 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     // Free the rest of the cluster data.
     //  Casting things to nullptr for safety just in case someone is trying to use it.
     cluster.pin_counter.deallocate_pin_count_state_recursive(cluster.pb);
+    cluster.pin_counter.clean_state();
     free_pb(cluster.pb, mutable_atom_pb_lookup());
     delete cluster.pb;
     cluster.pb = nullptr;
@@ -1348,6 +1401,7 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
                && "Should not clean an already cleaned cluster!");
     // Free the pb stats.
     cluster.pin_counter.deallocate_pin_count_state_recursive(cluster.pb);
+    cluster.pin_counter.clean_state();
     free_pb_stats_recursive(cluster.pb);
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.
@@ -1607,7 +1661,7 @@ size_t ClusterLegalizer::get_num_cluster_inputs_available(LegalizationClusterId 
     // Count the number of inputs available per pin class.
     size_t inputs_avail = 0;
     for (size_t class_id = 0; class_id < cluster.pb->pb_graph_node->input_pin_class_sizes.size(); class_id++) {
-        inputs_avail += cluster.pin_counter.committed_input_size(cluster.pb, class_id);
+        inputs_avail += cluster.pin_counter.input_size(cluster.pb, class_id);
     }
 
     return inputs_avail;
