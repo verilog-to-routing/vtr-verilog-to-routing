@@ -12,7 +12,12 @@
  * memoization of redundant legality checks done during detailed packing which
  * can dominate VPR runtime for complex logic block architectures.
  *
- * TODO Cite "Deja-Vu Packing" FCCM paper following publication
+ * This implementation and its results are described in:
+ *
+ * M. Liebster, A. Mohaghegh and A. Boutros,
+ * "Déjà Vu Packing: Optimizing FPGA Logic Clustering Runtime via Pattern Memoization,"
+ * in 2026 IEEE 34th Annual International Symposium on Field-Programmable Custom Computing Machines (FCCM),
+ * doi: 10.1109/FCCM68464.2026.00016.
  *
  * Theory of Operation
  * -------------------
