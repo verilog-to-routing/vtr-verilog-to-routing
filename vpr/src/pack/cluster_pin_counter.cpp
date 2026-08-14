@@ -685,7 +685,7 @@ bool ClusterPinCounter::check_pins_used(t_pb* cur_pb, t_ext_pin_util max_externa
     for (const TouchedKey& key : touched) {
         if (key.pb->pb_graph_node->pb_type->is_primitive())
             continue;
-        if (key.pb->name == nullptr)
+        if (key.pb->name.empty())
             continue;
 
         if (!class_is_feasible(*this, key.pb, key.is_input, key.class_id,
@@ -849,7 +849,7 @@ static void compare_class_maps_or_die(const t_pb* pb,
         VPR_FATAL_ERROR(VPR_ERROR_PACK,
                         "ClusterPinCounter state diverged from full recompute at pb '%s', "
                         "%s class %zu:%s\n",
-                        pb->name ? pb->name : "<unnamed>",
+                        !pb->name.empty() ? pb->name.c_str() : "<unnamed>",
                         is_input ? "input" : "output",
                         class_id,
                         diff.c_str());
