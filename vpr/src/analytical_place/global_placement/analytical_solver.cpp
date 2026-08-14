@@ -636,6 +636,12 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         }
     }
 
+    // Pre-compute the timing connection weights. They are constant for the whole
+    // B2B loop below, so this avoids recomputing them on every bound update.
+    if (pre_cluster_timing_manager_.is_valid() && iteration != 0) {
+        compute_timing_conn_weights();
+    }
+
     // Run the B2B solver using p_placement as a starting point.
     b2b_solve_loop(iteration, p_placement);
 
@@ -1353,56 +1359,19 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
             for (APPinId sink_pin : netlist_.net_sinks(net_id)) {
                 APBlockId sink_blk = netlist_.pin_block(sink_pin);
 
-                // Get the instantaneous derivative of delay at the given distance
-                // from driver to sink. This will provide a value which is higher
-                // if the tradeoff between delay and wirelength is better, and
-                // lower when the tradeoff between delay and wirelength is worse.
-                auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
-                                                                              sink_blk);
-
-                // Since the delay between two blocks may not monotonically increase
-                // (it may go down with distance due to different length wires), it
-                // is possible for the derivative of delay to be negative. The weight
-                // terms in this formulation should not be negative to prevent infinite
-                // answers. To prevent this, clamp the derivative to 0.
-                // TODO: If this is negative, it means that the sink should try to move
-                //       away from the driver. Perhaps add an anchor point to pull the
-                //       sink away.
-                d_delay_x = std::max(d_delay_x, 0.0);
-                d_delay_y = std::max(d_delay_y, 0.0);
-                d_delay_z = std::max(d_delay_z, 0.0);
-
-                // The units for delay are in seconds; however the units for
-                // the wirelength term are in tiles. To ensure the units match,
-                // we need to normalize away the time units. Get normalization
-                // factors to remove the time units.
-                auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
-
-                // Get the criticality of this timing edge from driver to sink.
-                double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
-
-                // Set the weight of the connection from driver to sink equal to:
-                //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
-                // The intuition is that we want the solver to shrink the distance
-                // from drivers to sinks (which would improve timing) for edges
-                // with the best tradeoff between delay and wire, with a focus
-                // on the more critical edges.
-                // The ap_timing_tradeoff serves to trade-off between the wirelength
-                // and timing net weights. The net weights are the general net weights
-                // based on prior knowledge about the nets.
-                double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
+                const auto& [timing_conn_w_x, timing_conn_w_y, timing_conn_w_z] = timing_conn_weights_[sink_pin];
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm,
+                                         2 /*num_pins*/, timing_conn_w_x,
                                          p_placement.block_x_locs, triplet_list_x, b_x);
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
+                                         2 /*num_pins*/, timing_conn_w_y,
                                          p_placement.block_y_locs, triplet_list_y, b_y);
 
                 if (is_multi_die()) {
                     add_connection_to_system(driver_blk, sink_blk,
-                                             2 /*num_pins*/, timing_net_w * d_delay_z * delay_z_norm,
+                                             2 /*num_pins*/, timing_conn_w_z,
                                              p_placement.block_layer_nums, triplet_list_z, b_z);
                 }
             }
