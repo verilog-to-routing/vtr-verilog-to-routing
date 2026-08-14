@@ -4,6 +4,7 @@
  * patterns.
  */
 
+#include <string>
 #include <vector>
 
 struct t_pb_type;
@@ -89,7 +90,7 @@ struct t_pack_pattern_connections {
  *                          net (gnd/vdd)  [0...num_of_chains][0...num_of_tie_offs]
  */
 struct t_pack_patterns {
-    char* name;
+    std::string name;
     int index;
     float base_cost;
 
@@ -103,7 +104,6 @@ struct t_pack_patterns {
 
     // default constructor initializing to an invalid pack pattern
     t_pack_patterns() noexcept {
-        name = nullptr;
         index = -1;
         root_block = nullptr;
         base_cost = 0;
