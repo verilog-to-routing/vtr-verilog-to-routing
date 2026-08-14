@@ -249,7 +249,7 @@ typedef std::tuple<t_primitive_num, std::string, BitIndex> PstPin;
 
 /// @brief Hash function definition for PstPin.
 struct PstPinHash {
-    size_t operator()(PstPin pin) const noexcept {
+    size_t operator()(const PstPin& pin) const noexcept {
         size_t hash = 0;
         vtr::hash_combine(hash, std::get<0>(pin));
         vtr::hash_combine(hash, std::get<1>(pin));
@@ -358,10 +358,10 @@ struct LocationAndConnectivityNode {
         : primitive_num(-1) {}
 
     ~LocationAndConnectivityNode() {
-        for (auto lcn : child_lcn) {
+        for (LocationAndConnectivityNode* lcn : child_lcn) {
             delete lcn;
         }
-        for (auto ecn : child_ecn) {
+        for (ExternalConnectivityNode* ecn : child_ecn) {
             delete ecn;
         }
     }
@@ -386,7 +386,7 @@ class PackingSignatureTree {
         , checkpoint_cursor_(nullptr) {}
 
     ~PackingSignatureTree() {
-        for (auto lcn : branches_) {
+        for (LocationAndConnectivityNode* lcn : branches_) {
             delete lcn;
         }
     }
@@ -461,14 +461,10 @@ class PackingSignatureTree {
     std::unordered_map<PstPin, PstPinId, PstPinHash> pin_mappings_;
 
     /// @brief Find (or create) and return PstPinId for provided PstPin.
-    inline PstPinId get_pin_mapping(PstPin pin) {
-        auto got = pin_mappings_.find(pin);
-        if (got == pin_mappings_.end()) {
-            PstPinId pin_id = PstPinId(pin_mappings_.size());
-            pin_mappings_[pin] = pin_id;
-            return pin_id;
-        }
-        return got->second;
+    inline PstPinId get_pin_mapping(const PstPin& pin) {
+        // try_emplace only inserts (with the next sequential ID) if pin is
+        // not already in the map.
+        return pin_mappings_.try_emplace(pin, PstPinId(pin_mappings_.size())).first->second;
     }
 
     /// @brief Tracks current number of external sinks for a given source pin.
