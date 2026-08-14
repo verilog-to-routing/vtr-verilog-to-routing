@@ -1206,6 +1206,66 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
     return std::make_tuple(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y, 1.0 / norm_fac_inv_z);
 }
 
+void B2BSolver::compute_timing_conn_weights() {
+    timing_conn_weights_.resize(netlist_.pins().size());
+
+    for (APNetId net_id : netlist_.nets()) {
+        if (netlist_.net_is_ignored(net_id))
+            continue;
+
+        APPinId driver_pin = netlist_.net_driver(net_id);
+        APBlockId driver_blk = netlist_.pin_block(driver_pin);
+
+        // The normalization factors depend only on the driver block, so they
+        // are computed once for the whole net rather than once per sink.
+        auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
+
+        for (APPinId sink_pin : netlist_.net_sinks(net_id)) {
+            APBlockId sink_blk = netlist_.pin_block(sink_pin);
+
+            // Get the instantaneous derivative of delay at the given distance
+            // from driver to sink. This will provide a value which is higher
+            // if the tradeoff between delay and wirelength is better, and
+            // lower when the tradeoff between delay and wirelength is worse.
+            auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
+                                                                          sink_blk);
+
+            // Since the delay between two blocks may not monotonically increase
+            // (it may go down with distance due to different length wires), it
+            // is possible for the derivative of delay to be negative. The weight
+            // terms in this formulation should not be negative to prevent infinite
+            // answers. To prevent this, clamp the derivative to 0.
+            // TODO: If this is negative, it means that the sink should try to move
+            //       away from the driver. Perhaps add an anchor point to pull the
+            //       sink away.
+            d_delay_x = std::max(d_delay_x, 0.0);
+            d_delay_y = std::max(d_delay_y, 0.0);
+            d_delay_z = std::max(d_delay_z, 0.0);
+
+            // Get the criticality of this timing edge from driver to sink.
+            double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
+
+            // Set the weight of the connection from driver to sink equal to:
+            //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
+            // The intuition is that we want the solver to shrink the distance
+            // from drivers to sinks (which would improve timing) for edges
+            // with the best tradeoff between delay and wire, with a focus
+            // on the more critical edges.
+            // The ap_timing_tradeoff serves to trade-off between the wirelength
+            // and timing net weights. The net weights are the general net weights
+            // based on prior knowledge about the nets.
+            double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
+
+            // The units for delay are in seconds; however the units for
+            // the wirelength term are in tiles. To ensure the units match,
+            // the normalization factors above remove the time units.
+            timing_conn_weights_[sink_pin] = std::make_tuple(timing_net_w * d_delay_x * delay_x_norm,
+                                                             timing_net_w * d_delay_y * delay_y_norm,
+                                                             timing_net_w * d_delay_z * delay_z_norm);
+        }
+    }
+}
+
 void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned iteration) {
     // Reset the linear system
     A_sparse_x = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
