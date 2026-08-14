@@ -713,6 +713,19 @@ class B2BSolver : public AnalyticalSolver {
     std::tuple<double, double, double> get_delay_normalization_facs(APBlockId driver_blk);
 
     /**
+     * @brief Pre-computes the timing connection weight of every sink pin into
+     *        timing_conn_weights_.
+     *
+     * The weights depend only on the legalized placement and the timing
+     * information, both fixed for the duration of a solve() call, so they are
+     * computed once here instead of once per bound update.
+     *
+     * Must be called after the legalized placement has been stored into
+     * block_*_locs_legalized and before the B2B loop is run.
+     */
+    void compute_timing_conn_weights();
+
+    /**
      * @brief Initializes the linear system with the given partial placement.
      *
      * Blocks will be connected to the bounding blocks of their nets using
@@ -803,6 +816,11 @@ class B2BSolver : public AnalyticalSolver {
     vtr::vector<APBlockId, double> block_y_locs_legalized;
     // NOTE: For speed, this vector is unused if a device has only one die.
     vtr::vector<APBlockId, double> block_z_locs_legalized;
+
+    /// @brief The timing connection weight of each sink pin in the netlist, in
+    ///        the x, y, and z dimensions respectively. Recomputed once per
+    ///        solve() call by compute_timing_conn_weights().
+    vtr::vector<APPinId, std::tuple<double, double, double>> timing_conn_weights_;
 
     /// @brief The total number of CG iterations that this solver has performed
     ///        so far. This can be a useful metric for the amount of work the
