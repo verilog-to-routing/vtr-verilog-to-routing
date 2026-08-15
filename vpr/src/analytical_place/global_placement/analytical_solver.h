@@ -643,9 +643,10 @@ class B2BSolver : public AnalyticalSolver {
      *      The number of pins in the hypernet connecting the two blocks.
      *  @param blk_locs
      *      The location of all blocks in a given dimension.
-     *  @param triplet_list
-     *      The triplet list which will be used to construct the connectivity
-     *      matrix for this dimension.
+     *  @param triplet_list The triplet list which will be used to construct
+     *      the off-diagonal entries of the connectivity matrix for this dimension.
+     *  @param matrix_diagonal Dense accumulator (indexed by row) for the
+     *      diagonal entries of the connectivity matrix for this dimension.
      *  @param b
      *      The constant vector for this dimension.
      */
@@ -655,6 +656,7 @@ class B2BSolver : public AnalyticalSolver {
                                   double net_w,
                                   const vtr::vector<APBlockId, double>& blk_locs,
                                   std::vector<Eigen::Triplet<double>>& triplet_list,
+                                  std::vector<double>& matrix_diagonal,
                                   Eigen::VectorXd& b);
 
     enum class CentralDifferenceDim {
