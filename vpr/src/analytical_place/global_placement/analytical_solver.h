@@ -513,6 +513,13 @@ class B2BSolver : public AnalyticalSolver {
     // TODO: Should this be a proportion of the design size?
     static constexpr unsigned max_cg_iterations_ = 100;
 
+    /// @brief The relative residual (|Ax - b| / |b|) at which the CG solver is
+    ///        considered converged and stops iterating. Eigen's default
+    ///        tolerance is machine epsilon, which CG rarely reaches in
+    ///        practice; at that default, every solve runs all
+    ///        max_cg_iterations_ iterations, long after the solution has become
+    ///        accurate enough for global placement to use.
+    /// Increasing this number will save runtime at the expense of quality.
     static constexpr double cg_convergence_tolerance_ = 1e-5;
 
     // The following constants are used to configure the anchor weighting.
