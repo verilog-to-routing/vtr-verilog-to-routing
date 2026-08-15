@@ -820,6 +820,7 @@ Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
 
     // Solve.
     cg.setMaxIterations(max_cg_iterations_);
+    cg.setTolerance(cg_convergence_tolerance_);
     Eigen::VectorXd solution = cg.solveWithGuess(b, guess);
 
     // Collect some metrics.

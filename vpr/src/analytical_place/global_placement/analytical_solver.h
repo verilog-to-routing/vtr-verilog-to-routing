@@ -513,6 +513,8 @@ class B2BSolver : public AnalyticalSolver {
     // TODO: Should this be a proportion of the design size?
     static constexpr unsigned max_cg_iterations_ = 100;
 
+    static constexpr double cg_convergence_tolerance_ = 1e-5;
+
     // The following constants are used to configure the anchor weighting.
     // The weights of anchors grow exponentially each iteration by the following
     // function:
