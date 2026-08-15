@@ -733,8 +733,6 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         // Set up the linear system, including anchor points.
         float build_linear_system_start_time = runtime_timer.elapsed_sec();
         init_linear_system(p_placement, iteration);
-        if (iteration != 0)
-            update_linear_system_with_anchors(iteration);
         total_time_spent_building_linear_system_ += runtime_timer.elapsed_sec() - build_linear_system_start_time;
         VTR_ASSERT_SAFE_MSG(!b_x.hasNaN(), "b_x has NaN!");
         VTR_ASSERT_SAFE_MSG(!b_y.hasNaN(), "b_y has NaN!");
@@ -1392,6 +1390,10 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         }
     }
 
+    if (iteration != 0) {
+        update_linear_system_with_anchors(iteration, matrix_diagonal_x, matrix_diagonal_y, matrix_diagonal_z);
+    }
+
     // Append the accumulated diagonal entries as one triplet per row.
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         if (matrix_diagonal_x[row_id_idx] != 0.0) {
@@ -1415,7 +1417,10 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
 
 // This function adds anchors for legalized solution. Anchors are treated as fixed node,
 // each connecting to a movable node. Number of nodes in a anchor net is always 2.
-void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
+void B2BSolver::update_linear_system_with_anchors(unsigned iteration,
+                                                  std::vector<double>& matrix_diagonal_x,
+                                                  std::vector<double>& matrix_diagonal_y,
+                                                  std::vector<double>& matrix_diagonal_z) {
     VTR_ASSERT_SAFE_MSG(iteration != 0,
                         "no fixed solution to anchor to in the first iteration");
     // Get the anchor weight based on the iteration number. We want the anchor
@@ -1429,14 +1434,14 @@ void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
         APBlockId blk_id = row_id_to_blk_id_[row_id];
         double pseudo_w_x = coeff_pseudo_anchor * 2.0;
         double pseudo_w_y = coeff_pseudo_anchor * 2.0;
-        A_sparse_x.coeffRef(row_id_idx, row_id_idx) += pseudo_w_x;
-        A_sparse_y.coeffRef(row_id_idx, row_id_idx) += pseudo_w_y;
+        matrix_diagonal_x[row_id_idx] += pseudo_w_x;
+        matrix_diagonal_y[row_id_idx] += pseudo_w_y;
         b_x(row_id_idx) += pseudo_w_x * block_x_locs_legalized[blk_id];
         b_y(row_id_idx) += pseudo_w_y * block_y_locs_legalized[blk_id];
 
         if (is_multi_die()) {
             double pseudo_w_z = coeff_pseudo_anchor * 2.0;
-            A_sparse_z.coeffRef(row_id_idx, row_id_idx) += pseudo_w_z;
+            matrix_diagonal_z[row_id_idx] += pseudo_w_z;
             b_z(row_id_idx) += pseudo_w_z * block_z_locs_legalized[blk_id];
         }
     }

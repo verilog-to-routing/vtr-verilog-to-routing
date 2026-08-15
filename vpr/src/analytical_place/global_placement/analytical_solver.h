@@ -745,15 +745,23 @@ class B2BSolver : public AnalyticalSolver {
      * approximates a linear equation.
      *
      * This will set the connectivity matrices (A) and constant vectors (b) to
-     * be solved by B2B.
+     * be solved by B2B. After the first iteration, this also folds the
+     * anchor-block connections into the system.
      */
     void init_linear_system(PartialPlacement& p_placement, unsigned iteration);
 
     /**
      * @brief Updates the linear system with anchor-blocks from the legalized
      *        solution.
+     *
+     * Anchors connect each moveable block to a fixed point, so they only add
+     * to the matrix diagonals (accumulated in the given dense vectors) and
+     * the constant vectors.
      */
-    void update_linear_system_with_anchors(unsigned iteration);
+    void update_linear_system_with_anchors(unsigned iteration,
+                                           std::vector<double>& matrix_diagonal_x,
+                                           std::vector<double>& matrix_diagonal_y,
+                                           std::vector<double>& matrix_diagonal_z);
 
     /**
      * @brief Solves the linear system of equations using the connectivity
