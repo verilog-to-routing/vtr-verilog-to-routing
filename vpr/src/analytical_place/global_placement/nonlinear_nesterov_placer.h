@@ -369,6 +369,12 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     vtr::vector<APNetId, bool> io_pair_locality_nets_;    ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
     std::unique_ptr<NetCohesion> cohesion_;               ///< Structural cohesion net classes and their weight multipliers.
     std::unique_ptr<AffinitySpringTerm> affinity_term_;   ///< Affinity-spring objective term (groups + energy/gradient/curvature).
+
+    /// @brief Barzilai-Borwein step policy, fixed at @ref kBarzilaiBorweinStep.
+    ///
+    /// The `false` path (monotone backtracking line search) is retained but is
+    /// currently unreachable; it is the fallback the BB step replaced.
+    bool bb_step_ = true;
     size_t num_io_pair_affinity_groups_ = 0;              ///< Count of IO_PAIR affinity groups.
     size_t num_pack_pattern_affinity_groups_ = 0;         ///< Count of PACK_PATTERN affinity groups.
     std::vector<double> filler_unit_mass_;                ///< [dim] density mass per dynamic filler.

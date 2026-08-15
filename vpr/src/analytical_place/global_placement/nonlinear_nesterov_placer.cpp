@@ -54,7 +54,7 @@ namespace {
  * epochs. Keep this value synchronized with the configuration line emitted by
  * optimize_from_seed_ so run metadata identifies the tested policy directly.
  */
-constexpr size_t kMaxNesterovIterations = 145;
+constexpr size_t kMaxNesterovIterations = 400;
 
 /**
  * @brief Number of optimization/legalization epochs in the nonlinear Nesterov placer.
@@ -397,31 +397,6 @@ constexpr double kMaxPinDensityInflation = 2.0;
 // --------------------------------------------------------------------------
 
 /**
- * @brief How the Nesterov epoch loop is seeded.
- *
- * B2B_ITERATED is the shipped behaviour. CENTRE_SPREAD is an ablation switch,
- * flipped only in an experiment build slot, that answers whether the
- * electrostatic formulation can place on its own or merely refines B2B. Keep the
- * default here; the experiment changes it in its own slot so the main tree stays
- * comparable to every prior run.
- */
-enum class e_warmstart_mode {
-    B2B_ITERATED,  ///< Iterate B2B solve + partial legalize until seed HPWL plateaus.
-    CENTRE_SPREAD, ///< ePlace-style: all movable blocks at the device centre, no B2B.
-};
-constexpr e_warmstart_mode kWarmStartMode = e_warmstart_mode::B2B_ITERATED;
-
-/**
- * @brief Symmetry-breaking radius, in tiles, for the CENTRE_SPREAD ablation.
- *
- * With every block at exactly the same point each net's WA wirelength gradient is
- * identically zero, so the optimizer has no descent direction until the density
- * force alone separates them. A sub-tile deterministic offset avoids that without
- * meaningfully seeding the placement.
- */
-constexpr double kCentreSpreadJitter = 0.5;
-
-/**
  * @brief Minimum B2B solve+legalize cycles used to build the warm-start seed.
  *
  * The nonlinear Nesterov placer seeds itself from a wirelength-aware B2B/QP solve
@@ -721,6 +696,8 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     affinity_term_ = std::make_unique<AffinitySpringTerm>(ap_netlist_,
                                                           io_pair_attraction_weight_,
                                                           pack_pattern_cohesion_weight_);
+
+    bb_step_ = kBarzilaiBorweinStep;
     num_io_pair_affinity_groups_ = 0;
     num_pack_pattern_affinity_groups_ = 0;
     initialize_pack_pattern_affinity_groups_(prepacker);
@@ -840,31 +817,6 @@ PartialPlacement NonlinearNesterovPlacer::initialize_placement_() {
     // optimizer to do. Snap fixed blocks into device bounds and return.
     if (moveable_blocks_.empty()) {
         project_placement_(p_placement);
-        return p_placement;
-    }
-
-    // Ablation: seed every movable block at the device centre instead of from a
-    // B2B solve, the ePlace/elfPlace initialization. This answers whether the
-    // electrostatic stage can place on its own or only refines what B2B already
-    // found -- a real question, since post-GP CPD measures 1.0046 against B2B.
-    // It is NOT a runtime play: the B2B warm start is only ~1.3% of total flow
-    // (median over 67 circuits), so removing it cannot pay for extra epochs.
-    if (kWarmStartMode == e_warmstart_mode::CENTRE_SPREAD) {
-        double cx = 0.5 * static_cast<double>(device_grid_width_);
-        double cy = 0.5 * static_cast<double>(device_grid_height_);
-        // A deterministic sub-tile lattice offset breaks the symmetry that would
-        // otherwise leave every WA wirelength gradient exactly zero at the centre.
-        size_t index = 0;
-        for (APBlockId blk_id : moveable_blocks_) {
-            double phase = static_cast<double>(index++);
-            p_placement.block_x_locs[blk_id] = cx + kCentreSpreadJitter * std::cos(phase);
-            p_placement.block_y_locs[blk_id] = cy + kCentreSpreadJitter * std::sin(phase);
-        }
-        project_placement_(p_placement);
-        if (log_verbosity_ >= 1) {
-            VTR_LOG("Nonlinear Nesterov warm start: ABLATION centre-spread (no B2B), seed HPWL %g.\n",
-                    p_placement.get_hpwl(ap_netlist_));
-        }
         return p_placement;
     }
 
@@ -1164,24 +1116,17 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     std::vector<double> checkpoint_hpwls;
     std::vector<double> checkpoint_cpds_ns;
     std::vector<int> checkpoint_sources;
-    // The centre-spread ablation's seed is every movable block piled on one point.
-    // Its HPWL is near zero for the degenerate reason that all pins are coincident,
-    // so offering it as a checkpoint candidate lets the selector pick the pile over
-    // any real placement -- which measures the selector, not the optimizer. Exclude
-    // it so the ablation actually tests whether the epoch loop can place unaided.
-    if (kWarmStartMode != e_warmstart_mode::CENTRE_SPREAD) {
-        checkpoints.push_back(seed);
-        checkpoint_hpwls.push_back(seed.get_hpwl(ap_netlist_));
-        {
-            vtr::Timer timing_update_timer;
-            checkpoint_cpds_ns.push_back(evaluate_checkpoint_cpd_(seed));
-            timing_update_time_sec += timing_update_timer.elapsed_sec();
-        }
-        checkpoint_sources.push_back(-1); // -1 = warm-start seed, otherwise epoch index.
-        VTR_ASSERT(checkpoints.size() == checkpoint_hpwls.size());
-        VTR_ASSERT(checkpoints.size() == checkpoint_cpds_ns.size());
-        VTR_ASSERT(checkpoints.size() == checkpoint_sources.size());
+    checkpoints.push_back(seed);
+    checkpoint_hpwls.push_back(seed.get_hpwl(ap_netlist_));
+    {
+        vtr::Timer timing_update_timer;
+        checkpoint_cpds_ns.push_back(evaluate_checkpoint_cpd_(seed));
+        timing_update_time_sec += timing_update_timer.elapsed_sec();
     }
+    checkpoint_sources.push_back(-1); // -1 = warm-start seed, otherwise epoch index.
+    VTR_ASSERT(checkpoints.size() == checkpoint_hpwls.size());
+    VTR_ASSERT(checkpoints.size() == checkpoint_cpds_ns.size());
+    VTR_ASSERT(checkpoints.size() == checkpoint_sources.size());
     PartialPlacement legal_anchor(ap_netlist_);
     PartialPlacement anchor_target(ap_netlist_);
     PartialPlacement y_placement(ap_netlist_);
@@ -1197,7 +1142,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
     VTR_LOG("Nonlinear Nesterov configuration: iterations=%zu epochs=%zu BB=%s resource_grid_stride1=%s.\n",
             kMaxNesterovIterations,
             num_epochs,
-            kBarzilaiBorweinStep ? "on" : "off",
+            bb_step_ ? "on" : "off",
             kFieldGridStride1 ? "on" : "off");
     auto apply_continuation_schedule = [&](double schedule) {
         current_gamma_fraction_ = kGammaStartFraction
@@ -1355,7 +1300,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             ObjectiveValue next_obj;
             bool accepted = false;
             bool gradient_restart = false;
-            if (kBarzilaiBorweinStep) {
+            if (bb_step_) {
                 // Preconditioned gradient: the space gradient_step_ actually
                 // moves in, and therefore the space the secant estimate must be
                 // taken in.
@@ -1444,7 +1389,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
 
             // Monotone backtracking line search: halve the step until the objective
             // does not increase (or the minimum step is reached).
-            while (!kBarzilaiBorweinStep && accepted_step >= kMinStepSize) {
+            while (!bb_step_ && accepted_step >= kMinStepSize) {
                 gradient_step_(y_placement, grad, y_fillers, filler_grad, accepted_step, next, next_fillers);
                 num_obj_evals++;
                 next_obj = evaluate_objective_(next,
@@ -1507,7 +1452,7 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             // The accepted point is retained so the short epoch keeps progressing.
             // Under BB the test is the gradient one computed above; otherwise it
             // is the objective comparison the line search already paid for.
-            bool objective_restart = kBarzilaiBorweinStep
+            bool objective_restart = bb_step_
                                          ? gradient_restart
                                          : next_obj.total > current_obj.total;
             if (objective_restart)
@@ -1538,13 +1483,13 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
             // Under BB no objective was evaluated at `next`, so next_obj is
             // unset; leaving current_obj alone keeps it meaningful (it is the
             // epoch-start value) rather than silently zeroing it.
-            if (!kBarzilaiBorweinStep)
+            if (!bb_step_)
                 current_obj = next_obj;
             num_accepted_iters++;
 
             // BB sets the next step from the secant estimate, so the geometric
             // growth that fed the line search would only fight the growth clamp.
-            step_size = kBarzilaiBorweinStep
+            step_size = bb_step_
                             ? accepted_step
                             : std::min(device_span, accepted_step * kStepGrowthRate);
 
@@ -1981,6 +1926,7 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
     return smooth_wirelength;
 }
 
+
 void NonlinearNesterovPlacer::update_timing_net_weights_() {
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);
 
@@ -2003,8 +1949,8 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
             AtomNetId atom_net_id = ap_netlist_.net_atom_net(net_id);
             VTR_ASSERT_SAFE(atom_net_id.is_valid());
 
-            // Interpolate between unit weight and net criticality.
             double crit = pre_cluster_timing_manager_.calc_net_setup_criticality(atom_net_id, atom_netlist_);
+            // Interpolate between unit weight and net criticality.
             weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
         }
 
