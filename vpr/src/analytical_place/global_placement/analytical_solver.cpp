@@ -820,11 +820,12 @@ Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
 
     // Solve.
     cg.setMaxIterations(max_cg_iterations_);
+    cg.setTolerance(cg_convergence_tolerance_);
     Eigen::VectorXd solution = cg.solveWithGuess(b, guess);
 
     // Collect some metrics.
     total_num_cg_iters_ += cg.iterations();
-    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: %zu\n", cg.iterations());
+    VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG iter: %zu (rel. residual: %g)\n", cg.iterations(), cg.error());
 
     return solution;
 }
