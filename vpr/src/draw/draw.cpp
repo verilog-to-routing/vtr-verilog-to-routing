@@ -100,7 +100,15 @@ static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
 
-static bool decide_reuse_geometry(ezgl::view_change_ctx& ctx);
+/**
+ * @brief A callback function that tells the ezgl renderer if the cached geometry can be reused for a camera-only redraw.
+ *
+ * @param reason Reason that cuased the view change.
+ * @param g ezgl::renderer.
+ * 
+ * @return True if cached geometry can be reused; false if geometry should be regenerated.
+ */
+static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
 
 /**
  * @brief Generalized callback function to setup the UI when the stage changes.
@@ -328,49 +336,54 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 
     if (draw_state->auto_proceed) {
-        //Automatically exit the event loop, so user's don't need to manually click proceed
+        // Automatically exit the event loop, so user's don't need to manually click proceed
 
-        //Avoid trying to repeatedly exit (which would cause errors in GTK)
+        // Avoid trying to repeatedly exit (which would cause errors in GTK)
         draw_state->auto_proceed = false;
 
-        application->quit(); //Ensure we leave the event loop
+        application->quit(); // Ensure we leave the event loop
     }
 }
 
-static bool decide_reuse_geometry(ezgl::view_change_ctx& ctx) {
+static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    double pixels_per_world_unit = 1 / ctx.world_units_per_pixel;
+    double world_units_per_pixel = g->world_units_per_pixel();
 
-    VTR_ASSERT_SAFE(ctx.reason != ezgl::view_change_reason::setup);
-
-    if(ctx.reason == ezgl::view_change_reason::pan) {
+    if (reason == ezgl::view_change_reason::pan) {
         return true;
-    } else if(ctx.reason == ezgl::view_change_reason::zoom_in) {
-        if(draw_state->show_rr && draw_state->enable_decluttering) {
-            if(draw_state->declutter_rr && pixels_per_world_unit >= MIN_PIXELS_PER_CHAN_NODE) {
-                return false;
-            }
-        }
-
-        if(draw_state->show_blk_internal && !(draw_state->all_internals_drawn)) {
+    } else if (reason == ezgl::view_change_reason::zoom_in || reason == ezgl::view_change_reason::pan_zoom_in) {
+        if(draw_state->show_rr
+            && draw_state->enable_rr_decluttering
+            && draw_state->rr_decluttered
+            && world_units_per_pixel <= MAX_WORLD_UNITS_PER_PIXEL)
             return false;
-        }
 
-        if(draw_state->show_crit_path && draw_state->show_crit_path_flylines && draw_state->show_crit_path_delays) {
+        if(draw_state->show_blk_internal
+            && !(draw_state->all_internals_drawn))
             return false;
-        }
+
+        if(draw_state->show_crit_path
+            && draw_state->show_crit_path_flylines
+            && draw_state->show_crit_path_delays)
+            return false;
     }
-    // ctx.reason == ezgl::view_change_reason::zoom_out
-    else {
-        if(draw_state->show_rr && draw_state->enable_decluttering) {
-            if(!(draw_state->declutter_rr) && pixels_per_world_unit < MIN_PIXELS_PER_CHAN_NODE) {
-                return false;
-            }
-        }
-
-        if(draw_state->show_blk_internal && !(draw_state->only_clbs_drawn)) {
+    else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
+        if(draw_state->show_rr
+            && draw_state->enable_rr_decluttering
+            && !(draw_state->rr_decluttered)
+            && world_units_per_pixel > MAX_WORLD_UNITS_PER_PIXEL)
             return false;
-        }
+
+        if(draw_state->show_blk_internal
+            && !(draw_state->only_clbs_drawn))
+            return false;
+
+        if(draw_state->show_crit_path
+            && draw_state->show_crit_path_flylines
+            && draw_state->show_crit_path_delays)
+            return false;
+    } else {
+        VTR_ASSERT_MSG(false, "Invalid ezgl::view_change_reason provided. Performing a camera-only redraw.");
     }
     return true;
 }
@@ -488,8 +501,8 @@ void update_screen(ScreenUpdatePriority priority,
                     rt = ezgl::renderer_type::immediate;
                 }
 
-                // Set the callback that helps rhi_backend::redraw_camera_only() determine if
-                // the full redraw can be replaced by a camera transformation.
+                // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
+                // the full redraw can be replaced by a camera-only redraw.
                 if (rt == ezgl::renderer_type::rhi) {
                     canvas->set_decide_reuse_geometry_callback(decide_reuse_geometry);
                 }

@@ -218,17 +218,17 @@ struct t_draw_state {
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
     /**
-     * @brief This enables level of detail drawing
+     * @brief Enables level of detail drawing for routing resources
      * 
-     * (e.g. stop drawing RR nodes, dynamically reduce number of block internals
-     *  and critical path delays when zoomed out).
+     * When enabled, level of detail algorithms check if the current zoom level is too high to draw routing resources meaningfully.
+     * If so, the "rr_decluttered" flag is set and the drawing of all routing resources will be skipped,
      * 
      * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
      */
-    bool enable_decluttering = true;
+    bool enable_rr_decluttering = true;
 
-    ///@brief This dynamically sets whether to stop drawing RR nodes based on the current zoom level.
-    bool declutter_rr = false;
+    ///@brief Tells the program that the drawing of routing resources is toggled but still skipped because the zoom level is too high.
+    bool rr_decluttered = false;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;
