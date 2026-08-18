@@ -7,6 +7,7 @@
  */
 
 #include "analytical_solver.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdio>
 #include <limits>
@@ -600,9 +601,7 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
             block_x_locs_solved = p_placement.block_x_locs;
             block_y_locs_solved = p_placement.block_y_locs;
             if (is_multi_die()) {
-                std::fill(p_placement.block_layer_nums.begin(),
-                          p_placement.block_layer_nums.end(),
-                          (device_grid_num_layers_ - 1) / 2.0);
+                std::ranges::fill(p_placement.block_layer_nums, (device_grid_num_layers_ - 1) / 2.0);
                 block_z_locs_solved = p_placement.block_layer_nums;
             }
             return;
