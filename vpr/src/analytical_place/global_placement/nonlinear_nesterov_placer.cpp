@@ -50,9 +50,9 @@ namespace {
 /**
  * @brief Maximum number of accelerated first-order iterations.
  *
- * The measured `bb145` configuration uses 145 iterations split over five
- * epochs. Keep this value synchronized with the configuration line emitted by
- * optimize_from_seed_ so run metadata identifies the tested policy directly.
+ * Split evenly across @ref kNesterovEpochs epochs. Keep synchronized with the
+ * configuration line emitted by optimize_from_seed_ so run metadata identifies
+ * the policy in use.
  */
 constexpr size_t kMaxNesterovIterations = 400;
 
@@ -659,6 +659,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , place_delay_model_(place_delay_model)
     , models_(models)
     , net_weights_(ap_netlist.nets().size(), 1.0)
+    , bb_step_(kBarzilaiBorweinStep)
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
@@ -697,7 +698,6 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
                                                           io_pair_attraction_weight_,
                                                           pack_pattern_cohesion_weight_);
 
-    bb_step_ = kBarzilaiBorweinStep;
     num_io_pair_affinity_groups_ = 0;
     num_pack_pattern_affinity_groups_ = 0;
     initialize_pack_pattern_affinity_groups_(prepacker);
@@ -1255,13 +1255,19 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
         double max_lookahead_displacement = 0.;
         double max_iterate_displacement = 0.;
         double final_projected_gradient_max = std::numeric_limits<double>::quiet_NaN();
-        ObjectiveValue current_obj = evaluate_objective_(current,
-                                                         density_multipliers,
-                                                         std::cref(proximity_anchor),
-                                                         proximity_weight,
-                                                         std::nullopt,
-                                                         current_fillers,
-                                                         std::nullopt);
+        // Consumed only by the line search, which reads and reassigns it in the
+        // `!bb_step_` branches below. Evaluating it under the BB step would cost
+        // a Poisson solve per resource dimension, per epoch, for a dead value.
+        ObjectiveValue current_obj;
+        if (!bb_step_) {
+            current_obj = evaluate_objective_(current,
+                                              density_multipliers,
+                                              std::cref(proximity_anchor),
+                                              proximity_weight,
+                                              std::nullopt,
+                                              current_fillers,
+                                              std::nullopt);
+        }
 
         // Nesterov accelerated-gradient inner solve. The gradient is taken at the
         // extrapolated look-ahead point y_placement; a backtracking line search
@@ -1289,8 +1295,15 @@ PartialPlacement NonlinearNesterovPlacer::optimize_from_seed_(const PartialPlace
                                                        y_fillers,
                                                        std::ref(filler_grad));
             double grad_norm_sq = gradient_norm_squared_(grad) + filler_gradient_norm_squared_(filler_grad);
-            if (!std::isfinite(y_obj.total) || !std::isfinite(grad_norm_sq))
+            if (!std::isfinite(y_obj.total) || !std::isfinite(grad_norm_sq)) {
+                // The BB step accepts unconditionally, so without this a
+                // non-finite look-ahead gradient would be turned straight into
+                // an accepted step; project_placement_ would not catch it,
+                // since std::clamp(NaN, lo, hi) is NaN.
                 num_nonfinite_observations++;
+                convergence_stop_reason = "nonfinite";
+                break;
+            }
             if (grad_norm_sq < kEpsilon) {
                 convergence_stop_reason = "zero-gradient";
                 break;
@@ -1925,7 +1938,6 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
 
     return smooth_wirelength;
 }
-
 
 void NonlinearNesterovPlacer::update_timing_net_weights_() {
     std::fill(net_weights_.begin(), net_weights_.end(), 1.0);

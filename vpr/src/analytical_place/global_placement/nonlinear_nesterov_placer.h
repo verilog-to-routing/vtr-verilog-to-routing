@@ -374,11 +374,13 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     ///
     /// The `false` path (monotone backtracking line search) is retained but is
     /// currently unreachable; it is the fallback the BB step replaced.
-    bool bb_step_ = true;
-    size_t num_io_pair_affinity_groups_ = 0;              ///< Count of IO_PAIR affinity groups.
-    size_t num_pack_pattern_affinity_groups_ = 0;         ///< Count of PACK_PATTERN affinity groups.
-    std::vector<double> filler_unit_mass_;                ///< [dim] density mass per dynamic filler.
-    std::vector<double> filler_precond_;                  ///< [dim] density-only filler preconditioner.
+    /// Set once in the constructor from @ref kBarzilaiBorweinStep, which is the
+    /// single source of truth for this policy.
+    bool bb_step_;
+    size_t num_io_pair_affinity_groups_ = 0;      ///< Count of IO_PAIR affinity groups.
+    size_t num_pack_pattern_affinity_groups_ = 0; ///< Count of PACK_PATTERN affinity groups.
+    std::vector<double> filler_unit_mass_;        ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;          ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
     // reused across every objective evaluation instead of being rebuilt.
