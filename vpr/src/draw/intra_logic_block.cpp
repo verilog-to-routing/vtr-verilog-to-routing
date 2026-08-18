@@ -213,6 +213,9 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
     draw_state->all_internals_drawn = true;
     draw_state->only_clbs_drawn = true;
+    draw_state->all_internals_drawn_level = 0;
+    draw_state->only_clbs_drawn_level = std::numeric_limits<double>::max();
+    
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
@@ -253,6 +256,12 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                 }
             }
         }
+    }
+    if (draw_state->all_internals_drawn) {
+        draw_state->all_internals_drawn_level = g->world_units_per_pixel();
+    }
+    if (draw_state->only_clbs_drawn) {
+        draw_state->only_clbs_drawn_level = g->world_units_per_pixel();
     }
 }
 #endif /* NO_GRAPHICS */
@@ -445,7 +454,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         return false;
     }
 
-    if (pb_type->depth > 0) {
+    if (draw_state->only_clbs_drawn && pb_type->depth > 0) {
        draw_state->only_clbs_drawn = false;
     }
 

@@ -359,7 +359,8 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
             return false;
 
         if(draw_state->show_blk_internal
-            && !(draw_state->all_internals_drawn))
+            && !(draw_state->all_internals_drawn)
+            && world_units_per_pixel < draw_state->only_clbs_drawn_level)
             return false;
 
         if(draw_state->show_crit_path
@@ -375,7 +376,8 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
             return false;
 
         if(draw_state->show_blk_internal
-            && !(draw_state->only_clbs_drawn))
+            && !(draw_state->only_clbs_drawn)
+            && world_units_per_pixel > draw_state->all_internals_drawn_level)
             return false;
 
         if(draw_state->show_crit_path
@@ -863,17 +865,6 @@ void set_initial_world_ap() {
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
-}
-
-double get_pixels_per_world_unit(ezgl::renderer* g) {
-    double world_width = g->get_visible_world().width();
-    double screen_width = g->get_visible_screen().width();
-    // If using this function for decluttering purpose:
-    // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
-    // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
-    // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
-    // returned by this function is below 1, it means that the channel nodes are blended together and should be decluttered.
-    return screen_width / world_width;
 }
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
