@@ -869,8 +869,7 @@ static bool cleanup_pb(t_pb* pb) {
 e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_id,
                                                         LegalizationCluster& cluster,
                                                         LegalizationClusterId cluster_id,
-                                                        const t_ext_pin_util& max_external_pin_util,
-                                                        bool bypass_pin_feasibility_filter) {
+                                                        const t_ext_pin_util& max_external_pin_util) {
     // Try to pack the molecule into a cluster with this pb type.
 
     // Safety debugs.
@@ -970,11 +969,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // relaxed below for molecules of the cluster's own relative placement
     // group during re-pack iterations.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
-    // When true, the speculative pin feasibility filter is skipped for this
-    // molecule. Set below (only for molecules of the cluster's own relative
-    // placement group during re-pack iterations) when the caller requested
-    // the bypass.
-    bool skip_pin_feasibility_filter = false;
     if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
         for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
             if (!atom_blk_id.is_valid())
@@ -1036,14 +1030,14 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
             // The speculative pin feasibility filter is order-dependent and
             // can falsely reject group molecules, so relax their pin
-            // utilization target to the physical maximum, and skip the filter
-            // entirely when the caller requests it (last resort; intra-lb
-            // routing at cluster close then decides).
+            // utilization target to the physical maximum. That is as far as
+            // the relaxation can legitimately go, and the filter itself must
+            // never be skipped: reset_lookahead() +
+            // try_update_lookahead_pins_used() are what rebuild the lookahead
+            // state, and commit_lookahead() swaps that state in assuming it
+            // was rebuilt. Skipping them committed stale pin usage.
             if (molecule_in_cluster_group) {
                 effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
-                if (bypass_pin_feasibility_filter) {
-                    skip_pin_feasibility_filter = true;
-                }
             }
         }
     }
@@ -1102,7 +1096,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             cluster.molecules.push_back(molecule_id);
             candidate_molecule_added_to_cluster = true;
 
-            if (enable_pin_feasibility_filter_ && !skip_pin_feasibility_filter) {
+            if (enable_pin_feasibility_filter_) {
                 // try_update_lookahead_pins_used requires the candidate molecule to
                 // already be in cluster.molecules, which is satisfied by the push above.
                 cluster.pin_counter.reset_lookahead();
@@ -1394,8 +1388,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
 }
 
 e_block_pack_status ClusterLegalizer::add_mol_to_cluster(PackMoleculeId molecule_id,
-                                                         LegalizationClusterId cluster_id,
-                                                         bool bypass_pin_feasibility_filter) {
+                                                         LegalizationClusterId cluster_id) {
     // Safety asserts to make sure the inputs are valid.
     VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
     VTR_ASSERT(legalization_cluster_ids_[cluster_id].is_valid() && "Cannot add to a destroyed cluster");
@@ -1414,8 +1407,7 @@ e_block_pack_status ClusterLegalizer::add_mol_to_cluster(PackMoleculeId molecule
     e_block_pack_status pack_status = try_pack_molecule(molecule_id,
                                                         cluster,
                                                         cluster_id,
-                                                        target_ext_pin_util,
-                                                        bypass_pin_feasibility_filter);
+                                                        target_ext_pin_util);
 
     // If the packing was successful, set the molecules' cluster to this one.
     if (pack_status == e_block_pack_status::BLK_PASSED)
