@@ -4,14 +4,19 @@
 Mosaic is the third synthesis flow for VTR, it is currently under developlment. The name Mosaic refers to the use of templates for techmapping.
 
 ## 1. Building Mosaic
-You need a built VTR tree first such that `build/bin/yosys-config` exists. The mosaic plugin only needs Yosys headers and does not link any VTR library. CMake root is `mosaic/` (build tree `mosaic/build/`). Mosaic sources live in `mosaic/src/`; `mosaic/wildebeest/` is a small object library pulled into that build.
+The default VTR build includes mosaic. Sources live in `mosaic/src/`; `mosaic/wildebeest/` is a small object library pulled into that build.
 
 ```shell
 make -j$(nproc)
-bash mosaic/build_mosaic.sh
 ```
 
-The install script builds `mosaic.so` under `mosaic/build/` and installs it into the VTR Yosys tree at `build/share/yosys/plugins/mosaic.so`. Yosys loads it with `plugin -i mosaic`.
+The plugin is at `build/share/yosys/plugins/mosaic.so`. Yosys loads it with `plugin -i mosaic`.
+
+`WITH_MOSAIC` (default ON) and `WITH_PARMYS` (default ON) select the Yosys plugins. Yosys is built when either is on. At least one must be on.
+
+```shell
+make CMAKE_PARAMS="-DWITH_MOSAIC=OFF" -j$(nproc)
+```
 
 
 
@@ -148,9 +153,9 @@ Common knobs in `arch_config.tcl`:
 Shared ABC scripts live under `template/abc/`. Rebuild them with `template/abc/build_delay_scr.py` when the upstream delay script changes. These run inside Yosys during mosaic synthesis, not as the external VTR ABC stage.
 
 ### 3g. Layout
-- `mosaic/wildebeest/` is a small wildebeest-originated object library (mainly `max_level` in `clk_domains.cc`, including the `-vtr_arch` patch), not the plugin CMake root.
+- `mosaic/wildebeest/` is a small wildebeest-originated object library (mainly `max_level` in `clk_domains.cc`, including the `-vtr_arch` patch).
 - `mosaic/src/` holds mosaic-only sources. Architecture scanning lives in `vtr_arch_info.*` and `vtr_arch_clocks.*`. The Yosys pass is `vtr_arch_rules.cc`. Rule generators live under `arch_rule_gen/` with the public API in `arch_rule_gen.h`.
-- `mosaic/build_mosaic.sh` configures, builds, and installs the plugin.
+- `build/share/yosys/plugins/mosaic.so` is the installed plugin (`WITH_MOSAIC`, default ON).
 - `vtr_flow/misc/mosaic/template/` is the shared synthesis support tree (`synthesis.tcl`, `fix_blif_for_vpr.py`, `rules/`, `abc/`, `lut_models/`).
 - `vtr_flow/misc/mosaic/<arch_xml_stem>/` is optional per-architecture policy (`arch_config.tcl`, optional `rules/` overlay).
 - `vtr_flow/scripts/python_libs/vtr/mosaic/` is the VTR flow stage that copies the template, fills tokens, and runs Yosys.
@@ -189,7 +194,7 @@ To compare Parmys and Mosaic hardblock BLIF model names on one circuit:
 python3 mosaic/scripts/compare_frontend_blif_models.py --run --circuit vtr_flow/benchmarks/verilog/diffeq1.v --arch vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
 ```
 
-The `RegressionWithMosaic` job in `.github/workflows/test.yml` builds mosaic on top of the release build artifact and runs the basic suite.
+The `RegressionWithMosaic` job in `.github/workflows/test.yml` runs the basic suite against the release build.
 
 Optional maintainer checks:
 

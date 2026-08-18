@@ -54,9 +54,31 @@ option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
 option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
-# Allow the user to enable building Yosys
+# Yosys plugins. Yosys is built when WITH_PARMYS or WITH_MOSAIC is on.
+# At least one of those options must be on (not enforced on Windows).
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
+option(WITH_MOSAIC "Enable mosaic yosys plugin as an alternative synthesis frontend" ON)
 option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" ON)
+
+if(NOT ${WITH_PARMYS} AND NOT ${WITH_MOSAIC})
+    if(WIN32)
+        message(STATUS "Neither parmys nor mosaic enabled (windows yosys plugins are disabled)")
+    else()
+        message(FATAL_ERROR "At least one of WITH_PARMYS or WITH_MOSAIC must be ON")
+    endif()
+endif()
+
+if(${WITH_PARMYS} OR ${WITH_MOSAIC})
+    set(WITH_YOSYS ON)
+else()
+    set(WITH_YOSYS OFF)
+endif()
+
+# slang is a yosys plugin, so skip it when neither frontend builds yosys
+if(${SLANG_SYSTEMVERILOG} AND NOT ${WITH_YOSYS})
+    message(WARNING "Yosys is not enabled, disabling Yosys-Slang as well.")
+    set(SLANG_SYSTEMVERILOG OFF)
+endif()
 
 set(VTR_VERSION_MAJOR 9)
 set(VTR_VERSION_MINOR 0)
@@ -521,6 +543,10 @@ if(${WITH_PARMYS})
     add_subdirectory(parmys)
 endif()
 
+if(${WITH_MOSAIC})
+    add_subdirectory(mosaic)
+endif()
+
 #Add the various tools
 add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
 add_compile_options(${ADDITIONAL_FLAGS})
@@ -536,15 +562,6 @@ if(${WITH_ODIN})
     # blifexplorer depends on odin
     if(${WITH_BLIFEXPLORER})
         add_subdirectory(blifexplorer)
-    endif()
-endif()
-
-# handle cmake params to compile yosys-slang plugin for Yosys
-if(${SLANG_SYSTEMVERILOG})
-    # avoid compiling yosys-slang plugin in case the Parmys frontend is not active
-    if(NOT ${WITH_PARMYS})
-        message(WARNING "Parmys is not enabled, disabling Yosys-Slang as well.")
-        set(SLANG_SYSTEMVERILOG OFF)
     endif()
 endif()
 

@@ -49,7 +49,7 @@ def main():
     if not YOSYS_BIN.is_file():
         return fail("yosys not found at {}".format(YOSYS_BIN))
     if not PLUGIN_PATH.is_file():
-        return fail("mosaic plugin not found at {} (run mosaic/build_mosaic.sh)".format(
+        return fail("mosaic plugin not found at {} (build vtr with WITH_MOSAIC=ON)".format(
             PLUGIN_PATH))
     overlayMult = OVERLAY_TPLDIR / "mult_map.v.tmpl"
     if not overlayMult.is_file():

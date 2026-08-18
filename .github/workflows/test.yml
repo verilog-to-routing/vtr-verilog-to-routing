@@ -807,15 +807,6 @@ jobs:
       run: |
         tar -xvzf build.tar.gz
 
-    # builds the mosaic plugin against the unpacked yosys and installs
-    # it as mosaic.so into build/share/yosys/plugins
-    - name: Build Mosaic Plugin
-      shell: bash
-      env:
-        BUILD_JOBS: ${{ steps.cpu-cores.outputs.count }}
-      run: |
-        bash mosaic/build_mosaic.sh
-
     - name: Test
       timeout-minutes: 40
       run: |

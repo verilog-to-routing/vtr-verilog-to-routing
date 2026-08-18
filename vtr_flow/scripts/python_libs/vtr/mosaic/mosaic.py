@@ -226,7 +226,7 @@ def run(
     if not plugin_path.is_file():
         raise vtr.VtrError(
             "mosaic plugin not found at {} (installed as mosaic.so)\n".format(plugin_path)
-            + "build it with: bash {}".format(vtr.paths.mosaic_build_script_path)
+            + "build vtr with WITH_MOSAIC=ON"
         )
 
     fix_blif_script = Path(vtr.paths.mosaic_fix_blif_script_path)

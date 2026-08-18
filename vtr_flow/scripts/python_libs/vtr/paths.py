@@ -38,7 +38,6 @@ parmys_output_on_error_path = parmys_path / "regression_test" / ".library" / "ou
 
 # MOSAIC paths
 mosaic_path = root_path / "mosaic"
-mosaic_build_script_path = mosaic_path / "build_mosaic.sh"
 mosaic_misc_path = vtr_flow_path / "misc" / "mosaic"
 mosaic_template_path = mosaic_misc_path / "template"
 mosaic_script_path = mosaic_template_path / "synthesis.tcl"

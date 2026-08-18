@@ -57,8 +57,8 @@ if (VPR_USE_EZGL STREQUAL "on")
     endif()
 endif ()
 
-# The VTR root CMakeFile initializes the WITH_PARMYS
-if (${WITH_PARMYS})
+# The VTR root CMakeFile sets WITH_YOSYS when parmys and/or mosaic is enabled
+if (${WITH_YOSYS})
 
 	cmake_minimum_required(VERSION 3.16)
 

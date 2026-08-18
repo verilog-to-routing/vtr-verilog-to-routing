@@ -8,9 +8,12 @@ set_target_properties(wildebeest PROPERTIES
 target_include_directories(wildebeest PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     # clk_domains.cc includes mosaic headers (vtr_arch_clocks.h)
-    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
 )
-target_link_libraries(wildebeest
-    PUBLIC
-        yosys::yosys
+target_include_directories(wildebeest SYSTEM PUBLIC
+    ${VTR_SOURCE_DIR}/libs/EXTERNAL/yosys
+    ${VTR_SOURCE_DIR}/libs/EXTERNAL/yosys/share/include
+)
+target_compile_definitions(wildebeest PUBLIC
+    _YOSYS_
 )
