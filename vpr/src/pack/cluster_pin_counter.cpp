@@ -99,6 +99,21 @@ void ClusterPinCounter::reset_lookahead() {
 
 void ClusterPinCounter::commit_lookahead() {
     for (auto& [pb, state] : per_pb_state_) {
+        // The lookahead state being promoted must have been rebuilt
+        // (reset_lookahead + try_update_lookahead_pins_used) and vetted
+        // (check_lookahead_pins_used) for the molecule being committed.
+        // Committed usage above the physical pin class size means a caller
+        // committed without rebuilding/vetting: later feasibility checks use
+        // the committed state as a floor, so such a commit silently corrupts
+        // every subsequent pin feasibility decision on this cluster.
+        for (size_t class_id = 0; class_id < state.lookahead_input_pin_class_nets.size(); class_id++) {
+            VTR_ASSERT_MSG(state.lookahead_input_pin_class_nets[class_id].size() <= (size_t)pb->pb_graph_node->input_pin_class_sizes[class_id],
+                           "Committing more input pin usage than the pin class physically has");
+        }
+        for (size_t class_id = 0; class_id < state.lookahead_output_pin_class_nets.size(); class_id++) {
+            VTR_ASSERT_MSG(state.lookahead_output_pin_class_nets[class_id].size() <= (size_t)pb->pb_graph_node->output_pin_class_sizes[class_id],
+                           "Committing more output pin usage than the pin class physically has");
+        }
         // Swapping instead of copying leaves stale nets in the lookahead state,
         // which is safe because the lookahead state is fully rebuilt
         // (reset_lookahead + try_update_lookahead_pins_used) before it is read.

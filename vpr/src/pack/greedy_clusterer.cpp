@@ -669,15 +669,12 @@ void GreedyClusterer::pack_relative_group_into_cluster(PackMoleculeId seed_mol_i
         return molecule_num_atoms(lhs) > molecule_num_atoms(rhs);
     });
 
-    // Add each molecule. If the speculative pin feasibility filter rejects
-    // one, retry it once with the filter bypassed.
-    // A molecule that still fails stays unclustered and the re-pack retry
-    // loop handles the split.
+    // Add each molecule. Group molecules already get the physical-maximum pin
+    // utilization target (see try_pack_molecule), so there is no further
+    // relaxation to retry with. A molecule that fails stays unclustered and
+    // the re-pack retry loop handles the resulting split.
     for (PackMoleculeId mol_id : order) {
-        if (cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id) == e_block_pack_status::BLK_PASSED)
-            continue;
-        cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id,
-                                             /*bypass_pin_feasibility_filter=*/true);
+        cluster_legalizer.add_mol_to_cluster(mol_id, legalization_cluster_id);
     }
 
     // Update the candidate selector's bookkeeping (gains, marked blocks,
