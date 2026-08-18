@@ -54,18 +54,30 @@ bool model_name_is_io_chain(const std::string& model_name) {
     if (model_name == LogicalModels::MODEL_INPUT || model_name == LogicalModels::MODEL_OUTPUT)
         return true;
 
+    // Pad-periphery family: io_config -> delay_chain -> ddio/obuf -> pad, plus
+    // on-chip termination. "io" is matched only as a delimited fragment: a bare
+    // find("io") also matches "addition_fp_16" and "no_compensation" in the
+    // shipped architectures, and would match any future "division" primitive,
+    // silently giving their two-pin nets the periphery weight multiplier.
+    static constexpr const char* kPeripheryFragments[] = {
+        "ddio", // double-data-rate I/O registers
+        "io_",  // io_config, io_ibuf, io_obuf
+        "_io",  // trailing form
+        "ibuf",
+        "obuf",
+        "pad",
+        "oct",         // on-chip termination, abbreviated
+        "termination", // ... and spelled out
+        "delay_chain", // separating these produced the long pad-to-pad hops
+                       // this cohesion class exists to avoid
+    };
+
     std::string lowered = lower_copy(model_name);
-    // delay_chain: I/O delay-chain primitives are part of the pad periphery
-    // family (io_config -> delay_chain -> ddio/obuf -> pad). Every other member
-    // already matches, so a delay-chain atom on a net used to disqualify
-    // exactly the periphery nets whose separation produced LU_Network's
-    // 13ns bad-basin critical path (5ns hops around the delay chains).
-    return lowered.find("io") != std::string::npos
-           || lowered.find("pad") != std::string::npos
-           || lowered.find("obuf") != std::string::npos
-           || lowered.find("oct") != std::string::npos
-           || lowered.find("delay_chain") != std::string::npos
-           || lowered.find("termination") != std::string::npos;
+    for (const char* fragment : kPeripheryFragments) {
+        if (lowered.find(fragment) != std::string::npos)
+            return true;
+    }
+    return false;
 }
 
 NetCohesion::NetCohesion(const APNetlist& ap_netlist,
@@ -205,10 +217,7 @@ void NetCohesion::update_boundary_net_flags(const std::vector<PrimitiveVectorDim
         // not in the warm-start seed -- so a seed-length gate misses exactly
         // the nets that need cohesion, and extra weight on an already-short
         // net only keeps it short. The seed-length gate below is retained for
-        // the generic boundary-cohesion class. Measured with the delay_chain
-        // matcher at weight 8: LU_Network routed CPD 13.1/13.1/
-        // 16.9/13.0 -> 7.4/7.7/7.2/7.4 ns across four seeds, stereo_vision
-        // CPD/WL also improve, all 73 other circuits bit-identical.
+        // the generic boundary-cohesion class.
         if (block_has_boundary_mass(first_blk_id, dimensions)
             && block_has_boundary_mass(second_blk_id, dimensions)
             && block_is_io_chain_block_(first_blk_id)

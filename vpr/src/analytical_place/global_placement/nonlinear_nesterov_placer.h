@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 #include "electrostatic_density_utils.h"
 #include "flat_placement_density_manager.h"
@@ -180,44 +181,48 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     double evaluate_checkpoint_cpd_(const PartialPlacement& placement);
 
     /**
-     * @brief Add electrostatic density value and gradient.
+     * @brief Scaled-ADMM dual update u += x - z, with windup safeguards.
+     *
+     * @param smooth         The epoch's smooth (pre-legalization) result, x.
+     * @param legalized      Its partial legalization, z.
+     * @param prev_legalized The previous epoch's z, used to detect a target jump.
      */
-    double add_density_gradient_(const PartialPlacement& p_placement,
-                                 const std::vector<double>& density_multipliers,
-                                 std::vector<double>& density_energies,
-                                 std::vector<double>& dim_overflow_ratios,
-                                 std::vector<double>& dim_overflow_mass,
-                                 std::vector<double>& dim_max_overflow,
-                                 double& total_overflow,
-                                 double& max_overflow,
-                                 std::optional<std::reference_wrapper<PlacementGradient>> grad,
-                                 const FillerState& fillers,
-                                 std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
+    void update_admm_dual_(const PartialPlacement& smooth,
+                           const PartialPlacement& legalized,
+                           const PartialPlacement& prev_legalized);
+
+    /// @brief A position clamped into the smooth-density domain, with an integral layer.
+    struct GridPosition {
+        double x = 0.;
+        double y = 0.;
+        size_t layer = 0;
+    };
+
+    /**
+     * @brief Clamp a continuous block/filler position into the device grid.
+     *
+     * Every density pass (deposition, gradient, overflow, filler seeding) needs
+     * the same projection, and they must agree exactly: a block deposited at one
+     * coordinate and differentiated at another would break the gradient.
+     */
+    GridPosition clamp_to_grid_(double x, double y, double layer) const;
+
+    /**
+     * @brief Add the electrostatic density energy and gradient.
+     *
+     * Fills every density-derived field of @p value (energy, per-dimension
+     * energies, and the overflow measures); the gradients are optional so the
+     * same routine serves both objective-only and gradient evaluations.
+     */
+    void add_density_gradient_(const PartialPlacement& p_placement,
+                               const std::vector<double>& density_multipliers,
+                               ObjectiveValue& value,
+                               std::optional<std::reference_wrapper<PlacementGradient>> grad,
+                               const FillerState& fillers,
+                               std::optional<std::reference_wrapper<FillerGradient>> filler_grad) const;
 
     /** @brief Build and cache the fixed per-site density targets. */
     void initialize_density_target_cache_(const std::vector<PrimitiveVectorDim>& dimensions) const;
-
-    /**
-     * @brief Log, per resource dimension, what fraction of the density force
-     *        aims at a tile with no capacity for that resource.
-     *
-     * Diagnostic only (--ap_verbosity 3); no effect on the optimization.
-     * Rebuilds each moveable block's density force exactly as
-     * add_density_gradient_ does, steps one tile against it, and checks
-     * whether the destination tile can hold the resource at all. Compared
-     * against the device-wide baseline (the fraction of tiles with zero
-     * capacity for that resource), this tells you whether the force is
-     * aiming *toward* legal territory, is directionless (leak == baseline),
-     * or is actively drawn toward incompatible tiles (leak > baseline).
-     * Must be called with the placement whose gradient the last
-     * add_density_gradient_ call (i.e. the last evaluate_objective_ call
-     * with grad set) actually evaluated -- it reads density_potential_workspace_
-     * and cached_field_grids_, which the next gradient evaluation overwrites.
-     */
-    void report_density_force_leak_(const PartialPlacement& p_placement,
-                                    const std::vector<PrimitiveVectorDim>& dimensions,
-                                    const std::vector<double>& density_multipliers,
-                                    size_t epoch) const;
 
     /**
      * @brief Build dynamic filler particles from seed whitespace.
@@ -254,6 +259,12 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
      * ratio per density dimension so scarce-resource overfill is not diluted by
      * abundant CLB capacity.
      */
+    /// @brief Per-dimension (overflow mass, target capacity); the single source
+    ///        both overflow measures are derived from.
+    std::vector<std::pair<double, double>> compute_physical_overflow_totals_(
+        const PartialPlacement& p_placement,
+        const std::vector<PrimitiveVectorDim>& dimensions) const;
+
     std::vector<double> compute_physical_overflow_ratios_per_dim_(const PartialPlacement& p_placement,
                                                                   const std::vector<PrimitiveVectorDim>& dimensions) const;
 
@@ -352,35 +363,23 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     vtr::vector<APNetId, double> net_weights_; ///< Per-net weight applied to the weighted-average (WA) wirelength term computed in add_wirelength_gradient_.
     /// @brief Average net weight from the last update_timing_net_weights_ call.
     ///
-    /// Telemetry only. It was once documented as rebalancing the density weight
-    /// and was read nowhere; wiring it up was measured at full-75 (as part of the
-    /// combined formulation-fix board, routed WL 1.00107, CI [0.99722, 1.00506])
-    /// and made no difference, so it stays a reported value. Worth knowing that
-    /// lambda_0 is normalized against unit-weight wirelength while the epoch loop
-    /// applies multipliers up to 8x, so the wirelength/density balance does carry
-    /// a design-dependent factor -- it simply does not matter.
+    /// Telemetry only: rebalancing the density weight by it was implemented and
+    /// made no measurable difference. Worth knowing that lambda_0 is normalized
+    /// against unit-weight wirelength while the epoch loop applies multipliers
+    /// well above 1, so the wirelength/density balance does carry a
+    /// design-dependent factor -- it simply does not matter.
     double avg_net_weight_ = 1.0;
 
     vtr::vector<APBlockId, double> block_precond_;        ///< Per-block diagonal preconditioner (objective curvature estimate).
     vtr::vector<APBlockId, float> pin_density_inflation_; ///< Per-block density-term mass inflation from pin count (routability cell inflation); 1.0 for blocks at or below the reference pin count.
-    bool precond_active_ = false;                         ///< Whether the preconditioner is applied in the current optimization run (size-gated).
-    bool step_unit_ = false;                              ///< Whether the epoch step starts at 1.0 (preconditioned units) rather than span-scaled.
-    bool proximity_full_ = false;                         ///< Whether the legalizer proximity anchor runs at full strength rather than @ref kProximityScale.
+    bool large_design_ = false;                           ///< Design is at or above @ref kPreconditionSizeThreshold: enables the Jacobi preconditioner, unit step scaling, and the full-strength proximity anchor.
     vtr::vector<APNetId, bool> io_pair_locality_nets_;    ///< Direct output-driver↔outpad nets receiving pair-spring WL weight.
     std::unique_ptr<NetCohesion> cohesion_;               ///< Structural cohesion net classes and their weight multipliers.
     std::unique_ptr<AffinitySpringTerm> affinity_term_;   ///< Affinity-spring objective term (groups + energy/gradient/curvature).
-
-    /// @brief Barzilai-Borwein step policy, fixed at @ref kBarzilaiBorweinStep.
-    ///
-    /// The `false` path (monotone backtracking line search) is retained but is
-    /// currently unreachable; it is the fallback the BB step replaced.
-    /// Set once in the constructor from @ref kBarzilaiBorweinStep, which is the
-    /// single source of truth for this policy.
-    bool bb_step_;
-    size_t num_io_pair_affinity_groups_ = 0;      ///< Count of IO_PAIR affinity groups.
-    size_t num_pack_pattern_affinity_groups_ = 0; ///< Count of PACK_PATTERN affinity groups.
-    std::vector<double> filler_unit_mass_;        ///< [dim] density mass per dynamic filler.
-    std::vector<double> filler_precond_;          ///< [dim] density-only filler preconditioner.
+    size_t num_io_pair_affinity_groups_ = 0;              ///< Count of IO_PAIR affinity groups.
+    size_t num_pack_pattern_affinity_groups_ = 0;         ///< Count of PACK_PATTERN affinity groups.
+    std::vector<double> filler_unit_mass_;                ///< [dim] density mass per dynamic filler.
+    std::vector<double> filler_precond_;                  ///< [dim] density-only filler preconditioner.
     // Placement-invariant density-grid constants, cached once (device grid,
     // bin capacity, and target density are fixed across the optimization) and
     // reused across every objective evaluation instead of being rebuilt.
@@ -394,7 +393,11 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     /// not defined over -- and cannot develop structure inside -- the tiles that
     /// cannot hold it. Abundant resources select a stride of one and keep the
     /// tile grid unchanged.
-    mutable std::vector<ResourceFieldGrid> cached_field_grids_;
+    /// @brief Per-resource charge unit: the mean capacity of a capacity-bearing
+    ///        tile, so resources with very different natural magnitudes (an
+    ///        abundant LUT dimension vs. a sparse DSP one) contribute comparably
+    ///        scaled charge.
+    mutable std::vector<double> cached_charge_scale_;
     // Reused density-evaluation storage. Objective/line-search evaluations are
     // serial, so these mutable buffers safely remove repeated device-grid-sized
     // allocation and zero-construction from the const evaluation routine.
@@ -438,10 +441,9 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
 
     /// @brief True when the warm-start seed's physical overflow is already below
     ///        the sparse gate. The electrostatic field then has nothing to spread,
-    ///        so the epoch loop is capped to a cheap filler-free probe instead of
-    ///        the full schedule (whose result was measured to be discarded in
-    ///        favor of the seed on sparse designs, at up to 11x the baseline
-    ///        placer's global-placement runtime).
+    ///        so the epoch loop is capped to a cheap filler-free probe instead
+    ///        of the full schedule, whose result the checkpoint selection below
+    ///        discards in favor of the seed on these designs anyway.
     bool sparse_seed_ = false;
 
     /// @brief Scaled-ADMM dual variables for the legalizer anchor. u accumulates
