@@ -1628,7 +1628,7 @@ double NonlinearNesterovPlacer::add_wirelength_gradient_(const PartialPlacement&
             negative_y_weights_ref = std::ref(negative_y_weights);
         }
 
-        double positive_x = weighted_average_coordinate(x_locs, gammaf, false, positive_x_weights_ref);
+        double positive_x = weighted_average_coordinate(x_locs, gamma, false, positive_x_weights_ref);
         double negative_x = weighted_average_coordinate(x_locs, gamma, true, negative_x_weights_ref);
         double positive_y = weighted_average_coordinate(y_locs, gamma, false, positive_y_weights_ref);
         double negative_y = weighted_average_coordinate(y_locs, gamma, true, negative_y_weights_ref);
