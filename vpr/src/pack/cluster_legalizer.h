@@ -267,15 +267,11 @@ class ClusterLegalizer {
      *  @param cluster_id               The ID of the cluster.
      *  @param max_external_pin_util    The max external pin utilization for a
      *                                  cluster of this type.
-     *  @param bypass_pin_feasibility_filter
-     *                                  Skip the speculative pin feasibility
-     *                                  filter.
      */
     e_block_pack_status try_pack_molecule(PackMoleculeId molecule_id,
                                           LegalizationCluster& cluster,
                                           LegalizationClusterId cluster_id,
-                                          const t_ext_pin_util& max_external_pin_util,
-                                          bool bypass_pin_feasibility_filter = false);
+                                          const t_ext_pin_util& max_external_pin_util);
 
     /**
      * @brief This function takes a chain molecule, and the pb_graph_node that is
@@ -381,16 +377,11 @@ class ClusterLegalizer {
      *
      *  @param molecule         The molecule to add to the cluster.
      *  @param cluster_id       The ID of the cluster to add the molecule to.
-     *  @param bypass_pin_feasibility_filter
-     *                          Skip the speculative pin feasibility filter for
-     *                          this molecule.
-     *
      *  @return     The status of the pack (if the addition was successful and
      *              if not why).
      */
     e_block_pack_status add_mol_to_cluster(PackMoleculeId molecule_id,
-                                           LegalizationClusterId cluster_id,
-                                           bool bypass_pin_feasibility_filter = false);
+                                           LegalizationClusterId cluster_id);
 
     /*
      * @brief Destroy the given cluster.
