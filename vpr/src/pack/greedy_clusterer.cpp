@@ -468,7 +468,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     if (log_verbosity_ > 2) {
         VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name.c_str());
         VTR_LOGV(seed_mol.pack_pattern, " molecule_type %s molecule_size %zu",
-                 seed_mol.pack_pattern->name, seed_mol.atom_block_ids.size());
+                 seed_mol.pack_pattern->name.c_str(), seed_mol.atom_block_ids.size());
         VTR_LOG("\n");
     }
 
@@ -500,7 +500,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
                             "\tPattern %s %s\n",
-                            seed_mol.pack_pattern->name,
+                            seed_mol.pack_pattern->name.c_str(),
                             root_atom_name.c_str());
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
@@ -590,7 +590,7 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
         std::string blk_model_name = arch_.models.model_name(blk_model_id);
         VTR_LOG("'%s' (%s)", blk_name.c_str(), blk_model_name.c_str());
         VTR_LOGV(candidate_mol.pack_pattern, " molecule %s molecule_size %zu",
-                 candidate_mol.pack_pattern->name,
+                 candidate_mol.pack_pattern->name.c_str(),
                  candidate_mol.atom_block_ids.size());
         VTR_LOG("\n");
         fflush(stdout);

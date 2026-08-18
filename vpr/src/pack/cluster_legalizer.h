@@ -118,7 +118,7 @@ struct LegalizationCluster {
      */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
-                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                        const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                         const std::unordered_set<int>& valid_feedback_pins,
                         bool enable_router_hot_start = false);
 
@@ -334,7 +334,7 @@ class ClusterLegalizer {
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
-                     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                     const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
@@ -515,7 +515,7 @@ class ClusterLegalizer {
     }
 
     /// @brief Gets the name of the given cluster.
-    inline std::string get_cluster_name(LegalizationClusterId cluster_id) const {
+    inline const std::string& get_cluster_name(LegalizationClusterId cluster_id) const {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
         const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
         return cluster.pb->name;
@@ -742,9 +742,7 @@ class ClusterLegalizer {
 
     /// @brief A vector of routing resource nodes within each logical block type
     ///        [0 .. num_logical_block_types-1]
-    /// TODO: This really should not be a pointer to a vector... I think this is
-    ///       meant to be a vector of vectors...
-    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
+    const std::vector<std::vector<t_lb_type_rr_node>>* lb_type_rr_graphs_ = nullptr;
 
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
     ///        Indexed by t_logical_block_type::index.

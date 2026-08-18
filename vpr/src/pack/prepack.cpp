@@ -14,7 +14,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <cstring>
 #include <map>
 #include <queue>
 #include <unordered_map>
@@ -32,7 +31,6 @@
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_time.h"
-#include "vtr_util.h"
 #include "vtr_vector.h"
 
 /*****************************************/
@@ -213,7 +211,7 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
     //Sanity check, every pattern should have a root block
     for (size_t i = 0; i < pattern_names.size(); ++i) {
         if (packing_patterns[i].root_block == nullptr) {
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", packing_patterns[i].name);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", packing_patterns[i].name.c_str());
         }
     }
 
@@ -372,8 +370,8 @@ static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(const 
     std::vector<t_pack_patterns> nlist(pattern_names.size());
 
     for (const std::pair<const std::string, int>& curr_pattern : pattern_names) {
-        VTR_ASSERT(nlist[curr_pattern.second].name == nullptr);
-        nlist[curr_pattern.second].name = vtr::strdup(curr_pattern.first.c_str());
+        VTR_ASSERT(nlist[curr_pattern.second].name.empty());
+        nlist[curr_pattern.second].name = curr_pattern.first;
         nlist[curr_pattern.second].root_block = nullptr;
         nlist[curr_pattern.second].is_chain = false;
         nlist[curr_pattern.second].index = curr_pattern.second;
@@ -395,7 +393,6 @@ static void free_pack_pattern(t_pack_patterns* pack_pattern) {
         for (int i = 0; i < num_pack_pattern_blocks; i++)
             pattern_block_list[i] = nullptr;
 
-        free(pack_pattern->name);
         free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
         for (int j = 0; j < num_pack_pattern_blocks; j++) {
             delete pattern_block_list[j];
@@ -608,7 +605,7 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                                                 expansion_edge->output_pins[i]->parent_node->placement_index,
                                                 expansion_edge->output_pins[i]->port->name,
                                                 expansion_edge->output_pins[i]->pin_number,
-                                                packing_pattern.name);
+                                                packing_pattern.name.c_str());
                             }
                             found = true;
                             forward_expand_pack_pattern_from_edge(expansion_edge->output_pins[i]->output_edges[j],
@@ -1292,7 +1289,7 @@ static void print_pack_molecules(const char* fname,
         fprintf(fp, "pack pattern index %d block count %d name %s root %s\n",
                 list_of_pack_patterns[i].index,
                 list_of_pack_patterns[i].num_blocks,
-                list_of_pack_patterns[i].name,
+                list_of_pack_patterns[i].name.c_str(),
                 list_of_pack_patterns[i].root_block->pb_type->name);
     }
 
@@ -1303,7 +1300,7 @@ static void print_pack_molecules(const char* fname,
                     atom_nlist.block_name(molecule.atom_block_ids[0]).c_str());
         } else if (molecule.type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK) {
             fprintf(fp, "\nmolecule type: %s\n",
-                    molecule.pack_pattern->name);
+                    molecule.pack_pattern->name.c_str());
             for (i = 0; i < molecule.pack_pattern->num_blocks;
                  i++) {
                 if (!molecule.atom_block_ids[i]) {
@@ -1760,8 +1757,8 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
     const std::vector<std::vector<t_pb_graph_pin*>>& chain_root_pins = chain_pattern->chain_root_pins;
 
     VTR_LOGV(chain_root_pins.size() > 1, "\nThere are %zu independent chains for chain pattern \"%s\":\n",
-             chain_pattern->chain_root_pins.size(), chain_pattern->name);
-    VTR_LOGV(chain_root_pins.size() == 1, "\nThere is one chain in this architecture called \"%s\" with the following starting points:\n", chain_pattern->name);
+             chain_pattern->chain_root_pins.size(), chain_pattern->name.c_str());
+    VTR_LOGV(chain_root_pins.size() == 1, "\nThere is one chain in this architecture called \"%s\" with the following starting points:\n", chain_pattern->name.c_str());
 
     size_t chainId = 0;
     for (const std::vector<t_pb_graph_pin*>& chain : chain_root_pins) {

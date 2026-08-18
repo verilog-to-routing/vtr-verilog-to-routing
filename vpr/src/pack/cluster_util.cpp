@@ -221,7 +221,7 @@ size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_c
     if (!pb_type->is_primitive()) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
-                if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
+                if (pb->child_pbs[i] && !pb->child_pbs[i][j].name.empty()) {
                     size_t child_depth = update_pb_type_count(&pb->child_pbs[i][j], pb_type_count, depth + 1);
 
                     max_depth = std::max(max_depth, child_depth);
@@ -333,7 +333,7 @@ void update_le_count(const t_pb* pb,
 
     // iterate over all the LEs and update the LE count accordingly
     for (int ile = 0; ile < parent_pb->get_num_children_of_type(0); ile++) {
-        if (!parent_pb->child_pbs[0][ile].name)
+        if (parent_pb->child_pbs[0][ile].name.empty())
             continue;
 
         auto has_used_lut = pb_used_for_blif_model(&parent_pb->child_pbs[0][ile], lut);
@@ -368,7 +368,7 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) 
     if (!pb_type->is_primitive()) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
-                if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
+                if (pb->child_pbs[i] && !pb->child_pbs[i][j].name.empty()) {
                     if (pb_used_for_blif_model(&pb->child_pbs[i][j], blif_model_name)) {
                         return true;
                     }
