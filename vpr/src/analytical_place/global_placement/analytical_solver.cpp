@@ -722,13 +722,13 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
     //         the bounds are likely to have changed after step 2.
     // We stop when it looks like the placement is converging (the change in
     // HPWL is sufficiently small for a few iterations).
-    double prev_hpwl = std::numeric_limits<double>::max();
+    // Seeding the convergence check with the HPWL of the incoming placement.
+    double prev_hpwl = p_placement.get_hpwl(netlist_);
     double curr_hpwl = prev_hpwl;
     unsigned num_convergence = 0;
     for (unsigned counter = 0; counter < max_num_bound_updates_; counter++) {
-        VTR_LOGV(log_verbosity_ >= 10,
-                 "\tPlacement HPWL in b2b loop: %f\n",
-                 p_placement.get_hpwl(netlist_));
+        // prev_hpwl is the HPWL of the placement currently in p_placement.
+        VTR_LOGV(log_verbosity_ >= 10, "\tPlacement HPWL in b2b loop: %f\n", prev_hpwl);
 
         // Set up the linear system, including anchor points.
         float build_linear_system_start_time = runtime_timer.elapsed_sec();
