@@ -267,19 +267,16 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
                                                                                        cluster_legalizer,
                                                                                        attraction_groups);
 
-    // On re-pack iterations triggered by split relative placement groups, a
-    // cluster seeded by a relative-group molecule packs its entire group
+    // A cluster seeded by a relative-group molecule packs its entire group
     // right away instead of relying on the candidate selector to propose the
-    // group's molecules one at a time. See the method for details.
-    if (cluster_legalizer.reserving_relative_group_capacity()) {
-        pack_relative_group_into_cluster(seed_mol_id,
-                                         legalization_cluster_id,
-                                         cluster_gain_stats,
-                                         candidate_selector,
-                                         cluster_legalizer,
-                                         prepacker,
-                                         attraction_groups);
-    }
+    // group's molecules one at a time.
+    pack_relative_group_into_cluster(seed_mol_id,
+                                     legalization_cluster_id,
+                                     cluster_gain_stats,
+                                     candidate_selector,
+                                     cluster_legalizer,
+                                     prepacker,
+                                     attraction_groups);
 
     // Select the first candidate molecule to try to add to this cluster.
     PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(

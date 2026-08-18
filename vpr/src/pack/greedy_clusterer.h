@@ -211,12 +211,9 @@ class GreedyClusterer {
      * @brief Pack the relative placement group of the seed molecule into the
      *        freshly seeded cluster.
      *
-     * Only used on re-pack iterations triggered by split relative placement
-     * groups. The group's molecules are added to the cluster immediately,
-     * largest first (rather than being proposed one at a time by the candidate
-     * selector, by which time unconstrained molecules may have consumed the
-     * cluster's capacity). A molecule that fails to add stays unclustered: the
-     * group is split this iteration and the re-pack retry loop handles it.
+     * Runs on every pass whenever a cluster's seed molecule belongs to a
+     * relative placement group: the group's cluster is constructed directly
+     * from the constraints instead of re-discovered greedily.
      */
     void pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
                                           LegalizationClusterId legalization_cluster_id,

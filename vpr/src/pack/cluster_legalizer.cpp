@@ -1005,6 +1005,12 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             }
         }
 
+        // The speculative pin feasibility filter is order-dependent and can
+        // falsely reject group molecules.
+        if (molecule_in_cluster_group) {
+            effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
+        }
+
         // The following only applies to re-pack iterations triggered by split
         // relative placement groups (see set_reserve_relative_group_capacity()).
         if (reserve_relative_group_capacity_) {
@@ -1028,16 +1034,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
             }
 
-            // The speculative pin feasibility filter is order-dependent and
-            // can falsely reject group molecules, so relax their pin
-            // utilization target to the physical maximum. That is as far as
-            // the relaxation can legitimately go, and the filter itself must
-            // never be skipped: check_pins_used() is what decides whether the
-            // applied molecule delta is committed or rolled back, so skipping
-            // it would commit unvetted pin usage.
-            if (molecule_in_cluster_group) {
-                effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
-            }
         }
     }
 
