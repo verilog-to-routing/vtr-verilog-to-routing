@@ -1,9 +1,243 @@
-#include "windowed_bi_matching_dp.h"
+/**
+ * @file
+ * @author  Athavan Balakumar
+ * @date    May 2026
+ * @brief   Implementation of the Windowed Bipartite Matching Detailed Placer.
+ */
 
+#include "windowed_bi_matching_dp.h"
+#include "blk_loc_registry.h"
+#include "clustered_netlist.h"
+#include "device_grid.h"
+#include "globals.h"
+#include "move_transactions.h"
+#include "physical_types.h"
+#include "place_and_route.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
+#include "verify_placement.h"
+#include "place_constraints.h"
+
+/**
+ * @brief Creates a placement location from grid coordinates.
+ */
+static t_pl_loc make_pl_loc(int x, int y, int sub_tile, int layer);
+
+/**
+ * @brief Returns true if the physical tile at the given grid location is not empty.
+ */
+static bool is_non_empty_physical_tile(const DeviceGrid& grid,
+                                       t_physical_tile_loc loc) {
+    t_physical_tile_type_ptr physical_type = grid.get_physical_type(loc);
+    if (!physical_type) {
+        return false;
+    }
+    if (physical_type->is_empty()) {
+        return false;
+    }
+    return true;
+}
+
+WindowedBiMatchingDetailedPlacer::WindowedBiMatchingDetailedPlacer(
+    const BlkLocRegistry& curr_clustered_placement,
+    const t_placer_opts& placer_opts)
+    : placer_state_(false)
+    , net_cost_handler_(placer_state_,
+                        g_vpr_ctx.placement().cube_bb,
+                        e_place_algorithm::BOUNDING_BOX_PLACE,
+                        placer_opts.congestion_chan_util_threshold) {
+    BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
+    blk_loc_registry = curr_clustered_placement;
+
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    for (ClusterBlockId block_id : clb_nlist.blocks()) {
+        blk_loc_registry.place_sync_external_block_connections(block_id);
+    }
+    // PlacerState(false) for now because timing cost updates are not needed
+    (void)net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
+}
+
+static t_pl_loc make_pl_loc(int x, int y, int sub_tile, int layer) {
+    t_pl_loc loc;
+    loc.x = x;
+    loc.y = y;
+    loc.sub_tile = sub_tile;
+    loc.layer = layer;
+    return loc;
+}
+
+bool WindowedBiMatchingDetailedPlacer::window_has_no_empty_physical_tiles(const DeviceGrid& grid, int x, int y, int layer) {
+    for (int dx = 0; dx < window_size_; dx++) {
+        for (int dy = 0; dy < window_size_; dy++) {
+            if (!is_non_empty_physical_tile(grid, {x + dx, y + dy, layer})) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool WindowedBiMatchingDetailedPlacer::window_has_all_placed_blocks(const BlkLocRegistry& blk_loc_registry, int x, int y, int layer) {
+    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+    for (int dx = 0; dx < window_size_; dx++) {
+        for (int dy = 0; dy < window_size_; dy++) {
+            t_pl_loc loc = make_pl_loc(x + dx, y + dy, placement_sub_tile_, layer);
+            ClusterBlockId blk = grid_blocks.block_at_location(loc);
+            if (blk == ClusterBlockId::INVALID()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool WindowedBiMatchingDetailedPlacer::blocks_are_swappable(const BlkLocRegistry& blk_loc_registry,
+                                                            const ClusteredNetlist& clb_nlist,
+                                                            ClusterBlockId block_a,
+                                                            ClusterBlockId block_b) {
+    // Both locations must have placed blocks.
+    if (block_a == ClusterBlockId::INVALID() || block_b == ClusterBlockId::INVALID()) {
+        return false;
+    }
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs = blk_loc_registry.block_locs();
+    // Fixed blocks cannot be moved.
+    if (block_locs[block_a].is_fixed || block_locs[block_b].is_fixed) {
+        return false;
+    }
+    // TODO: Allow for blocks of different types to be swappable if their target locations are compatible with the blocks
+    if (clb_nlist.block_type(block_a) != clb_nlist.block_type(block_b)) {
+        return false;
+    }
+    return true;
+}
+
+bool WindowedBiMatchingDetailedPlacer::try_swap_blocks(BlkLocRegistry& blk_loc_registry,
+                                                       ClusterBlockId block_a,
+                                                       t_pl_loc loc_a,
+                                                       ClusterBlockId block_b,
+                                                       t_pl_loc loc_b) {
+    t_pl_blocks_to_be_moved blocks_affected(2);
+
+    // Record the proposed swap between two blocks as a placement transaction
+    e_block_move_result result_a =
+        blocks_affected.record_block_move(block_a, loc_b, blk_loc_registry);
+    if (result_a != e_block_move_result::VALID) {
+        blocks_affected.clear_move_blocks();
+        return false;
+    }
+    e_block_move_result result_b =
+        blocks_affected.record_block_move(block_b, loc_a, blk_loc_registry);
+    if (result_b != e_block_move_result::VALID) {
+        blocks_affected.clear_move_blocks();
+        return false;
+    }
+
+    // Reject swapts that violate constraints from floorplan.
+    if (!floorplan_legal(blocks_affected)) {
+        blocks_affected.clear_move_blocks();
+        return false;
+    }
+
+    // Temporarily apply swap so bounding-box cost delta can be evaluated.
+    blk_loc_registry.apply_move_blocks(blocks_affected);
+
+    t_net_cost_terms cost_terms_delta;
+    double timing_delta_cost = 0.;
+
+    net_cost_handler_.find_affected_nets_and_update_costs(
+        nullptr,
+        nullptr,
+        blocks_affected,
+        cost_terms_delta,
+        timing_delta_cost);
+
+    // Only commit swaps that reduce cost
+    if (cost_terms_delta.bb_cost < 0.) {
+        net_cost_handler_.update_move_nets();
+        blk_loc_registry.commit_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
+        return true;
+    }
+
+    // Undo net-cost update and temporary placement move if swap does not reduce cost.
+    net_cost_handler_.reset_move_nets();
+    blk_loc_registry.revert_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
+    return false;
+}
 
 void WindowedBiMatchingDetailedPlacer::optimize_placement() {
     vtr::ScopedStartFinishTimer timer("Windowed Bipartite Matching Detailed Placer");
     VTR_LOG("Running Windowed Bipartite Matching detailed placer.\n");
+
+    g_vpr_ctx.mutable_placement().lock_loc_vars();
+
+    BlkLocRegistry& blk_loc_registry =
+        placer_state_.mutable_blk_loc_registry();
+
+    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const int grid_width = static_cast<int>(grid.width());
+    const int grid_height = static_cast<int>(grid.height());
+
+    const double initial_bb_wirelength_estimate =
+        net_cost_handler_.get_total_wirelength_estimate();
+
+    int num_swaps = 0;
+
+    for (int x = 0; x + window_size_ - 1 < grid_width; x += window_size_) {
+        for (int y = 0; y + window_size_ - 1 < grid_height; y += window_size_) {
+            if (!window_has_no_empty_physical_tiles(grid, x, y, placement_layer_)) {
+                continue;
+            }
+            if (!window_has_all_placed_blocks(blk_loc_registry, x, y, placement_layer_)) {
+                continue;
+            }
+
+            // Temporarily evaluate swaps between the top-left and top-right blocks
+            t_pl_loc left_loc = make_pl_loc(x, y, placement_sub_tile_, placement_layer_);
+            t_pl_loc right_loc = make_pl_loc(x + 1, y, placement_sub_tile_, placement_layer_);
+
+            ClusterBlockId left_blk = grid_blocks.block_at_location(left_loc);
+            ClusterBlockId right_blk = grid_blocks.block_at_location(right_loc);
+
+            if (!blocks_are_swappable(blk_loc_registry, clb_nlist, left_blk, right_blk)) {
+                continue;
+            }
+            if (!try_swap_blocks(blk_loc_registry, left_blk, left_loc, right_blk, right_loc)) {
+                continue;
+            }
+
+            num_swaps++;
+        }
+    }
+
+    const double final_bb_wirelength_estimate =
+        net_cost_handler_.get_total_wirelength_estimate();
+
+    auto& placement_ctx = g_vpr_ctx.mutable_placement();
+    placement_ctx.unlock_loc_vars();
+    placement_ctx.mutable_blk_loc_registry() = placer_state_.blk_loc_registry();
+    if (num_swaps > 0) {
+        post_place_sync();
+    }
+    // Verify that the placement remains valid after the detailed-placement swaps.
+    unsigned num_placement_errors = verify_placement(g_vpr_ctx);
+    if (num_placement_errors == 0) {
+        VTR_LOG("Completed placement consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_PLACE,
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_placement_errors);
+    }
+    VTR_LOG("Windowed BiMatching DP: committed %d neighbor swaps.\n", num_swaps);
+    VTR_LOG("--Initial wirelength estimate: %g\n",
+            initial_bb_wirelength_estimate);
+    VTR_LOG("--Final wirelength estimate: %g\n",
+            final_bb_wirelength_estimate);
+    VTR_LOG("--BB wirelength estimate delta: %g\n",
+            final_bb_wirelength_estimate - initial_bb_wirelength_estimate);
+    VTR_LOG("--Swaps committed: %d\n", num_swaps);
 }

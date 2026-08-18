@@ -1,7 +1,6 @@
 
 #include "placer.h"
 
-#include <algorithm>
 #include <functional>
 #include <optional>
 #include <utility>
@@ -434,7 +433,7 @@ void Placer::place() {
     // See if our latest checkpoint is better than the current placement solution
     if (placer_opts_.place_checkpointing) {
         restore_best_placement(placer_state_,
-                               placement_checkpoint_, timing_info_, costs_,
+                               placement_checkpoint_, net_cost_handler_, timing_info_, costs_,
                                placer_criticalities_, placer_setup_slacks_, place_delay_model_,
                                pin_timing_invalidator_, crit_params, noc_cost_handler_, interposer_cost_handler_);
     }

@@ -11,6 +11,7 @@
 #include "place_timing_update.h"
 
 class NocCostHandler;
+class NetCostHandler;
 
 /**
  * @brief Data structure that stores the placement state and saves it as a checkpoint.
@@ -78,6 +79,7 @@ void save_placement_checkpoint_if_needed(const vtr::vector_map<ClusterBlockId, t
 //restore the checkpoint if it's better than the latest placement solution
 void restore_best_placement(PlacerState& placer_state,
                             t_placement_checkpoint& placement_checkpoint,
+                            NetCostHandler& net_cost_handler,
                             std::shared_ptr<SetupTimingInfo>& timing_info,
                             t_placer_costs& costs,
                             std::unique_ptr<PlacerCriticalities>& placer_criticalities,

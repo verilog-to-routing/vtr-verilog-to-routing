@@ -183,10 +183,6 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
  * @param prepacker
  *              The prepacker object that provides access to the molecule
  *              corresponding to given molecule id.
- * @param force_site
- *              Optional user-specified primitive site on which to place the molecule; if a force_site
- *              argument is provided, the function either selects the specified site or reports failure.
- *              If the force_site argument is set to its default value (-1), vpr selects an available site.
  *
  * @return A LazyPopUniquePriorityQueue containing feasible primitive root
  *         candidates ordered by placement priority. The queue may be empty
@@ -195,8 +191,7 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
 LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> build_primitive_candidate_queue(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                                                                           PackMoleculeId molecule_id,
                                                                                                           std::vector<t_pb_graph_node*>& primitives_list,
-                                                                                                          const Prepacker& prepacker,
-                                                                                                          int force_site = -1);
+                                                                                                          const Prepacker& prepacker);
 
 /**
  * @brief Move a candidate root primitive from the valid set to the in-flight set.

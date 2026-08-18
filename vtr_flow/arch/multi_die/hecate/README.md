@@ -75,14 +75,15 @@ Variants explore different pitches and fanin/fanouts:
   * **Directionality:** Bidirectional/unidirectional inter-layer links.
   * **Fan-in/Fan-out:** The number of wires driving/being driven by each inter-layer connection.
 * **Architecture Naming Scheme:**
-  - `hecate_3d_sb_[variant_id]_fanin_[FANIN]_fanout_[FANOUT]_7nm.xml`
+  - `hecate_3d_sb_[variant_id]_fanin_[FANIN]_fanout_[FANOUT]_[ESD]_7nm.xml`
 
 
 ### 3D CSV and Generation Script
 
 The 3D switch-block architecture variants are generated from `3d/hecate_3d_sb_connectivity.csv` and the base architecture
-`3d/hecate_3d_sb_10um_bidir_fanin_16_fanout_16_7nm.xml`. This file can also be used directly as the default Hecate 3D
-architecture without running the generator. Each CSV row describes one variant:
+`3d/hecate_3d_sb_10um_bidir_fanin_16_fanout_16_with_esd_7nm.xml`. This file can also be used directly as the default Hecate 3D
+architecture without running the generator. Each CSV row describes one variant, and each variant is generated once with
+`with_esd` and once with `without_esd` inter-die switches:
 
 * `variant_id`: output architecture identifier.
 * `pitch_um`: bump pitch in µm (5, 10, or 25).
