@@ -306,7 +306,9 @@ struct t_draw_state {
     int show_blk_internal = 0;
 
     bool all_internals_drawn = false;
+    double all_internals_drawn_level = 0;
     bool only_clbs_drawn = false;
+    double only_clbs_drawn_level = std::numeric_limits<double>::max();
 
     ///@brief Whether graphics are enabled
     bool show_graphics = false;
@@ -480,16 +482,12 @@ struct t_draw_state {
     /**
      * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
      * @details This is set by the AP global placer just before drawing and cleared immediately after.
-     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
-     *          and avoid copying and modification of the partial placement.
      */
     const PartialPlacement* ap_partial_placement_ptr_;
 
     /**
      * @brief Stores a temporary reference to the atom block to AP block lookup.
-     * @details This is also set by the AP global placer and has the same lifetime as the partial placement reference.
-     *          Use optional, reference_wrapper and const to prevent from invalid references outside the AP global placer stage
-     *          and avoid copying and modification of the lookup.
+     * @details This is set by the AP global placer and has the same lifetime as the partial placement reference.
      */
     const AtomBlockAPBlockLookup* atom_block_ap_block_lookup_ptr_;
 
