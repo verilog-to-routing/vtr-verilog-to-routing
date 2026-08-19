@@ -6,7 +6,7 @@
 # <relative_macro_list> section of the VPR constraints file documentation).
 # The circuit is a generated design with 256 LUTs, a 10-bit and a 50-bit
 # adder carry chain, 20 DSPs (9x9 multiplies), 20 BRAMs and 28 registers.
-# The constraints file defines five macros:
+# The constraints file defines seven macros and one partition:
 #   - 5 LUTs packed into one CLB placed at dx=1 from a DSP
 #   - 5 LUTs packed into one CLB placed at dx=1 from a BRAM (regex matching)
 #   - two 5-LUT groups packed into two separate CLBs placed at dx=1
@@ -17,6 +17,12 @@
 #     an architecture-derived placement macro that is merged into the
 #     relative macro, and the packer's long-chain veto keeps the chain's
 #     clusters exclusive to this macro
+#   - three 5-LUT groups in an L shape (offsets (0,1) and (1,-1)): covers
+#     >2-group macros, nonzero y_offset and a negative offset component
+#   - two input pads one sub_tile apart in the same io tile: covers
+#     sub_tile_offset != 0 (io is the arch's only capacity>1 tile)
+#   - a floorplan partition holding an atom that is also in a relative
+#     macro's reference group: covers partition + relative macro composition
 
 # Path to directory of circuits to use
 circuits_dir=benchmarks/blif

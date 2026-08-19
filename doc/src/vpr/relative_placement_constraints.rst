@@ -44,8 +44,6 @@ A Relative Placement Constraints File Example
 		</relative_macro_list>
 	</vpr_constraints>
 
-.. _end:
-
 Relative Placement Constraints File Format
 ------------------------------------------
 

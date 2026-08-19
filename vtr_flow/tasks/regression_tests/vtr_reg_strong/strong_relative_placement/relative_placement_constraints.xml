@@ -1,4 +1,16 @@
 <vpr_constraints tool_name="vpr">
+
+    <!-- A floorplan partition containing la_10, which is also the reference
+         group of relative macro macro_lut_3groups below: exercises the
+         documented composition of partitions and relative macros on the same
+         atom. The region is generous so the macro stays placeable. -->
+    <partition_list>
+        <partition name="part_composed">
+            <add_atom name_pattern="la_10"/>
+            <add_region x_low="1" y_low="1" x_high="30" y_high="30"/>
+        </partition>
+    </partition_list>
+
     <relative_macro_list>
 
         <!-- 5 LUTs (lb_0..lb_4) placed next to DSP dsp0.
@@ -82,6 +94,46 @@
                 <add_atom name_pattern="dco0"/>
                 <add_atom name_pattern="dco1"/>
                 <add_atom name_pattern="dco2"/>
+            </relative_group>
+        </relative_macro>
+
+        <!-- Three 5-LUT groups in an L shape: exercises macros with more than
+             two groups, a nonzero y_offset and a negative offset component.
+             la_10 (reference group) is also in partition part_composed above. -->
+        <relative_macro name="macro_lut_3groups">
+            <reference_group>
+                <add_atom name_pattern="la_10"/>
+                <add_atom name_pattern="la_11"/>
+                <add_atom name_pattern="la_12"/>
+                <add_atom name_pattern="la_13"/>
+                <add_atom name_pattern="la_14"/>
+            </reference_group>
+            <relative_group x_offset="0" y_offset="1" sub_tile_offset="0">
+                <add_atom name_pattern="la_15"/>
+                <add_atom name_pattern="la_16"/>
+                <add_atom name_pattern="la_17"/>
+                <add_atom name_pattern="la_18"/>
+                <add_atom name_pattern="la_19"/>
+            </relative_group>
+            <relative_group x_offset="1" y_offset="-1" sub_tile_offset="0">
+                <add_atom name_pattern="la_20"/>
+                <add_atom name_pattern="la_21"/>
+                <add_atom name_pattern="la_22"/>
+                <add_atom name_pattern="la_23"/>
+                <add_atom name_pattern="la_24"/>
+            </relative_group>
+        </relative_macro>
+
+        <!-- Two input pads in the same io tile, one sub_tile apart: exercises
+             sub_tile_offset != 0 (io is this architecture's only capacity>1
+             tile). Each pad is its own io cluster; the macro pins the two
+             clusters to sub_tiles k and k+1 of one tile. -->
+        <relative_macro name="macro_io_subtile">
+            <reference_group>
+                <add_atom name_pattern="in10"/>
+            </reference_group>
+            <relative_group x_offset="0" y_offset="0" sub_tile_offset="1">
+                <add_atom name_pattern="in11"/>
             </relative_group>
         </relative_macro>
 

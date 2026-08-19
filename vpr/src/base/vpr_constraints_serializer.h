@@ -583,15 +583,18 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void* init_relative_macro_reference_group(void*& /*ctx*/) final {
         //the reference group is the anchor of the macro: implicit zero offset
         loaded_relative_group_ = UserRelativeGroup();
+        loaded_relative_group_failed_patterns_.clear();
         return nullptr;
     }
 
     virtual inline void finish_relative_macro_reference_group(void*& /*ctx*/) final {
         //the reference group is always groups[0], even when it matched no atoms
         //(whether an empty reference group is an error is decided when the whole
-        //macro has been read, see finish_relative_macro_list_relative_macro)
+        //macro has been read, see finish_relative_macro_list_relative_macro;
+        //keep its failed patterns until then so the diagnostic can name them)
         VTR_ASSERT(loaded_relative_macro_.groups.empty());
         loaded_relative_macro_.groups.push_back(loaded_relative_group_);
+        loaded_reference_group_failed_patterns_ = loaded_relative_group_failed_patterns_;
     }
 
     virtual inline std::pair<UserRelativeMacroId, int> get_relative_macro_reference_group(UserRelativeMacroId& macro_id) final {
@@ -602,6 +605,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void* add_relative_macro_relative_group(void*& /*ctx*/, int sub_tile_offset, int x_offset, int y_offset) final {
         loaded_relative_group_ = UserRelativeGroup();
+        loaded_relative_group_failed_patterns_.clear();
         loaded_relative_group_.offset.x = x_offset;
         loaded_relative_group_.offset.y = y_offset;
         loaded_relative_group_.offset.sub_tile = sub_tile_offset;
@@ -618,8 +622,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         }
 
         if (loaded_relative_group_.atoms.empty()) {
-            VTR_LOG_WARN("Relative macro '%s': a relative_group matched no atoms, skipping the group.\n",
-                         loaded_relative_macro_.name.c_str());
+            VTR_LOG_WARN("Relative macro '%s': the relative_group at offset (%d, %d, sub_tile %d) matched no atoms (failed name_pattern(s): %s), skipping the group.\n",
+                         loaded_relative_macro_.name.c_str(),
+                         loaded_relative_group_.offset.x, loaded_relative_group_.offset.y,
+                         loaded_relative_group_.offset.sub_tile,
+                         join_name_patterns(loaded_relative_group_failed_patterns_).c_str());
             return;
         }
 
@@ -668,7 +675,9 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                              macro_name.c_str());
             } else {
                 report_constraints_load_error("Relative macro '" + macro_name
-                                              + "': the reference group matched no atoms but a relative group did. The macro has no anchor.");
+                                              + "': the reference group matched no atoms (failed name_pattern(s): "
+                                              + join_name_patterns(loaded_reference_group_failed_patterns_)
+                                              + ") but a relative group did. The macro has no anchor.");
             }
             return;
         }
@@ -947,8 +956,27 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         }
 
         if (!found) {
-            VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern_.c_str());
+            //A missed pattern (e.g. a typo'd name or regex) silently discards
+            //placement intent, so name the macro and the pattern; the pattern
+            //is also referenced again if the whole group ends up empty.
+            VTR_LOG_WARN("Relative macro '%s': no atom matched name_pattern '%s', skipping the pattern.\n",
+                         loaded_relative_macro_.name.c_str(), name_pattern_.c_str());
+            loaded_relative_group_failed_patterns_.push_back(name_pattern_);
         }
+    }
+
+    /**
+     * @brief Join name patterns into a single quoted, comma-separated string
+     *        for warning/error messages.
+     */
+    static std::string join_name_patterns(const std::vector<std::string>& patterns) {
+        std::string joined;
+        for (size_t i = 0; i < patterns.size(); i++) {
+            if (i != 0)
+                joined += ", ";
+            joined += "'" + patterns[i] + "'";
+        }
+        return joined;
     }
 
     /**
@@ -992,6 +1020,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     std::pair<std::string, RoutingScheme> loaded_route_constraint;
     UserRelativeMacro loaded_relative_macro_;
     UserRelativeGroup loaded_relative_group_;
+
+    //name patterns of the relative group being loaded that matched no atom,
+    //referenced in the warning/error emitted when the whole group is empty
+    std::vector<std::string> loaded_relative_group_failed_patterns_;
+    //same, kept for the macro's reference group until the whole macro is read
+    //(an empty reference group is only diagnosed then)
+    std::vector<std::string> loaded_reference_group_failed_patterns_;
 
     //temp string used when a method must return a const char*
     std::string temp_ = "vpr";
