@@ -513,6 +513,15 @@ class B2BSolver : public AnalyticalSolver {
     // TODO: Should this be a proportion of the design size?
     static constexpr unsigned max_cg_iterations_ = 100;
 
+    /// @brief The relative residual (|Ax - b| / |b|) at which the CG solver is
+    ///        considered converged and stops iterating. Eigen's default
+    ///        tolerance is machine epsilon, which CG rarely reaches in
+    ///        practice; at that default, every solve runs all
+    ///        max_cg_iterations_ iterations, long after the solution has become
+    ///        accurate enough for global placement to use.
+    /// Increasing this number will save runtime at the expense of quality.
+    static constexpr double cg_convergence_tolerance_ = 1e-5;
+
     // The following constants are used to configure the anchor weighting.
     // The weights of anchors grow exponentially each iteration by the following
     // function:
@@ -634,9 +643,10 @@ class B2BSolver : public AnalyticalSolver {
      *      The number of pins in the hypernet connecting the two blocks.
      *  @param blk_locs
      *      The location of all blocks in a given dimension.
-     *  @param triplet_list
-     *      The triplet list which will be used to construct the connectivity
-     *      matrix for this dimension.
+     *  @param triplet_list The triplet list which will be used to construct
+     *      the off-diagonal entries of the connectivity matrix for this dimension.
+     *  @param matrix_diagonal Dense accumulator (indexed by row) for the
+     *      diagonal entries of the connectivity matrix for this dimension.
      *  @param b
      *      The constant vector for this dimension.
      */
@@ -646,6 +656,7 @@ class B2BSolver : public AnalyticalSolver {
                                   double net_w,
                                   const vtr::vector<APBlockId, double>& blk_locs,
                                   std::vector<Eigen::Triplet<double>>& triplet_list,
+                                  std::vector<double>& matrix_diagonal,
                                   Eigen::VectorXd& b);
 
     enum class CentralDifferenceDim {
@@ -713,6 +724,19 @@ class B2BSolver : public AnalyticalSolver {
     std::tuple<double, double, double> get_delay_normalization_facs(APBlockId driver_blk);
 
     /**
+     * @brief Pre-computes the timing connection weight of every sink pin into
+     *        timing_conn_weights_.
+     *
+     * The weights depend only on the legalized placement and the timing
+     * information, both fixed for the duration of a solve() call, so they are
+     * computed once here instead of once per bound update.
+     *
+     * Must be called after the legalized placement has been stored into
+     * block_*_locs_legalized and before the B2B loop is run.
+     */
+    void compute_timing_conn_weights();
+
+    /**
      * @brief Initializes the linear system with the given partial placement.
      *
      * Blocks will be connected to the bounding blocks of their nets using
@@ -721,15 +745,23 @@ class B2BSolver : public AnalyticalSolver {
      * approximates a linear equation.
      *
      * This will set the connectivity matrices (A) and constant vectors (b) to
-     * be solved by B2B.
+     * be solved by B2B. After the first iteration, this also folds the
+     * anchor-block connections into the system.
      */
     void init_linear_system(PartialPlacement& p_placement, unsigned iteration);
 
     /**
      * @brief Updates the linear system with anchor-blocks from the legalized
      *        solution.
+     *
+     * Anchors connect each moveable block to a fixed point, so they only add
+     * to the matrix diagonals (accumulated in the given dense vectors) and
+     * the constant vectors.
      */
-    void update_linear_system_with_anchors(unsigned iteration);
+    void update_linear_system_with_anchors(unsigned iteration,
+                                           std::vector<double>& matrix_diagonal_x,
+                                           std::vector<double>& matrix_diagonal_y,
+                                           std::vector<double>& matrix_diagonal_z);
 
     /**
      * @brief Solves the linear system of equations using the connectivity
@@ -803,6 +835,11 @@ class B2BSolver : public AnalyticalSolver {
     vtr::vector<APBlockId, double> block_y_locs_legalized;
     // NOTE: For speed, this vector is unused if a device has only one die.
     vtr::vector<APBlockId, double> block_z_locs_legalized;
+
+    /// @brief The timing connection weight of each sink pin in the netlist, in
+    ///        the x, y, and z dimensions respectively. Recomputed once per
+    ///        solve() call by compute_timing_conn_weights().
+    vtr::vector<APPinId, std::tuple<double, double, double>> timing_conn_weights_;
 
     /// @brief The total number of CG iterations that this solver has performed
     ///        so far. This can be a useful metric for the amount of work the
