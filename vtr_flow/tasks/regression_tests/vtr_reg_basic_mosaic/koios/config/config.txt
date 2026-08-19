@@ -32,4 +32,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params=-track_memory_usage -start mosaic -crit_path_router_iterations 100 --route_chan_width 300
+script_params=-track_memory_usage -start mosaic -crit_path_router_iterations 100 --route_chan_width 300 -verilator_check -verilator_check_vectors 20000
