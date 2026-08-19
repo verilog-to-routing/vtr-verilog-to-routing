@@ -1,49 +1,52 @@
 #!/usr/bin/env python3
-"""batch runner built around the vtr_flow/scripts/run_vtr_flow.py call.
-
-each job is python3 vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start <stage>.
-
-every run is pinned to 1 core (--num_workers 1 + VPR_NUM_WORKERS=1 +
-OMP_NUM_THREADS=1). --jobs N means N of those single-core runs in parallel.
-
-writes a live results csv under mosaic/scripts/compare_output_<arch_stem>/.
-watch_compare.py reads from this file. with --watch, the watcher is also ran
-
-timing uses three wall-clock timestamps per run (also stored in the results csv):
-  start, synth_finish (frontend blif appears), vpr_finish (flow process exits)
-  wall  = vpr_finish - start
-  synth = synth_finish - start
-  vpr   = vpr_finish - synth_finish
---no-rerun reloads cached rows (including those timestamps) from the newest
-prior compare_results_*.csv in the output dir.
-
-usage:
-    python3 mosaic/scripts/run_vtr_batch.py \\
-        --arch vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \\
-        --benchmark-dir vtr_flow/benchmarks/verilog/koios \\
-        --designs eltwise_layer conv_layer gemm_layer lenet \\
-        --include hard_block_include.v \\
-        --jobs 4 --watch
-
-flags:
-    --arch <xml>           architecture file (required)
-    --benchmark-dir <dir>  directory holding <design>.v
-    --designs <names...>   circuit stems. default: every *.v in bench dir
-                            except *_include.v
-    --include <files...>   -include paths (relative to --benchmark-dir or abs)
-    --flows <names...>     mosaic and/or vanilla_vtr (default: both)
-                            aliases: frank, parmys, vtr
-    --jobs <n>             concurrent single-core runs (default 4).
-                            each run is pinned to 1 core via --num_workers 1
-    --outdir <dir>         output directory (default
-                            mosaic/scripts/compare_output_<arch_stem>)
-    --csv <path>           results csv (default timestamped under outdir)
-    --route-chan-width N   passed to vpr (default 300)
-    --no-clean             keep existing run dirs
-    --no-rerun             skip runs that already have a .success marker
-    --watch                spawn watch_compare.py in this terminal
-    --watch-interval <s>   watch refresh period (default 1.0)
-"""
+# batch runner built around the vtr_flow/scripts/run_vtr_flow.py call.
+#
+# each job is python3 vtr_flow/scripts/run_vtr_flow.py <circuit.v> <arch.xml> -start <stage>.
+#
+# every run is pinned to 1 core (--num_workers 1 + VPR_NUM_WORKERS=1 +
+# OMP_NUM_THREADS=1). --jobs N means N of those single-core runs in parallel.
+#
+# writes a live results csv under mosaic/scripts/compare_output_<arch_stem>/.
+# watch_compare.py reads from this file. with --watch, the watcher is also ran
+#
+# timing
+#   wall  process lifetime
+#   synth until frontend blif
+#   vpr   VPR reported runtime
+# --no-rerun reloads cached rows (including those timestamps) from the newest
+# prior compare_results_*.csv in the output dir.
+#
+# usage:
+#     python3 mosaic/scripts/run_vtr_batch.py \
+#         --arch vtr_flow/arch/COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml \
+#         --benchmark-dir vtr_flow/benchmarks/verilog/koios \
+#         --designs eltwise_layer conv_layer gemm_layer lenet \
+#         --include hard_block_include.v \
+#         --jobs 4 --watch --verilator-check mosaic
+#
+# flags:
+#     --arch <xml>           architecture file (required)
+#     --benchmark-dir <dir>  directory holding <design>.v
+#     --designs <names...>   circuit stems. default: every *.v in bench dir
+#                             except *_include.v
+#     --include <files...>   -include paths (relative to --benchmark-dir or abs)
+#     --flows <names...>     mosaic and/or vanilla_vtr (default: both)
+#                             aliases: frank, parmys, vtr
+#     --jobs <n>             concurrent single-core runs (default 4).
+#                             each run is pinned to 1 core via --num_workers 1
+#     --outdir <dir>         output directory (default
+#                             mosaic/scripts/compare_output_<arch_stem>)
+#     --csv <path>           results csv (default timestamped under outdir)
+#     --route-chan-width N   passed to vpr (default 300)
+#     --no-clean             keep existing run dirs
+#     --no-rerun             skip runs that already have a .success marker
+#     --verilator-check <flows...>  after synth(+abc), rtl vs post-synth
+#                             random-check on the named flows (required).
+#                             same names/aliases as --flows
+#     --verilator-vectors N  vector count for --verilator-check (default 50000)
+#     --verilator-seed N     seed for --verilator-check (default 1)
+#     --watch                spawn watch_compare.py in this terminal
+#     --watch-interval <s>   watch refresh period (default 1.0)
 
 from __future__ import annotations
 
@@ -95,6 +98,11 @@ csvFields = (
     "status",
     "success",
     "vpr_status",
+    "verilator_status",
+    "verilator_matched",
+    "verilator_mismatched",
+    "verilator_vectors",
+    "verilator_port_errors",
     "start_unix",
     "synth_finish_unix",
     "vpr_finish_unix",
@@ -135,6 +143,7 @@ statusRank = {
     "route done": 9,
     "ok": 100,
     "cached": 100,
+    "fail": 100,
 }
 
 phasePatterns = [
@@ -158,6 +167,11 @@ statusKeys = (
     ("wall", "wall_time_sec"),
     ("synth", "synth_wall_sec"),
     ("vpr", "vpr_wall_sec"),
+    ("vcheck", "verilator_status"),
+    ("match", "verilator_matched"),
+    ("mismatch", "verilator_mismatched"),
+    ("vectors", "verilator_vectors"),
+    ("perrors", "verilator_port_errors"),
     ("s_luts", "synth_luts"),
     ("a_luts", "abc_luts"),
     ("p_luts", "packed_luts"),
@@ -256,8 +270,6 @@ def checkPrerequisites(needMosaic: bool, archFile: Path, benchDir: Path) -> None
 def statusSortKey(status: str) -> int:
     if status in statusRank:
         return statusRank[status]
-    if str(status).startswith("FAIL"):
-        return 100
     return statusRank.get("started", 1)
 
 
@@ -382,7 +394,7 @@ def upsertCsvRow(
 def formatSummary(runLabel: str, row: Dict, status: Optional[str] = None) -> str:
     if status is None:
         status = row.get("status") or (
-            "route done" if row.get("success") else f"FAIL ({row.get('vpr_status', '')})"
+            "route done" if row.get("success") else "fail"
         )
     parts = [f"{runLabel}: {status}"]
     for shortKey, field in statusKeys:
@@ -496,23 +508,30 @@ def abcWallFromMtimes(tempDir: Path, design: str) -> str:
     return f"{abcSec:.2f}"
 
 
-# USE: derive wall/synth/vpr from the three wall-clock timestamps.
-# wall = vpr_finish - start
-# synth = synth_finish - start
-# vpr = vpr_finish - synth_finish
+# derive wall/synth from timestamps. vpr uses VPR's own runtime when present
+# wall  vpr_finish - start
+# synth synth_finish - start
+# vpr   "The entire flow of VPR took" or vpr_finish - synth_finish
 def timesFromTimestamps(
     startUnix: float,
     synthFinishUnix: Optional[float],
     vprFinishUnix: float,
     tempDir: Path,
     design: str,
+    vprRuntimeSec: str = "",
 ) -> Dict[str, str]:
     if synthFinishUnix is None:
         synthFinishUnix = vprFinishUnix
     synthFinishUnix = min(max(synthFinishUnix, startUnix), vprFinishUnix)
     wallSec = max(0.0, vprFinishUnix - startUnix)
     synthSec = max(0.0, synthFinishUnix - startUnix)
-    vprSec = max(0.0, vprFinishUnix - synthFinishUnix)
+    if vprRuntimeSec:
+        try:
+            vprSec = max(0.0, float(vprRuntimeSec))
+        except ValueError:
+            vprSec = max(0.0, vprFinishUnix - synthFinishUnix)
+    else:
+        vprSec = max(0.0, vprFinishUnix - synthFinishUnix)
     return {
         "start_unix": f"{startUnix:.3f}",
         "synth_finish_unix": f"{synthFinishUnix:.3f}",
@@ -602,6 +621,11 @@ def parseVprQor(tempDir: Path) -> Dict[str, str]:
             "flow",
             "status",
             "success",
+            "verilator_status",
+            "verilator_matched",
+            "verilator_mismatched",
+            "verilator_vectors",
+            "verilator_port_errors",
             "wall_time_sec",
             "return_code",
             "start_unix",
@@ -744,6 +768,9 @@ def runOne(task: Tuple) -> Dict:
         priorRow,
         csvPath,
         order,
+        verilatorCheck,
+        verilatorVectors,
+        verilatorSeed,
     ) = task
     runLabel = f"{design}_{flowName}"
     tempDir = (outDir / "runs" / runLabel).resolve()
@@ -773,7 +800,7 @@ def runOne(task: Tuple) -> Dict:
         row = {
             "design": design,
             "flow": flowName,
-            "status": "FAIL (missing_verilog)",
+            "status": "fail",
             "success": False,
             "vpr_status": "missing_verilog",
             "wall_time_sec": "",
@@ -813,11 +840,16 @@ def runOne(task: Tuple) -> Dict:
     ]
     if includeFiles:
         cmd += ["-include", *[str(path) for path in includeFiles]]
+    if verilatorCheck:
+        cmd += [
+            "-verilator_check",
+            "-verilator_check_vectors",
+            str(verilatorVectors),
+            "-verilator_check_seed",
+            str(verilatorSeed),
+        ]
 
-    # three wall-clock timestamps drive all reported stage times:
-    #   wall  = vpr_finish - start
-    #   synth = synth_finish - start
-    #   vpr   = vpr_finish - synth_finish
+    # wall is process lifetime. synth is until frontend blif. vpr is VPR's own runtime
     startUnix = time.time()
     synthFinishUnix = None
     liveStatus = "started"
@@ -849,25 +881,34 @@ def runOne(task: Tuple) -> Dict:
     if synthFinishUnix is None and frontendReady(tempDir, design, flowName):
         synthFinishUnix = vprFinishUnix
 
-    stageTimes = timesFromTimestamps(
-        startUnix, synthFinishUnix, vprFinishUnix, tempDir, design
-    )
-
     qor = parseVprQor(tempDir)
-    qor.pop("_vpr_runtime_sec", "")
+    vprRuntime = qor.pop("_vpr_runtime_sec", "")
+    vprOut = tempDir / "vpr.out"
+    if not vprRuntime and (not vprOut.is_file() or vprOut.stat().st_size == 0):
+        vprRuntime = "0"
+    stageTimes = timesFromTimestamps(
+        startUnix,
+        synthFinishUnix,
+        vprFinishUnix,
+        tempDir,
+        design,
+        vprRuntimeSec=vprRuntime,
+    )
     qor.update(stageLutCounts(tempDir, design))
     qor.update(stageTimes)
     if qor.get("vpr_status") == "missing":
         qor["vpr_status"] = extractFailReason(tempDir, flowName, returnCode)
     success = returnCode == 0 and qor["vpr_status"] == "ok"
-    # qor must not overwrite status/design/flow (parseVprQor used to emit status="")
+    vcheck = readVerilatorMetrics(tempDir, verilatorCheck)
+    # final identity/status fields override any same-named keys from qor
     row = {
         **qor,
         "design": design,
         "flow": flowName,
-        "status": "route done" if success else f"FAIL ({qor.get('vpr_status', '')})",
+        "status": "route done" if success else "fail",
         "success": success,
         "return_code": returnCode,
+        **vcheck,
     }
     if success:
         try:
@@ -877,6 +918,60 @@ def runOne(task: Tuple) -> Dict:
 
     publish(row)
     return row
+
+
+# snapshot of verilator random-check from verilator_random_check.out
+# pass  rtl and post-synth matched
+# fail  sim ran and found mismatches
+# error could not compile or run the check
+def readVerilatorMetrics(tempDir: Path, enabled: bool) -> Dict[str, str]:
+    empty = {
+        "verilator_status": "",
+        "verilator_matched": "",
+        "verilator_mismatched": "",
+        "verilator_vectors": "",
+        "verilator_port_errors": "",
+    }
+    if not enabled:
+        return empty
+    logPath = tempDir / "verilator_random_check.out"
+    if not logPath.is_file():
+        return {**empty, "verilator_status": "error"}
+    try:
+        text = logPath.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {**empty, "verilator_status": "error"}
+
+    metrics = dict(empty)
+    summary = re.search(
+        r"VCHECK_SUMMARY\s+matched=(\d+)\s+mismatched=(\d+)\s+"
+        r"vectors=(\d+)\s+port_errors=(\d+)",
+        text,
+    )
+    if summary:
+        metrics["verilator_matched"] = summary.group(1)
+        metrics["verilator_mismatched"] = summary.group(2)
+        metrics["verilator_vectors"] = summary.group(3)
+        metrics["verilator_port_errors"] = summary.group(4)
+
+    toolError = bool(
+        re.search(
+            r"verilator not on PATH|ERROR:|yosys blif|missing post-synth|"
+            r"script missing",
+            text,
+        )
+    )
+    if "vectors matched across rtl" in text:
+        metrics["verilator_status"] = "pass"
+    elif summary and int(summary.group(2)) > 0:
+        metrics["verilator_status"] = "fail"
+    elif re.search(r"FAIL:\s+\d+\s+mismatches", text, re.IGNORECASE):
+        metrics["verilator_status"] = "fail"
+    elif toolError:
+        metrics["verilator_status"] = "error"
+    else:
+        metrics["verilator_status"] = "error"
+    return metrics
 
 
 def runPool(
@@ -972,6 +1067,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--no-clean", action="store_true")
     parser.add_argument("--no-rerun", action="store_true")
     parser.add_argument(
+        "--verilator-check",
+        nargs="+",
+        metavar="FLOW",
+        default=None,
+        help="after synth(+abc), rtl vs post-synth random-check on these flows "
+        "(mosaic and/or vanilla_vtr; aliases: frank, parmys, vtr)",
+    )
+    parser.add_argument(
+        "--verilator-vectors",
+        type=int,
+        default=50000,
+        help="vector count for --verilator-check (default 50000)",
+    )
+    parser.add_argument(
+        "--verilator-seed",
+        type=int,
+        default=1,
+        help="seed for --verilator-check (default 1)",
+    )
+    parser.add_argument(
         "--watch",
         action="store_true",
         help="spawn watch_compare.py in this terminal",
@@ -988,6 +1103,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     benchDir = resolvePath(args.benchmark_dir, vtrRoot)
     designs = resolveDesigns(args.designs, benchDir)
     selectedFlows = normalizeFlows(args.flows)
+    vcheckFlows = normalizeFlows(args.verilator_check) if args.verilator_check else []
+    missingVcheck = [flow for flow in vcheckFlows if flow not in selectedFlows]
+    if missingVcheck:
+        parser.error(
+            "--verilator-check flow not in --flows: "
+            + ", ".join(missingVcheck)
+            + " (selected: "
+            + ", ".join(selectedFlows)
+            + ")"
+        )
     jobs = max(1, args.jobs)
     includeFiles = resolveIncludePaths(args.include, benchDir)
     outDir = resolvePath(
@@ -1013,6 +1138,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     labels = [f"{design}_{flow}" for design in designs for flow in selectedFlows]
     (statusDir / "manifest.txt").write_text("\n".join(labels) + "\n", encoding="utf-8")
     (statusDir / "csv_path.txt").write_text(str(csvPath.resolve()) + "\n", encoding="utf-8")
+    if vcheckFlows:
+        (statusDir / "verilator_check").write_text(
+            " ".join(vcheckFlows) + "\n", encoding="utf-8"
+        )
+    else:
+        marker = statusDir / "verilator_check"
+        if marker.is_file():
+            marker.unlink()
 
     # --no-rerun reloads timing/qor for cached runs from the newest prior csv.
     priorIndex: Dict[Tuple[str, str], Dict] = {}
@@ -1057,6 +1190,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             priorIndex.get((design, flowName)),
             csvPath,
             order,
+            flowName in vcheckFlows,
+            args.verilator_vectors,
+            args.verilator_seed,
         )
         for design in designs
         for flowName in selectedFlows
@@ -1066,6 +1202,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"bench:   {benchDir}")
     print(f"designs: {', '.join(designs)}")
     print(f"flows:   {', '.join(selectedFlows)}")
+    if vcheckFlows:
+        print(f"vcheck:  {', '.join(vcheckFlows)}")
     if includeFiles:
         print(f"include: {', '.join(path.name for path in includeFiles)}")
     print(f"jobs:    {jobs} concurrent runs x 1 core each")
