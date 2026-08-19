@@ -1973,3 +1973,17 @@ Prepacker::~Prepacker() {
     // members.
     free_list_of_pack_patterns(list_of_pack_patterns);
 }
+
+std::pair<UserRelativeMacroId, int> get_molecule_relative_group(const t_pack_molecule& molecule,
+                                                                const UserRelativeMacros& relative_macros) {
+    for (AtomBlockId blk_id : molecule.atom_block_ids) {
+        if (!blk_id.is_valid())
+            continue;
+        // The molecule's constrained atoms are all in one group, so the first
+        // constrained atom determines the group of the whole molecule.
+        std::pair<UserRelativeMacroId, int> group = relative_macros.get_atom_group(blk_id);
+        if (group.first.is_valid())
+            return group;
+    }
+    return {UserRelativeMacroId::INVALID(), -1};
+}

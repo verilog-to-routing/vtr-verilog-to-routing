@@ -11,8 +11,10 @@
 #include <algorithm>
 #include <map>
 #include <unordered_set>
+#include <utility>
 #include "atom_netlist_fwd.h"
 #include "pack_patterns.h"
+#include "user_relative_macros.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -22,7 +24,6 @@
 // Forward declarations
 class t_pack_molecule;
 class LogicalModels;
-class UserRelativeMacros;
 struct t_logical_block_type;
 class t_pb_graph_node;
 
@@ -113,6 +114,16 @@ class t_pack_molecule {
         return type == e_pack_pattern_molecule_type::MOLECULE_FORCED_PACK && pack_pattern->is_chain;
     }
 };
+
+/**
+ * @brief Return the relative placement group a molecule belongs to.
+ *
+ * @return The (macro id, group index) of the molecule's group, or
+ *         (UserRelativeMacroId::INVALID(), -1) if no atom of the molecule
+ *         belongs to a relative placement macro.
+ */
+std::pair<UserRelativeMacroId, int> get_molecule_relative_group(const t_pack_molecule& molecule,
+                                                                const UserRelativeMacros& relative_macros);
 
 /**
  * @brief Statistics on a molecule.
@@ -307,6 +318,18 @@ class Prepacker {
         VTR_ASSERT_SAFE_MSG(molecule_id.is_valid(), "Invalid molecule ID");
         const t_pack_molecule& mol = get_molecule(molecule_id);
         return mol.atom_block_ids[mol.root];
+    }
+
+    /**
+     * @brief Get the number of valid atoms in the given molecule.
+     *
+     * A molecule's atom_block_ids may contain invalid ids when the molecule
+     * does not completely fill its pack pattern; those are not counted.
+     */
+    inline size_t get_molecule_num_valid_atoms(PackMoleculeId molecule_id) const {
+        const t_pack_molecule& mol = get_molecule(molecule_id);
+        return std::count_if(mol.atom_block_ids.begin(), mol.atom_block_ids.end(),
+                             [](AtomBlockId blk_id) noexcept { return blk_id.is_valid(); });
     }
 
     /**
