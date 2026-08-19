@@ -800,6 +800,10 @@ class B2BSolver : public AnalyticalSolver {
         return device_grid_num_layers_ > 1;
     }
 
+    std::vector<Eigen::Triplet<double>> triplet_list_x_;
+    std::vector<Eigen::Triplet<double>> triplet_list_y_;
+    std::vector<Eigen::Triplet<double>> triplet_list_z_;
+
     // The following are variables used to store the system of equations to be
     // solved in the x and y dimensions. The equations are of the form:
     //          Ax = b
