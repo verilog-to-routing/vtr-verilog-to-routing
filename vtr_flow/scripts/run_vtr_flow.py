@@ -395,6 +395,24 @@ def vtr_command_argparser(prog=None):
         help="Supplies Mosaic with a custom yosys template script"
         + " (default: vtr_flow/misc/mosaic/template/synthesis.tcl).",
     )
+    mosaic.add_argument(
+        "-verilator_check",
+        default=False,
+        action="store_true",
+        help="After synth(+abc), run mosaic verilator random-check of rtl vs post-synth blif",
+    )
+    mosaic.add_argument(
+        "-verilator_check_vectors",
+        type=int,
+        default=50000,
+        help="Number of random vectors for -verilator_check (default 50000)",
+    )
+    mosaic.add_argument(
+        "-verilator_check_seed",
+        type=int,
+        default=1,
+        help="Seed for -verilator_check (default 1)",
+    )
     #
     # VPR arguments
     #
@@ -615,6 +633,9 @@ def vtr_command_main(arg_list, prog=None):
             check_route=args.check_route,
             check_place=args.check_place,
             no_second_run=args.no_second_run,
+            verilator_check=args.verilator_check,
+            verilator_check_vectors=args.verilator_check_vectors,
+            verilator_check_seed=args.verilator_check_seed,
         )
         error_status = "OK"
     except vtr.VtrError as error:

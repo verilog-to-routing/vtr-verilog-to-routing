@@ -61,6 +61,9 @@ def run(
     check_route=False,
     check_place=False,
     no_second_run=False,
+    verilator_check=False,
+    verilator_check_vectors=50000,
+    verilator_check_seed=1,
 ):
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
@@ -123,6 +126,15 @@ def run(
 
         check_equivalent  :
             Enables Logical Equivalence Checks
+
+        verilator_check :
+            Run mosaic verilator random-check of rtl vs post-synth (after abc)
+
+        verilator_check_vectors :
+            Number of random vectors for verilator_check
+
+        verilator_check_seed :
+            Seed for verilator_check
 
         use_old_abc_script :
             Enables the use of the old ABC script
@@ -198,6 +210,8 @@ def run(
     # We initialize it here to the user specified circuit and let downstream
     # stages update it
     next_stage_netlist = circuit_copy
+    # set when a synthesis frontend runs; used to gate verilator_check
+    post_frontend_netlist = None
 
     #
     # RTL Elaboration & Synthesis (ODIN-II)
@@ -217,6 +231,7 @@ def run(
         )
 
         next_stage_netlist = post_odin_netlist
+        post_frontend_netlist = post_odin_netlist
 
         lec_base_netlist = post_odin_netlist if not lec_base_netlist else lec_base_netlist
     #
@@ -239,6 +254,7 @@ def run(
         )
 
         next_stage_netlist = post_yosys_netlist
+        post_frontend_netlist = post_yosys_netlist
 
         lec_base_netlist = post_yosys_netlist if not lec_base_netlist else lec_base_netlist
 
@@ -258,6 +274,7 @@ def run(
         )
 
         next_stage_netlist = post_mosaic_netlist
+        post_frontend_netlist = post_mosaic_netlist
 
         lec_base_netlist = post_mosaic_netlist if not lec_base_netlist else lec_base_netlist
 
@@ -281,6 +298,32 @@ def run(
 
         next_stage_netlist = post_abc_netlist
         lec_base_netlist = post_abc_netlist if not lec_base_netlist else lec_base_netlist
+
+    #
+    # verilator random-check of rtl against the post-synth netlist
+    #
+    if verilator_check:
+        if ".blif" in circuit_file.suffixes:
+            print("verilator_check: skipped (input is already a blif netlist)")
+        elif post_frontend_netlist is None:
+            print("verilator_check: skipped (no synthesis frontend ran in this flow)")
+        else:
+            # next_stage_netlist is post-abc for parmys/odin, or mosaic blif
+            post_synth_blif = next_stage_netlist
+            if not Path(post_synth_blif).is_file():
+                print(
+                    "verilator_check: missing post-synth blif {}".format(post_synth_blif)
+                )
+            else:
+                from vtr.mosaic.verilator_random_check import run_verilator_random_check
+
+                run_verilator_random_check(
+                    circuit_copy,
+                    post_synth_blif,
+                    temp_dir,
+                    vectors=verilator_check_vectors,
+                    seed=verilator_check_seed,
+                )
 
     #
     # Power Activity Estimation
