@@ -31,6 +31,7 @@ Optional flags:
 - `-mosaic_script <path>` chooses a custom Yosys template. The default is `vtr_flow/misc/mosaic/template/synthesis.tcl`.
 - `-top_module <name>` sets the top. Leave it empty for Yosys `-auto-top`.
 - `-include <file>` adds extra Verilog, which Koios-style hardblock includes need.
+- `-verilator_check` runs an rtl vs post-synth (after abc) Verilator random-check after synthesis.
 
 The stage writes `<circuit>.mosaic.blif`, logs to `mosaic.out`, prunes unused blackbox model declarations, then runs `fix_blif_for_vpr.py` for ram addr pads, hierarchical net dots, and latch-q uniquify. LUT mapping already happened inside Yosys (`abc` with `ENABLE_ABC=1`), so the flow skips the external VTR ABC stage and continues into VPR.
 
@@ -54,7 +55,7 @@ python3 mosaic/scripts/run_vtr_batch.py --arch vtr_flow/arch/COFFE_22nm/k6FracN1
 python3 mosaic/scripts/watch_compare.py --dir mosaic/scripts/compare_output_<arch_stem>
 ```
 
-Useful flags include `--flows mosaic` to skip vanilla VTR, and `--no-rerun` to skip jobs that already have a success marker. Omit `--designs` to take every `*.v` in the benchmark dir except `*_include.v`.
+Useful flags include `--flows mosaic` to skip vanilla VTR, `--verilator-check mosaic` to compare rtl vs post-synth with Verilator on Mosaic only, and `--no-rerun` to skip jobs that already have a success marker. Omit `--designs` to take every `*.v` in the benchmark dir except `*_include.v`. See `mosaic/verilator_check/README.md` for the random-check details.
 
 
 
@@ -164,13 +165,13 @@ Shared ABC scripts live under `template/abc/`. Rebuild them with `template/abc/b
 
 
 ## 4. Verilator check
-`mosaic/verilator_check/` checks functional equivalence between the original rtl, the post-synthesis, and post-ABC blifs from a harness run directory.
+`mosaic/verilator_check/` checks functional equivalence between the original rtl and the post-synth blif (after synth + abc, or mosaic in-yosys abc) from a harness run directory.
 
 ```shell
 python3 mosaic/verilator_check/run_random_check.py --run-dir <harness_run_dir> --vectors 200000 --seed 1
 ```
 
-The checker converts both blifs back to Verilog with Yosys, builds a three-DUT testbench with the rtl, post-synth design, and post-ABC design, and drives the same random vectors into all three. Hardblock simulation models live in `verilator_check/models/sim_hardblocks.v`.
+The checker converts the post-synth blif back to Verilog with Yosys, builds a two-DUT testbench with the rtl and post-synth design, and drives the same random vectors into both. Hardblock simulation models live in `verilator_check/models/sim_hardblocks.v`.
 
 Optional flags:
 - `--check-mem-init` fails if rtl memory init cannot survive hard ram blackboxes.
@@ -182,19 +183,20 @@ See `mosaic/verilator_check/README.md` for information.
 
 
 ## 5. CI Testing
-The `vtr_reg_basic_mosaic` suite runs the `k6` task (basic circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start mosaic`) plus the `koios` hardblock passthrough smoke (`test.v` + `hard_block_include.v` on the complex-DSP architecture):
+The `vtr_reg_basic_mosaic` suite runs the `k6` task (basic circuits on `k6_frac_N10_frac_chain_mem32K_40nm.xml` with `-start mosaic`) plus the `koios` hardblock passthrough smoke (`reduction_layer.v` + `hard_block_include.v` on the complex-DSP architecture). Those runs also enable `-verilator_check` (20000 vectors). Every mosaic case must pass rtl vs post-synth:
 
 ```shell
 ./run_reg_test.py vtr_reg_basic_mosaic -j4
+python3 mosaic/scripts/verify_regression_vcheck.py --suite vtr_reg_basic_mosaic
 ```
+
+Needs Verilator on `PATH`. The `RegressionWithMosaic` job in `.github/workflows/test.yml` runs this suite (and the vcheck gate) against the release build.
 
 To compare Parmys and Mosaic hardblock BLIF model names on one circuit:
 
 ```shell
 python3 mosaic/scripts/compare_frontend_blif_models.py --run --circuit vtr_flow/benchmarks/verilog/diffeq1.v --arch vtr_flow/arch/timing/k6_frac_N10_frac_chain_mem32K_40nm.xml
 ```
-
-The `RegressionWithMosaic` job in `.github/workflows/test.yml` runs the basic suite against the release build.
 
 Optional maintainer checks:
 
