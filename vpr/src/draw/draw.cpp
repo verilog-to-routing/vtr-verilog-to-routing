@@ -103,10 +103,10 @@ static void draw_main_canvas(ezgl::renderer* g);
 /**
  * @brief A callback function that tells the ezgl renderer if the cached geometry can be reused for a camera-only redraw.
  *
- * @param reason Reason that cuased the view change.
+ * @param reason Reason that caused the view change.
  * @param g ezgl::renderer.
  * 
- * @return True if cached geometry can be reused; false if geometry should be regenerated.
+ * @return True to indicate a camera-only redraw; false to indicate a full redraw.
  */
 static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
 
@@ -347,39 +347,59 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
 static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
+    // The current zoom level.
     double world_units_per_pixel = g->world_units_per_pixel();
 
+    // Pure panning does not change the level of detail, so the existing
+    // geometry can be reused with only a camera-only redraw.
     if (reason == ezgl::view_change_reason::pan) {
         return true;
     } else if (reason == ezgl::view_change_reason::zoom_in || reason == ezgl::view_change_reason::pan_zoom_in) {
+        // Zooming in past the RR decluttering threshold makes previously
+        // decluttered (hidden) routing resources visible, so cached geometry is incomplete.
         if(draw_state->show_rr
             && draw_state->enable_rr_decluttering
             && draw_state->rr_decluttered
             && world_units_per_pixel <= MAX_WORLD_UNITS_PER_PIXEL)
             return false;
 
+        // Intra-block drawing adds more details as the view gets closer, but stays the same once all internals are already drawn.
+        // Regenerate geometry when the current zoom level has passed below the initial detailed internal view (only_clbs_drawn_threshold)
+        // but not all internals are drawn yet.
         if(draw_state->show_blk_internal
+            && world_units_per_pixel < draw_state->only_clbs_drawn_threshold
             && !(draw_state->all_internals_drawn)
-            && world_units_per_pixel < draw_state->only_clbs_drawn_level)
+            )
             return false;
 
+        // Critical-path delay labels depend on screen-space placement, so
+        // their geometry must be rebuilt when zoom changes.
+        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
         if(draw_state->show_crit_path
             && draw_state->show_crit_path_flylines
             && draw_state->show_crit_path_delays)
             return false;
     }
     else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
+        // Zooming out past the RR decluttering threshold removes normal RR
+        // resources from the drawing, so reuse would leave stale geometry.
         if(draw_state->show_rr
             && draw_state->enable_rr_decluttering
             && !(draw_state->rr_decluttered)
             && world_units_per_pixel > MAX_WORLD_UNITS_PER_PIXEL)
             return false;
 
+        // Intra-block drawing drops details as the view gets farther away, but stays the same once only the CLBs are visible.
+        // Regenerate geometry when the current zoom level has passed above the final detailed internal view (all_internals_drawn_threshold)
+        // but the CLBs are not yet the only drawn shapes (some internals are drawn as well).
         if(draw_state->show_blk_internal
             && !(draw_state->only_clbs_drawn)
-            && world_units_per_pixel > draw_state->all_internals_drawn_level)
+            && world_units_per_pixel > draw_state->all_internals_drawn_threshold)
             return false;
 
+        // Critical-path delay labels have a fixed screen-size offset from the flylines, so
+        // their geometry must be rebuilt when zoom changes.
+        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
         if(draw_state->show_crit_path
             && draw_state->show_crit_path_flylines
             && draw_state->show_crit_path_delays)
@@ -387,6 +407,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
     } else {
         VTR_ASSERT_MSG(false, "Invalid ezgl::view_change_reason provided. Performing a camera-only redraw.");
     }
+    // Default to a camera-only redraw.
     return true;
 }
 

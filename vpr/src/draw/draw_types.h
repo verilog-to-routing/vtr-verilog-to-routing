@@ -306,9 +306,9 @@ struct t_draw_state {
     int show_blk_internal = 0;
 
     bool all_internals_drawn = false;
-    double all_internals_drawn_level = 0;
+    double all_internals_drawn_threshold = 0;
     bool only_clbs_drawn = false;
-    double only_clbs_drawn_level = std::numeric_limits<double>::max();
+    double only_clbs_drawn_threshold = std::numeric_limits<double>::max();
 
     ///@brief Whether graphics are enabled
     bool show_graphics = false;
