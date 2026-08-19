@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""convert a blif netlist to verilog via yosys for verilator elaboration."""
+# convert a blif netlist to verilog via yosys for verilator elaboration.
 
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ def resolveYosys(yosysPath: Path | None = None) -> Path:
         return yosysPath
     repoRoot = Path(__file__).resolve().parents[2]
     candidates = [
-        repoRoot / "vtr-verilog-to-routing-master" / "build" / "bin" / "yosys",
-        repoRoot / "vtr-verilog-to-routing-master" / "yosys" / "yosys",
+        repoRoot / "build" / "bin" / "yosys",
+        repoRoot / "yosys" / "yosys",
     ]
     for path in candidates:
         if path.is_file():
@@ -97,8 +97,12 @@ def _normalizeNetExpr(net: str) -> str:
 # trailing spaces yosys already emitted on escaped net names.
 def packBitBlastedHardblockPorts(verilogText: str) -> str:
     # yosys emits .\a[0] (net) as '.' plus escaped-id '\a[0] '
+    # abc/parmys blif uses a~0 instead of a[0]
     bitPinRe = re.compile(
-        r"^\.\\(?P<port>[A-Za-z_]\w*)\[(?P<idx>\d+)\]\s*\((?P<net>.*)\)$"
+        r"^\.\\(?P<port>[A-Za-z_]\w*)(?:\[(?P<br>\d+)\]|~(?P<tilde>\d+))\s*\((?P<net>.*)\)$"
+    )
+    tildePinRe = re.compile(
+        r"^\.(?P<port>[A-Za-z_]\w*)~(?P<tilde>\d+)\s*\((?P<net>.*)\)$"
     )
     plainPinRe = re.compile(r"^\.(?P<port>[A-Za-z_]\w*)\s*\((?P<net>.*)\)$")
     instPattern = re.compile(
@@ -116,10 +120,10 @@ def packBitBlastedHardblockPorts(verilogText: str) -> str:
         plain: List[Tuple[str, str]] = []
         for conn in conns:
             conn = conn.strip().rstrip(",")
-            mBit = bitPinRe.match(conn)
+            mBit = bitPinRe.match(conn) or tildePinRe.match(conn)
             if mBit and mBit.group("port") in vectorPorts:
                 port = mBit.group("port")
-                idx = int(mBit.group("idx"))
+                idx = int(mBit.group("br") or mBit.group("tilde"))
                 net = _normalizeNetExpr(mBit.group("net"))
                 blasted.setdefault(port, {})[idx] = net
                 continue
@@ -157,9 +161,7 @@ def packBitBlastedHardblockPorts(verilogText: str) -> str:
     return instPattern.sub(rewriteInstance, verilogText)
 
 
-# USE: rewrite module ports like \\a_in[0], \\a_in[1] into vector a_in[1:0].
-# also rewrites body references \\a_in[i] into a_in[i] so the tb can connect
-# .a_in(a_in) against rtl vector ports.
+# pack abc ~bit and yosys [bit] top ports into rtl-style vectors
 def packBitBlastedTopPorts(verilogText: str) -> str:
     modMatch = re.search(
         r"(?P<head>^\s*module\s+(?P<name>\w+)\s*\()(?P<ports>.*?)(?P<tail>\)\s*;)",
@@ -170,29 +172,29 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
         return verilogText
 
     rawPorts = [p.strip() for p in modMatch.group("ports").split(",") if p.strip()]
-    bitPortRe = re.compile(r"^\\(?P<base>[A-Za-z_]\w*)\[(?P<idx>\d+)\]\s*$")
+    bitPortRe = re.compile(
+        r"^\\?(?P<base>[A-Za-z_][A-Za-z0-9_]*)(?:\[(?P<br>\d+)\]|~(?P<tilde>\d+))\s*$"
+    )
 
-    scalarPorts: List[str] = []
     vectorBits: Dict[str, List[int]] = {}
     for port in rawPorts:
         m = bitPortRe.match(port)
         if m:
-            vectorBits.setdefault(m.group("base"), []).append(int(m.group("idx")))
-        else:
-            # strip escape if present. keep as-is name token when unsure
-            scalarPorts.append(port)
+            idx = int(m.group("br") or m.group("tilde"))
+            vectorBits.setdefault(m.group("base"), []).append(idx)
 
     if not vectorBits:
         return verilogText
 
-    # new port list. scalars first (as written), then packed vectors
     newPortList: List[str] = []
     seenVectors = set()
     for port in rawPorts:
         m = bitPortRe.match(port)
         if not m:
-            # drop leading backslash on rare escaped simple names
-            newPortList.append(port.lstrip("\\").strip() if port.startswith("\\") and "[" not in port else port)
+            if port.startswith("\\") and "[" not in port and "~" not in port:
+                newPortList.append(port.lstrip("\\").strip())
+            else:
+                newPortList.append(port)
             continue
         base = m.group("base")
         if base not in seenVectors:
@@ -204,11 +206,9 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
     )
     text = verilogText[: modMatch.start()] + newHeader + verilogText[modMatch.end() :]
 
-    # replace input/output/inout decls for bit ports with a single vector decl.
-    # forms: input \a_in[0] ; / input wire \a_in[0] ;
     dirRe = re.compile(
         r"^\s*(?P<dir>input|output|inout)(?:\s+wire|\s+reg)?\s+"
-        r"\\(?P<base>[A-Za-z_]\w*)\[(?P<idx>\d+)\]\s*;\s*$",
+        r"\\?(?P<base>[A-Za-z_][A-Za-z0-9_]*)(?:\[(?P<br>\d+)\]|~(?P<tilde>\d+))\s*;\s*$",
         re.M,
     )
     dirByBase: Dict[str, str] = {}
@@ -216,10 +216,8 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
         base = m.group("base")
         dirByBase.setdefault(base, m.group("dir"))
 
-    # drop all bitblasted decls
     text = dirRe.sub("", text)
 
-    # insert vector decls after module header
     declLines = []
     for base, idxs in vectorBits.items():
         direction = dirByBase.get(base, "input")
@@ -234,11 +232,20 @@ def packBitBlastedTopPorts(verilogText: str) -> str:
             flags=re.S,
         )
 
-    # rewrite body references \base[i] into base[i] (keep trailing space if any)
-    for base, idxs in vectorBits.items():
+    for base in vectorBits:
         text = re.sub(
             rf"\\{re.escape(base)}\[(\d+)\](\s?)",
             rf"{base}[\1]\2",
+            text,
+        )
+        text = re.sub(
+            rf"\\{re.escape(base)}~(\d+)(\s?)",
+            rf"{base}[\1]\2",
+            text,
+        )
+        text = re.sub(
+            rf"(?<![A-Za-z0-9_]){re.escape(base)}~(\d+)",
+            rf"{base}[\1]",
             text,
         )
     return text
@@ -313,7 +320,9 @@ def blifToVerilog(
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="convert a blif netlist to verilog via yosys"
+    )
     parser.add_argument("blif", type=Path)
     parser.add_argument("-o", "--output", type=Path, required=True)
     parser.add_argument("--top", default=None, help="top module name (default: auto-top)")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""parse top-module ports from rtl verilog or blif for the random-check tb."""
+# parse top-module ports from rtl verilog or blif for the random-check tb.
 
 from __future__ import annotations
 
@@ -45,6 +45,39 @@ def _parseWidth(tokenBlock: str) -> int:
         return 1
     msb, lsb = int(m.group(1)), int(m.group(2))
     return abs(msb - lsb) + 1
+
+
+# pack abc/yosys bit-blasted names (a~3 or a[3]) into one bus port
+def collapseBitBlastedPorts(ports: List[PortDecl]) -> List[PortDecl]:
+    bitRe = re.compile(r"^(.+)(?:~|\[)(\d+)\]?$")
+    buses: dict[str, tuple[str, list[int]]] = {}
+    packed: List[PortDecl] = []
+    seen = set()
+    for port in ports:
+        m = bitRe.match(port.name)
+        if not m:
+            packed.append(port)
+            continue
+        base = m.group(1)
+        idx = int(m.group(2))
+        if base not in buses:
+            buses[base] = (port.direction, [idx])
+        else:
+            buses[base][1].append(idx)
+        if base in seen:
+            continue
+        seen.add(base)
+        packed.append(port)
+    out: List[PortDecl] = []
+    for port in packed:
+        m = bitRe.match(port.name)
+        if not m:
+            out.append(port)
+            continue
+        base = m.group(1)
+        direction, idxs = buses[base]
+        out.append(PortDecl(base, direction, max(idxs) - min(idxs) + 1))
+    return out
 
 
 # HELPER: remove // and /* */ comments without treating //*** headers as /*.
@@ -112,7 +145,7 @@ def parseVerilogTopPorts(verilogPath: Path, topName: Optional[str] = None) -> Li
             if nameMatch:
                 w = _parseWidth(nameMatch.group(1) or "") if nameMatch.group(1) else currentWidth
                 ports.append(PortDecl(nameMatch.group(2), currentDir, w))
-        return ports
+        return collapseBitBlastedPorts(ports)
 
     # non-ansi. port list is names only. directions live in the body
     names = []
@@ -143,7 +176,7 @@ def parseVerilogTopPorts(verilogPath: Path, topName: Optional[str] = None) -> Li
             ports.append(PortDecl(name, "input", 1))
     if not ports:
         raise ValueError(f"no ports parsed from {verilogPath} module {resolvedTop}")
-    return ports
+    return collapseBitBlastedPorts(ports)
 
 
 # USE: return (modelName, ports) from the first non-blackbox .model.
@@ -197,11 +230,11 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
     def collapse(names: list[str], direction: str) -> List[PortDecl]:
         buses: dict[str, list[int]] = {}
         scalars: list[str] = []
-        bitRe = re.compile(r"^(.+)\[(\d+)\]$")
+        bitRe = re.compile(r"^(.+)(?:\[(\d+)\]|~(\d+))$")
         for n in names:
             m = bitRe.match(n)
             if m:
-                buses.setdefault(m.group(1), []).append(int(m.group(2)))
+                buses.setdefault(m.group(1), []).append(int(m.group(2) or m.group(3)))
             else:
                 scalars.append(n)
         ports: List[PortDecl] = []
@@ -218,7 +251,7 @@ def parseBlifTopPorts(blifPath: Path) -> tuple[str, List[PortDecl]]:
     ports = [PortDecl(n, "input", 1) for n in inputs] + [
         PortDecl(n, "output", 1) for n in outputs
     ]
-    return modelName, ports
+    return modelName, collapseBitBlastedPorts(ports)
 
 
 
