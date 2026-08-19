@@ -1111,7 +1111,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                 int east_x = start_x_ + (k + length_hops_) * repeat_.x;
                 if (east_x > x_max) break;
 
-                int wire_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+                int wire_ptc = clock_graph.reserve_chanx_ptc(bx, east_x, by, by);
                 int wire_idx = create_chanx_node(layer_num, bx, east_x, by, wire_ptc, track_direction(track), rr_nodes, rr_graph_builder);
                 east_wire[track][{bx, by}] = wire_idx;
             }
@@ -1123,7 +1123,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
                 int north_y = start_y_ + (k + length_hops_) * repeat_.y;
                 if (north_y > y_max) break;
 
-                int wire_ptc = clock_graph.get_and_increment_chany_ptc_num();
+                int wire_ptc = clock_graph.reserve_chany_ptc(bx, bx, by, north_y);
                 int wire_idx = create_chany_node(layer_num, by, north_y, bx, wire_ptc, track_direction(track), rr_nodes, rr_graph_builder, num_segments_x);
                 north_wire[track][{bx, by}] = wire_idx;
             }
@@ -1218,7 +1218,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
 
             if (!points_here.empty()) {
                 for (int track = 0; track < chan_w_; track++) {
-                    int hub_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+                    int hub_ptc = clock_graph.reserve_chanx_ptc(bx, bx, by, by);
                     int hub_idx = create_chanx_node(layer_num, bx, bx, by, hub_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
 
                     for (size_t i : points_here) {
@@ -1449,7 +1449,7 @@ void ClockSwitchGrid::create_rr_nodes_and_internal_edges_for_one_instance(ClockR
             int cov_idx = covering_wire_at(x, y, axis, track);
             if (cov_idx < 0) continue; // this track's wire (if staggered) doesn't reach here
 
-            int hub_ptc = clock_graph.get_and_increment_chanx_ptc_num();
+            int hub_ptc = clock_graph.reserve_chanx_ptc(x, x, y, y);
             int hub_idx = create_chanx_node(layer_num, x, x, y, hub_ptc, Direction::BIDIR, rr_nodes, rr_graph_builder);
 
             clock_graph.add_switch_location(get_name(), switch_points_[i].name, x, y, hub_idx);

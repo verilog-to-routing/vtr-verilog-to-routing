@@ -182,31 +182,74 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 }
 
 int ClockRRGraphBuilder::get_and_increment_chanx_ptc_num() {
-    // ptc_num is determined by the channel width
-    // The channel width lets the drawing engine how much to space the LBs apart
-    int ptc_num = chan_width_.x_max + (chanx_ptc_idx_++);
-    return ptc_num;
+    // Reserved across the whole grid: safe for a rib/spine's single ptc, reused at every
+    // (x,y) it touches, and cheap since there are only ever a handful of these networks.
+    return reserve_chanx_ptc(0, grid_.width() - 1, 0, grid_.height() - 1);
 }
 
 int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
-    // ptc_num is determined by the channel width
-    // The channel width lets the drawing engine how much to space the LBs apart
-    int ptc_num = chan_width_.y_max + (chany_ptc_idx_++);
-    return ptc_num;
+    return reserve_chany_ptc(0, grid_.width() - 1, 0, grid_.height() - 1);
+}
+
+int ClockRRGraphBuilder::reserve_chanx_ptc(int x_lo, int x_hi, int y_lo, int y_hi) {
+    int ptc = 0;
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            ptc = std::max(ptc, chanx_next_free_ptc_[x][y]);
+        }
+    }
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            chanx_next_free_ptc_[x][y] = ptc + 1;
+        }
+    }
+    return chan_width_.x_max + ptc;
+}
+
+int ClockRRGraphBuilder::reserve_chany_ptc(int x_lo, int x_hi, int y_lo, int y_hi) {
+    int ptc = 0;
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            ptc = std::max(ptc, chany_next_free_ptc_[x][y]);
+        }
+    }
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            chany_next_free_ptc_[x][y] = ptc + 1;
+        }
+    }
+    return chan_width_.y_max + ptc;
 }
 
 void ClockRRGraphBuilder::update_chan_width(t_chan_width* chan_width) const {
-    chan_width->x_max += chanx_ptc_idx_;
-    chan_width->y_max += chany_ptc_idx_;
+    // x_list is indexed by row (y): the extra chanx ptcs needed at row y is the highest
+    // local reservation made anywhere in that row, not the total reserved over the whole
+    // grid (chanx_next_free_ptc_ is already dense per-location, see reserve_chanx_ptc).
+    int max_chanx_extra = 0;
+    for (size_t y = 0; y < grid_.height(); ++y) {
+        int row_extra = 0;
+        for (size_t x = 0; x < grid_.width(); ++x) {
+            row_extra = std::max(row_extra, chanx_next_free_ptc_[x][y]);
+        }
+        chan_width->x_list[y] += row_extra;
+        max_chanx_extra = std::max(max_chanx_extra, row_extra);
+    }
+    chan_width->x_max += max_chanx_extra;
+
+    // y_list is indexed by column (x); same reasoning as above, transposed.
+    int max_chany_extra = 0;
+    for (size_t x = 0; x < grid_.width(); ++x) {
+        int col_extra = 0;
+        for (size_t y = 0; y < grid_.height(); ++y) {
+            col_extra = std::max(col_extra, chany_next_free_ptc_[x][y]);
+        }
+        chan_width->y_list[x] += col_extra;
+        max_chany_extra = std::max(max_chany_extra, col_extra);
+    }
+    chan_width->y_max += max_chany_extra;
+
     chan_width->max = std::max(chan_width->max, chan_width->x_max);
     chan_width->max = std::max(chan_width->max, chan_width->y_max);
-
-    for (size_t i = 0; i < grid_.height(); ++i) {
-        chan_width->x_list[i] += chanx_ptc_idx_;
-    }
-    for (size_t i = 0; i < grid_.width(); ++i) {
-        chan_width->y_list[i] += chany_ptc_idx_;
-    }
 }
 
 size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {

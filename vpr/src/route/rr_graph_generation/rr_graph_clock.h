@@ -7,6 +7,8 @@
 #include <set>
 #include <utility>
 
+#include "vtr_ndmatrix.h"
+
 #include "rr_graph_builder.h"
 
 #include "clock_network_builders.h"
@@ -66,11 +68,16 @@ class SwitchPoints {
 /// which ClockConnection/ClockNetwork subclasses use to wire up taps/drives.
 class ClockRRGraphBuilder {
   public:
-    /// @brief Returns the current ptc num where the wire should be drawn and updates the
-    /// channel width. The ptc_num is determined by the channel width; the channel width
-    /// global state gets incremented every time there is a request for a new ptc_num.
+    /// @brief Returns a ptc num reserved across the whole grid, i.e. guaranteed to collide
+    /// with no other clock-network node anywhere on the device.
     int get_and_increment_chanx_ptc_num();
     int get_and_increment_chany_ptc_num();
+
+    /// @brief Reserves and returns a ptc num that is guaranteed unique only among nodes
+    /// touching some (x,y) with x in [x_lo,x_hi] and y in [y_lo,y_hi] (inclusive), i.e. the
+    /// smallest value not already reserved anywhere in that box.
+    int reserve_chanx_ptc(int x_lo, int x_hi, int y_lo, int y_hi);
+    int reserve_chany_ptc(int x_lo, int x_hi, int y_lo, int y_hi);
 
     /// @brief Reverse lookup to find the clock source and tap locations for each clock
     /// network. The map key is the clock network name; the value holds all its switch points.
@@ -86,8 +93,8 @@ class ClockRRGraphBuilder {
         , grid_(grid)
         , rr_nodes_(rr_nodes)
         , rr_graph_builder_(rr_graph_builder)
-        , chanx_ptc_idx_(0)
-        , chany_ptc_idx_(0) {
+        , chanx_next_free_ptc_({grid.width(), grid.height()}, 0)
+        , chany_next_free_ptc_({grid.width(), grid.height()}, 0) {
     }
 
     const DeviceGrid& grid() const {
@@ -165,6 +172,8 @@ class ClockRRGraphBuilder {
     t_rr_graph_storage* rr_nodes_;
     RRGraphBuilder* rr_graph_builder_;
 
-    int chanx_ptc_idx_;
-    int chany_ptc_idx_;
+    // Per-(x,y) next unreserved local ptc value, offset by chan_width_.x_max/y_max to form
+    // an actual ptc num; see reserve_chanx_ptc/reserve_chany_ptc.
+    vtr::NdMatrix<int, 2> chanx_next_free_ptc_;
+    vtr::NdMatrix<int, 2> chany_next_free_ptc_;
 };
