@@ -4854,7 +4854,7 @@ static void process_clock_networks(pugi::xml_node parent,
 
             clock_network.switch_grid.length = get_attribute(curr_type, "length", loc_data, ReqOpt::OPTIONAL).as_string("1");
 
-            std::string directionality_str = get_attribute(curr_type, "directionality", loc_data, ReqOpt::OPTIONAL).as_string("bidir");
+            std::string directionality_str = get_attribute(curr_type, "directionality", loc_data).as_string();
             if (directionality_str == "bidir") {
                 clock_network.switch_grid.directionality = BI_DIRECTIONAL;
             } else if (directionality_str == "unidir") {

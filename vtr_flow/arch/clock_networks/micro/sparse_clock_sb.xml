@@ -193,7 +193,7 @@
       <metal_layer name="global_rib" Rmetal="50.42" Cmetal="20.7e-15"/>
     </metal_layers>
     <clock_network name="global_clk_switch_network" num_inst="1">
-      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W/4" starty="0" repeaty="H/4" chan_w="4" switch_name="drive_buff" switch_block_type="subset">
+      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W/4" starty="0" repeaty="H/4" chan_w="4" switch_name="drive_buff" switch_block_type="subset" directionality="bidir">
         <!-- Put a drive in the middle of the left side. -->
         <switch_point type="drive" name="drive" xoffset="0" yoffset="2*(H/4)" switch_name="drive_buff"/>
 

@@ -196,7 +196,7 @@
     </metal_layers>
     <clock_network name="global_clk_switch_network" num_inst="1">
       <!-- We put four clock switches at each corner (offset inwards to prevent the switches going over empty blocks) -->
-      <clock_switch_grid metal_layer="global_clk_switch_network" startx="1" repeatx="W-3" starty="1" repeaty="H-3" chan_w="4" switch_name="drive_buff" switch_block_type="subset">
+      <clock_switch_grid metal_layer="global_clk_switch_network" startx="1" repeatx="W-3" starty="1" repeaty="H-3" chan_w="4" switch_name="drive_buff" switch_block_type="subset" directionality="bidir">
         <!-- The drive point is the top-left switch box. -->
         <switch_point type="drive" name="drive" xoffset="0" yoffset="0" switch_name="drive_buff"/>
 

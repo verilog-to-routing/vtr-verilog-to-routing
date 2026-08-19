@@ -1442,7 +1442,7 @@
     </metal_layers>
     <!-- Create a global clk switch network of sparse switches. -->
     <clock_network name="global_clk_switch_network" num_inst="1">
-      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W/2" starty="0" repeaty="H/2" chan_w="4" switch_name="drive_buff" switch_block_type="subset">
+      <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" repeatx="W/2" starty="0" repeaty="H/2" chan_w="4" switch_name="drive_buff" switch_block_type="subset" directionality="bidir">
         <!-- Put a drive in the middle of the device -->
         <switch_point type="drive" name="drive" xoffset="W/2" yoffset="H/2" switch_name="drive_buff"/>
 

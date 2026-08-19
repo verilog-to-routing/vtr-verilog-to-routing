@@ -2500,7 +2500,7 @@ The high-level start tag for a clock network is as follows:
     .. code-block:: xml
 
         <clock_network name="global_clk_switch_network" num_inst="1">
-          <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" starty="0" repeatx="1" repeaty="1" chan_w="4" switch_name="drive_buff">
+          <clock_switch_grid metal_layer="global_clk_switch_network" startx="0" starty="0" repeatx="1" repeaty="1" chan_w="4" switch_name="drive_buff" directionality="bidir">
             <switch_point type="drive" name="drive" xoffset="0" yoffset="H/2" switch_name="drive_buff"/>
             <switch_point type="tap" name="tap" xoffset="0" yoffset="0" xincr="1" yincr="1"/>
           </clock_switch_grid>
@@ -2530,10 +2530,9 @@ The high-level start tag for a clock network is as follows:
             Wire length, in switch-box hops (not grid tiles), i.e. how many ``repeatx``/``repeaty`` pitches a wire spans before terminating at a switch box.
             A value greater than ``1`` lets wires skip over intermediate switch boxes without a wire-to-wire turn being available there (a ``<switch_point>`` may still tap into such a wire mid-span).
             **Default:** ``1`` (every wire spans exactly one switch-box pitch).
-        :opt_param directionality:
+        :req_param directionality:
             ``bidir`` gives one RR node per track, enterable/exitable from either end.
             ``unidir`` gives each track a single flow direction, alternating by track parity, like general routing's unidirectional segments; requires an even ``chan_w``.
-            **Default:** ``bidir``.
 
         .. arch:tag:: <switch_point type="{drive | tap}" name="string" xoffset="expr" yoffset="expr" xincr="expr" yincr="expr" switch_name="string">
 
