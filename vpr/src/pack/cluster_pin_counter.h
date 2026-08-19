@@ -34,45 +34,110 @@ class t_pb;
 struct t_pb_graph_pin;
 
 /**
- * @brief Owns pin usage state for one LegalizationCluster.
+ * @brief Tracks pin usage inside one LegalizationCluster during packing,
+ *        supporting incremental candidate feasibility checks.
  *
- * Two states are kept per pin class:
- *   - committed: nets claimed by molecules already accepted into the cluster.
- *   - lookahead: nets claimed by molecules currently under evaluation,
- *                rebuilt from scratch on each candidate check.
+ * The pin feasibility filter answers, for each candidate molecule, whether
+ * adding it keeps every pin class within its supply. This class maintains
+ * the pin state incrementally instead of recomputing it from scratch on
+ * every candidate, which would be expensive. Only atoms affected by the
+ * candidate are touched, and every mutation is journaled so a failed check
+ * can be reverted.
  *
- * When a candidate check is accepted, lookahead is promoted into committed;
- * the next check's reset then drops the lookahead side. When a check is
- * rejected, no promotion happens and the next reset drops lookahead.
+ * State stored per cluster:
+ *   - per_pb_state_: for every non-primitive pb in the cluster, per pin
+ *     class, a map from net to refcount. The refcount is the number of atom
+ *     pins currently marking (pb, class, net); the map's size() is the
+ *     distinct net count the filter compares against the class's supply.
+ *   - input_mark_record_ / output_mark_record_: per atom pin, the list of
+ *     pbs the pin's mark landed on. Needed to undo a pin's marks because
+ *     reachability is depth dependent and cannot be recomputed from current
+ *     pb membership alone.
+ *   - per_pb_state_journal_ / mark_record_journal_: mutations recorded
+ *     during a candidate check (to per_pb_state_ refcounts and to
+ *     input_mark_record_ / output_mark_record_ lists, respectively),
+ *     replayed in reverse on failure.
+ *
+ * Usage per cluster: call allocate_pin_count_state(pb) on every pb during
+ * setup. Then for each candidate molecule, run snapshot_root_class_sizes(root),
+ * apply_molecule_delta(candidate), and check_pins_used(root, max_ext_pin_util).
+ * On accept, call commit_check() to discard the journals. On reject, call
+ * rollback_check() to replay the journals in reverse. When the cluster's
+ * pin counter is no longer needed, call deallocate_pin_count_state_recursive(root)
+ * to erase per-pb entries, then clean_state() to release the remaining memory.
+ * Both destroy_cluster and clean_cluster do this; destroy_cluster additionally
+ * frees the pbs, so the deallocation must happen before that.
+ *
+ * Usage per cluster (pseudo-code):
+ *
+ *   // Setup: allocate state for the root; internal pbs are allocated
+ *   // lazily as atoms first descend into them.
+ *   pin_counter.allocate_pin_count_state(root);
+ *
+ *   // Per candidate molecule.
+ *   for each candidate:
+ *       pin_counter.snapshot_root_class_sizes(root);
+ *       pin_counter.apply_molecule_delta(candidate, ...);
+ *       pin_counter.check_pins_used(root, max_ext_pin_util);
+ *       // Accept the candidate only if the pin feasibility check passed
+ *       // AND all other cluster addition checks (cluster router, etc.)
+ *       // passed. Otherwise reject.
+ *       if candidate_accepted:
+ *           pin_counter.commit_check();
+ *       else:
+ *           pin_counter.rollback_check();
+ *           // (deallocate_pin_count_state_recursive is also called during
+ *           //  rejection cleanup, from revert_place_atom_block and cleanup_pb,
+ *           //  for any pb that a failed candidate speculatively added.)
+ *
+ *   // Teardown: release state before the cluster's pbs are freed.
+ *   // Both are called by ClusterLegalizer::clean_cluster and destroy_cluster.
+ *   pin_counter.deallocate_pin_count_state_recursive(root);
+ *   pin_counter.clean_state();
+ *
+ * How the incremental algorithm works (apply_molecule_delta): adding a
+ * candidate molecule can only change three groups of marks in the pin state.
+ *   1. When the candidate drives a net that has pre-existing sinks in the
+ *      cluster, those sinks may lose their input mark because the driver
+ *      is now in cluster too.
+ *   2. When the candidate sinks a net whose driver is already in the
+ *      cluster, that driver may lose its output mark because a sink is
+ *      now in cluster too.
+ *   3. The candidate's own atoms produce new marks.
+ * apply_molecule_delta handles these three cases and journals every mark
+ * change; all other atoms in the cluster are unaffected.
+ *
+ * Debug only consistency checks: verify_against_full_recompute rebuilds the
+ * state from scratch (via full_recompute_from_molecules) and asserts it
+ * matches the incremental result. assert_all_pbs_reachable_from catches
+ * lifetime bugs where a pb was freed without informing the counter. Both are
+ * expensive and are guarded by VTR_ASSERT_SAFE_ENABLED at their call sites.
  */
 class ClusterPinCounter {
   public:
     /**
      * @brief Per non-primitive pb pin counting state.
      *
-     * Each of the four vectors is indexed by pin class id at the associated pb.
-     * The inner vector holds the AtomNetIds currently claiming a pin of that class.
-     * Using vector for inner container because per class net counts are expected to be small.
+     * Indexed by pin class id at the associated pb. Inner map: net -> refcount.
+     * A net's refcount is the number of atom pins contributing a mark to that
+     * (pb, class); the map's .size() is the number of distinct nets, which
+     * is what the pin feasibility filter compares against supply.
      */
     struct PerPbState {
-        /// @brief Nets currently claiming an input pin of each input pin class, contributed by accepted molecules.
-        std::vector<std::vector<AtomNetId>> committed_input_pin_class_nets;
-        /// @brief Nets currently claiming an output pin of each output pin class, contributed by accepted molecules.
-        std::vector<std::vector<AtomNetId>> committed_output_pin_class_nets;
-        /// @brief Nets speculatively claiming an input pin of each input pin class during a candidate check.
-        std::vector<std::vector<AtomNetId>> lookahead_input_pin_class_nets;
-        /// @brief Nets speculatively claiming an output pin of each output pin class during a candidate check.
-        std::vector<std::vector<AtomNetId>> lookahead_output_pin_class_nets;
+        /// @brief Per input pin class: net -> refcount.
+        std::vector<std::unordered_map<AtomNetId, int>> input_pin_class_net_counts;
+        /// @brief Per output pin class: net -> refcount.
+        std::vector<std::unordered_map<AtomNetId, int>> output_pin_class_net_counts;
     };
 
     /**
      * @brief Allocate the pin usage state for given pb.
      *
-     * The four per-class vectors are sized to the number of
-     * input/output pin classes at given pb. Do not call on
-     * a pb whose state is already allocated.
+     * The two per class vectors are sized to the number of input/output pin
+     * classes at given pb. Do not call on a pb whose state is already
+     * allocated.
      *
-     * @param pb  The pb to allocate state for.
+     * @param pb The pb to allocate state for.
      */
     void allocate_pin_count_state(const t_pb* pb);
 
@@ -87,161 +152,226 @@ class ClusterPinCounter {
     void deallocate_pin_count_state_recursive(const t_pb* pb);
 
     /**
-     * @brief Add given net to the lookahead input state of given pin class of
-     *        given pb.
-     *
-     * No-op if the net is already recorded in the class (deduplicated).
-     *
-     * @param pb        The pb whose lookahead input state is updated.
-     * @param class_id  Input pin class id at pb to add net to.
-     * @param net       The net to add.
+     * @brief Release the memory held by the pin counter's internal state
+     *        that is no longer needed after the cluster is finalized
+     *        (ClusterLegalizer::clean_cluster) or destroyed
+     *        (ClusterLegalizer::destroy_cluster).
      */
-    void mark_lookahead_input(const t_pb* pb, size_t class_id, AtomNetId net);
+    void clean_state();
+
+    /// @brief Number of distinct nets currently marked in the given input pin class of given pb.
+    size_t input_size(const t_pb* pb, size_t class_id) const;
+    /// @brief Number of distinct nets currently marked in the given output pin class of given pb.
+    size_t output_size(const t_pb* pb, size_t class_id) const;
 
     /**
-     * @brief Add given net to the lookahead output state of given pin class of
-     *        given pb.
+     * @brief Snapshot the current per class sizes at the cluster root.
      *
-     * No dedup: a net has a single driver, so duplicates cannot occur within
-     * a single cluster.
-     *
-     * @param pb        The pb whose lookahead output state is updated.
-     * @param class_id  Output pin class id at pb to add net to.
-     * @param net       The net to add.
+     * Must be called at the start of every candidate check, before any
+     * mutation. check_pins_used reads the snapshot to implement the root
+     * clamp. The clamp raises the effective supply of each root class to at
+     * least the snapshotted size. This is needed because the seed molecule
+     * is packed with FULL_EXTERNAL_PIN_UTIL and can already exceed the
+     * scaled supply. Without the clamp, every subsequent check would fail.
      */
-    void mark_lookahead_output(const t_pb* pb, size_t class_id, AtomNetId net);
+    void snapshot_root_class_sizes(const t_pb* root);
 
     /**
-     * @brief Clear lookahead state at every pb.
+     * @brief Apply the delta introduced by the candidate molecule to the
+     *        current state.
+     *
+     * Adding a candidate molecule can only change three groups of marks in
+     * the pin state:
+     *   1. When the candidate drives a net that has pre-existing sinks in
+     *      the cluster, those sinks may lose their input mark because the
+     *      driver is now in cluster too.
+     *   2. When the candidate sinks a net whose driver is already in the
+     *      cluster, that driver may lose its output mark because a sink is
+     *      now in cluster too.
+     *   3. The candidate's own atoms produce new marks.
+     * All mutations are journaled so rollback_check can restore the pre-delta
+     * state exactly.
+     *
+     * Note: snapshot_root_class_sizes must have been called for this check,
+     * and the candidate's atoms must already be placed in their primitive pbs
+     * and recorded in atom_cluster (i.e. try_place_atom_block_rec has succeeded).
+     *
+     * @param candidate_id  The molecule id currently under evaluation.
      */
-    void reset_lookahead();
+    void apply_molecule_delta(PackMoleculeId candidate_id,
+                              const Prepacker& prepacker,
+                              const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                              const AtomPBBimap& atom_to_pb);
 
     /**
-     * @brief Promote the lookahead state to committed at every pb.
+     * @brief Check whether the current pin usage is feasible.
      *
-     * Called after a candidate molecule has been accepted into the cluster.
-     */
-    void commit_lookahead();
-
-    /// @brief Number of nets in the lookahead input state of the given pin class of the given pb.
-    size_t lookahead_input_size(const t_pb* pb, size_t class_id) const;
-    /// @brief Number of nets in the lookahead output state of the given pin class of the given pb.
-    size_t lookahead_output_size(const t_pb* pb, size_t class_id) const;
-    /// @brief Number of nets in the committed input state of the given pin class of the given pb.
-    size_t committed_input_size(const t_pb* pb, size_t class_id) const;
-    /// @brief Number of nets in the committed output state of the given pin class of the given pb.
-    size_t committed_output_size(const t_pb* pb, size_t class_id) const;
-
-    /**
-     * @brief Recompute the lookahead state from scratch for every atom of every
-     *        molecule in the given molecule list.
-     *
-     * Called on each candidate check, after reset_lookahead and before
-     * check_lookahead_pins_used. The molecule list should contain every molecule
-     * currently in the cluster: already committed molecules plus the candidate
-     * being tested.
-     *
-     * Because this is a full recompute rather than an incremental update,
-     * the order in which atoms are visited does not matter, and within one
-     * atom, the order in which its input and output pins are marked also does
-     * not matter, and there is no step that removes previously marked input
-     * pins when a later output locally captures the same net: each atom's
-     * input and output marking is derived independently from
-     * atom_cluster/atom_to_pb (i.e. from the complete membership), not by
-     * patching state left behind by previously visited atoms. This assumption
-     * will need to be revisited in the incremental version where both
-     * processing order and reducing previously marked inputs become effective.
-     *
-     * @param molecules     Molecule ids currently under evaluation in the cluster.
-     * @param prepacker     Used to resolve each PackMoleculeId to its atom list.
-     * @param atom_cluster  Maps atoms to the legalization cluster that owns them.
-     * @param atom_to_pb    Maps atoms to their assigned primitive pb.
-     */
-    void try_update_lookahead_pins_used(const std::vector<PackMoleculeId>& molecules,
-                                        const Prepacker& prepacker,
-                                        const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                        const AtomPBBimap& atom_to_pb);
-
-    /**
-     * @brief Check whether the lookahead pin usage is feasible at every
-     *        non-primitive pb in the subtree rooted at the given pb.
-     *
-     * The demand of each pin class is compared against its supply. At the
-     * cluster root, the supply is scaled by max_external_pin_util. If the
-     * current committed usage already exceeds this scaled supply, the supply
-     * is raised to that committed level so already committed pins are not
-     * rejected. At non-root pbs, the raw pin class size is used as the supply.
+     * Incremental: examines only the (pb, class) pairs incremented during
+     * this candidate check.
      *
      * @param cur_pb                 Root of the subtree to check.
-     * @param max_external_pin_util  Scaling factors applied to root level pin
-     *                               class supplies.
-     * @return                       True if every pin class has demand within
-     *                               supply, false otherwise.
+     * @param max_external_pin_util  Scaling factors applied to root class supplies.
+     * @return                       True if every touched pin class is within supply.
      */
-    bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util);
+    bool check_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const;
+
+    /**
+     * @brief Accept the current candidate check: discard the journals,
+     *        leaving the current state as the new baseline.
+     */
+    void commit_check();
+
+    /**
+     * @brief Reject the current candidate check: replay the journals in
+     *        reverse to restore the state before check.
+     *
+     * Must be called on every failure path that could have followed a
+     * mutation (pin feasibility failure, intra-cluster routing failure,
+     * etc.). Safe to call on an empty journal (no-op).
+     */
+    void rollback_check();
+
+    // =========================================================================
+    // Debug only helpers
+    // =========================================================================
+
+    /**
+     * @brief Recompute the current state from scratch over the given
+     *        molecule list.
+     */
+    void full_recompute_from_molecules(const std::vector<PackMoleculeId>& molecules,
+                                       const Prepacker& prepacker,
+                                       const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                       const AtomPBBimap& atom_to_pb);
+
+    /**
+     * @brief Build a scratch counter via full_recompute_from_molecules over
+     *        the given molecule list, and assert every (pb, class) net
+     *        refcount matches this counter.
+     */
+    void verify_against_full_recompute(const std::vector<PackMoleculeId>& molecules,
+                                       const Prepacker& prepacker,
+                                       const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                       const AtomPBBimap& atom_to_pb) const;
+
+    /**
+     * @brief Assert every pb tracked in per_pb_state_ is reachable from
+     *        cluster_root. Catches lifetime bugs where a pb was freed
+     *        without calling deallocate_pin_count_state_recursive.
+     */
+    void assert_all_pbs_reachable_from(const t_pb* cluster_root) const;
 
   private:
     /**
-     * @brief Add the given atom's pin usage contribution to the lookahead state.
-     *
-     * For each pin of the atom, walks from the atom's primitive pb up to the
-     * root and marks the pin class at each level that this pin's net would
-     * claim.
-     *
-     * @param blk_id        The atom whose pins are being marked.
-     * @param atom_cluster  Maps atoms to the legalization cluster that owns them.
-     * @param atom_to_pb    Maps atoms to their assigned primitive pb.
+     * @brief One journaled mutation to per_pb_state_ refcounts. Rollback
+     *        replays entries in reverse.
      */
-    void compute_and_mark_lookahead_pins_used(AtomBlockId blk_id,
-                                              const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                              const AtomPBBimap& atom_to_pb);
+    struct PerPbStateDelta {
+        const t_pb* pb; ///< Which pb the mutated refcount belongs to.
+        AtomNetId net;  ///< Which net's refcount changed.
+        int class_id;   ///< Which pin class at pb.
+        bool is_input;  ///< True: input pin class. False: output.
+        int change;     ///< +1 on add_mark, -1 on remove_mark.
+    };
 
     /**
-     * @brief Given an input pin and its assigned net, mark all pin classes that are
-     *        affected. Check if connecting this pin to its driver pin will require
-     *        entering a pb block starting from the parent pb block of the primitive
-     *        till the root block (depth = 0). If entering a pb block is required,
-     *        add this net to the input pin class (to increment the number of used
-     *        pins from this class) that should be used to enter the pb block.
-     *
-     * @param pb_graph_pin  The input pin being marked.
-     * @param primitive_pb  The primitive pb that owns pb_graph_pin.
-     * @param net_id        The net connected to pb_graph_pin.
-     * @param atom_cluster  Maps atoms to the legalization cluster that owns them.
-     * @param atom_to_pb    Maps atoms to their assigned primitive pb.
+     * @brief One journaled mutation to input_mark_record_ / output_mark_record_.
+     *        Rollback replays entries in reverse.
      */
-    void compute_and_mark_lookahead_pins_used_for_input_pin(const t_pb_graph_pin* pb_graph_pin,
-                                                            const t_pb* primitive_pb,
-                                                            AtomNetId net_id,
-                                                            const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                            const AtomPBBimap& atom_to_pb);
+    struct MarkRecordDelta {
+        AtomPinId pin;  ///< Which pin's mark record was mutated.
+        const t_pb* pb; ///< The pb added to or removed from that pin's record.
+        bool is_input;  ///< True: input_mark_record_. False: output_mark_record_.
+        int change;     ///< +1 on append (pb added to the record), -1 on removal.
+    };
+
+    /// @brief Increment the refcount of net_id in the given (pb, class) map. Journals the change.
+    void add_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id);
+
+    /// @brief Decrement the refcount of net_id in the given (pb, class) map, erasing the key at zero. Journals the change.
+    void remove_mark(const t_pb* pb, bool is_input, size_t class_id, AtomNetId net_id);
+
+    /// @brief Append pb to input_mark_record_[pin_id] (creating the entry if missing). Journals the append.
+    void record_input_mark(AtomPinId pin_id, const t_pb* pb);
+
+    /// @brief Append pb to output_mark_record_[pin_id] (creating the entry if missing). Journals the append.
+    void record_output_mark(AtomPinId pin_id, const t_pb* pb);
+
+    /// @brief Remove every mark this input pin has contributed, and clear its entry in input_mark_record_. Undoable via rollback_check.
+    void remove_input_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
+
+    /// @brief Remove every mark this output pin has contributed, and clear its entry in output_mark_record_. Undoable via rollback_check.
+    void remove_output_pin_marks(AtomPinId pin_id, AtomNetId net_id, const AtomPBBimap& atom_to_pb);
+
+    /// @brief Wipe all pin state, journaled so it can be rolled back. Used only by full_recompute_from_molecules.
+    void wipe_all_marks_journaled();
 
     /**
-     * @brief Given an output pin and its assigned net, mark all pin classes that are
-     *        affected. Check if connecting this pin to all its sink pins will require
-     *        leaving a pb block starting from the parent pb block of the primitive
-     *        till the root block (depth = 0). If leaving a pb block is required,
-     *        add this net to the output pin class (to increment the number of used
-     *        pins from this class) that should be used to leave the pb block.
-     *
-     * @param pb_graph_pin  The output pin being marked.
-     * @param primitive_pb  The primitive pb that owns pb_graph_pin.
-     * @param net_id        The net driven by pb_graph_pin.
-     * @param atom_cluster  Maps atoms to the legalization cluster that owns them.
-     * @param atom_to_pb    Maps atoms to their assigned primitive pb.
+     * @brief Add the given atom's pin marks: for each pin, mark the classes
+     *        at every pb the pin's net must cross on the walk from
+     *        primitive to root.
      */
-    void compute_and_mark_lookahead_pins_used_for_output_pin(const t_pb_graph_pin* pb_graph_pin,
-                                                             const t_pb* primitive_pb,
-                                                             AtomNetId net_id,
-                                                             const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                             const AtomPBBimap& atom_to_pb);
+    void compute_and_mark_pins_used(AtomBlockId blk_id,
+                                    const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                    const AtomPBBimap& atom_to_pb);
+
+    /**
+     * @brief Walk from primitive_pb up to root. At each pb where the pin's
+     *        net must enter through an input pin (i.e. the driver is not
+     *        reachable inside the pb), mark the input pin class and record
+     *        the pb into input_mark_record_[pin_id] so remove_input_pin_marks
+     *        can undo.
+     */
+    void compute_and_mark_pins_used_for_input_pin(AtomPinId pin_id,
+                                                  const t_pb_graph_pin* pb_graph_pin,
+                                                  const t_pb* primitive_pb,
+                                                  AtomNetId net_id,
+                                                  const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                  const AtomPBBimap& atom_to_pb);
+
+    /**
+     * @brief Walk from primitive_pb up to root. At each pb where the pin's
+     *        net must exit through an output pin (i.e. some sink is outside
+     *        the pb), mark the output pin class and record the pb into
+     *        output_mark_record_[pin_id] so remove_output_pin_marks can undo.
+     */
+    void compute_and_mark_pins_used_for_output_pin(AtomPinId pin_id,
+                                                   const t_pb_graph_pin* pb_graph_pin,
+                                                   const t_pb* primitive_pb,
+                                                   AtomNetId net_id,
+                                                   const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                   const AtomPBBimap& atom_to_pb);
+
+    /**
+     * @brief Debug reference: walk every non-primitive pb in the subtree and
+     *        test every pin class against its supply. Used to cross check
+     *        check_pins_used under VTR_ASSERT_SAFE_ENABLED.
+     */
+    bool check_pins_used_full_reference(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) const;
 
     /**
      * @brief Pin usage state for every non-primitive pb visited during
      *        clustering, keyed by pb pointer.
      *
-     * TODO: The per_pb_state_.find call on the mark/query hot path may be
-     *       expensive. Can consider dense index storage.
+     * TODO: Consider dense index storage; per_pb_state_.find is on the hot path.
      */
     std::unordered_map<const t_pb*, PerPbState> per_pb_state_;
+
+    /**
+     * @brief Per atom pin record of which pbs the pin's mark landed on. Read by
+     *        remove_input_pin_marks / remove_output_pin_marks to undo those
+     *        marks exactly.
+     */
+    std::unordered_map<AtomPinId, std::vector<const t_pb*>> input_mark_record_;
+    std::unordered_map<AtomPinId, std::vector<const t_pb*>> output_mark_record_;
+
+    /// @brief Journal of per_pb_state_ mutations for the current candidate check.
+    std::vector<PerPbStateDelta> per_pb_state_journal_;
+
+    /// @brief Journal of input_mark_record_ / output_mark_record_ mutations for the current candidate check.
+    std::vector<MarkRecordDelta> mark_record_journal_;
+
+    /// @brief Root pb class sizes captured by snapshot_root_class_sizes at the start of the check. Read by check_pins_used for the root clamp.
+    std::vector<size_t> root_input_class_size_snapshot_;
+    std::vector<size_t> root_output_class_size_snapshot_;
 };

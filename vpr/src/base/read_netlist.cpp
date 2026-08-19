@@ -355,7 +355,7 @@ static void process_complex_block(pugi::xml_node clb_block,
 
     // Use the logical block type to create the physical block.
     t_pb* pb = new t_pb;
-    pb->name = vtr::strdup(block_name.value());
+    pb->name = block_name.value();
     pb->pb_graph_node = complex_block_type.pb_graph_head;
 
     // Set the mode of the physical block.
@@ -484,7 +484,7 @@ static void process_pb(pugi::xml_node Parent,
         if (!blk_id) {
             VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                             ".net file and .blif file do not match, encountered unknown primitive %s in .net file.\n",
-                            pb->name);
+                            pb->name.c_str());
         }
 
         // Update atom netlist mapping
@@ -552,7 +552,7 @@ static void process_pb(pugi::xml_node Parent,
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                           "node is used by two different blocks %s and %s.\n",
                           instance_type.value(),
-                          pb->child_pbs[i][pb_index].name);
+                          pb->child_pbs[i][pb_index].name.c_str());
             }
             new_child_pb = &pb->child_pbs[i][pb_index];
             new_child_pb->pb_graph_node = &pb->pb_graph_node->child_pb_graph_nodes[pb->mode][i][pb_index];
@@ -570,11 +570,11 @@ static void process_pb(pugi::xml_node Parent,
         pugi::xml_attribute mode;
         pugi::xml_attribute name = pugiutil::get_attribute(child, "name", loc_data);
         if (0 != strcmp(name.value(), "open")) {
-            new_child_pb->name = vtr::strdup(name.value());
+            new_child_pb->name = name.value();
             mode = child.attribute("mode");
         } else {
             // hysical block has no used primitives but it may have used routing.
-            new_child_pb->name = nullptr;
+            new_child_pb->name.clear();
             pugi::xml_node lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
             if (!lookahead1) {
                 // If not used for routing, skip recursing into the pb.
@@ -599,7 +599,7 @@ static void process_pb(pugi::xml_node Parent,
         if (!found && !new_child_pb->is_primitive()) {
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                       "Unknown mode %s for cb %s #%d.\n", mode.value(),
-                      new_child_pb->name, pb_index);
+                      new_child_pb->name.c_str(), pb_index);
         }
 
         process_pb(child, index, new_child_pb, pb_route, num_primitives, loc_data);
@@ -1072,7 +1072,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
         for (int i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
             const t_pb_type* child_pb_type = &(pb_type->modes[pb->mode].pb_type_children[i]);
             for (int j = 0; j < child_pb_type->num_pb; j++) {
-                if (pb->child_pbs[i][j].name != nullptr) {
+                if (!pb->child_pbs[i][j].name.empty()) {
                     const_gen_count += mark_constant_generators_rec(&(pb->child_pbs[i][j]), pb_route, verbosity);
                 }
             }
@@ -1098,7 +1098,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
             }
         }
         if (const_gen == true) {
-            VTR_LOGV(verbosity > 2, "%s is a constant generator.\n", pb->name);
+            VTR_LOGV(verbosity > 2, "%s is a constant generator.\n", pb->name.c_str());
             const_gen_count++;
             for (int i = 0; i < pb->pb_graph_node->num_output_ports; i++) {
                 for (int j = 0; j < pb->pb_graph_node->num_output_pins[i]; j++) {
