@@ -221,7 +221,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
         draw_state->all_internals_drawn_threshold = 0;
         draw_state->only_clbs_drawn_threshold = std::numeric_limits<double>::max();
     }
-    
+
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
@@ -477,7 +477,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     // If the current pb has a depth deeper than 0 and passed the large_enough_to_draw() check, it means
     // not only the CLBs (the top-level blocks) are drawn on screen (useful for the reuse geometry callback used on the RHI path).
     if (draw_state->renderer_type == "rhi" && draw_state->only_clbs_drawn && pb_type->depth > 0) {
-       draw_state->only_clbs_drawn = false;
+        draw_state->only_clbs_drawn = false;
     }
 
     // First draw box.

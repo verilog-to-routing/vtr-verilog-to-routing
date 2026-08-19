@@ -357,7 +357,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
     } else if (reason == ezgl::view_change_reason::zoom_in || reason == ezgl::view_change_reason::pan_zoom_in) {
         // Zooming in past the RR decluttering threshold makes previously
         // decluttered (hidden) routing resources visible, so cached geometry is incomplete.
-        if(draw_state->show_rr
+        if (draw_state->show_rr
             && draw_state->enable_rr_decluttering
             && draw_state->rr_decluttered
             && world_units_per_pixel <= MAX_WORLD_UNITS_PER_PIXEL)
@@ -366,24 +366,22 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
         // Intra-block drawing adds more details as the view gets closer, but stays the same once all internals are already drawn.
         // Regenerate geometry when the current zoom level has passed below the CLB-only view (only_clbs_drawn_threshold)
         // but not all internals are drawn yet.
-        if(draw_state->show_blk_internal
+        if (draw_state->show_blk_internal
             && world_units_per_pixel < draw_state->only_clbs_drawn_threshold
-            && !(draw_state->all_internals_drawn)
-            )
+            && !(draw_state->all_internals_drawn))
             return false;
 
         // Critical-path delay labels depend on screen-space placement, so
         // their geometry must be rebuilt when zoom changes.
         // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
-        if(draw_state->show_crit_path
+        if (draw_state->show_crit_path
             && draw_state->show_crit_path_flylines
             && draw_state->show_crit_path_delays)
             return false;
-    }
-    else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
+    } else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
         // Zooming out past the RR decluttering threshold removes normal RR
         // resources from the drawing, so reuse would leave stale geometry.
-        if(draw_state->show_rr
+        if (draw_state->show_rr
             && draw_state->enable_rr_decluttering
             && !(draw_state->rr_decluttered)
             && world_units_per_pixel > MAX_WORLD_UNITS_PER_PIXEL)
@@ -392,7 +390,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
         // Intra-block drawing drops details as the view gets farther away, but stays the same once only the CLBs are visible.
         // Regenerate geometry when the current zoom level has passed above the final detailed internal view (all_internals_drawn_threshold)
         // but the CLBs are not yet the only drawn shapes (some internals are drawn as well).
-        if(draw_state->show_blk_internal
+        if (draw_state->show_blk_internal
             && world_units_per_pixel > draw_state->all_internals_drawn_threshold
             && !(draw_state->only_clbs_drawn))
             return false;
@@ -400,7 +398,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
         // Critical-path delay labels have a fixed screen-size offset from the flylines, so
         // their geometry must be rebuilt when zoom changes.
         // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
-        if(draw_state->show_crit_path
+        if (draw_state->show_crit_path
             && draw_state->show_crit_path_flylines
             && draw_state->show_crit_path_delays)
             return false;

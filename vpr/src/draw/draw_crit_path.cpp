@@ -770,15 +770,15 @@ static std::vector<t_label_drawing_info> calculate_basic_label_drawing_info(cons
                 //      .................
                 // Note: This illustration is for reference only; the tilted rectangle should have square corners.
 
-            // This specifies the dimension of the "tilted rectangle" in pixels.
-            ezgl::text_dimension_t delay_label_dimension = g->get_text_dimension(delay_label_str);
-            // The bbox is defined in world coordinates, so convert the text dimension from pixels to world units.
-            double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
-                                       + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
-                                      * world_units_per_pixel;
-            double label_bbox_height = (delay_label_dimension.width * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
-                                        + delay_label_dimension.height * cos(rotation_angle * (std::numbers::pi / 180)))
-                                       * world_units_per_pixel;
+                // This specifies the dimension of the "tilted rectangle" in pixels.
+                ezgl::text_dimension_t delay_label_dimension = g->get_text_dimension(delay_label_str);
+                // The bbox is defined in world coordinates, so convert the text dimension from pixels to world units.
+                double label_bbox_width = (delay_label_dimension.width * cos(rotation_angle * (std::numbers::pi / 180))
+                                           + delay_label_dimension.height * std::abs(sin(rotation_angle * (std::numbers::pi / 180))))
+                                          * world_units_per_pixel;
+                double label_bbox_height = (delay_label_dimension.width * std::abs(sin(rotation_angle * (std::numbers::pi / 180)))
+                                            + delay_label_dimension.height * cos(rotation_angle * (std::numbers::pi / 180)))
+                                           * world_units_per_pixel;
 
                 ezgl::point2d bbox_bottom_left = edge_bbox.center() - ezgl::point2d(label_bbox_width / 2, label_bbox_height / 2);
                 // Calculates a virtual bounding box centered on the timing edge before offsets are applied.
