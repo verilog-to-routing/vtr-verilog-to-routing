@@ -601,31 +601,6 @@ class ClusterLegalizer {
     }
 
     /**
-     * @brief Enable or disable reserving the remaining capacity of clusters
-     *        whose adopted relative placement group is still incomplete.
-     *
-     * While enabled, a cluster hosting a relative placement group that still
-     * has unclustered atoms only accepts molecules containing atoms of that
-     * group; other molecules are rejected until the group is complete, after
-     * which unconstrained molecules may fill the cluster as usual. This
-     * prevents unconstrained molecules from consuming a cluster's capacity
-     * before the group's last molecules are proposed.
-     *
-     * The packer enables this on re-pack iterations triggered by split
-     * relative placement groups. It is never enabled on the first packing
-     * pass, so flows without relative placement constraints are unaffected.
-     */
-    inline void set_reserve_relative_group_capacity(bool reserve) {
-        reserve_relative_group_capacity_ = reserve;
-    }
-
-    /// @brief Returns true if capacity reservation for incomplete relative
-    ///        placement groups is enabled (see set_reserve_relative_group_capacity()).
-    inline bool reserving_relative_group_capacity() const {
-        return reserve_relative_group_capacity_;
-    }
-
-    /**
      * @brief Set the relative placement group owning each prepacked chain
      */
     inline void set_relative_chain_owners(std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> owners) {
@@ -668,15 +643,6 @@ class ClusterLegalizer {
     /// @brief Build the per-type feedback-pin sets used by the intra-cluster router.
     ///        Called once by the constructor.
     void init_feedback_pin_sets();
-
-    /**
-     * @brief Returns true if the given relative placement group still has at
-     *        least one atom that has not been packed into any cluster.
-     *
-     * Used by the capacity reservation check (see
-     * set_reserve_relative_group_capacity()).
-     */
-    bool relative_group_has_unclustered_atoms(const std::pair<UserRelativeMacroId, int>& rel_group) const;
 
     /**
      * @brief Returns the relative placement group owning the given chain (the
@@ -750,13 +716,6 @@ class ClusterLegalizer {
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
-
-    /// @brief Whether clusters hosting an incomplete relative placement group
-    ///        reserve their remaining capacity for that group's molecules.
-    ///        See set_reserve_relative_group_capacity(). Deliberately not
-    ///        cleared by reset(): once enabled for the re-pack retries, it
-    ///        stays enabled for all remaining packing iterations.
-    bool reserve_relative_group_capacity_ = false;
 
     /// @brief The relative placement group owning each prepacked chain.
     std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> rel_chain_owners_;

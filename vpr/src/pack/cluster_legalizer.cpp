@@ -965,9 +965,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // Check if all atoms in the molecule can be added to the cluster without
     // relative placement group conflicts.
     std::pair<UserRelativeMacroId, int> new_cluster_rel_group = cluster.rel_group;
-    // The external pin utilization limit applied to this molecule. May be
-    // relaxed below for molecules of the cluster's own relative placement
-    // group during re-pack iterations.
+    // The external pin utilization limit applied to this molecule. Relaxed
+    // below for molecules of the cluster's own relative placement group.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
     if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
         for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
@@ -993,47 +992,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         // Does the molecule contain an atom of the cluster's (possibly just
         // adopted) relative placement group? Molecules of a different group
         // were rejected above, so any constrained atom here belongs to it.
-        bool molecule_in_cluster_group = false;
-        if (new_cluster_rel_group.first.is_valid()) {
-            for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
-                if (!atom_blk_id.is_valid())
-                    continue;
-                if (floorplanning_ctx.relative_macros.get_atom_group(atom_blk_id) == new_cluster_rel_group) {
-                    molecule_in_cluster_group = true;
-                    break;
-                }
-            }
-        }
+        bool molecule_in_cluster_group = new_cluster_rel_group.first.is_valid()
+                                         && get_molecule_relative_group(molecule, floorplanning_ctx.relative_macros) == new_cluster_rel_group;
 
-        // The speculative pin feasibility filter is order-dependent and can
-        // falsely reject group molecules.
+        // Relax the external pin utilization limit for molecules of the
+        // cluster's own relative placement group
         if (molecule_in_cluster_group) {
             effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
-        }
-
-        // The following only applies to re-pack iterations triggered by split
-        // relative placement groups (see set_reserve_relative_group_capacity()).
-        if (reserve_relative_group_capacity_) {
-            // A group may only be adopted by an empty cluster (one being
-            // seeded): a partially filled host has less capacity, and the
-            // whole-group packing in
-            // GreedyClusterer::pack_relative_group_into_cluster() only runs
-            // for seed molecules.
-            const bool cluster_adopting_group = !cluster.rel_group.first.is_valid()
-                                                && new_cluster_rel_group.first.is_valid();
-            if (cluster_adopting_group && !cluster.molecules.empty()) {
-                VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative group may only be adopted by an empty (seed) cluster during re-pack\n");
-                return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
-            }
-
-            // Reserve the cluster's remaining capacity for its group until
-            // the whole group is packed; afterwards it fills as usual.
-            if (cluster.rel_group.first.is_valid() && !molecule_in_cluster_group
-                && relative_group_has_unclustered_atoms(cluster.rel_group)) {
-                VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: cluster capacity reserved for incomplete relative group\n");
-                return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
-            }
-
         }
     }
 
@@ -1743,16 +1708,6 @@ void ClusterLegalizer::verify() {
     }
 }
 
-bool ClusterLegalizer::relative_group_has_unclustered_atoms(const std::pair<UserRelativeMacroId, int>& rel_group) const {
-    VTR_ASSERT_SAFE(rel_group.first.is_valid());
-    const UserRelativeMacro& macro = g_vpr_ctx.floorplanning().relative_macros.get_macro(rel_group.first);
-    for (AtomBlockId blk_id : macro.groups[rel_group.second].atoms) {
-        if (!is_atom_clustered(blk_id))
-            return true;
-    }
-    return false;
-}
-
 std::pair<UserRelativeMacroId, int> ClusterLegalizer::get_relative_chain_owner(MoleculeChainId chain_id) const {
     auto owner_it = rel_chain_owners_.find(chain_id);
     if (owner_it != rel_chain_owners_.end())
@@ -1805,11 +1760,17 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
 
     const bool relative_macros_active = relative_macros.get_num_macros() != 0;
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
-    bool molecule_in_cluster_group = false;
     // Whether the molecule contains an atom of some relative placement group,
     // and that group (a molecule's constrained atoms are all in one group).
     bool molecule_has_rel_group = false;
     std::pair<UserRelativeMacroId, int> molecule_rel_group = {UserRelativeMacroId::INVALID(), -1};
+    if (relative_macros_active) {
+        molecule_rel_group = get_molecule_relative_group(molecule, relative_macros);
+        molecule_has_rel_group = molecule_rel_group.first.is_valid();
+        if (molecule_has_rel_group && cluster_has_rel_group && molecule_rel_group != cluster.rel_group) {
+            return false;
+        }
+    }
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
         // FIXME: Why is it possible that molecules contain invalid block IDs?
         //        This should be fixed!
@@ -1822,19 +1783,6 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
                                                   atom_blk_id)) {
             return false;
         }
-        if (relative_macros_active) {
-            const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
-            if (atom_rel_group.first.is_valid()) {
-                molecule_has_rel_group = true;
-                molecule_rel_group = atom_rel_group;
-                if (cluster_has_rel_group) {
-                    if (atom_rel_group != cluster.rel_group) {
-                        return false;
-                    }
-                    molecule_in_cluster_group = true;
-                }
-            }
-        }
     }
     // Mirror the long-chain veto in try_pack_molecule(). The group the
     // cluster would host after the addition is the molecule's group if it has
@@ -1845,23 +1793,6 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
         if (!check_cluster_long_chain_ownership(molecule, rel_group, cluster)) {
             return false;
         }
-    }
-    // Mirror the seed-time adoption restriction in try_pack_molecule()
-    // (Defect A): during re-pack a group molecule may only join a cluster that
-    // already adopted its group or an empty cluster being seeded; it must not
-    // be pulled into a non-empty cluster that has not adopted a group (which
-    // would adopt the group mid-growth).
-    if (reserve_relative_group_capacity_ && molecule_has_rel_group
-        && !cluster_has_rel_group && !cluster.molecules.empty()) {
-        return false;
-    }
-    // Mirror the capacity reservation check in try_pack_molecule(): while the
-    // cluster's relative placement group is incomplete, only molecules
-    // containing atoms of that group are compatible (re-pack iterations only).
-    if (reserve_relative_group_capacity_ && cluster_has_rel_group
-        && !molecule_in_cluster_group
-        && relative_group_has_unclustered_atoms(cluster.rel_group)) {
-        return false;
     }
     // If every atom in the molecule has a free primitive it could theoretically
     // be placed in, then it is compatible.
