@@ -2,6 +2,9 @@
 
 project("mosaic")
 
+# max_level reads the tcl global templateDir when yosys is built with tcl.
+find_package(TCL)
+
 # wildebeest-originated sources (clk_domains / max_level)
 add_subdirectory(wildebeest)
 
@@ -46,3 +49,17 @@ set_target_properties(mosaic PROPERTIES
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/yosys/plugins)
 install(TARGETS mosaic DESTINATION ${CMAKE_BINARY_DIR}/share/yosys/plugins)
+
+# fallback path used by max_level when templateDir is unset:
+# share/yosys/plugins/mosaic/lut_models/LUTs.v
+set(MOSAIC_LUT_MODELS_SRC
+    ${VTR_SOURCE_DIR}/vtr_flow/misc/mosaic/template/lut_models/LUTs.v)
+set(MOSAIC_LUT_MODELS_DST
+    ${CMAKE_BINARY_DIR}/share/yosys/plugins/mosaic/lut_models)
+file(MAKE_DIRECTORY ${MOSAIC_LUT_MODELS_DST})
+configure_file(
+    ${MOSAIC_LUT_MODELS_SRC}
+    ${MOSAIC_LUT_MODELS_DST}/LUTs.v
+    COPYONLY
+)
+install(FILES ${MOSAIC_LUT_MODELS_SRC} DESTINATION ${MOSAIC_LUT_MODELS_DST})

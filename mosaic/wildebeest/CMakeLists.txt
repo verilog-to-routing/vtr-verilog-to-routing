@@ -17,3 +17,8 @@ target_include_directories(wildebeest SYSTEM PUBLIC
 target_compile_definitions(wildebeest PUBLIC
     _YOSYS_
 )
+
+if(TCL_FOUND)
+    target_compile_definitions(wildebeest PUBLIC YOSYS_ENABLE_TCL)
+    target_include_directories(wildebeest SYSTEM PUBLIC ${TCL_INCLUDE_PATH})
+endif()
