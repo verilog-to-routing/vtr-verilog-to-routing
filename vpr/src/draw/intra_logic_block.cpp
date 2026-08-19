@@ -211,10 +211,16 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     if (!draw_state->show_blk_internal) {
         return;
     }
-    draw_state->all_internals_drawn = true;
-    draw_state->only_clbs_drawn = true;
-    draw_state->all_internals_drawn_level = 0;
-    draw_state->only_clbs_drawn_level = std::numeric_limits<double>::max();
+
+    // Reset the flags and threshold zoom levels (world/pixel) that are useful for the reuse geometry callback
+    // decide_reuse_geometry() to determine whether a camera-only redraw can be performed (on the RHI path).
+    // The flags are modified in draw_internal_pb().
+    if (draw_state->renderer_type == "rhi") {
+        draw_state->all_internals_drawn = true;
+        draw_state->only_clbs_drawn = true;
+        draw_state->all_internals_drawn_threshold = 0;
+        draw_state->only_clbs_drawn_threshold = std::numeric_limits<double>::max();
+    }
     
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
@@ -257,11 +263,21 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
             }
         }
     }
-    if (draw_state->all_internals_drawn) {
-        draw_state->all_internals_drawn_level = g->world_units_per_pixel();
-    }
-    if (draw_state->only_clbs_drawn) {
-        draw_state->only_clbs_drawn_level = g->world_units_per_pixel();
+
+    if (draw_state->renderer_type == "rhi") {
+        // Record the threshold zoom level (world/pixel) where all internals are drawn.
+        // Note: on the RHI path , zooming in from this level will not keep updating the record to a smaller value,
+        // because camera-only redraws will be performed and the full redraw code for block internals (this function) will not be executed.
+        if (draw_state->all_internals_drawn) {
+            draw_state->all_internals_drawn_threshold = g->world_units_per_pixel();
+        }
+
+        // Record the threshold zoom level (world/pixel) where only the CLBs are drawn.
+        // Note: on the RHI path, zooming out from this level will not keep updating the record to a greater value,
+        // for the same reason explained a few lines above.
+        if (draw_state->only_clbs_drawn) {
+            draw_state->only_clbs_drawn_threshold = g->world_units_per_pixel();
+        }
     }
 }
 #endif /* NO_GRAPHICS */
@@ -450,11 +466,17 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
     // If the block's area is too small relative to the screen, don't draw anything.
     if (!large_enough_to_draw(abs_bbox, g)) {
-        draw_state->all_internals_drawn = false;
+        // Since the current pb is not drawn, the all_internals_drawn flag
+        // should be false (useful for the reuse geometry callback decide_reuse_geometry() used on the RHI path).
+        if (draw_state->renderer_type == "rhi") {
+            draw_state->all_internals_drawn = false;
+        }
         return false;
     }
 
-    if (draw_state->only_clbs_drawn && pb_type->depth > 0) {
+    // If the current pb has a depth deeper than 0 and passed the large_enough_to_draw() check, it means
+    // not only the CLBs (the top-level blocks) are drawn on screen (useful for the reuse geometry callback used on the RHI path).
+    if (draw_state->renderer_type == "rhi" && draw_state->only_clbs_drawn && pb_type->depth > 0) {
        draw_state->only_clbs_drawn = false;
     }
 

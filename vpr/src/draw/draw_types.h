@@ -305,9 +305,13 @@ struct t_draw_state {
     ///@brief If 0, no internal drawing is shown. Otherwise, indicates how many levels of sub-pbs to be drawn
     int show_blk_internal = 0;
 
+    ///@brief True if all block internals were drawn during the previous redraw.
     bool all_internals_drawn = false;
+    ///@brief World-units-per-pixel threshold at which all block internals were just able to be drawn.
     double all_internals_drawn_threshold = 0;
+    ///@brief True if only the CLBs (top-level blocks) were drawn during the previous redraw.
     bool only_clbs_drawn = false;
+    ///@brief World-units-per-pixel threshold at which only the CLBs (top-level blocks) were just able to be drawn without the internals.
     double only_clbs_drawn_threshold = std::numeric_limits<double>::max();
 
     ///@brief Whether graphics are enabled

@@ -364,7 +364,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
             return false;
 
         // Intra-block drawing adds more details as the view gets closer, but stays the same once all internals are already drawn.
-        // Regenerate geometry when the current zoom level has passed below the initial detailed internal view (only_clbs_drawn_threshold)
+        // Regenerate geometry when the current zoom level has passed below the CLB-only view (only_clbs_drawn_threshold)
         // but not all internals are drawn yet.
         if(draw_state->show_blk_internal
             && world_units_per_pixel < draw_state->only_clbs_drawn_threshold
@@ -393,8 +393,8 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
         // Regenerate geometry when the current zoom level has passed above the final detailed internal view (all_internals_drawn_threshold)
         // but the CLBs are not yet the only drawn shapes (some internals are drawn as well).
         if(draw_state->show_blk_internal
-            && !(draw_state->only_clbs_drawn)
-            && world_units_per_pixel > draw_state->all_internals_drawn_threshold)
+            && world_units_per_pixel > draw_state->all_internals_drawn_threshold
+            && !(draw_state->only_clbs_drawn))
             return false;
 
         // Critical-path delay labels have a fixed screen-size offset from the flylines, so
@@ -522,6 +522,7 @@ void update_screen(ScreenUpdatePriority priority,
                         "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
                         "with --disp on; falling back to the immediate renderer.\n");
                     rt = ezgl::renderer_type::immediate;
+                    draw_state->renderer_type = "immediate";
                 }
 
                 // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
