@@ -530,7 +530,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
                     t_pb* child_pb = nullptr;
                     t_pb_graph_node* child_pb_graph_node;
 
-                    if (pb && pb->child_pbs[pb_type_idx][pb_idx].name) {
+                    if (pb && !pb->child_pbs[pb_type_idx][pb_idx].name.empty()) {
                         /* Child is initialized */
                         child_pb = &pb->child_pbs[pb_type_idx][pb_idx];
                     }

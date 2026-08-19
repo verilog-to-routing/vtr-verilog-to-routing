@@ -275,7 +275,7 @@ class ClusterRouter {
      *                              route before running pathfinder, reducing
      *                              the number of nets that need re-routing.
      */
-    ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
+    ClusterRouter(const std::vector<t_lb_type_rr_node>* lb_type_graph,
                   t_logical_block_type_ptr type,
                   const std::unordered_set<int>& valid_feedback_pins,
                   bool enable_hot_start = false);
@@ -535,7 +535,7 @@ class ClusterRouter {
     // =========================================================================
 
     /// @brief Pointer to physical intra-logic cluster_ctx.blocks type rr graph.
-    std::vector<t_lb_type_rr_node>* lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>* lb_type_graph_;
 
     /// @brief Top-level output pins with Fc_out > 0 for this block type; pointer
     ///        into the map owned by ClusterLegalizer, valid for packing lifetime.

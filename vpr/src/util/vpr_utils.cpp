@@ -803,7 +803,7 @@ const t_pb* find_memory_sibling(const t_pb* pb) {
     for (int isibling = 0; isibling < pb_type->parent_mode->num_pb_type_children; ++isibling) {
         const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
 
-        if (sibling_pb->name != nullptr) {
+        if (!sibling_pb->name.empty()) {
             return sibling_pb;
         }
     }
@@ -1280,16 +1280,13 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
-    if (pb->name) {
-        free(pb->name);
-        pb->name = nullptr;
-    }
+    pb->name.clear();
 
     if (pb_type->blif_model == nullptr) {
         int mode = pb->mode;
         for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
-                if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
+                if (!pb->child_pbs[i][j].name.empty() || pb->child_pbs[i][j].child_pbs != nullptr) {
                     free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
                 }
             }
