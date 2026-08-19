@@ -15,7 +15,6 @@
 #include "atom_netlist.h"
 #include "cluster_legalizer.h"
 #include "echo_files.h"
-#include "globals.h"
 #include "greedy_clusterer.h"
 #include "logic_types.h"
 #include "logical_ram_infer.h"
@@ -199,11 +198,6 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
     // Initially all gains are zero.
     vtr::vector<PackMoleculeId, float> molecule_gains(seed_mols_.size(), 0.f);
 
-    // Molecules containing atoms of a relative placement group get a large seed
-    // gain bonus so that each group starts its own cluster early.
-    constexpr float rel_group_seed_gain_bonus = 1000.f;
-    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
-
     // Get the seed gain of each molecule.
     for (PackMoleculeId mol_id : seed_mols_) {
         // Gain of each molecule is the maximum gain of its atoms
@@ -221,9 +215,6 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                             seed_type,
                                             max_molecule_stats,
                                             atom_criticality);
-            if (relative_macros.get_atom_group(blk_id).first.is_valid()) {
-                atom_gain += rel_group_seed_gain_bonus;
-            }
             mol_gain = std::max(mol_gain, atom_gain);
         }
         molecule_gains[mol_id] = mol_gain;

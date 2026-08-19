@@ -61,31 +61,6 @@ static void remove_molecule_from_pb_stats_candidates(
     PackMoleculeId molecule_id,
     ClusterGainStats& cluster_gain_stats);
 
-/// @brief Maximum number of times a molecule of the cluster's own relative
-///        placement group is re-proposed as a candidate after failing to pack
-///        into the cluster. Other molecules are removed from the candidate
-///        list after their first failure.
-static constexpr int max_relative_group_mol_failures = 10;
-
-/// @brief Gain bonus for molecules containing a relative-group priority atom
-///        (an atom stranded outside its group's cluster in a previous packing
-///        iteration) when proposed to their own group's cluster. Large enough
-///        to dominate connectivity and attraction gains so these molecules are
-///        proposed first.
-static constexpr float rel_group_priority_atom_gain = 100.f;
-
-/**
- * @brief Returns true if the given molecule contains an atom belonging to the
- *        cluster's own relative placement group.
- *
- * Relative placement groups are the only attraction groups flagged with
- * pull_in_initial_search, which is how they are identified here.
- */
-static bool is_molecule_in_cluster_relative_group(PackMoleculeId molecule_id,
-                                                  AttractGroupId cluster_att_grp,
-                                                  AttractionInfo& attraction_groups,
-                                                  const Prepacker& prepacker);
-
 /*
  * @brief Add blk to list of feasible blocks sorted according to gain.
  */
@@ -799,19 +774,6 @@ void GreedyCandidateSelector::add_general_cluster_molecule_candidates(
                                                                    cluster_legalizer,
                                                                    attraction_groups);
         cluster_gain_stats.has_done_connectivity_and_timing = true;
-
-        // If the cluster's attraction group asks to be pulled in from the start,
-        // propose its molecules now instead of waiting for
-        // the connectivity-based search to run dry, by which time the cluster
-        // may already be full of unconstrained molecules.
-        AttractGroupId grp_id = cluster_gain_stats.attraction_grp_id;
-        if (grp_id.is_valid()
-            && attraction_groups.get_attraction_group_info(grp_id).pull_in_initial_search) {
-            add_cluster_molecule_candidates_by_attraction_group(cluster_gain_stats,
-                                                                legalization_cluster_id,
-                                                                cluster_legalizer,
-                                                                attraction_groups);
-        }
     }
 
     if (packer_opts_.prioritize_transitive_connectivity) {
@@ -1098,23 +1060,8 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
         }
 
         if (num_molecule_failures > 0) {
-            // A molecule of the cluster's own relative placement group must
-            // eventually be packed into this cluster, and its failure may be
-            // transient: e.g. external pin pressure that is relieved once more
-            // of the group is packed and its nets are absorbed. Keep
-            // re-proposing such molecules (deprioritized by the failure gain
-            // penalty below) for a bounded number of failures instead of
-            // removing them after the first one; genuinely unpackable
-            // molecules are still removed once the bound is reached.
-            bool retry_rel_group_molecule = num_molecule_failures < max_relative_group_mol_failures
-                                            && is_molecule_in_cluster_relative_group(molecule_id,
-                                                                                     cluster_att_grp,
-                                                                                     attraction_groups,
-                                                                                     prepacker);
-            if (!retry_rel_group_molecule) {
-                remove_molecule_from_pb_stats_candidates(molecule_id, cluster_gain_stats);
-                return;
-            }
+            remove_molecule_from_pb_stats_candidates(molecule_id, cluster_gain_stats);
+            return;
         }
     }
 
@@ -1141,21 +1088,6 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
 static void remove_molecule_from_pb_stats_candidates(PackMoleculeId molecule_id,
                                                      ClusterGainStats& cluster_gain_stats) {
     cluster_gain_stats.feasible_blocks.remove_at_pop_time(molecule_id);
-}
-
-static bool is_molecule_in_cluster_relative_group(PackMoleculeId molecule_id,
-                                                  AttractGroupId cluster_att_grp,
-                                                  AttractionInfo& attraction_groups,
-                                                  const Prepacker& prepacker) {
-    if (!cluster_att_grp.is_valid())
-        return false;
-    if (!attraction_groups.get_attraction_group_info(cluster_att_grp).pull_in_initial_search)
-        return false;
-    for (AtomBlockId blk_id : prepacker.get_molecule(molecule_id).atom_block_ids) {
-        if (blk_id.is_valid() && attraction_groups.get_atom_attraction_group(blk_id) == cluster_att_grp)
-            return true;
-    }
-    return false;
 }
 
 /*
@@ -1215,14 +1147,6 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         if (atom_grp_id == cluster_attraction_group_id && cluster_attraction_group_id != AttractGroupId::INVALID()) {
             float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
             gain += att_grp_gain;
-            // Relative-group atoms stranded outside their group's cluster in a
-            // previous packing iteration are packed as early as possible this
-            // time: greedy intra-cluster placement cannot rip up already-placed
-            // atoms, so a molecule proposed near the end of a cluster's growth
-            // can hit a placement dead end that packing it early avoids.
-            if (attraction_groups.is_relative_group_priority_atom(blk_id)) {
-                gain += rel_group_priority_atom_gain;
-            }
         } else if (cluster_attraction_group_id != AttractGroupId::INVALID() && atom_grp_id != cluster_attraction_group_id) {
             gain -= attraction_group_penalty;
         }
