@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-"""live status table for mosaic/scripts/run_vtr_batch.py.
-
-reads the results .csv file written by run_vtr_batch.py.
-
-usage:
-    python3 mosaic/scripts/watch_compare.py
-    python3 mosaic/scripts/watch_compare.py \
-        --dir mosaic/scripts/compare_output_<arch_stem>
-    python3 mosaic/scripts/watch_compare.py --interval 2
-    python3 mosaic/scripts/watch_compare.py --once
-
-flags:
-    --dir <outdir>     compare output directory (default: newest compare_output*
-                            under mosaic/scripts then repo root, by mtime)
-    --interval <sec>   refresh period (default 1.0)
-    --once             print once and exit
-"""
+# live status table for mosaic/scripts/run_vtr_batch.py.
+#
+# reads the results .csv file written by run_vtr_batch.py.
+#
+# usage:
+#     python3 mosaic/scripts/watch_compare.py
+#     python3 mosaic/scripts/watch_compare.py \
+#         --dir mosaic/scripts/compare_output_<arch_stem>
+#     python3 mosaic/scripts/watch_compare.py --interval 2
+#     python3 mosaic/scripts/watch_compare.py --once
+#
+# flags:
+#     --dir <outdir>     compare output directory (default: newest compare_output*
+#                             under mosaic/scripts then repo root, by mtime)
+#     --interval <sec>   refresh period (default 1.0)
+#     --once             print once and exit
+#
+# when --verilator-check <flows...> is set the table adds vcheck match mismatch vectors perrors
+# vcheck is pass, fail (mismatches), or error (could not run)
 
 from __future__ import annotations
 
@@ -58,6 +60,11 @@ csvDisplayKeys = (
     ("wall", "wall_time_sec"),
     ("synth", "synth_wall_sec"),
     ("vpr", "vpr_wall_sec"),
+    ("vcheck", "verilator_status"),
+    ("match", "verilator_matched"),
+    ("mismatch", "verilator_mismatched"),
+    ("vectors", "verilator_vectors"),
+    ("perrors", "verilator_port_errors"),
     ("s_luts", "synth_luts"),
     ("a_luts", "abc_luts"),
     ("p_luts", "packed_luts"),
@@ -248,8 +255,8 @@ def renderGeomeanTable(rows: Sequence[Dict[str, str]]) -> str:
 
 
 def coloredStatus(status: str) -> str:
-    if status.startswith("FAIL") or status == "fail":
-        return f"\033[91m{status}\033[0m"
+    if status == "fail":
+        return "\033[91mfail\033[0m"
     if status == "pending":
         return "\033[90mpending\033[0m"
     if status == "cached":
@@ -258,37 +265,83 @@ def coloredStatus(status: str) -> str:
     return f"{color}{status or 'started'}\033[0m"
 
 
+def coloredVcheck(value: str) -> str:
+    text = (value or "-").strip() or "-"
+    if text == "pass":
+        return f"\033[92m{text}\033[0m"
+    if text == "fail":
+        return f"\033[91m{text}\033[0m"
+    if text == "error":
+        return f"\033[93m{text}\033[0m"
+    return text
+
+
 def sap(row: Dict[str, str], *keys: str) -> str:
     return "/".join(str(row.get(key) or "-") for key in keys)
 
 
-def renderTable(rows: List[Dict[str, str]], title: str) -> str:
+# USE: show vcheck when batch wrote the flag marker or any row has a value.
+def showVerilatorColumn(targetDir: Path, rows: Sequence[Dict[str, str]]) -> bool:
+    marker = targetDir / "status" / "verilator_check"
+    if marker.is_file():
+        return True
+    return any(
+        (row.get(key) or "").strip()
+        for row in rows
+        for key in ("vcheck", "match", "mismatch", "vectors", "perrors")
+    )
+
+
+def renderTable(
+    rows: List[Dict[str, str]],
+    title: str,
+    showVcheck: bool = False,
+) -> str:
     table = PrettyTable()
-    table.field_names = [
+    fieldNames = [
         "run",
         "status",
-        "wall",
-        "synth",
-        "vpr",
-        "LUTs s/a/p",
-        "FFs s/p",
-        "BRAMs",
-        "DSPs",
-        "Adders",
-        "IO in",
-        "IO out",
-        "CLBs",
-        "Wirelen",
-        "CPD (ns)",
-        "Fmax (MHz)",
-        "WNS (ns)",
     ]
+    if showVcheck:
+        fieldNames.extend(["vcheck", "match", "mismatch", "vectors", "perrors"])
+    fieldNames.extend(
+        [
+            "wall",
+            "synth",
+            "vpr",
+            "LUTs s/a/p",
+            "FFs s/p",
+            "BRAMs",
+            "DSPs",
+            "Adders",
+            "IO in",
+            "IO out",
+            "CLBs",
+            "Wirelen",
+            "CPD (ns)",
+            "Fmax (MHz)",
+            "WNS (ns)",
+        ]
+    )
+    table.field_names = fieldNames
     table.align = "l"
     for row in rows:
-        table.add_row(
+        values = [
+            row.get("label", ""),
+            coloredStatus(row.get("status", "")),
+        ]
+        if showVcheck:
+            values.extend(
+                [
+                    coloredVcheck(row.get("vcheck", "")),
+                    row.get("match", "-") or "-",
+                    row.get("mismatch", "-") or "-",
+                    row.get("vectors", "-") or "-",
+                    row.get("perrors", "-") or "-",
+                ]
+            )
+        values.extend(
             [
-                row.get("label", ""),
-                coloredStatus(row.get("status", "")),
                 row.get("wall", "-"),
                 row.get("synth", "-"),
                 row.get("vpr", "-"),
@@ -306,6 +359,7 @@ def renderTable(rows: List[Dict[str, str]], title: str) -> str:
                 row.get("wns", "-"),
             ]
         )
+        table.add_row(values)
     return f"{title}\n{table}"
 
 
@@ -327,13 +381,13 @@ def findOutputDirs() -> List[Path]:
 
 
 def isDoneStatus(status: str) -> bool:
-    return status in ("route done", "ok", "cached") or status.startswith("FAIL")
+    return status in ("route done", "ok", "cached", "fail")
 
 
 # USE: true when a row can enter the live geomean.
 def isGeomeanReady(row: Dict[str, str]) -> bool:
     status = row.get("status", "")
-    if status.startswith("FAIL"):
+    if status == "fail":
         return False
     if status not in ("route done", "ok", "cached"):
         return False
@@ -372,7 +426,8 @@ def watchDir(targetDir: Path, interval: float, once: bool) -> None:
             if csvPath is None:
                 print(f"{title}\n(no results csv yet)")
             else:
-                print(renderTable(rows, title))
+                showVcheck = showVerilatorColumn(targetDir, rows)
+                print(renderTable(rows, title, showVcheck=showVcheck))
                 print()
                 print(renderGeomeanTable(rows))
             print(f"\nlogs: {logsDir}")
