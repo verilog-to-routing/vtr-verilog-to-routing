@@ -199,14 +199,18 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
 
     const bool device_has_interposers = device_ctx.grid.has_interposer_cuts();
 
+    //Get block type of head member. Members of an architecture-derived macro
+    //(e.g. a carry chain) all share it; members of a user-defined relative
+    //placement macro may differ, so their types are looked up per member below.
+    ClusterBlockId blk_id = pl_macro.members[0].blk_index;
+    auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+
     // Every macro can be placed until proven otherwise
     bool mac_can_be_placed = true;
 
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
-
-        auto block_type = cluster_ctx.clb_nlist.block_type(pl_macro.members[imember].blk_index);
 
         //Check that the member location is on the grid
         if (!is_loc_on_chip({member_pos.x, member_pos.y, member_pos.layer})) {
@@ -242,29 +246,43 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
             }
         }
 
-        // Check whether the location could accept block of this type
-        // Then check whether the location could still accommodate more blocks
-        // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
-        //
-        // The member must also land on the root of its tile (width/height offset 0),
-        // since blocks are only ever placed at tile roots. Members of a macro whose
-        // tiles have different sizes (e.g. a height-1 CLB anchoring a height-4 DSP)
-        // can land mid-tile even when the head is at a root: is_tile_compatible()
-        // alone accepts such a position (a body cell reports its tile's type) but it
-        // is not a placeable location. This mirrors the root check in
-        // is_legal_swap_to_location().
-        t_physical_tile_type_ptr member_tile = device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer});
-        if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && device_ctx.grid.get_width_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
-            && device_ctx.grid.get_height_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
-            && is_tile_compatible(member_tile, block_type)
-            && member_pos.sub_tile >= 0 && member_pos.sub_tile < member_tile->capacity
-            && is_sub_tile_compatible(member_tile, block_type, member_pos.sub_tile)
-            && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
+        if (!pl_macro.user_defined) {
+            // Check whether the location could accept block of this type
+            // Then check whether the location could still accommodate more blocks
+            // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
+            if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
+                && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
+                && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
+            } else {
+                // Can't be placed here - skip to the next try
+                mac_can_be_placed = false;
+                break;
+            }
         } else {
-            // Can't be placed here - skip to the next try
-            mac_can_be_placed = false;
-            break;
+            // User-defined relative placement macros can mix block types and use
+            // arbitrary offsets, so validate the location per member:
+            //
+            // The member must land on a tile root (width/height offset 0) — with
+            // mixed tile sizes a member can land mid-tile even when the head is at
+            // a root, and is_tile_compatible() alone would accept that unplaceable
+            // position. Mirrors the root check in is_legal_swap_to_location().
+            //
+            // The member's sub_tile must also be range-checked before indexing the
+            // grid, and checked for compatibility with the member's block type.
+            auto member_block_type = cluster_ctx.clb_nlist.block_type(pl_macro.members[imember].blk_index);
+            t_physical_tile_type_ptr member_tile = device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer});
+            if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
+                && device_ctx.grid.get_width_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
+                && device_ctx.grid.get_height_offset({member_pos.x, member_pos.y, member_pos.layer}) == 0
+                && is_tile_compatible(member_tile, member_block_type)
+                && member_pos.sub_tile >= 0 && member_pos.sub_tile < member_tile->capacity
+                && is_sub_tile_compatible(member_tile, member_block_type, member_pos.sub_tile)
+                && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
+            } else {
+                // Can't be placed here - skip to the next try
+                mac_can_be_placed = false;
+                break;
+            }
         }
 
         if (device_has_interposers) {

@@ -125,7 +125,8 @@ void MoveAbortionLogger::report_aborted_moves() const {
         VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
     }
 
-    if (arch_macro_proposals_ != 0 || user_macro_proposals_ != 0) {
+    // Only printed when user relative placement macros were proposed
+    if (user_macro_proposals_ != 0) {
         VTR_LOG("\n");
         VTR_LOG("Macro Move Proposals:\n");
         if (arch_macro_proposals_ != 0) {

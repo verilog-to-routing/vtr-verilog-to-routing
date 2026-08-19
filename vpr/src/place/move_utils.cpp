@@ -497,14 +497,31 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     VTR_ASSERT_SAFE(empty_locs.size() >= non_macro_displaced_blocks.size());
 
+    //Whether any of the affected macros is a user-defined relative placement
+    //macro. Only those can mix block types.
+    bool any_user_defined_macro = place_macros.has_user_defined_macros()
+                                  && std::ranges::any_of(affected_macros, [&](int im) { return place_macros[im].user_defined; });
+
+    if (!any_user_defined_macro) {
+        // Architecture-derived macros (e.g. carry chains) use the same block type:
+        // any displaced block can fill any vacated hole, so assign holes in order.
+        auto loc_itr = empty_locs.begin();
+        for (ClusterBlockId blk : non_macro_displaced_blocks) {
+            outcome = blocks_affected.record_block_move(blk, *loc_itr, blk_loc_registry);
+            ++loc_itr;
+        }
+
+        return outcome;
+    }
+
     //Fit the displaced blocks into the empty locations.
     //
     //Each block needs a hole it actually fits: same tile type, a compatible
-    //sub-tile, and a tile root. Carry chains vacate holes that are all one type,
-    //so any pairing works, but a relative placement macro mixing types (say a CLB
-    //and a DSP) leaves mixed holes, and handing them out in order can drop a block
-    //on the wrong tile; caught much later by the placement consistency check.
-    //So match each block to a hole that fits, and abort if one has no such hole.
+    //sub-tile, and a tile root. A relative placement macro mixing types (say a
+    //CLB and a DSP) leaves mixed holes, and handing them out in order can drop
+    //a block on the wrong tile; caught much later by the placement consistency
+    //check. So match each block to a hole that fits, and abort if one has no
+    //such hole.
     std::vector<t_pl_loc> empty_loc_vec(empty_locs.begin(), empty_locs.end());
     std::vector<bool> hole_used(empty_loc_vec.size(), false);
     for (ClusterBlockId blk : non_macro_displaced_blocks) {
@@ -562,8 +579,12 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     // the same displacement is applied to the other macro members. If their tile
     // sizes differ, a member may land on a non-root cell that appears type-compatible
     // but cannot actually hold a block.
-    if (device_ctx.grid.get_width_offset({to.x, to.y, to.layer}) != 0
-        || device_ctx.grid.get_height_offset({to.x, to.y, to.layer}) != 0) {
+    //
+    // Only user-defined macros can propose non-root targets, so the check is
+    // skipped when the design has none.
+    if (place_macros.has_user_defined_macros()
+        && (device_ctx.grid.get_width_offset({to.x, to.y, to.layer}) != 0
+            || device_ctx.grid.get_height_offset({to.x, to.y, to.layer}) != 0)) {
         return false;
     }
 
