@@ -346,9 +346,9 @@ bool try_pack(const t_packer_opts& packer_opts,
     // enough -- unrelated clustering has a real quality cost, so we only pay
     // it for the block type(s) that actually need it.
     if (appack_ctx.appack_options.use_appack && packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
-        constexpr float kMinUtilizationForThresholdBump = 0.9f;
-        constexpr float kMaxDistThUtilizationScaleMultiplier = 10.0f;
-        constexpr float kSevereUtilizationCutoff = 1.2f;
+        constexpr float kMinUtilizationForThresholdBump = 0.5f;
+        constexpr float kMaxDistThUtilizationScaleMultiplier = 30.0f;
+        constexpr float kSevereUtilizationCutoff = 1.5f;
 
         std::unordered_set<t_logical_block_type_ptr> severe_block_types;
         bool any_type_needs_denser_packing = false;
@@ -387,6 +387,7 @@ bool try_pack(const t_packer_opts& packer_opts,
             float th_multiplier = 1.0f + (utilization_clamped - kMinUtilizationForThresholdBump) / (kSevereUtilizationCutoff - kMinUtilizationForThresholdBump) * (kMaxDistThUtilizationScaleMultiplier - 1.0f);
             float base_max_dist_th = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(type);
             appack_ctx.max_distance_threshold_manager.set_max_dist_threshold(type, base_max_dist_th * th_multiplier);
+            VTR_LOG("\t%s: %g\n", type.name.c_str(), base_max_dist_th * th_multiplier);
 
             if (utilization >= kSevereUtilizationCutoff)
                 severe_block_types.insert(&type);

@@ -39,12 +39,12 @@ class APPackMaxDistThManager {
 
     // This is the default scale and offset. Logical blocks that we do not
     // recognize as being of the special categories will have this threshold.
-    static constexpr float default_max_dist_th_scale_ = 0.15f;
-    static constexpr float default_max_dist_th_offset_ = 10.0f;
+    static constexpr float default_max_dist_th_scale_ = 0.0f;
+    static constexpr float default_max_dist_th_offset_ = 7.0f;
 
     // Logic blocks (such as CLBs and LABs) tend to have more resources on the
     // device, thus they have tighter thresholds. This was found to work well.
-    static constexpr float logic_block_max_dist_th_scale_ = 0.02f;
+    static constexpr float logic_block_max_dist_th_scale_ = 0.0f;
     static constexpr float logic_block_max_dist_th_offset_ = 5.0f;
 
     // Memory blocks (i.e. blocks that contain pb_types of the memory class)
