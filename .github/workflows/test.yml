@@ -764,9 +764,9 @@ jobs:
       matrix:
         include: [
           {
-            name: 'Mosaic_k6_koios',
+            name: 'Mosaic_regression',
             suite: 'vtr_reg_basic_mosaic',
-            extra_pkgs: ''
+            extra_pkgs: 'verilator'
           }
         ]
     name: 'R: ${{ matrix.name }}'
@@ -808,9 +808,14 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
-      timeout-minutes: 40
+      timeout-minutes: 60
       run: |
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: Require mosaic verilator-check pass
+      timeout-minutes: 5
+      run: |
+        python3 mosaic/scripts/verify_regression_vcheck.py --suite ${{ matrix.suite }}
 
     - name: Compare Parmys and Mosaic hardblock BLIF models
       timeout-minutes: 20
