@@ -1,11 +1,13 @@
 
 #include "placer_state.h"
 
+#include "clustered_netlist.h"
 #include "globals.h"
 #include "move_transactions.h"
+#include "vpr_context.h"
 
 PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     const size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
@@ -37,8 +39,8 @@ PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
 }
 
 void PlacerTimingContext::commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& clb_nlist = cluster_ctx.clb_nlist;
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
 
     // Go through all the sink pins affected
     for (ClusterPinId pin_id : blocks_affected.affected_pins) {
@@ -50,6 +52,32 @@ void PlacerTimingContext::commit_td_cost(const t_pl_blocks_to_be_moved& blocks_a
         proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
         connection_timing_cost[net_id][ipin] = proposed_connection_timing_cost[net_id][ipin];
         proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
+    }
+}
+
+void PlacerTimingContext::extract_connection_commit_record(const std::vector<ClusterPinId>& affected_pins,
+                                                           std::vector<t_connection_commit_entry>& record) const {
+    // Mirrors the reading side of commit_td_cost().
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    record.clear();
+    record.reserve(affected_pins.size());
+
+    for (ClusterPinId pin_id : affected_pins) {
+        t_connection_commit_entry& entry = record.emplace_back();
+        entry.net_id = clb_nlist.pin_net(pin_id);
+        entry.ipin = clb_nlist.pin_net_index(pin_id);
+        entry.connection_delay = proposed_connection_delay[entry.net_id][entry.ipin];
+        entry.connection_timing_cost = proposed_connection_timing_cost[entry.net_id][entry.ipin];
+    }
+}
+
+void PlacerTimingContext::apply_connection_commit_record(const std::vector<t_connection_commit_entry>& record) {
+    // Mirrors the writing side of commit_td_cost(), minus the proposed_* resets:
+    // the applying state has no move in flight.
+    for (const t_connection_commit_entry& entry : record) {
+        connection_delay[entry.net_id][entry.ipin] = entry.connection_delay;
+        connection_timing_cost[entry.net_id][entry.ipin] = entry.connection_timing_cost;
     }
 }
 
