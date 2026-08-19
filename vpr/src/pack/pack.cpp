@@ -1,7 +1,6 @@
 
 #include "pack.h"
 
-#include <limits>
 #include <map>
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
@@ -91,16 +90,6 @@ enum class e_packer_state {
  *      are larger than 1.0, then fits_on_device will be false.
  *  @param external_pin_util_targets
  *      The current external pin utilization targets.
- *  @param relative_groups_split
- *      Whether any relative placement group's atoms ended up split across
- *      multiple clusters in the current clustering.
- *  @param relative_groups_extra_retry
- *      Whether an extra re-pack retry is allowed for split relative placement
- *      groups (the split-group count is still strictly decreasing and the
- *      retry iteration cap has not been reached).
- *  @param relative_groups_worsened
- *      Whether the last re-pack left MORE relative placement groups split
- *      than the pass before it.
  *  @param packer_opts
  *      The options passed into the packer.
  *  @param appack_ctx
@@ -109,19 +98,15 @@ enum class e_packer_state {
 static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
                                             bool fits_on_device,
                                             bool floorplan_regions_overfull,
-                                            bool relative_groups_split,
-                                            bool relative_groups_extra_retry,
-                                            bool relative_groups_worsened,
                                             bool using_unrelated_clustering,
                                             bool using_balanced_block_type_util,
                                             const std::map<t_logical_block_type_ptr, float>& block_type_utils,
                                             const t_ext_pin_util_targets& external_pin_util_targets,
                                             const t_packer_opts& packer_opts,
                                             const APPackContext& appack_ctx) {
-    if (fits_on_device && !floorplan_regions_overfull && !relative_groups_split) {
-        // If everything fits on the device, the floorplan regions are not
-        // overfilled, and no relative placement group is split across clusters,
-        // the next state is success.
+    if (fits_on_device && !floorplan_regions_overfull) {
+        // If everything fits on the device and the floorplan regions are
+        // not overfilled, the next state is success.
         return e_packer_state::SUCCESS;
     }
 
@@ -150,20 +135,8 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
         }
     }
 
-    // Check if there are overfilled floorplan regions or split relative
-    // placement groups. Both are resolved by packing more densely with
-    // attraction groups.
-    if (floorplan_regions_overfull || relative_groups_split) {
-        // Fail fast when the ONLY remaining problem is split relative
-        // placement groups and the last re-pack made things worse (more
-        // split groups than the pass before): the escalation below packs
-        // ever more densely, and a worsening pass means it is working
-        // against the groups. Report the failure now instead of burning
-        // the remaining escalation stages on a lost cause.
-        if (relative_groups_split && !floorplan_regions_overfull && fits_on_device
-            && relative_groups_worsened) {
-            return e_packer_state::FAILURE;
-        }
+    // Check if there are overfilled floorplan regions.
+    if (floorplan_regions_overfull) {
         // If there are overfilled region constraints, try to use attraction
         // groups to resolve it.
 
@@ -188,18 +161,6 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
             case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS:
                 return e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL;
             case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL:
-                // If the only remaining problem is split relative placement
-                // groups and the retries are still making progress (strictly
-                // fewer split groups each iteration, and the iteration cap
-                // has not been hit), keep retrying: each retry repacks the
-                // remaining split groups with a different intra-cluster
-                // arrangement. When progress stalls, fall through to FAILURE
-                // and report the remaining groups.
-                if (relative_groups_split && !floorplan_regions_overfull
-                    && fits_on_device && relative_groups_extra_retry) {
-                    return e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL;
-                }
-                break;
             default:
                 break;
         }
@@ -383,6 +344,9 @@ static std::vector<std::pair<UserRelativeMacroId, int>> find_split_relative_grou
             LegalizationClusterId group_cluster_id;
             for (AtomBlockId blk_id : macro.groups[igroup].atoms) {
                 LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+                // Unclustered atoms are tolerated: they cannot pin the group to
+                // a second cluster, and a pass that left atoms unclustered is
+                // never accepted as the final clustering anyway.
                 if (!cluster_id.is_valid())
                     continue;
                 if (!group_cluster_id.is_valid()) {
@@ -440,12 +404,6 @@ bool try_pack(const t_packer_opts& packer_opts,
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
      */
     AttractionInfo attraction_groups(false);
-
-    // Relative placement groups need their attraction pull from the very first
-    // iteration: their atoms must be packed into a single cluster and may not
-    // be connected to each other, so the connectivity-driven candidate search
-    // alone would not bring them together.
-    attraction_groups.create_att_groups_for_relative_groups();
 
     // Error out on molecules/chains spanning two relative placement groups
     // and collect which group owns each chain.
@@ -534,19 +492,6 @@ bool try_pack(const t_packer_opts& packer_opts,
     // The current state of the packer during iterative packing.
     e_packer_state current_packer_state = e_packer_state::DEFAULT;
 
-    // Number of relative placement groups split across clusters in the
-    // previous packing iteration. Used to allow extra re-pack retries while
-    // the retries keep making progress (strictly fewer split groups).
-    size_t prev_num_split_relative_groups = std::numeric_limits<size_t>::max();
-    // Fewest split relative placement groups seen across all packing iterations
-    // so far (Defect B): the retry loop re-packs from scratch and can regress,
-    // so this records the best result for reporting.
-    size_t best_num_split_relative_groups = std::numeric_limits<size_t>::max();
-    // Hard cap on the number of packing iterations spent on split relative
-    // placement group retries (safety bound; retries already stop as soon as
-    // an iteration makes no progress).
-    constexpr int max_relative_group_pack_iterations = 30;
-
     while (current_packer_state != e_packer_state::SUCCESS && current_packer_state != e_packer_state::FAILURE) {
         VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
         VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
@@ -581,80 +526,55 @@ bool try_pack(const t_packer_opts& packer_opts,
 
         // Check if any relative placement group was split across multiple
         // clusters. Such a clustering cannot be used (each group must become a
-        // single member of a placement macro), so a re-pack with boosted
-        // attraction on the split groups is attempted.
+        // single member of a placement macro).
         std::vector<std::pair<UserRelativeMacroId, int>> split_relative_groups = find_split_relative_groups(cluster_legalizer,
                                                                                                             g_vpr_ctx.floorplanning().relative_macros);
-        bool relative_groups_split = !split_relative_groups.empty();
-        // Allow extra re-pack retries while the split-group count strictly
-        // decreases (and the iteration cap has not been reached).
-        bool relative_groups_extra_retry = relative_groups_split
-                                           && split_relative_groups.size() < prev_num_split_relative_groups
-                                           && pack_iteration < max_relative_group_pack_iterations;
-        // A re-pack that leaves MORE groups split than the pass before it is
-        // working against the groups; used to fail fast (see get_next_packer_state).
-        bool relative_groups_worsened = relative_groups_split
-                                        && split_relative_groups.size() > prev_num_split_relative_groups;
-        prev_num_split_relative_groups = split_relative_groups.size();
-        best_num_split_relative_groups = std::min(best_num_split_relative_groups, split_relative_groups.size());
-        if (relative_groups_split) {
-            VTR_LOG("%zu relative placement group(s) are split across multiple clusters.\n",
-                    split_relative_groups.size());
-            // Boost the attraction gain of the split groups. The boosted gain is
-            // applied when the attraction groups are (re)built for the next
-            // packing iteration.
-            const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
-            for (const auto& [macro_id, group_idx] : split_relative_groups) {
-                attraction_groups.boost_relative_group_gain(macro_id, group_idx, 2.0f);
-
-                // Mark the group's stray atoms (those outside the cluster
-                // holding the majority of the group) as priority atoms: the
-                // candidate selector will pack them into their group's cluster
-                // as early as possible next iteration. Greedy intra-cluster
-                // placement cannot rip up already-placed atoms, so a molecule
-                // proposed near the end of a cluster's growth can hit a
-                // placement dead end that packing it early avoids.
-                const std::vector<AtomBlockId>& group_atoms = relative_macros.get_macro(macro_id).groups[group_idx].atoms;
-                std::map<LegalizationClusterId, int> cluster_atom_counts;
-                for (AtomBlockId blk_id : group_atoms) {
-                    cluster_atom_counts[cluster_legalizer.get_atom_cluster(blk_id)]++;
-                }
-                LegalizationClusterId majority_cluster;
-                int majority_count = 0;
-                for (const auto& [cluster_id, count] : cluster_atom_counts) {
-                    if (count > majority_count) {
-                        majority_cluster = cluster_id;
-                        majority_count = count;
-                    }
-                }
-                for (AtomBlockId blk_id : group_atoms) {
-                    if (cluster_legalizer.get_atom_cluster(blk_id) != majority_cluster) {
-                        attraction_groups.add_relative_group_priority_atom(blk_id);
-                    }
-                }
-            }
-            // Gain boosting alone cannot rescue a group whose adopted cluster
-            // was filled by unconstrained molecules before the group's last
-            // molecules were proposed. From the first re-pack attempt onward,
-            // reserve the remaining capacity of clusters hosting an incomplete
-            // relative placement group for that group's molecules
-            // (unconstrained fill still happens once a group is complete).
-            cluster_legalizer.set_reserve_relative_group_capacity(true);
-        }
 
         // Next packer state logic
         e_packer_state next_packer_state = get_next_packer_state(current_packer_state,
                                                                  fits_on_device,
                                                                  floorplan_regions_overfull,
-                                                                 relative_groups_split,
-                                                                 relative_groups_extra_retry,
-                                                                 relative_groups_worsened,
                                                                  allow_unrelated_clustering,
                                                                  balance_block_type_util,
                                                                  block_type_utils,
                                                                  cluster_legalizer.get_target_external_pin_util(),
                                                                  packer_opts,
                                                                  appack_ctx);
+
+        // A pass that would otherwise succeed but left a relative placement
+        // group split across clusters is a hard failure
+        if (!split_relative_groups.empty()
+            && (next_packer_state == e_packer_state::SUCCESS || next_packer_state == e_packer_state::FAILURE)) {
+            const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+            std::string split_group_report;
+            for (const auto& [macro_id, group_idx] : split_relative_groups) {
+                const UserRelativeMacro& macro = relative_macros.get_macro(macro_id);
+                split_group_report += "  Relative macro '" + macro.name + "', group " + std::to_string(group_idx) + ":";
+                for (AtomBlockId blk_id : macro.groups[group_idx].atoms) {
+                    LegalizationClusterId atom_cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+                    split_group_report += " '" + atom_ctx.netlist().block_name(blk_id) + "' ("
+                                          + (atom_cluster_id.is_valid() ? "cluster " + std::to_string((size_t)atom_cluster_id)
+                                                                        : std::string("unclustered"))
+                                          + ")";
+                }
+                split_group_report += "\n";
+            }
+            if (next_packer_state == e_packer_state::SUCCESS) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Failed to pack each relative placement group into a single cluster "
+                                "(%zu group(s) split):\n%s"
+                                "The group(s) may be too large to fit into one cluster or may conflict "
+                                "with pack patterns. Consider making the group(s) smaller.\n",
+                                split_relative_groups.size(),
+                                split_group_report.c_str());
+            } else {
+                VTR_LOG_WARN("%zu relative placement group(s) are split across clusters:\n%s"
+                             "This is likely a symptom of the clustering not fitting the device "
+                             "(see the following error).\n",
+                             split_relative_groups.size(),
+                             split_group_report.c_str());
+            }
+        }
 
         // Set up for the options used for the next packer state.
         // NOTE: This must be done here (and not at the start of the next packer
@@ -720,31 +640,27 @@ bool try_pack(const t_packer_opts& packer_opts,
                 break;
             }
             case e_packer_state::CREATE_ATTRACTION_GROUPS: {
-                VTR_LOGV(floorplan_regions_overfull, "Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
-                VTR_LOGV(relative_groups_split, "Relative placement groups are split across clusters: trying to pack again using cluster attraction groups. \n");
+                VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
                 attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
                 attraction_groups.set_att_group_pulls(1);
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 break;
             }
             case e_packer_state::CREATE_MORE_ATTRACTION_GROUPS: {
-                VTR_LOGV(floorplan_regions_overfull, "Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
-                VTR_LOGV(relative_groups_split, "Relative placement groups are split across clusters: trying to pack again with more attraction groups exploration. \n");
+                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 break;
             }
             case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS: {
                 attraction_groups.create_att_groups_for_all_regions();
-                VTR_LOGV(floorplan_regions_overfull, "Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
-                VTR_LOGV(relative_groups_split, "Relative placement groups are split across clusters: trying to pack again with more attraction groups exploration. \n");
+                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 break;
             }
             case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL: {
                 attraction_groups.create_att_groups_for_all_regions();
-                VTR_LOGV(floorplan_regions_overfull, "Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher pull. \n");
-                VTR_LOGV(relative_groups_split, "Relative placement groups are split across clusters: trying to pack again with more attraction groups exploration and higher pull. \n");
+                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher pull. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 attraction_groups.set_att_group_pulls(4);
                 break;
@@ -809,27 +725,6 @@ bool try_pack(const t_packer_opts& packer_opts,
 
         // Raise an error if the packer failed to pack.
         if (next_packer_state == e_packer_state::FAILURE) {
-            if (relative_groups_split) {
-                const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
-                std::string split_group_report;
-                for (const auto& [macro_id, group_idx] : split_relative_groups) {
-                    const UserRelativeMacro& macro = relative_macros.get_macro(macro_id);
-                    split_group_report += "  Relative macro '" + macro.name + "', group " + std::to_string(group_idx) + ":";
-                    for (AtomBlockId blk_id : macro.groups[group_idx].atoms) {
-                        split_group_report += " '" + atom_ctx.netlist().block_name(blk_id)
-                                              + "' (cluster " + std::to_string((size_t)cluster_legalizer.get_atom_cluster(blk_id)) + ")";
-                    }
-                    split_group_report += "\n";
-                }
-                VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                                "Failed to pack each relative placement group into a single cluster "
-                                "(%zu group(s) split; fewest seen across retries: %zu):\n%s"
-                                "The group(s) may be too large to fit into one cluster or may conflict "
-                                "with pack patterns. Consider making the group(s) smaller.\n",
-                                split_relative_groups.size(), best_num_split_relative_groups,
-                                split_group_report.c_str());
-            }
-
             if (floorplan_regions_overfull) {
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                                 "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
@@ -865,9 +760,6 @@ bool try_pack(const t_packer_opts& packer_opts,
 
             // Reset the cluster legalizer for re-clustering.
             cluster_legalizer.reset();
-
-            // Rebuild the relative placement attraction groups for the next iteration
-            attraction_groups.create_att_groups_for_relative_groups();
         }
 
         // Set the current state to the next state.
