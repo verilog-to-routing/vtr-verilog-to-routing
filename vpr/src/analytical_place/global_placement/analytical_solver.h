@@ -800,6 +800,9 @@ class B2BSolver : public AnalyticalSolver {
         return device_grid_num_layers_ > 1;
     }
 
+    /// @brief Off-diagonal entries of each dimension's connectivity matrix while
+    ///        it is being assembled. Kept as members so their buffers are reused
+    ///        across bound updates instead of reallocated on each one.
     std::vector<Eigen::Triplet<double>> triplet_list_x_;
     std::vector<Eigen::Triplet<double>> triplet_list_y_;
     std::vector<Eigen::Triplet<double>> triplet_list_z_;

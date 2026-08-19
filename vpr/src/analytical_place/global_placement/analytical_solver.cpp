@@ -1289,6 +1289,8 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
     // space for them. Only off-diagonal entries are stored as triplets; the
     // diagonal entries are accumulated in dense vectors and appended as one
     // triplet per row before the matrices are assembled.
+    // Roughly 4 triplets are emitted per pin; reserving less than that was
+    // measured to cause several reallocations per build.
     size_t triplet_reserve = (9 * netlist_.pins().size()) / 2;
     triplet_list_x_.clear();
     triplet_list_x_.reserve(triplet_reserve);
