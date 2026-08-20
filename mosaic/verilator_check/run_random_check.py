@@ -222,6 +222,7 @@ def runRandomCheck(
     checkMemInit: bool = False,
     directedRam: bool = False,
     ramZeroInit: bool = False,
+    includeFiles: Optional[List[Path]] = None,
 ) -> int:
     for path, label in ((rtlPath, "rtl"), (postSynthBlif, "post-synth-blif")):
         if not path.is_file():
@@ -232,6 +233,8 @@ def runRandomCheck(
     print(f"post-synth blif: {postSynthBlif}")
     print(f"work:            {workDir}")
     print(f"vectors:         {vectors}  seed={seed}")
+    if includeFiles:
+        print(f"includes:        {', '.join(str(path) for path in includeFiles)}")
     if directedRam:
         print("directed-ram: enabled")
     if ramZeroInit:
@@ -250,6 +253,7 @@ def runRandomCheck(
         seed=seed,
         maxErrors=maxErrors,
         directedRam=directedRam,
+        includeFiles=includeFiles,
     )
 
     if checkMemInit:
@@ -266,6 +270,48 @@ def runRandomCheck(
     )
 
 
+# USE: prepend run_vtr_flow -include files so rtl `ifdef matches synthesis.
+def combineRtlWithIncludes(
+    rtlPath: Path, includeFiles: Optional[List[Path]], dest: Path
+) -> Path:
+    includePaths = [Path(path) for path in (includeFiles or []) if Path(path).is_file()]
+    if not includePaths:
+        return rtlPath
+    chunks: List[str] = []
+    for incPath in includePaths:
+        chunks.append(f"// vtr -include {incPath.name}\n")
+        body = incPath.read_text(encoding="utf-8", errors="replace")
+        chunks.append(body)
+        if body and not body.endswith("\n"):
+            chunks.append("\n")
+    chunks.append(rtlPath.read_text(encoding="utf-8", errors="replace"))
+    dest.write_text("".join(chunks), encoding="utf-8")
+    return dest
+
+
+_OUTPUT_REG_RE = re.compile(
+    r"^(\s*output\s+)reg(\s+(?:\[[^\]]+\]\s*)?)(\w+)\s*;",
+    re.M,
+)
+_CELL_OUT_PIN_RE = re.compile(r"\.(?:out|out1|out2|sumout)\s*\(\s*(\w+)\s*\)")
+
+
+# USE: drop 'reg' on output ports that a child cell drives (koios hard_mem wrappers).
+# verilator rejects output-reg connected to single_port_ram.out / dual_port_ram.out*.
+def relaxOutputRegsDrivenByCells(verilogText: str) -> str:
+    drivenNets = set(_CELL_OUT_PIN_RE.findall(verilogText))
+    if not drivenNets:
+        return verilogText
+
+    def dropRegIfCellDriven(match: re.Match) -> str:
+        name = match.group(3)
+        if name in drivenNets:
+            return f"{match.group(1)}{match.group(2)}{name};"
+        return match.group(0)
+
+    return _OUTPUT_REG_RE.sub(dropRegIfCellDriven, verilogText)
+
+
 # USE: prepare renamed duts and tb. return (tbPath, verilatorSourceList, synthDutPath).
 def buildWorkDir(
     workDir: Path,
@@ -277,6 +323,7 @@ def buildWorkDir(
     seed: int,
     maxErrors: int,
     directedRam: bool = False,
+    includeFiles: Optional[List[Path]] = None,
 ) -> Tuple[Path, List[str], Path]:
     if workDir.exists():
         shutil.rmtree(workDir)
@@ -315,7 +362,12 @@ def buildWorkDir(
 
     rtlDut = workDir / "dut_rtl.v"
     synthDut = workDir / "dut_synth.v"
-    renameModule(rtlPath, rtlDut, "dut_rtl", oldName=rtlTop)
+    rtlSource = combineRtlWithIncludes(rtlPath, includeFiles, workDir / "rtl_with_includes.v")
+    renameModule(rtlSource, rtlDut, "dut_rtl", oldName=rtlTop)
+    rtlDut.write_text(
+        relaxOutputRegsDrivenByCells(rtlDut.read_text(encoding="utf-8", errors="replace")),
+        encoding="utf-8",
+    )
     renameModule(synthVRaw, synthDut, "dut_synth", oldName=synthTop)
 
     tbText = generateDualTestbench(
@@ -441,6 +493,13 @@ def main(argv=None) -> int:
     parser.add_argument("--run-dir", type=Path, default=None, help="vtr/compare run directory")
     parser.add_argument("--rtl", type=Path, default=None)
     parser.add_argument(
+        "--include",
+        type=Path,
+        action="append",
+        default=None,
+        help="extra rtl include files (defines / modules), same as run_vtr_flow -include",
+    )
+    parser.add_argument(
         "--post-synth-blif",
         type=Path,
         default=None,
@@ -501,6 +560,7 @@ def main(argv=None) -> int:
             checkMemInit=args.check_mem_init,
             directedRam=args.directed_ram,
             ramZeroInit=args.ram_zero_init,
+            includeFiles=args.include,
         )
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         print(f"error: {exc}", file=sys.stderr)

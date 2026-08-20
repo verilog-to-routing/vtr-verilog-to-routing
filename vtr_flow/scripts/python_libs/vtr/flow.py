@@ -7,6 +7,7 @@ from pathlib import Path
 from collections import OrderedDict
 from enum import Enum
 import vtr
+from vtr.mosaic.verilator_random_check import run_verilator_random_check
 
 
 class VtrStage(Enum):
@@ -311,16 +312,20 @@ def run(
             # next_stage_netlist is post-abc for parmys/odin, or mosaic blif
             post_synth_blif = next_stage_netlist
             if not Path(post_synth_blif).is_file():
-                print(
-                    "verilator_check: missing post-synth blif {}".format(post_synth_blif)
-                )
+                print("verilator_check: missing post-synth blif {}".format(post_synth_blif))
             else:
-                from vtr.mosaic.verilator_random_check import run_verilator_random_check
-
+                include_paths = []
+                if include_files:
+                    # rtl `ifdef (hard_mem / complex_dsp) must match synthesis -include
+                    for include in include_files:
+                        include_copy = temp_dir / Path(include).name
+                        if include_copy.is_file():
+                            include_paths.append(include_copy)
                 run_verilator_random_check(
                     circuit_copy,
                     post_synth_blif,
                     temp_dir,
+                    include_files=include_paths,
                     vectors=verilator_check_vectors,
                     seed=verilator_check_seed,
                 )
