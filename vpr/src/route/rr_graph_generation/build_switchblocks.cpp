@@ -537,6 +537,12 @@ static void compute_wireconn_connections(e_directionality directionality,
     }
     const std::vector<std::string>& permutations_ref = perm_iter->second;
 
+    // Cached references to the forward and reverse connection vectors.
+    // The map keys are the same for every pushed edge, so hash them only once on first use.
+    // References into std::unordered_map stay valid when other elements are inserted.
+    std::vector<t_switchblock_edge>* fwd_conns = nullptr;
+    std::vector<t_switchblock_edge>* rev_conns = nullptr;
+
     for (size_t iconn = 0; iconn < size_t(num_conns); ++iconn) {
         // Select the from wire
         // We modulo by the src set size to wrap around if there are more connections that src wires
@@ -605,18 +611,24 @@ static void compute_wireconn_connections(e_directionality directionality,
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
             // and now, finally, add this switchblock connection to the switchblock connections map
-            (*sb_conns)[sb_conn].push_back(sb_edge);
+            if (fwd_conns == nullptr) {
+                fwd_conns = &(*sb_conns)[sb_conn];
+            }
+            fwd_conns->push_back(sb_edge);
 
             // If bidir architecture, implement the reverse connection as well
             if (BI_DIRECTIONAL == directionality) {
                 t_switchblock_edge sb_reverse_edge = sb_edge;
                 std::swap(sb_reverse_edge.from_wire, sb_reverse_edge.to_wire);
-                //Since we are implementing the reverse connection we have swapped from and to.
-                //
-                //Coverity flags this (false positive), so annotate coverity ignores it:
-                // coverity[swapped_arguments : Intentional]
-                SwitchblockLookupKey sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
-                (*sb_conns)[sb_conn_reverse].push_back(sb_reverse_edge);
+                if (rev_conns == nullptr) {
+                    //Since we are implementing the reverse connection we have swapped from and to.
+                    //
+                    //Coverity flags this (false positive), so annotate coverity ignores it:
+                    // coverity[swapped_arguments : Intentional]
+                    SwitchblockLookupKey sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
+                    rev_conns = &(*sb_conns)[sb_conn_reverse];
+                }
+                rev_conns->push_back(sb_reverse_edge);
             }
         }
     }
