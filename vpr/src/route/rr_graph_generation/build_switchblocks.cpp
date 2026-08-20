@@ -528,6 +528,15 @@ static void compute_wireconn_connections(e_directionality directionality,
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
 
+    // The permutation functions are the same for every connection.
+    // The caller has already checked that the permutation map has an entry for this side combination.
+    SBSideConnection side_conn(sb_conn.from_side, sb_conn.to_side);
+    auto perm_iter = sb.permutation_map.find(side_conn);
+    if (perm_iter == sb.permutation_map.end()) {
+        return;
+    }
+    const std::vector<std::string>& permutations_ref = perm_iter->second;
+
     for (size_t iconn = 0; iconn < size_t(num_conns); ++iconn) {
         // Select the from wire
         // We modulo by the src set size to wrap around if there are more connections that src wires
@@ -553,12 +562,6 @@ static void compute_wireconn_connections(e_directionality directionality,
         }
 
         // Evaluate permutation functions for the from_wire
-        SBSideConnection side_conn(sb_conn.from_side, sb_conn.to_side);
-        auto iter = sb.permutation_map.find(side_conn);
-        if (iter == sb.permutation_map.end()) {
-            continue;
-        }
-        const std::vector<std::string>& permutations_ref = iter->second;
         for (const std::string& perm : permutations_ref) {
             // Convert the symbolic permutation formula to a number.
             // The result depends only on the formula and the (W, t) variable values,
