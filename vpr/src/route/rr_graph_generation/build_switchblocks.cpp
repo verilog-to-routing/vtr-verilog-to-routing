@@ -292,13 +292,9 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
     std::vector<t_wire_switchpoint>& all_collected_wire_switchpoints = *output_wires;
     all_collected_wire_switchpoints.clear();
 
-    std::vector<t_wire_switchpoint>& collected_wire_switchpoints = *scratch_wires;
-
     int seg_coord = (chan_type == e_rr_type::CHANY) ? y : x;
 
     for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
-        collected_wire_switchpoints.clear();
-
         std::string_view wire_type = wire_switchpoints.segment_name;
 
         if (wire_type_sizes.find(wire_type) == wire_type_sizes.end()) {
@@ -343,15 +339,12 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
 
                 int wire_switchpoint = get_switchpoint_of_wire(chan_type, chan_details[iwire], seg_coord, side);
 
-                // Check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so
+                // Check if this wire belongs to one of the specified switchpoints; add it to the collected wires if so
                 if (wire_switchpoint != valid_switchpoint) continue;
 
-                collected_wire_switchpoints.push_back({iwire, wire_switchpoint});
+                all_collected_wire_switchpoints.push_back({iwire, wire_switchpoint});
             }
         }
-
-        all_collected_wire_switchpoints.insert(all_collected_wire_switchpoints.end(),
-                                               collected_wire_switchpoints.begin(), collected_wire_switchpoints.end());
     }
 
     if (switchpoint_order == e_switch_point_order::SHUFFLED) {
