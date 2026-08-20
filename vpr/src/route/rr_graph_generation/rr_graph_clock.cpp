@@ -1,9 +1,11 @@
 #include "rr_graph_clock.h"
 
 #include "globals.h"
+#include "vpr_error.h"
 
 #include "vtr_assert.h"
 #include "vtr_time.h"
+#include "vtr_util.h"
 
 void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types_x,
                                                            t_rr_edge_info_set* rr_edges_to_create) {
@@ -17,7 +19,6 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types_x,
     create_clock_networks_switches(clock_routing, rr_edges_to_create);
 }
 
-// Clock network information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
                                                       int num_segments_x,
                                                       t_rr_edge_info_set* rr_edges_to_create) {
@@ -30,7 +31,6 @@ void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::uni
     rr_nodes_->shrink_to_fit();
 }
 
-// Clock switch information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
                                                          t_rr_edge_info_set* rr_edges_to_create) {
     for (auto& clock_connection : clock_connections) {
@@ -70,23 +70,59 @@ void SwitchPoint::insert_node_idx(int x, int y, int node_idx) {
 std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std::string clock_name,
                                                                              std::string switch_point_name,
                                                                              int x,
-                                                                             int y) const {
+                                                                             int y,
+                                                                             bool required) const {
     auto itter = clock_name_to_switch_points.find(clock_name);
 
-    // assert that clock name exists in map
-    VTR_ASSERT(itter != clock_name_to_switch_points.end());
+    if (itter == clock_name_to_switch_points.end()) {
+        if (!required) {
+            return {};
+        }
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
+                        "This usually means every instance of clock network '%s' failed to build. Check for "
+                        "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
+                        "the drive switch_point's offset places it outside every instance's valid span.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
+    }
 
     auto& switch_points = itter->second;
-    return switch_points.get_rr_node_indices_at_location(switch_point_name, x, y);
+    std::vector<int> rr_node_indices = switch_points.get_rr_node_indices_at_location(clock_name, switch_point_name, x, y);
+
+    if (rr_node_indices.empty() && required) {
+        std::string valid_locations;
+        for (auto& loc : switch_points.get_switch_locations(clock_name, switch_point_name)) {
+            valid_locations += vtr::string_fmt(" (%d,%d)", loc.first, loc.second);
+        }
+
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock network '%s' has no switch point named '%s' registered at location (%d,%d).\n"
+                        "This is usually caused by a mismatch between a <tap> element's locationx/locationy "
+                        "and the xoffset/yoffset of the switch_point it refers to. These must specify the "
+                        "exact same (x,y) location in the clock network architecture description.\n"
+                        "Switch point '%s' is only registered at:%s\n",
+                        clock_name.c_str(), switch_point_name.c_str(), x, y,
+                        switch_point_name.c_str(),
+                        valid_locations.empty() ? " <none>" : valid_locations.c_str());
+    }
+
+    return rr_node_indices;
 }
 
-std::vector<int> SwitchPoints::get_rr_node_indices_at_location(std::string switch_point_name,
+std::vector<int> SwitchPoints::get_rr_node_indices_at_location(const std::string& clock_name,
+                                                               std::string switch_point_name,
                                                                int x,
                                                                int y) const {
     auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
-    // assert that switch name exists in map
-    VTR_ASSERT(itter != switch_point_name_to_switch_location.end());
+    if (itter == switch_point_name_to_switch_location.end()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock network '%s' has no switch point named '%s'.\n"
+                        "This is usually caused by a <clock_routing> tap referencing a switch point whose "
+                        "xoffset/yoffset never landed on any instance of the network. Check for an earlier "
+                        "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
+    }
 
     auto& switch_point = itter->second;
     std::vector<int> rr_node_indices = switch_point.get_rr_node_indices_at_location(x, y);
@@ -94,8 +130,13 @@ std::vector<int> SwitchPoints::get_rr_node_indices_at_location(std::string switc
 }
 
 std::vector<int> SwitchPoint::get_rr_node_indices_at_location(int x, int y) const {
-    // assert that switch is connected to nodes at the location
-    VTR_ASSERT(!rr_node_indices[x][y].empty());
+    // Out-of-range or never-registered locations simply have no nodes here.
+    // Callers (ClockRRGraphBuilder::get_rr_node_indices_at_switch_location) are
+    // responsible for turning an empty result into a helpful error message,
+    // since they have the clock/switch point names needed to explain the mismatch.
+    if (x < 0 || y < 0 || size_t(x) >= rr_node_indices.size() || size_t(y) >= rr_node_indices[x].size()) {
+        return {};
+    }
 
     return rr_node_indices[x][y];
 }
@@ -104,18 +145,30 @@ std::set<std::pair<int, int>> ClockRRGraphBuilder::get_switch_locations(std::str
                                                                         std::string switch_point_name) const {
     auto itter = clock_name_to_switch_points.find(clock_name);
 
-    // assert that clock name exists in map
-    VTR_ASSERT(itter != clock_name_to_switch_points.end());
+    if (itter == clock_name_to_switch_points.end()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock network '%s' has no registered switch points (referenced via switch point '%s').\n"
+                        "This usually means every instance of clock network '%s' failed to build. Check for "
+                        "earlier \"drive point is not reachable\" warnings naming this network, which indicate "
+                        "the drive switch_point's offset places it outside every instance's valid span.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), clock_name.c_str());
+    }
 
     auto& switch_points = itter->second;
-    return switch_points.get_switch_locations(switch_point_name);
+    return switch_points.get_switch_locations(clock_name, switch_point_name);
 }
 
-std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(std::string switch_point_name) const {
+std::set<std::pair<int, int>> SwitchPoints::get_switch_locations(const std::string& clock_name, std::string switch_point_name) const {
     auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
-    // assert that switch name exists in map
-    VTR_ASSERT(itter != switch_point_name_to_switch_location.end());
+    if (itter == switch_point_name_to_switch_location.end()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Clock network '%s' has no switch point named '%s'.\n"
+                        "This is usually caused by a <clock_routing> tap referencing a switch point whose "
+                        "xoffset/yoffset never landed on any instance of the network. Check for an earlier "
+                        "\"does not correspond to any switch box location\" warning naming switch point '%s'.\n",
+                        clock_name.c_str(), switch_point_name.c_str(), switch_point_name.c_str());
+    }
 
     auto& switch_point = itter->second;
     return switch_point.get_switch_locations();
@@ -129,31 +182,74 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 }
 
 int ClockRRGraphBuilder::get_and_increment_chanx_ptc_num() {
-    // ptc_num is determined by the channel width
-    // The channel width lets the drawing engine how much to space the LBs apart
-    int ptc_num = chan_width_.x_max + (chanx_ptc_idx_++);
-    return ptc_num;
+    // Reserved across the whole grid: safe for a rib/spine's single ptc, reused at every
+    // (x,y) it touches, and cheap since there are only ever a handful of these networks.
+    return reserve_chanx_ptc(0, grid_.width() - 1, 0, grid_.height() - 1);
 }
 
 int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
-    // ptc_num is determined by the channel width
-    // The channel width lets the drawing engine how much to space the LBs apart
-    int ptc_num = chan_width_.y_max + (chany_ptc_idx_++);
-    return ptc_num;
+    return reserve_chany_ptc(0, grid_.width() - 1, 0, grid_.height() - 1);
+}
+
+int ClockRRGraphBuilder::reserve_chanx_ptc(int x_lo, int x_hi, int y_lo, int y_hi) {
+    int ptc = 0;
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            ptc = std::max(ptc, chanx_next_free_ptc_[x][y]);
+        }
+    }
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            chanx_next_free_ptc_[x][y] = ptc + 1;
+        }
+    }
+    return chan_width_.x_max + ptc;
+}
+
+int ClockRRGraphBuilder::reserve_chany_ptc(int x_lo, int x_hi, int y_lo, int y_hi) {
+    int ptc = 0;
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            ptc = std::max(ptc, chany_next_free_ptc_[x][y]);
+        }
+    }
+    for (int x = x_lo; x <= x_hi; ++x) {
+        for (int y = y_lo; y <= y_hi; ++y) {
+            chany_next_free_ptc_[x][y] = ptc + 1;
+        }
+    }
+    return chan_width_.y_max + ptc;
 }
 
 void ClockRRGraphBuilder::update_chan_width(t_chan_width* chan_width) const {
-    chan_width->x_max += chanx_ptc_idx_;
-    chan_width->y_max += chany_ptc_idx_;
+    // x_list is indexed by row (y): the extra chanx ptcs needed at row y is the highest
+    // local reservation made anywhere in that row, not the total reserved over the whole
+    // grid (chanx_next_free_ptc_ is already dense per-location, see reserve_chanx_ptc).
+    int max_chanx_extra = 0;
+    for (size_t y = 0; y < grid_.height(); ++y) {
+        int row_extra = 0;
+        for (size_t x = 0; x < grid_.width(); ++x) {
+            row_extra = std::max(row_extra, chanx_next_free_ptc_[x][y]);
+        }
+        chan_width->x_list[y] += row_extra;
+        max_chanx_extra = std::max(max_chanx_extra, row_extra);
+    }
+    chan_width->x_max += max_chanx_extra;
+
+    // y_list is indexed by column (x); same reasoning as above, transposed.
+    int max_chany_extra = 0;
+    for (size_t x = 0; x < grid_.width(); ++x) {
+        int col_extra = 0;
+        for (size_t y = 0; y < grid_.height(); ++y) {
+            col_extra = std::max(col_extra, chany_next_free_ptc_[x][y]);
+        }
+        chan_width->y_list[x] += col_extra;
+        max_chany_extra = std::max(max_chany_extra, col_extra);
+    }
+    chan_width->y_max += max_chany_extra;
+
     chan_width->max = std::max(chan_width->max, chan_width->x_max);
     chan_width->max = std::max(chan_width->max, chan_width->y_max);
-
-    for (size_t i = 0; i < grid_.height(); ++i) {
-        chan_width->x_list[i] += chanx_ptc_idx_;
-    }
-    for (size_t i = 0; i < grid_.width(); ++i) {
-        chan_width->y_list[i] += chany_ptc_idx_;
-    }
 }
 
 size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {
