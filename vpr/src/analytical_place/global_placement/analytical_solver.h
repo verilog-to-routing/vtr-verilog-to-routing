@@ -549,14 +549,7 @@ class B2BSolver : public AnalyticalSolver {
               const PreClusterTimingManager& pre_cluster_timing_manager,
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
-              int log_verbosity)
-        : AnalyticalSolver(ap_netlist,
-                           atom_netlist,
-                           device_grid,
-                           ap_timing_tradeoff,
-                           log_verbosity)
-        , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-        , place_delay_model_(place_delay_model) {}
+              int log_verbosity);
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -799,6 +792,15 @@ class B2BSolver : public AnalyticalSolver {
     inline bool is_multi_die() const {
         return device_grid_num_layers_ > 1;
     }
+
+    /// @brief Off-diagonal entries of each dimension's connectivity matrix while
+    ///        it is being assembled. Kept as members so their buffers are reused
+    ///        across bound updates instead of reallocated on each one. They are
+    ///        reserved in the constructor and cleared at the start of each call
+    ///        to init_linear_system.
+    std::vector<Eigen::Triplet<double>> triplet_list_x_;
+    std::vector<Eigen::Triplet<double>> triplet_list_y_;
+    std::vector<Eigen::Triplet<double>> triplet_list_z_;
 
     // The following are variables used to store the system of equations to be
     // solved in the x and y dimensions. The equations are of the form:
