@@ -101,6 +101,16 @@ static void draw_router_expansion_costs(ezgl::renderer* g);
 static void draw_main_canvas(ezgl::renderer* g);
 
 /**
+ * @brief A callback function that tells the ezgl renderer if the cached geometry can be reused for a camera-only redraw.
+ *
+ * @param reason Reason that caused the view change.
+ * @param g ezgl::renderer.
+ * 
+ * @return True to indicate a camera-only redraw; false to indicate a full redraw.
+ */
+static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
+
+/**
  * @brief Generalized callback function to setup the UI when the stage changes.
  */
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
@@ -326,13 +336,77 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 
     if (draw_state->auto_proceed) {
-        //Automatically exit the event loop, so user's don't need to manually click proceed
+        // Automatically exit the event loop, so user's don't need to manually click proceed
 
-        //Avoid trying to repeatedly exit (which would cause errors in GTK)
+        // Avoid trying to repeatedly exit (which would cause errors in GTK)
         draw_state->auto_proceed = false;
 
-        application->quit(); //Ensure we leave the event loop
+        application->quit(); // Ensure we leave the event loop
     }
+}
+
+static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    // The current zoom level.
+    double world_units_per_pixel = g->world_units_per_pixel();
+
+    // Pure panning does not change the level of detail, so the existing
+    // geometry can be reused with only a camera-only redraw.
+    if (reason == ezgl::view_change_reason::pan) {
+        return true;
+    } else if (reason == ezgl::view_change_reason::zoom_in || reason == ezgl::view_change_reason::pan_zoom_in) {
+        // Zooming in past the RR decluttering threshold makes previously
+        // decluttered (hidden) routing resources visible, so cached geometry is incomplete.
+        if (draw_state->show_rr
+            && draw_state->enable_rr_decluttering
+            && draw_state->rr_decluttered
+            && world_units_per_pixel <= MAX_WORLD_UNITS_PER_PIXEL)
+            return false;
+
+        // Intra-block drawing adds more details as the view gets closer, but stays the same once all internals are already drawn.
+        // Regenerate geometry when the current zoom level has passed below the CLB-only view (only_clbs_drawn_threshold)
+        // but not all internals are drawn yet.
+        if (draw_state->show_blk_internal
+            && world_units_per_pixel < draw_state->only_clbs_drawn_threshold
+            && !(draw_state->all_internals_drawn))
+            return false;
+
+        // Critical-path delay labels depend on screen-space placement, so
+        // their geometry must be rebuilt when zoom changes.
+        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
+        if (draw_state->show_crit_path
+            && draw_state->show_crit_path_flylines
+            && draw_state->show_crit_path_delays)
+            return false;
+    } else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
+        // Zooming out past the RR decluttering threshold removes normal RR
+        // resources from the drawing, so reuse would leave stale geometry.
+        if (draw_state->show_rr
+            && draw_state->enable_rr_decluttering
+            && !(draw_state->rr_decluttered)
+            && world_units_per_pixel > MAX_WORLD_UNITS_PER_PIXEL)
+            return false;
+
+        // Intra-block drawing drops details as the view gets farther away, but stays the same once only the CLBs are visible.
+        // Regenerate geometry when the current zoom level has passed above the final detailed internal view (all_internals_drawn_threshold)
+        // but the CLBs are not yet the only drawn shapes (some internals are drawn as well).
+        if (draw_state->show_blk_internal
+            && world_units_per_pixel > draw_state->all_internals_drawn_threshold
+            && !(draw_state->only_clbs_drawn))
+            return false;
+
+        // Critical-path delay labels have a fixed screen-size offset from the flylines, so
+        // their geometry must be rebuilt when zoom changes.
+        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
+        if (draw_state->show_crit_path
+            && draw_state->show_crit_path_flylines
+            && draw_state->show_crit_path_delays)
+            return false;
+    } else {
+        VTR_ASSERT_MSG(false, "Invalid ezgl::view_change_reason provided. Performing a camera-only redraw.");
+    }
+    // Default to a camera-only redraw.
+    return true;
 }
 
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
@@ -446,6 +520,13 @@ void update_screen(ScreenUpdatePriority priority,
                         "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
                         "with --disp on; falling back to the immediate renderer.\n");
                     rt = ezgl::renderer_type::immediate;
+                    draw_state->renderer_type = "immediate";
+                }
+
+                // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
+                // the full redraw can be replaced by a camera-only redraw.
+                if (rt == ezgl::renderer_type::rhi) {
+                    canvas->set_decide_reuse_geometry_callback(decide_reuse_geometry);
                 }
 
                 canvas->set_renderer_type(rt);
@@ -804,17 +885,6 @@ void set_initial_world_ap() {
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
-}
-
-double get_pixels_per_world_unit(ezgl::renderer* g) {
-    double world_width = g->get_visible_world().width();
-    double screen_width = g->get_visible_screen().width();
-    // If using this function for decluttering purpose:
-    // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
-    // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
-    // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
-    // returned by this function is below 1, it means that the channel nodes are blended together and should be decluttered.
-    return screen_width / world_width;
 }
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
