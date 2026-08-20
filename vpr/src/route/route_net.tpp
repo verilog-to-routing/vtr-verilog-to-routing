@@ -141,11 +141,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
 
     const DeviceGrid& device_grid = device_ctx.grid;
     bool has_interposer_cuts = device_grid.has_interposer_cuts();
-
-    // FIXME: 3D FPGAs were not shown to work well with this sink-order stuff yet.
-    //        Force them off for now.
-    // bool has_multiple_layers = device_grid.get_num_layers() > 1;
-    bool has_multiple_layers = false;
+    bool has_multiple_layers = device_grid.get_num_layers() > 1;
 
     if (has_interposer_cuts || has_multiple_layers) {
         // Sort-priority terms for sinks that cross a die boundary (an interposer cut in
