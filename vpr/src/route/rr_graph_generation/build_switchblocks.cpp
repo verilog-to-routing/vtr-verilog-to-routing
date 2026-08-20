@@ -557,7 +557,7 @@ static void compute_wireconn_connections(e_directionality directionality,
             formula_data.clear();
             formula_data.set_var_value("W", dest_W);
             formula_data.set_var_value("t", src_wire_ind);
-            int raw_dest_wire_ind = get_sb_formula_raw_result(scratchpad->formula_parser, perm.c_str(), formula_data);
+            int raw_dest_wire_ind = get_sb_formula_raw_result(scratchpad->formula_parser, perm, formula_data);
             int dest_wire_ind = adjust_formula_result(raw_dest_wire_ind, src_W, dest_W, iconn);
 
             if (dest_wire_ind < 0) {
