@@ -205,6 +205,7 @@ static void compute_wireconn_connections(e_directionality directionality,
  *  @param switchpoint_order switchpoint order (fixed, shuffled) specified in the architecture file
  *  @param rng used to randomly shuffle switchpoint if required (shuffled order)
  *  @param output_wires collected wire indices that matches the specified types and switchpoints
+ *  @param scratch_wires Scratch buffer reused across calls to hold per-wire switchpoints while collecting.
  */
 static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
                                   e_rr_type chan_type,
@@ -298,13 +299,13 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
     std::vector<t_wire_switchpoint>& all_collected_wire_switchpoints = *output_wires;
     all_collected_wire_switchpoints.clear();
 
-    std::vector<t_wire_switchpoint>& collected_wire_switchpoints = *scratch_wires;
+    // Scratch buffer holding the wires of the current type that pass the direction filter,
+    // each paired with its switchpoint.
+    std::vector<t_wire_switchpoint>& wire_candidates = *scratch_wires;
 
     int seg_coord = (chan_type == e_rr_type::CHANY) ? y : x;
 
     for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
-        collected_wire_switchpoints.clear();
-
         std::string_view wire_type = wire_switchpoints.segment_name;
 
         if (wire_type_sizes.find(wire_type) == wire_type_sizes.end()) {
@@ -318,46 +319,47 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
         int first_type_wire = wire_type_sizes.at(wire_type).start;
         int last_type_wire = first_type_wire + num_type_wires - 1;
 
-        // Walk through each wire segment of specified type and check whether it matches one
-        // of the specified switchpoints.
+        // Walk through each wire segment of specified type and compute its switchpoint once
+        wire_candidates.clear();
+        for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++) {
+            Direction seg_direction = chan_details[iwire].direction();
+
+            // unidirectional wires going in the decreasing direction can have an outgoing edge
+            // only from the top or right switch block sides, and an incoming edge only if they are
+            // at the left or bottom sides (analogous for wires going in INC direction)
+            if (side == TOP || side == RIGHT) {
+                if (seg_direction == Direction::DEC && is_dest) {
+                    continue;
+                }
+                if (seg_direction == Direction::INC && !is_dest) {
+                    continue;
+                }
+            } else {
+                VTR_ASSERT(side == LEFT || side == BOTTOM);
+                if (seg_direction == Direction::DEC && !is_dest) {
+                    continue;
+                }
+                if (seg_direction == Direction::INC && is_dest) {
+                    continue;
+                }
+            }
+
+            int wire_switchpoint = get_switchpoint_of_wire(chan_type, chan_details[iwire], seg_coord, side);
+
+            wire_candidates.push_back({iwire, wire_switchpoint});
+        }
+
+        // Check which candidate wires belong to one of the specified switchpoints and collect them.
         // Note that we walk through the points in order, this ensures that returned switchpoints
         // match the order specified in the architecture, which we assume is a priority order specified
         // by the architect.
         for (int valid_switchpoint : wire_switchpoints.switchpoints) {
-            for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++) {
-                Direction seg_direction = chan_details[iwire].direction();
+            for (const t_wire_switchpoint& wire_candidate : wire_candidates) {
+                if (wire_candidate.switchpoint != valid_switchpoint) continue;
 
-                // unidirectional wires going in the decreasing direction can have an outgoing edge
-                // only from the top or right switch block sides, and an incoming edge only if they are
-                // at the left or bottom sides (analogous for wires going in INC direction)
-                if (side == TOP || side == RIGHT) {
-                    if (seg_direction == Direction::DEC && is_dest) {
-                        continue;
-                    }
-                    if (seg_direction == Direction::INC && !is_dest) {
-                        continue;
-                    }
-                } else {
-                    VTR_ASSERT(side == LEFT || side == BOTTOM);
-                    if (seg_direction == Direction::DEC && !is_dest) {
-                        continue;
-                    }
-                    if (seg_direction == Direction::INC && is_dest) {
-                        continue;
-                    }
-                }
-
-                int wire_switchpoint = get_switchpoint_of_wire(chan_type, chan_details[iwire], seg_coord, side);
-
-                // Check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so
-                if (wire_switchpoint != valid_switchpoint) continue;
-
-                collected_wire_switchpoints.push_back({iwire, wire_switchpoint});
+                all_collected_wire_switchpoints.push_back(wire_candidate);
             }
         }
-
-        all_collected_wire_switchpoints.insert(all_collected_wire_switchpoints.end(),
-                                               collected_wire_switchpoints.begin(), collected_wire_switchpoints.end());
     }
 
     if (switchpoint_order == e_switch_point_order::SHUFFLED) {
