@@ -14,22 +14,8 @@ def verilator_check_script_path():
     return mosaic_path / "verilator_check" / "run_random_check.py"
 
 
-def run_verilator_random_check(
-    rtl_path,
-    post_synth_blif,
-    temp_dir,
-    include_files=None,
-    vectors=50000,
-    seed=1,
-    verilator_jobs=2,
-):
-    """run rtl vs post-synth random check. does not abort the cad flow."""
-    script = verilator_check_script_path()
-    if not script.is_file():
-        print("verilator_check script missing {}".format(script), flush=True)
-        return 2
-
-    work_dir = Path(temp_dir) / "verilator_check"
+def _build_verilator_check_cmd(script, rtl_path, post_synth_blif, work_dir, kwargs):
+    """build the run_random_check.py command line."""
     cmd = [
         sys.executable,
         str(script),
@@ -40,20 +26,32 @@ def run_verilator_random_check(
         "--work-dir",
         str(work_dir.resolve()),
         "--vectors",
-        str(int(vectors)),
+        str(int(kwargs.get("vectors", 50000))),
         "--seed",
-        str(int(seed)),
+        str(int(kwargs.get("seed", 1))),
         "--verilator-j",
-        str(int(verilator_jobs)),
+        str(int(kwargs.get("verilator_jobs", 2))),
     ]
-    if include_files:
-        for include in include_files:
-            include_path = Path(include)
-            if include_path.is_file():
-                cmd.extend(["--include", str(include_path.resolve())])
+    for include in kwargs.get("include_files") or []:
+        if Path(include).is_file():
+            cmd.extend(["--include", str(Path(include).resolve())])
     if Path(yosys_exe_path).is_file():
         cmd.extend(["--yosys", str(Path(yosys_exe_path).resolve())])
+    return cmd
 
+
+def run_verilator_random_check(rtl_path, post_synth_blif, temp_dir, **kwargs):
+    """run rtl vs post-synth random check. does not abort the cad flow.
+
+    optional kwargs: include_files, vectors, seed, verilator_jobs.
+    """
+    script = verilator_check_script_path()
+    if not script.is_file():
+        print("verilator_check script missing {}".format(script), flush=True)
+        return 2
+
+    work_dir = Path(temp_dir) / "verilator_check"
+    cmd = _build_verilator_check_cmd(script, rtl_path, post_synth_blif, work_dir, kwargs)
     print("mosaic verilator random-check:", " ".join(cmd), flush=True)
     log_path = work_dir.parent / "verilator_random_check.out"
     work_dir.parent.mkdir(parents=True, exist_ok=True)

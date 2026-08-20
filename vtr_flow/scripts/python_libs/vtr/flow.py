@@ -33,6 +33,40 @@ class VtrStage(Enum):
         return NotImplemented
 
 
+def _maybe_run_verilator_check(
+    circuit_file,
+    circuit_copy,
+    next_stage_netlist,
+    post_frontend_netlist,
+    opts,
+):
+    """run rtl vs post-synth verilator check when this flow produced a netlist."""
+    if ".blif" in circuit_file.suffixes:
+        print("verilator_check: skipped (input is already a blif netlist)")
+        return
+    if post_frontend_netlist is None:
+        print("verilator_check: skipped (no synthesis frontend ran in this flow)")
+        return
+    post_synth_blif = next_stage_netlist
+    if not Path(post_synth_blif).is_file():
+        print("verilator_check: missing post-synth blif {}".format(post_synth_blif))
+        return
+    temp_dir = opts["temp_dir"]
+    include_paths = []
+    for include in opts.get("include_files") or []:
+        include_copy = temp_dir / Path(include).name
+        if include_copy.is_file():
+            include_paths.append(include_copy)
+    run_verilator_random_check(
+        circuit_copy,
+        post_synth_blif,
+        temp_dir,
+        include_files=include_paths,
+        vectors=opts["vectors"],
+        seed=opts["seed"],
+    )
+
+
 # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
 def run(
     architecture_file,
@@ -304,31 +338,19 @@ def run(
     # verilator random-check of rtl against the post-synth netlist
     #
     if verilator_check:
-        if ".blif" in circuit_file.suffixes:
-            print("verilator_check: skipped (input is already a blif netlist)")
-        elif post_frontend_netlist is None:
-            print("verilator_check: skipped (no synthesis frontend ran in this flow)")
-        else:
-            # next_stage_netlist is post-abc for parmys/odin, or mosaic blif
-            post_synth_blif = next_stage_netlist
-            if not Path(post_synth_blif).is_file():
-                print("verilator_check: missing post-synth blif {}".format(post_synth_blif))
-            else:
-                include_paths = []
-                if include_files:
-                    # rtl `ifdef (hard_mem / complex_dsp) must match synthesis -include
-                    for include in include_files:
-                        include_copy = temp_dir / Path(include).name
-                        if include_copy.is_file():
-                            include_paths.append(include_copy)
-                run_verilator_random_check(
-                    circuit_copy,
-                    post_synth_blif,
-                    temp_dir,
-                    include_files=include_paths,
-                    vectors=verilator_check_vectors,
-                    seed=verilator_check_seed,
-                )
+        # next_stage_netlist is post-abc for parmys/odin, or mosaic blif
+        _maybe_run_verilator_check(
+            circuit_file,
+            circuit_copy,
+            next_stage_netlist,
+            post_frontend_netlist,
+            {
+                "temp_dir": temp_dir,
+                "include_files": include_files,
+                "vectors": verilator_check_vectors,
+                "seed": verilator_check_seed,
+            },
+        )
 
     #
     # Power Activity Estimation
