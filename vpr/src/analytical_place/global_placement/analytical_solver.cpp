@@ -580,6 +580,33 @@ void QPHybridSolver::print_statistics() {
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
 }
 
+B2BSolver::B2BSolver(const APNetlist& ap_netlist,
+                     const DeviceGrid& device_grid,
+                     const AtomNetlist& atom_netlist,
+                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                     std::shared_ptr<PlaceDelayModel> place_delay_model,
+                     float ap_timing_tradeoff,
+                     int log_verbosity)
+    : AnalyticalSolver(ap_netlist,
+                       atom_netlist,
+                       device_grid,
+                       ap_timing_tradeoff,
+                       log_verbosity)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+    , place_delay_model_(place_delay_model) {
+
+    // Reserve space for the triplet lists once here, since their buffers are
+    // reused for every linear system built by this solver.
+    // Roughly 4 triplets are emitted per pin; reserving less than that was
+    // measured to cause several reallocations per build.
+    size_t triplet_reserve = (9 * ap_netlist.pins().size()) / 2;
+    triplet_list_x_.reserve(triplet_reserve);
+    triplet_list_y_.reserve(triplet_reserve);
+    if (is_multi_die()) {
+        triplet_list_z_.reserve(triplet_reserve);
+    }
+}
+
 void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store an initial placement into the p_placement object as a starting point
     // for the B2B solver.
@@ -1285,21 +1312,14 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         b_z = Eigen::VectorXd::Zero(num_moveable_blocks_);
     }
 
-    // Create triplet lists to store the sparse positions to update and reserve
-    // space for them. Only off-diagonal entries are stored as triplets; the
-    // diagonal entries are accumulated in dense vectors and appended as one
-    // triplet per row before the matrices are assembled.
-    // Roughly 4 triplets are emitted per pin; reserving less than that was
-    // measured to cause several reallocations per build.
-    size_t triplet_reserve = (9 * netlist_.pins().size()) / 2;
+    // The triplet lists hold the off-diagonal entries of the matrices. The
+    // diagonal entries are accumulated in dense vectors and appended later.
+    // NOTE: These are daata members, so their memory is reused between calls
+    //       (they are reserved in the constructor).
+    //       They must be cleared before any triplets are added below.
     triplet_list_x_.clear();
-    triplet_list_x_.reserve(triplet_reserve);
     triplet_list_y_.clear();
-    triplet_list_y_.reserve(triplet_reserve);
     triplet_list_z_.clear();
-    if (is_multi_die()) {
-        triplet_list_z_.reserve(triplet_reserve);
-    }
 
     std::vector<double> matrix_diagonal_x(num_moveable_blocks_, 0.0);
     std::vector<double> matrix_diagonal_y(num_moveable_blocks_, 0.0);

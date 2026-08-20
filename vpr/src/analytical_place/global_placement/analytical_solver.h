@@ -549,14 +549,7 @@ class B2BSolver : public AnalyticalSolver {
               const PreClusterTimingManager& pre_cluster_timing_manager,
               std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
-              int log_verbosity)
-        : AnalyticalSolver(ap_netlist,
-                           atom_netlist,
-                           device_grid,
-                           ap_timing_tradeoff,
-                           log_verbosity)
-        , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-        , place_delay_model_(place_delay_model) {}
+              int log_verbosity);
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -802,7 +795,9 @@ class B2BSolver : public AnalyticalSolver {
 
     /// @brief Off-diagonal entries of each dimension's connectivity matrix while
     ///        it is being assembled. Kept as members so their buffers are reused
-    ///        across bound updates instead of reallocated on each one.
+    ///        across bound updates instead of reallocated on each one. They are
+    ///        reserved in the constructor and cleared at the start of each call
+    ///        to init_linear_system.
     std::vector<Eigen::Triplet<double>> triplet_list_x_;
     std::vector<Eigen::Triplet<double>> triplet_list_y_;
     std::vector<Eigen::Triplet<double>> triplet_list_z_;
