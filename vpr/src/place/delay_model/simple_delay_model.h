@@ -1,42 +1,86 @@
 #pragma once
 
 #include <optional>
+#include <tuple>
+
+#include "device_grid.h"
+#include "globals.h"
 #include "place_delay_model.h"
+#include "router_lookahead.h"
 #include "router_lookahead_interposer.h"
+#include "vpr_context.h"
+#include "vpr_error.h"
+#include "vtr_assert.h"
 
 /**
  * @class SimpleDelayModel
  * @brief A simple delay model based on the information stored in router lookahead
  * This is in contrast to other placement delay models that get the cost of getting from one location to another by running the router
+ * Since this class depends on the lookahead, its lifetime should not exceed the cached lookahead
+ * and must be rebuilt in case of an RR Graph rebuild.
+ *
+ * The model is templated on the concrete lookahead type so that the per-query lookahead
+ * call binds statically and can be inlined into delay(). This lookup is in the placer's
+ * inner hot loop and therefore needs this optimization.
  */
-class SimpleDelayModel : public PlaceDelayModel {
+template<typename LookaheadT>
+class SimpleDelayModel final : public PlaceDelayModel {
   public:
-    SimpleDelayModel() {}
+    explicit SimpleDelayModel(const LookaheadT& router_lookahead)
+        : router_lookahead_(router_lookahead) {}
 
-    /// @brief Use the information in the router lookahead to fill the delay matrix instead of running the router
-    void compute(RouterDelayProfiler& router,
-                 const t_placer_opts& placer_opts,
-                 const t_router_opts& router_opts,
-                 int longest_length) override;
+    /// @brief Set up any auxiliary data needed to query the router lookahead (e.g. interposer delay information)
+    void compute(RouterDelayProfiler& /*route_profiler*/,
+                 const t_placer_opts& /*placer_opts*/,
+                 const t_router_opts& /*router_opts*/,
+                 int /*longest_length*/) override {
+        const DeviceContext& device = g_vpr_ctx.device();
+        const DeviceGrid& grid = device.grid;
 
-    float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
+        if (grid.has_interposer_cuts()) {
+            // We don't use the base cost in the simple delay model, so we set the multiplier to 1.
+            interposer_lookahead_.emplace(device.rr_graph, grid, device, /*interposer_cut_base_cost_multiplier*/ 1);
+        }
+    }
+
+    float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override {
+        const DeviceGrid& grid = g_vpr_ctx.device().grid;
+        int delta_x = std::abs(from_loc.x - to_loc.x);
+        int delta_y = std::abs(from_loc.y - to_loc.y);
+
+        int from_tile_idx = grid.get_physical_type(from_loc)->index;
+
+        float interposer_delay = 0.f;
+        if (interposer_lookahead_) {
+            VTR_ASSERT_SAFE(grid.has_interposer_cuts());
+            std::tie(interposer_delay, std::ignore) = interposer_lookahead_->get_interposer_lookahead_cost(from_loc, to_loc);
+        }
+
+        // The cost is used for placement, so the source is on OPINs; thus, we need the minimum delay
+        // starting from OPINs, not from channels.
+        float min_delay = router_lookahead_.get_opin_distance_min_delay(from_tile_idx,
+                                                                        from_loc.layer_num, to_loc.layer_num,
+                                                                        delta_x, delta_y);
+        return min_delay + interposer_delay;
+    }
 
     void dump_echo(std::string /*filepath*/) const override {}
 
-    void read(const std::string& /*file*/) override;
-    void write(const std::string& /*file*/) const override;
+    void read(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_PLACE,
+                  "SimpleDelayModel does not support reading a placement delay lookup: "
+                  "it queries the router lookahead directly instead of storing a delay matrix.");
+    }
+
+    void write(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_PLACE,
+                  "SimpleDelayModel does not support writing a placement delay lookup: "
+                  "it queries the router lookahead directly instead of storing a delay matrix.");
+    }
 
   private:
-    /**
-     * @brief The matrix to store the minimum delay between different points on different layers.
-     *
-     *The matrix used to store delay information is a 5D matrix. This data structure stores the minimum delay for each tile type on each layer to other layers
-     *for each dx and dy. We decided to separate the delay for each physical type on each die to accommodate cases where the connectivity of a physical type differs
-     *on each layer. Additionally, instead of using d_layer, we distinguish between the destination layer to handle scenarios where connectivity between layers
-     *is not uniform. For example, if the number of inter-layer connections between layer 1 and 2 differs from the number of connections between layer 0 and 1.
-     *One might argue that this variability could also occur for dx and dy. However, we are operating under the assumption that the FPGA fabric architecture is regular.
-     */
-    vtr::NdMatrix<float, 5> delays_; // [0..num_physical_type-1][0..num_layers-1][0..num_layers-1][0..max_dx][0..max_dy]
+    /// @brief The router lookahead queried for the minimum delay between locations.
+    const LookaheadT& router_lookahead_;
 
     /// @brief Contains delay information of crossing a die, used in 2.5D architectures.
     std::optional<InterposerLookahead> interposer_lookahead_;
