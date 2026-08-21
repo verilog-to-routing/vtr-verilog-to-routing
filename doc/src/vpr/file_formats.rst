@@ -727,6 +727,17 @@ multiple clusters can be stacked there). A sub-tile of -1 may be used when
 the sub-tile of an atom is unknown (allowing the packing algorithm to choose
 any sub-tile at the given (x, y, layer) location).
 
+Lines written by VPR (:option:`vpr --write_flat_place`) carry an additional ``site_path``
+column:
+
+.. code-block:: none
+
+        n523  6 8 0 0 #12 lut6 site_path=clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+
+``site_path`` is the hierarchical path of the primitive the atom was placed on within its
+cluster (``t_pb_graph_node::hierarchical_type_name()``), including the mode selected at each
+level.
+
 When used with ``flat-recon`` full legalizer (see :option:`vpr --ap_full_legalizer`),
 each atom in a molecule should have compatible location information. It is legal to
 leave some molecules unconstrained; the reconstruction phase will choose where
