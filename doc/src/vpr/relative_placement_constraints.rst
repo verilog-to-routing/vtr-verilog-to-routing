@@ -60,6 +60,18 @@ The ``<vpr_constraints>`` top-level tag may contain one ``<relative_macro_list>`
 
 		The anchor of the macro. The atoms added to this group are packed into one cluster, and all relative groups' offsets are measured from this cluster's location. Contains one or more ``<add_atom>`` tags (same syntax and matching semantics as in a ``<partition>``, see :ref:`placement_constraints`; the ``logical_block_location`` attribute is not supported here and is ignored with a warning).
 
+		In addition to the attributes an ``<add_atom>`` takes inside a ``<partition>``, an ``<add_atom>`` of a reference or relative group accepts:
+
+		:opt_param site_path:
+			The primitive site inside the group's cluster this atom must be placed on.
+
+			A site is given as the **hierarchical path** of the primitive within its cluster (``t_pb_graph_node::hierarchical_type_name()``), for example::
+
+				clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+
+			When the attribute is omitted the atom is unpinned and the packer picks its site.
+			**Default:** unpinned
+
 	.. arch:tag:: <relative_group x_offset="int" y_offset="int" sub_tile_offset="int" layer_offset="int">
 
 		A group of atoms packed into one cluster, placed at the given offset from the reference group's cluster. Contains one or more ``<add_atom>`` tags.
