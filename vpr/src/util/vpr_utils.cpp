@@ -1339,15 +1339,14 @@ void free_pb_stats(t_pb* pb) {
  *                                                                                     *
  ***************************************************************************************/
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
-
     if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
-                  "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
+                  "Only a single port pin range specification allowed for direct connect (was: '%s')", std::string(src_string).c_str());
     }
 
     // parse out the pb_type and port name, possibly pin_indices
     if (src_string.find('[') == std::string_view::npos) {
-        /* Format "pb_type_name.port_name" */
+        // Format "pb_type_name.port_name"
         const int start_pin_index = -1;
         const int end_pin_index = -1;
 
@@ -1365,27 +1364,42 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
                 "[LINE %d] Invalid pin - %s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
-                line, src_string);
+                line, std::string(src_string).c_str());
             exit(1);
         }
     } else {
-        /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
+        // Format "pb_type_name.port_name[end_pin_index:start_pin_index]" or "pb_type_name.port_name[pin_index]"
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
         std::ranges::replace_if(source_string, [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; }, ' ');
 
+        // Whether a colon-separated range was given, e.g. "port[end:start]" vs. a
+        // single pin index "port[pin]" (checked before ':' is replaced with a space above).
+        const bool has_colon = src_string.find(':') != std::string_view::npos;
+
         std::istringstream source_iss(source_string);
         int start_pin_index, end_pin_index;
         std::string pb_type_name, port_name;
 
-        if (source_iss >> pb_type_name >> port_name >> end_pin_index >> start_pin_index) {
+        bool parsed_ok = false;
+        if (source_iss >> pb_type_name >> port_name >> end_pin_index) {
+            bool parsed_start = static_cast<bool>(source_iss >> start_pin_index);
+            if (has_colon && parsed_start) {
+                parsed_ok = true;
+            } else if (!has_colon && !parsed_start) {
+                // A single pin index (no ':') means start and end are the same pin.
+                start_pin_index = end_pin_index;
+                parsed_ok = true;
+            }
+        }
 
+        if (parsed_ok) {
             if (end_pin_index < 0 || start_pin_index < 0) {
                 VTR_LOG_ERROR(
                     "[LINE %d] Invalid pin - %s, the pin_index in "
                     "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                    line, src_string);
+                    line, std::string(src_string).c_str());
                 exit(1);
             }
 
@@ -1393,7 +1407,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
                 VTR_LOG_ERROR(
                     "[LINE %d] Invalid from_pin - %s, the end_pin_index in "
                     "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
-                    line, src_string);
+                    line, std::string(src_string).c_str());
                 exit(1);
             }
 
@@ -1403,7 +1417,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
                 "[LINE %d] Invalid pin - %s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
-                line, src_string);
+                line, std::string(src_string).c_str());
             exit(1);
         }
     }
