@@ -140,6 +140,9 @@ struct t_pl_macro_member {
 struct t_pl_macro {
     ///@brief A vector of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
+
+    ///@brief True if this macro comes from user relative placement constraints
+    bool user_defined = false;
 };
 
 class PlaceMacros {
@@ -188,6 +191,18 @@ class PlaceMacros {
     const std::vector<t_pl_macro>& macros() const;
 
     /**
+     * @brief Whether any macro came from user relative placement constraints.
+     *
+     * Architecture-derived macros (carry chains) are type-homogeneous and
+     * one-dimensional, while user relative placement macros may mix block types
+     * and extend in both dimensions. Code paths that only need to handle the
+     * latter can be skipped when this is false, keeping designs without
+     * relative placement constraints on exactly the same path as before the
+     * feature was added.
+     */
+    bool has_user_defined_macros() const { return has_user_defined_macros_; }
+
+    /**
      * @brief Returns the placement macro associated with a macro index.
      * @param idx An index specifying a macro. get_imacro_from_iblk() can
      * be called to find out a the macro index of the placement macro a
@@ -223,6 +238,10 @@ class PlaceMacros {
     ///@brief Stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros_;
 
+    /// @brief True if any entry of pl_macros_ came from user relative placement
+    ///        constraints. See has_user_defined_macros().
+    bool has_user_defined_macros_ = false;
+
   private:
     int find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                             const AtomNetlist& atom_nlist,
@@ -230,6 +249,23 @@ class PlaceMacros {
                             std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+
+    /**
+     * @brief Appends user-defined relative placement macros (read from the
+     *        constraints file) to the architecture-derived macros in pl_macros_.
+     *
+     * If a user-defined macro shares a cluster with an architecture-derived macro,
+     * such as a carry chain, they are merged into one rigid macro. The remaining
+     * chain clusters are added at their implied offsets, and the original
+     * architecture-derived macro is removed from pl_macros_.
+     *
+     * The packer guarantees a chain only shares clusters with the one user macro
+     * that names its atoms; a packed netlist
+     * violating this (e.g. a stale .net file) is a fatal error.
+     */
+    void append_user_defined_macros_(const ClusteredNetlist& clb_nlist,
+                                     const AtomNetlist& atom_nlist,
+                                     const AtomLookup& atom_lookup);
 
     void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
                                           const ClusteredNetlist& clb_nlist);

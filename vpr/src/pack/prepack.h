@@ -11,8 +11,10 @@
 #include <algorithm>
 #include <map>
 #include <unordered_set>
+#include <utility>
 #include "atom_netlist_fwd.h"
 #include "pack_patterns.h"
+#include "user_relative_macros.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -114,6 +116,16 @@ class t_pack_molecule {
 };
 
 /**
+ * @brief Return the relative placement group a molecule belongs to.
+ *
+ * @return The (macro id, group index) of the molecule's group, or
+ *         (UserRelativeMacroId::INVALID(), -1) if no atom of the molecule
+ *         belongs to a relative placement macro.
+ */
+std::pair<UserRelativeMacroId, int> get_molecule_relative_group(const t_pack_molecule& molecule,
+                                                                const UserRelativeMacros& relative_macros);
+
+/**
  * @brief Statistics on a molecule.
  *
  * This is used during packing to quickly look up information on a molecule to
@@ -202,10 +214,12 @@ class Prepacker {
      *  @param atom_nlist           The atom netlist to prepack.
      *  @param models
      *  @param logical_block_types  A list of the logical block types on the device.
+     *  @param relative_macros      User-defined relative placement macros.
      */
     Prepacker(const AtomNetlist& atom_nlist,
               const LogicalModels& models,
-              const std::vector<t_logical_block_type>& logical_block_types);
+              const std::vector<t_logical_block_type>& logical_block_types,
+              const UserRelativeMacros& relative_macros);
 
     /**
      * @brief A range of all prepacked molecules. Every atom should exist in one
@@ -307,6 +321,18 @@ class Prepacker {
     }
 
     /**
+     * @brief Get the number of valid atoms in the given molecule.
+     *
+     * A molecule's atom_block_ids may contain invalid ids when the molecule
+     * does not completely fill its pack pattern; those are not counted.
+     */
+    inline size_t get_molecule_num_valid_atoms(PackMoleculeId molecule_id) const {
+        const t_pack_molecule& mol = get_molecule(molecule_id);
+        return std::count_if(mol.atom_block_ids.begin(), mol.atom_block_ids.end(),
+                             [](AtomBlockId blk_id) noexcept { return blk_id.is_valid(); });
+    }
+
+    /**
      * @brief Get information about the chain associated with the given ID.
      */
     inline const t_chain_info& get_molecule_chain_info(MoleculeChainId chain_id) const {
@@ -339,7 +365,8 @@ class Prepacker {
     void alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                        const AtomNetlist& atom_nlist,
                                        const LogicalModels& models,
-                                       const std::vector<t_logical_block_type>& logical_block_types);
+                                       const std::vector<t_logical_block_type>& logical_block_types,
+                                       const UserRelativeMacros& relative_macros);
 
     /**
      * Given a pattern and an atom block to serve as the root block, determine if
@@ -357,7 +384,8 @@ class Prepacker {
     PackMoleculeId try_create_molecule(const int pack_pattern_index,
                                        AtomBlockId blk_id,
                                        std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                       const AtomNetlist& atom_nlist);
+                                       const AtomNetlist& atom_nlist,
+                                       const UserRelativeMacros& relative_macros);
 
   private:
     /**

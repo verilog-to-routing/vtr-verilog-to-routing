@@ -35,6 +35,21 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     //Update the floorplanning constraints in the floorplanning constraints context
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     floorplanning_ctx.constraints = reader.constraints_.place_constraints();
+    floorplanning_ctx.relative_macros = reader.constraints_.relative_macros();
+
+    const UserRelativeMacros& relative_macros = floorplanning_ctx.relative_macros;
+    if (relative_macros.get_num_macros() > 0) {
+        VTR_LOG("Read %zu relative placement macro(s):\n", relative_macros.get_num_macros());
+        for (size_t imacro = 0; imacro < relative_macros.get_num_macros(); imacro++) {
+            const UserRelativeMacro& macro = relative_macros.get_macro(UserRelativeMacroId(imacro));
+            size_t num_atoms = 0;
+            for (const UserRelativeGroup& group : macro.groups) {
+                num_atoms += group.atoms.size();
+            }
+            VTR_LOG("  Relative macro '%s': %zu group(s), %zu atom(s)\n",
+                    macro.name.c_str(), macro.groups.size(), num_atoms);
+        }
+    }
 
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
     routing_ctx.constraints = reader.constraints_.route_constraints();

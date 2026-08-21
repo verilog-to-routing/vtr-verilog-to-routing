@@ -323,6 +323,55 @@ static bool check_cluster_noc_group(AtomBlockId atom_blk_id,
 }
 
 /**
+ * @brief Checks if an atom block can be added to a clustered block without
+ *        violating relative placement group constraints.
+ *
+ * @param atom_blk_id
+ * @param cluster_rel_group     The relative placement group (macro id, group
+ *                              index) of the clustered block. This function may
+ *                              update this group.
+ * @param relative_macros       The user-defined relative placement macros.
+ * @param log_verbosity
+ *
+ * @return True if adding the atom block to the cluster does not violate
+ *         relative placement group constraints.
+ */
+static bool check_cluster_relative_group(AtomBlockId atom_blk_id,
+                                         std::pair<UserRelativeMacroId, int>& cluster_rel_group,
+                                         const UserRelativeMacros& relative_macros,
+                                         int log_verbosity) {
+    const std::pair<UserRelativeMacroId, int> atom_rel_group = relative_macros.get_atom_group(atom_blk_id);
+
+    // Unconstrained atoms are compatible with any cluster.
+    if (!atom_rel_group.first.is_valid())
+        return true;
+
+    if (!cluster_rel_group.first.is_valid()) {
+        // If the cluster does not host a relative placement group yet, assign
+        // the atom's group to the cluster.
+        VTR_LOGV(log_verbosity > 3,
+                 "\t\t\t Relative Group: Atom block %d passed cluster, cluster's relative group was updated with the atom's group (macro %zu, group %d)\n",
+                 atom_blk_id, (size_t)atom_rel_group.first, atom_rel_group.second);
+        cluster_rel_group = atom_rel_group;
+        return true;
+    }
+
+    if (cluster_rel_group == atom_rel_group) {
+        VTR_LOGV(log_verbosity > 3,
+                 "\t\t\t Relative Group: Atom block %d passed cluster, cluster's relative group was compatible with the atom's group\n",
+                 atom_blk_id);
+        return true;
+    }
+
+    // The cluster hosts a different relative placement group than the atom's.
+    VTR_LOGV(log_verbosity > 3,
+             "\t\t\t Relative Group: Atom block %d failed relative group check for cluster. Cluster's group: (macro %zu, group %d), atom's group: (macro %zu, group %d)\n",
+             atom_blk_id, (size_t)cluster_rel_group.first, cluster_rel_group.second,
+             (size_t)atom_rel_group.first, atom_rel_group.second);
+    return false;
+}
+
+/**
  * @brief This function takes the root block of a chain molecule and a proposed
  *        placement primitive for this block. The function then checks if this
  *        chain root block has a placement constraint (such as being driven from
@@ -913,6 +962,46 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         }
     }
 
+    // Check if all atoms in the molecule can be added to the cluster without
+    // relative placement group conflicts.
+    std::pair<UserRelativeMacroId, int> new_cluster_rel_group = cluster.rel_group;
+    // The external pin utilization limit applied to this molecule. Relaxed
+    // below for molecules of the cluster's own relative placement group.
+    t_ext_pin_util effective_external_pin_util = max_external_pin_util;
+    if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
+        for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+
+            bool block_pack_rel_group_status = check_cluster_relative_group(atom_blk_id,
+                                                                            new_cluster_rel_group,
+                                                                            floorplanning_ctx.relative_macros,
+                                                                            log_verbosity_);
+            if (!block_pack_rel_group_status) {
+                VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: relative_group_conflict (atom '%s')\n",
+                         atom_ctx.netlist().block_name(atom_blk_id).c_str());
+                return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+            }
+        }
+
+        if (!check_cluster_long_chain_ownership(molecule, new_cluster_rel_group, cluster)) {
+            VTR_LOGV(log_verbosity_ > 2, "\t\tFAILED pack molecule reason: long_chain_ownership_conflict\n");
+            return e_block_pack_status::BLK_FAILED_RELATIVE_GROUP;
+        }
+
+        // Does the molecule contain an atom of the cluster's (possibly just
+        // adopted) relative placement group? Molecules of a different group
+        // were rejected above, so any constrained atom here belongs to it.
+        bool molecule_in_cluster_group = new_cluster_rel_group.first.is_valid()
+                                         && get_molecule_relative_group(molecule, floorplanning_ctx.relative_macros) == new_cluster_rel_group;
+
+        // Relax the external pin utilization limit for molecules of the
+        // cluster's own relative placement group
+        if (molecule_in_cluster_group) {
+            effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
+        }
+    }
+
     // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
     primitives_list_.assign(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
@@ -982,7 +1071,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // Note: Expensive verification, do not keep in release.
                 cluster.pin_counter.verify_against_full_recompute(cluster.molecules, prepacker_, atom_cluster_, atom_pb_lookup());
 #endif
-                if (!cluster.pin_counter.check_pins_used(cluster.pb, max_external_pin_util)) {
+                if (!cluster.pin_counter.check_pins_used(cluster.pb, effective_external_pin_util)) {
                     VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
                     block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
                 } else {
@@ -1123,6 +1212,16 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                 // Update the cluster's NoC group ID. This is cheap so it does
                 // not need the check like the what the PR did above.
                 cluster.noc_grp_id = new_cluster_noc_grp_id;
+
+                // Update the cluster's relative placement group.
+                cluster.rel_group = new_cluster_rel_group;
+
+                // Record that the cluster now holds long-chain molecules and
+                // which relative placement group owns the chain.
+                if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
+                    cluster.has_long_chain_mols = true;
+                    cluster.long_chain_owner = get_relative_chain_owner(molecule.chain_id);
+                }
 
                 for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
                     AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
@@ -1609,6 +1708,38 @@ void ClusterLegalizer::verify() {
     }
 }
 
+std::pair<UserRelativeMacroId, int> ClusterLegalizer::get_relative_chain_owner(MoleculeChainId chain_id) const {
+    auto owner_it = rel_chain_owners_.find(chain_id);
+    if (owner_it != rel_chain_owners_.end())
+        return owner_it->second;
+    return {UserRelativeMacroId::INVALID(), -1};
+}
+
+bool ClusterLegalizer::check_cluster_long_chain_ownership(const t_pack_molecule& molecule,
+                                                          const std::pair<UserRelativeMacroId, int>& rel_group,
+                                                          const LegalizationCluster& cluster) const {
+    if (molecule.chain_id.is_valid() && prepacker_.get_molecule_chain_info(molecule.chain_id).is_long_chain) {
+        const std::pair<UserRelativeMacroId, int> mol_chain_owner = get_relative_chain_owner(molecule.chain_id);
+        // The molecule may not join a cluster hosting a group other than its
+        // chain's owner.
+        if (rel_group.first.is_valid() && rel_group != mol_chain_owner) {
+            VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: cluster hosts a relative group that does not own the molecule's chain\n");
+            return false;
+        }
+        // Long chains with different owners may not share a cluster.
+        if (cluster.has_long_chain_mols && cluster.long_chain_owner != mol_chain_owner) {
+            VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: cluster holds a long chain with a different owner\n");
+            return false;
+        }
+    }
+    // A group may not move into a cluster whose long chain it does not own.
+    if (cluster.has_long_chain_mols && rel_group.first.is_valid() && rel_group != cluster.long_chain_owner) {
+        VTR_LOGV(log_verbosity_ > 3, "\t\t\t Long Chain: relative group does not own the cluster's long chain\n");
+        return false;
+    }
+    return true;
+}
+
 bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
                                               LegalizationClusterId cluster_id) const {
     VTR_ASSERT_SAFE(molecule_id.is_valid());
@@ -1622,7 +1753,24 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
     //       would be more robust, but checking individual atoms is faster.
     const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
 
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    // Cheap early reject: an atom of one relative placement group can never
+    // join a cluster hosting a different group.
+    const bool cluster_has_rel_group = cluster.rel_group.first.is_valid();
+
+    const bool relative_macros_active = relative_macros.get_num_macros() != 0;
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
+    // Whether the molecule contains an atom of some relative placement group,
+    // and that group (a molecule's constrained atoms are all in one group).
+    bool molecule_has_rel_group = false;
+    std::pair<UserRelativeMacroId, int> molecule_rel_group = {UserRelativeMacroId::INVALID(), -1};
+    if (relative_macros_active) {
+        molecule_rel_group = get_molecule_relative_group(molecule, relative_macros);
+        molecule_has_rel_group = molecule_rel_group.first.is_valid();
+        if (molecule_has_rel_group && cluster_has_rel_group && molecule_rel_group != cluster.rel_group) {
+            return false;
+        }
+    }
     for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
         // FIXME: Why is it possible that molecules contain invalid block IDs?
         //        This should be fixed!
@@ -1633,6 +1781,16 @@ bool ClusterLegalizer::is_molecule_compatible(PackMoleculeId molecule_id,
         VTR_ASSERT(!is_atom_clustered(atom_blk_id));
         if (!exists_free_primitive_for_atom_block(cluster.placement_stats,
                                                   atom_blk_id)) {
+            return false;
+        }
+    }
+    // Mirror the long-chain veto in try_pack_molecule(). The group the
+    // cluster would host after the addition is the molecule's group if it has
+    // one (equal to the cluster's if both exist, checked above), else the
+    // cluster's.
+    if (relative_macros_active) {
+        const std::pair<UserRelativeMacroId, int>& rel_group = molecule_has_rel_group ? molecule_rel_group : cluster.rel_group;
+        if (!check_cluster_long_chain_ownership(molecule, rel_group, cluster)) {
             return false;
         }
     }

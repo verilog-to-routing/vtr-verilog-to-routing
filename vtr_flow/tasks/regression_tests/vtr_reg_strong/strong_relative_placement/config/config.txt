@@ -1,0 +1,49 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# This test exercises relative placement macros (see the
+# <relative_macro_list> section of the VPR constraints file documentation).
+# The circuit is a generated design with 256 LUTs, a 10-bit and a 50-bit
+# adder carry chain, 20 DSPs (9x9 multiplies), 20 BRAMs and 28 registers.
+# The constraints file defines seven macros and one partition:
+#   - 5 LUTs packed into one CLB placed at dx=1 from a DSP
+#   - 5 LUTs packed into one CLB placed at dx=1 from a BRAM (regex matching)
+#   - two 5-LUT groups packed into two separate CLBs placed at dx=1
+#   - a carry chain (first 3 adders constrained; the whole 10-bit chain fits
+#     one CLB and rides along as one molecule) placed at dx=1 from a DSP
+#   - a LONG carry chain (50 bits, spans ~3 CLBs; only the first 3 adders
+#     constrained) placed at dx=1 from a DSP: the chain's other clusters form
+#     an architecture-derived placement macro that is merged into the
+#     relative macro, and the packer's long-chain veto keeps the chain's
+#     clusters exclusive to this macro
+#   - three 5-LUT groups in an L shape (offsets (0,1) and (1,-1)): covers
+#     >2-group macros, nonzero y_offset and a negative offset component
+#   - two input pads one sub_tile apart in the same io tile: covers
+#     sub_tile_offset != 0 (io is the arch's only capacity>1 tile)
+#   - a floorplan partition holding an atom that is also in a relative
+#     macro's reference group: covers partition + relative macro composition
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=relative_placement_macros.blif
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+script_params=-starting_stage vpr --pack --place --route --analysis --route_chan_width 100 --read_vpr_constraints ../../../../relative_placement_constraints.xml

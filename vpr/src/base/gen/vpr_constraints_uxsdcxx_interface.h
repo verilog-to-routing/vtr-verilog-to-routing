@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx.py ..\OpenFPGA\vtr-verilog-to-routing\vpr\src\base\vpr_constraints.xsd
- * Input file: C:\Users\OscarPC\source\repos\OpenFPGA\vtr-verilog-to-routing\vpr\src\base\vpr_constraints.xsd
- * md5sum of input file: f19701e568aa29dcebaba9f650acca07
+ * Cmdline: uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Input file: /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * md5sum of input file: 87e4a93952c6e05cbb03b4ce42656d36
  */
 
 #include <functional>
@@ -32,6 +32,10 @@ struct DefaultVprConstraintsContextTypes {
     using AddLogicalBlockReadContext = void*;
     using PartitionReadContext = void*;
     using PartitionListReadContext = void*;
+    using ReferenceGroupReadContext = void*;
+    using RelativeGroupReadContext = void*;
+    using RelativeMacroReadContext = void*;
+    using RelativeMacroListReadContext = void*;
     using SetGlobalSignalReadContext = void*;
     using GlobalRouteConstraintsReadContext = void*;
     using VprConstraintsReadContext = void*;
@@ -40,6 +44,10 @@ struct DefaultVprConstraintsContextTypes {
     using AddLogicalBlockWriteContext = void*;
     using PartitionWriteContext = void*;
     using PartitionListWriteContext = void*;
+    using ReferenceGroupWriteContext = void*;
+    using RelativeGroupWriteContext = void*;
+    using RelativeMacroWriteContext = void*;
+    using RelativeMacroListWriteContext = void*;
     using SetGlobalSignalWriteContext = void*;
     using GlobalRouteConstraintsWriteContext = void*;
     using VprConstraintsWriteContext = void*;
@@ -144,6 +152,74 @@ class VprConstraintsBase {
     virtual inline size_t num_partition_list_partition(typename ContextTypes::PartitionListReadContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionReadContext get_partition_list_partition(int n, typename ContextTypes::PartitionListReadContext& ctx) = 0;
 
+    /** Generated for complex type "reference_group":
+     * <xs:complexType name="reference_group">
+     *   <xs:sequence>
+     *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
+    virtual inline void preallocate_reference_group_add_atom(typename ContextTypes::ReferenceGroupWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::AddAtomWriteContext add_reference_group_add_atom(typename ContextTypes::ReferenceGroupWriteContext& ctx) = 0;
+    virtual inline void finish_reference_group_add_atom(typename ContextTypes::AddAtomWriteContext& ctx) = 0;
+    virtual inline size_t num_reference_group_add_atom(typename ContextTypes::ReferenceGroupReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::AddAtomReadContext get_reference_group_add_atom(int n, typename ContextTypes::ReferenceGroupReadContext& ctx) = 0;
+
+    /** Generated for complex type "relative_group":
+     * <xs:complexType name="relative_group">
+     *   <xs:sequence>
+     *     <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     *   <xs:attribute name="x_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="y_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="sub_tile_offset" type="xs:int" use="required" />
+     *   <xs:attribute name="layer_offset" type="xs:int" />
+     * </xs:complexType>
+     */
+    virtual inline int get_relative_group_layer_offset(typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
+    virtual inline void set_relative_group_layer_offset(int layer_offset, typename ContextTypes::RelativeGroupWriteContext& ctx) = 0;
+    virtual inline int get_relative_group_sub_tile_offset(typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
+    virtual inline int get_relative_group_x_offset(typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
+    virtual inline int get_relative_group_y_offset(typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
+    virtual inline void preallocate_relative_group_add_atom(typename ContextTypes::RelativeGroupWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::AddAtomWriteContext add_relative_group_add_atom(typename ContextTypes::RelativeGroupWriteContext& ctx) = 0;
+    virtual inline void finish_relative_group_add_atom(typename ContextTypes::AddAtomWriteContext& ctx) = 0;
+    virtual inline size_t num_relative_group_add_atom(typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::AddAtomReadContext get_relative_group_add_atom(int n, typename ContextTypes::RelativeGroupReadContext& ctx) = 0;
+
+    /** Generated for complex type "relative_macro":
+     * <xs:complexType name="relative_macro">
+     *   <xs:sequence>
+     *     <xs:element name="reference_group" type="reference_group" />
+     *     <xs:element name="relative_group" type="relative_group" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_relative_macro_name(typename ContextTypes::RelativeMacroReadContext& ctx) = 0;
+    virtual inline void set_relative_macro_name(const char* name, typename ContextTypes::RelativeMacroWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::ReferenceGroupWriteContext init_relative_macro_reference_group(typename ContextTypes::RelativeMacroWriteContext& ctx) = 0;
+    virtual inline void finish_relative_macro_reference_group(typename ContextTypes::ReferenceGroupWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::ReferenceGroupReadContext get_relative_macro_reference_group(typename ContextTypes::RelativeMacroReadContext& ctx) = 0;
+    virtual inline void preallocate_relative_macro_relative_group(typename ContextTypes::RelativeMacroWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::RelativeGroupWriteContext add_relative_macro_relative_group(typename ContextTypes::RelativeMacroWriteContext& ctx, int sub_tile_offset, int x_offset, int y_offset) = 0;
+    virtual inline void finish_relative_macro_relative_group(typename ContextTypes::RelativeGroupWriteContext& ctx) = 0;
+    virtual inline size_t num_relative_macro_relative_group(typename ContextTypes::RelativeMacroReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::RelativeGroupReadContext get_relative_macro_relative_group(int n, typename ContextTypes::RelativeMacroReadContext& ctx) = 0;
+
+    /** Generated for complex type "relative_macro_list":
+     * <xs:complexType name="relative_macro_list">
+     *   <xs:sequence>
+     *     <xs:element name="relative_macro" type="relative_macro" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
+    virtual inline void preallocate_relative_macro_list_relative_macro(typename ContextTypes::RelativeMacroListWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::RelativeMacroWriteContext add_relative_macro_list_relative_macro(typename ContextTypes::RelativeMacroListWriteContext& ctx) = 0;
+    virtual inline void finish_relative_macro_list_relative_macro(typename ContextTypes::RelativeMacroWriteContext& ctx) = 0;
+    virtual inline size_t num_relative_macro_list_relative_macro(typename ContextTypes::RelativeMacroListReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::RelativeMacroReadContext get_relative_macro_list_relative_macro(int n, typename ContextTypes::RelativeMacroListReadContext& ctx) = 0;
+
     /** Generated for complex type "set_global_signal":
      * <xs:complexType name="set_global_signal">
      *   <xs:attribute name="name" type="xs:string" use="required" />
@@ -174,6 +250,7 @@ class VprConstraintsBase {
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
      *     <xs:all minOccurs="0">
      *       <xs:element name="partition_list" type="partition_list" />
+     *       <xs:element name="relative_macro_list" type="relative_macro_list" />
      *       <xs:element name="global_route_constraints" type="global_route_constraints" />
      *     </xs:all>
      *     <xs:attribute name="tool_name" type="xs:string" />
@@ -185,6 +262,10 @@ class VprConstraintsBase {
     virtual inline void finish_vpr_constraints_partition_list(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionListReadContext get_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline bool has_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::RelativeMacroListWriteContext init_vpr_constraints_relative_macro_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
+    virtual inline void finish_vpr_constraints_relative_macro_list(typename ContextTypes::RelativeMacroListWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::RelativeMacroListReadContext get_vpr_constraints_relative_macro_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+    virtual inline bool has_vpr_constraints_relative_macro_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline typename ContextTypes::GlobalRouteConstraintsWriteContext init_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline void finish_vpr_constraints_global_route_constraints(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::GlobalRouteConstraintsReadContext get_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;

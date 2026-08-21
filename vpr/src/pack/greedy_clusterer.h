@@ -21,6 +21,7 @@ struct APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
+struct ClusterGainStats;
 struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
@@ -148,6 +149,49 @@ class GreedyClusterer {
 
   private:
     /**
+     * @brief Struct to hold statistics on the progress of clustering.
+     */
+    struct t_cluster_progress_stats {
+        /// @brief The total number of molecules in the design.
+        int num_molecules = 0;
+        /// @brief The number of molecules which have been clustered.
+        int num_molecules_processed = 0;
+        /// @brief The number of molecules clustered since the last time the
+        ///        status was logged.
+        int mols_since_last_print = 0;
+    };
+
+    /**
+     * @brief Pack each relative placement group into its own cluster, before
+     *        the main clustering loop grows any unconstrained cluster.
+     */
+    void pack_relative_groups_first(GreedyCandidateSelector& candidate_selector,
+                                    ClusterLegalizer& cluster_legalizer,
+                                    const Prepacker& prepacker,
+                                    const RamMapper& ram_mapper,
+                                    bool balance_block_type_utilization,
+                                    AttractionInfo& attraction_groups,
+                                    std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                    DeviceContext& mutable_device_ctx,
+                                    t_cluster_progress_stats& clustering_stats);
+
+    /**
+     * @brief Grow a cluster from the given seed molecule and report progress.
+     *
+     *  @return The ID of the created cluster (always valid).
+     */
+    LegalizationClusterId grow_cluster_from_seed(PackMoleculeId seed_mol_id,
+                                                 GreedyCandidateSelector& candidate_selector,
+                                                 ClusterLegalizer& cluster_legalizer,
+                                                 const Prepacker& prepacker,
+                                                 const RamMapper& ram_mapper,
+                                                 bool balance_block_type_utilization,
+                                                 AttractionInfo& attraction_groups,
+                                                 std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                 DeviceContext& mutable_device_ctx,
+                                                 t_cluster_progress_stats& clustering_stats);
+
+    /**
      * @brief Given a seed molecule and a legalization strategy, tries to grow
      *        a cluster greedily, starting with the provided seed and adding
      *        whatever other molecules seem beneficial and legal. Will return
@@ -205,6 +249,20 @@ class GreedyClusterer {
                                           LegalizationClusterId legalization_cluster_id,
                                           ClusterLegalizer& cluster_legalizer,
                                           const Prepacker& prepacker);
+
+    /**
+     * @brief Pack the relative placement group of the seed molecule into the
+     *        freshly seeded cluster.
+     *
+     * @return The first molecule that failed to pack into the cluster, or
+     *         INVALID if the whole group packed (or the seed is
+     *         unconstrained / the design has no relative macros).
+     */
+    PackMoleculeId pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
+                                                    LegalizationClusterId legalization_cluster_id,
+                                                    ClusterLegalizer& cluster_legalizer,
+                                                    const Prepacker& prepacker,
+                                                    const std::vector<PackMoleculeId>& pack_first);
 
     /**
      * @brief Log the physical block usage of the logic element in the

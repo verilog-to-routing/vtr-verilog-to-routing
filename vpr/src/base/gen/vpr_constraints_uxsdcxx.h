@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx.py ..\OpenFPGA\vtr-verilog-to-routing\vpr\src\base\vpr_constraints.xsd
- * Input file: C:\Users\OscarPC\source\repos\OpenFPGA\vtr-verilog-to-routing\vpr\src\base\vpr_constraints.xsd
- * md5sum of input file: f19701e568aa29dcebaba9f650acca07
+ * Cmdline: uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Input file: /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * md5sum of input file: 87e4a93952c6e05cbb03b4ce42656d36
  */
 
 #include <functional>
@@ -52,6 +52,15 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
 template<class T, typename Context>
 inline void load_partition_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
+inline void load_reference_group(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+template<class T, typename Context>
+inline void load_relative_group(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_relative_group_required_attributes(const pugi::xml_node& root, int* sub_tile_offset, int* x_offset, int* y_offset, const std::function<void(const char*)>* report_error);
+template<class T, typename Context>
+inline void load_relative_macro(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+template<class T, typename Context>
+inline void load_relative_macro_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+template<class T, typename Context>
 inline void load_set_global_signal(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 inline void load_set_global_signal_required_attributes(const pugi::xml_node& root, enum_route_model_type* route_model, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
@@ -64,6 +73,14 @@ template<class T>
 inline void write_partition(T& in, std::ostream& os, const void* data, void* iter);
 template<class T>
 inline void write_partition_list(T& in, std::ostream& os, const void* data, void* iter);
+template<class T>
+inline void write_reference_group(T& in, std::ostream& os, const void* data, void* iter);
+template<class T>
+inline void write_relative_group(T& in, std::ostream& os, const void* data, void* iter);
+template<class T>
+inline void write_relative_macro(T& in, std::ostream& os, const void* data, void* iter);
+template<class T>
+inline void write_relative_macro_list(T& in, std::ostream& os, const void* data, void* iter);
 template<class T>
 inline void write_global_route_constraints(T& in, std::ostream& os, const void* data, void* iter);
 template<class T>
@@ -165,6 +182,24 @@ constexpr const char* atok_lookup_t_partition[] = {"name"};
 
 enum class gtok_t_partition_list { PARTITION };
 constexpr const char* gtok_lookup_t_partition_list[] = {"partition"};
+enum class gtok_t_reference_group { ADD_ATOM };
+constexpr const char* gtok_lookup_t_reference_group[] = {"add_atom"};
+enum class gtok_t_relative_group { ADD_ATOM };
+constexpr const char* gtok_lookup_t_relative_group[] = {"add_atom"};
+enum class atok_t_relative_group { LAYER_OFFSET,
+                                   SUB_TILE_OFFSET,
+                                   X_OFFSET,
+                                   Y_OFFSET };
+constexpr const char* atok_lookup_t_relative_group[] = {"layer_offset", "sub_tile_offset", "x_offset", "y_offset"};
+
+enum class gtok_t_relative_macro { REFERENCE_GROUP,
+                                   RELATIVE_GROUP };
+constexpr const char* gtok_lookup_t_relative_macro[] = {"reference_group", "relative_group"};
+enum class atok_t_relative_macro { NAME };
+constexpr const char* atok_lookup_t_relative_macro[] = {"name"};
+
+enum class gtok_t_relative_macro_list { RELATIVE_MACRO };
+constexpr const char* gtok_lookup_t_relative_macro_list[] = {"relative_macro"};
 
 enum class atok_t_set_global_signal { NAME,
                                       NETWORK_NAME,
@@ -174,8 +209,9 @@ constexpr const char* atok_lookup_t_set_global_signal[] = {"name", "network_name
 enum class gtok_t_global_route_constraints { SET_GLOBAL_SIGNAL };
 constexpr const char* gtok_lookup_t_global_route_constraints[] = {"set_global_signal"};
 enum class gtok_t_vpr_constraints { PARTITION_LIST,
+                                    RELATIVE_MACRO_LIST,
                                     GLOBAL_ROUTE_CONSTRAINTS };
-constexpr const char* gtok_lookup_t_vpr_constraints[] = {"partition_list", "global_route_constraints"};
+constexpr const char* gtok_lookup_t_vpr_constraints[] = {"partition_list", "relative_macro_list", "global_route_constraints"};
 enum class atok_t_vpr_constraints { TOOL_NAME };
 constexpr const char* atok_lookup_t_vpr_constraints[] = {"tool_name"};
 
@@ -512,6 +548,232 @@ inline gtok_t_partition_list lex_node_t_partition_list(const char* in, const std
     noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <partition_list>.").c_str());
 }
 
+inline gtok_t_reference_group lex_node_t_reference_group(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 8:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('a', 0, 64) | onechar('d', 8, 64) | onechar('d', 16, 64) | onechar('_', 24, 64) | onechar('a', 32, 64) | onechar('t', 40, 64) | onechar('o', 48, 64) | onechar('m', 56, 64):
+                    return gtok_t_reference_group::ADD_ATOM;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <reference_group>.").c_str());
+}
+
+inline gtok_t_relative_group lex_node_t_relative_group(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 8:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('a', 0, 64) | onechar('d', 8, 64) | onechar('d', 16, 64) | onechar('_', 24, 64) | onechar('a', 32, 64) | onechar('t', 40, 64) | onechar('o', 48, 64) | onechar('m', 56, 64):
+                    return gtok_t_relative_group::ADD_ATOM;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <relative_group>.").c_str());
+}
+inline atok_t_relative_group lex_attr_t_relative_group(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 8:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('x', 0, 64) | onechar('_', 8, 64) | onechar('o', 16, 64) | onechar('f', 24, 64) | onechar('f', 32, 64) | onechar('s', 40, 64) | onechar('e', 48, 64) | onechar('t', 56, 64):
+                    return atok_t_relative_group::X_OFFSET;
+                    break;
+                case onechar('y', 0, 64) | onechar('_', 8, 64) | onechar('o', 16, 64) | onechar('f', 24, 64) | onechar('f', 32, 64) | onechar('s', 40, 64) | onechar('e', 48, 64) | onechar('t', 56, 64):
+                    return atok_t_relative_group::Y_OFFSET;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 12:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('l', 0, 64) | onechar('a', 8, 64) | onechar('y', 16, 64) | onechar('e', 24, 64) | onechar('r', 32, 64) | onechar('_', 40, 64) | onechar('o', 48, 64) | onechar('f', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('f', 0, 32) | onechar('s', 8, 32) | onechar('e', 16, 32) | onechar('t', 24, 32):
+                            return atok_t_relative_group::LAYER_OFFSET;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 15:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('s', 0, 64) | onechar('u', 8, 64) | onechar('b', 16, 64) | onechar('_', 24, 64) | onechar('t', 32, 64) | onechar('i', 40, 64) | onechar('l', 48, 64) | onechar('e', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('_', 0, 32) | onechar('o', 8, 32) | onechar('f', 16, 32) | onechar('f', 24, 32):
+                            switch (in[12]) {
+                                case onechar('s', 0, 8):
+                                    switch (in[13]) {
+                                        case onechar('e', 0, 8):
+                                            switch (in[14]) {
+                                                case onechar('t', 0, 8):
+                                                    return atok_t_relative_group::SUB_TILE_OFFSET;
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <relative_group>.").c_str());
+}
+
+inline gtok_t_relative_macro lex_node_t_relative_macro(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 14:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('r', 0, 64) | onechar('e', 8, 64) | onechar('l', 16, 64) | onechar('a', 24, 64) | onechar('t', 32, 64) | onechar('i', 40, 64) | onechar('v', 48, 64) | onechar('e', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('_', 0, 32) | onechar('g', 8, 32) | onechar('r', 16, 32) | onechar('o', 24, 32):
+                            switch (in[12]) {
+                                case onechar('u', 0, 8):
+                                    switch (in[13]) {
+                                        case onechar('p', 0, 8):
+                                            return gtok_t_relative_macro::RELATIVE_GROUP;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 15:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('r', 0, 64) | onechar('e', 8, 64) | onechar('f', 16, 64) | onechar('e', 24, 64) | onechar('r', 32, 64) | onechar('e', 40, 64) | onechar('n', 48, 64) | onechar('c', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('e', 0, 32) | onechar('_', 8, 32) | onechar('g', 16, 32) | onechar('r', 24, 32):
+                            switch (in[12]) {
+                                case onechar('o', 0, 8):
+                                    switch (in[13]) {
+                                        case onechar('u', 0, 8):
+                                            switch (in[14]) {
+                                                case onechar('p', 0, 8):
+                                                    return gtok_t_relative_macro::REFERENCE_GROUP;
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <relative_macro>.").c_str());
+}
+inline atok_t_relative_macro lex_attr_t_relative_macro(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 4:
+            switch (*((triehash_uu32*)&in[0])) {
+                case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
+                    return atok_t_relative_macro::NAME;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <relative_macro>.").c_str());
+}
+
+inline gtok_t_relative_macro_list lex_node_t_relative_macro_list(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
+    switch (len) {
+        case 14:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('r', 0, 64) | onechar('e', 8, 64) | onechar('l', 16, 64) | onechar('a', 24, 64) | onechar('t', 32, 64) | onechar('i', 40, 64) | onechar('v', 48, 64) | onechar('e', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('_', 0, 32) | onechar('m', 8, 32) | onechar('a', 16, 32) | onechar('c', 24, 32):
+                            switch (in[12]) {
+                                case onechar('r', 0, 8):
+                                    switch (in[13]) {
+                                        case onechar('o', 0, 8):
+                                            return gtok_t_relative_macro_list::RELATIVE_MACRO;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <relative_macro_list>.").c_str());
+}
+
 inline atok_t_set_global_signal lex_attr_t_set_global_signal(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
@@ -615,6 +877,39 @@ inline gtok_t_vpr_constraints lex_node_t_vpr_constraints(const char* in, const s
                                     switch (in[13]) {
                                         case onechar('t', 0, 8):
                                             return gtok_t_vpr_constraints::PARTITION_LIST;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 19:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('r', 0, 64) | onechar('e', 8, 64) | onechar('l', 16, 64) | onechar('a', 24, 64) | onechar('t', 32, 64) | onechar('i', 40, 64) | onechar('v', 48, 64) | onechar('e', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('_', 0, 64) | onechar('m', 8, 64) | onechar('a', 16, 64) | onechar('c', 24, 64) | onechar('r', 32, 64) | onechar('o', 40, 64) | onechar('_', 48, 64) | onechar('l', 56, 64):
+                            switch (in[16]) {
+                                case onechar('i', 0, 8):
+                                    switch (in[17]) {
+                                        case onechar('s', 0, 8):
+                                            switch (in[18]) {
+                                                case onechar('t', 0, 8):
+                                                    return gtok_t_vpr_constraints::RELATIVE_MACRO_LIST;
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
                                             break;
                                         default:
                                             break;
@@ -803,6 +1098,35 @@ inline void load_add_region_required_attributes(const pugi::xml_node& root, int*
     }
     std::bitset<7> test_astate = astate | std::bitset<7>(0b0000111);
     if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_add_region, report_error);
+}
+
+inline void load_relative_group_required_attributes(const pugi::xml_node& root, int* sub_tile_offset, int* x_offset, int* y_offset, const std::function<void(const char*)>* report_error) {
+    std::bitset<4> astate = 0;
+    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
+        atok_t_relative_group in = lex_attr_t_relative_group(attr.name(), report_error);
+        if (astate[(int)in] == 0)
+            astate[(int)in] = 1;
+        else
+            noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <relative_group>.").c_str());
+        switch (in) {
+            case atok_t_relative_group::LAYER_OFFSET:
+                /* Attribute layer_offset set after element init */
+                break;
+            case atok_t_relative_group::SUB_TILE_OFFSET:
+                *sub_tile_offset = load_int(attr.value(), report_error);
+                break;
+            case atok_t_relative_group::X_OFFSET:
+                *x_offset = load_int(attr.value(), report_error);
+                break;
+            case atok_t_relative_group::Y_OFFSET:
+                *y_offset = load_int(attr.value(), report_error);
+                break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+    std::bitset<4> test_astate = astate | std::bitset<4>(0b0001);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_relative_group, report_error);
 }
 
 inline void load_set_global_signal_required_attributes(const pugi::xml_node& root, enum_route_model_type* route_model, const std::function<void(const char*)>* report_error) {
@@ -1088,6 +1412,290 @@ inline void load_partition_list(const pugi::xml_node& root, T& out, Context& con
     if (state != 0) dfa_error("end of input", gstate_t_partition_list[state], gtok_lookup_t_partition_list, 1, report_error);
 }
 
+constexpr int NUM_T_REFERENCE_GROUP_STATES = 2;
+constexpr const int NUM_T_REFERENCE_GROUP_INPUTS = 1;
+constexpr int gstate_t_reference_group[NUM_T_REFERENCE_GROUP_STATES][NUM_T_REFERENCE_GROUP_INPUTS] = {
+    {0},
+    {0},
+};
+template<class T, typename Context>
+inline void load_reference_group(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
+
+    if (root.first_attribute())
+        noreturn_report(report_error, "Unexpected attribute in <reference_group>.");
+
+    // Preallocate arrays by counting child nodes (if any)
+    size_t add_atom_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            *offset_debug = node.offset_debug();
+            gtok_t_reference_group in = lex_node_t_reference_group(node.name(), report_error);
+            next = gstate_t_reference_group[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_reference_group[(int)in], gstate_t_reference_group[state], gtok_lookup_t_reference_group, 1, report_error);
+            state = next;
+            switch (in) {
+                case gtok_t_reference_group::ADD_ATOM:
+                    add_atom_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_reference_group_add_atom(context, add_atom_count);
+    }
+    int next, state = 1;
+    for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+        *offset_debug = node.offset_debug();
+        gtok_t_reference_group in = lex_node_t_reference_group(node.name(), report_error);
+        next = gstate_t_reference_group[state][(int)in];
+        if (next == -1)
+            dfa_error(gtok_lookup_t_reference_group[(int)in], gstate_t_reference_group[state], gtok_lookup_t_reference_group, 1, report_error);
+        state = next;
+        switch (in) {
+            case gtok_t_reference_group::ADD_ATOM: {
+                auto child_context = out.add_reference_group_add_atom(context);
+                load_add_atom(node, out, child_context, report_error, offset_debug);
+                out.finish_reference_group_add_atom(child_context);
+            } break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+    if (state != 0) dfa_error("end of input", gstate_t_reference_group[state], gtok_lookup_t_reference_group, 1, report_error);
+}
+
+constexpr int NUM_T_RELATIVE_GROUP_STATES = 2;
+constexpr const int NUM_T_RELATIVE_GROUP_INPUTS = 1;
+constexpr int gstate_t_relative_group[NUM_T_RELATIVE_GROUP_STATES][NUM_T_RELATIVE_GROUP_INPUTS] = {
+    {0},
+    {0},
+};
+template<class T, typename Context>
+inline void load_relative_group(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
+
+    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
+        atok_t_relative_group in = lex_attr_t_relative_group(attr.name(), report_error);
+        switch (in) {
+            case atok_t_relative_group::LAYER_OFFSET:
+                out.set_relative_group_layer_offset(load_int(attr.value(), report_error), context);
+                break;
+            case atok_t_relative_group::SUB_TILE_OFFSET:
+                /* Attribute sub_tile_offset is already set */
+                break;
+            case atok_t_relative_group::X_OFFSET:
+                /* Attribute x_offset is already set */
+                break;
+            case atok_t_relative_group::Y_OFFSET:
+                /* Attribute y_offset is already set */
+                break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+
+    // Preallocate arrays by counting child nodes (if any)
+    size_t add_atom_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            *offset_debug = node.offset_debug();
+            gtok_t_relative_group in = lex_node_t_relative_group(node.name(), report_error);
+            next = gstate_t_relative_group[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_relative_group[(int)in], gstate_t_relative_group[state], gtok_lookup_t_relative_group, 1, report_error);
+            state = next;
+            switch (in) {
+                case gtok_t_relative_group::ADD_ATOM:
+                    add_atom_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_relative_group_add_atom(context, add_atom_count);
+    }
+    int next, state = 1;
+    for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+        *offset_debug = node.offset_debug();
+        gtok_t_relative_group in = lex_node_t_relative_group(node.name(), report_error);
+        next = gstate_t_relative_group[state][(int)in];
+        if (next == -1)
+            dfa_error(gtok_lookup_t_relative_group[(int)in], gstate_t_relative_group[state], gtok_lookup_t_relative_group, 1, report_error);
+        state = next;
+        switch (in) {
+            case gtok_t_relative_group::ADD_ATOM: {
+                auto child_context = out.add_relative_group_add_atom(context);
+                load_add_atom(node, out, child_context, report_error, offset_debug);
+                out.finish_relative_group_add_atom(child_context);
+            } break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+    if (state != 0) dfa_error("end of input", gstate_t_relative_group[state], gtok_lookup_t_relative_group, 1, report_error);
+}
+
+constexpr int NUM_T_RELATIVE_MACRO_STATES = 3;
+constexpr const int NUM_T_RELATIVE_MACRO_INPUTS = 2;
+constexpr int gstate_t_relative_macro[NUM_T_RELATIVE_MACRO_STATES][NUM_T_RELATIVE_MACRO_INPUTS] = {
+    {-1, 0},
+    {-1, 0},
+    {1, -1},
+};
+template<class T, typename Context>
+inline void load_relative_macro(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
+
+    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
+        atok_t_relative_macro in = lex_attr_t_relative_macro(attr.name(), report_error);
+        switch (in) {
+            case atok_t_relative_macro::NAME:
+                out.set_relative_macro_name(attr.value(), context);
+                break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+
+    // Preallocate arrays by counting child nodes (if any)
+    size_t relative_group_count = 0;
+    {
+        int next, state = 2;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            *offset_debug = node.offset_debug();
+            gtok_t_relative_macro in = lex_node_t_relative_macro(node.name(), report_error);
+            next = gstate_t_relative_macro[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_relative_macro[(int)in], gstate_t_relative_macro[state], gtok_lookup_t_relative_macro, 2, report_error);
+            state = next;
+            switch (in) {
+                case gtok_t_relative_macro::REFERENCE_GROUP:
+                    break;
+                case gtok_t_relative_macro::RELATIVE_GROUP:
+                    relative_group_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_relative_macro_relative_group(context, relative_group_count);
+    }
+    int next, state = 2;
+    for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+        *offset_debug = node.offset_debug();
+        gtok_t_relative_macro in = lex_node_t_relative_macro(node.name(), report_error);
+        next = gstate_t_relative_macro[state][(int)in];
+        if (next == -1)
+            dfa_error(gtok_lookup_t_relative_macro[(int)in], gstate_t_relative_macro[state], gtok_lookup_t_relative_macro, 2, report_error);
+        state = next;
+        switch (in) {
+            case gtok_t_relative_macro::REFERENCE_GROUP: {
+                auto child_context = out.init_relative_macro_reference_group(context);
+                load_reference_group(node, out, child_context, report_error, offset_debug);
+                out.finish_relative_macro_reference_group(child_context);
+            } break;
+            case gtok_t_relative_macro::RELATIVE_GROUP: {
+                int relative_group_sub_tile_offset;
+                memset(&relative_group_sub_tile_offset, 0, sizeof(relative_group_sub_tile_offset));
+                int relative_group_x_offset;
+                memset(&relative_group_x_offset, 0, sizeof(relative_group_x_offset));
+                int relative_group_y_offset;
+                memset(&relative_group_y_offset, 0, sizeof(relative_group_y_offset));
+                load_relative_group_required_attributes(node, &relative_group_sub_tile_offset, &relative_group_x_offset, &relative_group_y_offset, report_error);
+                auto child_context = out.add_relative_macro_relative_group(context, relative_group_sub_tile_offset, relative_group_x_offset, relative_group_y_offset);
+                load_relative_group(node, out, child_context, report_error, offset_debug);
+                out.finish_relative_macro_relative_group(child_context);
+            } break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+    if (state != 0) dfa_error("end of input", gstate_t_relative_macro[state], gtok_lookup_t_relative_macro, 2, report_error);
+}
+
+constexpr int NUM_T_RELATIVE_MACRO_LIST_STATES = 2;
+constexpr const int NUM_T_RELATIVE_MACRO_LIST_INPUTS = 1;
+constexpr int gstate_t_relative_macro_list[NUM_T_RELATIVE_MACRO_LIST_STATES][NUM_T_RELATIVE_MACRO_LIST_INPUTS] = {
+    {0},
+    {0},
+};
+template<class T, typename Context>
+inline void load_relative_macro_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
+
+    if (root.first_attribute())
+        noreturn_report(report_error, "Unexpected attribute in <relative_macro_list>.");
+
+    // Preallocate arrays by counting child nodes (if any)
+    size_t relative_macro_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            *offset_debug = node.offset_debug();
+            gtok_t_relative_macro_list in = lex_node_t_relative_macro_list(node.name(), report_error);
+            next = gstate_t_relative_macro_list[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_relative_macro_list[(int)in], gstate_t_relative_macro_list[state], gtok_lookup_t_relative_macro_list, 1, report_error);
+            state = next;
+            switch (in) {
+                case gtok_t_relative_macro_list::RELATIVE_MACRO:
+                    relative_macro_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_relative_macro_list_relative_macro(context, relative_macro_count);
+    }
+    int next, state = 1;
+    for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+        *offset_debug = node.offset_debug();
+        gtok_t_relative_macro_list in = lex_node_t_relative_macro_list(node.name(), report_error);
+        next = gstate_t_relative_macro_list[state][(int)in];
+        if (next == -1)
+            dfa_error(gtok_lookup_t_relative_macro_list[(int)in], gstate_t_relative_macro_list[state], gtok_lookup_t_relative_macro_list, 1, report_error);
+        state = next;
+        switch (in) {
+            case gtok_t_relative_macro_list::RELATIVE_MACRO: {
+                auto child_context = out.add_relative_macro_list_relative_macro(context);
+                load_relative_macro(node, out, child_context, report_error, offset_debug);
+                out.finish_relative_macro_list_relative_macro(child_context);
+            } break;
+            default:
+                break; /* Not possible. */
+        }
+    }
+    if (state != 0) dfa_error("end of input", gstate_t_relative_macro_list[state], gtok_lookup_t_relative_macro_list, 1, report_error);
+}
+
 template<class T, typename Context>
 inline void load_set_global_signal(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
@@ -1202,7 +1810,7 @@ inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& co
         }
     }
 
-    std::bitset<2> gstate = 0;
+    std::bitset<3> gstate = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         *offset_debug = node.offset_debug();
         gtok_t_vpr_constraints in = lex_node_t_vpr_constraints(node.name(), report_error);
@@ -1216,6 +1824,11 @@ inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& co
                 load_partition_list(node, out, child_context, report_error, offset_debug);
                 out.finish_vpr_constraints_partition_list(child_context);
             } break;
+            case gtok_t_vpr_constraints::RELATIVE_MACRO_LIST: {
+                auto child_context = out.init_vpr_constraints_relative_macro_list(context);
+                load_relative_macro_list(node, out, child_context, report_error, offset_debug);
+                out.finish_vpr_constraints_relative_macro_list(child_context);
+            } break;
             case gtok_t_vpr_constraints::GLOBAL_ROUTE_CONSTRAINTS: {
                 auto child_context = out.init_vpr_constraints_global_route_constraints(context);
                 load_global_route_constraints(node, out, child_context, report_error, offset_debug);
@@ -1225,7 +1838,7 @@ inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& co
                 break; /* Not possible. */
         }
     }
-    std::bitset<2> test_gstate = gstate | std::bitset<2>(0b11);
+    std::bitset<3> test_gstate = gstate | std::bitset<3>(0b111);
     if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_vpr_constraints, report_error);
 }
 
@@ -1292,6 +1905,86 @@ inline void write_partition_list(T& in, std::ostream& os, Context& context) {
 }
 
 template<class T, typename Context>
+inline void write_reference_group(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_reference_group_add_atom(context); i < n; i++) {
+            auto child_context = in.get_reference_group_add_atom(i, context);
+            os << "<add_atom";
+            os << " is_regex=\"" << in.get_add_atom_is_regex(child_context) << "\"";
+            if ((bool)in.get_add_atom_logical_block_location(child_context))
+                os << " logical_block_location=\"" << in.get_add_atom_logical_block_location(child_context) << "\"";
+            os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
+inline void write_relative_group(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_relative_group_add_atom(context); i < n; i++) {
+            auto child_context = in.get_relative_group_add_atom(i, context);
+            os << "<add_atom";
+            os << " is_regex=\"" << in.get_add_atom_is_regex(child_context) << "\"";
+            if ((bool)in.get_add_atom_logical_block_location(child_context))
+                os << " logical_block_location=\"" << in.get_add_atom_logical_block_location(child_context) << "\"";
+            os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
+inline void write_relative_macro(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        auto child_context = in.get_relative_macro_reference_group(context);
+        os << "<reference_group>\n";
+        write_reference_group(in, os, child_context);
+        os << "</reference_group>\n";
+    }
+    {
+        for (size_t i = 0, n = in.num_relative_macro_relative_group(context); i < n; i++) {
+            auto child_context = in.get_relative_macro_relative_group(i, context);
+            os << "<relative_group";
+            if ((bool)in.get_relative_group_layer_offset(child_context))
+                os << " layer_offset=\"" << in.get_relative_group_layer_offset(child_context) << "\"";
+            os << " sub_tile_offset=\"" << in.get_relative_group_sub_tile_offset(child_context) << "\"";
+            os << " x_offset=\"" << in.get_relative_group_x_offset(child_context) << "\"";
+            os << " y_offset=\"" << in.get_relative_group_y_offset(child_context) << "\"";
+            os << ">";
+            write_relative_group(in, os, child_context);
+            os << "</relative_group>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
+inline void write_relative_macro_list(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_relative_macro_list_relative_macro(context); i < n; i++) {
+            auto child_context = in.get_relative_macro_list_relative_macro(i, context);
+            os << "<relative_macro";
+            os << " name=\"" << in.get_relative_macro_name(child_context) << "\"";
+            os << ">";
+            write_relative_macro(in, os, child_context);
+            os << "</relative_macro>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
 inline void write_global_route_constraints(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
@@ -1320,6 +2013,14 @@ inline void write_vpr_constraints(T& in, std::ostream& os, Context& context) {
             os << "<partition_list>\n";
             write_partition_list(in, os, child_context);
             os << "</partition_list>\n";
+        }
+    }
+    {
+        if (in.has_vpr_constraints_relative_macro_list(context)) {
+            auto child_context = in.get_vpr_constraints_relative_macro_list(context);
+            os << "<relative_macro_list>\n";
+            write_relative_macro_list(in, os, child_context);
+            os << "</relative_macro_list>\n";
         }
     }
     {
