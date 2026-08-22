@@ -126,7 +126,9 @@
  */
 
 #include <algorithm>
+#include <cstdint>
 #include <string_view>
+#include <unordered_map>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -150,6 +152,10 @@ struct t_wireconn_scratchpad {
     std::vector<t_wire_switchpoint> potential_src_wires;
     std::vector<t_wire_switchpoint> potential_dest_wires;
     std::vector<t_wire_switchpoint> scratch_wires;
+    /// Caches permutation formula results keyed by formula string and packed (W, t)
+    /// variable values. Formula evaluation is a pure function of these inputs, so
+    /// results can be reused across connections and switchblock locations.
+    std::unordered_map<std::string, std::unordered_map<uint64_t, int>> formula_cache;
 };
 
 /************ Function Declarations ************/
@@ -522,6 +528,21 @@ static void compute_wireconn_connections(e_directionality directionality,
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
 
+    // The permutation functions are the same for every connection.
+    // The caller has already checked that the permutation map has an entry for this side combination.
+    SBSideConnection side_conn(sb_conn.from_side, sb_conn.to_side);
+    auto perm_iter = sb.permutation_map.find(side_conn);
+    if (perm_iter == sb.permutation_map.end()) {
+        return;
+    }
+    const std::vector<std::string>& permutations_ref = perm_iter->second;
+
+    // Cached references to the forward and reverse connection vectors.
+    // The map keys are the same for every pushed edge, so hash them only once on first use.
+    // References into std::unordered_map stay valid when other elements are inserted.
+    std::vector<t_switchblock_edge>* fwd_conns = nullptr;
+    std::vector<t_switchblock_edge>* rev_conns = nullptr;
+
     for (size_t iconn = 0; iconn < size_t(num_conns); ++iconn) {
         // Select the from wire
         // We modulo by the src set size to wrap around if there are more connections that src wires
@@ -547,19 +568,25 @@ static void compute_wireconn_connections(e_directionality directionality,
         }
 
         // Evaluate permutation functions for the from_wire
-        SBSideConnection side_conn(sb_conn.from_side, sb_conn.to_side);
-        auto iter = sb.permutation_map.find(side_conn);
-        if (iter == sb.permutation_map.end()) {
-            continue;
-        }
-        const std::vector<std::string>& permutations_ref = iter->second;
         for (const std::string& perm : permutations_ref) {
-            /* Convert the symbolic permutation formula to a number */
-            vtr::t_formula_data& formula_data = scratchpad->formula_data;
-            formula_data.clear();
-            formula_data.set_var_value("W", dest_W);
-            formula_data.set_var_value("t", src_wire_ind);
-            int raw_dest_wire_ind = get_sb_formula_raw_result(scratchpad->formula_parser, perm.c_str(), formula_data);
+            // Convert the symbolic permutation formula to a number.
+            // The result depends only on the formula and the (W, t) variable values,
+            // which repeat across connections and switchblock locations. Cache it to
+            // avoid re-parsing the formula string for every connection.
+            uint64_t wt_key = (uint64_t(dest_W) << 32) | uint64_t(uint32_t(src_wire_ind));
+            std::unordered_map<uint64_t, int>& formula_results = scratchpad->formula_cache[perm];
+            auto result_iter = formula_results.find(wt_key);
+            int raw_dest_wire_ind;
+            if (result_iter != formula_results.end()) {
+                raw_dest_wire_ind = result_iter->second;
+            } else {
+                vtr::t_formula_data& formula_data = scratchpad->formula_data;
+                formula_data.clear();
+                formula_data.set_var_value("W", dest_W);
+                formula_data.set_var_value("t", src_wire_ind);
+                raw_dest_wire_ind = get_sb_formula_raw_result(scratchpad->formula_parser, perm, formula_data);
+                formula_results.emplace(wt_key, raw_dest_wire_ind);
+            }
             int dest_wire_ind = adjust_formula_result(raw_dest_wire_ind, src_W, dest_W, iconn);
 
             if (dest_wire_ind < 0) {
@@ -584,18 +611,24 @@ static void compute_wireconn_connections(e_directionality directionality,
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
             // and now, finally, add this switchblock connection to the switchblock connections map
-            (*sb_conns)[sb_conn].push_back(sb_edge);
+            if (fwd_conns == nullptr) {
+                fwd_conns = &(*sb_conns)[sb_conn];
+            }
+            fwd_conns->push_back(sb_edge);
 
             // If bidir architecture, implement the reverse connection as well
             if (BI_DIRECTIONAL == directionality) {
                 t_switchblock_edge sb_reverse_edge = sb_edge;
                 std::swap(sb_reverse_edge.from_wire, sb_reverse_edge.to_wire);
-                //Since we are implementing the reverse connection we have swapped from and to.
-                //
-                //Coverity flags this (false positive), so annotate coverity ignores it:
-                // coverity[swapped_arguments : Intentional]
-                SwitchblockLookupKey sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
-                (*sb_conns)[sb_conn_reverse].push_back(sb_reverse_edge);
+                if (rev_conns == nullptr) {
+                    //Since we are implementing the reverse connection we have swapped from and to.
+                    //
+                    //Coverity flags this (false positive), so annotate coverity ignores it:
+                    // coverity[swapped_arguments : Intentional]
+                    SwitchblockLookupKey sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
+                    rev_conns = &(*sb_conns)[sb_conn_reverse];
+                }
+                rev_conns->push_back(sb_reverse_edge);
             }
         }
     }
