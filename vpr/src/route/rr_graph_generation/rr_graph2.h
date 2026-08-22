@@ -67,7 +67,6 @@ void label_wire_muxes(const int chan_num,
                       const int max_chan_width,
                       const bool check_cb,
                       std::vector<int>& labels,
-                      int* num_wire_muxes_cb_restricted,
                       const std::vector<int>& seg_dimension_cuts);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,

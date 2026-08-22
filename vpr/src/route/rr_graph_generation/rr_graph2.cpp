@@ -463,11 +463,10 @@ void load_sblock_pattern_lookup(const int i,
                              cuts);
 
         // Figure out all the tracks on a side that are starting.
-        int dummy;
         enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
         label_wire_muxes(chan, seg,
                          seg_details, UNDEFINED, chan_len, start_dir, chan_width,
-                         false, wire_mux_on_track[side], &dummy,
+                         false, wire_mux_on_track[side],
                          cuts);
     }
 
@@ -585,11 +584,9 @@ void label_wire_muxes(const int chan_num,
                       const int max_chan_width,
                       const bool check_cb,
                       std::vector<int>& labels,
-                      int* num_wire_muxes_cb_restricted,
                       const std::vector<int>& seg_dimension_cuts) {
     // The caller-owned vector retains its capacity across calls
     labels.clear();
-    int num_labels_restricted = 0;
 
     // Find the tracks that are starting.
     for (int itrack = 0; itrack < max_chan_width; ++itrack) {
@@ -631,11 +628,8 @@ void label_wire_muxes(const int chan_num,
             if (!check_cb || seg_details[itrack].cb(0) == true) {
                 labels.push_back(itrack);
             }
-            num_labels_restricted += (seg_details[itrack].cb(0) == true) ? 1 : 0;
         }
     }
-
-    *num_wire_muxes_cb_restricted = num_labels_restricted;
 }
 
 static void label_incoming_wires(const int chan_num,

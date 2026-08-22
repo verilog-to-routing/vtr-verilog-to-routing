@@ -932,10 +932,9 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     *Fs_clipped = false;
 
     // get list of muxes to which we can connect
-    int dummy;
     const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(to_type);
     label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
-                     to_dir, max_chan_width, false, mux_labels, &dummy,
+                     to_dir, max_chan_width, false, mux_labels,
                      chan_interposer_cuts);
     int num_labels = (int)mux_labels.size();
 
