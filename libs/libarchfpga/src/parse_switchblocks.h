@@ -68,7 +68,7 @@ void check_switchblock(const t_switchblock_inf& sb, const t_arch* arch);
 
 /**
  * @brief Evaluates a switch block permutation formula and returns its integer result.
- 
+ *
  * @param formula_parser  Parser used to evaluate the formula.
  * @param formula         Permutation formula string from the architecture file.
  * @param mydata          Values for the variables referenced by the formula (e.g. W, t).
