@@ -108,7 +108,7 @@ static void draw_main_canvas(ezgl::renderer* g);
  * 
  * @return True to indicate a camera-only redraw; false to indicate a full redraw.
  */
-static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
+static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
 
 /**
  * @brief Generalized callback function to setup the UI when the stage changes.
@@ -345,7 +345,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
-static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g) {
+static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     // The current zoom level.
     double world_units_per_pixel = g->world_units_per_pixel();
@@ -526,7 +526,7 @@ void update_screen(ScreenUpdatePriority priority,
                 // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
                 // the full redraw can be replaced by a camera-only redraw.
                 if (rt == ezgl::renderer_type::rhi) {
-                    canvas->set_decide_reuse_geometry_callback(decide_reuse_geometry);
+                    canvas->set_decide_reuse_geometry_callback(draw_can_reuse_geometry);
                 }
 
                 canvas->set_renderer_type(rt);
