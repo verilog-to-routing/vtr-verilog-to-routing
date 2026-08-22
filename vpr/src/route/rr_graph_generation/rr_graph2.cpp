@@ -588,65 +588,55 @@ void label_wire_muxes(const int chan_num,
                       int* num_wire_muxes,
                       int* num_wire_muxes_cb_restricted,
                       const std::vector<int>& seg_dimension_cuts) {
-    // COUNT pass then a LOAD pass
-    int num_labels = 0;
+    // The caller-owned vector retains its capacity across calls
+    labels.clear();
     int num_labels_restricted = 0;
-    for (int pass = 0; pass < 2; ++pass) {
-        // Alloc the list on LOAD pass
-        if (pass > 0) {
-            labels.resize(num_labels);
-            std::ranges::fill(labels, 0);
-            num_labels = 0;
+
+    // Find the tracks that are starting.
+    for (int itrack = 0; itrack < max_chan_width; ++itrack) {
+        // Skip tracks that are undefined
+        if (seg_details[itrack].length() == 0) {
+            continue;
         }
 
-        // Find the tracks that are starting.
-        for (int itrack = 0; itrack < max_chan_width; ++itrack) {
-            int start = get_seg_start(seg_details, itrack, chan_num, seg_num, seg_dimension_cuts);
+        // Skip tracks going the wrong way
+        if (seg_details[itrack].direction() != dir) {
+            continue;
+        }
+
+        if (seg_type_index != UNDEFINED) {
+            // skip tracks that don't belong to the specified segment type
+            if (seg_details[itrack].index() != seg_type_index) {
+                continue;
+            }
+        }
+
+        int start = get_seg_start(seg_details, itrack, chan_num, seg_num, seg_dimension_cuts);
+
+        // Determine if we are a wire startpoint
+        bool is_endpoint;
+        if (Direction::DEC == seg_details[itrack].direction()) {
+            // The segment end is only needed for the DEC endpoint test
             int end = get_seg_end(seg_details, itrack, start, chan_num, max_len, seg_dimension_cuts);
+            is_endpoint = (seg_num == end);
+        } else {
+            is_endpoint = (seg_num == start);
+        }
 
-            // Skip tracks that are undefined
-            if (seg_details[itrack].length() == 0) {
-                continue;
+        if (is_endpoint) {
+            // not all wire endpoints can be driven by OPIN (depending on the <cb> pattern in the arch file)
+            // the check_cb is targeting this arch specification:
+            // if this function is called by get_unidir_opin_connections(),
+            // then we need to check if mux connections can be added to this type of wire,
+            // otherwise, this function should not consider <cb> specification.
+            if (!check_cb || seg_details[itrack].cb(0) == true) {
+                labels.push_back(itrack);
             }
-
-            // Skip tracks going the wrong way
-            if (seg_details[itrack].direction() != dir) {
-                continue;
-            }
-
-            if (seg_type_index != UNDEFINED) {
-                // skip tracks that don't belong to the specified segment type
-                if (seg_details[itrack].index() != seg_type_index) {
-                    continue;
-                }
-            }
-
-            // Determine if we are a wire startpoint
-            bool is_endpoint = (seg_num == start);
-            if (Direction::DEC == seg_details[itrack].direction()) {
-                is_endpoint = (seg_num == end);
-            }
-
-            // Count the labels and load if LOAD pass
-            if (is_endpoint) {
-                // not all wire endpoints can be driven by OPIN (depending on the <cb> pattern in the arch file)
-                // the check_cb is targeting this arch specification:
-                // if this function is called by get_unidir_opin_connections(),
-                // then we need to check if mux connections can be added to this type of wire,
-                // otherwise, this function should not consider <cb> specification.
-                if (!check_cb || seg_details[itrack].cb(0) == true) {
-                    if (pass > 0) {
-                        labels[num_labels] = itrack;
-                    }
-                    ++num_labels;
-                }
-                if (pass > 0)
-                    num_labels_restricted += (seg_details[itrack].cb(0) == true) ? 1 : 0;
-            }
+            num_labels_restricted += (seg_details[itrack].cb(0) == true) ? 1 : 0;
         }
     }
 
-    *num_wire_muxes = num_labels;
+    *num_wire_muxes = (int)labels.size();
     *num_wire_muxes_cb_restricted = num_labels_restricted;
 }
 
