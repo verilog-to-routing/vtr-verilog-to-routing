@@ -395,7 +395,6 @@ void load_sblock_pattern_lookup(const int i,
     std::array<std::vector<int>, NUM_2D_SIDES> incoming_wire_label;
     int num_incoming_wires[NUM_2D_SIDES];
     int num_ending_wires[NUM_2D_SIDES];
-    int num_wire_muxes[NUM_2D_SIDES];
 
     /* "Label" the wires around the switch block by connectivity. */
     for (e_side side : TOTAL_2D_SIDES) {
@@ -404,7 +403,6 @@ void load_sblock_pattern_lookup(const int i,
         incoming_wire_label[side].clear();
         num_incoming_wires[side] = 0;
         num_ending_wires[side] = 0;
-        num_wire_muxes[side] = 0;
 
         /* Skip the side and leave the zeroed value if the
          * channel segment doesn't exist. */
@@ -469,14 +467,16 @@ void load_sblock_pattern_lookup(const int i,
         enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
         label_wire_muxes(chan, seg,
                          seg_details, UNDEFINED, chan_len, start_dir, chan_width,
-                         false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy,
+                         false, wire_mux_on_track[side], &dummy,
                          cuts);
     }
 
     for (e_side to_side : TOTAL_2D_SIDES) {
         // Can't do anything if no muxes on this side.
-        if (num_wire_muxes[to_side] == 0)
+        if (wire_mux_on_track[to_side].empty())
             continue;
+
+        int num_wire_muxes_to_side = (int)wire_mux_on_track[to_side].size();
 
         // Figure out side rotations
         VTR_ASSERT((TOP == 0) && (RIGHT == 1) && (BOTTOM == 2) && (LEFT == 3));
@@ -509,8 +509,8 @@ void load_sblock_pattern_lookup(const int i,
                                                             to_side,
                                                             incoming_wire_label[side_cw][ichan],
                                                             switch_block_type,
-                                                            num_wire_muxes[to_side],
-                                                            num_wire_muxes[to_side]);
+                                                            num_wire_muxes_to_side,
+                                                            num_wire_muxes_to_side);
 
                     if (sblock_pattern[i][j][side_cw][to_side][itrack][0] == UN_SET) {
                         sblock_pattern[i][j][side_cw][to_side][itrack][0] = mux;
@@ -535,8 +535,8 @@ void load_sblock_pattern_lookup(const int i,
                                                             to_side,
                                                             incoming_wire_label[side_ccw][ichan],
                                                             switch_block_type,
-                                                            num_wire_muxes[to_side],
-                                                            num_wire_muxes[to_side]);
+                                                            num_wire_muxes_to_side,
+                                                            num_wire_muxes_to_side);
 
                     if (sblock_pattern[i][j][side_ccw][to_side][itrack][0] == UN_SET) {
                         sblock_pattern[i][j][side_ccw][to_side][itrack][0] = mux;
@@ -558,7 +558,7 @@ void load_sblock_pattern_lookup(const int i,
                         /* In the direct connect case, I know for sure the init mux is at the same track #
                          * as this ending wire, but still need to find the init mux label for Fs > 3 */
                         int mux = find_label_of_track(wire_mux_on_track[to_side],
-                                                      num_wire_muxes[to_side], itrack);
+                                                      num_wire_muxes_to_side, itrack);
                         sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
                     } else {
                         /* These are wire segments that pass through the switch block.
@@ -585,7 +585,6 @@ void label_wire_muxes(const int chan_num,
                       const int max_chan_width,
                       const bool check_cb,
                       std::vector<int>& labels,
-                      int* num_wire_muxes,
                       int* num_wire_muxes_cb_restricted,
                       const std::vector<int>& seg_dimension_cuts) {
     // The caller-owned vector retains its capacity across calls
@@ -636,7 +635,6 @@ void label_wire_muxes(const int chan_num,
         }
     }
 
-    *num_wire_muxes = (int)labels.size();
     *num_wire_muxes_cb_restricted = num_labels_restricted;
 }
 

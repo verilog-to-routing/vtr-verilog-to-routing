@@ -915,7 +915,6 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
-    int num_labels = 0;
     std::vector<int> mux_labels;
 
     // x, y coords for get_rr_node lookups
@@ -936,8 +935,9 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     int dummy;
     const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(to_type);
     label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
-                     to_dir, max_chan_width, false, mux_labels, &num_labels, &dummy,
+                     to_dir, max_chan_width, false, mux_labels, &dummy,
                      chan_interposer_cuts);
+    int num_labels = (int)mux_labels.size();
 
     /* Can't connect if no muxes. */
     if (num_labels < 1) {

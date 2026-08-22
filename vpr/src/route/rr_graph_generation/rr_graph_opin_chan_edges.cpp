@@ -399,18 +399,19 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     int dummy;
     std::vector<int> inc_muxes;
     std::vector<int> dec_muxes;
-    int num_inc_muxes, num_dec_muxes;
     // Determine the channel width instead of using max channels to not create hanging nodes
     int max_chan_width = (e_rr_type::CHANX == chan_type) ? nodes_per_chan.x_list[y] : nodes_per_chan.y_list[x];
 
     // Get interposer cuts along the channel.
     const std::vector<int>& chan_interposer_cuts = get_chan_interposer_cuts(chan_type);
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     Direction::INC, max_chan_width, true, inc_muxes, &num_inc_muxes, &dummy,
+                     Direction::INC, max_chan_width, true, inc_muxes, &dummy,
                      chan_interposer_cuts);
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     Direction::DEC, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy,
+                     Direction::DEC, max_chan_width, true, dec_muxes, &dummy,
                      chan_interposer_cuts);
+    int num_inc_muxes = (int)inc_muxes.size();
+    int num_dec_muxes = (int)dec_muxes.size();
 
     // Clip Fc to the number of muxes.
     if ((Fc / 2 > num_inc_muxes) || (Fc / 2 > num_dec_muxes)) {
