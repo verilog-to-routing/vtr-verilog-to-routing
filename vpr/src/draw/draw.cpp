@@ -1356,13 +1356,13 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     QPushButton* proceed_button = app->find_push_button("ProceedButton");
     QObject::connect(proceed_button, &QPushButton::clicked, [app]() {
-        press_proceed(/*unused*/ nullptr, app);
+        press_proceed(app, /*unused*/ nullptr);
     });
 
     // Connect press_zoom_fit function to the Zoom-fit button
     QPushButton* zoom_fit_button = app->find_push_button("ZoomFitButton");
     QObject::connect(zoom_fit_button, &QPushButton::clicked, [app]() {
-        press_zoom_fit(/*unused*/ nullptr, app);
+        press_zoom_fit(app, /*unused*/ nullptr);
     });
 
     // Connect Block Outline checkbox
