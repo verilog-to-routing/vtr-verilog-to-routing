@@ -336,7 +336,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 
     if (draw_state->auto_proceed) {
-        // Automatically exit the event loop, so user's don't need to manually click proceed
+        // Automatically exit the event loop, so users don't need to manually click proceed
 
         // Avoid trying to repeatedly exit (which would cause errors in GTK)
         draw_state->auto_proceed = false;

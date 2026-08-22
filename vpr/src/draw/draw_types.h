@@ -307,11 +307,11 @@ struct t_draw_state {
 
     ///@brief True if all block internals were drawn during the previous redraw.
     bool all_internals_drawn = false;
-    ///@brief Threshold zoom level (world/pixel) at which all block internals were just able to be drawn.
+    ///@brief Threshold zoom level (world units / pixel) below which all block internals can be drawn.
     double all_internals_drawn_threshold = 0;
     ///@brief True if only the CLBs (top-level blocks) were drawn during the previous redraw.
     bool only_clbs_drawn = false;
-    ///@brief Threshold zoom level (world/pixel) at which only the CLBs (top-level blocks) were just able to be drawn without the internals.
+    ///@brief Threshold zoom level (world units / pixel) above which only the CLBs (top-level blocks) are drawn (without any internals).
     double only_clbs_drawn_threshold = std::numeric_limits<double>::max();
 
     ///@brief Whether graphics are enabled
