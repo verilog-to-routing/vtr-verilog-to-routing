@@ -360,7 +360,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
         if (draw_state->show_rr
             && draw_state->enable_rr_decluttering
             && draw_state->rr_decluttered
-            && world_units_per_pixel <= MAX_WORLD_UNITS_PER_PIXEL)
+            && world_units_per_pixel <= DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL)
             return false;
 
         // Intra-block drawing adds more details as the view gets closer, but stays the same once all internals are already drawn.
@@ -384,7 +384,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
         if (draw_state->show_rr
             && draw_state->enable_rr_decluttering
             && !(draw_state->rr_decluttered)
-            && world_units_per_pixel > MAX_WORLD_UNITS_PER_PIXEL)
+            && world_units_per_pixel > DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL)
             return false;
 
         // Intra-block drawing drops details as the view gets farther away, but stays the same once only the CLBs are visible.
@@ -403,7 +403,7 @@ static bool decide_reuse_geometry(ezgl::view_change_reason reason, ezgl::rendere
             && draw_state->show_crit_path_delays)
             return false;
     } else {
-        VTR_ASSERT_MSG(false, "Invalid ezgl::view_change_reason provided. Performing a camera-only redraw.");
+        VTR_ASSERT_MSG(false, "Invalid ezgl::view_change_reason provided. Aborting.");
     }
     // Default to a camera-only redraw.
     return true;

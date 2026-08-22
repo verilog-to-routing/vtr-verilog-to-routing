@@ -112,7 +112,7 @@ const float WIRE_DRAWING_WIDTH = 0.5;
 // Helps determine when routing resources should be decluttered. Channel nodes in the same region are placed parallel to each other by one world unit.
 // However, they are always drawn as one pixel wide regardless of the zoom level. Therefore, we want to keep the world to pixel ratio below 1
 // so that the channel nodes do not blend into a cluster, and 0.8 is a good threshold for this reason.
-constexpr double MAX_WORLD_UNITS_PER_PIXEL = 0.8;
+constexpr double DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL = 0.8;
 
 /**
  * @brief Calculate the ratio between pixels and world units spanning the screen width.

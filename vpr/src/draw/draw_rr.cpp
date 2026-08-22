@@ -53,7 +53,7 @@ void draw_rr(ezgl::renderer* g) {
     double world_units_per_pixel = g->world_units_per_pixel();
     if (draw_state->enable_rr_decluttering) {
         // If world_units_per_pixel is higher than the threshold, we need to stop drawing RR nodes.
-        draw_state->rr_decluttered = world_units_per_pixel > MAX_WORLD_UNITS_PER_PIXEL;
+        draw_state->rr_decluttered = world_units_per_pixel > DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL;
     } else {
         // Currently this branch will never be called, since enable_rr_decluttering hasn't been wired to any UI button.
         draw_state->rr_decluttered = false;
