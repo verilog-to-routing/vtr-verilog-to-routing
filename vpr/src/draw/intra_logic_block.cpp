@@ -86,7 +86,17 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
 
 #ifndef NO_GRAPHICS
 
-static double calculate_blk_internal_declutter_level(double internal_area, ezgl::renderer* g);
+/**
+ * @brief Calculates the zoom threshold for a given block internal.
+ *
+ * Determines the world-units-per-pixel zoom level at which a block internal
+ * with the given world area reaches the minimum required screen coverage.
+ *
+ * @param blk_internal_world_area Area of the block internal in world coordinates.
+ * @param g Main renderer.
+ * @return Zoom threshold in world units per pixel.
+ */
+static double calculate_blk_internal_declutter_level(double blk_internal_world_area, ezgl::renderer* g);
 
 /**
  * @brief Checks whether a block internal is too small to draw at the current zoom level.
@@ -101,7 +111,7 @@ static bool blk_internal_too_small_to_draw(const ezgl::rectangle& pb_bbox, ezgl:
  * @brief Helper subroutine to recursively draw sub-blocks.
  *
  * This function traverses through the pb_graph which a netlist block can map to,
- * and draws each sub-block inside its parent block (any pb block owing children block(s) in the pb_graph,
+ * and draws each sub-block inside its parent block (any pb block owning children block(s) in the pb_graph,
  * not necessarily the root block). A level of detail check (to determine whether the current block
  * should be drawn or not) is also implemented. The parent block recursively calls this function on its children,
  * and uses the returned boolean to determine if its children were drawn inside itself, in which case
@@ -214,12 +224,19 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
         return;
     }
 
-    // Reset the flags and threshold zoom levels (world units / pixel) that are useful for the reuse geometry callback
-    // draw_can_reuse_geometry() to determine whether a camera-only redraw can be performed (on the RHI path).
-    // The flags are modified in draw_internal_pb().
+    // (RHI only) Reset the block internal drawing state flags and the min / max block internal area so that they can be correctly modified
+    // during the recursive calls of draw_internal_pb() that is called below.
+    //
+    // In brief, these variables collectively serve the callback function draw_can_reuse_geometry() on the RHI path:
+    // after draw_internal_pb() returns to draw_internal_draw_subblk() (the current function), these updated variables
+    // are used to calculate all_blk_internals_drawn_threshold and only_clbs_drawn_threshold (see below), and draw_can_reuse_geometry() will use them
+    // as criteria for geometry reuse.
     if (draw_state->renderer_type == "rhi") {
-        draw_state->no_blk_internal_hidden_yet = true;
+        // Both flags are assumed to be true at first, and can only remain true if nothing in draw_internal_pb() sets them to false.
+        // We have to set them explicitly here to avoid carrying stale data from the last full redraw.
+        draw_state->no_blk_internal_decluttered_yet = true;
         draw_state->no_blk_internal_drawn_yet = true;
+
         draw_state->min_blk_internal_area = std::numeric_limits<double>::max();
         draw_state->max_blk_internal_area = 0;
     }
@@ -267,25 +284,31 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
 
     if (draw_state->renderer_type == "rhi") {
-        // If all block internals were drawn after the recursive draw_internal_pb() calls,
-        // update the threshold zoom level (world units / pixel) below which all block internals can be drawn.
+        // (RHI only) If all block internals were drawn after the recursive draw_internal_pb() calls,
+        // use the recorded min block internal area to update the zoom threshold (world units / pixel)
+        // below which all block internals can be drawn.
         if (draw_state->no_blk_internal_decluttered_yet) {
-            draw_state->blk_internal_declutter_lower_threshold = calculate_blk_internal_declutter_level(draw_state->min_blk_internal_area, g);
+            draw_state->all_blk_internals_drawn_threshold = calculate_blk_internal_declutter_level(draw_state->min_blk_internal_area, g);
         }
 
-        // If all only the CLBs were drawn after the recursive draw_internal_pb() calls,
-        // update the threshold zoom level (world units / pixel) above which only the CLBs can be drawn.
+        // (RHI only) If only the CLBs were drawn after the recursive draw_internal_pb() calls,
+        // use the recorded max block internal area to update the zoom threshold (world units / pixel)
+        // above which only the CLBs can be drawn.
         else if (draw_state->no_blk_internal_drawn_yet) {
-            draw_state->blk_internal_declutter_upper_threshold = calculate_blk_internal_declutter_level(draw_state->max_blk_internal_area, g);
+            draw_state->only_clbs_drawn_threshold = calculate_blk_internal_declutter_level(draw_state->max_blk_internal_area, g);
         }
     }
 }
 
 static double calculate_blk_internal_declutter_level(double blk_internal_world_area, ezgl::renderer* g) {
+    // Calculate the target block internal screen area that reaches the minimum required screen coverage.
     double target_blk_internal_screen_area = g->get_visible_screen().area() * BLK_INTERNAL_MIN_SCREEN_COVERAGE;
 
+    // Calculate the world-area-per-area ratio.
     double target_world_area_per_screen_area = blk_internal_world_area / target_blk_internal_screen_area;
 
+    // The area ratio is two-dimensional. Use std::sqrt() to get the one-dimensional world-units-per-pixel ratio
+    // assuming that X and Y axes are scaled in the same way.
     double target_world_units_per_pixel = std::sqrt(target_world_area_per_screen_area);
 
     return target_world_units_per_pixel;
@@ -459,10 +482,8 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-    // Note: A few statements below are used on the RHI renderer path only. In breif, they collectively serve the callback function
-    // draw_can_reuse_geometry() by constantly updating several drawing states of block internals (i.e. Is any block internal decluttered?)
-    // After draw_internal_pb() returns to its initial caller draw_internal_draw_subblk(), that function will compile these drawing states
-    // and calculate the upper and lower decluttering threshold zoom levels, and draw_can_reuse_geometry() will use them to decide if geometry can be reused.
+    // Note: A few statements below are used on the RHI renderer path only.
+    // Refer to the function body of draw_internal_draw_subblk() (caller of draw_internal_pb()) for their purpose.
 
     // (RHI only) If the current pb is non-CLB and is at the top hierarchy (pb_type->depth == 1),
     // check and update the max block internal area.

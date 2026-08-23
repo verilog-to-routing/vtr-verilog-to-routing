@@ -308,12 +308,14 @@ struct t_draw_state {
     ///@brief True if only the CLBs (top-level blocks) were drawn in the previous full redraw.
     bool no_blk_internal_drawn_yet = false;
 
-    ///@brief Threshold zoom level (world units / pixel) below which all block internals could be drawn, for the previous full redraw only.
-    double blk_internal_declutter_lower_threshold = 0;
-    ///@brief Threshold zoom level (world units / pixel) above which only the CLBs (top-level blocks) could be drawn, for the previous full redraw only.
-    double blk_internal_declutter_upper_threshold = 0;
+    ///@brief Zoom threshold (world units / pixel) below which all block internals could be drawn, for the previous full redraw only.
+    double all_blk_internals_drawn_threshold = 0;
+    ///@brief Zoom threshold (world units / pixel) above which only the CLBs (top-level blocks) could be drawn, for the previous full redraw only.
+    double only_clbs_drawn_threshold = 0;
 
+    ///@brief Area of the smallest block internal recorded in the previous full redraw.
     double min_blk_internal_area = 0;
+    ///@brief Area of the largest block internal (non-CLB) recorded in the previous full redraw.
     double max_blk_internal_area = 0;
 
     ///@brief Whether graphics are enabled
