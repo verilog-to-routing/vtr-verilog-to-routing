@@ -39,7 +39,7 @@ static constexpr float FRACTION_TEXT_PADDING = 0.01;
 
 // The minimum permissible ratio of a drawing instance's area over screen area (both in the world coordinates),
 // below which the drawing instance should be decluttered (hidden). This value was tested and determined through experimentation.
-static constexpr double MIN_SCREEN_AREA_COVERAGE = 0.003;
+static constexpr double BLK_INTERNAL_MIN_SCREEN_COVERAGE = 0.003;
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -212,14 +212,14 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
         return;
     }
 
-    // Reset the flags and threshold zoom levels (world/pixel) that are useful for the reuse geometry callback
-    // decide_reuse_geometry() to determine whether a camera-only redraw can be performed (on the RHI path).
+    // Reset the flags and threshold zoom levels (world units / pixel) that are useful for the reuse geometry callback
+    // draw_can_reuse_geometry() to determine whether a camera-only redraw can be performed (on the RHI path).
     // The flags are modified in draw_internal_pb().
     if (draw_state->renderer_type == "rhi") {
         draw_state->all_internals_drawn = true;
         draw_state->only_clbs_drawn = true;
-        draw_state->all_internals_drawn_threshold = 0;
-        draw_state->only_clbs_drawn_threshold = std::numeric_limits<double>::max();
+        draw_state->min_blk_internal_area = std::numeric_limits<double>::max();
+        draw_state->max_blk_internal_area = 0;
     }
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -265,20 +265,23 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
 
     if (draw_state->renderer_type == "rhi") {
-        // Record the threshold zoom level (world/pixel) where all internals are drawn.
+        // Record the threshold zoom level (world units / pixel) where all internals are drawn.
         // Note: on the RHI path , zooming in from this level will not keep updating the record to a smaller value,
         // because camera-only redraws will be performed and the full redraw code for block internals (this function) will not be executed.
         if (draw_state->all_internals_drawn) {
-            draw_state->all_internals_drawn_threshold = g->world_units_per_pixel();
+            draw_state->all_internals_drawn_threshold =
+            std::sqrt(draw_state->min_blk_internal_area / (g->get_visible_screen().area() * BLK_INTERNAL_MIN_SCREEN_COVERAGE));
         }
 
-        // Record the threshold zoom level (world/pixel) where only the CLBs are drawn.
+        // Record the threshold zoom level (world units / pixel) where only the CLBs are drawn.
         // Note: on the RHI path, zooming out from this level will not keep updating the record to a greater value,
         // for the same reason explained a few lines above.
         if (draw_state->only_clbs_drawn) {
-            draw_state->only_clbs_drawn_threshold = g->world_units_per_pixel();
+            draw_state->only_clbs_drawn_threshold =
+            std::sqrt(draw_state->max_blk_internal_area / (g->get_visible_screen().area() * BLK_INTERNAL_MIN_SCREEN_COVERAGE));
         }
     }
+
 }
 #endif /* NO_GRAPHICS */
 
@@ -443,7 +446,7 @@ static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer*
     double screen_area = g->get_visible_world().area();
     // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the block
     // because it would be very tiny on the screen, and it would also get cluttered with other blocks.
-    if (pb_bbox_area / screen_area < MIN_SCREEN_AREA_COVERAGE) {
+    if (pb_bbox_area / screen_area < BLK_INTERNAL_MIN_SCREEN_COVERAGE) {
         return false;
     } else {
         return true;
@@ -464,14 +467,22 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
+    if (draw_state->renderer_type == "rhi" && pb_type->depth == 1 && abs_bbox.area() > draw_state->max_blk_internal_area) {
+        draw_state->max_blk_internal_area = abs_bbox.area();
+    }
+
     // If the block's area is too small relative to the screen, don't draw anything.
-    if (!large_enough_to_draw(abs_bbox, g)) {
+    if (pb_type->depth > 0 && !large_enough_to_draw(abs_bbox, g)) {
         // Since the current pb is not drawn, the all_internals_drawn flag
         // should be false (useful for the reuse geometry callback decide_reuse_geometry() used on the RHI path).
         if (draw_state->renderer_type == "rhi") {
             draw_state->all_internals_drawn = false;
         }
         return false;
+    }
+
+    if (draw_state->renderer_type == "rhi" && pb_type->depth >= 1 && abs_bbox.area() < draw_state->min_blk_internal_area) {
+        draw_state->min_blk_internal_area = abs_bbox.area();
     }
 
     // If the current pb has a depth deeper than 0 and passed the large_enough_to_draw() check, it means

@@ -217,19 +217,6 @@ struct t_draw_state {
     /// @brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
-    /**
-     * @brief Enables level of detail drawing for routing resources
-     * 
-     * When enabled, level of detail algorithms check if the current zoom level is too high to draw routing resources meaningfully.
-     * If so, the "rr_decluttered" flag is set and the drawing of all routing resources will be skipped,
-     * 
-     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
-     */
-    bool enable_rr_decluttering = true;
-
-    ///@brief Tells the program that the drawing of routing resources is toggled but still skipped because the zoom level is too high.
-    bool rr_decluttered = false;
-
     ///@brief Whether to draw nets or not
     bool show_nets = false;
 
@@ -275,6 +262,17 @@ struct t_draw_state {
 
     ///@brief Controls drawing of routing resources on screen.
     bool show_rr = false;
+    /**
+     * @brief Enables level of detail drawing for routing resources
+     * 
+     * When enabled, level of detail algorithms check if the current zoom level is too high to draw routing resources meaningfully.
+     * If so, the "rr_decluttered" flag is set and the drawing of all routing resources will be skipped,
+     * 
+     * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
+     */
+    bool enable_rr_decluttering = false;
+    ///@brief Tells the program that the drawing of routing resources is toggled but still skipped because the zoom level is too high.
+    bool rr_decluttered = false;
 
     bool draw_channel_nodes = false;
     bool draw_inter_cluster_pins = false;
@@ -313,6 +311,8 @@ struct t_draw_state {
     bool only_clbs_drawn = false;
     ///@brief Threshold zoom level (world units / pixel) above which only the CLBs (top-level blocks) are drawn (without any internals).
     double only_clbs_drawn_threshold = std::numeric_limits<double>::max();
+    double min_blk_internal_area = std::numeric_limits<double>::max();
+    double max_blk_internal_area = 0;
 
     ///@brief Whether graphics are enabled
     bool show_graphics = false;
