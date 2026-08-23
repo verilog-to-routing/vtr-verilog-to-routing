@@ -86,13 +86,13 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
 
 #ifndef NO_GRAPHICS
 /**
- * @brief Checks whether a block is large enough to draw at the current zoom level.
+ * @brief Checks whether a block internal is too small to draw at the current zoom level.
  *
  * @param pb_bbox Bounding box of the physical block in world coordinates.
  * @param g Main renderer.
- * @return True if the block covers at least the minimum screen-area ratio; otherwise false.
+ * @return True if the block's area does not satisfy the minimum screen-area ratio; otherwise false.
  */
-static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
+static bool internal_too_small_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
 
 /**
  * @brief Helper subroutine to recursively draw sub-blocks.
@@ -438,7 +438,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 }
 
 #ifndef NO_GRAPHICS
-static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
+static bool internal_too_small_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
     // Calculate the block bounding box's area in the world coordinates.
     double pb_bbox_area = pb_bbox.area();
     // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
@@ -446,11 +446,7 @@ static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer*
     double screen_area = g->get_visible_world().area();
     // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the block
     // because it would be very tiny on the screen, and it would also get cluttered with other blocks.
-    if (pb_bbox_area / screen_area < BLK_INTERNAL_MIN_SCREEN_COVERAGE) {
-        return false;
-    } else {
-        return true;
-    }
+    return pb_bbox_area / screen_area < BLK_INTERNAL_MIN_SCREEN_COVERAGE;
 }
 
 static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
@@ -472,23 +468,22 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     // If the block's area is too small relative to the screen, don't draw anything.
-    if (pb_type->depth > 0 && !large_enough_to_draw(abs_bbox, g)) {
+    if (pb_type->depth > 0 && internal_too_small_to_draw(abs_bbox, g)) {
         // Since the current pb is not drawn, the all_internals_drawn flag
-        // should be false (useful for the reuse geometry callback decide_reuse_geometry() used on the RHI path).
+        // should be false (useful on the RHI path).
         if (draw_state->renderer_type == "rhi") {
             draw_state->all_internals_drawn = false;
         }
         return false;
     }
 
-    if (draw_state->renderer_type == "rhi" && pb_type->depth >= 1 && abs_bbox.area() < draw_state->min_blk_internal_area) {
-        draw_state->min_blk_internal_area = abs_bbox.area();
-    }
-
-    // If the current pb has a depth deeper than 0 and passed the large_enough_to_draw() check, it means
-    // not only the CLBs (the top-level blocks) are drawn on screen (useful for the reuse geometry callback used on the RHI path).
-    if (draw_state->renderer_type == "rhi" && draw_state->only_clbs_drawn && pb_type->depth > 0) {
+    if (draw_state->renderer_type == "rhi" && pb_type->depth > 0) {
+        // If the current pb has a depth deeper than 0 and passed the large_enough_to_draw() check, it means
+        // not only the CLBs (the top-level blocks) are drawn on screen (useful on the RHI path).
         draw_state->only_clbs_drawn = false;
+        if (abs_bbox.area() < draw_state->min_blk_internal_area) {
+            draw_state->min_blk_internal_area = abs_bbox.area();
+        }
     }
 
     // First draw box.
