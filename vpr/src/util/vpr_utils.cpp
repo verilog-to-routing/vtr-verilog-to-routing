@@ -1341,7 +1341,8 @@ void free_pb_stats(t_pb* pb) {
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
     if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
-                  "Only a single port pin range specification allowed for direct connect (was: '%s')", std::string(src_string).c_str());
+                  "Only a single port pin range specification allowed for direct connect (was: '%.*s')",
+                  static_cast<int>(src_string.length()), src_string.data());
     }
 
     // parse out the pb_type and port name, possibly pin_indices
@@ -1361,10 +1362,10 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
             return {start_pin_index, end_pin_index, pb_type_name, port_name};
         } else {
             VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %s, name should be in the format "
+                "[LINE %d] Invalid pin - %.*s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
-                line, std::string(src_string).c_str());
+                line, static_cast<int>(src_string.length()), src_string.data());
             exit(1);
         }
     } else {
@@ -1397,27 +1398,27 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         if (parsed_ok) {
             if (end_pin_index < 0 || start_pin_index < 0) {
                 VTR_LOG_ERROR(
-                    "[LINE %d] Invalid pin - %s, the pin_index in "
+                    "[LINE %d] Invalid pin - %.*s, the pin_index in "
                     "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                    line, std::string(src_string).c_str());
+                    line, static_cast<int>(src_string.length()), src_string.data());
                 exit(1);
             }
 
             if (end_pin_index < start_pin_index) {
                 VTR_LOG_ERROR(
-                    "[LINE %d] Invalid from_pin - %s, the end_pin_index in "
+                    "[LINE %d] Invalid from_pin - %.*s, the end_pin_index in "
                     "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
-                    line, std::string(src_string).c_str());
+                    line, static_cast<int>(src_string.length()), src_string.data());
                 exit(1);
             }
 
             return {start_pin_index, end_pin_index, pb_type_name, port_name};
         } else {
             VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %s, name should be in the format "
+                "[LINE %d] Invalid pin - %.*s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
-                line, std::string(src_string).c_str());
+                line, static_cast<int>(src_string.length()), src_string.data());
             exit(1);
         }
     }
