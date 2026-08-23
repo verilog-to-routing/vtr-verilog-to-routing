@@ -1,7 +1,9 @@
 # MOSAIC
 ![Mosaic](mosaic.png)
 
-Mosaic is the third synthesis flow for VTR, it is currently under developlment. The name Mosaic refers to the use of templates for techmapping.
+Mosaic is the third synthesis flow for VTR, it is currently under developlment. The name Mosaic refers to the use of templates for layered techmapping and synthesis.
+
+
 
 ## 1. Building Mosaic
 The default VTR build includes mosaic. Sources live in `mosaic/src/`; `mosaic/wildebeest/` is a small object library pulled into that build.
