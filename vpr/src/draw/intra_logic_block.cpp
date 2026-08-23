@@ -229,14 +229,20 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     //
     // In brief, these variables collectively serve the callback function draw_can_reuse_geometry() on the RHI path:
     // after draw_internal_pb() returns to draw_internal_draw_subblk() (the current function), these updated variables
-    // are used to calculate all_blk_internals_drawn_threshold and only_clbs_drawn_threshold (see below), and draw_can_reuse_geometry() will use them
+    // will be used to calculate all_blk_internals_drawn_threshold and only_clbs_drawn_threshold, and draw_can_reuse_geometry() will use them
     // as criteria for geometry reuse.
     if (draw_state->renderer_type == "rhi") {
-        // Both flags are assumed to be true at first, and can only remain true if nothing in draw_internal_pb() sets them to false.
+        // Both flags are assumed to be true at first, and will only remain true if nothing in draw_internal_pb() sets them to false.
         // We have to set them explicitly here to avoid carrying stale data from the last full redraw.
         draw_state->no_blk_internal_decluttered_yet = true;
         draw_state->no_blk_internal_drawn_yet = true;
 
+        // The thresholds are set to their extremum because they will not be always modified
+        // (e.g. all_blk_internals_drawn_threshold cannot be determined when not all block internals were drawn in the previous full redraw).
+        draw_state->all_blk_internals_drawn_threshold = 0;
+        draw_state->only_clbs_drawn_threshold = std::numeric_limits<double>::max();
+
+        // The area values are set to their opposite extremum because comparison will be used to update their values.
         draw_state->min_blk_internal_area = std::numeric_limits<double>::max();
         draw_state->max_blk_internal_area = 0;
     }

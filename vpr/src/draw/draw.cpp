@@ -350,11 +350,23 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
     // The current zoom level.
     double world_units_per_pixel = g->world_units_per_pixel();
 
+    // Whether critical path delay labels were drawn in the previous full redraw.
+    // Calculated in advance to avoid code repetition.
+    bool crit_path_delay_labels_drawn = draw_state->show_crit_path
+                                        && draw_state->show_crit_path_flylines
+                                        && draw_state->show_crit_path_delays;
+
     // Pure panning does not change the level of detail, so the existing
     // geometry can be reused with only a camera-only redraw.
     if (reason == ezgl::view_change_reason::pan) {
         return true;
     } else if (reason == ezgl::view_change_reason::zoom_in || reason == ezgl::view_change_reason::pan_zoom_in) {
+        // Critical-path delay labels depend on screen-space placement, so
+        // their geometry must be rebuilt when zoom changes.
+        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
+        if (crit_path_delay_labels_drawn)
+            return false;
+
         // Zooming in past the RR decluttering threshold makes previously
         // decluttered (hidden) routing resources visible, so cached geometry is incomplete.
         if (draw_state->show_rr
@@ -370,15 +382,10 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
             && world_units_per_pixel < draw_state->only_clbs_drawn_threshold
             && !(draw_state->no_blk_internal_decluttered_yet))
             return false;
-
-        // Critical-path delay labels depend on screen-space placement, so
-        // their geometry must be rebuilt when zoom changes.
-        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
-        if (draw_state->show_crit_path
-            && draw_state->show_crit_path_flylines
-            && draw_state->show_crit_path_delays)
-            return false;
     } else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
+        if (crit_path_delay_labels_drawn)
+            return false;
+
         // Zooming out past the RR decluttering threshold removes normal RR
         // resources from the drawing, so reuse would leave stale geometry.
         if (draw_state->show_rr
@@ -393,14 +400,6 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
         if (draw_state->show_blk_internal
             && world_units_per_pixel > draw_state->all_blk_internals_drawn_threshold
             && !(draw_state->no_blk_internal_drawn_yet))
-            return false;
-
-        // Critical-path delay labels have a fixed screen-size offset from the flylines, so
-        // their geometry must be rebuilt when zoom changes.
-        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
-        if (draw_state->show_crit_path
-            && draw_state->show_crit_path_flylines
-            && draw_state->show_crit_path_delays)
             return false;
     } else {
         VTR_ASSERT_MSG(false, "Invalid ezgl::view_change_reason provided. Aborting...");
