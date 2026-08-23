@@ -444,24 +444,20 @@ constexpr size_t kMaxDynamicFillersPerDim = 60000;
 // --------------------------------------------------------------------------
 
 /**
- * @brief Extra wirelength weight for I/O-related AP nets.
+ * @brief Extra smooth-WL weight for two-pin nets between boundary-confined blocks.
  *
- * Kept neutral by default; direct I/O chains use the narrower weights below.
- */
-constexpr double kBoundaryNetCohesionWeight = 1.0;
-
-/**
- * @brief Extra smooth-WL weight for direct I/O-chain AP nets.
+ * The failure mode this targets is not generic boundary spreading; it is
+ * periphery pairs being split before APPack can form compact I/O clusters.
+ * Broad boundary-net weighting was measured to regress guard circuits, so the
+ * weight is confined to two-pin nets whose endpoints both sit on resources the
+ * architecture places only at the device edge. Boundary confinement is measured
+ * from the parsed per-dimension grid capacity, so the class is derived from the
+ * architecture rather than from primitive names (see net_cohesion.h).
  *
- * Some designs' failure mode is not generic boundary spreading; it is specific
- * pad/obuf/OCT/termination chains being split before APPack can form compact
- * I/O clusters. Prior broad boundary-net weighting regressed guard circuits, so
- * this stronger weight is applied only to two-pin nets whose endpoints are both
- * I/O-chain primitives on boundary-confined resources.
+ * Matches the io-pair spring strength; weaker settings were measured too weak
+ * to hold a pad periphery together against the density field.
  */
-// Matches the io-pair spring strength. Weaker settings were measured too weak
-// to hold a pad periphery together against the density field.
-constexpr double kIoChainNetCohesionWeight = 8.0;
+constexpr double kPeripheryPairCohesionWeight = 8.0;
 
 /**
  * @brief Long-chain pack-pattern affinity-spring weight for I/O-chain designs.
@@ -595,7 +591,7 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
     , device_grid_height_(device_grid.height())
     , device_grid_num_layers_(device_grid.get_num_layers())
     , ap_timing_tradeoff_(ap_timing_tradeoff)
-    , io_chain_net_cohesion_weight_(kIoChainNetCohesionWeight)
+    , periphery_pair_cohesion_weight_(kPeripheryPairCohesionWeight)
     , pack_pattern_cohesion_weight_(kPackPatternCohesionWeight)
     , io_pair_net_weight_(kIoPairNetWeight)
     , io_pair_attraction_weight_(kIoPairAttractionWeight) {
@@ -615,14 +611,11 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
         density_manager_->generate_mass_report();
 
     cohesion_ = std::make_unique<NetCohesion>(ap_netlist_,
-                                              atom_netlist,
-                                              models,
                                               *density_manager_,
                                               device_grid_width_,
                                               device_grid_height_,
                                               device_grid_num_layers_,
-                                              kBoundaryNetCohesionWeight,
-                                              io_chain_net_cohesion_weight_,
+                                              periphery_pair_cohesion_weight_,
                                               log_verbosity_);
 
     affinity_term_ = std::make_unique<AffinitySpringTerm>(ap_netlist_,
@@ -694,12 +687,12 @@ NonlinearNesterovPlacer::NonlinearNesterovPlacer(const APNetlist& ap_netlist,
         size_t affinity_blocks = 0;
         for (const AffinityGroup& group : affinity_term_->groups())
             affinity_blocks += group.blocks.size();
-        VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g io_chain_cohesion=%g.\n",
+        VTR_LOG("Nonlinear Nesterov adaptive policy: blocks=%zu pins/block=%.2f warm-start-floor=%zu timing=%g periphery_pair_cohesion=%g.\n",
                 moveable_blocks_.size(),
                 pins_per_moveable_block,
                 warmstart_iters_,
                 effective_timing_tradeoff_,
-                io_chain_net_cohesion_weight_);
+                periphery_pair_cohesion_weight_);
         VTR_LOG("Nonlinear Nesterov affinity springs: io_pairs=%zu weight=%g; pack_groups=%zu weight=%g; blocks=%zu.\n",
                 num_io_pair_affinity_groups_,
                 io_pair_attraction_weight_,
@@ -864,11 +857,11 @@ PartialPlacement NonlinearNesterovPlacer::run_global_optimization_(const std::ve
     PartialPlacement seed = initialize_placement_();
     if (log_verbosity_ >= 1)
         VTR_LOG("Nonlinear Nesterov phase time: warm start took %.2f seconds.\n", warmstart_timer.elapsed_sec());
-    cohesion_->update_boundary_net_flags(density_dimensions, seed);
+    cohesion_->update_periphery_pair_nets(density_dimensions);
     if (pack_pattern_cohesion_weight_ > 0.
-        && cohesion_->num_io_chain_nets() == 0) {
+        && cohesion_->num_periphery_pair_nets() == 0) {
         if (log_verbosity_ >= 1) {
-            VTR_LOG("Nonlinear Nesterov pack-pattern affinity disabled: no long direct I/O-chain nets were found.\n");
+            VTR_LOG("Nonlinear Nesterov pack-pattern affinity disabled: no two-pin periphery nets were found.\n");
         }
         pack_pattern_cohesion_weight_ = 0.;
         affinity_term_->set_pack_pattern_weight(0.);
@@ -1683,14 +1676,12 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
             weight = effective_timing_tradeoff_ * crit + (1.0 - effective_timing_tradeoff_);
         }
 
-        // Cohesion-flagged nets (boundary / io-chain / scarcity classes) get
-        // extra wirelength weight so their pin blocks are pulled tightly
-        // together; this counteracts the differentiable wirelength term's
-        // tendency to let long boundary-anchored and I/O-chain nets spread
-        // out, which otherwise fragments those chains across the AP-to-APPack
-        // handoff.
+        // Cohesion-flagged nets get extra wirelength weight so their pin
+        // blocks are pulled tightly together; this counteracts the
+        // differentiable wirelength term's tendency to let two-pin periphery
+        // nets spread out, which otherwise splits those pairs across the
+        // AP-to-APPack handoff.
         weight *= cohesion_->net_multiplier(net_id);
-        // Boost all direct output-driver↔outpad nets (not just seed-long I/O-chain ones).
         if (static_cast<size_t>(net_id) < io_pair_locality_nets_.size() && io_pair_locality_nets_[net_id]) {
             weight *= io_pair_net_weight_;
         }
@@ -1704,10 +1695,9 @@ void NonlinearNesterovPlacer::update_timing_net_weights_() {
 
     avg_net_weight_ = weighted_nets > 0 ? total_weight / weighted_nets : 1.0;
     if (log_verbosity_ >= 1 && weighted_nets > 0) {
-        VTR_LOG("Nonlinear Nesterov timing/cohesion net weights: tradeoff=%g boundary_cohesion=%g io_chain_cohesion=%g min=%g avg=%g max=%g nets=%zu\n",
+        VTR_LOG("Nonlinear Nesterov timing/cohesion net weights: tradeoff=%g periphery_pair_cohesion=%g min=%g avg=%g max=%g nets=%zu\n",
                 effective_timing_tradeoff_,
-                kBoundaryNetCohesionWeight,
-                io_chain_net_cohesion_weight_,
+                periphery_pair_cohesion_weight_,
                 min_weight,
                 avg_net_weight_,
                 max_weight,
@@ -2378,11 +2368,9 @@ void NonlinearNesterovPlacer::compute_preconditioner_(const std::vector<Primitiv
         // so the curvature estimate agrees with the objective it is preconditioning.
         double inflation = pin_density_inflation_[blk_id];
         double density_curvature = 0.;
-        double inflated_mass = 0.;
         for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
             double mass = block_mass.get_dim_val(dimensions[dim_idx]) * inflation;
             density_curvature += density_multipliers[dim_idx] * mass;
-            inflated_mass += mass;
         }
         // Floor, then soften toward uniform with an exponent < 1 to reduce
         // over-correction on high-curvature blocks (dense DSP/RAM in

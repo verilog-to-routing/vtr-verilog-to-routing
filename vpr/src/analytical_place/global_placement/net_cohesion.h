@@ -5,52 +5,43 @@
  * @date    August 2026
  * @brief   Structural net-cohesion detection for the nonlinear Nesterov placer.
  *
- * The smooth wirelength objective lets certain structurally-rigid nets spread:
- * boundary-anchored nets and direct I/O-chain nets (pad/obuf/OCT/termination
- * and delay-chain periphery). Legalization then scatters those structures, which downstream
+ * The smooth wirelength objective lets two-pin nets between periphery-confined
+ * blocks spread apart. Legalization then scatters those pairs, which downstream
  * packing and annealing cannot reliably repair. This module owns the detection
- * of those net classes and the extra wirelength-weight multipliers that keep
- * them coherent through the AP-to-APPack handoff; the placer applies the
- * multipliers inside its net-weight refresh.
+ * of that net class and the extra wirelength-weight multiplier that keeps its
+ * endpoints together through the AP-to-APPack handoff; the placer applies the
+ * multiplier inside its net-weight refresh.
+ *
+ * The class is derived entirely from the parsed architecture: a resource
+ * dimension is "boundary-confined" when the grid gives it capacity only near
+ * the device edge. No primitive, model, or block-type name is consulted, so the
+ * detection transfers to any architecture whose periphery resources are laid
+ * out that way, and simply selects nothing on architectures where they are not.
  */
 
-#include <string>
 #include <vector>
 #include "ap_netlist.h"
 #include "primitive_vector_fwd.h"
 #include "vtr_vector.h"
 
-class AtomNetlist;
 class FlatPlacementDensityManager;
-class LogicalModels;
-struct PartialPlacement;
 
 /**
- * @brief True for primitive-model names in the direct I/O-chain family
- *        (pads, buffers, OCT/termination, and I/O delay chains).
- */
-bool model_name_is_io_chain(const std::string& model_name);
-
-/**
- * @brief Detects and stores the placer's cohesion net classes.
+ * @brief Detects and stores the placer's cohesion net class.
  *
- * Lifecycle per placement run: construct, then call
+ * Lifecycle per placement run: construct, call
  * @ref identify_boundary_confined_dims once the density dimensions are known,
- * and @ref update_boundary_net_flags after the warm-start seed exists.
- * Afterwards @ref net_multiplier yields the combined cohesion weight factor
- * for each net.
+ * then @ref update_periphery_pair_nets. Afterwards @ref net_multiplier yields
+ * the cohesion weight factor for each net.
  */
 class NetCohesion {
   public:
     NetCohesion(const APNetlist& ap_netlist,
-                const AtomNetlist& atom_netlist,
-                const LogicalModels& models,
                 const FlatPlacementDensityManager& density_manager,
                 size_t device_grid_width,
                 size_t device_grid_height,
                 size_t device_grid_num_layers,
-                double boundary_net_weight,
-                double io_chain_net_weight,
+                double periphery_pair_weight,
                 int log_verbosity);
 
     /**
@@ -69,46 +60,42 @@ class NetCohesion {
                                  const std::vector<PrimitiveVectorDim>& dimensions) const;
 
     /**
-     * @brief Mark long boundary-related and direct I/O-chain nets for extra
-     *        wirelength cohesion.
+     * @brief Flag the two-pin nets whose endpoints both sit on boundary-confined
+     *        resources, and compute their degree damping.
      */
-    void update_boundary_net_flags(const std::vector<PrimitiveVectorDim>& dimensions,
-                                   const PartialPlacement& seed);
+    void update_periphery_pair_nets(const std::vector<PrimitiveVectorDim>& dimensions);
 
-    /// @brief Number of flagged direct I/O-chain nets (gates pack-pattern affinity).
-    size_t num_io_chain_nets() const { return num_io_chain_cohesion_nets_; }
+    /// @brief Number of flagged periphery-pair nets (also gates pack-pattern affinity).
+    size_t num_periphery_pair_nets() const { return num_periphery_pair_nets_; }
 
     /**
-     * @brief Combined cohesion weight multiplier for one net (1.0 when unflagged).
+     * @brief Cohesion weight multiplier for one net (1.0 when unflagged).
      */
     double net_multiplier(APNetId net_id) const {
-        double multiplier = 1.0;
-        if (static_cast<size_t>(net_id) < boundary_cohesion_nets_.size() && boundary_cohesion_nets_[net_id])
-            multiplier *= boundary_net_weight_;
-        if (static_cast<size_t>(net_id) < io_chain_cohesion_nets_.size() && io_chain_cohesion_nets_[net_id])
-            multiplier *= io_chain_net_weight_;
-        return multiplier;
+        if (static_cast<size_t>(net_id) >= periphery_pair_nets_.size() || !periphery_pair_nets_[net_id])
+            return 1.;
+        // Degree-normalized cohesion. A block on many two-pin periphery nets
+        // accumulates the multiplier once per net, so its total pull scales with
+        // its degree; a high-fanout periphery structure therefore drags far
+        // harder than the simple pad-to-pad pair this class is meant to hold
+        // together. Scaling by a reference degree bounds each block's total
+        // contribution, which damps high-degree blocks without having to
+        // identify them.
+        return 1. + (periphery_pair_weight_ - 1.) * periphery_pair_damping_[net_id];
     }
 
   private:
-    /**
-     * @brief Return true if all atom primitives represented by the AP block are I/O-chain primitives.
-     */
-    bool block_is_io_chain_block_(APBlockId blk_id) const;
-
     const APNetlist& ap_netlist_;
-    const AtomNetlist& atom_netlist_;
-    const LogicalModels& models_;
     const FlatPlacementDensityManager& density_manager_;
     size_t device_grid_width_ = 0;
     size_t device_grid_height_ = 0;
     size_t device_grid_num_layers_ = 0;
-    double boundary_net_weight_ = 1.0;
-    double io_chain_net_weight_ = 2.0;
+    double periphery_pair_weight_ = 1.0;
     int log_verbosity_ = 0;
 
     std::vector<bool> boundary_confined_dims_;
-    vtr::vector<APNetId, bool> boundary_cohesion_nets_;
-    vtr::vector<APNetId, bool> io_chain_cohesion_nets_;
-    size_t num_io_chain_cohesion_nets_ = 0;
+    vtr::vector<APNetId, bool> periphery_pair_nets_;
+    /// @brief Per-net degree damping in [0,1]; 1 keeps the full weight.
+    vtr::vector<APNetId, double> periphery_pair_damping_;
+    size_t num_periphery_pair_nets_ = 0;
 };

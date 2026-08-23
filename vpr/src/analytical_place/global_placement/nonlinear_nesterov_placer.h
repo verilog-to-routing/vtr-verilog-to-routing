@@ -421,7 +421,7 @@ class NonlinearNesterovPlacer : public GlobalPlacer {
     size_t device_grid_num_layers_ = 0;          ///< Number of device layers.
     float ap_timing_tradeoff_ = 0.f;             ///< User timing tradeoff value.
     float effective_timing_tradeoff_ = 0.f;      ///< Timing tradeoff after design-size adaptation.
-    double io_chain_net_cohesion_weight_ = 2.;   ///< Weight multiplier for direct I/O-chain AP nets.
+    double periphery_pair_cohesion_weight_ = 2.; ///< Weight multiplier for two-pin nets between boundary-confined blocks.
     double pack_pattern_cohesion_weight_ = 0.02; ///< I/O-gated pack-pattern affinity-spring weight (zeroed at runtime when no long direct I/O-chain nets are found).
     double io_pair_net_weight_ = 8.;             ///< Extra smooth-WL multiplier for detected output-driver↔outpad nets.
     double io_pair_attraction_weight_ = 8.;      ///< I/O pair spring strength (legacy per-block constant; kernel uses 2x for n=2 pack math).

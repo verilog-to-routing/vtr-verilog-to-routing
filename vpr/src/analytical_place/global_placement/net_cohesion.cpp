@@ -6,14 +6,8 @@
 #include "net_cohesion.h"
 
 #include <algorithm>
-#include <cctype>
-#include <cmath>
 
-#include "atom_netlist.h"
 #include "flat_placement_density_manager.h"
-#include "logic_types.h"
-#include "partial_placement.h"
-#include "vtr_assert.h"
 #include "vtr_log.h"
 
 namespace {
@@ -33,75 +27,26 @@ constexpr size_t kBoundaryConfinedBandTiles = 2;
  */
 constexpr double kBoundaryConfinedCapacityFraction = 0.95;
 
-/**
- * @brief Minimum warm-start HPWL, as a fraction of device span, for applying
- *        boundary-net cohesion.
- */
-constexpr double kBoundaryNetCohesionMinSeedHpwlFraction = 0.25;
-
 constexpr double kEpsilon = 1e-9;
-
-std::string lower_copy(const std::string& value) {
-    std::string lowered = value;
-    for (char& c : lowered)
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return lowered;
-}
 
 } // namespace
 
-bool model_name_is_io_chain(const std::string& model_name) {
-    if (model_name == LogicalModels::MODEL_INPUT || model_name == LogicalModels::MODEL_OUTPUT)
-        return true;
-
-    // Pad-periphery family: io_config -> delay_chain -> ddio/obuf -> pad, plus
-    // on-chip termination. "io" is matched only as a delimited fragment: a bare
-    // find("io") also matches "addition_fp_16" and "no_compensation" in the
-    // shipped architectures, and would match any future "division" primitive,
-    // silently giving their two-pin nets the periphery weight multiplier.
-    static constexpr const char* kPeripheryFragments[] = {
-        "ddio", // double-data-rate I/O registers
-        "io_",  // io_config, io_ibuf, io_obuf
-        "_io",  // trailing form
-        "ibuf",
-        "obuf",
-        "pad",
-        "oct",         // on-chip termination, abbreviated
-        "termination", // ... and spelled out
-        "delay_chain", // separating these produced the long pad-to-pad hops
-                       // this cohesion class exists to avoid
-    };
-
-    std::string lowered = lower_copy(model_name);
-    for (const char* fragment : kPeripheryFragments) {
-        if (lowered.find(fragment) != std::string::npos)
-            return true;
-    }
-    return false;
-}
-
 NetCohesion::NetCohesion(const APNetlist& ap_netlist,
-                         const AtomNetlist& atom_netlist,
-                         const LogicalModels& models,
                          const FlatPlacementDensityManager& density_manager,
                          size_t device_grid_width,
                          size_t device_grid_height,
                          size_t device_grid_num_layers,
-                         double boundary_net_weight,
-                         double io_chain_net_weight,
+                         double periphery_pair_weight,
                          int log_verbosity)
     : ap_netlist_(ap_netlist)
-    , atom_netlist_(atom_netlist)
-    , models_(models)
     , density_manager_(density_manager)
     , device_grid_width_(device_grid_width)
     , device_grid_height_(device_grid_height)
     , device_grid_num_layers_(device_grid_num_layers)
-    , boundary_net_weight_(boundary_net_weight)
-    , io_chain_net_weight_(io_chain_net_weight)
+    , periphery_pair_weight_(periphery_pair_weight)
     , log_verbosity_(log_verbosity)
-    , boundary_cohesion_nets_(ap_netlist.nets().size(), false)
-    , io_chain_cohesion_nets_(ap_netlist.nets().size(), false) {}
+    , periphery_pair_nets_(ap_netlist.nets().size(), false)
+    , periphery_pair_damping_(ap_netlist.nets().size(), 1.) {}
 
 void NetCohesion::identify_boundary_confined_dims(const std::vector<PrimitiveVectorDim>& dimensions) {
     std::vector<bool> boundary_confined(dimensions.size(), false);
@@ -114,6 +59,28 @@ void NetCohesion::identify_boundary_confined_dims(const std::vector<PrimitiveVec
     size_t width = device_grid_width_;
     size_t height = device_grid_height_;
     size_t num_layers = device_grid_num_layers_;
+
+    // On a device small enough that the edge band covers nearly the whole grid,
+    // the capacity test cannot separate a periphery-confined resource from an
+    // evenly distributed one -- every resource would look boundary-confined.
+    // Detect that from the grid geometry and classify nothing rather than
+    // flagging everything.
+    size_t interior_width = width > 2 * kBoundaryConfinedBandTiles ? width - 2 * kBoundaryConfinedBandTiles : 0;
+    size_t interior_height = height > 2 * kBoundaryConfinedBandTiles ? height - 2 * kBoundaryConfinedBandTiles : 0;
+    double interior_fraction = width * height > 0
+                                   ? static_cast<double>(interior_width * interior_height)
+                                         / static_cast<double>(width * height)
+                                   : 0.;
+    if (interior_fraction <= 1. - kBoundaryConfinedCapacityFraction) {
+        if (log_verbosity_ >= 1) {
+            VTR_LOG("Nonlinear Nesterov boundary-confined resource dims: 0 / %zu (device %zux%zu too small to discriminate).\n",
+                    dimensions.size(),
+                    width,
+                    height);
+        }
+        boundary_confined_dims_ = std::move(boundary_confined);
+        return;
+    }
 
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
         double target_total = 0.;
@@ -162,7 +129,7 @@ bool NetCohesion::block_has_boundary_mass(APBlockId blk_id,
     if (boundary_confined_dims_.size() != dimensions.size())
         return false;
 
-    PrimitiveVector block_mass = density_manager_.mass_calculator().get_block_mass(blk_id);
+    const PrimitiveVector& block_mass = density_manager_.mass_calculator().get_block_mass(blk_id);
     for (size_t dim_idx = 0; dim_idx < dimensions.size(); dim_idx++) {
         double mass = block_mass.get_dim_val(dimensions[dim_idx]);
         if (mass != 0. && boundary_confined_dims_[dim_idx])
@@ -171,102 +138,70 @@ bool NetCohesion::block_has_boundary_mass(APBlockId blk_id,
     return false;
 }
 
-void NetCohesion::update_boundary_net_flags(const std::vector<PrimitiveVectorDim>& dimensions,
-                                            const PartialPlacement& seed) {
-    boundary_cohesion_nets_.resize(ap_netlist_.nets().size(), false);
-    std::fill(boundary_cohesion_nets_.begin(), boundary_cohesion_nets_.end(), false);
-    io_chain_cohesion_nets_.resize(ap_netlist_.nets().size(), false);
-    std::fill(io_chain_cohesion_nets_.begin(), io_chain_cohesion_nets_.end(), false);
-    num_io_chain_cohesion_nets_ = 0;
+void NetCohesion::update_periphery_pair_nets(const std::vector<PrimitiveVectorDim>& dimensions) {
+    periphery_pair_nets_.resize(ap_netlist_.nets().size(), false);
+    periphery_pair_damping_.resize(ap_netlist_.nets().size(), 1.);
+    std::fill(periphery_pair_nets_.begin(), periphery_pair_nets_.end(), false);
+    std::fill(periphery_pair_damping_.begin(), periphery_pair_damping_.end(), 1.);
+    num_periphery_pair_nets_ = 0;
 
+    // Boundary mass is a property of the block, not of the net, so evaluate it
+    // once per block rather than once per pin occurrence.
+    vtr::vector<APBlockId, bool> has_boundary_mass(ap_netlist_.blocks().size(), false);
     size_t boundary_blocks = 0;
-    size_t io_chain_blocks = 0;
     for (APBlockId blk_id : ap_netlist_.blocks()) {
-        bool has_boundary_mass = block_has_boundary_mass(blk_id, dimensions);
-        if (has_boundary_mass)
+        has_boundary_mass[blk_id] = block_has_boundary_mass(blk_id, dimensions);
+        if (has_boundary_mass[blk_id])
             boundary_blocks++;
-        if (has_boundary_mass && block_is_io_chain_block_(blk_id))
-            io_chain_blocks++;
     }
 
-    size_t boundary_nets = 0;
-    size_t io_chain_nets = 0;
+    // Block degree, counting only pins attached to a net.
+    vtr::vector<APBlockId, size_t> block_degree(ap_netlist_.blocks().size(), 0);
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        for (APPinId pin_id : ap_netlist_.block_pins(blk_id)) {
+            if (ap_netlist_.pin_net(pin_id).is_valid())
+                block_degree[blk_id]++;
+        }
+    }
+
+    std::vector<size_t> selected_degrees;
+    std::vector<APNetId> selected_ids;
     for (APNetId net_id : ap_netlist_.nets()) {
         if (ap_netlist_.net_is_ignored(net_id))
             continue;
         if (ap_netlist_.net_pins(net_id).size() != 2)
             continue;
 
-        bool has_boundary_endpoint = false;
-        APBlockId first_blk_id = APBlockId::INVALID();
-        APBlockId second_blk_id = APBlockId::INVALID();
-        for (APPinId pin_id : ap_netlist_.net_pins(net_id)) {
-            APBlockId blk_id = ap_netlist_.pin_block(pin_id);
-            if (!first_blk_id.is_valid())
-                first_blk_id = blk_id;
-            else
-                second_blk_id = blk_id;
-            has_boundary_endpoint = has_boundary_endpoint || block_has_boundary_mass(blk_id, dimensions);
-        }
-        if (!has_boundary_endpoint)
+        APBlockId first_blk_id = ap_netlist_.pin_block(*ap_netlist_.net_pins(net_id).begin());
+        APBlockId second_blk_id = ap_netlist_.pin_block(*(ap_netlist_.net_pins(net_id).begin() + 1));
+        if (!has_boundary_mass[first_blk_id] || !has_boundary_mass[second_blk_id])
             continue;
 
-        // Direct I/O-chain nets are flagged regardless of their seed length.
-        // The periphery tearing that motivates this weight happens during the
-        // epochs, when partial legalization scatters scarce I/O resources --
-        // not in the warm-start seed -- so a seed-length gate misses exactly
-        // the nets that need cohesion, and extra weight on an already-short
-        // net only keeps it short. The seed-length gate below is retained for
-        // the generic boundary-cohesion class.
-        if (block_has_boundary_mass(first_blk_id, dimensions)
-            && block_has_boundary_mass(second_blk_id, dimensions)
-            && block_is_io_chain_block_(first_blk_id)
-            && block_is_io_chain_block_(second_blk_id)) {
-            io_chain_cohesion_nets_[net_id] = true;
-            io_chain_nets++;
-        }
-
-        double seed_hpwl = std::abs(seed.block_x_locs[first_blk_id] - seed.block_x_locs[second_blk_id])
-                           + std::abs(seed.block_y_locs[first_blk_id] - seed.block_y_locs[second_blk_id]);
-        double device_span = std::max<double>(device_grid_width_, device_grid_height_);
-        if (seed_hpwl < kBoundaryNetCohesionMinSeedHpwlFraction * device_span)
-            continue;
-
-        boundary_cohesion_nets_[net_id] = true;
-        boundary_nets++;
+        // Flagged regardless of how long the net is in the warm-start seed. The
+        // periphery tearing this weight targets happens during the epochs, when
+        // partial legalization scatters scarce periphery resources, so a
+        // seed-length gate misses exactly the nets that need cohesion.
+        periphery_pair_nets_[net_id] = true;
+        selected_degrees.push_back(std::max(block_degree[first_blk_id], block_degree[second_blk_id]));
+        selected_ids.push_back(net_id);
     }
-    num_io_chain_cohesion_nets_ = io_chain_nets;
+    num_periphery_pair_nets_ = selected_ids.size();
+
+    // The reference degree is the median over the selected nets, so the damping
+    // is derived per design rather than tuned to any one architecture.
+    if (!selected_degrees.empty()) {
+        std::vector<size_t> sorted = selected_degrees;
+        std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
+        double ref = std::max<double>(1., static_cast<double>(sorted[sorted.size() / 2]));
+        for (size_t i = 0; i < selected_ids.size(); i++)
+            periphery_pair_damping_[selected_ids[i]] =
+                std::min(1., ref / std::max<double>(1., static_cast<double>(selected_degrees[i])));
+    }
 
     if (log_verbosity_ >= 1) {
-        VTR_LOG("Nonlinear Nesterov boundary-net cohesion: %zu boundary-mass blocks, %zu long two-pin boundary-related nets, weight=%g, min_seed_hpwl_frac=%g.\n",
+        VTR_LOG("Nonlinear Nesterov periphery-pair cohesion: %zu boundary-mass blocks, %zu two-pin periphery nets, weight=%g.\n",
                 boundary_blocks,
-                boundary_nets,
-                boundary_net_weight_,
-                kBoundaryNetCohesionMinSeedHpwlFraction);
-        VTR_LOG("Nonlinear Nesterov I/O-chain cohesion: %zu boundary I/O-chain blocks, %zu long direct I/O-chain nets, weight=%g.\n",
-                io_chain_blocks,
-                io_chain_nets,
-                io_chain_net_weight_);
+                num_periphery_pair_nets_,
+                periphery_pair_weight_);
     }
-}
-
-bool NetCohesion::block_is_io_chain_block_(APBlockId blk_id) const {
-    bool saw_atom = false;
-
-    for (APPinId pin_id : ap_netlist_.block_pins(blk_id)) {
-        AtomPinId atom_pin_id = ap_netlist_.pin_atom_pin(pin_id);
-        if (!atom_pin_id.is_valid())
-            continue;
-
-        AtomBlockId atom_blk_id = atom_netlist_.pin_block(atom_pin_id);
-        if (!atom_blk_id.is_valid())
-            continue;
-
-        saw_atom = true;
-        LogicalModelId model_id = atom_netlist_.block_model(atom_blk_id);
-        if (!model_name_is_io_chain(models_.model_name(model_id)))
-            return false;
-    }
-
-    return saw_atom;
 }
