@@ -267,13 +267,15 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
 
     if (draw_state->renderer_type == "rhi") {
-        // Update the threshold zoom level (world units / pixel) below which all block internals can be drawn.
-        if (draw_state->all_internals_drawn) {
+        // If all block internals were drawn after the recursive draw_internal_pb() calls,
+        // update the threshold zoom level (world units / pixel) below which all block internals can be drawn.
+        if (draw_state->no_blk_internal_decluttered_yet) {
             draw_state->blk_internal_declutter_lower_threshold = calculate_blk_internal_declutter_level(draw_state->min_blk_internal_area, g);
         }
 
-        // Update the threshold zoom level (world units / pixel) above which only the CLBs can be drawn.
-        if (draw_state->only_clbs_drawn) {
+        // If all only the CLBs were drawn after the recursive draw_internal_pb() calls,
+        // update the threshold zoom level (world units / pixel) above which only the CLBs can be drawn.
+        else if (draw_state->no_blk_internal_drawn_yet) {
             draw_state->blk_internal_declutter_upper_threshold = calculate_blk_internal_declutter_level(draw_state->max_blk_internal_area, g);
         }
     }
@@ -457,24 +459,36 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
+    // Note: A few statements below are used on the RHI renderer path only. In breif, they collectively serve the callback function
+    // draw_can_reuse_geometry() by constantly updating several drawing states of block internals (i.e. Is any block internal decluttered?)
+    // After draw_internal_pb() returns to its initial caller draw_internal_draw_subblk(), that function will compile these drawing states
+    // and calculate the upper and lower decluttering threshold zoom levels, and draw_can_reuse_geometry() will use them to decide if geometry can be reused.
+
+    // (RHI only) If the current pb is non-CLB and is at the top hierarchy (pb_type->depth == 1),
+    // check and update the max block internal area.
     if (draw_state->renderer_type == "rhi" && pb_type->depth == 1 && abs_bbox.area() > draw_state->max_blk_internal_area) {
         draw_state->max_blk_internal_area = abs_bbox.area();
     }
 
-    // If the block's area is too small relative to the screen, don't draw anything.
+    // If the area is too small relative to the screen, don't draw anything.
+    // CLBs at pb_type->depth == 0 are exempted from this check.
     if (pb_type->depth > 0 && blk_internal_too_small_to_draw(abs_bbox, g)) {
-        // Since the current pb is not drawn, the all_internals_drawn flag
-        // should be false (useful on the RHI path).
+        // (RHI only) Since the current non-CLB pb is decluttered, the no_blk_internal_decluttered_yet flag should become false.
         if (draw_state->renderer_type == "rhi") {
-            draw_state->all_internals_drawn = false;
+            draw_state->no_blk_internal_decluttered_yet = false;
         }
+        // Note that this return statement is not RHI only.
         return false;
     }
 
+    // (RHI only) If the current pb is non-CLB (pb_type->depth > 0) and it passed the blk_internal_too_small_to_draw() check,
+    // the no_blk_internal_drawn_yet flag should become false.
     if (draw_state->renderer_type == "rhi" && pb_type->depth > 0) {
-        // If the current pb has a depth deeper than 0 and passed the large_enough_to_draw() check, it means
-        // the flag only_clbs_drawn is no longer true (useful on the RHI path).
-        draw_state->only_clbs_drawn = false;
+        draw_state->no_blk_internal_drawn_yet = false;
+
+        // (RHI only) Check and update the min block internal area. Since a block internal at a higher hierarchy may have
+        // smaller area than another block internal (inside a different CLB) at a lower hierarchy,
+        // it is safe to not limit this update to the bottom hierarchy only.
         if (abs_bbox.area() < draw_state->min_blk_internal_area) {
             draw_state->min_blk_internal_area = abs_bbox.area();
         }
