@@ -364,10 +364,10 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
             return false;
 
         // Intra-block drawing adds more details as the view gets closer, but stays the same once all internals are already drawn.
-        // Regenerate geometry when the current zoom level is below the CLB-only view (only_clbs_drawn_threshold)
+        // Regenerate geometry when the current zoom level is below the CLB-only view (blk_internal_declutter_upper_threshold)
         // but not all internals are drawn yet.
         if (draw_state->show_blk_internal
-            && world_units_per_pixel < draw_state->only_clbs_drawn_threshold
+            && world_units_per_pixel < draw_state->blk_internal_declutter_upper_threshold
             && !(draw_state->all_internals_drawn))
             return false;
 
@@ -388,10 +388,10 @@ static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::rende
             return false;
 
         // Intra-block drawing drops details as the view gets farther away, but stays the same once only the CLBs are visible.
-        // Regenerate geometry when the current zoom level is above the final detailed internal view (all_internals_drawn_threshold)
+        // Regenerate geometry when the current zoom level is above the final detailed internal view (blk_internal_declutter_lower_threshold)
         // but the CLBs are not yet the only drawn shapes (some internals are drawn as well).
         if (draw_state->show_blk_internal
-            && world_units_per_pixel > draw_state->all_internals_drawn_threshold
+            && world_units_per_pixel > draw_state->blk_internal_declutter_lower_threshold
             && !(draw_state->only_clbs_drawn))
             return false;
 

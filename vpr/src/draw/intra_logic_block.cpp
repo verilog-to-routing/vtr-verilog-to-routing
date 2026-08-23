@@ -37,7 +37,7 @@
 // Vertical padding (as a fraction of tile height) added to leave space for text inside internal logic blocks
 static constexpr float FRACTION_TEXT_PADDING = 0.01;
 
-// The minimum permissible ratio of a drawing instance's area over screen area (both in the world coordinates),
+// The minimum permissible ratio of a drawing instance's area over the screen area (both defined in the world coordinates),
 // below which the drawing instance should be decluttered (hidden). This value was tested and determined through experimentation.
 static constexpr double BLK_INTERNAL_MIN_SCREEN_COVERAGE = 0.003;
 
@@ -85,6 +85,9 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
 
 #ifndef NO_GRAPHICS
+
+static double calculate_blk_internal_declutter_level(double internal_area, ezgl::renderer* g);
+
 /**
  * @brief Checks whether a block internal is too small to draw at the current zoom level.
  *
@@ -92,7 +95,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
  * @param g Main renderer.
  * @return True if the block's area does not satisfy the minimum screen-area ratio; otherwise false.
  */
-static bool internal_too_small_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
+static bool blk_internal_too_small_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
 
 /**
  * @brief Helper subroutine to recursively draw sub-blocks.
@@ -202,7 +205,6 @@ void draw_internal_init_blk() {
         draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*type.pb_type),
                                                draw_state->max_sub_blk_lvl);
     }
-    //draw_state->max_sub_blk_lvl -= 1;
 }
 
 #ifndef NO_GRAPHICS
@@ -265,24 +267,28 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
 
     if (draw_state->renderer_type == "rhi") {
-        // Record the threshold zoom level (world units / pixel) where all internals are drawn.
-        // Note: on the RHI path , zooming in from this level will not keep updating the record to a smaller value,
-        // because camera-only redraws will be performed and the full redraw code for block internals (this function) will not be executed.
+        // Update the threshold zoom level (world units / pixel) below which all block internals can be drawn.
         if (draw_state->all_internals_drawn) {
-            draw_state->all_internals_drawn_threshold =
-            std::sqrt(draw_state->min_blk_internal_area / (g->get_visible_screen().area() * BLK_INTERNAL_MIN_SCREEN_COVERAGE));
+            draw_state->blk_internal_declutter_lower_threshold = calculate_blk_internal_declutter_level(draw_state->min_blk_internal_area, g);
         }
 
-        // Record the threshold zoom level (world units / pixel) where only the CLBs are drawn.
-        // Note: on the RHI path, zooming out from this level will not keep updating the record to a greater value,
-        // for the same reason explained a few lines above.
+        // Update the threshold zoom level (world units / pixel) above which only the CLBs can be drawn.
         if (draw_state->only_clbs_drawn) {
-            draw_state->only_clbs_drawn_threshold =
-            std::sqrt(draw_state->max_blk_internal_area / (g->get_visible_screen().area() * BLK_INTERNAL_MIN_SCREEN_COVERAGE));
+            draw_state->blk_internal_declutter_upper_threshold = calculate_blk_internal_declutter_level(draw_state->max_blk_internal_area, g);
         }
     }
-
 }
+
+static double calculate_blk_internal_declutter_level(double blk_internal_world_area, ezgl::renderer* g) {
+    double target_blk_internal_screen_area = g->get_visible_screen().area() * BLK_INTERNAL_MIN_SCREEN_COVERAGE;
+
+    double target_world_area_per_screen_area = blk_internal_world_area / target_blk_internal_screen_area;
+
+    double target_world_units_per_pixel = std::sqrt(target_world_area_per_screen_area);
+
+    return target_world_units_per_pixel;
+}
+
 #endif /* NO_GRAPHICS */
 
 /* This function traverses through the pb_graph of a certain physical block type and
@@ -437,18 +443,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     *blk_height = child_height;
 }
 
-#ifndef NO_GRAPHICS
-static bool internal_too_small_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
-    // Calculate the block bounding box's area in the world coordinates.
-    double pb_bbox_area = pb_bbox.area();
-    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
-    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
-    double screen_area = g->get_visible_world().area();
-    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the block
-    // because it would be very tiny on the screen, and it would also get cluttered with other blocks.
-    return pb_bbox_area / screen_area < BLK_INTERNAL_MIN_SCREEN_COVERAGE;
-}
-
 static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -468,7 +462,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     // If the block's area is too small relative to the screen, don't draw anything.
-    if (pb_type->depth > 0 && internal_too_small_to_draw(abs_bbox, g)) {
+    if (pb_type->depth > 0 && blk_internal_too_small_to_draw(abs_bbox, g)) {
         // Since the current pb is not drawn, the all_internals_drawn flag
         // should be false (useful on the RHI path).
         if (draw_state->renderer_type == "rhi") {
@@ -479,7 +473,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
     if (draw_state->renderer_type == "rhi" && pb_type->depth > 0) {
         // If the current pb has a depth deeper than 0 and passed the large_enough_to_draw() check, it means
-        // not only the CLBs (the top-level blocks) are drawn on screen (useful on the RHI path).
+        // the flag only_clbs_drawn is no longer true (useful on the RHI path).
         draw_state->only_clbs_drawn = false;
         if (abs_bbox.area() < draw_state->min_blk_internal_area) {
             draw_state->min_blk_internal_area = abs_bbox.area();
@@ -615,6 +609,17 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     return true;
 }
 
+static bool blk_internal_too_small_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
+    // Calculate the block bounding box's area in the world coordinates.
+    double pb_bbox_area = pb_bbox.area();
+    // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
+    // This value changes as the user zooms in / out, and has nothing to do with the physical size (pixels) of the screen.
+    double screen_area = g->get_visible_world().area();
+    // If the ratio of the bounding box's area over screen area is less than the minimum threshold, don't draw the block
+    // because it would be very tiny on the screen, and it would also get cluttered with other blocks.
+    return pb_bbox_area / screen_area < BLK_INTERNAL_MIN_SCREEN_COVERAGE;
+}
+
 void draw_selected_pb_flylines(ezgl::renderer* g) {
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
@@ -681,7 +686,6 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
         }
     }
 }
-#endif /* NO_GRAPHICS */
 
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb) {
     std::vector<AtomBlockId> atoms;
@@ -921,9 +925,8 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             const ezgl::rectangle& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
             ezgl::renderer* g = application->get_renderer();
-            // If child block is being used, check if it intersects. Check also if it is visible (drawn) on screen,
-            // because otherwise it would be unavailable for selection.
-            if (!child_pb->name.empty() && bbox.contains(local_pt) && large_enough_to_draw(bbox, g)) {
+            // If child block is being used, check if it intersects. Also check if it is hidden by the drawing code for being too small.
+            if (!child_pb->name.empty() && bbox.contains(local_pt) && !blk_internal_too_small_to_draw(bbox, g)) {
                 // Check farther down the graph, see if we can find
                 // something more specific.
                 t_pb* subtree_result = highlight_sub_block_helper(

@@ -270,7 +270,7 @@ struct t_draw_state {
      * 
      * TODO: Currently this is always on, and wiring it to a UI button is required in the future.
      */
-    bool enable_rr_decluttering = false;
+    bool enable_rr_decluttering = true;
     ///@brief Tells the program that the drawing of routing resources is toggled but still skipped because the zoom level is too high.
     bool rr_decluttered = false;
 
@@ -306,12 +306,12 @@ struct t_draw_state {
     ///@brief True if all block internals were drawn during the previous redraw.
     bool all_internals_drawn = false;
     ///@brief Threshold zoom level (world units / pixel) below which all block internals can be drawn.
-    double all_internals_drawn_threshold = 0;
+    double blk_internal_declutter_lower_threshold = 0;
+    double min_blk_internal_area = 0;
     ///@brief True if only the CLBs (top-level blocks) were drawn during the previous redraw.
     bool only_clbs_drawn = false;
     ///@brief Threshold zoom level (world units / pixel) above which only the CLBs (top-level blocks) are drawn (without any internals).
-    double only_clbs_drawn_threshold = std::numeric_limits<double>::max();
-    double min_blk_internal_area = std::numeric_limits<double>::max();
+    double blk_internal_declutter_upper_threshold = 0;
     double max_blk_internal_area = 0;
 
     ///@brief Whether graphics are enabled
