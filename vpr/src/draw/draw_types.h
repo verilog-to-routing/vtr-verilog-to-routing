@@ -303,15 +303,17 @@ struct t_draw_state {
     ///@brief If 0, no internal drawing is shown. Otherwise, indicates how many levels of sub-pbs to be drawn
     int show_blk_internal = 0;
 
-    ///@brief True if all block internals were drawn during the previous redraw.
-    bool all_internals_drawn = false;
+    ///@brief True if all block internals were drawn in the previous redraw.
+    bool no_blk_internal_hidden_yet = false;
+    ///@brief True if only the CLBs (top-level blocks) were drawn in the previous redraw.
+    bool no_blk_internal_drawn_yet = false;
+
     ///@brief Threshold zoom level (world units / pixel) below which all block internals can be drawn.
     double blk_internal_declutter_lower_threshold = 0;
-    double min_blk_internal_area = 0;
-    ///@brief True if only the CLBs (top-level blocks) were drawn during the previous redraw.
-    bool only_clbs_drawn = false;
     ///@brief Threshold zoom level (world units / pixel) above which only the CLBs (top-level blocks) are drawn (without any internals).
     double blk_internal_declutter_upper_threshold = 0;
+
+    double min_blk_internal_area = 0;
     double max_blk_internal_area = 0;
 
     ///@brief Whether graphics are enabled

@@ -218,8 +218,8 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     // draw_can_reuse_geometry() to determine whether a camera-only redraw can be performed (on the RHI path).
     // The flags are modified in draw_internal_pb().
     if (draw_state->renderer_type == "rhi") {
-        draw_state->all_internals_drawn = true;
-        draw_state->only_clbs_drawn = true;
+        draw_state->no_blk_internal_hidden_yet = true;
+        draw_state->no_blk_internal_drawn_yet = true;
         draw_state->min_blk_internal_area = std::numeric_limits<double>::max();
         draw_state->max_blk_internal_area = 0;
     }
