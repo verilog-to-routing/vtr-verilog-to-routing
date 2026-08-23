@@ -27,7 +27,6 @@
 #include "device_grid.h"
 #include "electrostatic_density_utils.h"
 #include "flat_placement_bins.h"
-#include "globals.h"
 #include "logic_types.h"
 #include "partial_placement.h"
 #include "physical_types.h"

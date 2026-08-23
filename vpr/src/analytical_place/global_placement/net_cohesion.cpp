@@ -182,20 +182,24 @@ void NetCohesion::update_periphery_pair_nets(const std::vector<PrimitiveVectorDi
         // partial legalization scatters scarce periphery resources, so a
         // seed-length gate misses exactly the nets that need cohesion.
         periphery_pair_nets_[net_id] = true;
-        selected_degrees.push_back(std::max(block_degree[first_blk_id], block_degree[second_blk_id]));
+        size_t degree = std::max(block_degree[first_blk_id], block_degree[second_blk_id]);
+        // Parked as the raw degree; normalized against the median below.
+        periphery_pair_damping_[net_id] = static_cast<double>(degree);
+        selected_degrees.push_back(degree);
         selected_ids.push_back(net_id);
     }
     num_periphery_pair_nets_ = selected_ids.size();
 
     // The reference degree is the median over the selected nets, so the damping
-    // is derived per design rather than tuned to any one architecture.
+    // is derived per design rather than tuned to any one architecture. Each
+    // net's degree is already parked in periphery_pair_damping_, so the median
+    // reorders selected_degrees in place instead of copying it.
     if (!selected_degrees.empty()) {
-        std::vector<size_t> sorted = selected_degrees;
-        std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
-        double ref = std::max<double>(1., static_cast<double>(sorted[sorted.size() / 2]));
-        for (size_t i = 0; i < selected_ids.size(); i++)
-            periphery_pair_damping_[selected_ids[i]] =
-                std::min(1., ref / std::max<double>(1., static_cast<double>(selected_degrees[i])));
+        auto median = selected_degrees.begin() + selected_degrees.size() / 2;
+        std::nth_element(selected_degrees.begin(), median, selected_degrees.end());
+        double ref = std::max<double>(1., static_cast<double>(*median));
+        for (APNetId net_id : selected_ids)
+            periphery_pair_damping_[net_id] = std::min(1., ref / std::max(1., periphery_pair_damping_[net_id]));
     }
 
     if (log_verbosity_ >= 1) {
