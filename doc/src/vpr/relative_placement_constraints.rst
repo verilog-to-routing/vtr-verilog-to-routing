@@ -69,8 +69,8 @@ The ``<vpr_constraints>`` top-level tag may contain one ``<relative_macro_list>`
 
 				clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
 
-			When the attribute is omitted the atom is unpinned and the packer picks its site.
-			**Default:** unpinned
+			When the attribute is omitted the atom is not locked to a site and the packer picks one.
+			**Default:** none (the packer picks the site)
 
 	.. arch:tag:: <relative_group x_offset="int" y_offset="int" sub_tile_offset="int" layer_offset="int">
 
