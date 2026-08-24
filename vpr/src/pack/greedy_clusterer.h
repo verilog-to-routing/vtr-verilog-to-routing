@@ -206,10 +206,17 @@ class GreedyClusterer {
      * If the strategy is set to FULL, the cluster will grow using the full
      * legalizer for each molecule added. This cannot fail (assuming the seed
      * can exist in a cluster), so it will always return a valid cluster ID.
+     *
+     * group_order_variant picks the sequence a relative placement group's
+     * molecules are offered in (see pack_relative_group_into_cluster). Unless
+     * is_last_attempt is set, a cluster that took only part of its group is
+     * discarded so the caller can try the next sequence.
      */
     LegalizationClusterId try_grow_cluster(PackMoleculeId seed_mol_id,
                                            GreedyCandidateSelector& candidate_selector,
                                            ClusterLegalizationStrategy strategy,
+                                           int group_order_variant,
+                                           bool is_last_attempt,
                                            ClusterLegalizer& cluster_legalizer,
                                            const Prepacker& prepacker,
                                            const RamMapper& ram_mapper,
@@ -254,15 +261,48 @@ class GreedyClusterer {
      * @brief Pack the relative placement group of the seed molecule into the
      *        freshly seeded cluster.
      *
-     * @return The first molecule that failed to pack into the cluster, or
-     *         INVALID if the whole group packed (or the seed is
-     *         unconstrained / the design has no relative macros).
+     * Every molecule of the group is offered to the cluster once per call:
+     * those locked to a primitive site first (in constraint-file order), then
+     * the unlocked ones largest first. order_variant only reorders them, never
+     * changes a molecule's site, but the sequence decides how the intra-cluster
+     * router assigns logically equivalent LUT/crossbar inputs, so one variant
+     * can route where another did not (see grow_cluster_from_seed).
+     *
+     * Molecules that fail are left unclustered on purpose: the end-of-pass
+     * check in pack.cpp reports the resulting split group, and the ordinary
+     * fill that follows can still admit them.
      */
-    PackMoleculeId pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
-                                                    LegalizationClusterId legalization_cluster_id,
-                                                    ClusterLegalizer& cluster_legalizer,
-                                                    const Prepacker& prepacker,
-                                                    const std::vector<PackMoleculeId>& pack_first);
+    void pack_relative_group_into_cluster(PackMoleculeId seed_mol_id,
+                                          LegalizationClusterId legalization_cluster_id,
+                                          int order_variant,
+                                          ClusterLegalizer& cluster_legalizer,
+                                          const Prepacker& prepacker);
+
+    /**
+     * @brief Returns whether every atom of the seed molecule's relative
+     *        placement group is now in the given cluster (true when the seed
+     *        belongs to no group, or the design has no relative macros).
+     *
+     * Used to decide whether a grow attempt achieved what it was for: a
+     * cluster that took only part of its group no longer matches the sites in
+     * the constraints file.
+     */
+    static bool relative_group_fully_clustered(PackMoleculeId seed_mol_id,
+                                               LegalizationClusterId legalization_cluster_id,
+                                               const ClusterLegalizer& cluster_legalizer,
+                                               const Prepacker& prepacker);
+
+    /**
+     * @brief Returns whether the molecule's root atom is locked to a primitive
+     *        site by a relative placement macro.
+     *
+     * Sites are a property of a molecule's root primitive: the remaining
+     * primitives of a multi-atom molecule follow from its pack pattern, so the
+     * root atom's site is the one the legalizer forces.
+     */
+    static bool is_molecule_locked_to_site(PackMoleculeId mol_id,
+                                           const Prepacker& prepacker,
+                                           const UserRelativeMacros& relative_macros);
 
     /**
      * @brief Log the physical block usage of the logic element in the
