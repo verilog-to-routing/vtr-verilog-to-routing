@@ -23,7 +23,6 @@
 #include "vtr_math.h"
 #include "vtr_time.h"
 #include "route_common.h"
-#include "route_debug.h"
 #include "vtr_util.h"
 
 /**
