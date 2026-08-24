@@ -185,17 +185,23 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
                 // same driver/sink pair (i.e. interposer architectures are not also 3D), so the
                 // vertical/horizontal terms below only normalize against their own boundary's
                 // offset (dy or dx), unlike the planar term which already folds in both.
+                // There are specialized routers where the bounding box may not include
+                // the source. We clamp the alignment term to 0 to prevent the terms from
+                // going negative.
                 // TODO: once a 3D interposer architecture exists to validate against, the vertical
                 // and horizontal terms should also fold in a dz/bb_depth component, matching how
                 // the planar term already folds in dx and dy.
                 if (crosses_vertical) {
-                    pin_sort_priority[ipin] += (bb_height > 0) ? die_alignment_multiplier * (1.0f - float(dy) / bb_height) : die_alignment_multiplier;
+                    float align_v = std::max(1.0f - float(dy) / bb_height, 0.0f);
+                    pin_sort_priority[ipin] += (bb_height > 0) ? die_alignment_multiplier * align_v : die_alignment_multiplier;
                 }
                 if (crosses_horizontal) {
-                    pin_sort_priority[ipin] += (bb_width > 0) ? die_alignment_multiplier * (1.0f - float(dx) / bb_width) : die_alignment_multiplier;
+                    float align_h = std::max(1.0f - float(dx) / bb_width, 0.0f);
+                    pin_sort_priority[ipin] += (bb_width > 0) ? die_alignment_multiplier * align_h : die_alignment_multiplier;
                 }
                 if (crosses_planar) {
-                    pin_sort_priority[ipin] += (bb_planar > 0) ? die_alignment_multiplier * (1.0f - float(dx + dy) / bb_planar) : die_alignment_multiplier;
+                    float align_p = std::max(1.0f - float(dx + dy) / bb_planar, 0.0f);
+                    pin_sort_priority[ipin] += (bb_planar > 0) ? die_alignment_multiplier * align_p : die_alignment_multiplier;
                 }
             }
         }
