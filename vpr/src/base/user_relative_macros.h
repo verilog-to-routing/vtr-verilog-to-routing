@@ -31,6 +31,12 @@ struct UserRelativeGroup {
     ///        in the constraints file).
     std::vector<AtomBlockId> atoms;
 
+    /// @brief The primitive site each atom is locked to: atom_site_paths[i] is
+    ///        the site of atoms[i]. An empty string leaves that atom unlocked
+    ///        (the packer picks its site); an empty vector leaves the whole
+    ///        group unlocked.
+    std::vector<std::string> atom_site_paths;
+
     /// @brief Placement offset of this group's cluster relative to the
     ///        reference group's cluster. (0, 0, 0, 0) for the reference group.
     t_pl_offset offset;
@@ -81,10 +87,22 @@ class UserRelativeMacros {
      */
     std::pair<UserRelativeMacroId, int> get_atom_group(AtomBlockId blk_id) const;
 
+    /**
+     * @brief Return the hierarchical path of the primitive site the given atom
+     *        is locked to, or an empty string if the atom is unlocked
+     *
+     */
+    const std::string& get_atom_site_path(AtomBlockId blk_id) const;
+
   private:
     /// @brief All user-defined relative placement macros.
     vtr::vector<UserRelativeMacroId, UserRelativeMacro> macros_;
 
     /// @brief Reverse lookup: atom -> (macro id, group index within the macro).
     std::unordered_map<AtomBlockId, std::pair<UserRelativeMacroId, int>> atom_to_group_;
+
+    /// @brief Reverse lookup: atom -> the hierarchical path of the primitive
+    ///        site it is locked to. Only holds the locked atoms; a missing atom
+    ///        is unlocked.
+    std::unordered_map<AtomBlockId, std::string> atom_to_site_path_;
 };
