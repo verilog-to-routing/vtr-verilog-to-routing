@@ -175,7 +175,8 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
                                      vtr::RngContainer& rng,
                                      t_wireconn_scratchpad* scratchpad);
 
-/* ... sb_conn represents the 'coordinates' of the desired switch block connections */
+/* ... sb_conn represents the 'coordinates' of the desired switch block connections.
+ * permutations lists the permutation formulas for the from_side -> to_side pair of sb_conn */
 static void compute_wireconn_connections(e_directionality directionality,
                                          const t_chan_details& from_chan_details,
                                          const t_chan_details& to_chan_details,
@@ -186,7 +187,7 @@ static void compute_wireconn_connections(e_directionality directionality,
                                          e_rr_type to_chan_type,
                                          const t_wire_type_sizes& wire_type_sizes_from,
                                          const t_wire_type_sizes& wire_type_sizes_to,
-                                         const t_switchblock_inf& sb,
+                                         const std::vector<std::string>& permutations,
                                          const t_wireconn_inf& wireconn,
                                          t_sb_connection_map* sb_conns,
                                          vtr::RngContainer& rng,
@@ -396,11 +397,14 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
         return;
     }
 
-    // Check that the permutation map has an entry for this side combination
-    if (!sb.permutation_map.contains(side_conn)) {
+    // Look up the permutation functions for this side combination once.
+    // They are the same for every wireconn and every connection at this location.
+    auto perm_iter = sb.permutation_map.find(side_conn);
+    if (perm_iter == sb.permutation_map.end()) {
         // The specified switchblock does not have any permutation funcs for `from_side` to `to_side` connection
         return;
     }
+    const std::vector<std::string>& permutations = perm_iter->second;
 
     /* find the correct channel, and the coordinates to index into it for both the source and
      * destination channels. also return the channel type (ie chanx/chany/both) into which we are
@@ -429,7 +433,7 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
         // compute the destination wire segments to which the source wire segment should connect based on the current wireconn
         compute_wireconn_connections(directionality, from_chan_details, to_chan_details,
                                      sb_conn, from_loc, to_loc, from_chan_type, to_chan_type, wire_type_sizes_from,
-                                     wire_type_sizes_to, sb, wireconn, sb_conns, rng, scratchpad);
+                                     wire_type_sizes_to, permutations, wireconn, sb_conns, rng, scratchpad);
     }
 }
 
@@ -447,7 +451,7 @@ static void compute_wireconn_connections(e_directionality directionality,
                                          e_rr_type to_chan_type,
                                          const t_wire_type_sizes& wire_type_sizes_from,
                                          const t_wire_type_sizes& wire_type_sizes_to,
-                                         const t_switchblock_inf& sb,
+                                         const std::vector<std::string>& permutations,
                                          const t_wireconn_inf& wireconn,
                                          t_sb_connection_map* sb_conns,
                                          vtr::RngContainer& rng,
@@ -528,15 +532,6 @@ static void compute_wireconn_connections(e_directionality directionality,
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
 
-    // The permutation functions are the same for every connection.
-    // The caller has already checked that the permutation map has an entry for this side combination.
-    SBSideConnection side_conn(sb_conn.from_side, sb_conn.to_side);
-    auto perm_iter = sb.permutation_map.find(side_conn);
-    if (perm_iter == sb.permutation_map.end()) {
-        return;
-    }
-    const std::vector<std::string>& permutations_ref = perm_iter->second;
-
     // Cached references to the forward and reverse connection vectors.
     // The map keys are the same for every pushed edge, so hash them only once on first use.
     // References into std::unordered_map stay valid when other elements are inserted.
@@ -568,7 +563,7 @@ static void compute_wireconn_connections(e_directionality directionality,
         }
 
         // Evaluate permutation functions for the from_wire
-        for (const std::string& perm : permutations_ref) {
+        for (const std::string& perm : permutations) {
             // Convert the symbolic permutation formula to a number.
             // The result depends only on the formula and the (W, t) variable values,
             // which repeat across connections and switchblock locations. Cache it to
