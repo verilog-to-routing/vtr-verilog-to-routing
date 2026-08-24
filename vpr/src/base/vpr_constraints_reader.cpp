@@ -43,11 +43,16 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
         for (size_t imacro = 0; imacro < relative_macros.get_num_macros(); imacro++) {
             const UserRelativeMacro& macro = relative_macros.get_macro(UserRelativeMacroId(imacro));
             size_t num_atoms = 0;
+            size_t num_locked_atoms = 0;
             for (const UserRelativeGroup& group : macro.groups) {
                 num_atoms += group.atoms.size();
+                for (const std::string& site_path : group.atom_site_paths) {
+                    if (!site_path.empty())
+                        num_locked_atoms++;
+                }
             }
-            VTR_LOG("  Relative macro '%s': %zu group(s), %zu atom(s)\n",
-                    macro.name.c_str(), macro.groups.size(), num_atoms);
+            VTR_LOG("  Relative macro '%s': %zu group(s), %zu atom(s), %zu atom(s) locked to a primitive site\n",
+                    macro.name.c_str(), macro.groups.size(), num_atoms, num_locked_atoms);
         }
     }
 

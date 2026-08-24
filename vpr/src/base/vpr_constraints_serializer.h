@@ -142,6 +142,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      *   <xs:attribute name="is_regex" type="xs:boolean" default="false" />
      *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
+     *   <xs:attribute name="site_path" type="xs:string" use="optional" />
      * </xs:complexType>
      */
     virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
@@ -167,6 +168,23 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void set_add_atom_logical_block_location(const char* logical_block_location, void*& /*ctx*/) final {
         logical_block_location_ = logical_block_location;
+    }
+
+    virtual inline const char* get_add_atom_site_path(AtomBlockId& /*blk_id*/) final {
+        // Returning nullptr makes the generated writer omit the attribute.
+        // Nothing needs it written: the only writer (--write_vpr_constraints)
+        // builds its VprConstraints from the placement, which holds partitions
+        // and no relative macros. The assert catches a future writer that does
+        // carry macros, which would need this to return their site paths.
+        VTR_ASSERT(constraints_.relative_macros().get_num_macros() == 0);
+        return nullptr;
+    }
+
+    virtual inline void set_add_atom_site_path(const char* site_path, void*& /*ctx*/) final {
+        site_path_ = site_path;
+        //an empty site_path is not the same as no site_path at all: the former
+        //is a malformed constraint, the latter means the atom is unlocked
+        site_path_present_ = true;
     }
 
     virtual inline void set_add_atom_is_regex(const char* is_regex, void*& /*ctx*/) final {
@@ -301,6 +319,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         name_pattern_.clear();
         logical_block_location_.clear();
         is_regex_ = false;
+        site_path_.clear();
+        site_path_present_ = false;
         return nullptr;
     }
 
@@ -308,6 +328,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         PartitionId part_id(num_partitions_);
         auto& atom_ctx = g_vpr_ctx.atom();
         bool found = false;
+
+        if (site_path_present_) {
+            //site_path pins an atom to a primitive site inside its cluster,
+            //which is only meaningful for relative placement macros
+            VTR_LOG_WARN("Partition '%s': site_path is not supported on partition atoms, ignoring it for atom pattern %s.\n",
+                         loaded_partition.get_name().c_str(), name_pattern_.c_str());
+        }
 
         if (!is_regex_) { //the name pattern is not a regex, look for an exact match for the atom name
             AtomBlockId atom_id = atom_ctx.netlist().find_block(name_pattern_);
@@ -500,6 +527,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         name_pattern_.clear();
         logical_block_location_.clear();
         is_regex_ = false;
+        site_path_.clear();
+        site_path_present_ = false;
         return nullptr;
     }
 
@@ -549,6 +578,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         name_pattern_.clear();
         logical_block_location_.clear();
         is_regex_ = false;
+        site_path_.clear();
+        site_path_present_ = false;
         return nullptr;
     }
 
@@ -934,6 +965,24 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         const auto& atom_ctx = g_vpr_ctx.atom();
         bool found = false;
 
+        //A site path that is present but empty, or that contains whitespace,
+        //can never match a primitive. Rejecting it here is what stops a
+        //hand-written or hand-edited constraints file from silently degrading
+        //to "unlocked" (an absent attribute) or to a site that never matches.
+        //The scripts that write constraints files enforce the same rule, but a
+        //constraints file does not have to come from them.
+        if (site_path_present_
+            && (site_path_.empty() || site_path_.find_first_of(" \t\n\v\f\r") != std::string::npos)) {
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name + "' group "
+                                          + std::to_string(loaded_relative_macro_.groups.size())
+                                          + ": the site_path of atom pattern '" + name_pattern_ + "' is '"
+                                          + site_path_
+                                          + "', which is empty or contains whitespace. A site path is the "
+                                            "hierarchical path of one primitive, e.g. "
+                                            "'clb[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]'. Omit the "
+                                            "attribute entirely to leave the atom unlocked.");
+        }
+
         if (!is_regex_) { //the name pattern is not a regex, look for an exact match for the atom name
             AtomBlockId atom_id = atom_ctx.netlist().find_block(name_pattern_);
             if (atom_id != AtomBlockId::INVALID()) {
@@ -942,11 +991,22 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             }
         } else { //the name pattern is a regex, look for all atoms matching the regex pattern
             std::regex atom_name_regex = compile_atom_name_regex("Relative macro '" + loaded_relative_macro_.name + "'");
+            size_t num_matched = 0;
             for (AtomBlockId block_id : atom_ctx.netlist().blocks()) {
                 if (std::regex_search(atom_ctx.netlist().block_name(block_id), atom_name_regex)) {
                     add_atom_to_loaded_relative_group(block_id);
                     found = true;
+                    num_matched++;
                 }
+            }
+            if (!site_path_.empty() && num_matched > 1) {
+                //every matched atom would be locked to the same primitive,
+                //which no two atoms can share
+                report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+                                              + "': name_pattern '" + name_pattern_ + "' with site_path '"
+                                              + site_path_ + "' matched " + std::to_string(num_matched)
+                                              + " atoms; a site holds exactly one atom, so locked atoms must be "
+                                                "named individually.");
             }
         }
 
@@ -980,13 +1040,30 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /**
-     * @brief Append an atom to the relative placement group being loaded,
-     *        ignoring duplicates (two patterns of a group may match the same atom).
+     * @brief Append an atom, with the site it is locked to, to the relative
+     *        placement group being loaded.
+     *
+     * Two patterns matching the same atom with two different sites are
+     * contradictory placement intent, so that is a load error rather than a
+     * silent first-wins.
      */
     void add_atom_to_loaded_relative_group(AtomBlockId blk_id) {
         std::vector<AtomBlockId>& atoms = loaded_relative_group_.atoms;
-        if (std::find(atoms.begin(), atoms.end(), blk_id) == atoms.end()) {
+        std::vector<std::string>& atom_site_paths = loaded_relative_group_.atom_site_paths;
+        auto itr = std::find(atoms.begin(), atoms.end(), blk_id);
+        if (itr == atoms.end()) {
             atoms.push_back(blk_id);
+            atom_site_paths.push_back(site_path_);
+            return;
+        }
+
+        const std::string& prev_site_path = atom_site_paths[itr - atoms.begin()];
+        if (prev_site_path != site_path_) {
+            report_constraints_load_error("Relative macro '" + loaded_relative_macro_.name
+                                          + "': atom '" + g_vpr_ctx.atom().netlist().block_name(blk_id)
+                                          + "' is matched twice in the same group with two different site paths ('"
+                                          + prev_site_path + "' and '" + site_path_
+                                          + "'); an atom can only be locked to one primitive site.");
         }
     }
 
@@ -1038,6 +1115,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     bool is_regex_;
     std::string name_pattern_;
     std::string logical_block_location_;
+    //the hierarchical path of the primitive site the add_atom being read is
+    //locked to, and whether the attribute was present at all (an empty value
+    //is a malformed constraint, an absent one means unlocked)
+    std::string site_path_;
+    bool site_path_present_ = false;
 
     // Used when reading in regex LB type constraints for a partition.
     bool lb_type_is_regex_;
