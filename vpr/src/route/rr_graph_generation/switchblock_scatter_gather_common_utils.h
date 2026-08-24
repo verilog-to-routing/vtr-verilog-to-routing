@@ -1,15 +1,16 @@
 
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 
 #include "device_grid.h"
 #include "rr_types.h"
 #include "rr_graph_type.h"
 #include "vtr_expr_eval.h"
+#include "vtr_hash.h"
 
 #include <vector>
 
@@ -149,15 +150,13 @@ class SbFormulaCache {
     int evaluate(const std::string& formula, int W, int t);
 
   private:
-    /// Packs (W, t) into a single lookup key
-    static uint64_t make_key_(int W, int t);
-
     /// Parser used on cache misses
     vtr::FormulaParser formula_parser_;
 
     /// Variable values passed to the parser
     vtr::t_formula_data formula_data_;
 
-    /// Cached results keyed by formula, then by packed (W, t)
-    std::unordered_map<std::string, std::unordered_map<uint64_t, int>> results_;
+    /// Cached raw formula results, indexed by the formula string as written in the
+    /// architecture file, then by the (W, t) pair the formula was evaluated with
+    std::unordered_map<std::string, std::unordered_map<std::pair<int, int>, int, vtr::hash_pair>> results_;
 };

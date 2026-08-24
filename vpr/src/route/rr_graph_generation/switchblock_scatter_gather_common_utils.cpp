@@ -475,14 +475,10 @@ int evaluate_num_conns_formula(vtr::FormulaParser& formula_parser,
     return formula_parser.parse_formula(num_conns_formula, formula_data);
 }
 
-uint64_t SbFormulaCache::make_key_(int W, int t) {
-    return (uint64_t(uint32_t(W)) << 32) | uint64_t(uint32_t(t));
-}
-
 int SbFormulaCache::evaluate(const std::string& formula, int W, int t) {
-    std::unordered_map<uint64_t, int>& formula_results = results_[formula];
+    std::unordered_map<std::pair<int, int>, int, vtr::hash_pair>& formula_results = results_[formula];
 
-    uint64_t key = make_key_(W, t);
+    std::pair<int, int> key(W, t);
     auto result_iter = formula_results.find(key);
     if (result_iter != formula_results.end()) {
         return result_iter->second;
