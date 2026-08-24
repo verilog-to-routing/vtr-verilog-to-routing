@@ -43,6 +43,10 @@ static int get_tile_src_opin_max_ptc(int itile);
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev);
 
+/// One member of a tile signature, describing a location neighbouring an instance of a tile:
+/// (side, offset_along_side, neighbour_type_index, neighbour_width_offset, neighbour_height_offset).
+using t_signature_member = std::tuple<e_side, int, int, int, int>;
+
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     util::t_ipin_primitive_sink_delays& pin_delays,
                                     t_physical_tile_type_ptr physical_tile,
