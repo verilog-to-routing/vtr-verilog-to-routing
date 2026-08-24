@@ -891,7 +891,7 @@ class t_rr_graph_storage {
      * @brief Sorts edges according to comparison_function. This is an expensive method that builds the edge array from scratch
      * and invalidates all the RREdgeIds. This is not an inplace sort, and it is very expensive.
      * You should not be calling this method more than once or twice in the entire program, definitely do not use it in a hot loop.
-     * @tparam t_comp_func callable object with two size_t arguments. See 'edge_compare_dest_node' for example.
+     * @tparam t_comp_func callable object with two size_t arguments. See 'edge_compare_src_node_and_configurable_first' for example.
      * @param comparison_function Comparison function to order edges with.
      */
     template <typename t_comp_func>
@@ -902,33 +902,18 @@ class t_rr_graph_storage {
         std::vector<RREdgeId> edge_indices(edge_range.begin(), edge_range.end());
 
         std::stable_sort(edge_indices.begin(), edge_indices.end(), comparison_function);
-        
-        // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
-        // then builds the new vector to have rearranged elements from 'vec' and finally move the new vector
-        // to replace vec. Essentially does a permutation on vec based on edge_indices.
-        auto array_rearrange = [&edge_indices] (auto& vec, auto default_value) {
 
-            // Since vec could have any type, we need to figure out it's type to allocate new_vec.
-            // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
-            typename std::remove_reference<decltype(vec)>::type new_vec(vec.size(), default_value);
-
-            size_t new_index = 0;
-            for (RREdgeId edge_index : edge_indices) {
-                RREdgeId new_edge_index = RREdgeId(new_index);
-                new_vec[new_edge_index] = vec[edge_index];
-
-                new_index++;
-            }
-            VTR_ASSERT(new_index == vec.size());
-
-            vec = std::move(new_vec);
-        };
-
-        array_rearrange(edge_src_node_, RRNodeId::INVALID());
-        array_rearrange(edge_dest_node_, RRNodeId::INVALID());
-        array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
-        array_rearrange(edge_remapped_, false);
+        apply_edge_permutation(edge_indices);
     }
+
+    /**
+     * @brief Sorts edges by ascending destination node.
+     *
+     * Produces the same edge order as sort_edges() with a comparator ordering by destination node only,
+     * but runs as a single stable counting sort pass over the edges instead of a comparison sort.
+     * Like sort_edges(), this rebuilds the edge arrays and invalidates all RREdgeIds.
+     */
+    void sort_edges_by_dest_node();
 
     /******************
      * Fan-in methods *
@@ -978,6 +963,12 @@ class t_rr_graph_storage {
      * sort, and assign the first edge for each
      */
     void assign_first_edges();
+
+    /**
+     * @brief Rearranges every edge array so that the new edge i is the old edge edge_indices[i].
+     * Invalidates all RREdgeIds held elsewhere.
+     */
+    void apply_edge_permutation(const std::vector<RREdgeId>& edge_indices);
 
     /** @brief Verify that first_edge_ array correctly partitions rr edge data. */
     bool verify_first_edges() const;
