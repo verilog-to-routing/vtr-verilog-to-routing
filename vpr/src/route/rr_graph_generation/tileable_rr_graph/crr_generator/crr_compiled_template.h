@@ -1,5 +1,33 @@
 #pragma once
 
+/**
+ * @file crr_compiled_template.h
+ * @brief A switch template, parsed once up front so it can be applied cheaply
+ *        at every tile.
+ *
+ * A switch block is described by a *switch template*: a CSV file read into a
+ * DataFrame (see data_frame_processor.h) in which each row is a connection
+ * source, each column a connection sink, and a non-empty cell says "connect
+ * this source to this sink". The row and column headers are text - a side
+ * (LEFT/TOP/...), a segment type such as "L4", a tap position or a pin name.
+ *
+ * The same template is applied at every grid location matching its pattern,
+ * which on a large FPGA is hundreds of thousands of tiles. Most of the work of
+ * reading it gives the same answer at every one of them: parsing those header
+ * strings, working out each segment's base PTC, and dropping rows, columns and
+ * cells that can never resolve to a node. Only the final step is genuinely
+ * per-tile - clipping a segment at the device edge, and looking a pin name up
+ * in the tile type actually present at (x, y).
+ *
+ * "Compiling" a template means doing the tile-independent part once and keeping
+ * the result as plain numbers: a CompiledSegSpec per usable row and column, a
+ * CompiledCell per connection. Each tile then only resolves those specs to
+ * nodes and walks the cells, so no string is ever parsed twice.
+ *
+ * Built by CRRConnectionBuilder::initialize(), used by
+ * CRRConnectionBuilder::get_tile_connections().
+ */
+
 #include <string>
 #include <vector>
 
