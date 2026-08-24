@@ -442,6 +442,7 @@ static unsigned check_clustering_floorplanning_consistency(
  *    group becomes a single member of a placement macro).
  *  - No cluster hosts atoms of two different relative placement groups (two
  *    groups cannot be placed at two different offsets simultaneously).
+ *  - Every atom locked to a primitive site sits on that site.
  *
  *  @param atom_nlist       The atom netlist used to create the clustering.
  *  @param atom_lookup      The atom lookup between the atoms and their clusters.
@@ -487,6 +488,30 @@ static unsigned check_clustering_relative_group_consistency(const AtomNetlist& a
                         macro.name.c_str(), igroup);
                     num_errors++;
                     group_split_reported = true;
+                }
+
+                const std::string& site_path = relative_macros.get_atom_site_path(atom_blk_id);
+                if (!site_path.empty()) {
+                    const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
+                    if (atom_pb == nullptr || atom_pb->pb_graph_node == nullptr) {
+                        VTR_LOG_ERROR(
+                            "Atom block '%s' of relative macro '%s' group %zu is locked to "
+                            "primitive site '%s' but is not mapped to a primitive.\n",
+                            atom_nlist.block_name(atom_blk_id).c_str(),
+                            macro.name.c_str(), igroup, site_path.c_str());
+                        num_errors++;
+                    } else {
+                        std::string placed_path = atom_pb->pb_graph_node->hierarchical_type_name();
+                        if (placed_path != site_path) {
+                            VTR_LOG_ERROR(
+                                "Atom block '%s' of relative macro '%s' group %zu is locked to "
+                                "primitive site '%s', but it was placed on '%s'.\n",
+                                atom_nlist.block_name(atom_blk_id).c_str(),
+                                macro.name.c_str(), igroup, site_path.c_str(),
+                                placed_path.c_str());
+                            num_errors++;
+                        }
+                    }
                 }
 
                 // A cluster may host atoms of at most one group.
