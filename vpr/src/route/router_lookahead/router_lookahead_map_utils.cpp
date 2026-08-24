@@ -400,8 +400,6 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                 size_t num_sampled_locs = 0;
                 bool ptcs_with_no_delays = true;
                 while (ptcs_with_no_delays) { //Haven't found wire connected to ptc
-                    ptcs_with_no_delays = false;
-
                     sample_loc = pick_sample_tile(from_layer_num,
                                                   &device_ctx.physical_tile_types[itile],
                                                   sample_loc);
@@ -415,6 +413,9 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                                       device_ctx.physical_tile_types[itile].name.c_str());
                         break;
                     }
+
+                    // Reset after the break above so that running out of locations leaves the flag set
+                    ptcs_with_no_delays = false;
 
                     const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
                     for (RRNodeId node_id : rr_nodes_at_loc) {
@@ -451,7 +452,11 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                     ++num_sampled_locs;
                 }
                 if (ptcs_with_no_delays) {
-                    VPR_ERROR(VPR_ERROR_ROUTE, "Some SOURCE/OPINs have no reachable wires\n");
+                    VPR_ERROR(VPR_ERROR_ROUTE,
+                              "Some %ss of tile type %s on layer %d have no reachable wires\n",
+                              rr_node_typename[rr_type],
+                              device_ctx.physical_tile_types[itile].name.c_str(),
+                              from_layer_num);
                 }
             }
         }
