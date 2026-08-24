@@ -313,9 +313,9 @@ struct t_draw_state {
     ///@brief Zoom threshold (world units / pixel) above which only the CLBs (top-level blocks) could be drawn, for the previous full redraw only.
     double only_clbs_drawn_threshold = 0;
 
-    ///@brief Area of the smallest block internal recorded in the previous full redraw.
+    ///@brief Area of the smallest block internal recorded in the previous full redraw, defined in world coordiates.
     double min_blk_internal_area = 0;
-    ///@brief Area of the largest block internal (non-CLB) recorded in the previous full redraw.
+    ///@brief Area of the largest block internal (non-CLB) recorded in the previous full redraw, defined in world coordiates.
     double max_blk_internal_area = 0;
 
     ///@brief Whether graphics are enabled
