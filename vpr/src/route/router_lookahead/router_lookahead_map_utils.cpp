@@ -1264,8 +1264,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     vtr::vector<RRNodeId, bool> node_expanded;
-    node_expanded.resize(rr_graph.num_nodes());
-    std::fill(node_expanded.begin(), node_expanded.end(), false);
+    node_expanded.assign(rr_graph.num_nodes(), false);
 
     vtr::vector<RRNodeId, float> node_seen_cost(rr_graph.num_nodes(), -1.f);
 
@@ -1325,7 +1324,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
             }
         } else {
             int curr_ptc = rr_graph.node_ptc_num(curr.node);
-            if (starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() || starting_pin_delay_map.at(curr_ptc).delay > curr.delay) {
+            if (!starting_pin_delay_map.contains(curr_ptc) || starting_pin_delay_map.at(curr_ptc).delay > curr.delay) {
                 starting_pin_delay_map[curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
             }
         }
@@ -1345,12 +1344,11 @@ static void run_dijkstra(RRNodeId start_node,
     const bool has_interposer_cuts = device_ctx.grid.has_interposer_cuts();
 
     vtr::vector<RRNodeId, bool>& node_expanded = data.node_expanded;
-    node_expanded.resize(rr_graph.num_nodes());
-    std::fill(node_expanded.begin(), node_expanded.end(), false);
+    node_expanded.assign(rr_graph.num_nodes(), false);
 
     vtr::vector<RRNodeId, float>& node_visited_costs = data.node_visited_costs;
     node_visited_costs.resize(rr_graph.num_nodes());
-    std::fill(node_visited_costs.begin(), node_visited_costs.end(), -1.0);
+    std::ranges::fill(node_visited_costs, -1.0);
 
     // A priority queue for expansion
     std::priority_queue<util::PQ_Entry>& pq = data.pq;
@@ -1392,10 +1390,10 @@ static void run_dijkstra(RRNodeId start_node,
 
                 bool store_this_pin = true;
                 if (!sample_all_locs) {
-                    if (sample_locs.find(delta_x) == sample_locs.end()) {
+                    if (!sample_locs.contains(delta_x)) {
                         store_this_pin = false;
                     } else {
-                        if (sample_locs.at(delta_x).find(delta_y) == sample_locs.at(delta_x).end()) {
+                        if (!sample_locs.at(delta_x).contains(delta_y)) {
                             store_this_pin = false;
                         }
                     }
@@ -1522,7 +1520,7 @@ static std::pair<int, int> get_adjusted_rr_pin_position(const RRNodeId rr) {
      * However, current test show that the simple strategy provides
      * a good trade-off between runtime and quality of results
      */
-    auto it = std::find_if(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end(), [&](const e_side candidate_side) {
+    auto it = std::ranges::find_if(TOTAL_2D_SIDES, [&](const e_side candidate_side) {
         return rr_graph.is_node_on_specific_side(rr, candidate_side);
     });
     e_side rr_side = (it != TOTAL_2D_SIDES.end()) ? *it : NUM_2D_SIDES;
