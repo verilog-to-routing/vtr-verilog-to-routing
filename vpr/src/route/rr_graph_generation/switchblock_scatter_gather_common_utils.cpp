@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "globals.h"
+#include "parse_switchblocks.h"
 #include "vpr_error.h"
 #include "rr_node_types.h"
 #include "rr_types.h"
@@ -472,4 +473,26 @@ int evaluate_num_conns_formula(vtr::FormulaParser& formula_parser,
     formula_data.set_var_value("to", to_wire_count);
 
     return formula_parser.parse_formula(num_conns_formula, formula_data);
+}
+
+uint64_t SbFormulaCache::make_key_(int W, int t) {
+    return (uint64_t(uint32_t(W)) << 32) | uint64_t(uint32_t(t));
+}
+
+int SbFormulaCache::evaluate(const std::string& formula, int W, int t) {
+    std::unordered_map<uint64_t, int>& formula_results = results_[formula];
+
+    uint64_t key = make_key_(W, t);
+    auto result_iter = formula_results.find(key);
+    if (result_iter != formula_results.end()) {
+        return result_iter->second;
+    }
+
+    formula_data_.clear();
+    formula_data_.set_var_value("W", W);
+    formula_data_.set_var_value("t", t);
+    int result = get_sb_formula_raw_result(formula_parser_, formula, formula_data_);
+
+    formula_results.emplace(key, result);
+    return result;
 }

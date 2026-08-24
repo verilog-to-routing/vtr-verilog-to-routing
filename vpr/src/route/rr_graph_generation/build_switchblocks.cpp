@@ -126,9 +126,7 @@
  */
 
 #include <algorithm>
-#include <cstdint>
 #include <string_view>
-#include <unordered_map>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -152,10 +150,8 @@ struct t_wireconn_scratchpad {
     std::vector<t_wire_switchpoint> potential_src_wires;
     std::vector<t_wire_switchpoint> potential_dest_wires;
     std::vector<t_wire_switchpoint> scratch_wires;
-    /// Caches permutation formula results keyed by formula string and packed (W, t)
-    /// variable values. Formula evaluation is a pure function of these inputs, so
-    /// results can be reused across connections and switchblock locations.
-    std::unordered_map<std::string, std::unordered_map<uint64_t, int>> formula_cache;
+    /// Memoized permutation formula results, reused across connections and switchblock locations
+    SbFormulaCache formula_cache;
 };
 
 /************ Function Declarations ************/
@@ -564,24 +560,8 @@ static void compute_wireconn_connections(e_directionality directionality,
 
         // Evaluate permutation functions for the from_wire
         for (const std::string& perm : permutations) {
-            // Convert the symbolic permutation formula to a number.
-            // The result depends only on the formula and the (W, t) variable values,
-            // which repeat across connections and switchblock locations. Cache it to
-            // avoid re-parsing the formula string for every connection.
-            uint64_t wt_key = (uint64_t(dest_W) << 32) | uint64_t(uint32_t(src_wire_ind));
-            std::unordered_map<uint64_t, int>& formula_results = scratchpad->formula_cache[perm];
-            auto result_iter = formula_results.find(wt_key);
-            int raw_dest_wire_ind;
-            if (result_iter != formula_results.end()) {
-                raw_dest_wire_ind = result_iter->second;
-            } else {
-                vtr::t_formula_data& formula_data = scratchpad->formula_data;
-                formula_data.clear();
-                formula_data.set_var_value("W", dest_W);
-                formula_data.set_var_value("t", src_wire_ind);
-                raw_dest_wire_ind = get_sb_formula_raw_result(scratchpad->formula_parser, perm, formula_data);
-                formula_results.emplace(wt_key, raw_dest_wire_ind);
-            }
+            // Convert the symbolic permutation formula to a number
+            int raw_dest_wire_ind = scratchpad->formula_cache.evaluate(perm, dest_W, src_wire_ind);
             int dest_wire_ind = adjust_formula_result(raw_dest_wire_ind, src_W, dest_W, iconn);
 
             if (dest_wire_ind < 0) {
