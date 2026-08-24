@@ -320,6 +320,37 @@ static std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> validate_r
         if (molecule.chain_id.is_valid() && mol_group.first.is_valid()) {
             chain_groups.emplace(molecule.chain_id, mol_group);
         }
+
+        // Only the root atom of a molecule can be given a site: the legalizer
+        // forces the root onto it, and the pack pattern then fixes where the
+        // molecule's other atoms land. So a site on a non-root atom of a
+        // molecule whose root has none can never be honoured; it would be
+        // ignored silently. That means the prepacker built different molecules
+        // than it did when the sites were recorded, so fail instead.
+        AtomBlockId root_blk_id = molecule.atom_block_ids[molecule.root];
+        if (root_blk_id.is_valid()
+            && relative_macros.get_atom_site_path(root_blk_id).empty()) {
+            for (AtomBlockId blk_id : molecule.atom_block_ids) {
+                if (!blk_id.is_valid())
+                    continue;
+                const std::string& site_path = relative_macros.get_atom_site_path(blk_id);
+                if (site_path.empty())
+                    continue;
+
+                std::pair<UserRelativeMacroId, int> atom_group = relative_macros.get_atom_group(blk_id);
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "Atom '%s' of relative macro '%s' group %d is locked to primitive site '%s', but it "
+                                "is not the root of its prepacked molecule (the root is atom '%s', which is not "
+                                "locked). A site can only be forced through a molecule's root primitive, so this site "
+                                "would be ignored. The netlist most likely forms different pack patterns than the "
+                                "netlist the sites were recorded from; regenerate the macro against this netlist.\n",
+                                atom_netlist.block_name(blk_id).c_str(),
+                                relative_macros.get_macro(atom_group.first).name.c_str(),
+                                atom_group.second,
+                                site_path.c_str(),
+                                atom_netlist.block_name(root_blk_id).c_str());
+            }
+        }
     }
 
     return chain_groups;
@@ -344,7 +375,7 @@ static std::vector<std::pair<UserRelativeMacroId, int>> find_split_relative_grou
             LegalizationClusterId group_cluster_id;
             for (AtomBlockId blk_id : macro.groups[igroup].atoms) {
                 LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
-                // Unclustered atoms are tolerated: they cannot pin the group to
+                // Unclustered atoms are tolerated: they cannot tie the group to
                 // a second cluster, and a pass that left atoms unclustered is
                 // never accepted as the final clustering anyway.
                 if (!cluster_id.is_valid())
@@ -552,7 +583,12 @@ bool try_pack(const t_packer_opts& packer_opts,
                 split_group_report += "  Relative macro '" + macro.name + "', group " + std::to_string(group_idx) + ":";
                 for (AtomBlockId blk_id : macro.groups[group_idx].atoms) {
                     LegalizationClusterId atom_cluster_id = cluster_legalizer.get_atom_cluster(blk_id);
+                    // Name the site of a locked atom: a group that splits
+                    // because one atom could not take the site it was given is
+                    // only actionable if the site is in the message.
+                    const std::string& site_path = relative_macros.get_atom_site_path(blk_id);
                     split_group_report += " '" + atom_ctx.netlist().block_name(blk_id) + "' ("
+                                          + (!site_path.empty() ? "site '" + site_path + "', " : "")
                                           + (atom_cluster_id.is_valid() ? "cluster " + std::to_string((size_t)atom_cluster_id)
                                                                         : std::string("unclustered"))
                                           + ")";
