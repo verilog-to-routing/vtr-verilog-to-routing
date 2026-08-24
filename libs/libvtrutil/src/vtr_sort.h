@@ -143,4 +143,30 @@ void stable_radix_sort(Container& items, const sort_key<KeyFns>&... keys) {
     stable_radix_sort(items, scratch, keys...);
 }
 
+/**
+ * @brief Stable LSD radix sort of [first, last) into out by several keys.
+ *
+ * out must already have (last - first) elements. keys are listed from the
+ * most significant to the least significant. The input is read directly, so
+ * a generated sequence such as a vtr::StrongIdRange needs no copy first.
+ */
+template<typename InIt, typename Container, typename... KeyFns>
+    requires std::forward_iterator<InIt>
+void stable_radix_sort(InIt first, InIt last, Container& out, const sort_key<KeyFns>&... keys) {
+    static_assert(sizeof...(KeyFns) > 0, "stable_radix_sort needs at least one sort key");
+    constexpr size_t num_keys = sizeof...(KeyFns);
+    VTR_ASSERT(static_cast<size_t>(std::distance(first, last)) == std::size(out));
+
+    // First pass on the least significant key, from the input range into out
+    auto key_tuple = std::tie(keys...);
+    const auto& least_significant = std::get<num_keys - 1>(key_tuple);
+    stable_counting_sort(first, last, std::begin(out), least_significant.num_keys, least_significant.key_of);
+
+    // Remaining passes ping-pong between out and scratch, ending in out
+    if constexpr (num_keys > 1) {
+        Container scratch(std::size(out));
+        detail::stable_radix_sort_passes(out, scratch, key_tuple, std::make_index_sequence<num_keys - 1>{});
+    }
+}
+
 } // namespace vtr

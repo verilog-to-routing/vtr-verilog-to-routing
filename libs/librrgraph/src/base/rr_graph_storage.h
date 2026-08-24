@@ -15,6 +15,7 @@
 #include "rr_switch.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_sort.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
 #include <numeric>
@@ -891,7 +892,7 @@ class t_rr_graph_storage {
      * @brief Sorts edges according to comparison_function. This is an expensive method that builds the edge array from scratch
      * and invalidates all the RREdgeIds. This is not an inplace sort, and it is very expensive.
      * You should not be calling this method more than once or twice in the entire program, definitely do not use it in a hot loop.
-     * @tparam t_comp_func callable object with two size_t arguments. See 'edge_compare_src_node_and_configurable_first' for example.
+     * @tparam t_comp_func callable object with two RREdgeId arguments.
      * @param comparison_function Comparison function to order edges with.
      */
     template <typename t_comp_func>
@@ -907,13 +908,30 @@ class t_rr_graph_storage {
     }
 
     /**
-     * @brief Sorts edges by ascending destination node.
+     * @brief Sorts edges by one or more small integer keys.
      *
-     * Produces the same edge order as sort_edges() with a comparator ordering by destination node only,
-     * but runs as a single stable counting sort pass over the edges instead of a comparison sort.
+     * keys are listed from the most significant to the least significant. Each key is a
+     * vtr::sort_key whose key_of maps an RREdgeId to a value smaller than its num_keys.
+     * The result is the same as sort_edges() with a comparator on the tuple of keys,
+     * ties keep their current order, but it is computed with stable counting sort passes
+     * instead of a comparison sort.
      * Like sort_edges(), this rebuilds the edge arrays and invalidates all RREdgeIds.
+     *
+     * Example, sorting by destination node:
+     *
+     *     sort_edges_by_keys(vtr::sort_key(num_nodes, [&](RREdgeId e) { return edge_dest_node_[e]; }));
      */
-    void sort_edges_by_dest_node();
+    template <typename... KeyFns>
+    void sort_edges_by_keys(const vtr::sort_key<KeyFns>&... keys) {
+        size_t num_edges = edge_src_node_.size();
+        vtr::StrongIdRange<RREdgeId> edge_range(RREdgeId(0), RREdgeId(num_edges));
+
+        // Sort the edge ids 0..num_edges-1 by the keys directly into edge_indices
+        std::vector<RREdgeId> edge_indices(num_edges);
+        vtr::stable_radix_sort(edge_range.begin(), edge_range.end(), edge_indices, keys...);
+
+        apply_edge_permutation(edge_indices);
+    }
 
     /******************
      * Fan-in methods *
