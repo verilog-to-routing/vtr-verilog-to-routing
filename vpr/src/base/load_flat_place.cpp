@@ -40,7 +40,7 @@ static void print_flat_placement_file_header(FILE* fp) {
             vtr::BUILD_TIMESTAMP);
     fprintf(fp, "#\n");
     fprintf(fp, "# This file prints the following information for each atom in the netlist:\n");
-    fprintf(fp, "# <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type>\n");
+    fprintf(fp, "# <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type> <site_path>\n");
     fprintf(fp, "\n");
 }
 
@@ -63,6 +63,8 @@ static void print_flat_cluster(FILE* fp,
                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                                const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     // Atom context used to get the atom_pb for each atom in the cluster.
+    // NOTE: This is only used for getting the atom's primitive type and the
+    //       hierarchical path of the primitive it was placed on.
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // Get the location of this cluster.
@@ -73,13 +75,30 @@ static void print_flat_cluster(FILE* fp,
         // Get the atom pb graph node.
         t_pb_graph_node* atom_pbgn = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom)->pb_graph_node;
 
+        // The hierarchical path of the primitive this atom was placed on,
+        // e.g. "clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0]".
+        std::string site_path = atom_pbgn->hierarchical_type_name();
+
+        // The file is whitespace delimited, so a path containing whitespace
+        // would break tokenisation and silently mis-parse in every reader.
+        // Refuse to write it.
+        if (site_path.find_first_of(" \t\n\v\f\r") != std::string::npos) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Cannot write the flat placement file: the primitive site path of atom '%s' "
+                            "contains whitespace ('%s'). Remove whitespace from the pb_type and mode names "
+                            "of the architecture.\n",
+                            atom_ctx.netlist().block_name(atom).c_str(),
+                            site_path.c_str());
+        }
+
         // Print the flat placement information for this atom.
-        fprintf(fp, "%s  %d %d %d %d #%zu %s\n",
+        fprintf(fp, "%s  %d %d %d %d #%zu %s %s\n",
                 atom_ctx.netlist().block_name(atom).c_str(),
                 blk_loc.x, blk_loc.y, blk_loc.layer,
                 blk_loc.sub_tile,
                 static_cast<size_t>(blk_id),
-                atom_pbgn->pb_type->name);
+                atom_pbgn->pb_type->name,
+                site_path.c_str());
     }
 }
 
