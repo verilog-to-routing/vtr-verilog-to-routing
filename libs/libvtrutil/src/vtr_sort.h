@@ -57,9 +57,9 @@ void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, Key
 /**
  * @brief Stable counting sort of a container in place.
  *
- * scratch must have the same size as items. It is used as the destination
- * buffer and then swapped with items, so after the call scratch holds the
- * old (unsorted) contents.
+ * scratch must be a different container of the same size as items. It is used
+ * as the destination buffer and then swapped with items, so after the call
+ * scratch holds the old (unsorted) contents.
  *
  * @tparam Container  Random access, swappable container (std::vector, vtr::vector, ...).
  * @param num_keys  Exclusive upper bound on the keys. Every key must be smaller than this.
@@ -67,6 +67,8 @@ void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, Key
 template<typename Container, typename KeyFn>
 void stable_counting_sort(Container& items, Container& scratch, size_t num_keys, KeyFn key_of) {
     VTR_ASSERT(std::size(items) == std::size(scratch));
+    // The sort reads items while writing scratch, so the two must not be the same container.
+    VTR_ASSERT(&items != &scratch);
     stable_counting_sort(std::begin(items), std::end(items), std::begin(scratch), num_keys, key_of);
     std::swap(items, scratch);
 }
