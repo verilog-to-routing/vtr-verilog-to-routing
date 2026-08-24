@@ -887,35 +887,19 @@ class t_rr_graph_storage {
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     bool validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
-    
-    /**
-     * @brief Sorts edges according to comparison_function. This is an expensive method that builds the edge array from scratch
-     * and invalidates all the RREdgeIds. This is not an inplace sort, and it is very expensive.
-     * You should not be calling this method more than once or twice in the entire program, definitely do not use it in a hot loop.
-     * @tparam t_comp_func callable object with two RREdgeId arguments.
-     * @param comparison_function Comparison function to order edges with.
-     */
-    template <typename t_comp_func>
-    void sort_edges(t_comp_func comparison_function) {
-
-        size_t num_edges = edge_src_node_.size();
-        vtr::StrongIdRange<RREdgeId> edge_range(RREdgeId(0), RREdgeId(num_edges));
-        std::vector<RREdgeId> edge_indices(edge_range.begin(), edge_range.end());
-
-        std::stable_sort(edge_indices.begin(), edge_indices.end(), comparison_function);
-
-        apply_edge_permutation(edge_indices);
-    }
 
     /**
      * @brief Sorts edges by one or more small integer keys.
      *
      * keys are listed from the most significant to the least significant. Each key is a
      * vtr::sort_key whose key_of maps an RREdgeId to a value smaller than its num_keys.
-     * The result is the same as sort_edges() with a comparator on the tuple of keys,
-     * ties keep their current order, but it is computed with stable counting sort passes
-     * instead of a comparison sort.
-     * Like sort_edges(), this rebuilds the edge arrays and invalidates all RREdgeIds.
+     * The result is the same as a stable sort by the tuple of keys, ties keep their
+     * current order, but it is computed with stable counting sort passes instead of a
+     * comparison sort.
+     *
+     * This is an expensive method that rebuilds the edge arrays from scratch and
+     * invalidates all RREdgeIds. It should only be called a few times while the graph
+     * is being built, never in a hot loop.
      *
      * Example, sorting by destination node:
      *
