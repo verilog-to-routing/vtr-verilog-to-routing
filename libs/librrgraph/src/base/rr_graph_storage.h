@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <bitset>
 
 #include "librrgraph_types.h"

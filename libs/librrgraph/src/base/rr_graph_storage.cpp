@@ -5,6 +5,7 @@
 #include "vtr_assert.h"
 #include "vtr_error.h"
 #include "librrgraph_types.h"
+#include "vtr_sort.h"
 #include "vtr_util.h"
 
 #include <algorithm>
