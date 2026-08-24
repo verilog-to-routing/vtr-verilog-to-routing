@@ -54,6 +54,10 @@ using t_signature_member = std::tuple<e_side, int, int, int, int>;
 static std::vector<t_signature_member> get_surrounding_blocks_signature(const t_physical_tile_loc& root_loc,
                                                                         t_physical_tile_type_ptr tile_type);
 
+/// @brief Returns representative tile locations to sample when populating the src/opin lookahead.
+static std::vector<t_physical_tile_loc> get_representative_sample_locs(int layer_num,
+                                                                       t_physical_tile_type_ptr tile_type);
+
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     util::t_ipin_primitive_sink_delays& pin_delays,
                                     t_physical_tile_type_ptr physical_tile,
@@ -1260,6 +1264,32 @@ static std::vector<t_signature_member> get_surrounding_blocks_signature(const t_
     }
 
     return signature;
+}
+
+static std::vector<t_physical_tile_loc> get_representative_sample_locs(int layer_num,
+                                                                       t_physical_tile_type_ptr tile_type) {
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
+    std::map<std::vector<t_signature_member>, t_physical_tile_loc> locs_by_signature;
+    for (int x = 0; x < (int)grid.width(); x++) {
+        for (int y = 0; y < (int)grid.height(); y++) {
+            t_physical_tile_loc root_loc(x, y, layer_num);
+            // Visit each instance once, at the location it starts from
+            if (grid.get_physical_type(root_loc) != tile_type || !grid.is_root_location(root_loc)) {
+                continue;
+            }
+
+            locs_by_signature.try_emplace(get_surrounding_blocks_signature(root_loc, tile_type), root_loc);
+        }
+    }
+
+    std::vector<t_physical_tile_loc> sample_locs;
+    sample_locs.reserve(locs_by_signature.size());
+    for (const auto& [signature, root_loc] : locs_by_signature) {
+        sample_locs.push_back(root_loc);
+    }
+
+    return sample_locs;
 }
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev) {
