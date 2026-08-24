@@ -14,6 +14,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 #include "atom_netlist_fwd.h"
@@ -595,11 +596,6 @@ class ClusterLegalizer {
         cluster_legalization_strategy_ = strategy;
     }
 
-    /// @brief Gets the current legalization strategy of the cluster legalizer.
-    inline ClusterLegalizationStrategy get_legalization_strategy() const {
-        return cluster_legalization_strategy_;
-    }
-
     /**
      * @brief Set the relative placement group owning each prepacked chain
      */
@@ -607,12 +603,30 @@ class ClusterLegalizer {
         rel_chain_owners_ = std::move(owners);
     }
 
-    /// @brief Returns the relative placement group (macro id, group index)
-    ///        hosted by the given cluster, or an invalid pair if the cluster
-    ///        does not host one.
-    inline std::pair<UserRelativeMacroId, int> get_cluster_rel_group(LegalizationClusterId cluster_id) const {
-        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
-        return legalization_clusters_[cluster_id].rel_group;
+    /**
+     * @brief Why the last locked molecule could not be placed on the primitive
+     *        site it is locked to, for callers that turn a packing failure into
+     *        a fatal error and need to name the cause.
+     */
+    struct UnsatisfiableLockedSite {
+        /// @brief The atom whose site could not be honoured.
+        AtomBlockId atom;
+        /// @brief The relative macro and group index the atom belongs to.
+        std::pair<UserRelativeMacroId, int> rel_group = {UserRelativeMacroId::INVALID(), -1};
+        /// @brief The hierarchical path of the site the atom is locked to.
+        std::string site_path;
+        /// @brief A few paths of primitives that could hold the atom in the
+        ///        cluster type that was tried, for the "did you mean" part of
+        ///        the message. Empty if that type has no compatible primitive.
+        std::vector<std::string> available_site_paths;
+        /// @brief Name of the cluster type that was tried.
+        std::string cluster_type_name;
+    };
+
+    /// @brief Returns the last unsatisfiable primitive site lock (see
+    ///        UnsatisfiableLockedSite). Its `atom` is invalid if there was none.
+    inline const UnsatisfiableLockedSite& get_last_unsatisfiable_locked_site() const {
+        return last_unsatisfiable_locked_site_;
     }
 
     /*
@@ -668,6 +682,22 @@ class ClusterLegalizer {
                                             const std::pair<UserRelativeMacroId, int>& rel_group,
                                             const LegalizationCluster& cluster) const;
 
+    /**
+     * @brief Log why a molecule locked to a primitive site could not be placed
+     *        on it, naming the relative macro, the group, the atom and the
+     *        site, plus the atom occupying the site if there is one.
+     *
+     *  @param molecule         The molecule that could not be placed.
+     *  @param cluster          The cluster it was being added to.
+     *  @param rel_group        The relative placement group the molecule is in.
+     *  @param force_site_path  The hierarchical path of the primitive site the
+     *                          molecule's root atom is locked to.
+     */
+    void report_unsatisfiable_locked_site(const t_pack_molecule& molecule,
+                                          const LegalizationCluster& cluster,
+                                          const std::pair<UserRelativeMacroId, int>& rel_group,
+                                          std::string_view force_site_path);
+
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
@@ -719,6 +749,10 @@ class ClusterLegalizer {
 
     /// @brief The relative placement group owning each prepacked chain.
     std::map<MoleculeChainId, std::pair<UserRelativeMacroId, int>> rel_chain_owners_;
+
+    /// @brief The last locked molecule rejected because its site was not
+    ///        available (see get_last_unsatisfiable_locked_site()).
+    UnsatisfiableLockedSite last_unsatisfiable_locked_site_;
 
     /// @brief Controls whether the pin counting feasibility filter is used
     ///        during clustering. When enabled the clustering engine counts the

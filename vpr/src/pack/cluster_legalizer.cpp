@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 #include "atom_lookup.h"
@@ -968,6 +969,9 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     // The external pin utilization limit applied to this molecule. Relaxed
     // below for molecules of the cluster's own relative placement group.
     t_ext_pin_util effective_external_pin_util = max_external_pin_util;
+    // The hierarchical path of the primitive site this molecule is locked to,
+    // or empty when it is free to be placed anywhere in the cluster.
+    std::string_view force_site_path;
     if (floorplanning_ctx.relative_macros.get_num_macros() != 0) {
         for (AtomBlockId atom_blk_id : molecule.atom_block_ids) {
             if (!atom_blk_id.is_valid())
@@ -1000,6 +1004,23 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         if (molecule_in_cluster_group) {
             effective_external_pin_util = t_ext_pin_util(1.f, 1.f);
         }
+
+        // Force the molecule onto the site recorded for its root atom, if any.
+        if (molecule_in_cluster_group) {
+            AtomBlockId root_blk_id = molecule.atom_block_ids[molecule.root];
+            if (root_blk_id.is_valid()) {
+                // The site path lives in the UserRelativeMacros of the
+                // floorplanning context, so it outlives this call.
+                const std::string& site_path = floorplanning_ctx.relative_macros.get_atom_site_path(root_blk_id);
+                if (!site_path.empty()) {
+                    force_site_path = site_path;
+                    VTR_LOGV(log_verbosity_ > 3,
+                             "\t\tRelative macro: atom '%s' is locked to primitive site '%s'\n",
+                             atom_ctx.netlist().block_name(root_blk_id).c_str(),
+                             site_path.c_str());
+                }
+            }
+        }
     }
 
     // Reuse the member scratch vector to avoid a heap allocation per candidate molecule.
@@ -1008,10 +1029,18 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     LazyPopUniquePriorityQueue<t_pb_graph_node*, std::tuple<float, int, int>> primitives_alive = build_primitive_candidate_queue(cluster.placement_stats,
                                                                                                                                  molecule_id,
                                                                                                                                  primitives_list_,
-                                                                                                                                 prepacker_);
+                                                                                                                                 prepacker_,
+                                                                                                                                 force_site_path);
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (primitives_alive.empty()) {
+            if (!force_site_path.empty()) {
+                // The molecule is locked to one site, so there is nothing else
+                // to try in this cluster
+                report_unsatisfiable_locked_site(molecule, cluster, new_cluster_rel_group, force_site_path);
+                block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
+                break;
+            }
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
@@ -1713,6 +1742,137 @@ std::pair<UserRelativeMacroId, int> ClusterLegalizer::get_relative_chain_owner(M
     if (owner_it != rel_chain_owners_.end())
         return owner_it->second;
     return {UserRelativeMacroId::INVALID(), -1};
+}
+
+/**
+ * @brief Collect the hierarchical paths of the primitive sites under
+ *        pb_graph_node (all modes) that could host the given atom, and report
+ *        whether one of them is the wanted path.
+ *
+ * Occupancy is ignored: this answers whether the site is expressible in this
+ * cluster type at all, and - through the collected paths - what the caller
+ * could have written instead.
+ *
+ * @param wanted_path      The path the atom is locked to.
+ * @param available_paths  Appended with compatible paths, up to max_paths of
+ *                         them, for the diagnostic.
+ * @return Whether a compatible primitive with exactly the wanted path exists.
+ */
+static bool find_atom_compatible_site_path(const t_pb_graph_node* pb_graph_node,
+                                           AtomBlockId blk_id,
+                                           const std::string& wanted_path,
+                                           std::vector<std::string>& available_paths,
+                                           size_t max_paths) {
+    bool found = false;
+
+    // Depth-first walk of the pb hierarchy.
+    std::vector<const t_pb_graph_node*> to_visit = {pb_graph_node};
+    while (!to_visit.empty()) {
+        const t_pb_graph_node* node = to_visit.back();
+        to_visit.pop_back();
+
+        if (node->is_primitive()) {
+            if (!primitive_type_feasible(blk_id, node->pb_type))
+                continue;
+            std::string path = node->hierarchical_type_name();
+            if (path == wanted_path)
+                found = true;
+            else if (available_paths.size() < max_paths)
+                available_paths.push_back(std::move(path));
+            continue;
+        }
+
+        for (int imode = node->pb_type->num_modes - 1; imode >= 0; imode--) {
+            const t_mode& mode = node->pb_type->modes[imode];
+            for (int ichild = mode.num_pb_type_children - 1; ichild >= 0; ichild--) {
+                for (int ipb = mode.pb_type_children[ichild].num_pb - 1; ipb >= 0; ipb--)
+                    to_visit.push_back(&node->child_pb_graph_nodes[imode][ichild][ipb]);
+            }
+        }
+    }
+
+    return found;
+}
+
+void ClusterLegalizer::report_unsatisfiable_locked_site(const t_pack_molecule& molecule,
+                                                        const LegalizationCluster& cluster,
+                                                        const std::pair<UserRelativeMacroId, int>& rel_group,
+                                                        std::string_view force_site_path) {
+    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
+    const UserRelativeMacros& relative_macros = g_vpr_ctx.floorplanning().relative_macros;
+    AtomBlockId root_blk_id = molecule.atom_block_ids[molecule.root];
+    const std::string& macro_name = relative_macros.get_macro(rel_group.first).name;
+    // This is a cold path (a rejection), and both the record kept below and the
+    // log messages want a std::string, so make one copy up front.
+    const std::string site_path(force_site_path);
+
+    // Is the site expressible in this cluster type at all, and if not, what
+    // could have been written instead?
+    constexpr size_t MAX_REPORTED_PATHS = 3;
+    std::vector<std::string> available_paths;
+    bool site_exists = find_atom_compatible_site_path(cluster.type->pb_graph_head,
+                                                      root_blk_id,
+                                                      site_path,
+                                                      available_paths,
+                                                      MAX_REPORTED_PATHS);
+
+    // Remember the rejection: a seed molecule that is rejected by every
+    // candidate cluster type ends in a fatal error raised by the caller, which
+    // would otherwise blame the architecture without mentioning the site (see
+    // GreedyClusterer::start_new_cluster).
+    last_unsatisfiable_locked_site_ = {root_blk_id,
+                                       rel_group,
+                                       site_path,
+                                       available_paths,
+                                       cluster.type->name};
+
+    // Everything below only produces the per-attempt log message. The walk
+    // above cannot be skipped: it feeds the record the caller's fatal error
+    // reads (and it is only reached when a locked molecule is rejected).
+    if (log_verbosity_ <= 2)
+        return;
+
+    if (!site_exists) {
+        std::string examples;
+        for (const std::string& path : available_paths)
+            examples += " '" + path + "'";
+        VTR_LOG("\t\tRelative macro '%s' group %d: atom '%s' is locked to primitive site '%s', which does not "
+                "exist in cluster type '%s' for this atom. Compatible sites there include:%s\n",
+                macro_name.c_str(), rel_group.second,
+                atom_nlist.block_name(root_blk_id).c_str(), site_path.c_str(),
+                cluster.type->name.c_str(),
+                examples.empty() ? " (none)" : examples.c_str());
+        return;
+    }
+
+    // The site exists, so it is taken: name the atom sitting on it, which is
+    // the actionable information (two atoms of the group locked to one site, or
+    // fill logic that got there first).
+    for (PackMoleculeId cluster_mol_id : cluster.molecules) {
+        const t_pack_molecule& cluster_mol = prepacker_.get_molecule(cluster_mol_id);
+        for (AtomBlockId blk_id : cluster_mol.atom_block_ids) {
+            if (!blk_id.is_valid())
+                continue;
+            const t_pb* atom_pb = atom_pb_lookup().atom_pb(blk_id);
+            if (atom_pb == nullptr)
+                continue;
+            if (atom_pb->pb_graph_node->hierarchical_type_name() != site_path)
+                continue;
+
+            VTR_LOG("\t\tRelative macro '%s' group %d: atom '%s' is locked to primitive site '%s', "
+                    "which is already occupied by atom '%s'\n",
+                    macro_name.c_str(), rel_group.second,
+                    atom_nlist.block_name(root_blk_id).c_str(), site_path.c_str(),
+                    atom_nlist.block_name(blk_id).c_str());
+            return;
+        }
+    }
+
+    VTR_LOG("\t\tRelative macro '%s' group %d: atom '%s' could not be placed on the primitive site '%s' it "
+            "is locked to (the site or one of its ancestors is unavailable, or the molecule rooted at this "
+            "atom does not fit there)\n",
+            macro_name.c_str(), rel_group.second,
+            atom_nlist.block_name(root_blk_id).c_str(), site_path.c_str());
 }
 
 bool ClusterLegalizer::check_cluster_long_chain_ownership(const t_pack_molecule& molecule,
