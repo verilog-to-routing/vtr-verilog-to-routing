@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
  * Input file: /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: 87e4a93952c6e05cbb03b4ce42656d36
+ * md5sum of input file: e589fedfb6c057e5decbf6ee406658c7
  */
 
 #include <functional>
@@ -67,6 +67,7 @@ class VprConstraintsBase {
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      *   <xs:attribute name="is_regex" type="xs:string" default="false" />
      *   <xs:attribute name="logical_block_location" type="xs:string" use="optional" />
+     *   <xs:attribute name="site_path" type="xs:string" use="optional" />
      * </xs:complexType>
      */
     virtual inline const char* get_add_atom_is_regex(typename ContextTypes::AddAtomReadContext& ctx) = 0;
@@ -75,6 +76,8 @@ class VprConstraintsBase {
     virtual inline void set_add_atom_logical_block_location(const char* logical_block_location, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
     virtual inline const char* get_add_atom_name_pattern(typename ContextTypes::AddAtomReadContext& ctx) = 0;
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
+    virtual inline const char* get_add_atom_site_path(typename ContextTypes::AddAtomReadContext& ctx) = 0;
+    virtual inline void set_add_atom_site_path(const char* site_path, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
 
     /** Generated for complex type "add_region":
      * <xs:complexType name="add_region">

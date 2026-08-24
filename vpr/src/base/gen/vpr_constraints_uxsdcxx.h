@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx.py /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
  * Input file: /home/amohaghegh/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: 87e4a93952c6e05cbb03b4ce42656d36
+ * md5sum of input file: e589fedfb6c057e5decbf6ee406658c7
  */
 
 #include <functional>
@@ -157,8 +157,9 @@ static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.")
 
 enum class atok_t_add_atom { IS_REGEX,
                              LOGICAL_BLOCK_LOCATION,
-                             NAME_PATTERN };
-constexpr const char* atok_lookup_t_add_atom[] = {"is_regex", "logical_block_location", "name_pattern"};
+                             NAME_PATTERN,
+                             SITE_PATH };
+constexpr const char* atok_lookup_t_add_atom[] = {"is_regex", "logical_block_location", "name_pattern", "site_path"};
 
 enum class atok_t_add_region { LAYER_HIGH,
                                LAYER_LOW,
@@ -223,6 +224,21 @@ inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<v
             switch (*((triehash_uu64*)&in[0])) {
                 case onechar('i', 0, 64) | onechar('s', 8, 64) | onechar('_', 16, 64) | onechar('r', 24, 64) | onechar('e', 32, 64) | onechar('g', 40, 64) | onechar('e', 48, 64) | onechar('x', 56, 64):
                     return atok_t_add_atom::IS_REGEX;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 9:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('s', 0, 64) | onechar('i', 8, 64) | onechar('t', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):
+                    switch (in[8]) {
+                        case onechar('h', 0, 8):
+                            return atok_t_add_atom::SITE_PATH;
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 default:
                     break;
@@ -1175,6 +1191,9 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
             case atok_t_add_atom::NAME_PATTERN:
                 out.set_add_atom_name_pattern(attr.value(), context);
                 break;
+            case atok_t_add_atom::SITE_PATH:
+                out.set_add_atom_site_path(attr.value(), context);
+                break;
             default:
                 break; /* Not possible. */
         }
@@ -1856,6 +1875,8 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
             if ((bool)in.get_add_atom_logical_block_location(child_context))
                 os << " logical_block_location=\"" << in.get_add_atom_logical_block_location(child_context) << "\"";
             os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
+            if ((bool)in.get_add_atom_site_path(child_context))
+                os << " site_path=\"" << in.get_add_atom_site_path(child_context) << "\"";
             os << "/>\n";
         }
     }
@@ -1917,6 +1938,8 @@ inline void write_reference_group(T& in, std::ostream& os, Context& context) {
             if ((bool)in.get_add_atom_logical_block_location(child_context))
                 os << " logical_block_location=\"" << in.get_add_atom_logical_block_location(child_context) << "\"";
             os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
+            if ((bool)in.get_add_atom_site_path(child_context))
+                os << " site_path=\"" << in.get_add_atom_site_path(child_context) << "\"";
             os << "/>\n";
         }
     }
@@ -1935,6 +1958,8 @@ inline void write_relative_group(T& in, std::ostream& os, Context& context) {
             if ((bool)in.get_add_atom_logical_block_location(child_context))
                 os << " logical_block_location=\"" << in.get_add_atom_logical_block_location(child_context) << "\"";
             os << " name_pattern=\"" << in.get_add_atom_name_pattern(child_context) << "\"";
+            if ((bool)in.get_add_atom_site_path(child_context))
+                os << " site_path=\"" << in.get_add_atom_site_path(child_context) << "\"";
             os << "/>\n";
         }
     }
