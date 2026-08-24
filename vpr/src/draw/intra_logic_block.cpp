@@ -307,10 +307,10 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
 }
 
 static double calculate_blk_internal_declutter_level(double blk_internal_world_area, ezgl::renderer* g) {
-    // Calculate the target block internal screen area that reaches the minimum required screen coverage.
+    // Calculate the block internal's target area in screen coordinates that reaches the minimum required screen coverage.
     double target_blk_internal_screen_area = g->get_visible_screen().area() * BLK_INTERNAL_MIN_SCREEN_COVERAGE;
 
-    // Calculate the world-area-per-screen-area ratio.
+    // Calculate the associated world-area-per-screen-area ratio.
     double target_world_area_per_screen_area = blk_internal_world_area / target_blk_internal_screen_area;
 
     // The area ratio is two-dimensional. Use std::sqrt() to get the one-dimensional world-units-per-pixel ratio
