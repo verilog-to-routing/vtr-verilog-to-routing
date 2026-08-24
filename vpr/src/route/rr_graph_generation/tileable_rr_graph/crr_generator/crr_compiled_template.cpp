@@ -34,6 +34,8 @@ CompiledTemplate::CompiledTemplate(const DataFrame& df, bool is_annotated) {
     compile_axis(df, /*is_vertical=*/true, sources_, source_index);
     compile_axis(df, /*is_vertical=*/false, sinks_, sink_index);
 
+    cells_.reserve(df.connections);
+
     // Compile the non-empty cells whose row and column both carry a valid spec
     for (size_t row = NUM_EMPTY_ROWS; row < df.rows(); ++row) {
         if (source_index[row] < 0) {
@@ -60,6 +62,7 @@ void CompiledTemplate::compile_axis(const DataFrame& df,
     size_t axis_size = is_vertical ? df.rows() : df.cols();
     size_t axis_start = is_vertical ? NUM_EMPTY_ROWS : NUM_EMPTY_COLS;
     spec_index.assign(axis_size, -1);
+    specs.reserve(axis_size - axis_start);
 
     // The PTC assignment of a routing segment depends on the segments that
     // precede it on the same axis. This state chain replicates the original
