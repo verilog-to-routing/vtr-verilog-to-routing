@@ -70,6 +70,13 @@ void restore_best_placement(PlacerState& placer_state,
 
         costs = placement_checkpoint.restore_placement(placer_state.mutable_block_locs(), placer_state.mutable_grid_blocks());
 
+        // The restored placement may put blocks in different tiles/sub-tiles than
+        // the placement they replaced, so the cached physical pin indices must be
+        // re-synced before any pin coordinates are derived from them below.
+        for (const ClusterBlockId block_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+            placer_state.mutable_blk_loc_registry().place_sync_external_block_connections(block_id);
+        }
+
         net_cost_handler.comp_bb_cong_cost(e_cost_methods::NORMAL);
 
         //recompute timing from scratch

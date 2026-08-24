@@ -125,9 +125,6 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
 //Returns the drawing coordinates of the specified pin
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin);
 
-//Returns the drawing coordinates of the specified tnode
-ezgl::point2d tnode_draw_coord(tatum::NodeId node);
-
 /* Converts a vtr Color to a ezgl Color. */
 ezgl::color to_ezgl_color(vtr::Color<float> color);
 

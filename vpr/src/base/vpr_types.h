@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <set>
+#include <string>
 #include <string_view>
 #include "ap_flow_enums.h"
 #include "atom_netlist_fwd.h"
@@ -31,6 +32,7 @@
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "heap_type.h"
+#include "lb_type_rr_node_types.h"
 
 #include "vtr_assert.h"
 #include "vtr_vector.h"
@@ -255,7 +257,7 @@ typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
  */
 class t_pb {
   public:
-    char* name = nullptr;                     ///<Name of this physical block
+    std::string name;                         ///<Name of this physical block. Empty if the block is unused.
     t_pb_graph_node* pb_graph_node = nullptr; ///<pointer to pb_graph_node this pb corresponds to
 
     int mode = 0; ///<mode that this pb is set to
@@ -1634,8 +1636,6 @@ struct t_power_opts {
     bool do_power; ///<Perform power estimation?
 };
 
-struct t_lb_type_rr_node; /* Defined in pack_types.h */
-
 /// @brief Stores settings for VPR server mode
 struct t_server_opts {
     bool is_server_mode_enabled = false;
@@ -1656,7 +1656,7 @@ struct t_vpr_setup {
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
-    std::vector<t_lb_type_rr_node>* PackerRRGraph;
+    std::vector<std::vector<t_lb_type_rr_node>> PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run

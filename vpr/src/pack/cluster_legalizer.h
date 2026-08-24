@@ -16,6 +16,7 @@
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "cluster_legalizer_fwd.h"
+#include "cluster_pin_counter.h"
 #include "cluster_router.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
@@ -97,7 +98,8 @@ struct LegalizationCluster {
         , pr(PartitionRegion())
         , noc_grp_id(NocGroupId::INVALID())
         , cluster_router()
-        , placement_stats(nullptr) {}
+        , placement_stats(nullptr)
+        , pin_counter() {}
 
     /**
      * @brief Constructor for the LegalizationCluster class.
@@ -112,7 +114,7 @@ struct LegalizationCluster {
      */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
-                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                        const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                         const std::unordered_set<int>& valid_feedback_pins,
                         bool enable_router_hot_start = false);
 
@@ -154,6 +156,12 @@ struct LegalizationCluster {
     ///        placed in the cluster. This is used when the legalizer decides
     ///        what sites it should try to put a new molecule into.
     t_intra_cluster_placement_stats* placement_stats;
+
+    /// @brief Pin counting state for this cluster's pb hierarchy. Tracks the
+    ///        demand of each pin class at each pb level so the legalizer can
+    ///        quickly check whether adding a candidate molecule would exceed
+    ///        the pin supply of this cluster.
+    ClusterPinCounter pin_counter;
 };
 
 /*
@@ -308,7 +316,7 @@ class ClusterLegalizer {
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
-                     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                     const std::vector<std::vector<t_lb_type_rr_node>>& lb_type_rr_graphs,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
@@ -490,7 +498,7 @@ class ClusterLegalizer {
     }
 
     /// @brief Gets the name of the given cluster.
-    inline std::string get_cluster_name(LegalizationClusterId cluster_id) const {
+    inline const std::string& get_cluster_name(LegalizationClusterId cluster_id) const {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
         const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
         return cluster.pb->name;
@@ -632,11 +640,14 @@ class ClusterLegalizer {
     ///        expensive to calculate from the prepacker.
     size_t max_molecule_size_;
 
+    /// @brief Scratch vector used by try_pack_molecule() to hold the primitive
+    ///        chosen for each molecule atom. A member to avoid reallocating it
+    ///        for every candidate molecule.
+    std::vector<t_pb_graph_node*> primitives_list_;
+
     /// @brief A vector of routing resource nodes within each logical block type
     ///        [0 .. num_logical_block_types-1]
-    /// TODO: This really should not be a pointer to a vector... I think this is
-    ///       meant to be a vector of vectors...
-    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
+    const std::vector<std::vector<t_lb_type_rr_node>>* lb_type_rr_graphs_ = nullptr;
 
     /// @brief Per-type set of top-level output pin indices with Fc_out > 0.
     ///        Indexed by t_logical_block_type::index.

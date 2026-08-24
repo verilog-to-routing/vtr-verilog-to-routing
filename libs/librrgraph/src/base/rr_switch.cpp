@@ -1,18 +1,6 @@
 
 #include "rr_switch.h"
 
-e_switch_type t_rr_switch_inf::type() const {
-    return type_;
-}
-
-bool t_rr_switch_inf::buffered() const {
-    return switch_type_is_buffered(type());
-}
-
-bool t_rr_switch_inf::configurable() const {
-    return switch_type_is_configurable(type());
-}
-
 bool t_rr_switch_inf::operator==(const t_rr_switch_inf& other) const {
     return R == other.R
            && Cin == other.Cin

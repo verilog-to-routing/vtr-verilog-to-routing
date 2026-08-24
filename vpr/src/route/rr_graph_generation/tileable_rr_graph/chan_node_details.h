@@ -33,7 +33,7 @@ class ChanNodeDetails {
   public:                                    /* Accessors */
     size_t get_chan_width() const;
     size_t get_track_node_id(const size_t& track_id) const;
-    std::vector<size_t> get_track_node_ids() const;
+    const std::vector<size_t>& get_track_node_ids() const;
     Direction get_track_direction(const size_t& track_id) const;
     size_t get_track_segment_length(const size_t& track_id) const;
     size_t get_track_segment_id(const size_t& track_id) const;

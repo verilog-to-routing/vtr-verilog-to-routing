@@ -46,7 +46,6 @@ class Placer {
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
            const t_noc_opts& noc_opts,
-           const IntraLbPbPinLookup& pb_gpin_lookup,
            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
            const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
@@ -81,8 +80,6 @@ class Placer {
     const t_analysis_opts& analysis_opts_;
     /// Holds NoC-related parameters
     const t_noc_opts& noc_opts_;
-    /// Enables fast look-up pb graph pins from block pin indices
-    const IntraLbPbPinLookup& pb_gpin_lookup_;
     /// Enables fast look-up of atom pins connect to CLB pins
     const ClusteredPinAtomPinsLookup& netlist_pin_lookup_;
     /// Placement cost terms with their normalization factors and total cost

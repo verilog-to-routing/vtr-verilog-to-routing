@@ -92,7 +92,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
  * @param g Main renderer.
  * @return True if the block covers at least the minimum screen-area ratio; otherwise false.
  */
-static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
+static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g);
 
 /**
  * @brief Helper subroutine to recursively draw sub-blocks.
@@ -408,7 +408,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 }
 
 #ifndef NO_GRAPHICS
-static inline bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
+static bool large_enough_to_draw(const ezgl::rectangle& pb_bbox, ezgl::renderer* g) {
     // Calculate the block bounding box's area in the world coordinates.
     double pb_bbox_area = pb_bbox.area();
     // Calculate the visible world's (region enclosed by screen) area in the world coordinates.
@@ -448,7 +448,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     // First draw box.
-    if (pb->name != nullptr) {
+    if (!pb->name.empty()) {
         // If block is used, draw it in colour with solid border.
         g->set_line_dash(ezgl::line_dash::none);
 
@@ -485,7 +485,7 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
     // Only when the current block has valid children blocks and the block internal depth
     // does not exceed the limit do we keep recursing.
-    if (pb->child_pbs != nullptr && pb->name != nullptr && pb_type->depth < draw_state->show_blk_internal) {
+    if (pb->child_pbs != nullptr && !pb->name.empty() && pb_type->depth < draw_state->show_blk_internal) {
         int num_child_types = pb->get_num_child_types();
         bool current_child_pb_drawn = false;
         for (int i = 0; i < num_child_types; ++i) {
@@ -543,9 +543,8 @@ static bool draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         }
     } else {
         // Format for primitives: <block_type_name>(<block_name>)
-        if (pb->name != nullptr) {
-            std::string pb_name(pb->name);
-            pb_display_text += "(" + pb_name + ")";
+        if (!pb->name.empty()) {
+            pb_display_text += "(" + pb->name + ")";
         }
     }
 
@@ -885,7 +884,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             ezgl::renderer* g = application->get_renderer();
             // If child block is being used, check if it intersects. Check also if it is visible (drawn) on screen,
             // because otherwise it would be unavailable for selection.
-            if (child_pb->name != nullptr && bbox.contains(local_pt) && large_enough_to_draw(bbox, g)) {
+            if (!child_pb->name.empty() && bbox.contains(local_pt) && large_enough_to_draw(bbox, g)) {
                 // Check farther down the graph, see if we can find
                 // something more specific.
                 t_pb* subtree_result = highlight_sub_block_helper(
@@ -1055,8 +1054,7 @@ bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair&
  */
 t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb) {
     //Checking if block is one being searched for
-    std::string pbName(pb->name);
-    if (pbName == name)
+    if (pb->name == name)
         return pb;
     //If block has no children, returning
     if (pb->child_pbs == nullptr)
@@ -1070,7 +1068,7 @@ t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb) {
         for (int j = 0; j < num_children_of_type; ++j) {
             t_pb* child_pb = &pb->child_pbs[i][j];
             //If child exists, recursively calling function on it
-            if (child_pb->name != nullptr) {
+            if (!child_pb->name.empty()) {
                 t_pb* subtree_result = find_atom_block_in_pb(name, child_pb);
                 //If a result is found, returning it to top of recursive calls
                 if (subtree_result != nullptr) {
