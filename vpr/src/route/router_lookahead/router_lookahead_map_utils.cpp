@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <ranges>
+#include <tuple>
 #include "globals.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
@@ -402,76 +403,71 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
         }
     }
 
-    // We assume that the routing connectivity of each instance of a physical tile is the same,
-    // and so only measure one instance of each type
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
-            if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], from_layer_num) == 0) {
+            const t_physical_tile_type& tile_type = device_ctx.physical_tile_types[itile];
+            if (device_ctx.grid.num_instances(&tile_type, from_layer_num) == 0) {
                 continue;
             }
+
+            std::vector<t_physical_tile_loc> sample_locs = get_representative_sample_locs(from_layer_num, &tile_type);
+            if (sample_locs.empty()) {
+                VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
+                              "Found no sample locations for %s\n",
+                              tile_type.name.c_str());
+                continue;
+            }
+
             for (e_rr_type rr_type : {e_rr_type::SOURCE, e_rr_type::OPIN}) {
-                t_physical_tile_loc sample_loc(UNDEFINED, UNDEFINED, UNDEFINED);
+                // The ptcs of this rr_type that were seen at any sampled instance, each mapped to one
+                // of the nodes it was seen on so that it can be named if it has no reachable wire
+                std::map<int, RRNodeId> sampled_ptcs;
 
-                size_t num_sampled_locs = 0;
-                bool ptcs_with_no_delays = true;
-                while (ptcs_with_no_delays) { //Haven't found wire connected to ptc
-                    sample_loc = pick_sample_tile(from_layer_num,
-                                                  &device_ctx.physical_tile_types[itile],
-                                                  sample_loc);
+                for (const t_physical_tile_loc& root_loc : sample_locs) {
+                    // A tile may span several grid locations and its pins are spread over all of them
+                    for (int width_offset = 0; width_offset < tile_type.width; width_offset++) {
+                        for (int height_offset = 0; height_offset < tile_type.height; height_offset++) {
+                            const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(from_layer_num, root_loc.x + width_offset, root_loc.y + height_offset, rr_type);
+                            for (RRNodeId node_id : rr_nodes_at_loc) {
+                                if (!is_inter_cluster_node(rr_graph, node_id)) {
+                                    continue;
+                                }
 
-                    if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
-                        //No untried instances of the current tile type left
-                        VTR_LOGV_WARN(route_verbosity > 1 || device_model_warnings,
-                                      "Found no %ssample locations for %s in %s\n",
-                                      (num_sampled_locs == 0) ? "" : "more ",
-                                      rr_node_typename[rr_type],
-                                      device_ctx.physical_tile_types[itile].name.c_str());
-                        break;
-                    }
+                                int ptc = rr_graph.node_ptc_num(node_id);
+                                VTR_ASSERT(ptc < int(src_opin_delays[from_layer_num][itile].size()));
+                                sampled_ptcs.emplace(ptc, node_id);
 
-                    // Reset after the break above so that running out of locations leaves the flag set
-                    ptcs_with_no_delays = false;
-
-                    const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
-                    for (RRNodeId node_id : rr_nodes_at_loc) {
-                        int ptc = rr_graph.node_ptc_num(node_id);
-                        if (!is_inter_cluster_node(rr_graph, node_id)) {
-                            continue;
-                        }
-
-                        VTR_ASSERT(ptc < int(src_opin_delays[from_layer_num][itile].size()));
-
-                        // Find the wire types which are reachable from inode and record them and
-                        // the cost to reach them
-                        dijkstra_flood_to_wires(itile, node_id, src_opin_delays);
-
-                        bool reachable_wire_found = false;
-                        for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
-                            if (!src_opin_delays[from_layer_num][itile][ptc][to_layer_num].empty()) {
-                                reachable_wire_found = true;
-                                break;
+                                // Find the wire types which are reachable from inode and record them and
+                                // the cost to reach them
+                                dijkstra_flood_to_wires(itile, node_id, src_opin_delays);
                             }
                         }
-                        if (!reachable_wire_found) {
-                            VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d,%d)\n",
-                                           rr_node_typename[rr_type],
-                                           rr_node_arch_name(node_id, is_flat).c_str(),
-                                           sample_loc.x,
-                                           sample_loc.y,
-                                           sample_loc.layer_num);
+                    }
+                }
 
-                            ptcs_with_no_delays = true;
+                // Every ptc that was sampled should be able to reach a wire on some layer
+                std::vector<RRNodeId> unreachable_nodes;
+                for (const auto& [ptc, node_id] : sampled_ptcs) {
+                    bool reachable_wire_found = false;
+                    for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+                        if (!src_opin_delays[from_layer_num][itile][ptc][to_layer_num].empty()) {
+                            reachable_wire_found = true;
+                            break;
                         }
                     }
-
-                    ++num_sampled_locs;
+                    if (!reachable_wire_found) {
+                        unreachable_nodes.push_back(node_id);
+                    }
                 }
-                if (ptcs_with_no_delays) {
+
+                if (!unreachable_nodes.empty()) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
-                              "Some %ss of tile type %s on layer %d have no reachable wires\n",
+                              "%zu %ss of tile type %s on layer %d have no reachable wires (%s is one of them)\n",
+                              unreachable_nodes.size(),
                               rr_node_typename[rr_type],
-                              device_ctx.physical_tile_types[itile].name.c_str(),
-                              from_layer_num);
+                              tile_type.name.c_str(),
+                              from_layer_num,
+                              rr_node_arch_name(unreachable_nodes.front(), is_flat).c_str());
                 }
             }
         }
