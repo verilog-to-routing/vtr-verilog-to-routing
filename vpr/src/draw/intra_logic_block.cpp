@@ -87,7 +87,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
 #ifndef NO_GRAPHICS
 
 /**
- * @brief Calculates the zoom threshold for a given block internal.
+ * @brief Calculates the zoom threshold for a given block internal to be decluttered.
  *
  * Determines the world-units-per-pixel zoom level at which a block internal
  * with the given world area reaches the minimum required screen coverage.
