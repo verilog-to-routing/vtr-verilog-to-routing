@@ -47,6 +47,13 @@ static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_
 /// (side, offset_along_side, neighbour_type_index, neighbour_width_offset, neighbour_height_offset).
 using t_signature_member = std::tuple<e_side, int, int, int, int>;
 
+/**
+ * @brief Builds a signature of the blocks surrounding one instance of a tile.
+ * @return One member per grid location that touches the instance and holds a tile.
+ */
+static std::vector<t_signature_member> get_surrounding_blocks_signature(const t_physical_tile_loc& root_loc,
+                                                                        t_physical_tile_type_ptr tile_type);
+
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     util::t_ipin_primitive_sink_delays& pin_delays,
                                     t_physical_tile_type_ptr physical_tile,
@@ -1219,6 +1226,40 @@ static int get_tile_src_opin_max_ptc(int itile) {
     }
 
     return max_ptc;
+}
+
+static std::vector<t_signature_member> get_surrounding_blocks_signature(const t_physical_tile_loc& root_loc,
+                                                                        t_physical_tile_type_ptr tile_type) {
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
+    std::vector<t_signature_member> signature;
+
+    // Records the location neighbouring the instance on the given side, at the given offset from the
+    // root of the instance along that side
+    auto record_neighbour = [&](e_side side, int offset_along_side, int x, int y) {
+        t_physical_tile_loc neighbour_loc(x, y, root_loc.layer_num);
+        // A location off the edge of the device holds no tile, so nothing is recorded for it
+        if (!grid.is_valid_tile_loc(neighbour_loc)) {
+            return;
+        }
+
+        signature.emplace_back(side,
+                               offset_along_side,
+                               grid.get_physical_type(neighbour_loc)->index,
+                               grid.get_width_offset(neighbour_loc),
+                               grid.get_height_offset(neighbour_loc));
+    };
+
+    for (int height_offset = 0; height_offset < tile_type->height; height_offset++) {
+        record_neighbour(LEFT, height_offset, root_loc.x - 1, root_loc.y + height_offset);
+        record_neighbour(RIGHT, height_offset, root_loc.x + tile_type->width, root_loc.y + height_offset);
+    }
+    for (int width_offset = 0; width_offset < tile_type->width; width_offset++) {
+        record_neighbour(BOTTOM, width_offset, root_loc.x + width_offset, root_loc.y - 1);
+        record_neighbour(TOP, width_offset, root_loc.x + width_offset, root_loc.y + tile_type->height);
+    }
+
+    return signature;
 }
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev) {
