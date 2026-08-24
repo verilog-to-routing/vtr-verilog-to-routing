@@ -10,7 +10,9 @@
  */
 
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
+#include <limits>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -36,13 +38,17 @@ template<typename InIt, typename OutIt, typename KeyFn>
 void stable_counting_sort(InIt first, InIt last, OutIt out, size_t num_keys, KeyFn key_of) {
     // offsets[k + 1] first holds the number of elements with key k, then after
     // the prefix sum offsets[k] is the output position of the first element with key k.
-    std::vector<size_t> offsets(num_keys + 1, 0);
+    std::vector<uint32_t> offsets(num_keys + 1, 0);
 
+    size_t num_elements = 0;
     for (InIt it = first; it != last; ++it) {
         size_t key = static_cast<size_t>(key_of(*it));
         VTR_ASSERT_DEBUG_MSG(key < num_keys, "Sort key must be smaller than num_keys");
         offsets[key + 1]++;
+        num_elements++;
     }
+    VTR_ASSERT_MSG(num_elements <= std::numeric_limits<uint32_t>::max(),
+                   "Number of sorted elements must fit in the 32 bit offsets");
 
     for (size_t key = 1; key <= num_keys; ++key) {
         offsets[key] += offsets[key - 1];
