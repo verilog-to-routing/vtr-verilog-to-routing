@@ -6,6 +6,7 @@
 #include "physical_types.h"
 #include "route_net.h"
 
+#include <algorithm>
 #include <tuple>
 
 #include "connection_based_routing.h"
@@ -201,7 +202,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
     }
 
     // compare the sort priority of different sink nodes
-    std::stable_sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
+    std::ranges::stable_sort(remaining_targets, [&](int a, int b) noexcept {
         return pin_sort_priority[a] > pin_sort_priority[b];
     });
 
