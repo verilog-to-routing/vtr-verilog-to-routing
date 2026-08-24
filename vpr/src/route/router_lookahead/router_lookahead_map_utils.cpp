@@ -460,15 +460,13 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                     }
                 }
 
-                if (!unreachable_nodes.empty()) {
-                    VPR_ERROR(VPR_ERROR_ROUTE,
+                VTR_LOGV_WARN(!unreachable_nodes.empty() && (route_verbosity > 1 || device_model_warnings),
                               "%zu %ss of tile type %s on layer %d have no reachable wires (%s is one of them)\n",
                               unreachable_nodes.size(),
                               rr_node_typename[rr_type],
                               tile_type.name.c_str(),
                               from_layer_num,
                               rr_node_arch_name(unreachable_nodes.front(), is_flat).c_str());
-                }
             }
         }
     }
