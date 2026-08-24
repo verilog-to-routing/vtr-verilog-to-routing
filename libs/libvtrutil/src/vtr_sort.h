@@ -125,10 +125,15 @@ void stable_radix_sort(Container& items, Container& scratch, const sort_key<KeyF
 
 /**
  * @brief Stable LSD radix sort of a container in place, allocating the scratch buffer internally.
+ *
+ * Container must be constructible from an element count, and the element type
+ * must be default constructible. Call the overload taking a scratch buffer
+ * instead to reuse one buffer across several sorts.
  */
 template<typename Container, typename... KeyFns>
 void stable_radix_sort(Container& items, const sort_key<KeyFns>&... keys) {
-    Container scratch(items);
+    // Only the size of scratch matters. Its contents are overwritten by the first pass.
+    Container scratch(std::size(items));
     stable_radix_sort(items, scratch, keys...);
 }
 
