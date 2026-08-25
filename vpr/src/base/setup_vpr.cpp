@@ -782,7 +782,6 @@ static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts, Devic
     crr_opts.sb_templates = Options.sb_templates;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
     crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
-    crr_opts.sb_count_dir = Options.sb_count_dir;
 
     // If the user did not explicitly set a GSB version, infer the default:
     // use GSB_V1 when sb_maps is provided (CRR flow), otherwise NOT_CRR.
