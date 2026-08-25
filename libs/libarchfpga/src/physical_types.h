@@ -1088,12 +1088,17 @@ struct t_pin_to_pin_annotation {
     std::string output_pins;
     std::string clock;
 
+    /* pack_pattern annotations only: nets on this pattern connection may drive
+     * multiple sinks, so the prepacker's single-fanout assumptions are lifted for it */
+    bool pack_pattern_allow_multi_fanout;
+
     int line_num; /* used to report what line number this annotation is found in architecture file */
 
     t_pin_to_pin_annotation() noexcept {
         line_num = 0;
         type = (e_pin_to_pin_annotation_type)0;
         format = (e_pin_to_pin_annotation_format)0;
+        pack_pattern_allow_multi_fanout = false;
     }
 };
 
@@ -1490,6 +1495,9 @@ class t_pb_graph_edge {
     int num_pack_patterns;
     std::vector<const char*> pack_pattern_names;
     int* pack_pattern_indices;
+    /* [0..num_pack_patterns-1] parallel to pack_pattern_names: true if the
+     * pattern annotation on this edge is marked allow_multi_fanout */
+    std::vector<bool> pack_pattern_allow_multi_fanout;
     bool infer_pattern;
 
     int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
