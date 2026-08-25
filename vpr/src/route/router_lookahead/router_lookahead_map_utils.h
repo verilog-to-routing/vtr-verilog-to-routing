@@ -81,21 +81,13 @@ class CostEntry {
   public:
     float delay;      ///<Delay value of the cost entry
     float congestion; ///<Base cost value of the cost entry
-    bool fill;        ///<Boolean specifying whether this Entry was created as a result of the cost map
-                      ///<holes filling procedure
 
     CostEntry()
         : delay(std::numeric_limits<float>::quiet_NaN())
-        , congestion(std::numeric_limits<float>::quiet_NaN())
-        , fill(false) {}
+        , congestion(std::numeric_limits<float>::quiet_NaN()) {}
     CostEntry(float set_delay, float set_congestion)
         : delay(set_delay)
-        , congestion(set_congestion)
-        , fill(false) {}
-    CostEntry(float set_delay, float set_congestion, bool set_fill)
-        : delay(set_delay)
-        , congestion(set_congestion)
-        , fill(set_fill) {}
+        , congestion(set_congestion) {}
     bool valid() const {
         return !(std::isnan(delay) || std::isnan(congestion));
     }
