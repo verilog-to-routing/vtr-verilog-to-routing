@@ -56,7 +56,7 @@
 
 static constexpr int VALID_NEIGHBOR_NUMBER = 3;
 
-/* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
+/* when a list of delay/congestion entries at a coordinate in CostEntry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
  * calculated */
 enum e_representative_entry_method {
@@ -78,7 +78,7 @@ t_wire_cost_map f_wire_cost_map;
  * @brief Fill f_wire_cost_map. It is a look-up table from CHANX/CHANY (to SINKs) for various distances
  * @param segment_inf
  */
-static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type,
+static util::CostEntry get_wire_cost_entry(e_rr_type rr_type,
                                             int seg_index,
                                             int from_layer_num,
                                             int delta_x,
@@ -95,7 +95,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
  * @param device_ctx
  */
 static void compute_tiles_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay,
-                                    std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+                                    std::unordered_map<int, std::unordered_map<int, util::CostEntry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx);
 /***
@@ -116,7 +116,7 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
  * @param physical_tile
  * @param intra_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
  */
-static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<int, util::CostEntry>>& tile_min_cost,
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay);
 
@@ -124,13 +124,13 @@ static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<i
  * @brief Iterate over the first (channel type) and second (segment type) dimensions of f_wire_cost_map to get the minimum cost for each dx and dy_
  * @param internal_opin_global_cost_map This map is populated in this function. [dx][dy] -> cost
  */
-static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distance_min_cost);
+static void min_chann_global_cost_map(vtr::NdMatrix<util::CostEntry, 4>& distance_min_cost);
 
 /**
  * @brief Given the src/opin map of each physical tile type, iterate over all OPINs/sources of a type and create
  * the minimum cost map across all of them for each tile type.
  */
-static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_delays, vtr::NdMatrix<util::Cost_Entry, 5>& distance_min_cost);
+static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_delays, vtr::NdMatrix<util::CostEntry, 5>& distance_min_cost);
 
 // Read the file and fill intra_tile_pin_primitive_pin_delay and tile_min_cost
 static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay,
@@ -150,7 +150,7 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
 
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
-static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
+static util::CostEntry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 
 /**
  * @brief Fill in the missing entry in router lookahead map
@@ -164,7 +164,7 @@ static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, 
  * @param chan_index The channel index of the source node
  * @return The cost for the missing entry
  */
-static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_num,
+static util::CostEntry get_nearby_cost_entry_average_neighbour(int from_layer_num,
                                                                 int missing_dx,
                                                                 int missing_dy,
                                                                 int to_layer_num,
@@ -380,7 +380,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT(from_seg_index >= 0);
 
         // Now get the expected cost from our lookahead map
-        util::Cost_Entry cost_entry = get_wire_cost_entry(from_type,
+        util::CostEntry cost_entry = get_wire_cost_entry(from_type,
                                                           from_seg_index,
                                                           from_layer_num,
                                                           delta_x,
@@ -507,7 +507,7 @@ float MapLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_
 
 /******** Function Definitions ********/
 
-static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
+static util::CostEntry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
     VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANZ);
     VTR_ASSERT_SAFE(from_layer_num < static_cast<int>(f_wire_cost_map.dim_size(0)));
     VTR_ASSERT_SAFE(to_layer_num < static_cast<int>(f_wire_cost_map.dim_size(1)));
@@ -627,10 +627,10 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
         for (int to_layer_num = 0; to_layer_num < num_layers; ++to_layer_num) {
             for (int ix = 0; ix < grid_width; ix++) {
                 for (int iy = 0; iy < grid_height; iy++) {
-                    util::Cost_Entry cost_entry = f_wire_cost_map[from_layer_num][to_layer_num][chan_index][segment_index][ix][iy];
+                    util::CostEntry cost_entry = f_wire_cost_map[from_layer_num][to_layer_num][chan_index][segment_index][ix][iy];
 
                     if (std::isnan(cost_entry.delay) && std::isnan(cost_entry.congestion)) {
-                        util::Cost_Entry copied_entry = get_nearby_cost_entry_average_neighbour(from_layer_num,
+                        util::CostEntry copied_entry = get_nearby_cost_entry_average_neighbour(from_layer_num,
                                                                                                 ix,
                                                                                                 iy,
                                                                                                 to_layer_num,
@@ -645,7 +645,7 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 }
 
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
-static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index) {
+static util::CostEntry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index) {
     /* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
      * of the cost entry to be copied */
 
@@ -672,18 +672,18 @@ static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, 
     copy_y = std::max(copy_y, 0); //Clip to zero
     copy_x = std::max(copy_x, 0); //Clip to zero
 
-    util::Cost_Entry copy_entry = f_wire_cost_map[from_layer_num][to_layer_num][chan_index][segment_index][copy_x][copy_y];
+    util::CostEntry copy_entry = f_wire_cost_map[from_layer_num][to_layer_num][chan_index][segment_index][copy_x][copy_y];
 
     /* if the entry to be copied is also empty, recurse */
     if (std::isnan(copy_entry.delay) && std::isnan(copy_entry.congestion)) {
         if (copy_x == 0 && copy_y == 0) {
-            copy_entry = util::Cost_Entry(0., 0.); //(0, 0) entry is invalid so set zero to terminate recursion
+            copy_entry = util::CostEntry(0., 0.); //(0, 0) entry is invalid so set zero to terminate recursion
             // set zero if the source and sink nodes are on the same layer. If they are not, it means that there is no connection from the source node to
             // the other layer. This means that the connection should be set to a very large number
             if (from_layer_num == to_layer_num) {
-                copy_entry = util::Cost_Entry(0., 0.);
+                copy_entry = util::CostEntry(0., 0.);
             } else {
-                copy_entry = util::Cost_Entry(ROUTER_LOOKAHEAD_NO_PATH_SENTINEL, ROUTER_LOOKAHEAD_NO_PATH_SENTINEL);
+                copy_entry = util::CostEntry(ROUTER_LOOKAHEAD_NO_PATH_SENTINEL, ROUTER_LOOKAHEAD_NO_PATH_SENTINEL);
             }
         } else {
             copy_entry = get_nearby_cost_entry(from_layer_num, copy_x, copy_y, to_layer_num, segment_index, chan_index);
@@ -693,7 +693,7 @@ static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, 
     return copy_entry;
 }
 
-static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_num,
+static util::CostEntry get_nearby_cost_entry_average_neighbour(int from_layer_num,
                                                                 int missing_dx,
                                                                 int missing_dy,
                                                                 int to_layer_num,
@@ -717,7 +717,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
             if (neighbour_y < 0 || neighbour_y >= (int)f_wire_cost_map.dim_size(5)) {
                 continue;
             }
-            util::Cost_Entry copy_entry = f_wire_cost_map[from_layer_num][to_layer_num][chan_index][segment_index][neighbour_x][neighbour_y];
+            util::CostEntry copy_entry = f_wire_cost_map[from_layer_num][to_layer_num][chan_index][segment_index][neighbour_x][neighbour_y];
             if (std::isnan(copy_entry.delay) || std::isnan(copy_entry.congestion)) {
                 continue;
             }
@@ -738,7 +738,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
 }
 
 static void compute_tiles_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay,
-                                    std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+                                    std::unordered_map<int, std::unordered_map<int, util::CostEntry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx) {
     const auto& tiles = device_ctx.physical_tile_types;
@@ -791,14 +791,14 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
     rr_graph_builder.clear();
 }
 
-static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<int, util::CostEntry>>& tile_min_cost,
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay) {
     const auto& tile_pin_delays = intra_tile_pin_primitive_pin_delay.at(physical_tile->index);
-    std::unordered_map<int, util::Cost_Entry> min_cost_map;
+    std::unordered_map<int, util::CostEntry> min_cost_map;
     for (auto& primitive_sink_pair : physical_tile->primitive_class_inf) {
         int primitive_sink = primitive_sink_pair.first;
-        auto min_cost = util::Cost_Entry(ROUTER_LOOKAHEAD_NO_PATH_SENTINEL,
+        auto min_cost = util::CostEntry(ROUTER_LOOKAHEAD_NO_PATH_SENTINEL,
                                          ROUTER_LOOKAHEAD_NO_PATH_SENTINEL);
 
         for (int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
@@ -821,7 +821,7 @@ static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<i
     VTR_ASSERT(insert_res.second);
 }
 
-static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distance_min_cost) {
+static void min_chann_global_cost_map(vtr::NdMatrix<util::CostEntry, 4>& distance_min_cost) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     int width = (int)g_vpr_ctx.device().grid.width();
     int height = (int)g_vpr_ctx.device().grid.height();
@@ -834,10 +834,10 @@ static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distan
         for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
             for (int dx = 0; dx < width; dx++) {
                 for (int dy = 0; dy < height; dy++) {
-                    util::Cost_Entry min_cost(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+                    util::CostEntry min_cost(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
                     for (int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(2); chan_idx++) {
                         for (int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(3); seg_idx++) {
-                            auto cost = util::Cost_Entry(f_wire_cost_map[from_layer_num][to_layer_num][chan_idx][seg_idx][dx][dy].delay,
+                            auto cost = util::CostEntry(f_wire_cost_map[from_layer_num][to_layer_num][chan_idx][seg_idx][dx][dy].delay,
                                                          f_wire_cost_map[from_layer_num][to_layer_num][chan_idx][seg_idx][dx][dy].congestion);
                             if (cost.delay < min_cost.delay) {
                                 min_cost.delay = cost.delay;
@@ -852,7 +852,7 @@ static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distan
     }
 }
 
-static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_delays, vtr::NdMatrix<util::Cost_Entry, 5>& distance_min_cost) {
+static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_delays, vtr::NdMatrix<util::CostEntry, 5>& distance_min_cost) {
     // This function calculates and stores the minimum cost to reach a point on layer `n_sink`, which is `dx` and `dy` further from the current point
     // on layer `n_source` and is located on physical tile type `t`. To compute this cost, the function iterates over all output pins of tile `t`,
     // and for each pin, iterates over all segment types accessible by it. It then determines and stores the minimum cost to the destination point.
@@ -873,7 +873,7 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
             for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
                 for (int dx = 0; dx < width; dx++) {
                     for (int dy = 0; dy < height; dy++) {
-                        util::Cost_Entry min_cost(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+                        util::CostEntry min_cost(std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
                         for (const auto& tile_opin_map : src_opin_delays[from_layer_num][tile_type_idx]) {
                             float expected_delay_cost = std::numeric_limits<float>::infinity();
                             float expected_cong_cost = std::numeric_limits<float>::infinity();
@@ -891,7 +891,7 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
                                             continue;
                                         }
 
-                                        util::Cost_Entry wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
+                                        util::CostEntry wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type,
                                                                                                reachable_wire_inf.wire_seg_index,
                                                                                                reachable_wire_inf.layer_number,
                                                                                                dx,
@@ -953,12 +953,12 @@ static void write_intra_cluster_router_lookahead(const std::string& /*file*/,
 
 #else /* VTR_ENABLE_CAPNPROTO */
 
-static void ToCostEntry(util::Cost_Entry* out, const VprMapCostEntry::Reader& in) {
+static void ToCostEntry(util::CostEntry* out, const VprMapCostEntry::Reader& in) {
     out->delay = in.getDelay();
     out->congestion = in.getCongestion();
 }
 
-static void FromCostEntry(VprMapCostEntry::Builder* out, const util::Cost_Entry& in) {
+static void FromCostEntry(VprMapCostEntry::Builder* out, const util::CostEntry& in) {
     out->setDelay(in.delay);
     out->setCongestion(in.congestion);
 }
@@ -975,11 +975,11 @@ static void fromIntEntry(::capnp::List<int64_t, ::capnp::Kind::PRIMITIVE>::Build
     out.set(idx, cost);
 }
 
-static void toPairEntry(std::unordered_map<int, util::Cost_Entry>& map_out,
+static void toPairEntry(std::unordered_map<int, util::CostEntry>& map_out,
                         const int& key,
                         const VprMapCostEntry::Reader& cap_cost) {
     VTR_ASSERT(map_out.find(key) == map_out.end());
-    util::Cost_Entry cost(cap_cost.getDelay(), cap_cost.getCongestion());
+    util::CostEntry cost(cap_cost.getDelay(), cap_cost.getCongestion());
     map_out[key] = cost;
 }
 
@@ -987,7 +987,7 @@ static void fromPairEntry(::capnp::List<int64_t, ::capnp::Kind::PRIMITIVE>::Buil
                           ::capnp::List<::VprMapCostEntry, ::capnp::Kind::STRUCT>::Builder& out_val,
                           int flat_idx,
                           const int& key,
-                          const util::Cost_Entry& cost) {
+                          const util::CostEntry& cost) {
     out_key.set(flat_idx, key);
     out_val[flat_idx].setDelay(cost.delay);
     out_val[flat_idx].setCongestion(cost.congestion);
@@ -1040,8 +1040,8 @@ static void read_intra_cluster_router_lookahead(std::unordered_map<int, util::t_
         util::t_ipin_primitive_sink_delays tile_pin_sink_cost_map(num_pins);
 
         for (int pin_num = 0; pin_num < num_pins; pin_num++) {
-            std::unordered_map<int, util::Cost_Entry> pin_sink_cost_map;
-            toUnorderedMap<int64_t, VprMapCostEntry, int, util::Cost_Entry>(pin_sink_cost_map,
+            std::unordered_map<int, util::CostEntry> pin_sink_cost_map;
+            toUnorderedMap<int64_t, VprMapCostEntry, int, util::CostEntry>(pin_sink_cost_map,
                                                                             num_seen_pair,
                                                                             num_seen_pair + pin_num_sink_arr[num_seen_pin],
                                                                             map.getPinSinks(),
@@ -1106,8 +1106,8 @@ static void write_intra_cluster_router_lookahead(const std::string& file,
         int num_seen_pin = 0;
         for (int physical_tile_idx = 0; physical_tile_idx < num_tile_types; ++physical_tile_idx) {
             for (int pin_num = 0; pin_num < physical_tile_num_pin_arr[physical_tile_idx]; ++pin_num) {
-                const std::unordered_map<int, util::Cost_Entry>& pin_sinks = intra_tile_pin_primitive_pin_delay.at(physical_tile_idx).at(pin_num);
-                FromUnorderedMap<int64_t, VprMapCostEntry, int, util::Cost_Entry>(
+                const std::unordered_map<int, util::CostEntry>& pin_sinks = intra_tile_pin_primitive_pin_delay.at(physical_tile_idx).at(pin_num);
+                FromUnorderedMap<int64_t, VprMapCostEntry, int, util::CostEntry>(
                     pin_sink_arr_builder,
                     pin_sink_cost_builder,
                     num_seen_pin,
@@ -1131,7 +1131,7 @@ void read_router_lookahead(const std::string& file) {
 
     auto map = reader.getRoot<VprMapLookahead>();
 
-    ToNdMatrix<6, VprMapCostEntry, util::Cost_Entry>(&f_wire_cost_map, map.getCostMap(), ToCostEntry);
+    ToNdMatrix<6, VprMapCostEntry, util::CostEntry>(&f_wire_cost_map, map.getCostMap(), ToCostEntry);
 }
 
 void write_router_lookahead(const std::string& file) {
@@ -1140,7 +1140,7 @@ void write_router_lookahead(const std::string& file) {
     auto map = builder.initRoot<VprMapLookahead>();
 
     auto cost_map = map.initCostMap();
-    FromNdMatrix<6, VprMapCostEntry, util::Cost_Entry>(&cost_map, f_wire_cost_map, FromCostEntry);
+    FromNdMatrix<6, VprMapCostEntry, util::CostEntry>(&cost_map, f_wire_cost_map, FromCostEntry);
 
     writeMessageToFile(file, &builder);
 }

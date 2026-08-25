@@ -40,7 +40,7 @@ static t_simple_cost_map simple_cost_map;
 
 /******** File-Scope Functions ********/
 
-static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type,
+static util::CostEntry get_wire_cost_entry(e_rr_type rr_type,
                                             int seg_index,
                                             int from_layer_num,
                                             int delta_x,
@@ -66,7 +66,7 @@ std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId fr
     float expected_cong_cost = ROUTER_LOOKAHEAD_NO_PATH_SENTINEL;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
-    util::Cost_Entry cost_entry(0, 0);
+    util::CostEntry cost_entry(0, 0);
     if (is_chanxy(from_type)) {
         // TODO: handle CHANZ nodes
         int from_layer_num = rr_graph.node_layer_low(from_node);
@@ -118,7 +118,7 @@ void SimpleLookahead::write(const std::string& file) const {
 
 /******** Function Definitions ********/
 
-static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
+static util::CostEntry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
     VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
     VTR_ASSERT_SAFE(from_layer_num < static_cast<int>(simple_cost_map.dim_size(0)));
     VTR_ASSERT_SAFE(to_layer_num < static_cast<int>(simple_cost_map.dim_size(1)));
@@ -155,12 +155,12 @@ void write_router_lookahead(const std::string& /*file*/) {
 
 #else /* VTR_ENABLE_CAPNPROTO */
 
-static void ToCostEntry(util::Cost_Entry* out, const VprMapCostEntry::Reader& in) {
+static void ToCostEntry(util::CostEntry* out, const VprMapCostEntry::Reader& in) {
     out->delay = in.getDelay();
     out->congestion = in.getCongestion();
 }
 
-static void FromCostEntry(VprMapCostEntry::Builder* out, const util::Cost_Entry& in) {
+static void FromCostEntry(VprMapCostEntry::Builder* out, const util::CostEntry& in) {
     out->setDelay(in.delay);
     out->setCongestion(in.congestion);
 }
@@ -175,7 +175,7 @@ void read_router_lookahead(const std::string& file) {
 
     auto map = reader.getRoot<VprMapLookahead>();
 
-    ToNdMatrix<6, VprMapCostEntry, util::Cost_Entry>(&simple_cost_map, map.getCostMap(), ToCostEntry);
+    ToNdMatrix<6, VprMapCostEntry, util::CostEntry>(&simple_cost_map, map.getCostMap(), ToCostEntry);
 }
 
 void write_router_lookahead(const std::string& file) {
@@ -184,7 +184,7 @@ void write_router_lookahead(const std::string& file) {
     auto map = builder.initRoot<VprMapLookahead>();
 
     auto cost_map = map.initCostMap();
-    FromNdMatrix<6, VprMapCostEntry, util::Cost_Entry>(&cost_map, simple_cost_map, FromCostEntry);
+    FromNdMatrix<6, VprMapCostEntry, util::CostEntry>(&cost_map, simple_cost_map, FromCostEntry);
 
     writeMessageToFile(file, &builder);
 }

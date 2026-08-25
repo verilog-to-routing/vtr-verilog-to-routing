@@ -44,7 +44,7 @@ class CostMap {
      * @param delta_y y delta value that is the distance between the current node to the target node
      * @return The cost entry corresponding to the current segment and the delta x,y.
      */
-    util::Cost_Entry find_cost(int from_seg_index, int delta_x, int delta_y) const;
+    util::CostEntry find_cost(int from_seg_index, int delta_x, int delta_y) const;
 
     /**
      * @brief Sets the cost map given the delay and congestion routing costs
@@ -65,7 +65,7 @@ class CostMap {
      *
      * The coordinates identifying the cost map location to fill (cx, cy) need to fall within the bounding box provided as input (bounds). If the (cx, cy) point falls out of the bounds, a default cost entry is returned instead.
      */
-    std::pair<util::Cost_Entry, int> get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
+    std::pair<util::CostEntry, int> get_nearby_cost_entry(const vtr::NdMatrix<util::CostEntry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
 
     /**
      * @brief Reads the lookahead file
@@ -85,7 +85,7 @@ class CostMap {
     std::vector<std::pair<int, int>> list_empty() const;
 
   private:
-    vtr::Matrix<vtr::Matrix<util::Cost_Entry>> cost_map_; ///<Cost map containing all the costs computed during the lookahead generation.
+    vtr::Matrix<vtr::Matrix<util::CostEntry>> cost_map_; ///<Cost map containing all the costs computed during the lookahead generation.
                                                           ///<It is indexed as follows: cost_map_[0][segment_index][delta_x][delta_y]
                                                           ///<The first index is always 0 and it is kept to allow future specializations of
                                                           ///<the cost map based on other possible indices.
@@ -106,7 +106,7 @@ class CostMap {
      * @param matrix cost map for a specific segment type
      * @return Penalty delay value
      */
-    float get_penalty(vtr::NdMatrix<util::Cost_Entry, 2>& matrix) const;
+    float get_penalty(vtr::NdMatrix<util::CostEntry, 2>& matrix) const;
 
     /**
      * @brief Fills the holes in the cost map matrix
@@ -116,5 +116,5 @@ class CostMap {
      * @param bounding_box_height height of the segment type cost map bounding box
      * @param delay_penalty penalty corresponding to the current segment cost map
      */
-    void fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty, bool device_model_warnings);
+    void fill_holes(vtr::NdMatrix<util::CostEntry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty, bool device_model_warnings);
 };

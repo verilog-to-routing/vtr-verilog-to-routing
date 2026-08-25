@@ -211,8 +211,8 @@ PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 }
 
 /* returns cost entry with the smallest delay */
-Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
-    Cost_Entry smallest_entry;
+CostEntry Expansion_Cost_Entry::get_smallest_entry() const {
+    CostEntry smallest_entry;
 
     for (auto entry : this->cost_vector) {
         if (!smallest_entry.valid() || entry.delay < smallest_entry.delay) {
@@ -224,7 +224,7 @@ Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
 }
 
 /* returns a cost entry that represents the average of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
+CostEntry Expansion_Cost_Entry::get_average_entry() const {
     float avg_delay = 0;
     float avg_congestion = 0;
 
@@ -236,11 +236,11 @@ Cost_Entry Expansion_Cost_Entry::get_average_entry() const {
     avg_delay /= (float)this->cost_vector.size();
     avg_congestion /= (float)this->cost_vector.size();
 
-    return Cost_Entry(avg_delay, avg_congestion);
+    return CostEntry(avg_delay, avg_congestion);
 }
 
 /* returns a cost entry that represents the geomean of all the recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
+CostEntry Expansion_Cost_Entry::get_geomean_entry() const {
     float geomean_delay = 0;
     float geomean_cong = 0;
     for (auto cost_entry : this->cost_vector) {
@@ -251,11 +251,11 @@ Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
     geomean_delay = exp(geomean_delay / (float)this->cost_vector.size());
     geomean_cong = exp(geomean_cong / (float)this->cost_vector.size());
 
-    return Cost_Entry(geomean_delay, geomean_cong);
+    return CostEntry(geomean_delay, geomean_cong);
 }
 
 /* returns a cost entry that represents the medial of all recorded entries */
-Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
+CostEntry Expansion_Cost_Entry::get_median_entry() const {
     /* find median by binning the delays of all entries and then choosing the bin
      * with the largest number of entries */
 
@@ -267,8 +267,8 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     int num_bins = 10;
 
     /* find entries with smallest and largest delays */
-    Cost_Entry min_del_entry;
-    Cost_Entry max_del_entry;
+    CostEntry min_del_entry;
+    CostEntry max_del_entry;
     for (auto entry : this->cost_vector) {
         if (!min_del_entry.valid() || entry.delay < min_del_entry.delay) {
             min_del_entry = entry;
@@ -283,7 +283,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     float bin_size = delay_diff / (float)num_bins;
 
     /* sort the cost entries into bins */
-    std::vector<std::vector<Cost_Entry>> entry_bins(num_bins, std::vector<Cost_Entry>());
+    std::vector<std::vector<CostEntry>> entry_bins(num_bins, std::vector<CostEntry>());
     for (auto entry : this->cost_vector) {
         float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
 
@@ -306,7 +306,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     }
 
     /* get the representative delay of the largest bin */
-    Cost_Entry representative_entry = entry_bins[largest_bin][0];
+    CostEntry representative_entry = entry_bins[largest_bin][0];
 
     return representative_entry;
 }
@@ -890,7 +890,7 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
         //If there are multiple options we use the minimum value.
         for (const util::t_reachable_wire_inf& reachable_wire_inf : src_opin_delay_map | std::views::values) {
 
-            util::Cost_Entry wire_cost_entry;
+            util::CostEntry wire_cost_entry;
             if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
                 //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
                 //In the lookahead, we treat such connections as 'special' wire types
@@ -1287,7 +1287,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     root.node = starting_node_id;
 
     int root_ptc = rr_graph.node_ptc_num(root.node);
-    std::unordered_map<int, util::Cost_Entry>& starting_pin_delay_map = pin_delays.at(root_ptc);
+    std::unordered_map<int, util::CostEntry>& starting_pin_delay_map = pin_delays.at(root_ptc);
     pq.push(root);
 
     while (!pq.empty()) {
@@ -1322,7 +1322,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
         } else {
             int curr_ptc = rr_graph.node_ptc_num(curr.node);
             if (starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() || starting_pin_delay_map.at(curr_ptc).delay > curr.delay) {
-                starting_pin_delay_map[curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
+                starting_pin_delay_map[curr_ptc] = util::CostEntry(curr.delay, curr.congestion);
             }
         }
     }

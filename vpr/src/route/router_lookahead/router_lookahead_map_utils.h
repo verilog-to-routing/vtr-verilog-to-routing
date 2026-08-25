@@ -25,14 +25,14 @@
 
 namespace util {
 
-class Cost_Entry;
+class CostEntry;
 
 class Expansion_Cost_Entry;
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
 typedef vtr::NdMatrix<Expansion_Cost_Entry, 3> t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
-typedef Cost_Entry (*WireCostCallBackFunction)(e_rr_type, int, int, int, int, int);
+typedef CostEntry (*WireCostCallBackFunction)(e_rr_type, int, int, int, int, int);
 
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry {
@@ -63,7 +63,7 @@ struct t_dijkstra_data {
     std::priority_queue<PQ_Entry> pq;
 };
 
-/* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
+/* when a list of delay/congestion entries at a coordinate in CostEntry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
  * calculated */
 enum e_representative_entry_method {
@@ -77,22 +77,22 @@ enum e_representative_entry_method {
 /**
  * @brief f_cost_map is an array of these cost entries that specifies delay/congestion estimates to travel relative x/y distances
  */
-class Cost_Entry {
+class CostEntry {
   public:
     float delay;      ///<Delay value of the cost entry
     float congestion; ///<Base cost value of the cost entry
     bool fill;        ///<Boolean specifying whether this Entry was created as a result of the cost map
                       ///<holes filling procedure
 
-    Cost_Entry()
+    CostEntry()
         : delay(std::numeric_limits<float>::quiet_NaN())
         , congestion(std::numeric_limits<float>::quiet_NaN())
         , fill(false) {}
-    Cost_Entry(float set_delay, float set_congestion)
+    CostEntry(float set_delay, float set_congestion)
         : delay(set_delay)
         , congestion(set_congestion)
         , fill(false) {}
-    Cost_Entry(float set_delay, float set_congestion, bool set_fill)
+    CostEntry(float set_delay, float set_congestion, bool set_fill)
         : delay(set_delay)
         , congestion(set_congestion)
         , fill(set_fill) {}
@@ -100,7 +100,7 @@ class Cost_Entry {
         return !(std::isnan(delay) || std::isnan(congestion));
     }
 
-    bool operator==(const Cost_Entry& other) const {
+    bool operator==(const CostEntry& other) const {
         return delay == other.delay && congestion == other.congestion;
     }
 };
@@ -115,22 +115,22 @@ class Cost_Entry {
  */
 class Expansion_Cost_Entry {
   private:
-    std::vector<Cost_Entry> cost_vector; ///<This vector is used to store different cost entries that are treated
-                                         ///<differently based on the below representative cost entry method computations
-                                         ///<Currently, only the smallest entry is stored in the vector, but this prepares
-                                         ///<the ground for other possible representative cost entry calculation methods.
-                                         ///<The vector is filled for a specific (chan_index, segment_index, delta_x, delta_y) cost entry.
+    std::vector<CostEntry> cost_vector; ///<This vector is used to store different cost entries that are treated
+                                        ///<differently based on the below representative cost entry method computations
+                                        ///<Currently, only the smallest entry is stored in the vector, but this prepares
+                                        ///<the ground for other possible representative cost entry calculation methods.
+                                        ///<The vector is filled for a specific (chan_index, segment_index, delta_x, delta_y) cost entry.
 
-    Cost_Entry get_smallest_entry() const;
-    Cost_Entry get_average_entry() const;
-    Cost_Entry get_geomean_entry() const;
-    Cost_Entry get_median_entry() const;
+    CostEntry get_smallest_entry() const;
+    CostEntry get_average_entry() const;
+    CostEntry get_geomean_entry() const;
+    CostEntry get_median_entry() const;
 
   public:
     void add_cost_entry(e_representative_entry_method method,
                         float add_delay,
                         float add_congestion) {
-        Cost_Entry cost_entry(add_delay, add_congestion);
+        CostEntry cost_entry(add_delay, add_congestion);
         if (method == SMALLEST) {
             /* taking the smallest-delay entry anyway, so no need to push back multiple entries */
             if (this->cost_vector.empty()) {
@@ -148,8 +148,8 @@ class Expansion_Cost_Entry {
         this->cost_vector.clear();
     }
 
-    Cost_Entry get_representative_cost_entry(e_representative_entry_method method) const {
-        Cost_Entry entry;
+    CostEntry get_representative_cost_entry(e_representative_entry_method method) const {
+        CostEntry entry;
 
         if (!cost_vector.empty()) {
             switch (method) {
@@ -292,7 +292,7 @@ struct t_reachable_wire_inf {
 typedef std::vector<std::vector<std::vector<std::vector<std::map<int, t_reachable_wire_inf>>>>> t_src_opin_delays;
 
 //[from pin ptc num][target src ptc num]->cost
-typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_delays;
+typedef std::vector<std::unordered_map<int, CostEntry>> t_ipin_primitive_sink_delays;
 
 //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1]
 // ^                                           ^
@@ -305,7 +305,7 @@ typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_sink_d
 // and the tile's IPIN. If there are many connections to the same IPIN, the one with the minimum delay is selected.
 typedef std::vector<std::vector<std::vector<t_reachable_wire_inf>>> t_chan_ipins_delays;
 
-typedef Cost_Entry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
+typedef CostEntry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
 
 /**
  * @brief For each tile, iterate over its OPINs and store which segment types are accessible from each OPIN

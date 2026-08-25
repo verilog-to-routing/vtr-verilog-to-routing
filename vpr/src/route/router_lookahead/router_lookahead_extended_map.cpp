@@ -110,7 +110,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
         for (const auto& kv : this->src_opin_delays[from_layer_num][tile_index][from_ptc][to_layer_num]) {
             const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
-            util::Cost_Entry cost_entry;
+            util::CostEntry cost_entry;
             if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
                 //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
                 //In the lookahead, we treat such connections as 'special' wire types
@@ -212,7 +212,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     }
 
     int from_seg_index = cost_map_.node_to_segment(size_t(from_node));
-    util::Cost_Entry cost_entry = cost_map_.find_cost(from_seg_index, dx, dy);
+    util::CostEntry cost_entry = cost_map_.find_cost(from_seg_index, dx, dy);
 
     if (!cost_entry.valid()) {
         // there is no route

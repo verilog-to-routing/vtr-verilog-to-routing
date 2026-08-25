@@ -33,7 +33,7 @@ static constexpr float PENALTY_MIN = 1e-12f;
  * @param min_cost
  * @param new_cost
  */
-static void assign_min_entry(util::Cost_Entry& min_cost, const util::Cost_Entry& new_cost);
+static void assign_min_entry(util::CostEntry& min_cost, const util::CostEntry& new_cost);
 
 // also known as the L1 norm
 static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b) {
@@ -92,9 +92,9 @@ int CostMap::node_to_segment(int from_node_ind) const {
  *
  * PENALTY_FACTOR: impact of the penalty on the total delay cost.
  */
-static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
+static util::CostEntry penalize(const util::CostEntry& entry, int distance, float penalty) {
     penalty = std::max(penalty, PENALTY_MIN);
-    return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
+    return util::CostEntry(entry.delay + distance * penalty * PENALTY_FACTOR,
                             entry.congestion, entry.fill);
 }
 
@@ -108,14 +108,14 @@ static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, fl
  *   @return The requested cost entry in the lookahead map.
  *
  * */
-util::Cost_Entry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y) const {
+util::CostEntry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y) const {
     VTR_ASSERT(from_seg_index >= 0 && static_cast<size_t>(from_seg_index) < offset_.size());
     const auto& cost_map = cost_map_[0][from_seg_index];
     // Check whether the cost map corresponding to the input segment is empty.
     // This can be due to an absence of samples during the lookahead generation.
     // This check is required to avoid unexpected behavior when querying an empty map.
     if (cost_map.dim_size(0) == 0 || cost_map.dim_size(1) == 0) {
-        return util::Cost_Entry();
+        return util::CostEntry();
     }
 
     // Delta coordinate with the offset adjusted to fit the segment bounding box
@@ -146,12 +146,12 @@ util::Cost_Entry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y
 }
 
 // finds the penalty delay corresponding to a segment
-float CostMap::get_penalty(vtr::NdMatrix<util::Cost_Entry, 2>& matrix) const {
+float CostMap::get_penalty(vtr::NdMatrix<util::CostEntry, 2>& matrix) const {
     float min_delay = std::numeric_limits<float>::infinity(), max_delay = 0.f;
     vtr::Point<int> min_location(0, 0), max_location(0, 0);
     for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
         for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
-            util::Cost_Entry& cost_entry = matrix[ix][iy];
+            util::CostEntry& cost_entry = matrix[ix][iy];
             if (cost_entry.valid()) {
                 if (cost_entry.delay < min_delay) {
                     min_delay = cost_entry.delay;
@@ -171,19 +171,19 @@ float CostMap::get_penalty(vtr::NdMatrix<util::Cost_Entry, 2>& matrix) const {
 }
 
 // fills the holes in the cost map matrix
-void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty, bool device_model_warnings) {
+void CostMap::fill_holes(vtr::NdMatrix<util::CostEntry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty, bool device_model_warnings) {
     // find missing cost entries and fill them in by copying a nearby cost entry
-    std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
+    std::vector<std::tuple<unsigned, unsigned, util::CostEntry>> missing;
     bool couldnt_fill = false;
     // shifted_bounds uses half-open convention: xmax/ymax = dimension size (one past the last valid index).
     auto shifted_bounds = vtr::Rect<int>(0, 0, bounding_box_width, bounding_box_height);
     int max_fill = 0;
     for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
         for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
-            util::Cost_Entry& cost_entry = matrix[ix][iy];
+            util::CostEntry& cost_entry = matrix[ix][iy];
             if (!cost_entry.valid()) {
                 // maximum search radius
-                util::Cost_Entry filler;
+                util::CostEntry filler;
                 int distance;
                 std::tie(filler, distance) = get_nearby_cost_entry(matrix, ix, iy, shifted_bounds);
                 if (filler.valid()) {
@@ -256,12 +256,12 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
         if (seg_bounds.empty()) {
             // Didn't find any sample routes, so routing isn't possible between these segment/chan types.
             offset_[0][seg] = std::make_pair(0, 0);
-            cost_map_[0][seg] = vtr::NdMatrix<util::Cost_Entry, 2>(
+            cost_map_[0][seg] = vtr::NdMatrix<util::CostEntry, 2>(
                 {size_t(0), size_t(0)});
             continue;
         } else {
             offset_[0][seg] = std::make_pair(seg_bounds.xmin(), seg_bounds.ymin());
-            cost_map_[0][seg] = vtr::NdMatrix<util::Cost_Entry, 2>(
+            cost_map_[0][seg] = vtr::NdMatrix<util::CostEntry, 2>(
                 {size_t(seg_bounds.width()), size_t(seg_bounds.height())});
         }
     }
@@ -354,7 +354,7 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
     return results;
 }
 
-static void assign_min_entry(util::Cost_Entry& min_cost, const util::Cost_Entry& new_cost) {
+static void assign_min_entry(util::CostEntry& min_cost, const util::CostEntry& new_cost) {
     // The values in src is only being assigned to dst if they are valid
     if (!std::isnan(new_cost.delay)) {
         if (std::isnan(min_cost.delay)) {
@@ -374,7 +374,7 @@ static void assign_min_entry(util::Cost_Entry& min_cost, const util::Cost_Entry&
 }
 
 // find the minimum cost entry from the nearest manhattan distance neighbor
-std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix,
+std::pair<util::CostEntry, int> CostMap::get_nearby_cost_entry(const vtr::NdMatrix<util::CostEntry, 2>& matrix,
                                                                 int cx,
                                                                 int cy,
                                                                 const vtr::Rect<int>& bounds) {
@@ -382,16 +382,16 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
     // bounds is half-open ([xmin,xmax) x [ymin,ymax)), so contains() is correct for index validation.
     bool in_bounds = bounds.contains(vtr::Point<int>(cx, cy));
     if (!in_bounds) {
-        return std::make_pair(util::Cost_Entry(), 0);
+        return std::make_pair(util::CostEntry(), 0);
     }
     int n = 0;
-    util::Cost_Entry fill(matrix[cx][cy]);
+    util::CostEntry fill(matrix[cx][cy]);
     fill.fill = true;
 
     while (in_bounds && !fill.valid()) {
         n++;
         in_bounds = false;
-        util::Cost_Entry min_entry;
+        util::CostEntry min_entry;
         for (int ox = -n; ox <= n; ox++) {
             int x = cx + ox;
             int oy = n - abs(ox);
@@ -423,13 +423,13 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-static void ToCostEntry(util::Cost_Entry* out, const VprCostEntry::Reader& in) {
+static void ToCostEntry(util::CostEntry* out, const VprCostEntry::Reader& in) {
     out->delay = in.getDelay();
     out->congestion = in.getCongestion();
     out->fill = in.getFill();
 }
 
-static void FromCostEntry(VprCostEntry::Builder* out, const util::Cost_Entry& in) {
+static void FromCostEntry(VprCostEntry::Builder* out, const util::CostEntry& in) {
     out->setDelay(in.delay);
     out->setCongestion(in.congestion);
     out->setFill(in.fill);
@@ -444,15 +444,15 @@ static void FromVprVector2D(VprVector2D::Builder* out, const std::pair<int, int>
     out->setY(in.second);
 }
 
-static void ToMatrixCostEntry(vtr::NdMatrix<util::Cost_Entry, 2>* out,
+static void ToMatrixCostEntry(vtr::NdMatrix<util::CostEntry, 2>* out,
                               const Matrix<VprCostEntry>::Reader& in) {
-    ToNdMatrix<2, VprCostEntry, util::Cost_Entry>(out, in, ToCostEntry);
+    ToNdMatrix<2, VprCostEntry, util::CostEntry>(out, in, ToCostEntry);
 }
 
 static void FromMatrixCostEntry(
     Matrix<VprCostEntry>::Builder* out,
-    const vtr::NdMatrix<util::Cost_Entry, 2>& in) {
-    FromNdMatrix<2, VprCostEntry, util::Cost_Entry>(
+    const vtr::NdMatrix<util::CostEntry, 2>& in) {
+    FromNdMatrix<2, VprCostEntry, util::CostEntry>(
         out, in, FromCostEntry);
 }
 
@@ -481,7 +481,7 @@ void CostMap::read(const std::string& file) {
 
     {
         const auto& cost_maps = cost_map.getCostMap();
-        ToNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::Cost_Entry, 2>>(
+        ToNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::CostEntry, 2>>(
             &cost_map_, cost_maps, ToMatrixCostEntry);
     }
 
@@ -505,7 +505,7 @@ void CostMap::write(const std::string& file) const {
 
     {
         auto cost_maps = cost_map.initCostMap();
-        FromNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::Cost_Entry, 2>>(
+        FromNdMatrix<2, Matrix<VprCostEntry>, vtr::NdMatrix<util::CostEntry, 2>>(
             &cost_maps, cost_map_, FromMatrixCostEntry);
     }
 

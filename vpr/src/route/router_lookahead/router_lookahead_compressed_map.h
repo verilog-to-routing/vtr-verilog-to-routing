@@ -13,7 +13,7 @@ class CompressedMapLookahead : public RouterLookahead {
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
     // Lookup table to store the minimum cost for each dx and dy
-    vtr::NdMatrix<util::Cost_Entry, 3> distance_based_min_cost; // [layer_num][dx][dy] -> cost
+    vtr::NdMatrix<util::CostEntry, 3> distance_based_min_cost; // [layer_num][dx][dy] -> cost
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
@@ -63,7 +63,7 @@ class CompressedMapLookahead : public RouterLookahead {
 //   compressed index: In this type of router look-ahead, we do not sample every x and y. Another data structure maps every x and y to
 //   an index. That index should be used here.
 
-typedef vtr::NdMatrix<util::Cost_Entry, 5> t_compressed_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][compressed_idx]
+typedef vtr::NdMatrix<util::CostEntry, 5> t_compressed_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][compressed_idx]
                                                                        //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
                                                                        // The first index is the layer number that the node under consideration is on, and the forth index
                                                                        // is the layer number that the target node is on.

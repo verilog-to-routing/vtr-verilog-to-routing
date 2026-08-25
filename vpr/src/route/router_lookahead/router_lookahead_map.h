@@ -21,10 +21,10 @@ class MapLookahead : public RouterLookahead {
     // Lookup table from a tile pins to the primitive classes inside that tile
     std::unordered_map<int, util::t_ipin_primitive_sink_delays> intra_tile_pin_primitive_pin_delay; // [physical_tile_type][from_pin_physical_num][sink_physical_num] -> cost
     // Lookup table to store the minimum cost to reach to a primitive pin from the root-level IPINs
-    std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
+    std::unordered_map<int, std::unordered_map<int, util::CostEntry>> tile_min_cost; // [physical_tile_type][sink_physical_num] -> cost
     // Lookup table to store the minimum cost for each dx and dy
-    vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
-    vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost;  // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
+    vtr::NdMatrix<util::CostEntry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
+    vtr::NdMatrix<util::CostEntry, 5> opin_distance_based_min_cost;  // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
     std::optional<InterposerLookahead> interposer_lookahead_;
 
     const t_det_routing_arch& det_routing_arch_;
@@ -67,7 +67,7 @@ class MapLookahead : public RouterLookahead {
  * - The first index is the layer number that the node under consideration is on.
  * - The second index is the layer number that the target node is on.
  */
-typedef vtr::NdMatrix<util::Cost_Entry, 6> t_wire_cost_map;
+typedef vtr::NdMatrix<util::CostEntry, 6> t_wire_cost_map;
 
 void read_router_lookahead(const std::string& file);
 void write_router_lookahead(const std::string& file);
