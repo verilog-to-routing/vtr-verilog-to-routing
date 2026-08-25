@@ -21,6 +21,14 @@ const t_pb_graph_edge* get_edge_between_pins(
  * @brief BFS through pb_graph output_edges to find the accumulated delay_max
  *        from src to sink.
  *
+ *
+ * NOTE: We use BFS here since we are only trying to estimate what the delay
+ *       would eventually be after intra-lb routing. Since the current intra-lb
+ *       router is not timing-driven, we want the path that minimizes resource
+ *       use. We could switch to a minimum delay (Djikstra) search, but it would
+ *       probably make little difference in timing estimation for these short
+ *       routes.
+ *
  * @param src   Source pb_graph pin to search from.
  * @param sink  Sink pb_graph pin to search for.
  *
@@ -37,6 +45,8 @@ float calc_pb_graph_path_delay(const t_pb_graph_pin* src, const t_pb_graph_pin* 
  * cluster, e.g. for connections that leave the cluster via dedicated chain
  * wiring (such as carry chains).
  *
+ * NOTE: See the explanation above for why we use BFS here.
+ *
  * @param src   Source pb_graph pin to search from.
  *
  * @return The accumulated delay_max along the path from src to the nearest
@@ -52,6 +62,8 @@ float calc_pb_graph_delay_to_root_pin(const t_pb_graph_pin* src);
  * Used to estimate the delay from the boundary of a cluster to a primitive
  * pin, e.g. for connections that enter the cluster via dedicated chain
  * wiring (such as carry chains).
+ *
+ * NOTE: See the explanation above for why we use BFS here.
  *
  * @param sink  Sink pb_graph pin to search from (traversed backwards).
  *
