@@ -372,6 +372,11 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             // }
             
 
+            if (total_path_delay == -1) {
+                /*Delay node is not valid, leave the budgets as is*/
+                continue;
+            }
+
             /*During hold analysis, increase the budgets when there is negative slack.
              * During setup analysis, decrease the budgets when there is negative slack*/
             if ((slack_type == NEGATIVE && path_slack < 0) || (slack_type == POSITIVE && path_slack > 0) || slack_type == BOTH) {
