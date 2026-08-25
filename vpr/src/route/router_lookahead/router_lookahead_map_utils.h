@@ -97,6 +97,8 @@ class CostEntry {
     }
 };
 
+static_assert(sizeof(CostEntry) == 2 * sizeof(float), "CostEntry must stay a compact {delay, congestion} pair");
+
 /**
  * @brief a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion.
  *
