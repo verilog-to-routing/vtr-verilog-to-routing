@@ -414,7 +414,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
     mode = &pb_type->modes[pb->mode];
 
     pugi::xml_node block_node = parent_node.append_child("block");
-    block_node.append_attribute("name") = pb->name;
+    block_node.append_attribute("name") = pb->name.c_str();
     block_node.append_attribute("instance") = vtr::string_fmt("%s[%d]", pb_type->name, pb_index).c_str();
 
     if (!pb_type->is_primitive()) {
@@ -570,7 +570,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
         for (i = 0; i < mode->num_pb_type_children; i++) {
             for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
                 /* If child pb is not used but routing is used, I must print things differently */
-                if ((pb->child_pbs[i] != nullptr) && (pb->child_pbs[i][j].name != nullptr)) {
+                if ((pb->child_pbs[i] != nullptr) && (!pb->child_pbs[i][j].name.empty())) {
                     clustering_xml_block(block_node, type, pb_graph_pin_lookup_from_index_by_type, &pb->child_pbs[i][j], j, pb_route);
                 } else {
                     is_used = false;
