@@ -1724,13 +1724,24 @@ A pack pattern is a power user feature directing that the CAD tool should group 
 This allows the architect to help the CAD tool recognize structures that have limited flexibility so that netlist atoms that fit those structures be kept together as though they are one unit.
 This tag impacts the CAD tool only, there is no architectural impact from defining molecules.
 
-.. arch:tag:: <pack_pattern name="string" in_port="string" out_port="string"/>
+.. arch:tag:: <pack_pattern name="string" in_port="string" out_port="string" allow_multi_fanout="bool"/>
 
     .. warning:: This is a power user option. Unless you know why you need it, you probably shouldn't specify it.
 
     :req_param name: The name of the pattern.
     :req_param in_port: The input pins of the edges for this pattern.
     :req_param out_port: Which output pins of the edges for this pattern.
+    :opt_param allow_multi_fanout:
+
+        Controls whether a molecule can still be formed over this pattern connection when the netlist signal carrying it also drives other logic.
+
+        By default (``false``), the packer only matches this connection if the net driving it has exactly one sink, i.e. the signal goes straight from the source primitive to the destination primitive and nowhere else.
+        If the net fans out to additional sinks, the molecule is cut at this connection.
+
+        When set to ``true``, the packer will match this connection even if the net drives multiple sinks: the sink that fits the pattern becomes part of the molecule, and the remaining sinks are routed normally outside of it.
+        Only set this on connections where the architecture actually provides a path for that extra fanout to leave the pattern (see *Multi-fanout connections* below).
+
+        **Default:** ``false``
 
     This tag gives a hint to the CAD tool that certain architectural structures should stay together during packing.
     The tag labels interconnect edges with a pack pattern name.
@@ -1743,6 +1754,31 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
     There is a priority order when VPR groups molecules.
     Pack patterns with more primitives take priority over pack patterns with less primitives.
     In the event that the number of primitives is the same, the pack pattern with less inputs takes priority over pack patterns with more inputs.
+
+    **Multi-fanout connections:**
+
+    By default, the prepacker assumes each pack pattern connection is point-to-point: if the netlist net implementing a connection fans out to more than one sink, no molecule is formed over that connection.
+    This is a conservative assumption — a net with extra fanout may not be routable through the dedicated intra-block interconnect the pattern describes, since the other sinks also need to be reached.
+
+    If the architecture can absorb the extra fanout (e.g., the block provides paths from the pattern connection to general routing), the architect can mark the ``<pack_pattern>`` annotation with ``allow_multi_fanout="true"``.
+    The prepacker will then form molecules over this connection even when its net drives multiple sinks; among the sinks, the one matching the pattern's destination primitive continues the molecule, and the remaining sinks are left to be routed outside the pattern.
+
+    Note that the attribute is written on individual interconnect edges, but its effect is defined at the level of a *primitive-to-primitive connection*.
+    Such a connection may pass through several interconnect edges when the two primitives are not directly wired together (e.g., the signal traverses intermediate modes or levels of the pb_type hierarchy).
+    The architect does not need to annotate every edge along that path: if any annotated edge on the connection's path is marked ``allow_multi_fanout="true"``, the entire primitive-to-primitive connection allows multi-fanout.
+
+    .. note::
+
+        If several sinks match the pattern's destination primitive, only one joins the molecule.
+        For example, with a ``LUT -> FF`` pack pattern and a LUT driving two FFs, the prepacker picks the last matching FF added to the netlist to form the molecule; the other FF is packed as a separate atom.
+
+    For example, in a carry chain where each adder's ``cout`` may also feed look-ahead logic in addition to the next adder's ``cin``, marking the chain's ``cout`` link keeps chain molecules together despite the extra fanout:
+
+    .. code-block:: xml
+
+        <direct name="carry_out" input="adder.cout" output="arithmetic.cout">
+          <pack_pattern name="chain" in_port="adder.cout" out_port="arithmetic.cout" allow_multi_fanout="true"/>
+        </direct>
 
     **Special Case:**
 

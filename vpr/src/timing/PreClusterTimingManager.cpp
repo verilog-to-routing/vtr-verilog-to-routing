@@ -87,7 +87,8 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
                                                                          atom_lookup,
                                                                          arch.models,
                                                                          timing_arc_delays_,
-                                                                         prepacker);
+                                                                         prepacker,
+                                                                         *g_vpr_ctx.timing().graph);
     timing_info_ = make_setup_timing_info(clustering_delay_calc_, timing_update_type);
 
     // Calculate the initial timing

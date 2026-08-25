@@ -101,12 +101,21 @@ static void draw_router_expansion_costs(ezgl::renderer* g);
 static void draw_main_canvas(ezgl::renderer* g);
 
 /**
+ * @brief A callback function that tells the ezgl renderer if the cached geometry can be reused for a camera-only redraw.
+ *
+ * @param reason Reason that caused the view change.
+ * @param g ezgl::renderer.
+ * 
+ * @return True to indicate a camera-only redraw; false to indicate a full redraw.
+ */
+static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g);
+
+/**
  * @brief Generalized callback function to setup the UI when the stage changes.
  */
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause();
 static void set_block_outline(bool checked);
 static void set_block_text(bool checked);
 static void set_draw_partitions(bool checked);
@@ -327,13 +336,76 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 
     if (draw_state->auto_proceed) {
-        //Automatically exit the event loop, so user's don't need to manually click proceed
+        // Automatically exit the event loop, so users don't need to manually click proceed
 
-        //Avoid trying to repeatedly exit (which would cause errors in GTK)
+        // Avoid trying to repeatedly exit (which would cause errors in GTK)
         draw_state->auto_proceed = false;
 
-        application->quit(); //Ensure we leave the event loop
+        application->quit(); // Ensure we leave the event loop
     }
+}
+
+static bool draw_can_reuse_geometry(ezgl::view_change_reason reason, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    // The current zoom level.
+    double world_units_per_pixel = g->world_units_per_pixel();
+
+    // Whether critical path delay labels were drawn in the previous full redraw.
+    // Calculated in advance to avoid code repetition.
+    bool crit_path_delay_labels_drawn = draw_state->show_crit_path
+                                        && draw_state->show_crit_path_flylines
+                                        && draw_state->show_crit_path_delays;
+
+    // Pure panning does not change the level of detail, so the existing
+    // geometry can be reused with only a camera-only redraw.
+    if (reason == ezgl::view_change_reason::pan) {
+        return true;
+    } else if (reason == ezgl::view_change_reason::zoom_in || reason == ezgl::view_change_reason::pan_zoom_in) {
+        // Critical-path delay labels depend on screen-space placement, so
+        // their geometry must be rebuilt when zoom changes.
+        // TODO: Make the drawing of critical-path delay labels as an overlay feature to avoid a full redraw.
+        if (crit_path_delay_labels_drawn)
+            return false;
+
+        // Zooming in past the RR decluttering threshold makes previously
+        // decluttered (hidden) routing resources visible, so cached geometry is incomplete.
+        if (draw_state->show_rr
+            && draw_state->enable_rr_decluttering
+            && draw_state->rr_decluttered
+            && world_units_per_pixel <= DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL)
+            return false;
+
+        // Intra-block drawing adds more details as the view gets closer, but stays the same once all internals are already drawn.
+        // Regenerate geometry when the current zoom level is below the CLB-only view (only_clbs_drawn_threshold)
+        // but not all internals are drawn yet.
+        if (draw_state->show_blk_internal
+            && world_units_per_pixel < draw_state->only_clbs_drawn_threshold
+            && !(draw_state->no_blk_internal_decluttered_yet))
+            return false;
+    } else if (reason == ezgl::view_change_reason::zoom_out || reason == ezgl::view_change_reason::pan_zoom_out) {
+        if (crit_path_delay_labels_drawn)
+            return false;
+
+        // Zooming out past the RR decluttering threshold removes normal RR
+        // resources from the drawing, so reuse would leave stale geometry.
+        if (draw_state->show_rr
+            && draw_state->enable_rr_decluttering
+            && !(draw_state->rr_decluttered)
+            && world_units_per_pixel > DRAW_RR_MAX_WORLD_UNITS_PER_PIXEL)
+            return false;
+
+        // Intra-block drawing drops details as the view gets farther away, but stays the same once only the CLBs are visible.
+        // Regenerate geometry when the current zoom level is above the final detailed internal view (all_blk_internals_drawn_threshold)
+        // but the CLBs are not yet the only drawn shapes (some internals are drawn as well).
+        if (draw_state->show_blk_internal
+            && world_units_per_pixel > draw_state->all_blk_internals_drawn_threshold
+            && !(draw_state->no_blk_internal_drawn_yet))
+            return false;
+    } else {
+        VTR_ASSERT_MSG(false, "Invalid ezgl::view_change_reason provided. Aborting...");
+    }
+    // Default to a camera-only redraw.
+    return true;
 }
 
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
@@ -346,6 +418,7 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
         routing_button_setup(app);
         view_button_setup(app);
         crit_path_button_setup(app);
+        proceed_by_step_button_setup(app);
     }
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -446,6 +519,13 @@ void update_screen(ScreenUpdatePriority priority,
                         "QRhiWidget cannot run under QT_QPA_PLATFORM=offscreen "
                         "with --disp on; falling back to the immediate renderer.\n");
                     rt = ezgl::renderer_type::immediate;
+                    draw_state->renderer_type = "immediate";
+                }
+
+                // Set the callback that helps rhi_backend::redraw_at_view_change() determine if
+                // the full redraw can be replaced by a camera-only redraw.
+                if (rt == ezgl::renderer_type::rhi) {
+                    canvas->set_decide_reuse_geometry_callback(draw_can_reuse_geometry);
                 }
 
                 canvas->set_renderer_type(rt);
@@ -481,14 +561,16 @@ void update_screen(ScreenUpdatePriority priority,
         initial_stages.insert(pic_on_screen_val);
     }
 
-    bool should_pause = int(priority) >= draw_state->gr_automode;
+    // When the priority associated with this screen update is higher than the level set in draw_state,
+    // we need to pause at the current graphics view. This does not necessarily happen only at a state change.
+    // Check the definition of gr_automode in draw_state for more information.
+    bool pause_for_priority = int(priority) >= draw_state->gr_automode;
 
-    //If there was a state change, we must call ezgl::application::run() to update the buttons.
-    //However, by default this causes graphics to pause for user interaction.
-    //
-    //If the priority is such that we shouldn't pause we need to continue automatically, so
-    //the user won't need to click manually.
-    draw_state->auto_proceed = (state_change && !should_pause);
+    // If there was a state change, we must call ezgl::application::run() to update the buttons.
+    // However, by default this causes graphics to pause for user interaction.
+    // If the priority is such that we shouldn't pause we need to continue automatically, so
+    // the user won't need to click manually.
+    draw_state->auto_proceed = (state_change && !pause_for_priority);
 
     // Headless mode (save_graphics / graphics_commands without --disp): never
     // block for user interaction — there is no user at the keyboard. Always
@@ -496,13 +578,26 @@ void update_screen(ScreenUpdatePriority priority,
     if (!draw_state->show_graphics)
         draw_state->auto_proceed = true;
 
-    if (state_change                   //Must update buttons
-        || should_pause                //The priority means graphics should pause for user interaction
-        || draw_state->forced_pause) { //The user asked to pause
+    // When Proceed by Step is enabled (an option in the Misc. menu), we need to track if the number of
+    // steps (e.g. temperature change, routing iteration) since the last graphics view has reached
+    // the number specified by the user. If true, we need to pause the graphics at the current graphics view.
+    t_proceed_by_step& proceed_by_step = draw_state->proceed_by_step;
+    bool steps_reached = proceed_by_step.enabled && (proceed_by_step.step_counter == proceed_by_step.steps_to_proceed);
 
-        if (draw_state->forced_pause) {
-            VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
-            draw_state->forced_pause = false; //Reset pause flag
+    if (state_change          // Must update buttons.
+        || pause_for_priority // The priority means graphics should pause at the current view for user interaction.
+        || steps_reached) {   // The number of steps set by the user is reached.
+
+        // Reset the step counter if Proceed by Step is on.
+        // Note that, other causes that pause the graphics (e.g. a state change)
+        // when Proceed by Step is on will also trigger this reset.
+        if (proceed_by_step.enabled) {
+            // Note that, we are modifying the variable stored in draw_state.
+            proceed_by_step.step_counter = 0;
+        }
+
+        if (steps_reached) {
+            VTR_LOG("Pausing optimization to view graphics ('Steps to Proceed' reached). Click 'Proceed' to continue.\n");
         }
 
         const bool has_cmds = !draw_state->graphics_commands.empty();
@@ -552,6 +647,10 @@ void update_screen(ScreenUpdatePriority priority,
         exit(pending_graphics_exit_code);
     }
 
+    // Increments the step counter if Proceed by Step is on.
+    if (draw_state->proceed_by_step.enabled) {
+        (draw_state->proceed_by_step.step_counter)++;
+    }
 #else
     (void)setup_timing_info;
     (void)priority;
@@ -785,17 +884,6 @@ void set_initial_world_ap() {
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
-}
-
-double get_pixels_per_world_unit(ezgl::renderer* g) {
-    double world_width = g->get_visible_world().width();
-    double screen_width = g->get_visible_screen().width();
-    // If using this function for decluttering purpose:
-    // This ratio is sufficient for determining when decluttering should be on, and no other factors (e.g. channel width, tile width)
-    // are needed, because a channel node usually occupies one world unit (in width), yet it is also always drawn in one pixel
-    // in spite of the zoom level. The channel nodes are also placed contiguously and in parallel. Therefore, when the ratio
-    // returned by this function is below 1, it means that the channel nodes are blended together and should be decluttered.
-    return screen_width / world_width;
 }
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
@@ -1191,7 +1279,7 @@ static void highlight_blocks(double x, double y) {
     if (get_selected_sub_block_info().has_selection()) {
         t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
         sprintf(msg, "sub-block %s (a \"%s\") selected",
-                selected_subblock->name,
+                selected_subblock->name.c_str(),
                 selected_subblock->pb_graph_node->pb_type->name);
     } else {
         /* Highlight block and fan-in/fan-outs. */
@@ -1267,19 +1355,13 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     QPushButton* proceed_button = app->find_push_button("ProceedButton");
     QObject::connect(proceed_button, &QPushButton::clicked, [app]() {
-        press_proceed(/*unused*/ nullptr, app);
+        press_proceed(app, /*unused*/ nullptr);
     });
 
     // Connect press_zoom_fit function to the Zoom-fit button
     QPushButton* zoom_fit_button = app->find_push_button("ZoomFitButton");
     QObject::connect(zoom_fit_button, &QPushButton::clicked, [app]() {
-        press_zoom_fit(/*unused*/ nullptr, app);
-    });
-
-    // Connect Pause button
-    QPushButton* pause_button = app->find_push_button("PauseButton");
-    QObject::connect(pause_button, &QPushButton::clicked, []() {
-        set_force_pause();
+        press_zoom_fit(app, /*unused*/ nullptr);
     });
 
     // Connect Block Outline checkbox
@@ -1386,12 +1468,6 @@ static void set_draw_partitions(bool checked) {
 
     application->update_message(draw_state->default_message);
     application->refresh_drawing();
-}
-
-static void set_force_pause() {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->forced_pause = true;
 }
 
 // The enums below are the integer argument values accepted by the

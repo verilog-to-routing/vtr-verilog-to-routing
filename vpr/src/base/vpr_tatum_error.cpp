@@ -32,7 +32,7 @@ std::string format_tatum_error(const tatum::Error& error) {
                 if (clb_idx) {
                     const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb_idx);
                     if (pb) {
-                        msg += "Cluster: '" + std::string(pb->name) + "', ";
+                        msg += "Cluster: '" + pb->name + "', ";
                     }
                 }
             }

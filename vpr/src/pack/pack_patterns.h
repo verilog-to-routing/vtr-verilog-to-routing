@@ -4,6 +4,7 @@
  * patterns.
  */
 
+#include <string>
 #include <vector>
 
 struct t_pb_type;
@@ -40,6 +41,10 @@ struct t_pack_pattern_block {
  *      from_pin   : specific pin in the from_block driving the connection
  *      to_block   : block driven by this connection
  *      to_pin     : specific pin in the to_block driven by this connection
+ *      allow_multi_fanout : true if any pb-graph edge along this connection's
+ *                           path is annotated with allow_multi_fanout="true",
+ *                           lifting the prepacker's single-fanout assumptions
+ *                           for the netlist net implementing this connection
  */
 struct t_pack_pattern_connections {
     t_pack_pattern_block* from_block;
@@ -47,6 +52,8 @@ struct t_pack_pattern_connections {
 
     t_pack_pattern_block* to_block;
     t_pb_graph_pin* to_pin;
+
+    bool allow_multi_fanout = false;
 };
 
 /**
@@ -89,7 +96,7 @@ struct t_pack_pattern_connections {
  *                          net (gnd/vdd)  [0...num_of_chains][0...num_of_tie_offs]
  */
 struct t_pack_patterns {
-    char* name;
+    std::string name;
     int index;
     float base_cost;
 
@@ -103,7 +110,6 @@ struct t_pack_patterns {
 
     // default constructor initializing to an invalid pack pattern
     t_pack_patterns() noexcept {
-        name = nullptr;
         index = -1;
         root_block = nullptr;
         base_cost = 0;

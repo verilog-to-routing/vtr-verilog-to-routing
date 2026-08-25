@@ -118,7 +118,7 @@ static bool is_route_mode_compatible(const t_lb_trace& rt,
  * Constructor/Destructor functions
  ******************************************************************************************/
 
-ClusterRouter::ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
+ClusterRouter::ClusterRouter(const std::vector<t_lb_type_rr_node>* lb_type_graph,
                              t_logical_block_type_ptr type,
                              const std::unordered_set<int>& valid_feedback_pins,
                              bool enable_hot_start) {
@@ -643,7 +643,7 @@ static void reset_lb_net_rt(t_lb_trace& lb_trace) {
 
 void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
                                              const AtomPBBimap& atom_to_pb) {
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
     bool found = false;
     unsigned int ipos;
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -810,7 +810,7 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
 void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
                                                   const AtomPBBimap& atom_to_pb) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_netlist, atom_to_pb, pin_id);
 
@@ -933,7 +933,7 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb
     // are not 'missing' in the clustered netlist.
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     for (size_t ilb_net = 0; ilb_net < intra_lb_nets_.size(); ++ilb_net) {
         //Collect all the sink terminals indices which target a particular node
@@ -987,7 +987,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
                                       e_commit_remove op,
                                       std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
                                       t_mode_selection_status* mode_status) {
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     int inode = rt.current_node;
 
@@ -1006,7 +1006,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
     lb_rr_node_stats_[inode].occ += incr;
     VTR_ASSERT(lb_rr_node_stats_[inode].occ >= 0);
 
-    t_lb_type_rr_node& driver_node = lb_type_graph[inode];
+    const t_lb_type_rr_node& driver_node = lb_type_graph[inode];
     t_pb_graph_pin* driver_pin = driver_node.pb_graph_pin;
 
     /* Recursively update route tree */
@@ -1015,7 +1015,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
         // A conflict is present if there are differing modes between a pb_graph_node
         // and its children.
         if (op == RT_COMMIT && mode_status->try_expand_all_modes) {
-            t_lb_type_rr_node& node = lb_type_graph[rt.next_nodes[i].current_node];
+            const t_lb_type_rr_node& node = lb_type_graph[rt.next_nodes[i].current_node];
             t_pb_graph_pin* pin = node.pb_graph_pin;
 
             if (check_edge_for_route_conflicts(mode_map, driver_pin, pin)) {
@@ -1111,7 +1111,7 @@ void ClusterRouter::expand_edges_(int mode,
                                   float cur_cost,
                                   int net_fanout,
                                   bool target_is_internal_sink) {
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
     t_expansion_node enode;
 
     // Block feedback routing through Fc_out == 0 top-level output pins: such a
@@ -1190,12 +1190,12 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node,
 void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node,
                                            int net_fanout,
                                            bool target_is_internal_sink) {
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     int cur_inode = exp_node.node_index;
     float cur_cost = exp_node.cost;
     int cur_mode = lb_rr_node_stats_[cur_inode].mode;
-    t_lb_type_rr_node& node = lb_type_graph[cur_inode];
+    const t_lb_type_rr_node& node = lb_type_graph[cur_inode];
     t_pb_graph_pin* pin = node.pb_graph_pin;
 
     for (int mode = 0; mode < lb_type_graph[cur_inode].num_modes; mode++) {
@@ -1256,7 +1256,7 @@ bool ClusterRouter::add_to_rt_(t_lb_trace& rt, int node_index, int irt_net) {
 }
 
 bool ClusterRouter::is_route_success_() {
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     for (size_t inode = 0; inode < lb_type_graph.size(); inode++) {
         if (lb_rr_node_stats_[inode].occ > lb_type_graph[inode].capacity) {
@@ -1283,7 +1283,7 @@ static t_lb_trace* find_node_in_rt(t_lb_trace& rt, int rt_index) {
 
 void ClusterRouter::print_route_(const char* filename) {
     FILE* fp;
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
+    const std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     fp = fopen(filename, "w");
     if (fp == nullptr) {
@@ -1482,7 +1482,7 @@ std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& 
 
 void ClusterRouter::reset_intra_lb_route() {
     VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
-    for (t_lb_type_rr_node& node : *lb_type_graph_) {
+    for (const t_lb_type_rr_node& node : *lb_type_graph_) {
         t_pb_graph_pin* pin = node.pb_graph_pin;
         if (pin == nullptr) {
             continue;
