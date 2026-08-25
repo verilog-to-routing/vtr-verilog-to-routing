@@ -333,17 +333,13 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     // Building CRR Graph
     std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;
     std::unique_ptr<crrgenerator::SwitchBlockManager> sb_manager;
-    std::unique_ptr<crrgenerator::NodeLookupManager> node_lookup;
     if (build_crr_edges) {
         sb_manager = std::make_unique<crrgenerator::SwitchBlockManager>(crr_opts.sb_maps,
                                                                         crr_opts.sb_templates,
                                                                         crr_opts.annotated_rr_graph,
                                                                         route_verbosity);
-        node_lookup = std::make_unique<crrgenerator::NodeLookupManager>(rr_graph,
-                                                                        grids.width(),
-                                                                        grids.height());
+
         crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
-                                                                                      *node_lookup,
                                                                                       *sb_manager,
                                                                                       route_verbosity,
                                                                                       crr_opts.gsb_version);
@@ -367,11 +363,6 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             VTR_LOGV(route_verbosity > 1, "Building edges for GSB[%lu][%lu]\n", ix, iy);
 
             vtr::Point<size_t> gsb_coord(ix, iy);
-            /* Create a GSB object */
-            const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
-                                                            device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord, perimeter_cb,
-                                                            crr_opts.gsb_version);
 
             if (build_crr_edges) {
                 /* When CRR edges are built, all GSB connections (including input
@@ -379,11 +370,17 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                 build_crr_gsb_edges(rr_graph_builder,
                                     num_edges_to_create,
                                     rr_node_driver_switches,
-                                    rr_gsb,
+                                    gsb_coord,
                                     *crr_connection_builder,
                                     delay_to_switch_id,
                                     route_verbosity);
             } else {
+                /* Create a GSB object */
+                const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+                                                                device_chan_width, segment_inf_x, segment_inf_y,
+                                                                layer, gsb_coord, perimeter_cb,
+                                                                crr_opts.gsb_version);
+
                 /* adapt the track_to_ipin_lookup for the GSB nodes */
                 t_track2pin_map track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
 
